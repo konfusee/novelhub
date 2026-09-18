@@ -23,10 +23,18 @@ E={
 ('in','Content reports'),
 ('out','Notifications')]),
 'guest':('Guest','actor',[
-('in','Registration / authentication requests'),
-('in','Story discovery / access requests'),
-('out','Registration / authentication results'),
-('out','Published story catalog / preview')]),
+('in','Registration data'),
+('out','Registration result'),
+('in','Authentication request'),
+('out','Authentication result'),
+('in','Browse published stories request'),
+('out','Published story catalog'),
+('in','Search & filter criteria'),
+('out','Search results'),
+('in','Story detail request'),
+('out','Story details, tags & public statistics'),
+('in','Public chapter / preview request'),
+('out','Public chapter content / preview')]),
 'author':('Author','actor',[
 ('in','Author application'),
 ('out','Application result'),
@@ -64,24 +72,24 @@ E={
 ('out','Content for summarization / tagging'),('in','Summaries & metadata')]),
  'oauth':('Authentication\nProvider\n(Google OAuth)','external',[
 ('out','Authentication request'),('in','Authentication result & identity')])}
-assert sum(len(v[2]) for v in E.values()) == 47
+assert sum(len(v[2]) for v in E.values()) == 55
 boxes={
  'oauth':(3090,700,250,180),
- 'guest':(60,1100,250,200),
- 'reader':(60,1320,250,450),
+ 'guest':(60,1050,250,500),
+ 'reader':(60,1570,250,380),
  'ai':(60,700,250,190),
- 'tts':(60,1780,250,190),
+ 'tts':(60,2150,250,190),
  'embedding':(3090,1200,250,190),
  'storage':(3090,1380,250,160),
  'author':(3090,1570,250,500),
- 'email':(60,2200,250,160),
+ 'email':(60,2450,250,160),
  'moderator':(60,200,250,295),
  'admin':(3090,2550,250,328),
 }
  # Keep side ports inside the circle's vertical span so most connectors stay straight.
 port_offsets={
- 'guest':[35,80,125,165],
- 'reader':[35,78,121,164,207,250,293,336,379,422],
+ 'guest':[35,75,115,155,195,235,275,315,355,395,435,475],
+ 'reader':[30,65,100,135,170,205,240,275,310,345],
  'author':[32,72,120,168,220,272,320,368,416],
  'oauth':[48,129], 'embedding':[35,116], 'storage':[44,121],
  'ai':[29,138], 'tts':[53,129], 'email':[79],
@@ -106,9 +114,9 @@ for names,side in [(['ai','guest','reader','tts','email'],'L'),(['oauth','embedd
  below_pos={j:k for k,j in enumerate(below)}
  for i,f in enumerate(group):
   if i in above_pos:
-   ny=top+100+40*above_pos[i]
+   ny=top+50+40*above_pos[i]
   elif i in below_pos:
-   ny=bottom-100-40*(len(below)-1-below_pos[i])
+   ny=bottom-120+25*below_pos[i]
   else:
    ny=f['ey']
   extent=math.sqrt(R*R-(ny-CY)**2)
