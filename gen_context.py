@@ -13,8 +13,12 @@ INK='#000000'; MUTED='#000000'; BLUE='#000000'; TEAL='#000000'
 E={
 'reader':('Reader','actor',[
 ('in','Account & profile data'),
-('in','Search criteria'),
+('in','Browse published catalog request'),
+('out','Published story catalog'),
+('in','Search & filter criteria'),
 ('out','Search results'),
+('in','Story detail / chapter request'),
+('out','Story details & chapter content'),
 ('in','Reading / listening requests'),
 ('out','Story content & audio'),
 ('in','Reading position'),
@@ -27,14 +31,14 @@ E={
 ('out','Registration result'),
 ('in','Authentication request'),
 ('out','Authentication result'),
-('in','Browse published stories request'),
+('in','Browse published catalog request'),
 ('out','Published story catalog'),
 ('in','Search & filter criteria'),
 ('out','Search results'),
-('in','Story detail request'),
-('out','Story details, tags & public statistics'),
-('in','Public chapter / preview request'),
-('out','Public chapter content / preview')]),
+('in','Story detail / chapter request'),
+('out','Story details & chapter content'),
+('in','Reading / listening requests'),
+('out','Story content & audio')]),
 'author':('Author','actor',[
 ('in','Author application'),
 ('out','Application result'),
@@ -72,11 +76,11 @@ E={
 ('out','Content for summarization / tagging'),('in','Summaries & metadata')]),
  'oauth':('Authentication\nProvider\n(Google OAuth)','external',[
 ('out','Authentication request'),('in','Authentication result & identity')])}
-assert sum(len(v[2]) for v in E.values()) == 55
+assert sum(len(v[2]) for v in E.values()) == 59
 boxes={
  'oauth':(3090,700,250,180),
  'guest':(60,1050,250,500),
- 'reader':(60,1570,250,380),
+ 'reader':(60,1530,250,520),
  'ai':(60,700,250,190),
  'tts':(60,2150,250,190),
  'embedding':(3090,1200,250,190),
@@ -89,7 +93,7 @@ boxes={
  # Keep side ports inside the circle's vertical span so most connectors stay straight.
 port_offsets={
  'guest':[35,75,115,155,195,235,275,315,355,395,435,475],
- 'reader':[30,65,100,135,170,205,240,275,310,345],
+ 'reader':[30,56,82,108,134,160,186,212,238,264,290,316,342,368],
  'author':[32,72,120,168,220,272,320,368,416],
  'oauth':[48,129], 'embedding':[35,116], 'storage':[44,121],
  'ai':[29,138], 'tts':[53,129], 'email':[79],
