@@ -12,18 +12,18 @@ INK='#000000'; MUTED='#000000'; BLUE='#000000'; TEAL='#000000'
 # in/out are relative to NovelHub. Each label describes one data flow.
 E={
 'reader':('Reader','actor',[
-('in','Account & profile data'),
-('in','Browse published catalog request'),
-('out','Published story catalog'),
-('in','Search & filter criteria'),
+('in','Profile data'),
+('in','Browse catalog'),
+('out','Story catalog'),
+('in','Search / filter'),
 ('out','Search results'),
-('in','Story detail / chapter request'),
-('out','Story details & chapter content'),
-('in','Reading / listening requests'),
-('out','Story content & audio'),
+('in','View story / chapter'),
+('out','Story / chapter content'),
+('in','Read / listen request'),
+('out','Story content / audio'),
 ('in','Reading position'),
-('out','Saved reading progress'),
-('in','Follows, comments & ratings'),
+('out','Reading progress'),
+('in','Follow / comment / rate'),
 ('in','Content reports'),
 ('out','Notifications')]),
 'guest':('Guest','actor',[
@@ -31,14 +31,14 @@ E={
 ('out','Registration result'),
 ('in','Authentication request'),
 ('out','Authentication result'),
-('in','Browse published catalog request'),
-('out','Published story catalog'),
-('in','Search & filter criteria'),
+('in','Browse catalog'),
+('out','Story catalog'),
+('in','Search / filter'),
 ('out','Search results'),
-('in','Story detail / chapter request'),
-('out','Story details & chapter content'),
-('in','Reading / listening requests'),
-('out','Story content & audio')]),
+('in','View story / chapter'),
+('out','Story / chapter content'),
+('in','Read / listen request'),
+('out','Story content / audio')]),
 'author':('Author','actor',[
 ('in','Author application'),
 ('out','Application result'),
@@ -79,8 +79,8 @@ E={
 assert sum(len(v[2]) for v in E.values()) == 59
 boxes={
  'oauth':(3090,700,250,180),
- 'guest':(60,1050,250,500),
- 'reader':(60,1530,250,520),
+ 'guest':(60,1050,250,450),
+ 'reader':(60,1520,250,450),
  'ai':(60,700,250,190),
  'tts':(60,2150,250,190),
  'embedding':(3090,1200,250,190),
@@ -92,8 +92,8 @@ boxes={
 }
  # Keep side ports inside the circle's vertical span so most connectors stay straight.
 port_offsets={
- 'guest':[35,75,115,155,195,235,275,315,355,395,435,475],
- 'reader':[30,56,82,108,134,160,186,212,238,264,290,316,342,368],
+ 'guest':[30,65,100,135,170,205,240,275,310,345,380,415],
+ 'reader':[25,54,83,112,141,170,199,228,257,286,315,344,373,402],
  'author':[32,72,120,168,220,272,320,368,416],
  'oauth':[48,129], 'embedding':[35,116], 'storage':[44,121],
  'ai':[29,138], 'tts':[53,129], 'email':[79],
@@ -101,7 +101,7 @@ port_offsets={
 # Small deterministic offsets keep the layout from feeling mechanically perfect
 # without sacrificing its visible alignment.
 MICRO_X=(0,-6,4,-3,7,-4,3,-2,5,-5,2,-1,6,-3,1)
-MICRO_Y=(0,1,-1,0,2,-1,1,-2,0,1,-1,2,0,-1,1)
+MICRO_Y=(0,0,0,0,0,0,0,0,0,0,0,0,0,0,0)
 MICRO_BEND=(0,2,-1,3,-2,1,-3,2,-1,0,2,-2,1,-1,3)
 flows=[]
 for names,side in [(['ai','guest','reader','tts','email'],'L'),(['oauth','embedding','storage','author'],'R')]:
