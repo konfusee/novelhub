@@ -71,9 +71,9 @@ boxes={
  'reader':(60,1520,250,570),
  'ai':(60,500,250,190),
  'tts':(60,2110,250,190),
- 'embedding':(3090,970,250,190),
- 'storage':(3090,1190,250,160),
- 'author':(3090,1370,250,650),
+ 'embedding':(3090,1050,250,190),
+ 'storage':(3090,1270,250,160),
+ 'author':(3090,1450,250,650),
  'email':(60,2450,250,190),
  'moderator':(60,100,250,350),
  'admin':(3090,2800,250,450),
@@ -107,7 +107,10 @@ for names,side in [(['ai','guest','reader','tts','email'],'L'),(['oauth','paymen
  below_pos={j:k for k,j in enumerate(below)}
  for i,f in enumerate(group):
   if i in above_pos:
-   ny=top+20+25*above_pos[i]
+   if side=='R':
+    ny=top+50+20*above_pos[i]
+   else:
+    ny=top+20+25*above_pos[i]
   elif i in below_pos:
    ny=bottom-20-25*(len(below)-1-below_pos[i])
   else:
@@ -127,7 +130,7 @@ for names,side in [(['ai','guest','reader','tts','email'],'L'),(['oauth','paymen
   if routed:
    f['lx']=(start[0]+bend)/2
   else:
-   f['lx']=(start[0]+end[0])/2-(180 if side=='R' else 0)
+   f['lx']=(start[0]+end[0])/2
   f['ly']=f['ey']-16;f['lw']=660;f['lh']=32
  flows.extend(group)
 # Upper/lower connections: vertical from the circle, one 90-degree bend,
