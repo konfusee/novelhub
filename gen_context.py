@@ -19,14 +19,15 @@ E={
 ('in','Read / listen request'),('out','Story content / audio'),
 ('in','Reading position'),('out','Reading progress'),
 ('in','Follow / comment / rate'),('in','Content reports'),('out','Notifications'),
-('in','Coin top-up / unlock request'),('out','Coin balance / early access')]),
+('in','Coin top-up request'),('out','Top-up status / coin balance'),
+('in','Early chapter unlock request'),('out','Unlock result / chapter access')]),
 'guest':('Guest','actor',[
 ('in','Registration data'),('out','Registration result'),
 ('in','Authentication request'),('out','Authentication result'),
 ('in','Browse catalog'),('out','Story catalog'),
 ('in','Search / filter'),('out','Search results'),
 ('in','View story / chapter'),('out','Story / chapter content'),
-('in','Read / listen request'),('out','Story content / audio')]),
+('in','Read / listen request'),('out','Limited story content / audio')]),
 'author':('Author','actor',[
 ('in','Author application'),('out','Application result'),
 ('out','Story template / format rules'),('in','Formatted story / chapter'),
@@ -61,12 +62,12 @@ E={
 ('out','Authentication request'),('in','Authentication result / identity')]),
 'payment':('Payment Gateway','external',[
 ('out','Top-up payment request'),('in','Payment result')])}
-assert sum(len(v[2]) for v in E.values()) == 74
+assert sum(len(v[2]) for v in E.values()) == 76
 boxes={
  'oauth':(3090,750,250,180),
  'payment':(3090,1000,250,170),
  'guest':(60,1420,250,450),
- 'reader':(60,1900,250,520),
+ 'reader':(60,1900,250,600),
  'ai':(60,750,250,190),
  'tts':(60,2520,250,190),
  'embedding':(3090,1450,250,190),
@@ -79,7 +80,7 @@ boxes={
 # Flow ports are evenly spaced inside each entity box.
 port_offsets={
  'guest':[30,65,100,135,170,205,240,275,310,345,380,415],
- 'reader':[25,55,85,115,145,175,205,235,265,295,325,355,385,415,445,475],
+ 'reader':[25,56,87,118,149,180,211,242,273,304,335,366,397,428,459,490,521,552],
  'author':[35,82,129,176,223,270,317,364,411,458,505,552],
  'oauth':[48,129], 'payment':[42,128],
  'embedding':[35,116], 'storage':[44,121],
@@ -121,8 +122,9 @@ for names,side in [(['ai','guest','reader','tts','email'],'L'),(['oauth','paymen
    else:
     bend=1050-6*i if f['ey']<ny else 1050+6*i
    f['points']=[start,(bend,f['ey']),(bend,ny),end]
-  f['lx']=(650 if side=='L' else 2750)+MICRO_X[i%len(MICRO_X)]
-  f['ly']=f['ey']-16+MICRO_Y[i%len(MICRO_Y)];f['lw']=660;f['lh']=32
+  routed=abs(f['ey']-ny)>=1
+  f['lx']=((start[0]+bend)/2 if routed else (start[0]+end[0])/2)
+  f['ly']=f['ey']-16;f['lw']=660;f['lh']=32
  flows.extend(group)
 # Upper/lower connections: vertical from the circle, one 90-degree bend,
 # then a labeled horizontal segment to a side-positioned actor.
