@@ -6,8 +6,8 @@ matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 from matplotlib.patches import Circle, FancyBboxPatch, FancyArrowPatch
 OUT=Path(__file__).parent
-W,H=3400,4200
-CX,CY,R=1700,2000,700
+W,H=3400,3350
+CX,CY,R=1700,1600,700
 INK='#000000'; MUTED='#000000'; BLUE='#000000'; TEAL='#000000'
 # in/out are relative to NovelHub. Each label describes one data flow.
 E={
@@ -34,7 +34,8 @@ E={
 ('in','PDF & media uploads'),('in','Rights / license declaration'),
 ('in','X-day lock & coin price'),('in','Publication submission'),
 ('out','Saved / imported drafts'),('out','Publication status / feedback'),
-('out','Story statistics'),('out','Author wallet / 70% revenue')]),
+('out','Story statistics'),('out','Earnings balance / 70% share'),
+('in','Withdrawal request'),('out','Withdrawal status / payout record')]),
 'moderator':('Moderator','actor',[
 ('out','Pending submissions'),('out','Reports / reported content'),
 ('out','Similarity findings'),('out','AI review results / risk flags'),
@@ -43,10 +44,10 @@ E={
 'admin':('Admin','actor',[
 ('in','User-management changes'),('in','Role / permission changes'),
 ('in','Category / content changes'),('out','Administrative records'),
-('out','Escalated reports'),('in','Escalation decisions'),
 ('out','System statistics / audit logs'),('in','Coin rate / revenue policy'),
-('in','Financial control actions'),('out','Transaction / wallet reports'),
-('out','System wallet / 30% revenue')]),
+('out','Pending withdrawal requests'),('in','Withdrawal approval / rejection'),
+('in','Wallet / transaction controls'),('out','Finance / wallet reports'),
+('out','System revenue / 30% share')]),
 'storage':('VPSTTT Object\nStorage','external',[
 ('out','Media files / retrieval requests'),('in','Media URLs / file content')]),
 'tts':('TTS Service','external',[
@@ -61,27 +62,27 @@ E={
 'oauth':('Authentication\nProvider\n(Google OAuth)','external',[
 ('out','Authentication request'),('in','Authentication result / identity')]),
 'payment':('Payment Gateway','external',[
-('out','Top-up payment request'),('in','Payment result')])}
-assert sum(len(v[2]) for v in E.values()) == 76
+('out','Top-up / payout request'),('in','Payment / payout result')])}
+assert sum(len(v[2]) for v in E.values()) == 78
 boxes={
- 'oauth':(3090,750,250,180),
- 'payment':(3090,1000,250,170),
- 'guest':(60,1420,250,450),
- 'reader':(60,1900,250,600),
- 'ai':(60,750,250,190),
- 'tts':(60,2520,250,190),
- 'embedding':(3090,1450,250,190),
- 'storage':(3090,1680,250,160),
- 'author':(3090,1870,250,600),
- 'email':(60,2900,250,160),
- 'moderator':(60,150,250,400),
- 'admin':(3090,3450,250,500),
+ 'oauth':(3090,500,250,180),
+ 'payment':(3090,720,250,170),
+ 'guest':(60,1050,250,450),
+ 'reader':(60,1520,250,570),
+ 'ai':(60,500,250,190),
+ 'tts':(60,2110,250,190),
+ 'embedding':(3090,970,250,190),
+ 'storage':(3090,1190,250,160),
+ 'author':(3090,1370,250,650),
+ 'email':(60,2450,250,190),
+ 'moderator':(60,100,250,350),
+ 'admin':(3090,2800,250,450),
 }
 # Flow ports are evenly spaced inside each entity box.
 port_offsets={
  'guest':[30,65,100,135,170,205,240,275,310,345,380,415],
  'reader':[25,56,87,118,149,180,211,242,273,304,335,366,397,428,459,490,521,552],
- 'author':[35,82,129,176,223,270,317,364,411,458,505,552],
+ 'author':[35,79,123,167,211,255,299,343,387,431,475,519,563,607],
  'oauth':[48,129], 'payment':[42,128],
  'embedding':[35,116], 'storage':[44,121],
  'ai':[30,75,120,165], 'tts':[53,129], 'email':[55,115],
@@ -208,5 +209,5 @@ for a,x,y,w,h in text_artists:
 ET.indent(mx);ET.ElementTree(mx).write(OUT/'novelhub_context_refined.drawio',encoding='utf-8',xml_declaration=True)
 fig.savefig(OUT/'novelhub_context_refined.png',dpi=140,facecolor='white');plt.close(fig)
 from PIL import Image
-im=Image.open(OUT/'novelhub_context_refined.png');im.load();assert im.size==(4760,5880)
+im=Image.open(OUT/'novelhub_context_refined.png');im.load();assert im.size==(4760,4690)
 print(f'OK: {len(E)} entities; {len(flows)} distinct directed flows; no connector crossings; label bounds checked; PNG decoded.')
