@@ -422,7 +422,7 @@
           </mxGeometry>
         </mxCell>
         <mxCell id="label-43" value="Text segments" style="text;html=0;align=center;verticalAlign=middle;whiteSpace=wrap;fontFamily=Helvetica;fontSize=20;fontColor=#000000;fontStyle=0;strokeColor=none;fillColor=none;fillOpacity=0;labelBackgroundColor=none;labelBorderColor=none;" vertex="1" parent="1">
-          <mxGeometry x="2249.373940674923" y="973.0" width="660" height="32" as="geometry" />
+          <mxGeometry x="2069.373940674923" y="973.0" width="660" height="32" as="geometry" />
         </mxCell>
         <mxCell id="flow-44" edge="1" parent="1" source="embedding" target="novelhub" style="edgeStyle=none;rounded=0;html=0;endArrow=block;endFill=1;endSize=8;strokeColor=#000000;strokeWidth=1.5;exitX=0.0;exitY=0.6105263157894737;exitPerimeter=0;entryX=0.8394202740688592;entryY=0.13285714285714287;entryPerimeter=0;">
           <mxGeometry relative="1" as="geometry">
@@ -430,7 +430,7 @@
           </mxGeometry>
         </mxCell>
         <mxCell id="label-44" value="Embedding vectors" style="text;html=0;align=center;verticalAlign=middle;whiteSpace=wrap;fontFamily=Helvetica;fontSize=20;fontColor=#000000;fontStyle=0;strokeColor=none;fillColor=none;fillOpacity=0;labelBackgroundColor=none;labelBorderColor=none;" vertex="1" parent="1">
-          <mxGeometry x="2302.5941918482013" y="1054.0" width="660" height="32" as="geometry" />
+          <mxGeometry x="2122.5941918482013" y="1054.0" width="660" height="32" as="geometry" />
         </mxCell>
         <mxCell id="flow-45" edge="1" parent="1" source="novelhub" target="storage" style="edgeStyle=none;rounded=0;html=0;endArrow=block;endFill=1;endSize=8;strokeColor=#000000;strokeWidth=1.5;exitX=0.9262101618225642;exitY=0.23857142857142857;exitPerimeter=0;entryX=0.0;entryY=0.275;entryPerimeter=0;">
           <mxGeometry relative="1" as="geometry">
@@ -438,7 +438,7 @@
           </mxGeometry>
         </mxCell>
         <mxCell id="label-45" value="Media files / retrieval requests" style="text;html=0;align=center;verticalAlign=middle;whiteSpace=wrap;fontFamily=Helvetica;fontSize=20;fontColor=#000000;fontStyle=0;strokeColor=none;fillColor=none;fillOpacity=0;labelBackgroundColor=none;labelBorderColor=none;" vertex="1" parent="1">
-          <mxGeometry x="2363.347113275795" y="1202.0" width="660" height="32" as="geometry" />
+          <mxGeometry x="2183.347113275795" y="1202.0" width="660" height="32" as="geometry" />
         </mxCell>
         <mxCell id="flow-46" edge="1" parent="1" source="storage" target="novelhub" style="edgeStyle=none;rounded=0;html=0;endArrow=block;endFill=1;endSize=8;strokeColor=#000000;strokeWidth=1.5;exitX=0.0;exitY=0.75625;exitPerimeter=0;entryX=0.9553978973359004;entryY=0.2935714285714286;entryPerimeter=0;">
           <mxGeometry relative="1" as="geometry">
@@ -446,7 +446,7 @@
           </mxGeometry>
         </mxCell>
         <mxCell id="label-46" value="Media URLs / file content" style="text;html=0;align=center;verticalAlign=middle;whiteSpace=wrap;fontFamily=Helvetica;fontSize=20;fontColor=#000000;fontStyle=0;strokeColor=none;fillColor=none;fillOpacity=0;labelBackgroundColor=none;labelBorderColor=none;" vertex="1" parent="1">
-          <mxGeometry x="2383.7785281351303" y="1279.0" width="660" height="32" as="geometry" />
+          <mxGeometry x="2203.7785281351303" y="1279.0" width="660" height="32" as="geometry" />
         </mxCell>
         <mxCell id="flow-47" edge="1" parent="1" source="author" target="novelhub" style="edgeStyle=none;rounded=0;html=0;endArrow=block;endFill=1;endSize=8;strokeColor=#000000;strokeWidth=1.5;exitX=0.0;exitY=0.05384615384615385;exitPerimeter=0;entryX=0.9802077569093594;entryY=0.3607142857142857;entryPerimeter=0;">
           <mxGeometry relative="1" as="geometry">
@@ -454,7 +454,7 @@
           </mxGeometry>
         </mxCell>
         <mxCell id="label-47" value="Author application" style="text;html=0;align=center;verticalAlign=middle;whiteSpace=wrap;fontFamily=Helvetica;fontSize=20;fontColor=#000000;fontStyle=0;strokeColor=none;fillColor=none;fillOpacity=0;labelBackgroundColor=none;labelBorderColor=none;" vertex="1" parent="1">
-          <mxGeometry x="2401.1454298365516" y="1373.0" width="660" height="32" as="geometry" />
+          <mxGeometry x="2221.1454298365516" y="1373.0" width="660" height="32" as="geometry" />
         </mxCell>
         <mxCell id="flow-48" edge="1" parent="1" source="novelhub" target="author" style="edgeStyle=none;rounded=0;html=0;endArrow=block;endFill=1;endSize=8;strokeColor=#000000;strokeWidth=1.5;exitX=0.988228262941315;exitY=0.3921428571428571;exitPerimeter=0;entryX=0.0;entryY=0.12153846153846154;entryPerimeter=0;">
           <mxGeometry relative="1" as="geometry">
@@ -462,7 +462,7 @@
           </mxGeometry>
         </mxCell>
         <mxCell id="label-48" value="Application result" style="text;html=0;align=center;verticalAlign=middle;whiteSpace=wrap;fontFamily=Helvetica;fontSize=20;fontColor=#000000;fontStyle=0;strokeColor=none;fillColor=none;fillOpacity=0;labelBackgroundColor=none;labelBorderColor=none;" vertex="1" parent="1">
-          <mxGeometry x="2406.7597840589206" y="1417.0" width="660" height="32" as="geometry" />
+          <mxGeometry x="2226.7597840589206" y="1417.0" width="660" height="32" as="geometry" />
         </mxCell>
         <mxCell id="flow-49" edge="1" parent="1" source="novelhub" target="author" style="edgeStyle=none;rounded=0;html=0;endArrow=block;endFill=1;endSize=8;strokeColor=#000000;strokeWidth=1.5;exitX=0.994124147830672;exitY=0.4235714285714286;exitPerimeter=0;entryX=0.0;entryY=0.18923076923076923;entryPerimeter=0;">
           <mxGeometry relative="1" as="geometry">
@@ -470,7 +470,7 @@
           </mxGeometry>
         </mxCell>
         <mxCell id="label-49" value="Story template / format rules" style="text;html=0;align=center;verticalAlign=middle;whiteSpace=wrap;fontFamily=Helvetica;fontSize=20;fontColor=#000000;fontStyle=0;strokeColor=none;fillColor=none;fillOpacity=0;labelBackgroundColor=none;labelBorderColor=none;" vertex="1" parent="1">
-          <mxGeometry x="2410.8869034814707" y="1461.0" width="660" height="32" as="geometry" />
+          <mxGeometry x="2230.8869034814707" y="1461.0" width="660" height="32" as="geometry" />
         </mxCell>
         <mxCell id="flow-50" edge="1" parent="1" source="author" target="novelhub" style="edgeStyle=none;rounded=0;html=0;endArrow=block;endFill=1;endSize=8;strokeColor=#000000;strokeWidth=1.5;exitX=0.0;exitY=0.2569230769230769;exitPerimeter=0;entryX=0.9979708826829136;entryY=0.455;entryPerimeter=0;">
           <mxGeometry relative="1" as="geometry">
@@ -478,7 +478,7 @@
           </mxGeometry>
         </mxCell>
         <mxCell id="label-50" value="Formatted story / chapter" style="text;html=0;align=center;verticalAlign=middle;whiteSpace=wrap;fontFamily=Helvetica;fontSize=20;fontColor=#000000;fontStyle=0;strokeColor=none;fillColor=none;fillOpacity=0;labelBackgroundColor=none;labelBorderColor=none;" vertex="1" parent="1">
-          <mxGeometry x="2413.5796178780392" y="1505.0" width="660" height="32" as="geometry" />
+          <mxGeometry x="2233.5796178780392" y="1505.0" width="660" height="32" as="geometry" />
         </mxCell>
         <mxCell id="flow-51" edge="1" parent="1" source="author" target="novelhub" style="edgeStyle=none;rounded=0;html=0;endArrow=block;endFill=1;endSize=8;strokeColor=#000000;strokeWidth=1.5;exitX=0.0;exitY=0.32461538461538464;exitPerimeter=0;entryX=0.9998157823904028;entryY=0.48642857142857143;entryPerimeter=0;">
           <mxGeometry relative="1" as="geometry">
@@ -486,7 +486,7 @@
           </mxGeometry>
         </mxCell>
         <mxCell id="label-51" value="PDF &amp; media uploads" style="text;html=0;align=center;verticalAlign=middle;whiteSpace=wrap;fontFamily=Helvetica;fontSize=20;fontColor=#000000;fontStyle=0;strokeColor=none;fillColor=none;fillOpacity=0;labelBackgroundColor=none;labelBorderColor=none;" vertex="1" parent="1">
-          <mxGeometry x="2414.871047673282" y="1549.0" width="660" height="32" as="geometry" />
+          <mxGeometry x="2234.871047673282" y="1549.0" width="660" height="32" as="geometry" />
         </mxCell>
         <mxCell id="flow-52" edge="1" parent="1" source="author" target="novelhub" style="edgeStyle=none;rounded=0;html=0;endArrow=block;endFill=1;endSize=8;strokeColor=#000000;strokeWidth=1.5;exitX=0.0;exitY=0.3923076923076923;exitPerimeter=0;entryX=0.9996810207011865;entryY=0.5178571428571429;entryPerimeter=0;">
           <mxGeometry relative="1" as="geometry">
@@ -494,7 +494,7 @@
           </mxGeometry>
         </mxCell>
         <mxCell id="label-52" value="Rights / license declaration" style="text;html=0;align=center;verticalAlign=middle;whiteSpace=wrap;fontFamily=Helvetica;fontSize=20;fontColor=#000000;fontStyle=0;strokeColor=none;fillColor=none;fillOpacity=0;labelBackgroundColor=none;labelBorderColor=none;" vertex="1" parent="1">
-          <mxGeometry x="2414.7767144908303" y="1593.0" width="660" height="32" as="geometry" />
+          <mxGeometry x="2234.7767144908303" y="1593.0" width="660" height="32" as="geometry" />
         </mxCell>
         <mxCell id="flow-53" edge="1" parent="1" source="author" target="novelhub" style="edgeStyle=none;rounded=0;html=0;endArrow=block;endFill=1;endSize=8;strokeColor=#000000;strokeWidth=1.5;exitX=0.0;exitY=0.46;exitPerimeter=0;entryX=0.9975649890892113;entryY=0.5492857142857143;entryPerimeter=0;">
           <mxGeometry relative="1" as="geometry">
@@ -502,7 +502,7 @@
           </mxGeometry>
         </mxCell>
         <mxCell id="label-53" value="X-day lock &amp; coin price" style="text;html=0;align=center;verticalAlign=middle;whiteSpace=wrap;fontFamily=Helvetica;fontSize=20;fontColor=#000000;fontStyle=0;strokeColor=none;fillColor=none;fillOpacity=0;labelBackgroundColor=none;labelBorderColor=none;" vertex="1" parent="1">
-          <mxGeometry x="2413.295492362448" y="1637.0" width="660" height="32" as="geometry" />
+          <mxGeometry x="2233.295492362448" y="1637.0" width="660" height="32" as="geometry" />
         </mxCell>
         <mxCell id="flow-54" edge="1" parent="1" source="author" target="novelhub" style="edgeStyle=none;rounded=0;html=0;endArrow=block;endFill=1;endSize=8;strokeColor=#000000;strokeWidth=1.5;exitX=0.0;exitY=0.5276923076923077;exitPerimeter=0;entryX=0.9934421993320318;entryY=0.5807142857142857;entryPerimeter=0;">
           <mxGeometry relative="1" as="geometry">
@@ -510,7 +510,7 @@
           </mxGeometry>
         </mxCell>
         <mxCell id="label-54" value="Publication submission" style="text;html=0;align=center;verticalAlign=middle;whiteSpace=wrap;fontFamily=Helvetica;fontSize=20;fontColor=#000000;fontStyle=0;strokeColor=none;fillColor=none;fillOpacity=0;labelBackgroundColor=none;labelBorderColor=none;" vertex="1" parent="1">
-          <mxGeometry x="2410.409539532422" y="1681.0" width="660" height="32" as="geometry" />
+          <mxGeometry x="2230.409539532422" y="1681.0" width="660" height="32" as="geometry" />
         </mxCell>
         <mxCell id="flow-55" edge="1" parent="1" source="novelhub" target="author" style="edgeStyle=none;rounded=0;html=0;endArrow=block;endFill=1;endSize=8;strokeColor=#000000;strokeWidth=1.5;exitX=0.9872617157050582;exitY=0.6121428571428571;exitPerimeter=0;entryX=0.0;entryY=0.5953846153846154;entryPerimeter=0;">
           <mxGeometry relative="1" as="geometry">
@@ -518,7 +518,7 @@
           </mxGeometry>
         </mxCell>
         <mxCell id="label-55" value="Saved / imported drafts" style="text;html=0;align=center;verticalAlign=middle;whiteSpace=wrap;fontFamily=Helvetica;fontSize=20;fontColor=#000000;fontStyle=0;strokeColor=none;fillColor=none;fillOpacity=0;labelBackgroundColor=none;labelBorderColor=none;" vertex="1" parent="1">
-          <mxGeometry x="2406.0832009935407" y="1725.0" width="660" height="32" as="geometry" />
+          <mxGeometry x="2226.0832009935407" y="1725.0" width="660" height="32" as="geometry" />
         </mxCell>
         <mxCell id="flow-56" edge="1" parent="1" source="novelhub" target="author" style="edgeStyle=none;rounded=0;html=0;endArrow=block;endFill=1;endSize=8;strokeColor=#000000;strokeWidth=1.5;exitX=0.9789438849155077;exitY=0.6435714285714286;exitPerimeter=0;entryX=0.0;entryY=0.6630769230769231;entryPerimeter=0;">
           <mxGeometry relative="1" as="geometry">
@@ -526,7 +526,7 @@
           </mxGeometry>
         </mxCell>
         <mxCell id="label-56" value="Publication status / feedback" style="text;html=0;align=center;verticalAlign=middle;whiteSpace=wrap;fontFamily=Helvetica;fontSize=20;fontColor=#000000;fontStyle=0;strokeColor=none;fillColor=none;fillOpacity=0;labelBackgroundColor=none;labelBorderColor=none;" vertex="1" parent="1">
-          <mxGeometry x="2400.2607194408556" y="1769.0" width="660" height="32" as="geometry" />
+          <mxGeometry x="2220.2607194408556" y="1769.0" width="660" height="32" as="geometry" />
         </mxCell>
         <mxCell id="flow-57" edge="1" parent="1" source="novelhub" target="author" style="edgeStyle=none;rounded=0;html=0;endArrow=block;endFill=1;endSize=8;strokeColor=#000000;strokeWidth=1.5;exitX=0.96837484987988;exitY=0.675;exitPerimeter=0;entryX=0.0;entryY=0.7307692307692307;entryPerimeter=0;">
           <mxGeometry relative="1" as="geometry">
@@ -534,7 +534,7 @@
           </mxGeometry>
         </mxCell>
         <mxCell id="label-57" value="Story statistics" style="text;html=0;align=center;verticalAlign=middle;whiteSpace=wrap;fontFamily=Helvetica;fontSize=20;fontColor=#000000;fontStyle=0;strokeColor=none;fillColor=none;fillOpacity=0;labelBackgroundColor=none;labelBorderColor=none;" vertex="1" parent="1">
-          <mxGeometry x="2392.862394915916" y="1813.0" width="660" height="32" as="geometry" />
+          <mxGeometry x="2212.862394915916" y="1813.0" width="660" height="32" as="geometry" />
         </mxCell>
         <mxCell id="flow-58" edge="1" parent="1" source="novelhub" target="author" style="edgeStyle=none;rounded=0;html=0;endArrow=block;endFill=1;endSize=8;strokeColor=#000000;strokeWidth=1.5;exitX=0.9553978973359004;exitY=0.7064285714285714;exitPerimeter=0;entryX=0.0;entryY=0.7984615384615384;entryPerimeter=0;">
           <mxGeometry relative="1" as="geometry">
@@ -542,7 +542,7 @@
           </mxGeometry>
         </mxCell>
         <mxCell id="label-58" value="Earnings balance / 70% share" style="text;html=0;align=center;verticalAlign=middle;whiteSpace=wrap;fontFamily=Helvetica;fontSize=20;fontColor=#000000;fontStyle=0;strokeColor=none;fillColor=none;fillOpacity=0;labelBackgroundColor=none;labelBorderColor=none;" vertex="1" parent="1">
-          <mxGeometry x="2383.7785281351303" y="1857.0" width="660" height="32" as="geometry" />
+          <mxGeometry x="2203.7785281351303" y="1857.0" width="660" height="32" as="geometry" />
         </mxCell>
         <mxCell id="flow-59" edge="1" parent="1" source="author" target="novelhub" style="edgeStyle=none;rounded=0;html=0;endArrow=block;endFill=1;endSize=8;strokeColor=#000000;strokeWidth=1.5;exitX=0.0;exitY=0.8661538461538462;exitPerimeter=0;entryX=0.939799931323138;entryY=0.7378571428571429;entryPerimeter=0;">
           <mxGeometry relative="1" as="geometry">
@@ -550,7 +550,7 @@
           </mxGeometry>
         </mxCell>
         <mxCell id="label-59" value="Withdrawal request" style="text;html=0;align=center;verticalAlign=middle;whiteSpace=wrap;fontFamily=Helvetica;fontSize=20;fontColor=#000000;fontStyle=0;strokeColor=none;fillColor=none;fillOpacity=0;labelBackgroundColor=none;labelBorderColor=none;" vertex="1" parent="1">
-          <mxGeometry x="2372.8599519261966" y="1901.0" width="660" height="32" as="geometry" />
+          <mxGeometry x="2192.8599519261966" y="1901.0" width="660" height="32" as="geometry" />
         </mxCell>
         <mxCell id="flow-60" edge="1" parent="1" source="novelhub" target="author" style="edgeStyle=none;rounded=0;html=0;endArrow=block;endFill=1;endSize=8;strokeColor=#000000;strokeWidth=1.5;exitX=0.9212899287683396;exitY=0.7692857142857142;exitPerimeter=0;entryX=0.0;entryY=0.9338461538461539;entryPerimeter=0;">
           <mxGeometry relative="1" as="geometry">
@@ -558,7 +558,7 @@
           </mxGeometry>
         </mxCell>
         <mxCell id="label-60" value="Withdrawal status / payout record" style="text;html=0;align=center;verticalAlign=middle;whiteSpace=wrap;fontFamily=Helvetica;fontSize=20;fontColor=#000000;fontStyle=0;strokeColor=none;fillColor=none;fillOpacity=0;labelBackgroundColor=none;labelBorderColor=none;" vertex="1" parent="1">
-          <mxGeometry x="2359.9029501378377" y="1945.0" width="660" height="32" as="geometry" />
+          <mxGeometry x="2179.9029501378377" y="1945.0" width="660" height="32" as="geometry" />
         </mxCell>
         <mxCell id="flow-61" edge="1" parent="1" source="novelhub" target="moderator" style="edgeStyle=none;rounded=0;html=0;endArrow=block;endFill=1;endSize=8;strokeColor=#000000;strokeWidth=1.5;exitX=0.5714285714285714;exitY=0.005128340694606501;exitPerimeter=0;entryX=1.0;entryY=0.07142857142857142;entryPerimeter=0;">
           <mxGeometry relative="1" as="geometry">

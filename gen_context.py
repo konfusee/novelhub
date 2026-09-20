@@ -124,7 +124,10 @@ for names,side in [(['ai','guest','reader','tts','email'],'L'),(['oauth','paymen
     bend=1050-6*i if f['ey']<ny else 1050+6*i
    f['points']=[start,(bend,f['ey']),(bend,ny),end]
   routed=abs(f['ey']-ny)>=1
-  f['lx']=((start[0]+bend)/2 if routed else (start[0]+end[0])/2)
+  if routed:
+   f['lx']=(start[0]+bend)/2
+  else:
+   f['lx']=(start[0]+end[0])/2-(180 if side=='R' else 0)
   f['ly']=f['ey']-16;f['lw']=660;f['lh']=32
  flows.extend(group)
 # Upper/lower connections: vertical from the circle, one 90-degree bend,
