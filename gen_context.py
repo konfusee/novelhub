@@ -6,97 +6,84 @@ matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 from matplotlib.patches import Circle, FancyBboxPatch, FancyArrowPatch
 OUT=Path(__file__).parent
-W,H=3400,3000
-CX,CY,R=1700,1500,550
+W,H=3400,4200
+CX,CY,R=1700,2000,700
 INK='#000000'; MUTED='#000000'; BLUE='#000000'; TEAL='#000000'
 # in/out are relative to NovelHub. Each label describes one data flow.
 E={
 'reader':('Reader','actor',[
 ('in','Profile data'),
-('in','Browse catalog'),
-('out','Story catalog'),
-('in','Search / filter'),
-('out','Search results'),
-('in','View story / chapter'),
-('out','Story / chapter content'),
-('in','Read / listen request'),
-('out','Story content / audio'),
-('in','Reading position'),
-('out','Reading progress'),
-('in','Follow / comment / rate'),
-('in','Content reports'),
-('out','Notifications')]),
+('in','Browse catalog'),('out','Story catalog'),
+('in','Search / filter'),('out','Search results'),
+('in','View story / chapter'),('out','Story / chapter content'),
+('in','Read / listen request'),('out','Story content / audio'),
+('in','Reading position'),('out','Reading progress'),
+('in','Follow / comment / rate'),('in','Content reports'),('out','Notifications'),
+('in','Coin top-up / unlock request'),('out','Coin balance / early access')]),
 'guest':('Guest','actor',[
-('in','Registration data'),
-('out','Registration result'),
-('in','Authentication request'),
-('out','Authentication result'),
-('in','Browse catalog'),
-('out','Story catalog'),
-('in','Search / filter'),
-('out','Search results'),
-('in','View story / chapter'),
-('out','Story / chapter content'),
-('in','Read / listen request'),
-('out','Story content / audio')]),
+('in','Registration data'),('out','Registration result'),
+('in','Authentication request'),('out','Authentication result'),
+('in','Browse catalog'),('out','Story catalog'),
+('in','Search / filter'),('out','Search results'),
+('in','View story / chapter'),('out','Story / chapter content'),
+('in','Read / listen request'),('out','Story content / audio')]),
 'author':('Author','actor',[
-('in','Author application'),
-('out','Application result'),
-('in','Story & chapter drafts'),
-('in','PDF & media uploads'),
-('in','Usage-rights declarations'),
-('in','Publication submissions'),
-('out','Saved / imported drafts'),
-('out','Publication status & review feedback'),
-('out','Story statistics')]),
+('in','Author application'),('out','Application result'),
+('out','Story template / format rules'),('in','Formatted story / chapter'),
+('in','PDF & media uploads'),('in','Rights / license declaration'),
+('in','X-day lock & coin price'),('in','Publication submission'),
+('out','Saved / imported drafts'),('out','Publication status / feedback'),
+('out','Story statistics'),('out','Author wallet / 70% revenue')]),
 'moderator':('Moderator','actor',[
-('out','Pending submissions'),
-('out','Reports & reported content'),
-('out','Similarity findings'),
+('out','Pending submissions'),('out','Reports / reported content'),
+('out','Similarity findings'),('out','AI review results / risk flags'),
 ('in','Publication review decisions'),
-('in','Report resolutions & content actions'),
-('out','Moderation history')]),
+('in','Report resolutions / content actions'),('out','Moderation history')]),
 'admin':('Admin','actor',[
-('in','User-management changes'),
-('in','Role & permission changes'),
-('in','Category & platform-content changes'),
-('out','Administrative records'),
-('out','Escalated reports'),
-('in','Escalation decisions'),
-('out','System statistics & audit logs')]),
- 'storage':('Object Storage','external',[
+('in','User-management changes'),('in','Role / permission changes'),
+('in','Category / content changes'),('out','Administrative records'),
+('out','Escalated reports'),('in','Escalation decisions'),
+('out','System statistics / audit logs'),('in','Coin rate / revenue policy'),
+('in','Financial control actions'),('out','Transaction / wallet reports'),
+('out','System wallet / 30% revenue')]),
+'storage':('VPSTTT Object\nStorage','external',[
 ('out','Media files / retrieval requests'),('in','Media URLs / file content')]),
- 'tts':('TTS Service','external',[
+'tts':('TTS Service','external',[
 ('out','Text & voice settings'),('in','Generated audio')]),
- 'embedding':('Vector Embedding\nService','external',[
+'embedding':('OpenAI Embedding\nService','external',[
 ('out','Text segments'),('in','Embedding vectors')]),
- 'email':('Email Service','external',[
-('out','Recipient email & message content')]),
- 'ai':('AI Service','external',[
-('out','Content for summarization / tagging'),('in','Summaries & metadata')]),
- 'oauth':('Authentication\nProvider\n(Google OAuth)','external',[
-('out','Authentication request'),('in','Authentication result & identity')])}
-assert sum(len(v[2]) for v in E.values()) == 59
+ 'email':('Gmail SMTP\nService','external',[
+('out','Recipient email / message'),('in','SMTP acceptance / error')]),
+'ai':('OpenAI LLM\nService','external',[
+('out','Author content / prompts'),('in','Writing / metadata suggestions'),
+('out','Moderation content / criteria'),('in','Review suggestions / risk flags')]),
+'oauth':('Authentication\nProvider\n(Google OAuth)','external',[
+('out','Authentication request'),('in','Authentication result / identity')]),
+'payment':('Payment Gateway','external',[
+('out','Top-up payment request'),('in','Payment result')])}
+assert sum(len(v[2]) for v in E.values()) == 74
 boxes={
- 'oauth':(3090,700,250,180),
- 'guest':(60,1050,250,450),
- 'reader':(60,1520,250,450),
- 'ai':(60,700,250,190),
- 'tts':(60,2150,250,190),
- 'embedding':(3090,1200,250,190),
- 'storage':(3090,1410,250,160),
- 'author':(3090,1580,250,500),
- 'email':(60,2450,250,160),
- 'moderator':(60,200,250,295),
- 'admin':(3090,2550,250,328),
+ 'oauth':(3090,750,250,180),
+ 'payment':(3090,1000,250,170),
+ 'guest':(60,1420,250,450),
+ 'reader':(60,1900,250,520),
+ 'ai':(60,750,250,190),
+ 'tts':(60,2520,250,190),
+ 'embedding':(3090,1450,250,190),
+ 'storage':(3090,1680,250,160),
+ 'author':(3090,1870,250,600),
+ 'email':(60,2900,250,160),
+ 'moderator':(60,150,250,400),
+ 'admin':(3090,3450,250,500),
 }
- # Keep side ports inside the circle's vertical span so most connectors stay straight.
+# Flow ports are evenly spaced inside each entity box.
 port_offsets={
  'guest':[30,65,100,135,170,205,240,275,310,345,380,415],
- 'reader':[25,54,83,112,141,170,199,228,257,286,315,344,373,402],
- 'author':[32,72,120,168,220,272,320,368,416],
- 'oauth':[48,129], 'embedding':[35,116], 'storage':[44,121],
- 'ai':[29,138], 'tts':[53,129], 'email':[79],
+ 'reader':[25,55,85,115,145,175,205,235,265,295,325,355,385,415,445,475],
+ 'author':[35,82,129,176,223,270,317,364,411,458,505,552],
+ 'oauth':[48,129], 'payment':[42,128],
+ 'embedding':[35,116], 'storage':[44,121],
+ 'ai':[30,75,120,165], 'tts':[53,129], 'email':[55,115],
 }
 # Small deterministic offsets keep the layout from feeling mechanically perfect
 # without sacrificing its visible alignment.
@@ -104,7 +91,7 @@ MICRO_X=(0,-6,4,-3,7,-4,3,-2,5,-5,2,-1,6,-3,1)
 MICRO_Y=(0,0,0,0,0,0,0,0,0,0,0,0,0,0,0)
 MICRO_BEND=(0,2,-1,3,-2,1,-3,2,-1,0,2,-2,1,-1,3)
 flows=[]
-for names,side in [(['ai','guest','reader','tts','email'],'L'),(['oauth','embedding','storage','author'],'R')]:
+for names,side in [(['ai','guest','reader','tts','email'],'L'),(['oauth','payment','embedding','storage','author'],'R')]:
  group=[]
  for name in names:
   x,y,w,h=boxes[name]; n=len(E[name][2])
@@ -118,9 +105,9 @@ for names,side in [(['ai','guest','reader','tts','email'],'L'),(['oauth','embedd
  below_pos={j:k for k,j in enumerate(below)}
  for i,f in enumerate(group):
   if i in above_pos:
-   ny=top+50+40*above_pos[i]
+   ny=top+20+25*above_pos[i]
   elif i in below_pos:
-   ny=bottom-120+25*below_pos[i]
+   ny=bottom-20-25*(len(below)-1-below_pos[i])
   else:
    ny=f['ey']
   extent=math.sqrt(R*R-(ny-CY)**2)
@@ -130,9 +117,9 @@ for names,side in [(['ai','guest','reader','tts','email'],'L'),(['oauth','embedd
    f['points']=[start,end]
   else:
    if side=='R':
-    bend=2300+8*i if f['ey']<ny else 2300-8*i
+    bend=2750+6*i if f['ey']<ny else 2750-6*i
    else:
-    bend=1100-8*i if f['ey']<ny else 1100+8*i
+    bend=1050-6*i if f['ey']<ny else 1050+6*i
    f['points']=[start,(bend,f['ey']),(bend,ny),end]
   f['lx']=(650 if side=='L' else 2750)+MICRO_X[i%len(MICRO_X)]
   f['ly']=f['ey']-16+MICRO_Y[i%len(MICRO_Y)];f['lw']=660;f['lh']=32
@@ -142,15 +129,14 @@ for names,side in [(['ai','guest','reader','tts','email'],'L'),(['oauth','embedd
 for name,side in [('moderator','T'),('admin','B')]:
  x,y,w,h=boxes[name];n=len(E[name][2])
  for i,(direction,label) in enumerate(E[name][2]):
-  ey=([195,232,281,315,362,420] if side=='T' else [2580,2616,2665,2699,2750,2790,2836])[i]
-  nx=((1910-74*i) if side=='T' else (1930-69*i))+MICRO_BEND[i]
+  ey=y+25+(h-50)*i/(n-1)
+  nx=CX+100-200*i/(n-1)+MICRO_BEND[i]
   extent=math.sqrt(R*R-(nx-CX)**2)
   ny=CY-extent if side=='T' else CY+extent
   ex=x+w if side=='T' else x
   f=dict(entity=name,side=side,direction=direction,label=label,
          points=[(ex,ey),(nx,ey),(nx,ny)],
-         lx=(800 if side=='T' else 2600)+MICRO_X[i+3],
-         ly=ey-16+MICRO_Y[i+3],lw=660,lh=32)
+         lx=(ex+nx)/2,ly=ey-16,lw=660,lh=32)
   flows.append(f)
 for f in flows:
  f['source']=f['entity'];f['target']='novelhub'
@@ -192,6 +178,10 @@ def text(id,label,x,y,w,h,size=22,bold=False,color=INK,background=False):
 vertex('novelhub','',CX-R,CY-R,2*R,2*R,f'ellipse;fillColor=#FFFFFF;strokeColor={BLUE};strokeWidth=2.4;')
 ax.add_patch(Circle((CX,CY),R,facecolor='#FFFFFF',edgecolor=BLUE,linewidth=1.75))
 text('system-name','NovelHub',CX,CY,900,100,54,True,color=BLUE)
+text('system-description',
+     'AI-assisted platform for creating, publishing, discovering,\n'
+     'reading, and moderating multimedia novels.',
+     CX,CY+105,1100,120,24,False,color=BLUE)
 for name,(x,y,w,h) in boxes.items():
  label,kind,_=E[name];color=BLUE if kind=='actor' else TEAL;fill='#FFFFFF'
  vertex(name,label,x,y,w,h,f'rounded=0;html=0;whiteSpace=wrap;align=center;verticalAlign=middle;fontSize=20;fontStyle=1;fontColor={color};fillColor={fill};strokeColor={color};strokeWidth=1.7;')
@@ -216,5 +206,5 @@ for a,x,y,w,h in text_artists:
 ET.indent(mx);ET.ElementTree(mx).write(OUT/'novelhub_context_refined.drawio',encoding='utf-8',xml_declaration=True)
 fig.savefig(OUT/'novelhub_context_refined.png',dpi=140,facecolor='white');plt.close(fig)
 from PIL import Image
-im=Image.open(OUT/'novelhub_context_refined.png');im.load();assert im.size==(4760,4200)
+im=Image.open(OUT/'novelhub_context_refined.png');im.load();assert im.size==(4760,5880)
 print(f'OK: {len(E)} entities; {len(flows)} distinct directed flows; no connector crossings; label bounds checked; PNG decoded.')
