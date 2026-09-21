@@ -78,12 +78,12 @@ A Reader can also perform `UC-GST-01` through `UC-GST-04`.
 
 | ID | Use case | Goal and successful outcome | Requirement references |
 |---|---|---|---|
-| UC-MOD-01 | View pending submissions | Access stories/chapters awaiting a publication decision. | FR-MOD-05, FR-MOD-06 |
-| UC-MOD-02 | Inspect review evidence | Review submitted content, rights declarations, automatic AI results, similarity findings and risk flags. | FR-MOD-02 through FR-MOD-06, FR-MOD-11 |
-| UC-MOD-03 | Decide publication submission | Approve, reject or request revision with a recorded decision. AI evidence informs but does not make the final decision. | FR-MOD-07, FR-MOD-08 |
-| UC-MOD-04 | Review reported content | Inspect Reader reports and the related content/context. | FR-MOD-09 |
-| UC-MOD-05 | Resolve content report | Resolve a report and apply an authorized content action with a recorded outcome. | FR-MOD-09, FR-MOD-10 |
-| UC-MOD-06 | View moderation history | Review prior submission decisions, report resolutions and content actions. | FR-MOD-10 |
+| UC-MOD-01 | Manage moderation queue | View, filter and open pending publication submissions and unresolved content reports without changing their outcome. | FR-MOD-05, FR-MOD-06, FR-MOD-09 |
+| UC-MOD-02 | Review publication submission | Review the exact submitted revision, rights declaration, media, automatic AI results, similarity findings and risk flags before making a decision. | FR-MOD-02 through FR-MOD-06, FR-MOD-11 |
+| UC-MOD-03 | Decide publication submission | Approve, reject or request revision with a reasoned, auditable decision for the reviewed revision. AI evidence informs but does not make the final decision. | FR-MOD-07, FR-MOD-08, FR-MOD-10 |
+| UC-MOD-04 | Review reported content | Inspect a Reader report, the reported content, available context and related moderation evidence before resolving the report. | FR-MOD-09 |
+| UC-MOD-05 | Resolve content report | Dismiss the report or apply a permitted content action with a recorded reason and outcome. | FR-MOD-09, FR-MOD-10 |
+| UC-MOD-06 | View moderation history | Review prior submission decisions, report resolutions and content actions without modifying the audit trail. | FR-MOD-10 |
 
 ## 7. Admin use cases
 
