@@ -1,0 +1,89 @@
+<?xml version='1.0' encoding='utf-8'?>
+<mxfile host="app.diagrams.net" type="device">
+  <diagram name="NovelHub Moderator Use Cases" id="novelhub-moderator-use-cases">
+    <mxGraphModel dx="1400" dy="900" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1900" pageHeight="1200" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="system-boundary" value="NovelHub — Moderation Boundary" style="rounded=0;whiteSpace=wrap;html=1;strokeColor=#1F4E79;strokeWidth=2;fillColor=#FFFFFF;verticalAlign=top;align=left;spacingTop=18;spacingLeft=22;fontSize=22;fontStyle=1;fontColor=#1F4E79;" vertex="1" parent="1">
+          <mxGeometry x="430" y="80" width="1000" height="1000" as="geometry" />
+        </mxCell>
+        <mxCell id="moderator" value="Moderator" style="shape=umlActor;html=1;verticalLabelPosition=bottom;verticalAlign=top;align=center;fontSize=20;fontStyle=1;fontColor=#1F4E79;strokeColor=#1F4E79;fillColor=#EAF2F8;" vertex="1" parent="1">
+          <mxGeometry x="90" y="415" width="220" height="150" as="geometry" />
+        </mxCell>
+        <mxCell id="uc-queue" value="UC-MOD-01&#10;Manage moderation queue" style="ellipse;whiteSpace=wrap;html=1;strokeColor=#0F766E;strokeWidth=1.8;fillColor=#FFFFFF;fontSize=17;fontColor=#0F766E;align=center;verticalAlign=middle;" vertex="1" parent="1">
+          <mxGeometry x="570" y="135" width="720" height="88" as="geometry" />
+        </mxCell>
+        <mxCell id="uc-review" value="UC-MOD-02&#10;Review publication submission" style="ellipse;whiteSpace=wrap;html=1;strokeColor=#0F766E;strokeWidth=1.8;fillColor=#FFFFFF;fontSize=17;fontColor=#0F766E;align=center;verticalAlign=middle;" vertex="1" parent="1">
+          <mxGeometry x="570" y="245" width="720" height="88" as="geometry" />
+        </mxCell>
+        <mxCell id="uc-decide" value="UC-MOD-03&#10;Decide publication submission" style="ellipse;whiteSpace=wrap;html=1;strokeColor=#0F766E;strokeWidth=1.8;fillColor=#FFFFFF;fontSize=17;fontColor=#0F766E;align=center;verticalAlign=middle;" vertex="1" parent="1">
+          <mxGeometry x="570" y="355" width="720" height="88" as="geometry" />
+        </mxCell>
+        <mxCell id="uc-reported" value="UC-MOD-04&#10;Review reported content" style="ellipse;whiteSpace=wrap;html=1;strokeColor=#0F766E;strokeWidth=1.8;fillColor=#FFFFFF;fontSize=17;fontColor=#0F766E;align=center;verticalAlign=middle;" vertex="1" parent="1">
+          <mxGeometry x="570" y="465" width="720" height="88" as="geometry" />
+        </mxCell>
+        <mxCell id="uc-resolve" value="UC-MOD-05&#10;Resolve content report" style="ellipse;whiteSpace=wrap;html=1;strokeColor=#0F766E;strokeWidth=1.8;fillColor=#FFFFFF;fontSize=17;fontColor=#0F766E;align=center;verticalAlign=middle;" vertex="1" parent="1">
+          <mxGeometry x="570" y="575" width="720" height="88" as="geometry" />
+        </mxCell>
+        <mxCell id="uc-history" value="UC-MOD-06&#10;View moderation history" style="ellipse;whiteSpace=wrap;html=1;strokeColor=#0F766E;strokeWidth=1.8;fillColor=#FFFFFF;fontSize=17;fontColor=#0F766E;align=center;verticalAlign=middle;" vertex="1" parent="1">
+          <mxGeometry x="570" y="685" width="720" height="88" as="geometry" />
+        </mxCell>
+        <mxCell id="actor-llm" value="OpenAI LLM&#10;Service" style="rounded=1;arcSize=12;whiteSpace=wrap;html=1;strokeColor=#4B5563;strokeWidth=1.4;fillColor=#F3F4F6;fontSize=16;fontColor=#374151;align=center;verticalAlign=middle;" vertex="1" parent="1">
+          <mxGeometry x="1540" y="155" width="280" height="90" as="geometry" />
+        </mxCell>
+        <mxCell id="actor-embedding" value="OpenAI Embedding&#10;Service" style="rounded=1;arcSize=12;whiteSpace=wrap;html=1;strokeColor=#4B5563;strokeWidth=1.4;fillColor=#F3F4F6;fontSize=16;fontColor=#374151;align=center;verticalAlign=middle;" vertex="1" parent="1">
+          <mxGeometry x="1540" y="305" width="280" height="90" as="geometry" />
+        </mxCell>
+        <mxCell id="actor-storage" value="VPSTTT Object&#10;Storage" style="rounded=1;arcSize=12;whiteSpace=wrap;html=1;strokeColor=#4B5563;strokeWidth=1.4;fillColor=#F3F4F6;fontSize=16;fontColor=#374151;align=center;verticalAlign=middle;" vertex="1" parent="1">
+          <mxGeometry x="1540" y="455" width="280" height="90" as="geometry" />
+        </mxCell>
+        <mxCell id="actor-smtp" value="Gmail SMTP&#10;Service" style="rounded=1;arcSize=12;whiteSpace=wrap;html=1;strokeColor=#4B5563;strokeWidth=1.4;fillColor=#F3F4F6;fontSize=16;fontColor=#374151;align=center;verticalAlign=middle;" vertex="1" parent="1">
+          <mxGeometry x="1540" y="605" width="280" height="90" as="geometry" />
+        </mxCell>
+        <mxCell id="moderator-association-1" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=none;strokeColor=#1F2937;strokeWidth=1.3;" edge="1" parent="1" source="moderator" target="uc-queue">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="moderator-association-2" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=none;strokeColor=#1F2937;strokeWidth=1.3;" edge="1" parent="1" source="moderator" target="uc-review">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="moderator-association-3" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=none;strokeColor=#1F2937;strokeWidth=1.3;" edge="1" parent="1" source="moderator" target="uc-decide">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="moderator-association-4" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=none;strokeColor=#1F2937;strokeWidth=1.3;" edge="1" parent="1" source="moderator" target="uc-reported">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="moderator-association-5" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=none;strokeColor=#1F2937;strokeWidth=1.3;" edge="1" parent="1" source="moderator" target="uc-resolve">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="moderator-association-6" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=none;strokeColor=#1F2937;strokeWidth=1.3;" edge="1" parent="1" source="moderator" target="uc-history">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="support-llm" value="pre-generated review evidence" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=none;dashed=1;strokeColor=#6B7280;strokeWidth=1.2;" edge="1" parent="1" source="actor-llm" target="uc-review">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="support-embedding" value="similarity evidence" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=none;dashed=1;strokeColor=#6B7280;strokeWidth=1.2;" edge="1" parent="1" source="actor-embedding" target="uc-review">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="support-storage-review" value="retrieve permitted media" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=none;dashed=1;strokeColor=#6B7280;strokeWidth=1.2;" edge="1" parent="1" source="actor-storage" target="uc-review">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="support-storage-report" value="retrieve reported content" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=none;dashed=1;strokeColor=#6B7280;strokeWidth=1.2;" edge="1" parent="1" source="actor-storage" target="uc-reported">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="support-smtp-decide" value="decision notification" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=none;dashed=1;strokeColor=#6B7280;strokeWidth=1.2;" edge="1" parent="1" source="actor-smtp" target="uc-decide">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="support-smtp-resolve" value="resolution notification" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=none;dashed=1;strokeColor=#6B7280;strokeWidth=1.2;" edge="1" parent="1" source="actor-smtp" target="uc-resolve">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="note-ai" value="AI review starts automatically when Author content is submitted.&#10;Moderator does not trigger or delegate the final decision to AI." style="shape=note;whiteSpace=wrap;html=1;strokeColor=#B7791F;fillColor=#FFF2CC;fontSize=16;fontColor=#5B4636;align=center;verticalAlign=middle;" vertex="1" parent="1">
+          <mxGeometry x="555" y="825" width="790" height="75" as="geometry" />
+        </mxCell>
+        <mxCell id="note-scope" value="Similarity and rights data are review evidence, not legal verdicts.&#10;Admin owns account, role and finance governance." style="shape=note;whiteSpace=wrap;html=1;strokeColor=#B7791F;fillColor=#FFF2CC;fontSize=16;fontColor=#5B4636;align=center;verticalAlign=middle;" vertex="1" parent="1">
+          <mxGeometry x="555" y="920" width="790" height="75" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>
