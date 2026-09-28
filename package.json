@@ -1,0 +1,27 @@
+{
+  "name": "novelhub",
+  "version": "1.0.0",
+  "description": "NovelHub full-stack monorepo",
+  "private": true,
+  "scripts": {
+    "frontend": "npm run dev --prefix frontend",
+    "backend": "npm run dev --prefix backend",
+    "dev": "concurrently \"npm run backend\" \"npm run frontend\"",
+    "build": "npm run build --prefix frontend",
+    "install:all": "npm install && npm install --prefix frontend && npm install --prefix backend"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/konfusee/novelhub.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/konfusee/novelhub/issues"
+  },
+  "homepage": "https://github.com/konfusee/novelhub#readme",
+  "devDependencies": {
+    "concurrently": "^10.0.5"
+  }
+}
