@@ -2,11 +2,11 @@
 
 Last updated: 2026-09-28
 
-Current phase: Reader
+Current phase: Author
 
-Current page: P08 — Reader Home
+Current page: P17 — Author Dashboard
 
-Overall: 7 / 36 completed
+Overall: 16 / 36 completed
 
 Foundation: DONE
 
@@ -28,15 +28,17 @@ Status: DONE
 
 ## Reader
 
-- [ ] P08 — Reader Home
-- [ ] P09 — Personal Library
-- [ ] P10 — My List / Following
-- [ ] P11 — Full Chapter Reader
-- [ ] P12 — Full Audio Player
-- [ ] P13 — Reading History & Progress
-- [ ] P14 — Notifications Center
-- [ ] P15 — Reader Profile & Preferences
-- [ ] P16 — Wallet / Coins
+- [x] P08 — Reader Home
+- [x] P09 — Personal Library
+- [x] P10 — My List / Following
+- [x] P11 — Full Chapter Reader
+- [x] P12 — Full Audio Player
+- [x] P13 — Reading History & Progress
+- [x] P14 — Notifications Center
+- [x] P15 — Reader Profile & Preferences
+- [x] P16 — Wallet / Coins
+
+Status: DONE
 
 ## Author
 
@@ -71,24 +73,28 @@ Status: DONE
 
 ## Current Work
 
-P07 — Authentication / Join NovelHub
+P16 — Wallet / Coins
 
 Status: DONE
 
-Verified:
-- Login/register tabs, validation, password visibility, and consent
-- Frontend-only success feedback and membership benefits
-- Light and dark themes
-- Responsive at 375px, 768px, 1024px, and 1440px
-- Production route `/join`
-- Preview route `/ui-preview/p07`
+Completed:
+- Stitch template reviewed
+- Wallet balance and auto-unlock controls
+- Four responsive coin packages
+- Transaction filters and ledger table
+- Creator revenue allocation and FAQ widgets
+- Mock purchase modal updates balance and history
+- Production and preview routes
+- Light and dark theme support verified
+- Responsive layout verified
 - ESLint PASS
 - Production build PASS
 
-Guest / Public group: DONE (7 / 7)
+Remaining:
+- None
 
 ## Next Action
 
-Start P08 and set its registry status to `IN_PROGRESS` before implementation.
+Start P17 — Author Dashboard.
 
-Do not start P09 until P08 is `DONE`.
+Do not start P18 until P17 is `DONE`.

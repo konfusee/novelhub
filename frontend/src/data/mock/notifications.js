@@ -1,1 +1,7 @@
-export const notifications = []
+export const notifications = [
+  {id:1,type:'story',label:'Story Update',time:'25m ago',title:'The Silent Forest: Chapter 15 is now live!',body:'Dive into the whispering grove as Mira Lane unravels the guardian’s hidden secret beneath the roots.',action:'Read Chapter',unread:true,color:'#31584c'},
+  {id:2,type:'author',label:'Author Announcement',time:'2h ago',title:'Mira Lane published a new side story “Echoes of Eldoria”.',body:'A standalone prequel focusing on the ancient guardians before the fall of the Silver Citadel.',action:'Explore',unread:true,color:'#8e5cf7'},
+  {id:3,type:'comment',label:'Comment Reply',time:'5h ago',title:'Kaelen_Reader replied to your comment on Chapter 14',body:'“Totally agree on the plot twist! I didn’t anticipate the archivist would be the turncoat all along.”',action:'View Discussion',unread:false,color:'#5b8da0'},
+  {id:4,type:'system',label:'Streak Milestone',time:'Yesterday · 18:30',title:'Daily reading streak reward: +15 Coins added to your wallet!',body:'You’ve maintained a 7-day reading streak! Keep reading for 15+ minutes daily.',action:'View Wallet',unread:false,color:'#f4a261'},
+  {id:5,type:'story',label:'Audio Release',time:'2 days ago',title:'Whispers of You: Audio track Chapter 7 now available in HD.',body:'Full atmospheric binaural soundscapes are ready to stream or download for offline commuting.',action:'Listen Now (28m)',unread:false,color:'#d78f7d'},
+]
