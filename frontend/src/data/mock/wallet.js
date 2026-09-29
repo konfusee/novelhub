@@ -1,1 +1,13 @@
-export const transactions = []
+export const coinPackages=[
+ {id:'starter',coins:500,total:500,price:'$4.99',label:'Starter Tier',note:'Unlocks approximately 20–25 serialized manuscript chapters.'},
+ {id:'regular',coins:1200,total:1300,bonus:100,price:'$9.99',label:'Regular Reader',badge:'Most Popular',note:'Ideal for completing full serial arcs and weekly releases.'},
+ {id:'collector',coins:2500,total:2800,bonus:300,price:'$19.99',label:'Avid Collector',badge:'Best Value',note:'Includes bonus patron badge for community author comment trails.'},
+ {id:'vault',coins:6000,total:7000,bonus:1000,price:'$49.99',label:'Archivist Vault',note:'Ultimate bundle for heavy audio listening and omnibus unlocks.'},
+]
+export const transactions=[
+ {date:'Oct 24, 2026, 14:15',type:'unlock',label:'Chapter Unlock',item:'The Silent Forest — Ch. 15',amount:-25,balance:1420},
+ {date:'Oct 22, 2026, 09:30',type:'added',label:'Recharge',item:'Recharge via Apple Pay ($9.99)',amount:1200,balance:1445},
+ {date:'Oct 20, 2026, 18:45',type:'added',label:'Streak Bonus',item:'Daily Reading Streak (7-day reward)',amount:15,balance:245},
+ {date:'Oct 18, 2026, 21:04',type:'tip',label:'Author Tip',item:'Gratuity to Mira Lane (Author)',amount:-50,balance:230},
+ {date:'Oct 16, 2026, 11:20',type:'unlock',label:'Chapter Unlock',item:'Whispers of You — Ch. 4',amount:-25,balance:280},
+]
