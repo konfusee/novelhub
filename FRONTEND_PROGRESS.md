@@ -98,3 +98,13 @@ Remaining:
 Frontend UI completion finished.
 
 36 / 36 screens are `DONE`.
+
+---
+
+## Final Verification
+
+- Registry: 36 / 36 unique screens
+- Preview mappings: 36 / 36
+- ESLint: PASS
+- Production build: PASS
+- Group commits: Guest/Public, Reader, Author, Moderator, Administrator complete
