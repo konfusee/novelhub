@@ -1,12 +1,12 @@
 # NovelHub Frontend Progress
 
-Last updated: 2026-09-28
+Last updated: 2026-09-29
 
-Current phase: Author
+Current phase: Moderator
 
-Current page: P17 — Author Dashboard
+Current page: P27 — Moderator Overview
 
-Overall: 16 / 36 completed
+Overall: 26 / 36 completed
 
 Foundation: DONE
 
@@ -42,20 +42,22 @@ Status: DONE
 
 ## Author
 
-- [ ] P17 — Author Dashboard
-- [ ] P18 — Create New Story
-- [ ] P19 — Story Manager
-- [ ] P20 — Chapter Editor
-- [ ] P21 — Drafts
-- [ ] P22 — Import PDF
-- [ ] P23 — Media Library
-- [ ] P24 — AI Writing Assistant
-- [ ] P25 — Submission for Review
-- [ ] P26 — Author Analytics
+- [x] P17 — Author Dashboard
+- [x] P18 — Create New Story
+- [x] P19 — Story Manager
+- [x] P20 — Chapter Editor
+- [x] P21 — Drafts
+- [x] P22 — Import PDF
+- [x] P23 — Media Library
+- [x] P24 — AI Writing Assistant
+- [x] P25 — Submission for Review
+- [x] P26 — Author Analytics
+
+Status: DONE
 
 ## Moderator
 
-- [ ] P27 — Moderator Overview
+- [ ] P27 — Moderator Overview [IN_PROGRESS]
 - [ ] P28 — Submission Queue
 - [ ] P29 — Content Review Detail
 - [ ] P30 — Reports Queue
@@ -73,28 +75,21 @@ Status: DONE
 
 ## Current Work
 
-P16 — Wallet / Coins
+P27 — Moderator Overview
 
-Status: DONE
+Status: IN_PROGRESS
 
 Completed:
-- Stitch template reviewed
-- Wallet balance and auto-unlock controls
-- Four responsive coin packages
-- Transaction filters and ledger table
-- Creator revenue allocation and FAQ widgets
-- Mock purchase modal updates balance and history
-- Production and preview routes
-- Light and dark theme support verified
-- Responsive layout verified
-- ESLint PASS
-- Production build PASS
+- Checkpoint initialized
 
 Remaining:
-- None
+- Review Stitch template
+- Implement moderator overview dashboard
+- Add queue, priority and moderation mock interactions
+- Verify themes, responsive layout, ESLint and build
 
 ## Next Action
 
-Start P17 — Author Dashboard.
+Continue P27 — Moderator Overview.
 
-Do not start P18 until P17 is `DONE`.
+Do not start P28 until P27 is `DONE`.
