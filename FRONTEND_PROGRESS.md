@@ -2,11 +2,11 @@
 
 Last updated: 2026-09-29
 
-Current phase: Moderator
+Current phase: Administrator
 
-Current page: P27 — Moderator Overview
+Current page: P32 — Admin Dashboard
 
-Overall: 26 / 36 completed
+Overall: 31 / 36 completed
 
 Foundation: DONE
 
@@ -57,15 +57,17 @@ Status: DONE
 
 ## Moderator
 
-- [ ] P27 — Moderator Overview [IN_PROGRESS]
-- [ ] P28 — Submission Queue
-- [ ] P29 — Content Review Detail
-- [ ] P30 — Reports Queue
-- [ ] P31 — Similarity / Risk Review
+- [x] P27 — Moderator Overview
+- [x] P28 — Submission Queue
+- [x] P29 — Content Review Detail
+- [x] P30 — Reports Queue
+- [x] P31 — Similarity / Risk Review
+
+Status: DONE
 
 ## Administrator
 
-- [ ] P32 — Admin Dashboard
+- [ ] P32 — Admin Dashboard [IN_PROGRESS]
 - [ ] P33 — Users Management
 - [ ] P34 — Roles & Permissions
 - [ ] P35 — Categories & Content Configuration
@@ -75,7 +77,7 @@ Status: DONE
 
 ## Current Work
 
-P27 — Moderator Overview
+P32 — Admin Dashboard
 
 Status: IN_PROGRESS
 
@@ -84,12 +86,12 @@ Completed:
 
 Remaining:
 - Review Stitch template
-- Implement moderator overview dashboard
-- Add queue, priority and moderation mock interactions
+- Implement administrator dashboard and system metrics
+- Add service, audit and operational mock interactions
 - Verify themes, responsive layout, ESLint and build
 
 ## Next Action
 
-Continue P27 — Moderator Overview.
+Continue P32 — Admin Dashboard.
 
-Do not start P28 until P27 is `DONE`.
+Do not start P33 until P32 is `DONE`.
