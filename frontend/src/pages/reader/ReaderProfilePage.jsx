@@ -23,8 +23,11 @@ export function ReaderProfilePage() {
   const navigate = useNavigate()
   const { theme, setTheme } = useTheme()
   const { currentUser } = useAuth()
+  const isSettings = location.pathname.startsWith('/reader/settings')
   const sectionFromPath = location.pathname.split('/').at(-1)
-  const section = ['reading', 'listening', 'appearance', 'privacy'].includes(sectionFromPath) ? sectionFromPath : 'profile'
+  const section = isSettings && ['reading', 'listening', 'appearance', 'privacy', 'security'].includes(sectionFromPath)
+    ? sectionFromPath
+    : isSettings ? 'reading' : 'profile'
   const [name, setName] = useState(currentUser?.name || 'NovelHub Reader')
   const [handle, setHandle] = useState(`@${(currentUser?.name || 'novelhub_reader').toLowerCase().replace(/[^a-z0-9]+/g, '_')}`)
   const [bio, setBio] = useState('Passionate reader of slow-burn fantasy & cozy mysteries. 📚✨')
@@ -41,25 +44,30 @@ export function ReaderProfilePage() {
   const [notice, setNotice] = useState('')
   const changed = () => setSaved(false)
   const changeSection = value => {
-    navigate(value === 'profile' ? '/reader/profile' : `/reader/profile/${value}`)
+    navigate(`/reader/settings/${value}`)
   }
   const save = () => {
     localStorage.setItem(
       'novelhub.reader.preferences',
-      JSON.stringify({ name, handle, bio, fontSize, spacing, canvas, speed, skip, autoplay }),
+      JSON.stringify({ name, handle, bio, genres, fontSize, spacing, canvas, speed, skip, autoplay, twoFactor }),
     )
     setSaved(true)
-    setNotice('Your preferences were saved.')
+    setNotice(isSettings ? 'Your preferences were saved.' : 'Your profile was saved.')
   }
   const discard = () => {
+    setName(currentUser?.name || 'NovelHub Reader')
+    setHandle(`@${(currentUser?.name || 'novelhub_reader').toLowerCase().replace(/[^a-z0-9]+/g, '_')}`)
+    setBio('Passionate reader of slow-burn fantasy & cozy mysteries. 📚✨')
+    setGenres(['Fantasy', 'Romance', 'Mystery'])
     setFontSize(18)
     setSpacing(1.8)
     setCanvas('parchment')
     setSpeed(1)
     setSkip(15)
     setAutoplay(true)
+    setTwoFactor(false)
     setSaved(true)
-    setNotice('Unsaved preference changes were discarded.')
+    setNotice(isSettings ? 'Unsaved preference changes were discarded.' : 'Unsaved profile changes were discarded.')
   }
   return (
     <ReaderLayout>
@@ -67,29 +75,31 @@ export function ReaderProfilePage() {
         <div className="flex flex-col justify-between gap-3 sm:flex-row sm:items-center">
           <div>
             <p className="text-[10px] uppercase tracking-[.18em] text-brand">
-              Account &amp; Sanctuary · Reader ID #NV-88291
+              {isSettings ? 'Reader preferences' : 'Public identity'} · Reader ID #NV-88291
             </p>
             <h1 className="mt-2 text-3xl font-bold sm:text-4xl">
-              Reader Profile &amp; Preferences
+              {isSettings ? 'Reader Settings' : 'Reader Profile'}
             </h1>
           </div>
           <p className="max-w-md text-sm text-muted">
-            Customize your reading typography, audio narrator pacing, and visual theme.
+            {isSettings
+              ? 'Configure reading, listening, appearance, privacy, and account safeguards.'
+              : 'Manage the identity and interests shown on your NovelHub profile.'}
           </p>
         </div>
-        <div className="mt-6 overflow-x-auto">
+        {isSettings && <div className="mt-6 overflow-x-auto">
           <Tabs
             value={section}
             onChange={changeSection}
             items={[
-              { value: 'profile', label: 'Profile Info' },
-              { value: 'reading', label: 'Reading Settings' },
+              { value: 'reading', label: 'Reading Preferences' },
               { value: 'listening', label: 'Listening Preferences' },
-              { value: 'appearance', label: 'Appearance & Themes' },
-              { value: 'privacy', label: 'Privacy & Security' },
+              { value: 'appearance', label: 'Appearance' },
+              { value: 'privacy', label: 'Privacy' },
+              { value: 'security', label: 'Security' },
             ]}
           />
-        </div>
+        </div>}
         <div className="mt-6 grid items-start gap-6 xl:grid-cols-[minmax(0,1fr)_360px]">
           <div className="space-y-5">
             {notice && <p role="status" className="rounded-2xl border border-brand/20 bg-brand/10 px-4 py-3 text-xs text-brand">{notice}</p>}
@@ -308,12 +318,21 @@ export function ReaderProfilePage() {
             <Card>
               <SectionTitle
                 icon={ShieldCheck}
-                title="Privacy & Security"
-                note="Account safeguards"
+                title="Privacy"
+                note="Activity visibility"
               />
               <ControlRow label="Public reading activity">
                 <Badge tone="green">Friends only</Badge>
               </ControlRow>
+            </Card>
+            )}
+            {section === 'security' && (
+            <Card>
+              <SectionTitle
+                icon={ShieldCheck}
+                title="Security"
+                note="Account safeguards"
+              />
               <ControlRow label="Two-factor authentication">
                 <Button onClick={() => { setTwoFactor(value => !value); setNotice(twoFactor ? 'Two-factor authentication disabled for this demo.' : 'Two-factor authentication enabled for this demo.') }} variant="secondary" className="min-h-9 py-1.5">
                   {twoFactor ? 'Disable' : 'Configure'}
@@ -323,7 +342,7 @@ export function ReaderProfilePage() {
             )}
           </div>
           <aside className="space-y-5 xl:sticky xl:top-24">
-            {(section === 'reading' || section === 'appearance') && (
+            {isSettings && (section === 'reading' || section === 'appearance') && (
             <Card className={canvas === 'navy' ? 'bg-[#081321] text-white' : 'bg-reader text-ink'}>
               <div className="flex items-center justify-between">
                 <span className="flex items-center gap-2 text-xs font-semibold">
@@ -354,7 +373,7 @@ export function ReaderProfilePage() {
               </div>
             </Card>
             )}
-            {section === 'listening' && (
+            {isSettings && section === 'listening' && (
             <Card>
               <div className="flex items-center justify-between">
                 <strong className="text-sm">Narrator Sync Test</strong>
@@ -376,19 +395,21 @@ export function ReaderProfilePage() {
               </div>
             </Card>
             )}
-            <Card className="bg-elevated">
+            {isSettings && <Card className="bg-elevated">
               <p className="text-xl italic text-brand">“Good stories make a kinder tomorrow.”</p>
               <p className="mt-3 text-xs text-muted">
                 Every font size nuance and canvas tone you choose shapes the intimacy of your
                 reading sanctuary.
               </p>
-            </Card>
+            </Card>}
           </aside>
         </div>
         <section className="relative z-10 mt-8 rounded-3xl border border-line bg-surface p-4 shadow-sm sm:p-5">
         <div className="flex flex-col items-stretch justify-between gap-4 sm:flex-row sm:items-center">
           <p className="hidden text-xs text-muted sm:block">
-            {saved ? 'Preferences saved' : 'Unsaved preferences: review your changes.'}
+            {saved
+              ? isSettings ? 'Preferences saved' : 'Profile saved'
+              : isSettings ? 'Unsaved preferences: review your changes.' : 'Unsaved profile changes: review your changes.'}
           </p>
           <div className="flex gap-2 sm:ml-auto">
             <Button variant="secondary" onClick={discard}>

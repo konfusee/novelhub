@@ -40,8 +40,9 @@ function SidebarGroup({ group, activePath, collapsed, onNavigate }) {
 
 function commonNavigation(workspace) {
   const base = `/${workspace}`
+  const settingsPath = workspace === 'admin' ? '/admin/preferences' : `${base}/settings`
   return { labelKey: 'navigation.account', items: [
-    ['navigation.settings', `${base}/settings`, Settings], ['navigation.account', `${base}/account`, ShieldCheck],
+    ['navigation.settings', settingsPath, Settings], ['navigation.account', `${base}/account`, ShieldCheck],
     ['common.helpSupport', `${base}/support`, HelpCircle],
   ] }
 }

@@ -1,4 +1,4 @@
-import { BrowserRouter, Route, Routes, useLocation } from 'react-router-dom'
+import { BrowserRouter, Navigate, Route, Routes, useLocation } from 'react-router-dom'
 import { useEffect } from 'react'
 import { ThemeProvider } from './context/ThemeContext'
 import { AuthProvider, useAuth } from './context/AuthContext'
@@ -136,14 +136,19 @@ function AppRoutes() {
         <Route path="/reader/history" element={role('reader', <ReadingHistoryPage />)} />
         <Route path="/reader/notifications" element={role('reader', <NotificationsPage />)} />
         <Route path="/reader/profile" element={role('reader', <ReaderProfilePage />)} />
-        <Route path="/reader/profile/reading" element={role('reader', <ReaderProfilePage />)} />
-        <Route path="/reader/profile/listening" element={role('reader', <ReaderProfilePage />)} />
-        <Route path="/reader/profile/appearance" element={role('reader', <ReaderProfilePage />)} />
-        <Route path="/reader/profile/privacy" element={role('reader', <ReaderProfilePage />)} />
+        <Route path="/reader/profile/reading" element={<Navigate to="/reader/settings/reading" replace />} />
+        <Route path="/reader/profile/listening" element={<Navigate to="/reader/settings/listening" replace />} />
+        <Route path="/reader/profile/appearance" element={<Navigate to="/reader/settings/appearance" replace />} />
+        <Route path="/reader/profile/privacy" element={<Navigate to="/reader/settings/privacy" replace />} />
         <Route path="/reader/wallet" element={role('reader', <WalletPage />)} />
         <Route path="/reader/audiobooks" element={role('reader', <RoleUtilityPage role="reader" eyebrow="Listening" title="My Audiobooks" description="Continue listening, manage downloaded audio, and browse your saved narration queue." />)} />
         <Route path="/reader/messages" element={role('reader', <RoleUtilityPage role="reader" eyebrow="Community" title="Messages" description="Keep up with author announcements, reading clubs, and conversations around your favorite stories." />)} />
-        <Route path="/reader/settings" element={role('reader', <RoleUtilityPage role="reader" eyebrow="Account" title="Reader Settings" description="Manage language, appearance, reading preferences, notifications, and account options." />)} />
+        <Route path="/reader/settings" element={role('reader', <ReaderProfilePage />)} />
+        <Route path="/reader/settings/reading" element={role('reader', <ReaderProfilePage />)} />
+        <Route path="/reader/settings/listening" element={role('reader', <ReaderProfilePage />)} />
+        <Route path="/reader/settings/appearance" element={role('reader', <ReaderProfilePage />)} />
+        <Route path="/reader/settings/privacy" element={role('reader', <ReaderProfilePage />)} />
+        <Route path="/reader/settings/security" element={role('reader', <ReaderProfilePage />)} />
         <Route path="/reader/account" element={role('reader', <RoleUtilityPage role="reader" eyebrow="Shared account" title="Account" description="Manage sign-in methods, contact information, connected devices, and account security." />)} />
         <Route path="/reader/support" element={role('reader', <RoleUtilityPage role="reader" eyebrow="NovelHub help" title="Help & Support" description="Find product guidance, accessibility help, frequently asked questions, and support channels." />)} />
         <Route
@@ -206,6 +211,7 @@ function AppRoutes() {
         <Route path="/admin/roles" element={role('admin', <RolesPermissionsPage />)} />
         <Route path="/admin/categories" element={role('admin', <CategoriesConfigurationPage />)} />
         <Route path="/admin/settings" element={role('admin', <PlatformSettingsPage />)} />
+        <Route path="/admin/preferences" element={role('admin', <RoleUtilityPage role="admin" eyebrow="Workspace preferences" title="Admin Settings" description="Configure personal notifications, availability, language, appearance, and administrative workspace preferences." />)} />
         <Route path="/admin/profile" element={role('admin', <RoleUtilityPage role="admin" eyebrow="Shared profile" title="Profile" description="Manage your display identity and shared NovelHub profile information." />)} />
         <Route path="/admin/account" element={role('admin', <RoleUtilityPage role="admin" eyebrow="Shared account" title="Account" description="Manage sign-in methods, contact information, connected devices, and account security." />)} />
         <Route path="/admin/support" element={role('admin', <RoleUtilityPage role="admin" eyebrow="NovelHub help" title="Help & Support" description="Find administration guidance, operational documentation, and support channels." />)} />
