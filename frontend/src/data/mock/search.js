@@ -1,7 +1,69 @@
-export const searchResults=[
- {id:'whispers-moon',title:'Whispers of the Moon',author:'Elena J. Park',rating:'4.9',reads:'142K',status:'Completed',genres:['Romance','Fantasy','Magic'],description:'Under the watchful gleam of a crescent moon, a celestial sorceress finds herself bound to an immortal guardian whose fate will either save or shatter her world.',format:'Audio',duration:'4h 32m audio available',color:'#35566d',icon:'🌙'},
- {id:'blood-moon',title:'Shadow of the Blood Moon',author:'Ren Park',rating:'4.7',reads:'89K',status:'Ongoing',genres:['Fantasy','Adventure','Action'],description:'When the sky bleeds red for the first time in three centuries, an exiled commander is called back to defend the borders against creatures of legend.',format:'Story',duration:'Updated 2 hours ago',color:'#673b4b',icon:'🌕'},
- {id:'moonlight-sonata',title:'Moonlight Sonata',author:'Liam Carter',rating:'4.8',reads:'64K',status:'Completed',genres:['Drama','Romance','Slice of Life'],description:'A reclusive pianist meets a wandering violinist on a misty seaside promenade, sparking a collaboration of melodies that echo through their lives.',format:'Audio',duration:'2h 15m narration',color:'#334764',icon:'🎹'},
- {id:'moon-garden',title:'The Moon Garden',author:'Aya Morgan',rating:'4.6',reads:'51K',status:'Ongoing',genres:['Fantasy','Mystery'],description:'Every midnight, a hidden garden blooms with memories that do not belong to its caretaker.',format:'Story',duration:'Updated yesterday',color:'#386059',icon:'🌿'},
+export const searchResults = [
+  {
+    id: 'whispers-moon',
+    title: 'Whispers of the Moon',
+    author: 'Elena J. Park',
+    rating: '4.9',
+    reads: '142K',
+    status: 'Completed',
+    genres: ['Romance', 'Fantasy', 'Magic'],
+    description:
+      'Under the watchful gleam of a crescent moon, a celestial sorceress finds herself bound to an immortal guardian whose fate will either save or shatter her world.',
+    format: 'Audio',
+    duration: '4h 32m audio available',
+    color: '#35566d',
+    icon: '🌙',
+  },
+  {
+    id: 'blood-moon',
+    title: 'Shadow of the Blood Moon',
+    author: 'Ren Park',
+    rating: '4.7',
+    reads: '89K',
+    status: 'Ongoing',
+    genres: ['Fantasy', 'Adventure', 'Action'],
+    description:
+      'When the sky bleeds red for the first time in three centuries, an exiled commander is called back to defend the borders against creatures of legend.',
+    format: 'Story',
+    duration: 'Updated 2 hours ago',
+    color: '#673b4b',
+    icon: '🌕',
+  },
+  {
+    id: 'moonlight-sonata',
+    title: 'Moonlight Sonata',
+    author: 'Liam Carter',
+    rating: '4.8',
+    reads: '64K',
+    status: 'Completed',
+    genres: ['Drama', 'Romance', 'Slice of Life'],
+    description:
+      'A reclusive pianist meets a wandering violinist on a misty seaside promenade, sparking a collaboration of melodies that echo through their lives.',
+    format: 'Audio',
+    duration: '2h 15m narration',
+    color: '#334764',
+    icon: '🎹',
+  },
+  {
+    id: 'moon-garden',
+    title: 'The Moon Garden',
+    author: 'Aya Morgan',
+    rating: '4.6',
+    reads: '51K',
+    status: 'Ongoing',
+    genres: ['Fantasy', 'Mystery'],
+    description:
+      'Every midnight, a hidden garden blooms with memories that do not belong to its caretaker.',
+    format: 'Story',
+    duration: 'Updated yesterday',
+    color: '#386059',
+    icon: '🌿',
+  },
 ]
-export const trendingSearches=['#BloodMoon','#CyberCity','#MagicAcademy','#SilentForest','#ImmortalKing']
+export const trendingSearches = [
+  '#BloodMoon',
+  '#CyberCity',
+  '#MagicAcademy',
+  '#SilentForest',
+  '#ImmortalKing',
+]

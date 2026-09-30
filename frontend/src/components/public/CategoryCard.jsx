@@ -1,2 +1,27 @@
-const toneClasses={purple:'bg-purple/15 text-purple',rose:'bg-rose/15 text-rose',blue:'bg-sky-500/15 text-sky-600',green:'bg-brand/15 text-brand',orange:'bg-orange/15 text-orange',neutral:'bg-elevated text-muted'}
-export function CategoryCard({category,onSelect}){return <button onClick={()=>onSelect?.(category.name)} className="group flex min-w-0 items-start gap-4 rounded-2xl border border-line bg-surface p-4 text-left transition-colors hover:border-brand"><span className={`grid size-11 shrink-0 place-items-center rounded-xl text-xl ${toneClasses[category.tone]}`}>{category.icon}</span><span className="min-w-0"><strong className="block text-sm group-hover:text-brand">{category.name}</strong><span className="mt-0.5 block text-[10px] text-muted">{category.count} stories</span><span className="mt-1 block truncate text-[10px] text-muted">{category.description}</span></span></button>}
+const toneClasses = {
+  purple: 'bg-purple/15 text-purple',
+  rose: 'bg-rose/15 text-rose',
+  blue: 'bg-sky-500/15 text-sky-600',
+  green: 'bg-brand/15 text-brand',
+  orange: 'bg-orange/15 text-orange',
+  neutral: 'bg-elevated text-muted',
+}
+export function CategoryCard({ category, onSelect }) {
+  return (
+    <button
+      onClick={() => onSelect?.(category.name)}
+      className="group flex min-w-0 items-start gap-4 rounded-2xl border border-line bg-surface p-4 text-left transition-colors hover:border-brand"
+    >
+      <span
+        className={`grid size-11 shrink-0 place-items-center rounded-xl text-xl ${toneClasses[category.tone]}`}
+      >
+        {category.icon}
+      </span>
+      <span className="min-w-0">
+        <strong className="block text-sm group-hover:text-brand">{category.name}</strong>
+        <span className="mt-0.5 block text-[10px] text-muted">{category.count} stories</span>
+        <span className="mt-1 block truncate text-[10px] text-muted">{category.description}</span>
+      </span>
+    </button>
+  )
+}

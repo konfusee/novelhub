@@ -1,10 +1,93 @@
-export const podium=[
- {rank:1,title:'The Silent Forest',author:'Mira Lane',genre:'Fantasy',rating:'4.9',reads:'340,510',change:'Stable #1',color:'#173b3f',icon:'🌲'},
- {rank:2,title:'Whispers of You',author:'Elena J. Park',genre:'Romance',rating:'4.8',reads:'290K',change:'↑ 1 pos',color:'#df8b79',icon:'🌅'},
- {rank:3,title:'Neon Hearts',author:'Kaito Min',genre:'Sci-Fi',rating:'4.7',reads:'250K',change:'↓ 1 pos',color:'#34336f',icon:'🌃'},
+export const podium = [
+  {
+    rank: 1,
+    title: 'The Silent Forest',
+    author: 'Mira Lane',
+    genre: 'Fantasy',
+    rating: '4.9',
+    reads: '340,510',
+    change: 'Stable #1',
+    color: '#173b3f',
+    icon: '🌲',
+  },
+  {
+    rank: 2,
+    title: 'Whispers of You',
+    author: 'Elena J. Park',
+    genre: 'Romance',
+    rating: '4.8',
+    reads: '290K',
+    change: '↑ 1 pos',
+    color: '#df8b79',
+    icon: '🌅',
+  },
+  {
+    rank: 3,
+    title: 'Neon Hearts',
+    author: 'Kaito Min',
+    genre: 'Sci-Fi',
+    rating: '4.7',
+    reads: '250K',
+    change: '↓ 1 pos',
+    color: '#34336f',
+    icon: '🌃',
+  },
 ]
-const titles=["A Dragon's Wish",'The Last Kingdom','Fragments of Us','Echoes of the Solstice','Tide & Tower','Warm Brews & Rainy Days','Clockwork Monarch','The Glass Cathedral','Starlight Weaver','Night Watcher of Oakhaven','Harbor Lights and Heartstrings','Tales of the Far Prairie']
-const genres=['Adventure','Mystery','Drama','Historical','Adventure','Slice of Life','Steampunk','Mystery','Sci-Fi','Horror','Romance','Adventure']
-export const rankings=titles.map((title,index)=>({rank:index+4,title,author:['Ren Park','Aurora White','Liam Carter','Julian Vance','Clara Higgins','May Lin','Arthur Sterling','Soran Wells','Nadia Croft','G. R. Black','Chloe Dupont','Austin Hayes'][index],genre:genres[index],reads:`${143-index*9}K`,rating:(4.8-(index%7)*.1).toFixed(1),change:index%4===0?'NEW':index%3===0?'↑ 4':index%3===1?'↓ 1':'—'}))
-export const rankingCategories=['Trending','Most Read','Most Listened','Rising Authors','New Releases']
-export const rankingPeriods=['Today','This Week','This Month','All Time']
+const titles = [
+  "A Dragon's Wish",
+  'The Last Kingdom',
+  'Fragments of Us',
+  'Echoes of the Solstice',
+  'Tide & Tower',
+  'Warm Brews & Rainy Days',
+  'Clockwork Monarch',
+  'The Glass Cathedral',
+  'Starlight Weaver',
+  'Night Watcher of Oakhaven',
+  'Harbor Lights and Heartstrings',
+  'Tales of the Far Prairie',
+]
+const genres = [
+  'Adventure',
+  'Mystery',
+  'Drama',
+  'Historical',
+  'Adventure',
+  'Slice of Life',
+  'Steampunk',
+  'Mystery',
+  'Sci-Fi',
+  'Horror',
+  'Romance',
+  'Adventure',
+]
+export const rankings = titles.map((title, index) => ({
+  rank: index + 4,
+  title,
+  author: [
+    'Ren Park',
+    'Aurora White',
+    'Liam Carter',
+    'Julian Vance',
+    'Clara Higgins',
+    'May Lin',
+    'Arthur Sterling',
+    'Soran Wells',
+    'Nadia Croft',
+    'G. R. Black',
+    'Chloe Dupont',
+    'Austin Hayes',
+  ][index],
+  genre: genres[index],
+  reads: `${143 - index * 9}K`,
+  rating: (4.8 - (index % 7) * 0.1).toFixed(1),
+  change: index % 4 === 0 ? 'NEW' : index % 3 === 0 ? '↑ 4' : index % 3 === 1 ? '↓ 1' : '—',
+}))
+export const rankingCategories = [
+  'Trending',
+  'Most Read',
+  'Most Listened',
+  'Rising Authors',
+  'New Releases',
+]
+export const rankingPeriods = ['Today', 'This Week', 'This Month', 'All Time']

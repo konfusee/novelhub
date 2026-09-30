@@ -1,0 +1,408 @@
+import { useState } from 'react'
+import {
+  BookOpen,
+  Camera,
+  Check,
+  Eye,
+  Headphones,
+  Palette,
+  Play,
+  Save,
+  ShieldCheck,
+  UserRound,
+} from 'lucide-react'
+import { ReaderLayout } from '../../layouts'
+import { Avatar, Badge, Button, Card, Input, Tabs } from '../../components/ui'
+import { useTheme } from '../../context/ThemeContext'
+
+export function ReaderProfilePage() {
+  const { theme, setTheme } = useTheme()
+  const [section, setSection] = useState('profile')
+  const [name, setName] = useState('Elena Rostova')
+  const [handle, setHandle] = useState('@elena_reader')
+  const [bio, setBio] = useState('Passionate reader of slow-burn fantasy & cozy mysteries. 📚✨')
+  const [fontSize, setFontSize] = useState(18)
+  const [spacing, setSpacing] = useState(1.8)
+  const [canvas, setCanvas] = useState('parchment')
+  const [speed, setSpeed] = useState(1)
+  const [skip, setSkip] = useState(15)
+  const [autoplay, setAutoplay] = useState(true)
+  const [saved, setSaved] = useState(true)
+  const changed = () => setSaved(false)
+  const save = () => {
+    localStorage.setItem(
+      'novelhub.reader.preferences',
+      JSON.stringify({ name, handle, bio, fontSize, spacing, canvas, speed, skip, autoplay }),
+    )
+    setSaved(true)
+  }
+  return (
+    <ReaderLayout>
+      <main className="page-reader pb-28 pt-7">
+        <div className="flex flex-col justify-between gap-3 sm:flex-row sm:items-center">
+          <div>
+            <p className="text-[10px] uppercase tracking-[.18em] text-brand">
+              Account &amp; Sanctuary · Reader ID #NV-88291
+            </p>
+            <h1 className="mt-2 text-3xl font-bold sm:text-4xl">
+              Reader Profile &amp; Preferences
+            </h1>
+          </div>
+          <p className="max-w-md text-sm text-muted">
+            Customize your reading typography, audio narrator pacing, and visual theme.
+          </p>
+        </div>
+        <div className="mt-6 overflow-x-auto">
+          <Tabs
+            value={section}
+            onChange={setSection}
+            items={[
+              { value: 'profile', label: 'Profile Info' },
+              { value: 'reading', label: 'Reading Settings' },
+              { value: 'listening', label: 'Listening Preferences' },
+              { value: 'appearance', label: 'Appearance & Themes' },
+              { value: 'privacy', label: 'Privacy & Security' },
+            ]}
+          />
+        </div>
+        <div className="mt-6 grid items-start gap-6 xl:grid-cols-[minmax(0,1fr)_360px]">
+          <div className="space-y-5">
+            <Card>
+              <SectionTitle
+                icon={UserRound}
+                title="Profile Information"
+                note="Publicly visible to serial commentators"
+              />
+              <div className="mt-5 flex items-center gap-4">
+                <div className="relative">
+                  <Avatar name={name} className="size-20 text-xl" />
+                  <button
+                    aria-label="Change avatar"
+                    className="absolute -bottom-1 -right-1 grid size-8 place-items-center rounded-full bg-brand text-white"
+                  >
+                    <Camera size={15} />
+                  </button>
+                </div>
+                <div>
+                  <Button variant="secondary" className="min-h-9 py-1.5">
+                    Upload New Avatar
+                  </Button>
+                  <p className="mt-2 text-[10px] text-muted">JPG or PNG, minimum 400×400px.</p>
+                </div>
+              </div>
+              <div className="mt-5 grid gap-4 sm:grid-cols-2">
+                <Field label="Display Name">
+                  <Input
+                    value={name}
+                    onChange={e => {
+                      setName(e.target.value)
+                      changed()
+                    }}
+                  />
+                </Field>
+                <Field label="User Handle">
+                  <Input
+                    value={handle}
+                    onChange={e => {
+                      setHandle(e.target.value)
+                      changed()
+                    }}
+                  />
+                </Field>
+              </div>
+              <Field label="Reader Bio" className="mt-4">
+                <textarea
+                  value={bio}
+                  onChange={e => {
+                    setBio(e.target.value)
+                    changed()
+                  }}
+                  maxLength={160}
+                  className="min-h-24 w-full rounded-2xl border border-line bg-surface p-3 text-sm outline-none focus:border-brand"
+                />
+                <span className="float-right text-[10px] text-muted">{bio.length} / 160</span>
+              </Field>
+              <div className="mt-5">
+                <p className="text-xs font-semibold">Favorite Genres</p>
+                <div className="mt-2 flex flex-wrap gap-2">
+                  {['Fantasy', 'Romance', 'Mystery'].map(item => (
+                    <Badge tone="green" key={item}>
+                      {item} ×
+                    </Badge>
+                  ))}
+                  <button className="rounded-full border border-dashed border-line px-3 py-1 text-xs">
+                    + Add Genre
+                  </button>
+                </div>
+              </div>
+            </Card>
+            <Card>
+              <SectionTitle icon={BookOpen} title="Reading Settings" note="Typography & canvas" />
+              <p className="mt-5 text-xs font-semibold">
+                Default Font Size <span className="float-right text-brand">{fontSize}px</span>
+              </p>
+              <input
+                type="range"
+                min="14"
+                max="24"
+                value={fontSize}
+                onChange={e => {
+                  setFontSize(Number(e.target.value))
+                  changed()
+                }}
+                className="mt-2 w-full accent-brand"
+              />
+              <p className="mt-5 text-xs font-semibold">Line Spacing &amp; Rhythm</p>
+              <div className="mt-2 grid grid-cols-3 gap-2">
+                {[1.4, 1.8, 2.2].map(value => (
+                  <Choice
+                    key={value}
+                    active={spacing === value}
+                    onClick={() => {
+                      setSpacing(value)
+                      changed()
+                    }}
+                    title={`${value}×`}
+                    note={value === 1.4 ? 'Compact' : value === 1.8 ? 'Relaxed' : 'Spacious'}
+                  />
+                ))}
+              </div>
+              <p className="mt-5 text-xs font-semibold">Preferred Reader Canvas</p>
+              <div className="mt-2 grid grid-cols-3 gap-2">
+                {[
+                  ['parchment', 'Parchment', '#fcf8f2'],
+                  ['cream', 'Soft Cream', '#fffdf9'],
+                  ['navy', 'Dark Navy', '#081321'],
+                ].map(([value, label, color]) => (
+                  <button
+                    key={value}
+                    onClick={() => {
+                      setCanvas(value)
+                      changed()
+                    }}
+                    className={`rounded-2xl border p-3 text-left text-xs ${canvas === value ? 'border-brand' : 'border-line'}`}
+                    style={{
+                      backgroundColor: color,
+                      color: value === 'navy' ? 'white' : '#172033',
+                    }}
+                  >
+                    {label}
+                    {canvas === value && <Check size={13} className="float-right" />}
+                  </button>
+                ))}
+              </div>
+            </Card>
+            <Card>
+              <SectionTitle
+                icon={Headphones}
+                title="Listening Preferences"
+                note="Audio Lounge & Narration"
+              />
+              <ControlRow label="Default Playback Speed">
+                <div className="flex rounded-xl bg-elevated p-1">
+                  {[0.8, 1, 1.25, 1.5].map(value => (
+                    <button
+                      onClick={() => {
+                        setSpeed(value)
+                        changed()
+                      }}
+                      key={value}
+                      className={`rounded-lg px-3 py-1 text-xs ${speed === value ? 'bg-brand text-white' : ''}`}
+                    >
+                      {value}×
+                    </button>
+                  ))}
+                </div>
+              </ControlRow>
+              <ControlRow label="Skip Interval">
+                <div className="flex gap-2">
+                  {[10, 15, 30].map(value => (
+                    <button
+                      onClick={() => {
+                        setSkip(value)
+                        changed()
+                      }}
+                      key={value}
+                      className={`rounded-full border px-3 py-1 text-xs ${skip === value ? 'border-brand bg-brand/10 text-brand' : 'border-line'}`}
+                    >
+                      {value}s
+                    </button>
+                  ))}
+                </div>
+              </ControlRow>
+              <ControlRow label="Autoplay Next Chapter">
+                <button
+                  onClick={() => {
+                    setAutoplay(!autoplay)
+                    changed()
+                  }}
+                  className={`h-6 w-11 rounded-full p-1 ${autoplay ? 'bg-brand' : 'bg-line'}`}
+                >
+                  <span
+                    className={`block size-4 rounded-full bg-white transition ${autoplay ? 'translate-x-5' : ''}`}
+                  />
+                </button>
+              </ControlRow>
+            </Card>
+            <Card>
+              <SectionTitle
+                icon={Palette}
+                title="Appearance & Themes"
+                note="System chrome & navigation"
+              />
+              <div className="mt-5 grid gap-3 sm:grid-cols-3">
+                {[
+                  ['light', 'Light Theme'],
+                  ['dark', 'Dark Theme'],
+                  ['system', 'System'],
+                ].map(([value, label]) => (
+                  <Choice
+                    key={value}
+                    active={theme === value}
+                    onClick={() => {
+                      setTheme(value)
+                      changed()
+                    }}
+                    title={label}
+                    note={value === 'system' ? 'Follow device' : `${label} palette`}
+                  />
+                ))}
+              </div>
+            </Card>
+            <Card>
+              <SectionTitle
+                icon={ShieldCheck}
+                title="Privacy & Security"
+                note="Account safeguards"
+              />
+              <ControlRow label="Public reading activity">
+                <Badge tone="green">Friends only</Badge>
+              </ControlRow>
+              <ControlRow label="Two-factor authentication">
+                <Button variant="secondary" className="min-h-9 py-1.5">
+                  Configure
+                </Button>
+              </ControlRow>
+            </Card>
+          </div>
+          <aside className="space-y-5 xl:sticky xl:top-24">
+            <Card className={canvas === 'navy' ? 'bg-[#081321] text-white' : 'bg-reader text-ink'}>
+              <div className="flex items-center justify-between">
+                <span className="flex items-center gap-2 text-xs font-semibold">
+                  <Eye size={15} />
+                  Live Reader Sample
+                </span>
+                <Badge tone="green">
+                  {fontSize}px · {spacing}×
+                </Badge>
+              </div>
+              <div className="mt-5 border-y border-line py-5">
+                <p className="text-[10px] uppercase tracking-[.18em] text-orange">
+                  Chapter 14 · The Silver Compass
+                </p>
+                <h2 className="mt-2 text-lg font-semibold">The Whisper in the Pines</h2>
+                <p className="mt-4" style={{ fontSize, lineHeight: spacing }}>
+                  The ancient trail curved gently beneath the canopy of silver pines, where twilight
+                  pooled in deep amethyst shadows. The story had not ended at the lake.
+                </p>
+              </div>
+              <div className="mt-4 flex items-center gap-3 text-xs">
+                <span>A−</span>
+                <span>A+</span>
+                <div className="ml-auto h-1.5 w-24 rounded-full bg-line">
+                  <div className="h-full w-[62%] rounded-full bg-orange" />
+                </div>
+                <span>62%</span>
+              </div>
+            </Card>
+            <Card>
+              <div className="flex items-center justify-between">
+                <strong className="text-sm">Narrator Sync Test</strong>
+                <span className="text-xs text-orange">{speed}× Cadence</span>
+              </div>
+              <div className="mt-4 flex items-center gap-3">
+                <span className="grid size-14 place-items-center rounded-xl bg-orange/20">
+                  <Headphones />
+                </span>
+                <div className="min-w-0 flex-1">
+                  <strong className="block truncate text-xs">The Silver Compass (Audio)</strong>
+                  <div className="mt-2 h-1 rounded-full bg-elevated">
+                    <div className="h-full w-[42%] bg-brand" />
+                  </div>
+                </div>
+                <button className="grid size-10 place-items-center rounded-full bg-brand text-white">
+                  <Play size={16} />
+                </button>
+              </div>
+            </Card>
+            <Card className="bg-elevated">
+              <p className="text-xl italic text-brand">“Good stories make a kinder tomorrow.”</p>
+              <p className="mt-3 text-xs text-muted">
+                Every font size nuance and canvas tone you choose shapes the intimacy of your
+                reading sanctuary.
+              </p>
+            </Card>
+          </aside>
+        </div>
+      </main>
+      <div className="fixed inset-x-0 bottom-0 z-40 border-t border-line bg-surface/95 p-3 backdrop-blur lg:left-56">
+        <div className="mx-auto flex max-w-[1240px] items-center justify-between gap-3">
+          <p className="hidden text-xs text-muted sm:block">
+            {saved ? 'Preferences saved' : 'Unsaved preferences: review your changes.'}
+          </p>
+          <div className="ml-auto flex gap-2">
+            <Button variant="secondary" onClick={() => setSaved(true)}>
+              Discard
+            </Button>
+            <Button onClick={save}>
+              <Save size={15} />
+              Save Changes
+            </Button>
+          </div>
+        </div>
+      </div>
+    </ReaderLayout>
+  )
+}
+
+function SectionTitle({ icon: Icon, title, note }) {
+  return (
+    <div className="flex items-center justify-between border-b border-line pb-3">
+      <h2 className="flex items-center gap-2 font-semibold">
+        <Icon size={17} className="text-brand" />
+        {title}
+      </h2>
+      <span className="text-[10px] text-muted">{note}</span>
+    </div>
+  )
+}
+function Field({ label, className = '', children }) {
+  return (
+    <label className={`block ${className}`}>
+      <span className="mb-1.5 block text-xs font-semibold">{label}</span>
+      {children}
+    </label>
+  )
+}
+function Choice({ active, onClick, title, note }) {
+  return (
+    <button
+      onClick={onClick}
+      className={`rounded-2xl border p-3 text-left ${active ? 'border-brand bg-brand/10' : 'border-line'}`}
+    >
+      <strong className="block text-xs">
+        {title}
+        {active && <Check size={13} className="float-right text-brand" />}
+      </strong>
+      <span className="mt-1 block text-[10px] text-muted">{note}</span>
+    </button>
+  )
+}
+function ControlRow({ label, children }) {
+  return (
+    <div className="mt-4 flex items-center justify-between gap-3 border-b border-line pb-4 last:border-0 last:pb-0">
+      <span className="text-xs font-semibold">{label}</span>
+      {children}
+    </div>
+  )
+}

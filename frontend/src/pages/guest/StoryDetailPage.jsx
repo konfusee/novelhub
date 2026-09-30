@@ -1,0 +1,217 @@
+import { useState } from 'react'
+import { Bookmark, BookOpen, Headphones, Share2, Star } from 'lucide-react'
+import { useNavigate, useParams } from 'react-router-dom'
+import { PublicHeader } from '../../components/public/PublicHeader'
+import { ChapterList } from '../../components/public/ChapterList'
+import { Badge, Button, Card } from '../../components/ui'
+import { chapterPreview, storyDetail } from '../../data/mock/reader'
+
+const tabs = ['Chapters', 'Synopsis & Details', 'Reviews & Discussions', 'Related Audiobooks']
+export function StoryDetailPage() {
+  const navigate = useNavigate()
+  const { storyId = 'demo' } = useParams()
+  const [tab, setTab] = useState('Chapters')
+  const [bookmarked, setBookmarked] = useState(false)
+  const [following, setFollowing] = useState(false)
+  return (
+    <div className="min-h-screen bg-page text-ink">
+      <PublicHeader />
+      <main className="page-public space-y-7 py-7">
+        <p className="text-xs text-muted">
+          Home / Fantasy / <strong className="text-ink">The Silent Forest</strong>
+        </p>
+        <Card className="grid gap-7 p-5 sm:p-7 lg:grid-cols-[240px_minmax(0,1fr)]">
+          <div className="relative grid min-h-80 place-items-center overflow-hidden rounded-2xl border border-line bg-[#173b3f] text-7xl text-white">
+            <span>🌲</span>
+            <Badge tone="green" className="absolute left-3 top-3">
+              Free Preview
+            </Badge>
+            <span className="absolute bottom-5 text-center text-lg font-bold tracking-[.2em]">
+              THE SILENT
+              <br />
+              FOREST
+            </span>
+          </div>
+          <div className="min-w-0">
+            <h1 className="text-3xl font-bold tracking-tight sm:text-4xl">{storyDetail.title}</h1>
+            <div className="mt-3 flex flex-wrap items-center gap-3 text-sm">
+              <span className="grid size-9 place-items-center rounded-full bg-elevated font-semibold text-brand">
+                ML
+              </span>
+              <strong>{storyDetail.author}</strong>
+              <Badge tone="green">Verified Author</Badge>
+              <span className="text-muted">• {storyDetail.followers} Followers</span>
+            </div>
+            <div className="mt-5 flex flex-wrap gap-x-5 gap-y-2 border-y border-line py-3 text-xs">
+              <span className="flex items-center gap-1 font-semibold">
+                <Star size={14} className="fill-orange text-orange" />
+                {storyDetail.rating} <span className="text-muted">({storyDetail.ratings})</span>
+              </span>
+              <span>
+                <strong>{storyDetail.reads}</strong> Reads
+              </span>
+              <span>
+                <strong>{storyDetail.chapters}</strong> Chapters
+              </span>
+              <span>
+                Status: <strong className="text-brand">{storyDetail.status}</strong>
+              </span>
+              <span>{storyDetail.language}</span>
+            </div>
+            <div className="mt-4 flex flex-wrap gap-2">
+              {storyDetail.genres.map((genre, index) => (
+                <Badge tone={index === 1 ? 'orange' : index === 2 ? 'purple' : 'green'} key={genre}>
+                  {genre}
+                </Badge>
+              ))}
+            </div>
+            <p className="mt-5 text-sm leading-6 text-muted">{storyDetail.synopsis}</p>
+            <div className="mt-6 flex flex-wrap gap-3">
+              <Button onClick={() => navigate(`/stories/${storyId}/preview/chapter-1`)}>
+                <BookOpen size={16} />
+                Read Preview
+              </Button>
+              <Button variant="secondary">
+                <Headphones size={16} />
+                Listen Preview
+              </Button>
+              <button
+                onClick={() => setBookmarked(!bookmarked)}
+                aria-label="Bookmark"
+                className={`grid size-11 place-items-center rounded-2xl border ${bookmarked ? 'border-brand bg-brand text-white' : 'border-line'}`}
+              >
+                <Bookmark size={17} />
+              </button>
+              <button
+                aria-label="Share"
+                className="grid size-11 place-items-center rounded-2xl border border-line"
+              >
+                <Share2 size={17} />
+              </button>
+            </div>
+            <div className="mt-5 rounded-2xl border border-brand/30 bg-brand/5 p-4 text-xs leading-5">
+              <strong className="text-brand">Guest Reading Mode:</strong> Create a free account to
+              unlock full chapters, sync bookmarks, and join author discussions.
+            </div>
+          </div>
+        </Card>
+        <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_340px]">
+          <section className="overflow-hidden rounded-3xl border border-line bg-surface">
+            <nav className="flex gap-1 overflow-x-auto border-b border-line p-3">
+              {tabs.map(item => (
+                <button
+                  onClick={() => setTab(item)}
+                  className={`shrink-0 rounded-xl px-4 py-2 text-xs font-semibold ${tab === item ? 'bg-brand text-white' : 'text-muted'}`}
+                  key={item}
+                >
+                  {item}
+                  {item === 'Chapters' ? ' 148' : ''}
+                </button>
+              ))}
+            </nav>
+            <div className="p-5">
+              <div className="mb-4 flex items-center justify-between text-xs text-muted">
+                <span>Displaying 1–5 of 148 chapters</span>
+                <button className="text-brand">Oldest First ▾</button>
+              </div>
+              {tab === 'Chapters' ? (
+                <ChapterList chapters={chapterPreview} storyId={storyId} />
+              ) : (
+                <div className="rounded-2xl bg-reader p-6 text-sm leading-7 text-muted">
+                  {tab === 'Synopsis & Details'
+                    ? storyDetail.synopsis
+                    : `${tab} content is available after joining NovelHub.`}
+                </div>
+              )}
+            </div>
+            <div className="flex flex-col items-center justify-between gap-3 border-t border-line bg-elevated p-5 text-xs text-muted sm:flex-row">
+              <span>Sign in to access all remaining 143 chapters.</span>
+              <Button>Unlock All Free</Button>
+            </div>
+          </section>
+          <aside className="space-y-5">
+            <Card className="p-5">
+              <div className="flex items-center gap-3">
+                <span className="grid size-12 place-items-center rounded-full bg-elevated font-semibold text-brand">
+                  ML
+                </span>
+                <div>
+                  <h3 className="font-bold">About Mira Lane</h3>
+                  <p className="text-xs text-muted">Fantasy & Speculative Fiction author</p>
+                </div>
+              </div>
+              <p className="mt-4 text-xs leading-5 text-muted">
+                Storyteller crafting worlds bathed in twilight and ancient ruins. Winner of the 2024
+                NovelHub Fantasy Guild Award.
+              </p>
+              <div className="mt-4 grid grid-cols-3 border-y border-line py-3 text-center text-xs">
+                <span>
+                  <strong className="block">4</strong>
+                  <small>Works</small>
+                </span>
+                <span>
+                  <strong className="block">15.2K</strong>
+                  <small>Followers</small>
+                </span>
+                <span>
+                  <strong className="block">3.4M</strong>
+                  <small>Reads</small>
+                </span>
+              </div>
+              <Button
+                variant={following ? 'primary' : 'secondary'}
+                onClick={() => setFollowing(!following)}
+                className="mt-4 w-full"
+              >
+                {following ? 'Following' : 'Follow Author'}
+              </Button>
+            </Card>
+            <Card className="p-5">
+              <div className="flex items-center justify-between">
+                <h3 className="font-bold">Community Rating</h3>
+                <button className="text-xs text-brand">View all 1.2K</button>
+              </div>
+              <div className="mt-5 flex gap-5">
+                <div className="text-center">
+                  <strong className="text-4xl">4.8</strong>
+                  <p className="text-orange">★★★★★</p>
+                  <small className="text-muted">12,450 ratings</small>
+                </div>
+                <div className="flex-1 space-y-2">
+                  {[82, 12, 4, 1, 1].map((value, index) => (
+                    <div className="flex items-center gap-2 text-[10px]" key={value + index}>
+                      <span>{5 - index}★</span>
+                      <div className="h-1.5 flex-1 rounded-full bg-elevated">
+                        <div
+                          className="h-full rounded-full bg-brand"
+                          style={{ width: `${value}%` }}
+                        />
+                      </div>
+                      <span>{value}%</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+              <div className="mt-5 border-t border-line pt-4">
+                <strong className="text-xs">Kaelen_Reader</strong>
+                <p className="mt-2 text-xs italic leading-5 text-muted">
+                  “The prose in chapter 2 gave me goosebumps. The lore feels alive and the tension
+                  doesn’t let up.”
+                </p>
+              </div>
+            </Card>
+          </aside>
+        </div>
+      </main>
+      <footer className="border-t border-line bg-surface">
+        <div className="mx-auto flex max-w-[1360px] flex-wrap justify-between gap-4 px-5 py-7 text-xs text-muted md:px-8 lg:px-12">
+          <strong className="text-ink">
+            Novel<span className="text-brand">Hub</span>
+          </strong>
+          <span>Terms · Privacy · Content Guidelines · Help Center</span>
+          <span>© 2026 NovelHub</span>
+        </div>
+      </footer>
+    </div>
+  )
+}
