@@ -185,7 +185,7 @@ export function FollowingPage() {
             <Card>
               <div className="flex items-center justify-between">
                 <h2 className="text-lg font-semibold">Suggested Authors</h2>
-                <button className="text-xs text-brand">Explore</button>
+                <button onClick={() => window.location.assign('/search')} className="text-xs text-brand">Explore</button>
               </div>
               <p className="mt-2 text-sm leading-5 text-muted">
                 Writers matching your preferred fantasy and romance reading history.
@@ -225,7 +225,7 @@ export function FollowingPage() {
                 You&apos;ve spent 4 hours reading saved stories this week. One more session to
                 complete your badge!
               </p>
-              <Button variant="secondary" className="mt-4 w-full">
+              <Button onClick={() => window.location.assign('/reader/history')} variant="secondary" className="mt-4 w-full">
                 <Target size={16} />
                 View progress
               </Button>

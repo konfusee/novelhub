@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import {
   BookOpen,
   CheckCircle2,
@@ -12,14 +13,16 @@ import { Badge, Button, Card } from '../ui'
 
 export function LibraryCard({ item, view = 'grid', onRemove }) {
   const [menuOpen, setMenuOpen] = useState(false)
+  const [notice, setNotice] = useState('')
+  const navigate = useNavigate()
   const audio = item.type === 'audio'
   const menu = (
     <div className="absolute right-3 top-12 z-20 w-48 rounded-2xl border border-line bg-surface p-1.5 text-xs shadow-xl">
-      <button className="flex w-full items-center gap-2 rounded-xl px-3 py-2 hover:bg-elevated">
+      <button onClick={() => { setNotice('Available offline'); setMenuOpen(false) }} className="flex w-full items-center gap-2 rounded-xl px-3 py-2 hover:bg-elevated">
         <Download size={15} />
         Download offline
       </button>
-      <button className="flex w-full items-center gap-2 rounded-xl px-3 py-2 hover:bg-elevated">
+      <button onClick={() => { setNotice('Marked as finished'); setMenuOpen(false) }} className="flex w-full items-center gap-2 rounded-xl px-3 py-2 hover:bg-elevated">
         <CheckCircle2 size={15} />
         Mark as finished
       </button>
@@ -60,7 +63,7 @@ export function LibraryCard({ item, view = 'grid', onRemove }) {
             {item.detail} · {item.activity}
           </p>
         </div>
-        <Button className="hidden min-h-9 px-3 py-2 text-xs sm:flex">
+        <Button onClick={() => navigate(audio ? `/listen/${item.id}/chapter-1` : `/read/${item.id}/chapter-1`)} className="hidden min-h-9 px-3 py-2 text-xs sm:flex">
           {audio ? <Play size={14} /> : <BookOpen size={14} />} Continue
         </Button>
         <button
@@ -71,6 +74,7 @@ export function LibraryCard({ item, view = 'grid', onRemove }) {
           <MoreVertical size={19} />
         </button>
         {menuOpen && menu}
+        {notice && <span className="absolute bottom-2 right-14 text-[10px] text-brand">{notice}</span>}
       </Card>
     )
   return (
@@ -114,6 +118,7 @@ export function LibraryCard({ item, view = 'grid', onRemove }) {
         </button>
       </div>
       {menuOpen && menu}
+      {notice && <span className="mt-2 text-[10px] text-brand">{notice}</span>}
     </Card>
   )
 }

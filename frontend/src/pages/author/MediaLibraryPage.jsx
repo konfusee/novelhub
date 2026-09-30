@@ -82,7 +82,7 @@ export function MediaLibraryPage() {
                 </p>
               </div>
               <div className="flex gap-2">
-                <Button variant="secondary">
+            <Button onClick={() => window.alert('Media folders opened (mock).')} variant="secondary">
                   <FolderOpen size={16} />
                   Batch Organize
                 </Button>

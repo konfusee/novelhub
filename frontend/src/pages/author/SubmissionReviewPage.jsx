@@ -198,7 +198,7 @@ export function SubmissionReviewPage() {
                   Queue assignment occurs within 10 minutes of submission.
                 </p>
               </div>
-              <Button variant="secondary" className="sm:ml-auto">
+          <Button onClick={() => window.alert('Submission preview opened (mock).')} variant="secondary" className="sm:ml-auto">
                 <ArrowLeft size={14} />
                 Save &amp; Return to Editor
               </Button>

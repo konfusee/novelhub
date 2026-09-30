@@ -327,11 +327,11 @@ function ChapterDetection({ chapter, active, onActive, onToggle, onTitle }) {
         className="mt-3 w-full rounded-xl border border-line bg-elevated px-3 py-2 text-sm outline-none focus:border-brand"
       />
       <div className="mt-3 flex justify-end gap-4 text-[10px]">
-        <button className="flex items-center gap-1">
+        <button onClick={() => window.alert('Split point added (mock).')} className="flex items-center gap-1">
           <Scissors size={12} />
           Split at Page
         </button>
-        <button className="flex items-center gap-1">
+        <button onClick={() => window.alert('Chapter merged with the next section (mock).')} className="flex items-center gap-1">
           <GitMerge size={12} />
           Merge Below
         </button>

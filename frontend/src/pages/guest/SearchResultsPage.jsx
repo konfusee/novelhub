@@ -32,6 +32,11 @@ export function SearchResultsPage({ embedded = false }) {
       ),
     [query],
   )
+  const visibleResults = useMemo(() => {
+    if (tab === 'Stories') return results.filter(result => result.format === 'Story')
+    if (tab === 'Audiobooks') return results.filter(result => result.format === 'Audio')
+    return results
+  }, [results, tab])
   const toggle = item =>
     setChecked(current =>
       current.includes(item) ? current.filter(value => value !== item) : [...current, item],
@@ -109,11 +114,16 @@ export function SearchResultsPage({ embedded = false }) {
             ))}
           </div>
           <div className="space-y-4">
-            {results.map(result => (
-              <SearchResultItem result={result} key={result.id} />
-            ))}
+            {tab === 'Authors'
+              ? [...new Map(visibleResults.map(result => [result.author, result])).values()].map(result => (
+                  <Card key={result.author} className="flex items-center justify-between gap-4 p-5">
+                    <div><strong>{result.author}</strong><p className="mt-1 text-xs text-muted">Author of {result.title}</p></div>
+                    <button onClick={() => setQuery(result.author)} className="rounded-xl border border-line px-3 py-2 text-xs font-semibold text-brand">View stories</button>
+                  </Card>
+                ))
+              : visibleResults.map(result => <SearchResultItem result={result} key={result.id} />)}
           </div>
-          {!results.length && (
+          {!visibleResults.length && (
             <Card className="py-16 text-center">
               <Search className="mx-auto text-muted" />
               <h2 className="mt-4 font-semibold">No results found</h2>
@@ -122,8 +132,8 @@ export function SearchResultsPage({ embedded = false }) {
           )}
           <Card className="mt-5 flex flex-col items-center justify-between gap-4 p-4 sm:flex-row">
             <p className="text-xs text-muted">
-              Showing <strong className="text-ink">{results.length ? 1 : 0}</strong> to{' '}
-              <strong className="text-ink">{results.length}</strong> of{' '}
+              Showing <strong className="text-ink">{visibleResults.length ? 1 : 0}</strong> to{' '}
+              <strong className="text-ink">{visibleResults.length}</strong> of{' '}
               <strong className="text-ink">148</strong> results
             </p>
             <div className="flex gap-1">
@@ -175,7 +185,7 @@ export function SearchResultsPage({ embedded = false }) {
               The wind moved gently through the ancient trees, carrying whispers of forgotten
               stories.
             </p>
-            <button className="mt-4 w-full rounded-xl bg-brand py-2.5 text-xs font-semibold text-white">
+            <button onClick={() => window.location.assign('/stories/demo')} className="mt-4 w-full rounded-xl bg-brand py-2.5 text-xs font-semibold text-white">
               Read Feature Now
             </button>
           </Card>

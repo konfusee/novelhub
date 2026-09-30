@@ -36,7 +36,7 @@ export function AdminDashboardPage() {
             <h1 className="mt-2 text-2xl font-bold">Platform Operations Dashboard</h1>
           </div>
           <div className="flex flex-wrap gap-2">
-            <button className="flex items-center gap-2 rounded-2xl border border-line px-4 py-2 text-xs">
+            <button onClick={() => window.alert('Live telemetry is updating in real time (mock).')} className="flex items-center gap-2 rounded-2xl border border-line px-4 py-2 text-xs">
               <span className="size-2 rounded-full bg-brand" />
               Live Stream <span className="rounded-full bg-brand px-2 py-1 text-white">ON</span>
             </button>
@@ -104,18 +104,23 @@ export function AdminDashboardPage() {
                 </div>
               </div>
               <div className="mt-6 flex h-64 items-end justify-around gap-5 border-b border-line px-4">
-                {bars.map(([readers, authors], index) => (
+                {bars.map(([readers, authors], index) => {
+                  const first = metric === 'stories' ? authors : metric === 'royalty' ? Math.round((readers + authors) / 2) : readers
+                  const second = metric === 'stories' ? readers : metric === 'royalty' ? Math.max(18, authors - 8) : authors
+                  const scale = range === '90d' ? 0.88 : 1
+                  return (
                   <div key={index} className="flex h-full flex-1 items-end justify-center gap-2">
                     <div
                       className="w-1/3 max-w-12 rounded-t-xl bg-brand"
-                      style={{ height: `${readers}%` }}
+                      style={{ height: `${Math.round(first * scale)}%` }}
                     />
                     <div
                       className="w-1/3 max-w-12 rounded-t-xl bg-orange"
-                      style={{ height: `${authors}%` }}
+                      style={{ height: `${Math.round(second * scale)}%` }}
                     />
                   </div>
-                ))}
+                  )
+                })}
               </div>
               <div className="mt-3 grid grid-cols-4 text-center text-[9px] text-muted">
                 <span>W1</span>
@@ -145,7 +150,7 @@ export function AdminDashboardPage() {
                     Chronological immutable audit stream for platform compliance
                   </p>
                 </div>
-                <button className="text-xs text-brand">View Full Audit Log →</button>
+                <button onClick={() => window.location.assign('/admin/audit-logs')} className="text-xs text-brand">View Full Audit Log →</button>
               </div>
               <div className="mt-5 overflow-x-auto">
                 <table className="w-full min-w-[680px] text-left text-xs">

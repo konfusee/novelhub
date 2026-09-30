@@ -22,7 +22,7 @@ export function RankingRow({ item }) {
       <Badge tone={tone} className="hidden justify-center sm:inline-flex">
         {item.change}
       </Badge>
-      <Button variant="secondary" className="min-h-8 px-3 py-1 text-[10px]">
+      <Button onClick={() => window.location.assign(`/stories/${item.id || 'demo'}`)} variant="secondary" className="min-h-8 px-3 py-1 text-[10px]">
         Preview
       </Button>
     </div>

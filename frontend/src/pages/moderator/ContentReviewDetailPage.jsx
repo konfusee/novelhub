@@ -51,7 +51,7 @@ export function ContentReviewDetailPage() {
     <ModeratorLayout>
       <main className="page-moderator py-5">
         <div className="flex flex-col gap-4 border-b border-line pb-4 lg:flex-row lg:items-center">
-          <button className="flex items-center gap-2 text-xs text-brand">
+          <button onClick={() => window.location.assign('/moderator/submissions')} className="flex items-center gap-2 text-xs text-brand">
             <ArrowLeft size={14} />
             Return to Submission Queue
           </button>
@@ -177,11 +177,11 @@ export function ContentReviewDetailPage() {
                 End of Chapter 16 Verification Mark · 2,150 words rendered
               </span>
               <div className="flex gap-2">
-                <Button variant="secondary" className="min-h-8 px-3 py-1 text-[10px]">
+                <Button onClick={() => setActiveChapter(value => Math.max(0, value - 1))} variant="secondary" className="min-h-8 px-3 py-1 text-[10px]">
                   <ChevronLeft size={12} />
                   Previous
                 </Button>
-                <Button variant="secondary" className="min-h-8 px-3 py-1 text-[10px]">
+                <Button onClick={() => setActiveChapter(value => Math.min(chapters.length - 1, value + 1))} variant="secondary" className="min-h-8 px-3 py-1 text-[10px]">
                   Next
                   <ChevronRight size={12} />
                 </Button>

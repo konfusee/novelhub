@@ -55,7 +55,7 @@ export function ReadingHistoryPage() {
               <Trash2 size={15} />
               Clear History
             </Button>
-            <Button>
+            <Button onClick={() => window.alert('Reading history export prepared (mock).')}>
               <Download size={15} />
               Export Log
             </Button>
@@ -165,7 +165,7 @@ export function ReadingHistoryPage() {
                     </div>
                     <div className="hidden text-right sm:block">
                       <p className="mb-3 text-[10px] text-muted">{item.duration}</p>
-                      <Button className="min-h-9 px-3 py-1 text-xs">
+                      <Button onClick={() => window.location.assign('/stories/demo')} className="min-h-9 px-3 py-1 text-xs">
                         {item.progress === 100 ? <RotateCcw size={14} /> : <Play size={14} />}{' '}
                         {item.progress === 100 ? 'Re-read' : 'Resume'}
                       </Button>

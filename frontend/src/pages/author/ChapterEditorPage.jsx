@@ -80,7 +80,7 @@ export function ChapterEditorPage() {
           </Badge>
           <Badge>{words} words</Badge>
           <Badge>9 min read</Badge>
-          <Button variant="secondary" className="min-h-9 px-3 py-1 text-xs">
+          <Button onClick={() => window.alert('Reader preview opened (mock).')} variant="secondary" className="min-h-9 px-3 py-1 text-xs">
             <Eye size={14} />
             Preview
           </Button>
@@ -118,7 +118,7 @@ export function ChapterEditorPage() {
                   <Save size={14} />
                   {saved ? 'Draft saved locally and synchronized.' : 'Changes waiting to be saved.'}
                 </span>
-                <button className="font-semibold text-brand">Continue to Chapter 17 →</button>
+                <button onClick={() => window.alert('Chapter 17 opened (mock).')} className="font-semibold text-brand">Continue to Chapter 17 →</button>
               </div>
             </article>
           </main>
@@ -192,6 +192,7 @@ function ChapterTree({ open, onClose }) {
                 return (
                   <button
                     key={chapter}
+                    onClick={() => window.alert(`${chapter} selected.`)}
                     className={`flex w-full items-center gap-2 rounded-xl px-3 py-2 text-left text-xs ${active ? 'bg-brand/10 font-semibold text-brand' : 'text-muted hover:bg-elevated'}`}
                   >
                     <span className="truncate">{chapter}</span>
@@ -205,7 +206,7 @@ function ChapterTree({ open, onClose }) {
           </section>
         ))}
       </div>
-      <Button variant="secondary" className="mt-8 w-full">
+      <Button onClick={() => window.alert('A new chapter draft was added (mock).')} variant="secondary" className="mt-8 w-full">
         <BookOpen size={15} />
         Add Chapter
       </Button>
@@ -233,6 +234,7 @@ function Toolbar({ onSave }) {
           <button
             key={label}
             title={label}
+            onClick={() => document.execCommand?.(label.toLowerCase())}
             className="grid size-9 place-items-center rounded-xl hover:bg-elevated hover:text-brand"
           >
             <Icon size={16} />

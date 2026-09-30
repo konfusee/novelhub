@@ -34,10 +34,10 @@ function Hero() {
             imagination.
           </p>
           <div className="mt-7 flex flex-col items-stretch gap-3 sm:flex-row sm:flex-wrap sm:items-center">
-            <Button>
+            <Button onClick={() => window.location.assign('/search')}>
               Explore Stories <ArrowRight size={16} />
             </Button>
-            <Button variant="secondary">
+            <Button onClick={() => window.location.assign('/search?format=audio')} variant="secondary">
               <Headphones size={16} /> Start Listening
             </Button>
           </div>
@@ -90,10 +90,10 @@ function Hero() {
             <span className="size-2 rounded-full bg-line" />
           </div>
           <div className="absolute bottom-4 right-7 flex gap-2">
-            <button className="grid size-8 place-items-center rounded-full border border-line bg-surface">
+            <button onClick={() => window.alert('Previous featured story selected (mock).')} className="grid size-8 place-items-center rounded-full border border-line bg-surface">
               <ChevronLeft size={15} />
             </button>
-            <button className="grid size-8 place-items-center rounded-full border border-line bg-surface">
+            <button onClick={() => window.alert('Next featured story selected (mock).')} className="grid size-8 place-items-center rounded-full border border-line bg-surface">
               <ChevronRight size={15} />
             </button>
           </div>
@@ -110,6 +110,7 @@ function Categories() {
       <div className="grid grid-cols-4 gap-3 sm:grid-cols-8">
         {categories.map(category => (
           <button
+            onClick={() => window.location.assign(`/categories?genre=${encodeURIComponent(category.name)}`)}
             className="rounded-2xl border border-line bg-surface px-2 py-4 text-center hover:border-brand"
             key={category.name}
           >
@@ -146,10 +147,11 @@ function ContinueCard({ audio = false }) {
           <div className={audio ? 'h-full w-[32%] bg-orange' : 'h-full w-[68%] bg-brand'} />
         </div>
         <div className="flex gap-2">
-          <Button className="min-h-9 flex-1 px-3 py-2 text-xs">
+          <Button onClick={() => window.location.assign(audio ? '/listen/demo/chapter-1' : '/stories/demo')} className="min-h-9 flex-1 px-3 py-2 text-xs">
             {audio ? <Headphones size={14} /> : <BookOpen size={14} />} Continue
           </Button>
           <button
+            onClick={() => window.alert('Story bookmark updated (mock).')}
             aria-label="Bookmark"
             className="grid size-9 place-items-center rounded-xl border border-line"
           >
@@ -190,7 +192,7 @@ function ReaderPreview() {
           >
             Aa−
           </button>
-          <button className="rounded-lg border border-line px-2 py-1">{fontSize}</button>
+          <span className="rounded-lg border border-line px-2 py-1">{fontSize}</span>
           <button
             onClick={() => setFontSize(Math.min(19, fontSize + 1))}
             className="rounded-lg border border-line px-2 py-1"
@@ -241,7 +243,7 @@ function AudioPreview() {
         <span>10:24</span>
       </div>
       <div className="mt-4 flex items-center justify-around">
-        <button className="text-xs text-muted">↺ 15</button>
+        <button onClick={() => window.alert('Skipped back 15 seconds (mock).')} className="text-xs text-muted">↺ 15</button>
         <button
           onClick={() => setPlaying(!playing)}
           className="grid size-14 place-items-center rounded-full bg-brand text-white"
@@ -249,7 +251,7 @@ function AudioPreview() {
         >
           {playing ? <Pause /> : <Play />}
         </button>
-        <button className="text-xs text-muted">15 ↻</button>
+        <button onClick={() => window.alert('Skipped forward 15 seconds (mock).')} className="text-xs text-muted">15 ↻</button>
       </div>
     </Card>
   )
@@ -287,7 +289,7 @@ export function GuestHomePage({ embedded = false }) {
                     <h3 className="mt-3 text-lg font-semibold leading-tight">{item.title}</h3>
                     <p className="mt-2 text-xs leading-5 text-muted">{item.description}</p>
                     <div className="mt-auto flex items-end justify-between">
-                      <button className="text-xs font-semibold text-brand">Explore →</button>
+                      <button onClick={() => window.location.assign('/search')} className="text-xs font-semibold text-brand">Explore →</button>
                       <span className="text-3xl">{item.icon}</span>
                     </div>
                   </Card>
@@ -302,8 +304,8 @@ export function GuestHomePage({ embedded = false }) {
                   do.
                 </p>
                 <div className="mt-5 flex gap-3">
-                  <Button>Create an Account</Button>
-                  <Button variant="secondary">Learn More</Button>
+                  <Button onClick={() => window.location.assign('/register')}>Create an Account</Button>
+                  <Button onClick={() => window.location.assign('/')} variant="secondary">Learn More</Button>
                 </div>
               </div>
               <div className="text-7xl">📚🌿</div>

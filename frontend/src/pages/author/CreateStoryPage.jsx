@@ -86,7 +86,7 @@ export function CreateStoryPage() {
                       <strong>B</strong>
                       <em>I</em>
                       <span>❞ Quote</span>
-                      <button className="ml-auto flex items-center gap-1 text-brand">
+                      <button onClick={() => window.alert('AI polish suggestion generated (mock).')} className="ml-auto flex items-center gap-1 text-brand">
                         <Sparkles size={13} />
                         AI Polish Hint
                       </button>
@@ -183,7 +183,7 @@ export function CreateStoryPage() {
                 <Save size={15} />
                 {saved ? 'Draft Saved' : 'Save as Draft'}
               </Button>
-              <button className="text-sm">Cancel</button>
+              <button onClick={() => window.location.assign('/author')} className="text-sm">Cancel</button>
               <Button onClick={() => setStep(Math.min(4, step + 1))}>
                 Continue to Step {Math.min(4, step + 1)} <ChevronRight size={16} />
               </Button>
@@ -217,7 +217,7 @@ export function CreateStoryPage() {
                       <Badge key={tag}>#{tag}</Badge>
                     ))}
                   </div>
-                  <Button className="mt-4 w-full">
+                  <Button onClick={() => window.alert('Reader preview opened (mock).')} className="mt-4 w-full">
                     <BookOpen size={15} />
                     Read Preview
                   </Button>

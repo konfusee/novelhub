@@ -88,19 +88,19 @@ export function StoryManagerPage() {
               </div>
             </div>
             <div className="flex flex-wrap gap-2 lg:max-w-sm lg:justify-end">
-              <Button>
+              <Button onClick={() => window.location.assign('/author/stories/demo/chapters/chapter-1/edit')}>
                 <Plus size={15} />
                 Add New Chapter
               </Button>
-              <Button variant="secondary">
+              <Button onClick={() => window.alert('Story metadata editor opened (mock).')} variant="secondary">
                 <Edit3 size={15} />
                 Edit Metadata
               </Button>
-              <Button variant="secondary">
+              <Button onClick={() => window.location.assign('/stories/demo')} variant="secondary">
                 <Eye size={15} />
                 Preview as Reader
               </Button>
-              <Button variant="secondary" className="min-h-11 px-4">
+              <Button onClick={() => window.alert('More story actions opened (mock).')} variant="secondary" className="min-h-11 px-4">
                 <MoreHorizontal size={17} />
               </Button>
             </div>
@@ -232,6 +232,7 @@ function ChapterRow({ chapter }) {
         <div className="flex justify-end gap-2">
           <Button
             variant={chapter.status === 'Draft' ? 'primary' : 'secondary'}
+            onClick={() => window.location.assign('/author/stories/demo/chapters/chapter-1/edit')}
             className="min-h-8 px-3 py-1 text-[10px]"
           >
             {chapter.status === 'Draft'
@@ -241,6 +242,7 @@ function ChapterRow({ chapter }) {
                 : 'Edit'}
           </Button>
           <button
+            onClick={() => window.location.assign('/author/analytics')}
             className="rounded-lg border border-line p-2"
             aria-label={`Analytics for ${chapter.title}`}
           >
@@ -276,7 +278,7 @@ function StoryHealth() {
           <div className="mt-3 h-1.5 rounded-full bg-surface">
             <div className="h-full w-2/5 rounded-full bg-orange" />
           </div>
-          <button className="mt-2 text-[10px] text-orange">Manage Tracks</button>
+          <button onClick={() => window.location.assign('/author/media')} className="mt-2 text-[10px] text-orange">Manage Tracks</button>
         </div>
         <p className="mt-5 text-xs font-semibold">Publishing Milestones</p>
         <div className="mt-3 space-y-3">
@@ -292,7 +294,7 @@ function StoryHealth() {
             </div>
           ))}
         </div>
-        <Button variant="secondary" className="mt-5 w-full">
+        <Button onClick={() => window.location.assign('/author/analytics')} variant="secondary" className="mt-5 w-full">
           <BarChart3 size={15} />
           View Story Analytics
         </Button>

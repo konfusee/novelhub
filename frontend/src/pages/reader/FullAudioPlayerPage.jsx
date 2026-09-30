@@ -254,8 +254,8 @@ export function FullAudioPlayerPage() {
                 <p className="text-xs text-muted">Love this audiobook?</p>
                 <strong className="text-sm">Save it for later</strong>
               </div>
-              <button aria-label="Favorite">
-                <Heart className="text-rose" />
+              <button onClick={() => setSaved(value => !value)} aria-label={saved ? 'Remove favorite' : 'Favorite'}>
+                <Heart className={saved ? 'fill-rose text-rose' : 'text-muted'} />
               </button>
             </Card>
           </aside>

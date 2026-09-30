@@ -144,7 +144,7 @@ export function ModeratorOverviewPage() {
                 <h2 className="text-lg font-semibold">
                   Recent Moderator Decisions &amp; Audit Stream
                 </h2>
-                <button className="text-xs text-brand">View Full Audit Log</button>
+                <button onClick={() => window.location.assign('/moderator/audit-trail')} className="text-xs text-brand">View Full Audit Log</button>
               </div>
               <div className="mt-5 space-y-4 border-l border-line pl-5">
                 {audit.map(([time, title, status], index) => (
@@ -211,13 +211,13 @@ export function ModeratorOverviewPage() {
                       <strong className="text-xs">{name}</strong>
                       <p className="text-[9px] text-muted">Online · On-call specialist</p>
                     </div>
-                    <Button variant="secondary" className="ml-auto min-h-8 px-2 py-1 text-[9px]">
+                    <Button onClick={() => window.alert('Moderator ping sent (mock).')} variant="secondary" className="ml-auto min-h-8 px-2 py-1 text-[9px]">
                       Ping
                     </Button>
                   </div>
                 ))}
               </div>
-              <button className="mt-4 w-full rounded-2xl border border-dashed border-line p-3 text-xs text-muted">
+              <button onClick={() => window.alert('Emergency queue freeze requested (mock).')} className="mt-4 w-full rounded-2xl border border-dashed border-line p-3 text-xs text-muted">
                 Trigger Emergency Queue Freeze
               </button>
             </Card>

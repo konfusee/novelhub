@@ -155,7 +155,7 @@ export function WalletPage() {
                     Detailed ledger of unlocks, refills, and creator gratuities.
                   </p>
                 </div>
-                <button className="flex items-center gap-1 text-xs text-brand">
+                <button onClick={() => window.alert('Transaction CSV exported (mock).')} className="flex items-center gap-1 text-xs text-brand">
                   <Download size={14} />
                   Export
                 </button>

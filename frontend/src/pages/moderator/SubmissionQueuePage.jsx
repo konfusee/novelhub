@@ -162,6 +162,7 @@ export function SubmissionQueuePage() {
               row={{ ...row, assigned: assignments[row.id] || row.assigned }}
               checked={selected.includes(row.id)}
               onCheck={() => toggle(row.id)}
+              onClaim={() => setAssignments(current => ({ ...current, [row.id]: 'Sarah Jenkins' }))}
               onReview={() => navigate(`/moderator/submissions/${row.id}`)}
             />
           ))}
@@ -229,7 +230,7 @@ export function SubmissionQueuePage() {
   )
 }
 
-function QueueRow({ row, checked, onCheck, onReview }) {
+function QueueRow({ row, checked, onCheck, onClaim, onReview }) {
   return (
     <Card
       className={`${row.tone === 'red' ? 'border-rose/50' : row.tone === 'purple' ? 'border-purple/50' : 'border-line'} p-4`}
@@ -298,7 +299,7 @@ function QueueRow({ row, checked, onCheck, onReview }) {
             )}
           </p>
           <div className="mt-3 flex justify-end gap-2">
-            <Button variant="secondary" className="min-h-9 px-3 py-1 text-xs">
+            <Button onClick={onClaim} variant="secondary" className="min-h-9 px-3 py-1 text-xs">
               {row.assigned === 'Unassigned' ? 'Claim' : 'Reassign'}
             </Button>
             <Button

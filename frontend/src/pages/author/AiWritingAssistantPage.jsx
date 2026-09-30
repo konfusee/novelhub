@@ -157,7 +157,7 @@ export function AiWritingAssistantPage() {
                   </div>
                 </div>
               </div>
-              <Button variant="secondary" className="min-h-9 text-xs">
+              <Button onClick={() => window.alert('Chapter selector opened (mock).')} variant="secondary" className="min-h-9 text-xs">
                 Change Chapter
               </Button>
             </Card>
@@ -327,11 +327,11 @@ function Suggestion({ suggestion, index, inserted, onInsert }) {
           <p className="mt-4 text-sm leading-7 text-muted">“{suggestion.body}”</p>
           <div className="mt-5 flex flex-wrap items-center gap-3 border-t border-line pt-4 text-[10px] text-muted">
             <span className="text-brand">✓ Tone Match: {suggestion.tone}</span>
-            <button className="flex items-center gap-1">
+            <button onClick={() => navigator.clipboard?.writeText(suggestion.text || suggestion.title || 'NovelHub suggestion')} className="flex items-center gap-1">
               <Copy size={12} />
               Copy
             </button>
-            <button className="flex items-center gap-1">
+            <button onClick={() => window.alert('Suggestion refined (mock).')} className="flex items-center gap-1">
               <WandSparkles size={12} />
               Refine
             </button>
