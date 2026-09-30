@@ -1,5 +1,5 @@
 import {
-  BarChart3, BookHeart, BookOpen, Bot, Boxes, CircleDollarSign, CirclePlus,
+  BarChart3, Bell, BookHeart, BookOpen, Bot, Boxes, CircleDollarSign, CirclePlus,
   ClipboardCheck, Compass, FileClock, FileSearch, FileText, Flag, FolderTree,
   Gauge, Headphones, History, Home, Images, LayoutDashboard, Library, MessageCircle,
   PenLine, Scale, Search, Send, ShieldAlert, ShieldCheck, SlidersHorizontal,
@@ -22,12 +22,13 @@ export const workspaceNavigation = {
     ] },
     { labelKey: 'navigation.activity', items: [
       ['navigation.audiobooks', '/reader/audiobooks', Headphones], ['navigation.history', '/reader/history', History],
-      ['navigation.messages', '/reader/messages', MessageCircle], ['navigation.wallet', '/reader/wallet', WalletCards],
+      ['common.notifications', '/reader/notifications', Bell], ['navigation.messages', '/reader/messages', MessageCircle],
+      ['navigation.wallet', '/reader/wallet', WalletCards],
     ] },
   ],
   author: [
     { labelKey: 'navigation.main', items: [
-      ['navigation.dashboard', '/author', LayoutDashboard, true], ['navigation.myStories', '/author/stories/demo', BookOpen],
+      ['navigation.dashboard', '/author', LayoutDashboard, true], ['navigation.storyManager', '/author/stories/demo', BookOpen],
       ['navigation.drafts', '/author/drafts', FileClock], ['navigation.newStory', '/author/stories/new', CirclePlus],
     ] },
     { labelKey: 'navigation.create', items: [
@@ -58,6 +59,7 @@ export const workspaceNavigation = {
       ['navigation.categories', '/admin/categories', FolderTree], ['navigation.content', '/admin/content', SlidersHorizontal],
     ] },
     { labelKey: 'navigation.platform', items: [
+      ['navigation.platformSettings', '/admin/settings', SlidersHorizontal],
       ['navigation.services', '/admin/services', Boxes], ['navigation.auditLogs', '/admin/audit-logs', History],
       ['navigation.moderation', '/admin/moderation', ShieldCheck], ['navigation.transactions', '/admin/transactions', WalletCards],
     ] },
