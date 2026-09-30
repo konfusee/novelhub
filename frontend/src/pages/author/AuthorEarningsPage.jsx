@@ -11,9 +11,9 @@ const periodData = {
 }
 
 const sales = [
-  ['The Silent Forest', 'Chapter 16', 25, 184, 3220],
-  ['The Silent Forest', 'Chapter 15', 25, 143, 2502],
-  ['Echoes of Eldoria', 'Chapter 3', 20, 96, 1344],
+  ['The Silent Forest', 'Chương 16', 25, 184, 3220],
+  ['The Silent Forest', 'Chương 15', 25, 143, 2502],
+  ['Echoes of Eldoria', 'Chương 3', 20, 96, 1344],
 ]
 
 export function AuthorEarningsPage() {
