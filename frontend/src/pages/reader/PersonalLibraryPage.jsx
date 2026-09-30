@@ -6,11 +6,11 @@ import { Badge, Button, Card, Input, Select } from '../../components/ui'
 import { libraryItems as initialItems } from '../../data/mock/reader'
 
 const tabs = [
-  ['all', 'All'],
-  ['reading', 'Currently Reading'],
-  ['listening', 'Listening'],
-  ['completed', 'Completed'],
-  ['offline', 'Saved Offline'],
+  ['all', 'Tất cả'],
+  ['reading', 'Đang đọc'],
+  ['listening', 'Đang nghe'],
+  ['completed', 'Đã hoàn thành'],
+  ['offline', 'Đã lưu ngoại tuyến'],
 ]
 
 export function PersonalLibraryPage() {
@@ -53,21 +53,21 @@ export function PersonalLibraryPage() {
         <Card className="flex flex-col justify-between gap-5 p-5 sm:p-6 lg:flex-row lg:items-center">
           <div>
             <div className="flex flex-wrap items-center gap-3">
-              <h1 className="text-3xl font-bold tracking-tight">My Library</h1>
-              <Badge tone="green">{items.length} Total Titles</Badge>
+              <h1 className="text-3xl font-bold tracking-tight">Thư viện của tôi</h1>
+              <Badge tone="green">Tổng cộng {items.length} tác phẩm</Badge>
             </div>
             <p className="mt-2 text-sm text-muted">
-              {items.filter(i => i.type === 'story').length} Stories <span className="mx-2">•</span>{' '}
-              {items.filter(i => i.type === 'audio').length} Audiobooks{' '}
+              {items.filter(i => i.type === 'story').length} truyện chữ <span className="mx-2">•</span>{' '}
+              {items.filter(i => i.type === 'audio').length} truyện âm thanh{' '}
               <span className="mx-2">•</span>{' '}
-              <span className="font-medium text-orange">6 in progress this week</span>
+              <span className="font-medium text-orange">6 tác phẩm đang đọc tuần này</span>
             </p>
           </div>
           <div className="w-full rounded-2xl border border-line bg-elevated p-4 lg:w-80">
             <div className="flex items-center justify-between text-xs">
               <span className="flex items-center gap-2 font-medium">
                 <Cloud size={16} className="text-brand" />
-                Offline Storage
+                Bộ nhớ ngoại tuyến
               </span>
               <strong>2.4 GB / 10 GB</strong>
             </div>
@@ -75,7 +75,7 @@ export function PersonalLibraryPage() {
               <div className="h-full w-[24%] rounded-full bg-brand" />
             </div>
             <p className="mt-2 text-[11px] text-muted">
-              4 titles ready for uninterrupted offline reading
+              4 tác phẩm đã sẵn sàng để đọc ngoại tuyến
             </p>
           </div>
         </Card>
@@ -98,33 +98,33 @@ export function PersonalLibraryPage() {
                 icon={Search}
                 value={query}
                 onChange={e => setQuery(e.target.value)}
-                placeholder="Filter your library..."
+                placeholder="Lọc thư viện..."
                 className="w-full sm:w-60"
               />
-              <Select value={type} onChange={e => setType(e.target.value)} aria-label="Filter type">
-                <option value="all">All formats</option>
-                <option value="story">Text stories</option>
-                <option value="audio">Audiobooks</option>
+              <Select value={type} onChange={e => setType(e.target.value)} aria-label="Lọc theo định dạng">
+                <option value="all">Tất cả định dạng</option>
+                <option value="story">Truyện chữ</option>
+                <option value="audio">Truyện âm thanh</option>
               </Select>
               <Select
                 value={sort}
                 onChange={e => setSort(e.target.value)}
-                aria-label="Sort library"
+                aria-label="Sắp xếp thư viện"
               >
-                <option value="recent">Recently opened</option>
-                <option value="title">Title A–Z</option>
-                <option value="progress">Most progress</option>
+                <option value="recent">Mở gần đây</option>
+                <option value="title">Tên A–Z</option>
+                <option value="progress">Tiến độ cao nhất</option>
               </Select>
               <div className="flex rounded-2xl border border-line bg-surface p-1">
                 <button
-                  aria-label="Grid view"
+                  aria-label="Dạng lưới"
                   onClick={() => setView('grid')}
                   className={`rounded-xl p-2 ${view === 'grid' ? 'bg-brand text-white' : 'text-muted'}`}
                 >
                   <Grid2X2 size={17} />
                 </button>
                 <button
-                  aria-label="List view"
+                  aria-label="Dạng danh sách"
                   onClick={() => setView('list')}
                   className={`rounded-xl p-2 ${view === 'list' ? 'bg-brand text-white' : 'text-muted'}`}
                 >
@@ -151,8 +151,8 @@ export function PersonalLibraryPage() {
         ) : (
           <Card className="mt-6 py-16 text-center">
             <Filter className="mx-auto text-muted" />
-            <h2 className="mt-3 font-semibold">No titles found</h2>
-            <p className="mt-1 text-sm text-muted">Try another search or filter.</p>
+            <h2 className="mt-3 font-semibold">Không tìm thấy tác phẩm</h2>
+            <p className="mt-1 text-sm text-muted">Hãy thử từ khóa hoặc bộ lọc khác.</p>
             <Button
               className="mt-4"
               onClick={() => {
@@ -161,7 +161,7 @@ export function PersonalLibraryPage() {
                 setQuery('')
               }}
             >
-              Clear filters
+              Xóa bộ lọc
             </Button>
           </Card>
         )}
@@ -172,19 +172,19 @@ export function PersonalLibraryPage() {
               <Trophy />
             </span>
             <div>
-              <h2 className="font-semibold sm:text-lg">Weekly Reading Goal</h2>
+              <h2 className="font-semibold sm:text-lg">Mục tiêu đọc hằng tuần</h2>
               <p className="text-sm text-muted">
-                You&apos;ve read 4.5 hours of your 5 hour weekly target. Keep going!
+                Bạn đã đọc 4,5 giờ trong mục tiêu 5 giờ tuần này. Hãy tiếp tục!
               </p>
             </div>
           </div>
           <div className="flex w-full gap-2 sm:w-auto">
             <Button onClick={() => window.location.assign('/reader/history')} variant="secondary" className="flex-1">
-              View Analytics
+              Xem thống kê
             </Button>
             <Button onClick={() => window.location.assign('/stories/demo')} className="flex-1 whitespace-nowrap">
               <Check size={16} />
-              Continue Reading
+              Tiếp tục đọc
             </Button>
           </div>
         </Card>

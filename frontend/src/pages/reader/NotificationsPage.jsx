@@ -14,11 +14,11 @@ import { Badge, Button, Card } from '../../components/ui'
 import { notifications as initialNotifications } from '../../data/mock/notifications'
 
 const filters = [
-  ['all', 'All', Bell],
-  ['story', 'Story Updates', BookOpen],
-  ['author', 'Authors', UserRound],
-  ['comment', 'Comments & Replies', MessageCircle],
-  ['system', 'System & Coins', WalletCards],
+  ['all', 'Tất cả', Bell],
+  ['story', 'Cập nhật truyện', BookOpen],
+  ['author', 'Tác giả', UserRound],
+  ['comment', 'Bình luận & phản hồi', MessageCircle],
+  ['system', 'Hệ thống & xu', WalletCards],
 ]
 
 export function NotificationsPage() {
@@ -40,33 +40,33 @@ export function NotificationsPage() {
         <div className="flex flex-col justify-between gap-4 border-b border-line pb-6 sm:flex-row sm:items-center">
           <div>
             <p className="text-[10px] uppercase tracking-[.2em] text-brand">
-              Activity Hub · Reader Feed
+              Trung tâm hoạt động · Bảng tin độc giả
             </p>
-            <h1 className="mt-2 text-3xl font-bold sm:text-4xl">Notifications Center</h1>
+            <h1 className="mt-2 text-3xl font-bold sm:text-4xl">Trung tâm thông báo</h1>
             <p className="mt-2 text-sm text-muted">
-              Stay updated with new chapters, community discussions, and author releases.
+              Theo dõi chương mới, thảo luận cộng đồng và tác phẩm mới từ tác giả.
             </p>
           </div>
           <div className="flex gap-2">
             <Button variant="secondary" onClick={markAll}>
               <CheckCheck size={16} />
-              Mark all as read
+              Đánh dấu tất cả đã đọc
             </Button>
             <Button variant="ghost" onClick={() => setSettings(!settings)}>
               <Settings size={16} />
-              Settings
+              Cài đặt
             </Button>
           </div>
         </div>
         {settings && (
           <Card className="mt-4 flex flex-wrap items-center justify-between gap-3 bg-elevated">
             <div>
-              <strong className="text-sm">Notification preferences</strong>
-              <p className="mt-1 text-xs text-muted">Story and author alerts are enabled.</p>
+              <strong className="text-sm">Tùy chọn thông báo</strong>
+              <p className="mt-1 text-xs text-muted">Đã bật thông báo truyện và tác giả.</p>
             </div>
             <div className="flex gap-2">
-              <Badge tone="green">Email On</Badge>
-              <Badge tone="green">Push On</Badge>
+              <Badge tone="green">Đã bật email</Badge>
+              <Badge tone="green">Đã bật thông báo đẩy</Badge>
             </div>
           </Card>
         )}
@@ -86,10 +86,10 @@ export function NotificationsPage() {
         <div className="mt-3 flex items-center justify-between rounded-2xl border border-line bg-surface px-4 py-3 text-xs">
           <span>
             <span className="mr-2 inline-block size-2 rounded-full bg-brand" />
-            You have {items.filter(i => i.unread).length} unread notifications requiring attention.
+            Bạn có {items.filter(i => i.unread).length} thông báo chưa đọc cần xem.
           </span>
           <span className="hidden text-muted sm:block">
-            Showing {shown.length} of {items.length}
+            Hiển thị {shown.length} / {items.length}
           </span>
         </div>
         <section className="mt-5 space-y-3">
@@ -124,7 +124,7 @@ export function NotificationsPage() {
                     </Badge>
                     <span className="text-xs text-muted">{item.time}</span>
                     <span className="ml-auto text-[10px] text-muted">
-                      {item.unread ? '● Unread' : 'Read'}
+                      {item.unread ? '● Chưa đọc' : 'Đã đọc'}
                     </span>
                   </div>
                   <h2 className="mt-2 text-base font-semibold sm:text-lg">{item.title}</h2>
@@ -132,10 +132,10 @@ export function NotificationsPage() {
                   <div className="mt-4 flex items-center gap-2 border-t border-line pt-3">
                     <Button onClick={() => window.alert(`${item.action} opened (mock).`)} className="min-h-9 px-4 py-1.5 text-xs">{item.action}</Button>
                     <button onClick={() => toggleRead(item.id)} className="text-xs text-muted">
-                      {item.unread ? 'Mark read' : 'Mark unread'}
+                      {item.unread ? 'Đánh dấu đã đọc' : 'Đánh dấu chưa đọc'}
                     </button>
                     <button
-                      aria-label="Delete notification"
+                      aria-label="Xóa thông báo"
                       onClick={() =>
                         setItems(current => current.filter(entry => entry.id !== item.id))
                       }
@@ -151,14 +151,14 @@ export function NotificationsPage() {
           {shown.length === 0 && (
             <Card className="py-16 text-center">
               <Bell className="mx-auto text-muted" />
-              <h2 className="mt-3 font-semibold">You&apos;re all caught up</h2>
-              <p className="mt-1 text-sm text-muted">No notifications in this category.</p>
+              <h2 className="mt-3 font-semibold">Bạn đã xem hết thông báo</h2>
+              <p className="mt-1 text-sm text-muted">Không có thông báo trong nhóm này.</p>
             </Card>
           )}
         </section>
         <div className="mt-6 flex flex-col justify-between gap-3 border-t border-line pt-5 text-xs text-muted sm:flex-row sm:items-center">
-          <span>Showing {shown.length} notifications from the past 30 days</span>
-          <Button onClick={() => window.alert('Earlier notifications loaded (mock).')} variant="secondary">Load earlier notifications</Button>
+          <span>Hiển thị {shown.length} thông báo trong 30 ngày qua</span>
+          <Button onClick={() => window.alert('Đã tải các thông báo trước đó (mô phỏng).')} variant="secondary">Tải thông báo trước đó</Button>
         </div>
       </main>
     </ReaderLayout>
