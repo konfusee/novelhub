@@ -13,6 +13,20 @@ const roleMeta = {
   admin: ['navigation.admin', Crown],
 }
 
+const workspaceAccent = {
+  reader: 'bg-brand/10 text-brand',
+  author: 'bg-orange/15 text-orange',
+  moderator: 'bg-purple/15 text-purple',
+  admin: 'bg-rose/15 text-rose',
+}
+
+const workspaceActive = {
+  reader: 'bg-brand text-white',
+  author: 'bg-orange text-white',
+  moderator: 'bg-purple text-white',
+  admin: 'bg-rose text-white',
+}
+
 export function WorkspaceSwitcher({ currentRole, compact = false }) {
   const { t } = useLocale()
   const { roles } = useAuth()
@@ -32,7 +46,7 @@ export function WorkspaceSwitcher({ currentRole, compact = false }) {
             <Link
               key={role}
               to={ROLE_HOME[role]}
-              className={`flex items-center gap-2 rounded-lg px-2.5 py-2 text-xs ${role === currentRole ? 'bg-brand text-white' : 'text-muted hover:bg-elevated hover:text-ink'}`}
+              className={`flex items-center gap-2 rounded-lg px-2.5 py-2 text-xs ${role === currentRole ? workspaceActive[role] : 'text-muted hover:bg-elevated hover:text-ink'}`}
             >
               <Icon size={15} /> {t(labelKey)}
             </Link>
@@ -119,7 +133,7 @@ export function SharedWorkspaceHeader({ currentRole, workspaceLabel, onOpenMenu,
       <div className="flex h-16 items-center gap-3 px-4 sm:px-6 xl:px-8">
         <IconButton label={t('common.openMenu')} className="md:hidden" onClick={onOpenMenu}><Menu size={19} /></IconButton>
         <Input icon={Search} placeholder={t('common.searchStoriesAuthorsTags')} className="hidden w-full max-w-md sm:flex" />
-        <span className="hidden max-w-48 shrink-0 truncate rounded-full bg-brand/10 px-3 py-1.5 text-center text-[10px] font-semibold text-brand md:block">{workspaceLabel} · {t('common.workspace')}</span>
+        <span className={`hidden max-w-48 shrink-0 truncate rounded-full px-3 py-1.5 text-center text-[10px] font-semibold md:block ${workspaceAccent[currentRole] || workspaceAccent.reader}`}>{workspaceLabel} · {t('common.workspace')}</span>
         <div className="ml-auto"><RoleHeaderLinks includeWallet currentRole={currentRole} /></div>
         <Link to={walletPath} className="hidden items-center gap-2 rounded-xl border border-line bg-surface px-3 py-2 text-xs font-semibold sm:flex">
           <span className="text-orange">●</span> {t('wallet.coins', { count: 450 })} <span className="text-brand">+</span>
