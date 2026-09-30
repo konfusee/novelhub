@@ -63,7 +63,7 @@ export function ReaderProfilePage() {
   }
   return (
     <ReaderLayout>
-      <main className="page-reader pb-28 pt-7">
+      <main className="page-reader pb-12 pt-7">
         <div className="flex flex-col justify-between gap-3 sm:flex-row sm:items-center">
           <div>
             <p className="text-[10px] uppercase tracking-[.18em] text-brand">
@@ -385,23 +385,23 @@ export function ReaderProfilePage() {
             </Card>
           </aside>
         </div>
-      </main>
-      <div className="fixed inset-x-0 bottom-0 z-40 border-t border-line bg-surface/95 p-3 backdrop-blur lg:left-56">
-        <div className="mx-auto flex max-w-[1240px] items-center justify-between gap-3">
+        <section className="relative z-10 mt-8 rounded-3xl border border-line bg-surface p-4 shadow-sm sm:p-5">
+        <div className="flex flex-col items-stretch justify-between gap-4 sm:flex-row sm:items-center">
           <p className="hidden text-xs text-muted sm:block">
             {saved ? 'Preferences saved' : 'Unsaved preferences: review your changes.'}
           </p>
-          <div className="ml-auto flex gap-2">
+          <div className="flex gap-2 sm:ml-auto">
             <Button variant="secondary" onClick={discard}>
               Discard
             </Button>
-            <Button onClick={save}>
+            <Button className="flex-1 sm:flex-none" onClick={save}>
               <Save size={15} />
               Save Changes
             </Button>
           </div>
         </div>
-      </div>
+        </section>
+      </main>
     </ReaderLayout>
   )
 }

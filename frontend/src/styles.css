@@ -87,7 +87,7 @@ body {
 .min-h-screen.bg-page::before,
 .min-h-screen.bg-page::after {
   position: fixed;
-  z-index: 0;
+  z-index: -1;
   pointer-events: none;
   content: '';
 }
@@ -106,7 +106,7 @@ body {
   box-shadow:
     -1.25rem 1.25rem 0 -1px var(--page-bg),
     -1.25rem 1.25rem 0 0 color-mix(in srgb, var(--border) 48%, transparent);
-  opacity: 0.52;
+  opacity: 0.18;
   transform: rotate(-8deg);
 }
 
@@ -115,7 +115,7 @@ body {
   left: -2.5rem;
   width: 12rem;
   height: 4rem;
-  opacity: 0.42;
+  opacity: 0.16;
   background: repeating-linear-gradient(
     0deg,
     transparent 0 0.55rem,
