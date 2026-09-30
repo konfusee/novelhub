@@ -33,7 +33,7 @@ export function GuestReaderPreviewPage() {
             <ArrowLeft size={17} />
             <span className="hidden sm:inline">The Silent Forest</span>
           </Link>
-          <button className="mx-auto flex min-w-0 max-w-sm flex-1 items-center justify-between rounded-xl border border-line bg-page px-3 py-2 text-xs">
+          <button onClick={() => window.alert('Chapter selector opened (mock).')} className="mx-auto flex min-w-0 max-w-sm flex-1 items-center justify-between rounded-xl border border-line bg-page px-3 py-2 text-xs">
             <span className="truncate">Chapter 1: The Whispering Trees</span>
             <span>⌄</span>
           </button>
@@ -178,7 +178,7 @@ export function GuestReaderPreviewPage() {
           <span className="block text-xs font-medium">Chapter 1</span>
           <span className="text-[10px] text-brand">100% complete</span>
         </div>
-        <button className="grid size-9 place-items-center rounded-full" aria-label="Comments">
+        <button onClick={() => window.alert('Join NovelHub to comment on this chapter.')} className="grid size-9 place-items-center rounded-full" aria-label="Comments">
           <MessageCircle size={17} />
         </button>
         <Link

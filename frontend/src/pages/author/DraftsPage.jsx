@@ -85,7 +85,7 @@ export function DraftsPage() {
             </p>
           </div>
           <div className="flex flex-wrap gap-2">
-            <Button variant="secondary">
+            <Button onClick={() => window.location.assign('/author/import')} variant="secondary">
               <Upload size={15} />
               Import Manuscript
             </Button>
@@ -177,7 +177,7 @@ export function DraftsPage() {
             </div>
             <div className="text-xs text-muted">
               Cloud Storage: 14.2 MB / 500 MB{' '}
-              <Button variant="secondary" className="ml-2 min-h-9 px-3 py-1 text-xs">
+              <Button onClick={() => window.alert('Backup manager opened (mock).')} variant="secondary" className="ml-2 min-h-9 px-3 py-1 text-xs">
                 Manage Backups
               </Button>
             </div>
@@ -234,7 +234,7 @@ function DraftCard({ draft, featured, onEdit, onDelete }) {
           </Badge>
         )}
         <span className="ml-auto text-[10px] text-muted">Last edited: {draft.edited}</span>
-        <button aria-label="Draft options">
+        <button onClick={() => window.alert('Draft options opened (mock).')} aria-label="Draft options">
           <MoreHorizontal size={16} />
         </button>
       </div>
@@ -259,7 +259,7 @@ function DraftCard({ draft, featured, onEdit, onDelete }) {
         </div>
       </div>
       <div className="mt-auto flex flex-wrap items-center gap-2 border-t border-line pt-5">
-        <button className="p-2 text-muted hover:text-brand" aria-label="Duplicate draft">
+        <button onClick={() => window.alert('Draft duplicated (mock).')} className="p-2 text-muted hover:text-brand" aria-label="Duplicate draft">
           <Copy size={15} />
         </button>
         <button
@@ -275,7 +275,7 @@ function DraftCard({ draft, featured, onEdit, onDelete }) {
             Ready
           </span>
         )}
-        <Button variant="secondary" className="ml-auto min-h-9 px-3 py-1 text-xs">
+        <Button onClick={() => window.alert('Draft preview opened (mock).')} variant="secondary" className="ml-auto min-h-9 px-3 py-1 text-xs">
           Preview
         </Button>
         <Button onClick={onEdit} className="min-h-9 px-3 py-1 text-xs">

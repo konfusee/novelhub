@@ -141,13 +141,13 @@ export function PlatformSettingsPage() {
             items={sections.map(value => ({ value, label: value }))}
           />
         </div>
-        <section className="mt-6">
+        {section !== 'Platform Settings' && section !== 'Audit Logs' && <section className="mt-6">
           <h2 className="text-xl font-semibold">External Services &amp; Infrastructure Gateway</h2>
           <p className="text-xs text-muted">
             Operational runtime state, service mesh telemetry, and gateway credentials.
           </p>
           <div className="mt-4 grid gap-4 md:grid-cols-2 2xl:grid-cols-4">
-            {services.map(service => (
+            {services.filter(service => section === 'External Services & APIs' || service[0].toLowerCase().includes(section.split(' ')[0].toLowerCase()) || (section === 'Storage & Media Mesh' && service[0].includes('Storage'))).map(service => (
               <ServiceCard
                 key={service[0]}
                 service={service}
@@ -155,8 +155,8 @@ export function PlatformSettingsPage() {
               />
             ))}
           </div>
-        </section>
-        <Card className="mt-6">
+        </section>}
+        {section === 'Platform Settings' && <Card className="mt-6">
           <div className="flex items-start gap-3">
             <SlidersHorizontal className="text-brand" />
             <div>
@@ -209,8 +209,8 @@ export function PlatformSettingsPage() {
               {saved ? 'Configuration Saved' : 'Save Configuration'}
             </Button>
           </div>
-        </Card>
-        <Card className="mt-6">
+        </Card>}
+        {section === 'Audit Logs' && <Card className="mt-6">
           <div className="flex flex-col justify-between gap-3 lg:flex-row lg:items-start">
             <div>
               <h2 className="flex items-center gap-2 text-xl font-semibold">
@@ -287,7 +287,7 @@ export function PlatformSettingsPage() {
               Refresh stream
             </button>
           </div>
-        </Card>
+        </Card>}
         <Modal open={Boolean(modal)} title="Platform operation" onClose={() => setModal('')}>
           <div className="flex gap-3 rounded-2xl bg-elevated p-4">
             <KeyRound className="shrink-0 text-brand" />

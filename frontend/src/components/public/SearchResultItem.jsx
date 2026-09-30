@@ -1,7 +1,11 @@
+import { useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { Bookmark, Clock, Eye, Star } from 'lucide-react'
 import { Badge, Button, Card } from '../ui'
 import { StoryCover } from '../story/StoryCover'
 export function SearchResultItem({ result }) {
+  const navigate = useNavigate()
+  const [bookmarked, setBookmarked] = useState(false)
   return (
     <Card className="flex gap-4 p-4 sm:gap-5 sm:p-5">
       <StoryCover
@@ -21,8 +25,8 @@ export function SearchResultItem({ result }) {
               by <strong>{result.author}</strong>
             </p>
           </div>
-          <button aria-label="Bookmark">
-            <Bookmark size={18} className="text-muted" />
+          <button onClick={() => setBookmarked(value => !value)} aria-label={bookmarked ? 'Remove bookmark' : 'Bookmark'}>
+            <Bookmark size={18} className={bookmarked ? 'fill-brand text-brand' : 'text-muted'} />
           </button>
         </div>
         <div className="mt-3 flex flex-wrap items-center gap-2 text-xs text-muted">
@@ -52,7 +56,7 @@ export function SearchResultItem({ result }) {
             <Clock size={13} />
             {result.duration}
           </span>
-          <Button className="ml-auto min-h-9 px-4 py-2 text-xs">Read Preview</Button>
+          <Button onClick={() => navigate(`/stories/${result.id}`)} className="ml-auto min-h-9 px-4 py-2 text-xs">Read Preview</Button>
         </div>
       </div>
     </Card>

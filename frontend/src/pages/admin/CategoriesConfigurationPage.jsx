@@ -86,7 +86,7 @@ export function CategoriesConfigurationPage() {
         <div className="mt-6 overflow-x-auto border-b border-line pb-3">
           <Tabs value={active} onChange={setActive} items={tabs} />
         </div>
-        <Card className="mt-6">
+        {active === 'categories' && <Card className="mt-6">
           <div className="flex flex-col justify-between gap-4 lg:flex-row lg:items-center">
             <div>
               <h2 className="text-xl font-semibold">
@@ -182,9 +182,9 @@ export function CategoriesConfigurationPage() {
               Download Taxonomy Schema
             </button>
           </div>
-        </Card>
+        </Card>}
         <div className="mt-6 grid gap-6 xl:grid-cols-2">
-          <Card>
+          {active === 'tags' && <Card>
             <div className="flex justify-between">
               <div>
                 <h2 className="text-xl font-semibold">Tag Vocabulary &amp; AI Ingestion</h2>
@@ -223,8 +223,8 @@ export function CategoriesConfigurationPage() {
                 <span className="size-4 rounded-full bg-white" />
               </span>
             </button>
-          </Card>
-          <Card>
+          </Card>}
+          {active === 'ratings' && <Card>
             <div className="flex justify-between">
               <div>
                 <h2 className="text-xl font-semibold">Content Ratings &amp; Age Gate</h2>
@@ -254,7 +254,19 @@ export function CategoriesConfigurationPage() {
                 tone="red"
               />
             </div>
-          </Card>
+          </Card>}
+          {active === 'lifecycle' && <Card className="xl:col-span-2">
+            <h2 className="text-xl font-semibold">Story Lifecycle States</h2>
+            <p className="mt-1 text-xs text-muted">Publishing states control visibility, editing, moderation, and reader access.</p>
+            <div className="mt-5 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+              {['Draft', 'Pending Review', 'Changes Requested', 'Approved', 'Published', 'Archived'].map((state, index) => (
+                <div key={state} className="rounded-2xl border border-line bg-elevated p-4">
+                  <Badge tone={index < 2 ? 'orange' : index === 4 ? 'green' : 'neutral'}>{state}</Badge>
+                  <p className="mt-3 text-xs text-muted">{index + 1}. Valid transition in the editorial publishing workflow.</p>
+                </div>
+              ))}
+            </div>
+          </Card>}
         </div>
         <Card className="mt-6 flex flex-col gap-4 lg:flex-row lg:items-center">
           <div className="flex-1">

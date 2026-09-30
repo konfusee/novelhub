@@ -72,7 +72,7 @@ export function SimilarityRiskReviewPage() {
           <div className="flex flex-wrap gap-2">
             <Badge tone="orange">Requires Inspection</Badge>
             <Input icon={Search} placeholder="Search flagged text..." className="w-full sm:w-56" />
-            <Button variant="secondary">
+            <Button onClick={() => window.alert('Similarity report exported (mock).')} variant="secondary">
               <Download size={14} />
               Export Audit JSON
             </Button>

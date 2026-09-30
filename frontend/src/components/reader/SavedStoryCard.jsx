@@ -35,7 +35,7 @@ export function SavedStoryCard({ story }) {
             {alerts ? <Bell size={16} className="text-brand" /> : <BellOff size={16} />}{' '}
             {alerts ? 'Alerts On' : 'Muted'}
           </button>
-          <Button className="min-h-9 px-3 py-1.5 text-xs">
+      <Button onClick={() => window.location.assign(`/stories/${story.id || 'demo'}`)} className="min-h-9 px-3 py-1.5 text-xs">
             Read Next <ArrowRight size={14} />
           </Button>
         </div>

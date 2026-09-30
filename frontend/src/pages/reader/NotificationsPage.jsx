@@ -130,7 +130,7 @@ export function NotificationsPage() {
                   <h2 className="mt-2 text-base font-semibold sm:text-lg">{item.title}</h2>
                   <p className="mt-1 text-sm leading-6 text-muted">{item.body}</p>
                   <div className="mt-4 flex items-center gap-2 border-t border-line pt-3">
-                    <Button className="min-h-9 px-4 py-1.5 text-xs">{item.action}</Button>
+                    <Button onClick={() => window.alert(`${item.action} opened (mock).`)} className="min-h-9 px-4 py-1.5 text-xs">{item.action}</Button>
                     <button onClick={() => toggleRead(item.id)} className="text-xs text-muted">
                       {item.unread ? 'Mark read' : 'Mark unread'}
                     </button>
@@ -158,7 +158,7 @@ export function NotificationsPage() {
         </section>
         <div className="mt-6 flex flex-col justify-between gap-3 border-t border-line pt-5 text-xs text-muted sm:flex-row sm:items-center">
           <span>Showing {shown.length} notifications from the past 30 days</span>
-          <Button variant="secondary">Load earlier notifications</Button>
+          <Button onClick={() => window.alert('Earlier notifications loaded (mock).')} variant="secondary">Load earlier notifications</Button>
         </div>
       </main>
     </ReaderLayout>

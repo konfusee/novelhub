@@ -66,7 +66,7 @@ export function FullChapterReaderPage() {
               {fullChapter.story}
             </strong>
             <span className="hidden text-muted md:block">/</span>
-            <button className="flex min-w-0 items-center gap-1 rounded-full bg-elevated px-3 py-1.5 text-xs">
+            <button onClick={() => window.alert('Chapter selector opened (mock).')} className="flex min-w-0 items-center gap-1 rounded-full bg-elevated px-3 py-1.5 text-xs">
               <span className="truncate">
                 Chapter {fullChapter.number}: {fullChapter.title}
               </span>
@@ -194,7 +194,7 @@ export function FullChapterReaderPage() {
             </div>
           </Card>
           <nav className="mt-8 flex flex-col items-stretch justify-between gap-4 border-t border-line pt-7 sm:flex-row sm:items-center">
-            <Button variant="secondary">
+            <Button onClick={() => window.alert('Previous chapter opened (mock).')} variant="secondary">
               <ArrowLeft size={16} />
               Previous Chapter
             </Button>
@@ -205,7 +205,7 @@ export function FullChapterReaderPage() {
               </div>
               <p className="mt-1 text-[10px] text-brand">100% of chapter</p>
             </div>
-            <Button>
+            <Button onClick={() => window.alert('Next chapter opened (mock).')}>
               Next: The Amber Gate <ArrowRight size={16} />
             </Button>
           </nav>
@@ -232,7 +232,7 @@ export function FullChapterReaderPage() {
               className="min-h-28 w-full rounded-2xl border border-line bg-surface p-3 text-sm outline-none focus:border-brand"
               placeholder="Join the discussion..."
             />
-            <Button className="w-full">Post comment</Button>
+            <Button onClick={() => window.alert('Comment posted locally (mock).')} className="w-full">Post comment</Button>
           </div>
         </Drawer>
         {commentsOpen && (

@@ -182,6 +182,7 @@ export function AuthorAnalyticsPage() {
             {retention.map((value, index) => (
               <button
                 key={index}
+                onClick={() => window.alert(`Chapter ${index + 1} retention: ${value}%`)}
                 className={`rounded-xl border p-3 text-center ${index === 14 ? 'border-brand bg-brand/10' : 'border-line bg-elevated'}`}
               >
                 <span className="text-[9px] text-muted">Ch. {index + 1}</span>
@@ -202,7 +203,7 @@ export function AuthorAnalyticsPage() {
                 release.
               </p>
             </div>
-            <Button variant="secondary" className="sm:ml-auto min-h-9 text-xs">
+            <Button onClick={() => window.alert('Chapter detail analytics opened (mock).')} variant="secondary" className="sm:ml-auto min-h-9 text-xs">
               View Chapter Details
             </Button>
           </div>

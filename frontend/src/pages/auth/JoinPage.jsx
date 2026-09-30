@@ -191,7 +191,7 @@ export function JoinPage({ initialMode }) {
               icon={LockKeyhole}
               action={
                 isLogin ? (
-                  <button type="button" className="font-medium text-brand hover:underline">
+                  <button type="button" onClick={() => setError('Password reset instructions are available in the full backend flow.')} className="font-medium text-brand hover:underline">
                     Forgot password?
                   </button>
                 ) : null

@@ -174,10 +174,10 @@ export function UsersManagementPage() {
             <div className="flex flex-col justify-between gap-3 border-t border-line p-4 text-xs text-muted sm:flex-row sm:items-center">
               <span>Showing {users.length} of 142,850 accounts</span>
               <div className="flex gap-2">
-                <button className="rounded-xl border border-line px-3 py-2">Previous</button>
-                <button className="rounded-xl bg-brand px-3 py-2 text-white">1</button>
-                <button className="rounded-xl border border-line px-3 py-2">2</button>
-                <button className="rounded-xl border border-line px-3 py-2">Next</button>
+                <button disabled className="rounded-xl border border-line px-3 py-2 disabled:opacity-40">Previous</button>
+                <button onClick={() => setNotice('Page 1 selected.')} className="rounded-xl bg-brand px-3 py-2 text-white">1</button>
+                <button onClick={() => setNotice('Page 2 selected (mock).')} className="rounded-xl border border-line px-3 py-2">2</button>
+                <button onClick={() => setNotice('Next page selected (mock).')} className="rounded-xl border border-line px-3 py-2">Next</button>
               </div>
             </div>
           </Card>
@@ -253,11 +253,11 @@ function UserInspector({ user, onEdit, onSuspend }) {
             <Edit3 size={14} />
             Edit Roles
           </Button>
-          <Button variant="secondary">
+          <Button onClick={() => window.alert('Coin adjustment dialog opened (mock).')} variant="secondary">
             <BadgeDollarSign size={14} />
             Adjust Coins
           </Button>
-          <Button variant="secondary">
+          <Button onClick={() => window.alert('Warning composer opened (mock).')} variant="secondary">
             <AlertTriangle size={14} />
             Issue Warning
           </Button>

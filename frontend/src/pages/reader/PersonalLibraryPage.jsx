@@ -179,10 +179,10 @@ export function PersonalLibraryPage() {
             </div>
           </div>
           <div className="flex w-full gap-2 sm:w-auto">
-            <Button variant="secondary" className="flex-1">
+            <Button onClick={() => window.location.assign('/reader/history')} variant="secondary" className="flex-1">
               View Analytics
             </Button>
-            <Button className="flex-1 whitespace-nowrap">
+            <Button onClick={() => window.location.assign('/stories/demo')} className="flex-1 whitespace-nowrap">
               <Check size={16} />
               Continue Reading
             </Button>

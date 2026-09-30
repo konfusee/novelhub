@@ -39,7 +39,7 @@ export function PodiumCard({ story }) {
           <strong>{story.reads}</strong> reads
         </span>
       </div>
-      <Button variant={champion ? 'primary' : 'secondary'} className="mt-auto min-h-9 py-2 text-xs">
+      <Button onClick={() => window.location.assign(`/stories/${story.id || 'demo'}`)} variant={champion ? 'primary' : 'secondary'} className="mt-auto min-h-9 py-2 text-xs">
         {champion ? 'Start Reading' : 'Read Preview'}
       </Button>
     </Card>

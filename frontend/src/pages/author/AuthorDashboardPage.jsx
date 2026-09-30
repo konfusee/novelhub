@@ -54,7 +54,7 @@ export function AuthorDashboardPage() {
             <h2 className="text-xl font-semibold">
               Continue Writing <Badge className="ml-2">2 Active Works</Badge>
             </h2>
-            <button className="text-xs text-brand">View All Drafts →</button>
+            <button onClick={() => window.location.assign('/author/drafts')} className="text-xs text-brand">View All Drafts →</button>
           </div>
           <div className="mt-4 grid gap-4 md:grid-cols-2">
             <DraftCard
@@ -128,7 +128,7 @@ export function AuthorDashboardPage() {
                           {story.chapters} Chapters · ★ {story.rating} · {story.reads}
                         </p>
                       </div>
-                      <Button
+                      <Button onClick={() => window.location.assign('/author/stories/demo')}
                         variant="secondary"
                         className="hidden min-h-9 px-3 py-1 text-xs sm:flex"
                       >
@@ -157,7 +157,7 @@ export function AuthorDashboardPage() {
                 <strong className="text-3xl text-brand">6 Days</strong>
                 <p className="text-xs text-muted">Daily Streak 🔥</p>
               </div>
-              <Button variant="secondary">Sprint Goal Settings</Button>
+              <Button onClick={() => window.alert('Sprint goal settings opened (mock).')} variant="secondary">Sprint Goal Settings</Button>
             </Card>
           </div>
           <aside className="min-w-0 space-y-5">
@@ -180,7 +180,7 @@ export function AuthorDashboardPage() {
                   The Ironwood pendant was last referenced in Chapter 4.
                 </Insight>
               </div>
-              <Button className="mt-4 w-full border-purple bg-purple">
+              <Button onClick={() => window.location.assign('/author/ai')} className="mt-4 w-full border-purple bg-purple">
                 <Sparkles size={15} />
                 Full Manuscript Audit
               </Button>
@@ -253,7 +253,7 @@ function DraftCard({ title, chapter, progress, words, primary = false }) {
             <div className="h-full rounded-full bg-brand" style={{ width: `${progress}%` }} />
           </div>
         </div>
-        <Button className="min-h-9 px-4 py-1 text-xs">
+        <Button onClick={() => window.location.assign('/author/stories/demo/chapters/chapter-1/edit')} className="min-h-9 px-4 py-1 text-xs">
           <Edit3 size={14} />
           {primary ? 'Resume Writing' : 'Open Draft'}
         </Button>
