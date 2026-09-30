@@ -312,7 +312,8 @@ button {
 .page-reader,
 .page-author,
 .page-moderator,
-.page-admin {
+.page-admin,
+.page-shell {
   width: 100%;
   margin-inline: auto;
 }
@@ -324,9 +325,10 @@ button {
 .page-reader,
 .page-author,
 .page-moderator,
-.page-admin {
+.page-admin,
+.page-shell {
   max-width: 1540px;
-  padding-inline: 1rem;
+  padding-inline: 1.25rem;
 }
 
 .workspace-content > * {
@@ -342,8 +344,9 @@ button {
   .page-reader,
   .page-author,
   .page-moderator,
-  .page-admin {
-    padding-inline: 1.5rem;
+  .page-admin,
+  .page-shell {
+    padding-inline: 2rem;
   }
 }
 
@@ -363,8 +366,9 @@ button {
   .page-reader,
   .page-author,
   .page-moderator,
-  .page-admin {
-    padding-inline: 2rem;
+  .page-admin,
+  .page-shell {
+    padding-inline: 2.5rem;
   }
 }
 
