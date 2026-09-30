@@ -10,28 +10,30 @@ import {
   Trash2,
 } from 'lucide-react'
 import { Badge, Button, Card } from '../ui'
+import { useLocale } from '../../context/LocaleContext'
 
 export function LibraryCard({ item, view = 'grid', onRemove }) {
   const [menuOpen, setMenuOpen] = useState(false)
   const [notice, setNotice] = useState('')
   const navigate = useNavigate()
+  const { t } = useLocale()
   const audio = item.type === 'audio'
   const menu = (
     <div className="absolute right-3 top-12 z-20 w-48 rounded-2xl border border-line bg-surface p-1.5 text-xs shadow-xl">
-      <button onClick={() => { setNotice('Available offline'); setMenuOpen(false) }} className="flex w-full items-center gap-2 rounded-xl px-3 py-2 hover:bg-elevated">
+      <button onClick={() => { setNotice(t('library.availableOffline')); setMenuOpen(false) }} className="flex w-full items-center gap-2 rounded-xl px-3 py-2 hover:bg-elevated">
         <Download size={15} />
-        Download offline
+        {t('library.downloadOffline')}
       </button>
-      <button onClick={() => { setNotice('Marked as finished'); setMenuOpen(false) }} className="flex w-full items-center gap-2 rounded-xl px-3 py-2 hover:bg-elevated">
+      <button onClick={() => { setNotice(t('library.markedFinished')); setMenuOpen(false) }} className="flex w-full items-center gap-2 rounded-xl px-3 py-2 hover:bg-elevated">
         <CheckCircle2 size={15} />
-        Mark as finished
+        {t('library.markFinished')}
       </button>
       <button
         onClick={() => onRemove(item.id)}
         className="flex w-full items-center gap-2 rounded-xl px-3 py-2 text-rose hover:bg-rose/10"
       >
         <Trash2 size={15} />
-        Remove from library
+        {t('library.remove')}
       </button>
     </div>
   )
@@ -47,7 +49,7 @@ export function LibraryCard({ item, view = 'grid', onRemove }) {
         <div className="min-w-0 flex-1">
           <div className="flex items-center gap-2">
             <h3 className="truncate font-semibold">{item.title}</h3>
-            <Badge tone={audio ? 'orange' : 'green'}>{audio ? 'Audiobook' : 'Text story'}</Badge>
+            <Badge tone={audio ? 'orange' : 'green'}>{t(audio ? 'library.audiobook' : 'library.textStory')}</Badge>
           </div>
           <p className="text-xs text-muted">{item.author}</p>
           <div className="mt-3 flex items-center gap-3">
@@ -64,10 +66,10 @@ export function LibraryCard({ item, view = 'grid', onRemove }) {
           </p>
         </div>
         <Button onClick={() => navigate(audio ? `/listen/${item.id}/chapter-1` : `/read/${item.id}/chapter-1`)} className="hidden min-h-9 px-3 py-2 text-xs sm:flex">
-          {audio ? <Play size={14} /> : <BookOpen size={14} />} Continue
+          {audio ? <Play size={14} /> : <BookOpen size={14} />} {t('common.continue')}
         </Button>
         <button
-          aria-label="Options"
+          aria-label={t('common.options')}
           className="p-2 text-muted"
           onClick={() => setMenuOpen(!menuOpen)}
         >
@@ -86,11 +88,11 @@ export function LibraryCard({ item, view = 'grid', onRemove }) {
         <span className="text-4xl font-bold opacity-20">NH</span>
         <Badge tone={audio ? 'orange' : 'green'} className="absolute left-2 top-2 bg-surface/90">
           {audio ? <Headphones size={12} /> : <BookOpen size={12} />}{' '}
-          {audio ? 'Audiobook' : 'Text story'}
+          {t(audio ? 'library.audiobook' : 'library.textStory')}
         </Badge>
         {item.offline && (
           <span
-            title="Available offline"
+            title={t('library.availableOffline')}
             className="absolute right-2 top-2 grid size-7 place-items-center rounded-full bg-surface text-brand"
           >
             <Download size={14} />
@@ -113,7 +115,7 @@ export function LibraryCard({ item, view = 'grid', onRemove }) {
       </div>
       <div className="mt-3 flex items-center justify-between border-t border-line pt-3 text-[11px] text-muted">
         <span>{item.activity}</span>
-        <button aria-label="Options" onClick={() => setMenuOpen(!menuOpen)}>
+        <button aria-label={t('common.options')} onClick={() => setMenuOpen(!menuOpen)}>
           <MoreVertical size={18} />
         </button>
       </div>

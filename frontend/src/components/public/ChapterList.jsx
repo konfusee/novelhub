@@ -2,9 +2,11 @@ import { Lock } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import { Badge } from '../ui'
 import { useAuth } from '../../context/AuthContext'
+import { useLocale } from '../../context/LocaleContext'
 
 export function ChapterList({ chapters, storyId = 'demo' }) {
   const { isAuthenticated } = useAuth()
+  const { t } = useLocale()
   return (
     <div className="space-y-3">
       {chapters.map(chapter => (
@@ -15,15 +17,15 @@ export function ChapterList({ chapters, storyId = 'demo' }) {
           <div>
             <div className="flex flex-wrap items-center gap-2">
               <span className="text-[10px] font-semibold uppercase text-brand">
-                Chapter {chapter.number}
+                {t('story.chapterNumber', { number: chapter.number })}
               </span>
               <Badge tone={chapter.free ? 'green' : 'neutral'}>
                 {chapter.free ? (
-                  'Free Preview'
+                  t('story.freePreview')
                 ) : (
                   <>
                     <Lock size={10} />
-                    Locked
+                    {t('story.locked')}
                   </>
                 )}
               </Badge>
@@ -50,7 +52,7 @@ export function ChapterList({ chapters, storyId = 'demo' }) {
                 : 'border-line bg-surface text-ink'
             }`}
           >
-            {isAuthenticated ? 'Read' : chapter.free ? 'Preview' : 'Sign in'}
+            {isAuthenticated ? t('story.read') : chapter.free ? t('story.preview') : t('auth.signIn')}
           </Link>
         </article>
       ))}

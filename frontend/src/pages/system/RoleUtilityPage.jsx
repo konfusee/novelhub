@@ -1,6 +1,7 @@
 import { Activity, CheckCircle2, Clock3, Search } from 'lucide-react'
 import { AdminLayout, AuthorLayout, ModeratorLayout, ReaderLayout } from '../../layouts'
 import { Badge, Card, Input } from '../../components/ui'
+import { useLocale } from '../../context/LocaleContext'
 
 const layouts = {
   reader: ReaderLayout,
@@ -11,6 +12,7 @@ const layouts = {
 
 export function RoleUtilityPage({ role, eyebrow, title, description }) {
   const Layout = layouts[role]
+  const { t } = useLocale()
   const rows = [
     ['NH-1042', 'The Silent Forest', 'Updated 12 minutes ago', 'Active'],
     ['NH-1038', 'Whispers of You', 'Updated 46 minutes ago', 'Review'],
@@ -26,9 +28,9 @@ export function RoleUtilityPage({ role, eyebrow, title, description }) {
         </header>
         <section className="grid gap-4 sm:grid-cols-3">
           {[
-            ['Open items', '24', Activity],
-            ['Due today', '8', Clock3],
-            ['Completed', '96%', CheckCircle2],
+            [t('workspace.openItems'), '24', Activity],
+            [t('workspace.dueToday'), '8', Clock3],
+            [t('workspace.completed'), '96%', CheckCircle2],
           ].map(([label, value, Icon]) => (
             <Card key={label} className="flex items-center gap-4 p-5">
               <span className="grid size-11 place-items-center rounded-2xl bg-brand/10 text-brand"><Icon size={20} /></span>
@@ -38,13 +40,13 @@ export function RoleUtilityPage({ role, eyebrow, title, description }) {
         </section>
         <Card className="overflow-hidden p-0">
           <div className="flex flex-col gap-3 border-b border-line p-5 sm:flex-row sm:items-center">
-            <div><h2 className="font-semibold">Recent activity</h2><p className="text-xs text-muted">Workspace records and latest changes</p></div>
-            <Input icon={Search} placeholder="Search records..." className="sm:ml-auto sm:max-w-xs" />
+            <div><h2 className="font-semibold">{t('workspace.recentActivity')}</h2><p className="text-xs text-muted">{t('workspace.latestChanges')}</p></div>
+            <Input icon={Search} placeholder={t('workspace.searchRecords')} className="sm:ml-auto sm:max-w-xs" />
           </div>
           <div className="divide-y divide-line">
             {rows.map(([id, name, time, status]) => (
               <div key={id} className="grid gap-2 p-5 text-sm sm:grid-cols-[100px_1fr_180px_90px] sm:items-center">
-                <span className="font-mono text-xs text-muted">{id}</span><strong>{name}</strong><span className="text-xs text-muted">{time}</span><Badge tone={status === 'Active' ? 'green' : status === 'Review' ? 'orange' : 'purple'}>{status}</Badge>
+                <span className="font-mono text-xs text-muted">{id}</span><strong>{name}</strong><span className="text-xs text-muted">{time}</span><Badge tone={status === 'Active' ? 'green' : status === 'Review' ? 'orange' : 'purple'}>{t(`workspace.status.${status.toLowerCase()}`)}</Badge>
               </div>
             ))}
           </div>

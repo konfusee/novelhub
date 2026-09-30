@@ -10,13 +10,17 @@
     "closeNavigation": "Đóng điều hướng",
     "collapseSidebar": "Thu gọn thanh bên",
     "delete": "Xóa",
+    "discard": "Hủy thay đổi",
     "edit": "Sửa",
     "expandSidebar": "Mở rộng thanh bên",
     "helpSupport": "Trợ giúp & hỗ trợ",
+    "continue": "Tiếp tục",
+    "options": "Tùy chọn",
     "notifications": "Thông báo",
     "openMenu": "Mở menu",
     "openProfile": "Mở hồ sơ",
     "save": "Lưu",
+    "saveChanges": "Lưu thay đổi",
     "searchStories": "Tìm truyện...",
     "searchStoriesAuthorsTags": "Tìm truyện, tác giả, thẻ...",
     "switchWorkspace": "Chuyển không gian làm việc",
@@ -240,6 +244,31 @@
     "privacyRetentionBody": "Thông tin chỉ được lưu trong thời gian cần thiết cho các mục đích được mô tả, nghĩa vụ pháp lý, giải quyết tranh chấp và bảo mật nền tảng.",
     "privacyChoicesTitle": "Lựa chọn của bạn",
     "privacyChoicesBody": "Bạn có thể cập nhật hồ sơ, điều chỉnh tùy chọn, yêu cầu bản sao dữ liệu hoặc yêu cầu xóa dữ liệu khi áp dụng."
+  },
+  "story": {
+    "chapterNumber": "Chương {{number}}",
+    "freePreview": "Đọc thử miễn phí",
+    "locked": "Đã khóa",
+    "read": "Đọc",
+    "preview": "Đọc thử"
+  },
+  "library": {
+    "availableOffline": "Có thể đọc ngoại tuyến",
+    "downloadOffline": "Tải để đọc ngoại tuyến",
+    "markedFinished": "Đã đánh dấu hoàn thành",
+    "markFinished": "Đánh dấu hoàn thành",
+    "remove": "Xóa khỏi thư viện",
+    "audiobook": "Truyện âm thanh",
+    "textStory": "Truyện chữ"
+  },
+  "workspace": {
+    "openItems": "Mục đang mở",
+    "dueToday": "Đến hạn hôm nay",
+    "completed": "Đã hoàn thành",
+    "recentActivity": "Hoạt động gần đây",
+    "latestChanges": "Bản ghi và thay đổi mới nhất trong không gian làm việc",
+    "searchRecords": "Tìm bản ghi...",
+    "status": { "active": "Đang hoạt động", "review": "Cần xem xét", "resolved": "Đã xử lý" }
   },
   "settings": {
     "title": "Cài đặt",

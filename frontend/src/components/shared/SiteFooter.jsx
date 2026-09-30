@@ -71,9 +71,6 @@ export function SiteFooter() {
               </span>
             ))}
           </div>
-          <Link className="mt-7 inline-flex items-center gap-2 font-semibold text-brand" to="/">
-            {t('common.backToHome')} <span aria-hidden="true">→</span>
-          </Link>
         </div>
         <FooterLinks title="footer.discover" links={discoverLinks} />
         <FooterLinks title="footer.information" links={informationLinks} />

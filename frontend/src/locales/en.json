@@ -10,13 +10,17 @@
     "closeNavigation": "Close navigation",
     "collapseSidebar": "Collapse sidebar",
     "delete": "Delete",
+    "discard": "Discard",
     "edit": "Edit",
     "expandSidebar": "Expand sidebar",
     "helpSupport": "Help & Support",
+    "continue": "Continue",
+    "options": "Options",
     "notifications": "Notifications",
     "openMenu": "Open menu",
     "openProfile": "Open profile",
     "save": "Save",
+    "saveChanges": "Save Changes",
     "searchStories": "Search stories...",
     "searchStoriesAuthorsTags": "Search stories, authors, tags...",
     "switchWorkspace": "Switch workspace",
@@ -240,6 +244,31 @@
     "privacyRetentionBody": "Information is retained only as long as needed for the purposes described here, legal obligations, dispute resolution, and platform security.",
     "privacyChoicesTitle": "Your choices",
     "privacyChoicesBody": "You may update profile information, adjust preferences, request a copy of your data, or request deletion where applicable."
+  },
+  "story": {
+    "chapterNumber": "Chapter {{number}}",
+    "freePreview": "Free Preview",
+    "locked": "Locked",
+    "read": "Read",
+    "preview": "Preview"
+  },
+  "library": {
+    "availableOffline": "Available offline",
+    "downloadOffline": "Download offline",
+    "markedFinished": "Marked as finished",
+    "markFinished": "Mark as finished",
+    "remove": "Remove from library",
+    "audiobook": "Audiobook",
+    "textStory": "Text story"
+  },
+  "workspace": {
+    "openItems": "Open items",
+    "dueToday": "Due today",
+    "completed": "Completed",
+    "recentActivity": "Recent activity",
+    "latestChanges": "Workspace records and latest changes",
+    "searchRecords": "Search records...",
+    "status": { "active": "Active", "review": "Review", "resolved": "Resolved" }
   },
   "settings": {
     "title": "Settings",
