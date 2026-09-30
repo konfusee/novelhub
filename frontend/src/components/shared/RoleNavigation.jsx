@@ -109,7 +109,7 @@ export function SharedWorkspaceHeader({ currentRole, workspaceLabel, onOpenMenu,
   const { resolvedTheme, setTheme } = useTheme()
   const walletPath = currentRole === 'author' ? '/author/wallet' : '/reader/wallet'
   return (
-    <header className={`fixed left-0 right-0 top-0 z-30 border-b border-line bg-surface/95 shadow-sm backdrop-blur transition-[left,right] ${offsetClass}`}>
+    <header data-app-header className={`fixed left-0 right-0 top-0 z-30 border-b border-line bg-surface/95 shadow-sm backdrop-blur transition-[left,right] ${offsetClass}`}>
       <div className="flex h-16 items-center gap-3 px-4 sm:px-6 xl:px-8">
         <IconButton label="Open menu" className="md:hidden" onClick={onOpenMenu}><Menu size={19} /></IconButton>
         <Input icon={Search} placeholder="Search stories, authors, tags..." className="hidden w-full max-w-md sm:flex" />
