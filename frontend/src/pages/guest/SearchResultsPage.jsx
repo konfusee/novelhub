@@ -5,12 +5,14 @@ import { SearchFilters } from '../../components/public/SearchFilters'
 import { SearchResultItem } from '../../components/public/SearchResultItem'
 import { Card, Input, Select } from '../../components/ui'
 import { searchResults, trendingSearches } from '../../data/mock/search'
+import { useLocale } from '../../context/LocaleContext'
 
-const resultTabs = ['All Results', 'Stories', 'Audiobooks', 'Authors']
+const resultTabs = ['all', 'stories', 'audiobooks', 'authors']
 export function SearchResultsPage({ embedded = false }) {
+  const { t } = useLocale()
   const [query, setQuery] = useState('moon')
   const [sort, setSort] = useState('Relevance')
-  const [tab, setTab] = useState('All Results')
+  const [tab, setTab] = useState('all')
   const [checked, setChecked] = useState([
     'Stories',
     'Audiobooks',
@@ -33,8 +35,8 @@ export function SearchResultsPage({ embedded = false }) {
     [query],
   )
   const visibleResults = useMemo(() => {
-    if (tab === 'Stories') return results.filter(result => result.format === 'Story')
-    if (tab === 'Audiobooks') return results.filter(result => result.format === 'Audio')
+    if (tab === 'stories') return results.filter(result => result.format === 'Story')
+    if (tab === 'audiobooks') return results.filter(result => result.format === 'Audio')
     return results
   }, [results, tab])
   const toggle = item =>
@@ -51,12 +53,11 @@ export function SearchResultsPage({ embedded = false }) {
       <section className="border-b border-line bg-surface">
         <div className="mx-auto grid max-w-[1360px] gap-5 px-5 py-7 md:px-8 lg:grid-cols-[1fr_auto] lg:items-end lg:px-12">
           <div>
-            <p className="text-xs text-muted">Home / Search</p>
+            <p className="text-xs text-muted">{t('navigation.home')} / {t('common.search')}</p>
             <div className="mt-2 flex flex-wrap items-baseline gap-3">
-              <h1 className="text-3xl font-bold tracking-tight">Search Results</h1>
+              <h1 className="text-3xl font-bold tracking-tight">{t('search.results')}</h1>
               <span className="text-sm text-muted">
-                Showing 148 results for{' '}
-                <strong className="text-brand">“{query || 'all stories'}”</strong>
+                {t('search.showingFor', { count: 148, query: query || t('search.allStories') })}
               </span>
             </div>
           </div>
@@ -70,18 +71,18 @@ export function SearchResultsPage({ embedded = false }) {
             <Select
               value={sort}
               onChange={event => setSort(event.target.value)}
-              aria-label="Sort results"
+              aria-label={t('search.sortResults')}
             >
-              <option>Relevance</option>
-              <option>Most Popular</option>
-              <option>Newest</option>
-              <option>Top Rated</option>
+              <option value="Relevance">{t('search.relevance')}</option>
+              <option value="Most Popular">{t('search.mostPopular')}</option>
+              <option value="Newest">{t('search.newest')}</option>
+              <option value="Top Rated">{t('search.topRated')}</option>
             </Select>
             <button
               onClick={() => setFiltersOpen(true)}
               className="relative flex min-h-11 items-center justify-center gap-2 rounded-2xl border border-line bg-surface px-4 text-sm lg:hidden"
             >
-              <Filter size={16} /> Filters
+              <Filter size={16} /> {t('search.filters')}
               {applied > 0 && (
                 <span className="rounded-full bg-brand px-1.5 text-[10px] text-white">
                   {applied}
@@ -108,17 +109,17 @@ export function SearchResultsPage({ embedded = false }) {
                 className={`rounded-xl px-3 py-2.5 text-xs font-medium ${tab === item ? 'bg-brand text-white' : 'text-muted hover:text-ink'}`}
                 key={item}
               >
-                {item}
-                {item === 'All Results' ? ' (148)' : ''}
+                {t(`search.tabs.${item}`)}
+                {item === 'all' ? ' (148)' : ''}
               </button>
             ))}
           </div>
           <div className="space-y-4">
-            {tab === 'Authors'
+            {tab === 'authors'
               ? [...new Map(visibleResults.map(result => [result.author, result])).values()].map(result => (
                   <Card key={result.author} className="flex items-center justify-between gap-4 p-5">
-                    <div><strong>{result.author}</strong><p className="mt-1 text-xs text-muted">Author of {result.title}</p></div>
-                    <button onClick={() => setQuery(result.author)} className="rounded-xl border border-line px-3 py-2 text-xs font-semibold text-brand">View stories</button>
+                    <div><strong>{result.author}</strong><p className="mt-1 text-xs text-muted">{t('search.authorOf', { title: result.title })}</p></div>
+                    <button onClick={() => setQuery(result.author)} className="rounded-xl border border-line px-3 py-2 text-xs font-semibold text-brand">{t('search.viewStories')}</button>
                   </Card>
                 ))
               : visibleResults.map(result => <SearchResultItem result={result} key={result.id} />)}
@@ -126,8 +127,8 @@ export function SearchResultsPage({ embedded = false }) {
           {!visibleResults.length && (
             <Card className="py-16 text-center">
               <Search className="mx-auto text-muted" />
-              <h2 className="mt-4 font-semibold">No results found</h2>
-              <p className="mt-1 text-sm text-muted">Try another title, author, or genre.</p>
+              <h2 className="mt-4 font-semibold">{t('search.noResults')}</h2>
+              <p className="mt-1 text-sm text-muted">{t('search.tryAnother')}</p>
             </Card>
           )}
           <Card className="mt-5 flex flex-col items-center justify-between gap-4 p-4 sm:flex-row">
@@ -153,7 +154,7 @@ export function SearchResultsPage({ embedded = false }) {
           <Card className="p-5">
             <h3 className="flex items-center gap-2 text-sm font-bold">
               <Flame size={16} className="text-orange" />
-              Trending Searches
+              {t('search.trending')}
             </h3>
             <div className="mt-4 flex flex-wrap gap-2">
               {trendingSearches.map(item => (
@@ -169,7 +170,7 @@ export function SearchResultsPage({ embedded = false }) {
           </Card>
           <Card className="p-5">
             <span className="text-[10px] font-semibold uppercase tracking-wide text-orange">
-              Story of the month
+              {t('search.storyOfMonth')}
             </span>
             <div className="mt-4 flex gap-3">
               <div className="grid aspect-[3/4] w-16 place-items-center rounded-lg bg-[#173b3f] text-2xl">
@@ -186,7 +187,7 @@ export function SearchResultsPage({ embedded = false }) {
               stories.
             </p>
             <button onClick={() => window.location.assign('/stories/demo')} className="mt-4 w-full rounded-xl bg-brand py-2.5 text-xs font-semibold text-white">
-              Read Feature Now
+              {t('search.readFeature')}
             </button>
           </Card>
           <Card className="bg-elevated p-5 text-center">
@@ -205,8 +206,8 @@ export function SearchResultsPage({ embedded = false }) {
             onClick={event => event.stopPropagation()}
           >
             <div className="mb-5 flex items-center justify-between">
-              <strong>Search Filters</strong>
-              <button aria-label="Close filters" onClick={() => setFiltersOpen(false)}>
+              <strong>{t('search.searchFilters')}</strong>
+              <button aria-label={t('search.closeFilters')} onClick={() => setFiltersOpen(false)}>
                 <X />
               </button>
             </div>

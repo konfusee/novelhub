@@ -16,37 +16,38 @@ import { PublicHeader } from '../../components/public/PublicHeader'
 import { StoryCard } from '../../components/public/StoryCard'
 import { SectionTitle } from '../../components/public/SectionTitle'
 import { Button, Card } from '../../components/ui'
+import { useLocale } from '../../context/LocaleContext'
 
 function Hero() {
+  const { t } = useLocale()
   return (
     <section className="relative overflow-hidden rounded-3xl border border-line bg-surface">
       <div className="grid lg:grid-cols-[1.02fr_.98fr]">
         <div className="p-7 sm:p-10 lg:p-12">
           <p className="text-[11px] font-semibold tracking-[.28em] text-muted">
-            READ · LISTEN · CREATE · BELONG
+            {t('home.eyebrow')}
           </p>
           <h1 className="mt-4 text-4xl font-bold leading-[1.08] tracking-[-.04em] sm:text-5xl lg:text-[54px]">
-            Stories for a<br />
-            <span className="text-brand">Brighter</span> Tomorrow
+            {t('home.heroLineOne')}<br />
+            <span className="text-brand">{t('home.heroHighlight')}</span> {t('home.heroLineTwo')}
           </h1>
           <p className="mt-5 max-w-lg text-sm leading-6 text-muted sm:text-base">
-            Discover inspiring stories, immersive audiobooks, and a community that loves
-            imagination.
+            {t('home.heroDescription')}
           </p>
           <div className="mt-7 flex flex-col items-stretch gap-3 sm:flex-row sm:flex-wrap sm:items-center">
             <Button onClick={() => window.location.assign('/search')}>
-              Explore Stories <ArrowRight size={16} />
+              {t('home.exploreStories')} <ArrowRight size={16} />
             </Button>
             <Button onClick={() => window.location.assign('/search?format=audio')} variant="secondary">
-              <Headphones size={16} /> Start Listening
+              <Headphones size={16} /> {t('home.startListening')}
             </Button>
           </div>
           <div className="mt-9 grid grid-cols-2 gap-5 border-t border-line pt-6 sm:grid-cols-4">
             {[
-              ['3M+', 'Readers'],
-              ['100K+', 'Stories'],
-              ['15K+', 'Authors'],
-              ['4.8 ★', 'User Rating'],
+              ['3M+', t('home.readers')],
+              ['100K+', t('home.stories')],
+              ['15K+', t('home.authors')],
+              ['4.8 ★', t('home.userRating')],
             ].map(([value, label]) => (
               <div key={label}>
                 <strong className="text-xl">{value}</strong>
@@ -104,9 +105,10 @@ function Hero() {
 }
 
 function Categories() {
+  const { t } = useLocale()
   return (
     <section>
-      <SectionTitle>Browse by Category</SectionTitle>
+      <SectionTitle>{t('home.browseCategory')}</SectionTitle>
       <div className="grid grid-cols-4 gap-3 sm:grid-cols-8">
         {categories.map(category => (
           <button
@@ -115,7 +117,7 @@ function Categories() {
             key={category.name}
           >
             <span className="block text-2xl">{category.icon}</span>
-            <span className="mt-2 block truncate text-[11px] font-medium">{category.name}</span>
+            <span className="mt-2 block truncate text-[11px] font-medium">{t(`genres.${category.name.toLowerCase().replaceAll(' ', '').replace('-', '')}`)}</span>
           </button>
         ))}
       </div>
@@ -124,6 +126,7 @@ function Categories() {
 }
 
 function ContinueCard({ audio = false }) {
+  const { t } = useLocale()
   return (
     <Card className="flex gap-4 p-4">
       <div
@@ -134,7 +137,7 @@ function ContinueCard({ audio = false }) {
       </div>
       <div className="min-w-0 flex-1">
         <div className="flex justify-between text-xs font-medium text-brand">
-          <span>{audio ? 'Continue Listening' : 'Continue Reading'}</span>
+          <span>{t(audio ? 'home.continueListening' : 'home.continueReading')}</span>
           <span>{audio ? '32%' : '68%'}</span>
         </div>
         <h3 className="mt-2 truncate font-semibold">
@@ -148,11 +151,11 @@ function ContinueCard({ audio = false }) {
         </div>
         <div className="flex gap-2">
           <Button onClick={() => window.location.assign(audio ? '/listen/demo/chapter-1' : '/stories/demo')} className="min-h-9 flex-1 px-3 py-2 text-xs">
-            {audio ? <Headphones size={14} /> : <BookOpen size={14} />} Continue
+            {audio ? <Headphones size={14} /> : <BookOpen size={14} />} {t('common.continue')}
           </Button>
           <button
             onClick={() => window.alert('Story bookmark updated (mock).')}
-            aria-label="Bookmark"
+            aria-label={t('story.bookmark')}
             className="grid size-9 place-items-center rounded-xl border border-line"
           >
             <Bookmark size={15} />
@@ -164,11 +167,12 @@ function ContinueCard({ audio = false }) {
 }
 
 function ReaderPreview() {
+  const { t } = useLocale()
   const [fontSize, setFontSize] = useState(14)
   const [spacing, setSpacing] = useState(1.8)
   return (
     <Card className="nh-audio-motif overflow-hidden p-5">
-      <h3 className="font-bold">Reader Preview</h3>
+      <h3 className="font-bold">{t('home.readerPreview')}</h3>
       <div className="mt-4">
         <h4 className="font-semibold">The Silent Forest</h4>
         <p className="text-xs text-muted">Chapter 1 · The Whispering Trees</p>
@@ -184,7 +188,7 @@ function ReaderPreview() {
         </p>
       </div>
       <div className="mt-4 flex items-center justify-between border-t border-line pt-4 text-xs">
-        <span className="text-muted">Appearance</span>
+        <span className="text-muted">{t('settings.tabs.appearance')}</span>
         <div className="flex gap-1">
           <button
             onClick={() => setFontSize(Math.max(12, fontSize - 1))}
@@ -202,7 +206,7 @@ function ReaderPreview() {
         </div>
       </div>
       <div className="mt-3 flex items-center justify-between text-xs">
-        <span className="text-muted">Line Spacing</span>
+        <span className="text-muted">{t('settings.reading.lineSpacing')}</span>
         <div className="flex gap-1">
           {[1.5, 1.8, 2.1].map(value => (
             <button
@@ -220,18 +224,19 @@ function ReaderPreview() {
 }
 
 function AudioPreview() {
+  const { t } = useLocale()
   const [playing, setPlaying] = useState(true)
   const [liked, setLiked] = useState(false)
   return (
     <Card className="p-5">
-      <h3 className="font-bold">Audio Player Preview</h3>
+      <h3 className="font-bold">{t('home.audioPreview')}</h3>
       <div className="mt-5 flex items-center gap-3">
         <div className="grid size-14 place-items-center rounded-xl bg-orange/20 text-2xl">🌅</div>
         <div className="min-w-0 flex-1">
           <h4 className="truncate text-sm font-semibold">Whispers of You</h4>
           <p className="text-xs text-muted">Elena J. Park</p>
         </div>
-        <button onClick={() => setLiked(!liked)} aria-label="Favorite">
+        <button onClick={() => setLiked(!liked)} aria-label={t('home.favorite')}>
           <Heart className={liked ? 'fill-rose text-rose' : 'text-muted'} size={20} />
         </button>
       </div>
@@ -247,7 +252,7 @@ function AudioPreview() {
         <button
           onClick={() => setPlaying(!playing)}
           className="grid size-14 place-items-center rounded-full bg-brand text-white"
-          aria-label={playing ? 'Pause' : 'Play'}
+          aria-label={t(playing ? 'home.pause' : 'home.play')}
         >
           {playing ? <Pause /> : <Play />}
         </button>
@@ -258,6 +263,7 @@ function AudioPreview() {
 }
 
 export function GuestHomePage({ embedded = false }) {
+  const { t } = useLocale()
   return (
     <div className="min-h-screen bg-page text-ink">
       {!embedded && <PublicHeader />}
@@ -266,7 +272,7 @@ export function GuestHomePage({ embedded = false }) {
         <div className="grid gap-8 xl:grid-cols-[minmax(0,1fr)_320px]">
           <div className="space-y-8">
             <section>
-              <SectionTitle>Trending Stories</SectionTitle>
+              <SectionTitle>{t('home.trending')}</SectionTitle>
               <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
                 {stories.map(story => (
                   <StoryCard key={story.id} story={story} />
@@ -279,7 +285,7 @@ export function GuestHomePage({ embedded = false }) {
               <ContinueCard audio />
             </section>
             <section>
-              <SectionTitle>Featured This Week</SectionTitle>
+              <SectionTitle>{t('home.featured')}</SectionTitle>
               <div className="grid gap-4 md:grid-cols-3">
                 {featuredStories.map(item => (
                   <Card key={item.title} className="flex min-h-48 flex-col p-5">
@@ -289,7 +295,7 @@ export function GuestHomePage({ embedded = false }) {
                     <h3 className="mt-3 text-lg font-semibold leading-tight">{item.title}</h3>
                     <p className="mt-2 text-xs leading-5 text-muted">{item.description}</p>
                     <div className="mt-auto flex items-end justify-between">
-                      <button onClick={() => window.location.assign('/search')} className="text-xs font-semibold text-brand">Explore →</button>
+                      <button onClick={() => window.location.assign('/search')} className="text-xs font-semibold text-brand">{t('navigation.explore')} →</button>
                       <span className="text-3xl">{item.icon}</span>
                     </div>
                   </Card>
@@ -298,14 +304,13 @@ export function GuestHomePage({ embedded = false }) {
             </section>
             <section className="nh-join-motif flex flex-col justify-between gap-6 overflow-hidden rounded-3xl border border-line bg-surface p-7 sm:flex-row sm:items-center">
               <div>
-                <h2 className="text-2xl font-bold text-rose">Join NovelHub Today</h2>
+                <h2 className="text-2xl font-bold text-rose">{t('home.joinTitle')}</h2>
                 <p className="mt-2 max-w-lg text-sm text-muted">
-                  Read. Listen. Create. Connect with a community that loves stories as much as you
-                  do.
+                  {t('home.joinDescription')}
                 </p>
                 <div className="mt-5 flex gap-3">
-                  <Button onClick={() => window.location.assign('/register')}>Create an Account</Button>
-                  <Button onClick={() => window.location.assign('/')} variant="secondary">Learn More</Button>
+                  <Button onClick={() => window.location.assign('/register')}>{t('home.createAccount')}</Button>
+                  <Button onClick={() => window.location.assign('/')} variant="secondary">{t('home.learnMore')}</Button>
                 </div>
               </div>
               <div className="text-7xl">📚🌿</div>

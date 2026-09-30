@@ -16,6 +16,8 @@
     "helpSupport": "Help & Support",
     "continue": "Continue",
     "options": "Options",
+    "reset": "Reset",
+    "search": "Search",
     "notifications": "Notifications",
     "openMenu": "Open menu",
     "openProfile": "Open profile",
@@ -250,7 +252,23 @@
     "freePreview": "Free Preview",
     "locked": "Locked",
     "read": "Read",
-    "preview": "Preview"
+    "preview": "Preview",
+    "bookmark": "Bookmark"
+    ,"removeBookmark": "Remove bookmark", "readCount": "{{count}} reads", "readPreview": "Read Preview"
+  },
+  "genres": { "fantasy": "Fantasy", "romance": "Romance", "mystery": "Mystery", "mysterythriller": "Mystery & Thriller", "scifi": "Sci-Fi", "adventure": "Adventure", "sliceoflife": "Slice of Life", "historical": "Historical", "drama": "Drama", "horror": "Horror" },
+  "home": {
+    "eyebrow": "READ · LISTEN · CREATE · BELONG", "heroLineOne": "Stories for a", "heroHighlight": "Brighter", "heroLineTwo": "Tomorrow", "heroDescription": "Discover inspiring stories, immersive audiobooks, and a community that loves imagination.",
+    "exploreStories": "Explore Stories", "startListening": "Start Listening", "readers": "Readers", "stories": "Stories", "authors": "Authors", "userRating": "User Rating", "browseCategory": "Browse by Category", "continueListening": "Continue Listening", "continueReading": "Continue Reading", "readerPreview": "Reader Preview", "audioPreview": "Audio Player Preview", "favorite": "Favorite", "pause": "Pause", "play": "Play", "trending": "Trending Stories", "featured": "Featured This Week", "joinTitle": "Join NovelHub Today", "joinDescription": "Read. Listen. Create. Connect with a community that loves stories as much as you do.", "createAccount": "Create an Account", "learnMore": "Learn More"
+  },
+  "search": {
+    "contentType": "Content Type", "stories": "Stories", "audiobooks": "Audiobooks", "authors": "Authors", "genres": "Genres", "format": "Format", "textStory": "Text Story", "audiobookEdition": "Audiobook Edition", "illustratedChapters": "Illustrated Chapters", "filters": "Filters", "publicationStatus": "Publication Status", "allStatuses": "All Statuses", "ongoing": "Ongoing", "completedOnly": "Completed Only", "applyFilters": "Apply Filters", "resetFilters": "Reset Filters", "results": "Search Results", "showingFor": "Showing {{count}} results for “{{query}}”", "allStories": "all stories", "sortResults": "Sort results", "relevance": "Relevance", "mostPopular": "Most Popular", "newest": "Newest", "topRated": "Top Rated", "tabs": { "all": "All Results", "stories": "Stories", "audiobooks": "Audiobooks", "authors": "Authors" }, "authorOf": "Author of {{title}}", "viewStories": "View stories", "noResults": "No results found", "tryAnother": "Try another title, author, or genre.", "trending": "Trending Searches", "storyOfMonth": "Story of the month", "readFeature": "Read Feature Now", "searchFilters": "Search Filters", "closeFilters": "Close filters"
+  },
+  "following": {
+    "title": "My List & Following", "description": "Organize your favorite stories, followed authors, and personal reading collections.", "savedStories": "Saved Stories", "followedAuthors": "Followed Authors", "favorites": "Favorites", "collections": "Collections", "featuredCollections": "Featured Collections", "viewCollections": "View all {{count}} collections", "sortStories": "Sort stories", "latestUpdated": "Latest Updated", "titleAz": "Title A–Z", "showingSaved": "Showing {{shown}} of {{total}} saved stories", "searchSaved": "Search saved stories...", "yourAuthors": "Your followed authors", "authorUpdates": "Explore author updates from the suggestions panel.", "noMatches": "No matching stories found.", "suggestedAuthors": "Suggested Authors", "suggestedDescription": "Writers matching your preferred fantasy and romance reading history.", "following": "Following", "follow": "Follow", "weeklyGoal": "Weekly Reading Goal", "days": "{{current}} / {{total}} days", "goalDescription": "You've spent 4 hours reading saved stories this week. One more session to complete your badge!", "viewProgress": "View progress", "toggleFavorite": "Toggle favorite", "alertsOn": "Alerts On", "muted": "Muted", "readNext": "Read Next"
+  },
+  "history": {
+    "eyebrow": "Personal library records · synced 4 mins ago", "title": "Reading History & Progress", "clear": "Clear History", "export": "Export Log", "storiesProgress": "Stories in Progress", "activeStories": "active stories", "chaptersMonth": "Chapters Read This Month", "vsLastMonth": "+12% vs last month", "audioHours": "Audiobook Hours", "hours": "hrs", "streak": "Current Reading Streak", "consecutiveDays": "consecutive days", "readingTab": "Reading History · {{count}}", "listeningTab": "Listening History · {{count}}", "completedTab": "Completed Archives · {{count}}", "weeklyMinutes": "Weekly Reading Minutes", "weeklyTarget": "Target: 45 daily minutes · Current week total: 395 mins", "thisWeek": "This Week", "lastWeek": "Last Week", "recentSessions": "Recent Sessions", "sessions": "{{count}} sessions", "audio": "Audio", "story": "Story", "byAuthor": "By {{author}}", "finished": "{{progress}}% finished", "reread": "Re-read", "resume": "Resume", "genreAffinity": "Genre Affinity", "genreDescription": "Based on this month's reading time", "monthlyTarget": "October Literary Target", "targetDescription": "You are 16 chapters away from finishing your October reading badge.", "activeSync": "Active Reading Sync", "connected": "Connected"
   },
   "library": {
     "availableOffline": "Available offline",

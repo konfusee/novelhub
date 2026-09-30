@@ -3,12 +3,13 @@ import { BookOpen, Download, Flame, Headphones, Play, RotateCcw, Trash2 } from '
 import { ReaderLayout } from '../../layouts'
 import { Badge, Button, Card, Tabs } from '../../components/ui'
 import { libraryItems } from '../../data/mock/reader'
+import { useLocale } from '../../context/LocaleContext'
 
 const metrics = [
-  ['Stories in Progress', '6', 'active stories', BookOpen],
-  ['Chapters Read This Month', '84', '+12% vs last month', BookOpen],
-  ['Audiobook Hours', '26.5', 'hrs', Headphones],
-  ['Current Reading Streak', '18', 'consecutive days', Flame],
+  ['history.storiesProgress', '6', 'history.activeStories', BookOpen],
+  ['history.chaptersMonth', '84', 'history.vsLastMonth', BookOpen],
+  ['history.audioHours', '26.5', 'history.hours', Headphones],
+  ['history.streak', '18', 'history.consecutiveDays', Flame],
 ]
 const weekly = [32, 48, 24, 51, 41, 49, 46]
 const genres = [
@@ -26,6 +27,7 @@ const historyItems = [
 ]
 
 export function ReadingHistoryPage() {
+  const { t } = useLocale()
   const [tab, setTab] = useState('reading')
   const [period, setPeriod] = useState('week')
   const [items, setItems] = useState(historyItems)
@@ -44,20 +46,20 @@ export function ReadingHistoryPage() {
         <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-end">
           <div>
             <p className="text-[10px] uppercase tracking-[.2em] text-brand">
-              Personal library records · synced 4 mins ago
+              {t('history.eyebrow')}
             </p>
             <h1 className="mt-2 text-3xl font-bold tracking-tight sm:text-4xl">
-              Reading History &amp; Progress
+              {t('history.title')}
             </h1>
           </div>
           <div className="flex gap-2">
             <Button variant="secondary" onClick={() => setItems([])}>
               <Trash2 size={15} />
-              Clear History
+              {t('history.clear')}
             </Button>
             <Button onClick={() => window.alert('Reading history export prepared (mock).')}>
               <Download size={15} />
-              Export Log
+              {t('history.export')}
             </Button>
           </div>
         </div>
@@ -65,14 +67,14 @@ export function ReadingHistoryPage() {
           {metrics.map(([title, value, detail, Icon]) => (
             <Card key={title} className="p-4">
               <div className="flex justify-between gap-2">
-                <p className="text-xs text-muted">{title}</p>
+                <p className="text-xs text-muted">{t(title)}</p>
                 <Icon
                   size={18}
-                  className={title.includes('Streak') ? 'text-orange' : 'text-brand'}
+                  className={title === 'history.streak' ? 'text-orange' : 'text-brand'}
                 />
               </div>
               <p className="mt-3 text-2xl font-bold">
-                {value} <span className="text-xs font-normal text-muted">{detail}</span>
+                {value} <span className="text-xs font-normal text-muted">{t(detail)}</span>
               </p>
             </Card>
           ))}
@@ -82,9 +84,9 @@ export function ReadingHistoryPage() {
             value={tab}
             onChange={setTab}
             items={[
-              { value: 'reading', label: 'Reading History · 34' },
-              { value: 'listening', label: 'Listening History · 12' },
-              { value: 'completed', label: 'Completed Archives · 19' },
+              { value: 'reading', label: t('history.readingTab', { count: 34 }) },
+              { value: 'listening', label: t('history.listeningTab', { count: 12 }) },
+              { value: 'completed', label: t('history.completedTab', { count: 19 }) },
             ]}
           />
         </div>
@@ -93,9 +95,9 @@ export function ReadingHistoryPage() {
             <Card>
               <div className="flex items-start justify-between">
                 <div>
-                  <h2 className="text-xl font-semibold">Weekly Reading Minutes</h2>
+                  <h2 className="text-xl font-semibold">{t('history.weeklyMinutes')}</h2>
                   <p className="text-xs text-muted">
-                    Target: 45 daily minutes · Current week total: 395 mins
+                    {t('history.weeklyTarget')}
                   </p>
                 </div>
                 <div className="flex rounded-xl border border-line p-1">
@@ -103,13 +105,13 @@ export function ReadingHistoryPage() {
                     onClick={() => setPeriod('week')}
                     className={`rounded-lg px-3 py-1 text-xs ${period === 'week' ? 'bg-brand text-white' : ''}`}
                   >
-                    This Week
+                    {t('history.thisWeek')}
                   </button>
                   <button
                     onClick={() => setPeriod('last')}
                     className={`rounded-lg px-3 py-1 text-xs ${period === 'last' ? 'bg-brand text-white' : ''}`}
                   >
-                    Last Week
+                    {t('history.lastWeek')}
                   </button>
                 </div>
               </div>
@@ -129,9 +131,9 @@ export function ReadingHistoryPage() {
             </Card>
             <section>
               <div className="mb-3 flex items-center gap-3">
-                <h2 className="text-sm font-semibold">Recent Sessions</h2>
+                <h2 className="text-sm font-semibold">{t('history.recentSessions')}</h2>
                 <span className="h-px flex-1 bg-line" />
-                <span className="text-[10px] text-muted">{visible.length} sessions</span>
+                <span className="text-[10px] text-muted">{t('history.sessions', { count: visible.length })}</span>
               </div>
               <div className="space-y-3">
                 {visible.map(item => (
@@ -145,13 +147,13 @@ export function ReadingHistoryPage() {
                     <div className="min-w-0 flex-1">
                       <div className="flex gap-2">
                         <Badge tone={item.type === 'audio' ? 'orange' : 'green'}>
-                          {item.type === 'audio' ? 'Audio' : 'Story'}
+                          {t(item.type === 'audio' ? 'history.audio' : 'history.story')}
                         </Badge>
                         <span className="text-[10px] text-muted">{item.when}</span>
                       </div>
                       <h3 className="mt-2 truncate font-semibold">{item.title}</h3>
                       <p className="text-xs text-muted">
-                        By {item.author} · {item.detail}
+                        {t('history.byAuthor', { author: item.author })} · {item.detail}
                       </p>
                       <div className="mt-3 flex items-center gap-3">
                         <div className="h-1.5 flex-1 rounded-full bg-elevated">
@@ -160,14 +162,14 @@ export function ReadingHistoryPage() {
                             style={{ width: `${item.progress}%` }}
                           />
                         </div>
-                        <span className="text-[10px] text-brand">{item.progress}% finished</span>
+                        <span className="text-[10px] text-brand">{t('history.finished', { progress: item.progress })}</span>
                       </div>
                     </div>
                     <div className="hidden text-right sm:block">
                       <p className="mb-3 text-[10px] text-muted">{item.duration}</p>
                       <Button onClick={() => window.location.assign('/stories/demo')} className="min-h-9 px-3 py-1 text-xs">
                         {item.progress === 100 ? <RotateCcw size={14} /> : <Play size={14} />}{' '}
-                        {item.progress === 100 ? 'Re-read' : 'Resume'}
+                        {t(item.progress === 100 ? 'history.reread' : 'history.resume')}
                       </Button>
                     </div>
                   </Card>
@@ -177,8 +179,8 @@ export function ReadingHistoryPage() {
           </div>
           <aside className="space-y-5">
             <Card>
-              <h2 className="text-xl font-semibold">Genre Affinity</h2>
-              <p className="text-xs text-muted">Based on this month&apos;s reading time</p>
+              <h2 className="text-xl font-semibold">{t('history.genreAffinity')}</h2>
+              <p className="text-xs text-muted">{t('history.genreDescription')}</p>
               <div className="mt-5 flex h-2 overflow-hidden rounded-full">
                 {genres.map(([, value, color]) => (
                   <span key={color} className={color} style={{ width: `${value}%` }} />
@@ -196,14 +198,14 @@ export function ReadingHistoryPage() {
             </Card>
             <Card>
               <div className="flex items-center justify-between">
-                <h2 className="font-semibold">October Literary Target</h2>
+                <h2 className="font-semibold">{t('history.monthlyTarget')}</h2>
                 <span className="text-xs text-brand">84 / 100 ch</span>
               </div>
               <div className="mt-4 h-2 rounded-full bg-elevated">
                 <div className="h-full w-[84%] rounded-full bg-brand" />
               </div>
               <p className="mt-3 text-xs leading-5 text-muted">
-                You are 16 chapters away from finishing your October reading badge.
+                {t('history.targetDescription')}
               </p>
             </Card>
             <Card className="bg-elevated">
@@ -212,8 +214,8 @@ export function ReadingHistoryPage() {
             </Card>
             <Card>
               <div className="flex items-center justify-between">
-                <h2 className="font-semibold">Active Reading Sync</h2>
-                <Badge tone="green">Connected</Badge>
+                <h2 className="font-semibold">{t('history.activeSync')}</h2>
+                <Badge tone="green">{t('history.connected')}</Badge>
               </div>
               <div className="mt-4 space-y-2 text-xs text-muted">
                 <p>

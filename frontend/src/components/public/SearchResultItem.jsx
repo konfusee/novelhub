@@ -3,7 +3,9 @@ import { useNavigate } from 'react-router-dom'
 import { Bookmark, Clock, Eye, Star } from 'lucide-react'
 import { Badge, Button, Card } from '../ui'
 import { StoryCover } from '../story/StoryCover'
+import { useLocale } from '../../context/LocaleContext'
 export function SearchResultItem({ result }) {
+  const { t } = useLocale()
   const navigate = useNavigate()
   const [bookmarked, setBookmarked] = useState(false)
   return (
@@ -22,10 +24,10 @@ export function SearchResultItem({ result }) {
           <div className="min-w-0 flex-1">
             <h3 className="truncate text-base font-bold sm:text-lg">{result.title}</h3>
             <p className="mt-1 text-xs">
-              by <strong>{result.author}</strong>
+              {t('history.byAuthor', { author: result.author })}
             </p>
           </div>
-          <button onClick={() => setBookmarked(value => !value)} aria-label={bookmarked ? 'Remove bookmark' : 'Bookmark'}>
+          <button onClick={() => setBookmarked(value => !value)} aria-label={t(bookmarked ? 'story.removeBookmark' : 'story.bookmark')}>
             <Bookmark size={18} className={bookmarked ? 'fill-brand text-brand' : 'text-muted'} />
           </button>
         </div>
@@ -36,7 +38,7 @@ export function SearchResultItem({ result }) {
           </span>
           <span className="flex items-center gap-1">
             <Eye size={13} />
-            {result.reads} reads
+            {t('story.readCount', { count: result.reads })}
           </span>
           <Badge tone={result.status === 'Completed' ? 'green' : 'orange'}>{result.status}</Badge>
         </div>
@@ -56,7 +58,7 @@ export function SearchResultItem({ result }) {
             <Clock size={13} />
             {result.duration}
           </span>
-          <Button onClick={() => navigate(`/stories/${result.id}`)} className="ml-auto min-h-9 px-4 py-2 text-xs">Read Preview</Button>
+          <Button onClick={() => navigate(`/stories/${result.id}`)} className="ml-auto min-h-9 px-4 py-2 text-xs">{t('story.readPreview')}</Button>
         </div>
       </div>
     </Card>

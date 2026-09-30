@@ -1,55 +1,58 @@
+import { useLocale } from '../../context/LocaleContext'
+
 const groups = [
   {
-    title: 'Content Type',
+    title: 'search.contentType',
     items: [
-      ['Stories', '124'],
-      ['Audiobooks', '42'],
-      ['Authors', '18'],
+      ['Stories', 'search.stories', '124'],
+      ['Audiobooks', 'search.audiobooks', '42'],
+      ['Authors', 'search.authors', '18'],
     ],
   },
   {
-    title: 'Genres',
+    title: 'search.genres',
     items: [
-      ['Fantasy', '82'],
-      ['Romance', '54'],
-      ['Mystery & Thriller', '29'],
-      ['Sci-Fi', '21'],
-      ['Adventure', '18'],
+      ['Fantasy', 'genres.fantasy', '82'],
+      ['Romance', 'genres.romance', '54'],
+      ['Mystery & Thriller', 'genres.mysterythriller', '29'],
+      ['Sci-Fi', 'genres.scifi', '21'],
+      ['Adventure', 'genres.adventure', '18'],
     ],
   },
   {
-    title: 'Format',
+    title: 'search.format',
     items: [
-      ['Text Story', ''],
-      ['Audiobook Edition', ''],
-      ['Illustrated Chapters', ''],
+      ['Text Story', 'search.textStory', ''],
+      ['Audiobook Edition', 'search.audiobookEdition', ''],
+      ['Illustrated Chapters', 'search.illustratedChapters', ''],
     ],
   },
 ]
 export function SearchFilters({ checked, onToggle, onApply, onReset }) {
+  const { t } = useLocale()
   return (
     <div className="space-y-5">
       <div className="flex items-center justify-between border-b border-line pb-4">
-        <h2 className="font-bold">Filters</h2>
+        <h2 className="font-bold">{t('search.filters')}</h2>
         <button onClick={onReset} className="text-xs font-semibold text-orange">
-          Reset
+          {t('common.reset')}
         </button>
       </div>
       {groups.map(group => (
         <fieldset key={group.title} className="border-b border-line pb-5">
           <legend className="mb-3 text-[11px] font-bold uppercase tracking-[.14em] text-muted">
-            {group.title}
+            {t(group.title)}
           </legend>
           <div className="space-y-2.5">
-            {group.items.map(([label, count]) => (
-              <label className="flex cursor-pointer items-center gap-2 text-xs" key={label}>
+            {group.items.map(([value, labelKey, count]) => (
+              <label className="flex cursor-pointer items-center gap-2 text-xs" key={value}>
                 <input
                   type="checkbox"
-                  checked={checked.includes(label)}
-                  onChange={() => onToggle(label)}
+                  checked={checked.includes(value)}
+                  onChange={() => onToggle(value)}
                   className="size-4 accent-[var(--primary)]"
                 />
-                <span className="flex-1">{label}</span>
+                <span className="flex-1">{t(labelKey)}</span>
                 {count && <span className="text-muted">{count}</span>}
               </label>
             ))}
@@ -58,17 +61,17 @@ export function SearchFilters({ checked, onToggle, onApply, onReset }) {
       ))}
       <fieldset>
         <legend className="mb-3 text-[11px] font-bold uppercase tracking-[.14em] text-muted">
-          Publication Status
+          {t('search.publicationStatus')}
         </legend>
-        {['All Statuses', 'Ongoing', 'Completed Only'].map((label, index) => (
-          <label className="mb-2 flex items-center gap-2 text-xs" key={label}>
+        {['allStatuses', 'ongoing', 'completedOnly'].map((key, index) => (
+          <label className="mb-2 flex items-center gap-2 text-xs" key={key}>
             <input
               name="status"
               type="radio"
               defaultChecked={index === 0}
               className="size-4 accent-[var(--primary)]"
             />
-            {label}
+            {t(`search.${key}`)}
           </label>
         ))}
       </fieldset>
@@ -77,19 +80,20 @@ export function SearchFilters({ checked, onToggle, onApply, onReset }) {
   )
 }
 function ButtonPair({ onApply, onReset }) {
+  const { t } = useLocale()
   return (
     <div className="grid gap-2 pt-2">
       <button
         onClick={onApply}
         className="rounded-xl bg-brand px-4 py-3 text-xs font-semibold text-white"
       >
-        Apply Filters
+        {t('search.applyFilters')}
       </button>
       <button
         onClick={onReset}
         className="rounded-xl border border-line px-4 py-3 text-xs font-semibold"
       >
-        Reset Filters
+        {t('search.resetFilters')}
       </button>
     </div>
   )

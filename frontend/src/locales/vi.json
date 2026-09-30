@@ -16,6 +16,8 @@
     "helpSupport": "Trợ giúp & hỗ trợ",
     "continue": "Tiếp tục",
     "options": "Tùy chọn",
+    "reset": "Đặt lại",
+    "search": "Tìm kiếm",
     "notifications": "Thông báo",
     "openMenu": "Mở menu",
     "openProfile": "Mở hồ sơ",
@@ -250,7 +252,23 @@
     "freePreview": "Đọc thử miễn phí",
     "locked": "Đã khóa",
     "read": "Đọc",
-    "preview": "Đọc thử"
+    "preview": "Đọc thử",
+    "bookmark": "Đánh dấu truyện"
+    ,"removeBookmark": "Bỏ đánh dấu truyện", "readCount": "{{count}} lượt đọc", "readPreview": "Đọc thử"
+  },
+  "genres": { "fantasy": "Kỳ ảo", "romance": "Lãng mạn", "mystery": "Bí ẩn", "mysterythriller": "Bí ẩn & giật gân", "scifi": "Khoa học viễn tưởng", "adventure": "Phiêu lưu", "sliceoflife": "Đời thường", "historical": "Lịch sử", "drama": "Chính kịch", "horror": "Kinh dị" },
+  "home": {
+    "eyebrow": "ĐỌC · NGHE · SÁNG TÁC · KẾT NỐI", "heroLineOne": "Những câu chuyện cho", "heroHighlight": "Ngày mai", "heroLineTwo": "Tươi sáng", "heroDescription": "Khám phá những câu chuyện truyền cảm hứng, truyện âm thanh sống động và cộng đồng yêu trí tưởng tượng.",
+    "exploreStories": "Khám phá truyện", "startListening": "Bắt đầu nghe", "readers": "Độc giả", "stories": "Tác phẩm", "authors": "Tác giả", "userRating": "Đánh giá người dùng", "browseCategory": "Khám phá theo thể loại", "continueListening": "Nghe tiếp", "continueReading": "Đọc tiếp", "readerPreview": "Xem trước trình đọc", "audioPreview": "Xem trước trình phát", "favorite": "Yêu thích", "pause": "Tạm dừng", "play": "Phát", "trending": "Truyện thịnh hành", "featured": "Nổi bật tuần này", "joinTitle": "Tham gia NovelHub hôm nay", "joinDescription": "Đọc. Nghe. Sáng tác. Kết nối với cộng đồng yêu truyện như bạn.", "createAccount": "Tạo tài khoản", "learnMore": "Tìm hiểu thêm"
+  },
+  "search": {
+    "contentType": "Loại nội dung", "stories": "Truyện", "audiobooks": "Truyện âm thanh", "authors": "Tác giả", "genres": "Thể loại", "format": "Định dạng", "textStory": "Truyện chữ", "audiobookEdition": "Phiên bản âm thanh", "illustratedChapters": "Chương minh họa", "filters": "Bộ lọc", "publicationStatus": "Trạng thái xuất bản", "allStatuses": "Tất cả trạng thái", "ongoing": "Đang tiến hành", "completedOnly": "Chỉ đã hoàn thành", "applyFilters": "Áp dụng bộ lọc", "resetFilters": "Đặt lại bộ lọc", "results": "Kết quả tìm kiếm", "showingFor": "Hiển thị {{count}} kết quả cho “{{query}}”", "allStories": "tất cả truyện", "sortResults": "Sắp xếp kết quả", "relevance": "Liên quan nhất", "mostPopular": "Phổ biến nhất", "newest": "Mới nhất", "topRated": "Đánh giá cao nhất", "tabs": { "all": "Tất cả kết quả", "stories": "Truyện", "audiobooks": "Truyện âm thanh", "authors": "Tác giả" }, "authorOf": "Tác giả của {{title}}", "viewStories": "Xem tác phẩm", "noResults": "Không tìm thấy kết quả", "tryAnother": "Hãy thử tên truyện, tác giả hoặc thể loại khác.", "trending": "Tìm kiếm thịnh hành", "storyOfMonth": "Truyện của tháng", "readFeature": "Đọc truyện nổi bật", "searchFilters": "Bộ lọc tìm kiếm", "closeFilters": "Đóng bộ lọc"
+  },
+  "following": {
+    "title": "Danh sách & Đang theo dõi", "description": "Sắp xếp truyện yêu thích, tác giả đang theo dõi và bộ sưu tập đọc cá nhân.", "savedStories": "Truyện đã lưu", "followedAuthors": "Tác giả đang theo dõi", "favorites": "Yêu thích", "collections": "Bộ sưu tập", "featuredCollections": "Bộ sưu tập nổi bật", "viewCollections": "Xem cả {{count}} bộ sưu tập", "sortStories": "Sắp xếp truyện", "latestUpdated": "Cập nhật mới nhất", "titleAz": "Tên A–Z", "showingSaved": "Đang hiển thị {{shown}} / {{total}} truyện đã lưu", "searchSaved": "Tìm truyện đã lưu...", "yourAuthors": "Tác giả bạn đang theo dõi", "authorUpdates": "Khám phá cập nhật của tác giả trong bảng gợi ý.", "noMatches": "Không tìm thấy truyện phù hợp.", "suggestedAuthors": "Tác giả đề xuất", "suggestedDescription": "Các tác giả phù hợp với lịch sử đọc kỳ ảo và lãng mạn của bạn.", "following": "Đang theo dõi", "follow": "Theo dõi", "weeklyGoal": "Mục tiêu đọc hằng tuần", "days": "{{current}} / {{total}} ngày", "goalDescription": "Bạn đã đọc truyện đã lưu trong 4 giờ tuần này. Thêm một phiên nữa để hoàn thành huy hiệu!", "viewProgress": "Xem tiến độ", "toggleFavorite": "Bật/tắt yêu thích", "alertsOn": "Đang bật thông báo", "muted": "Đã tắt thông báo", "readNext": "Đọc tiếp"
+  },
+  "history": {
+    "eyebrow": "Bản ghi thư viện cá nhân · đồng bộ 4 phút trước", "title": "Lịch sử & Tiến độ đọc", "clear": "Xóa lịch sử", "export": "Xuất nhật ký", "storiesProgress": "Truyện đang đọc", "activeStories": "truyện đang hoạt động", "chaptersMonth": "Chương đã đọc tháng này", "vsLastMonth": "+12% so với tháng trước", "audioHours": "Giờ nghe truyện", "hours": "giờ", "streak": "Chuỗi ngày đọc hiện tại", "consecutiveDays": "ngày liên tiếp", "readingTab": "Lịch sử đọc · {{count}}", "listeningTab": "Lịch sử nghe · {{count}}", "completedTab": "Kho đã hoàn thành · {{count}}", "weeklyMinutes": "Số phút đọc hằng tuần", "weeklyTarget": "Mục tiêu: 45 phút mỗi ngày · Tổng tuần này: 395 phút", "thisWeek": "Tuần này", "lastWeek": "Tuần trước", "recentSessions": "Phiên gần đây", "sessions": "{{count}} phiên", "audio": "Âm thanh", "story": "Truyện", "byAuthor": "Tác giả {{author}}", "finished": "Đã hoàn thành {{progress}}%", "reread": "Đọc lại", "resume": "Tiếp tục", "genreAffinity": "Thể loại yêu thích", "genreDescription": "Dựa trên thời gian đọc tháng này", "monthlyTarget": "Mục tiêu đọc tháng 10", "targetDescription": "Bạn còn 16 chương để hoàn thành huy hiệu đọc tháng 10.", "activeSync": "Đồng bộ đọc đang hoạt động", "connected": "Đã kết nối"
   },
   "library": {
     "availableOffline": "Có thể đọc ngoại tuyến",

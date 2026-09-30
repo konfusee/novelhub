@@ -1,8 +1,10 @@
 import { useState } from 'react'
 import { ArrowRight, Bell, BellOff, Heart } from 'lucide-react'
 import { Badge, Button, Card } from '../ui'
+import { useLocale } from '../../context/LocaleContext'
 
 export function SavedStoryCard({ story }) {
+  const { t } = useLocale()
   const [favorite, setFavorite] = useState(story.favorite)
   const [alerts, setAlerts] = useState(story.alerts)
   return (
@@ -20,7 +22,7 @@ export function SavedStoryCard({ story }) {
             <h3 className="truncate text-lg font-semibold">{story.title}</h3>
             <p className="mt-1 text-xs text-muted">{story.author}</p>
           </div>
-          <button aria-label="Toggle favorite" onClick={() => setFavorite(!favorite)}>
+          <button aria-label={t('following.toggleFavorite')} onClick={() => setFavorite(!favorite)}>
             <Heart size={20} className={favorite ? 'fill-rose text-rose' : 'text-muted'} />
           </button>
         </div>
@@ -33,10 +35,10 @@ export function SavedStoryCard({ story }) {
             className="flex items-center gap-1.5 text-xs text-muted"
           >
             {alerts ? <Bell size={16} className="text-brand" /> : <BellOff size={16} />}{' '}
-            {alerts ? 'Alerts On' : 'Muted'}
+            {t(alerts ? 'following.alertsOn' : 'following.muted')}
           </button>
       <Button onClick={() => window.location.assign(`/stories/${story.id || 'demo'}`)} className="min-h-9 px-3 py-1.5 text-xs">
-            Read Next <ArrowRight size={14} />
+            {t('following.readNext')} <ArrowRight size={14} />
           </Button>
         </div>
       </div>
