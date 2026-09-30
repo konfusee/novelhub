@@ -96,7 +96,7 @@
     "privacyPolicy": "Privacy policy",
     "termsOfUse": "Terms of use"
   },
-  "wallet": { "coins": "{{count}} coins" },
+  "wallet": { "coins": "{{count}} coins", "coinUnit": "coins" },
   "reader": {
     "addNote": "Add note",
     "alignment": "Text alignment",
@@ -269,6 +269,9 @@
   },
   "history": {
     "eyebrow": "Personal library records · synced 4 mins ago", "title": "Reading History & Progress", "clear": "Clear History", "export": "Export Log", "storiesProgress": "Stories in Progress", "activeStories": "active stories", "chaptersMonth": "Chapters Read This Month", "vsLastMonth": "+12% vs last month", "audioHours": "Audiobook Hours", "hours": "hrs", "streak": "Current Reading Streak", "consecutiveDays": "consecutive days", "readingTab": "Reading History · {{count}}", "listeningTab": "Listening History · {{count}}", "completedTab": "Completed Archives · {{count}}", "weeklyMinutes": "Weekly Reading Minutes", "weeklyTarget": "Target: 45 daily minutes · Current week total: 395 mins", "thisWeek": "This Week", "lastWeek": "Last Week", "recentSessions": "Recent Sessions", "sessions": "{{count}} sessions", "audio": "Audio", "story": "Story", "byAuthor": "By {{author}}", "finished": "{{progress}}% finished", "reread": "Re-read", "resume": "Resume", "genreAffinity": "Genre Affinity", "genreDescription": "Based on this month's reading time", "monthlyTarget": "October Literary Target", "targetDescription": "You are 16 chapters away from finishing your October reading badge.", "activeSync": "Active Reading Sync", "connected": "Connected"
+  },
+  "authorFinance": {
+    "eyebrow": "Author earnings · creator account", "title": "Earnings & Chapter Pricing", "description": "Track chapter purchases and author subscriptions by day, week, or month; review the estimated month-end payout and control your publishing prices.", "today": "Today", "thisWeek": "This Week", "thisMonth": "This Month", "chapterBuyers": "Chapter buyers", "newSubscribers": "New author subscribers", "coinsEarned": "Coins earned", "netRevenue": "Net creator revenue", "revenueTrend": "Purchase & subscription trend", "revenueTrendDescription": "Combined paid chapter unlocks and new author subscriptions.", "creatorShare": "70% creator share", "days": { "mon": "Mon", "tue": "Tue", "wed": "Wed", "thu": "Thu", "fri": "Fri", "sat": "Sat", "sun": "Sun" }, "salesByChapter": "Sales by chapter", "salesDescription": "Revenue after NovelHub's platform share.", "story": "Story", "chapter": "Chapter", "price": "Price", "buyers": "Buyers", "authorCoins": "Author coins", "estimatedPayout": "Estimated month-end payout", "payoutDate": "Scheduled for the final business day of the month after transaction review.", "pricingTitle": "Chapter & subscription pricing", "pricingDescription": "Prices apply to future purchases. Already unlocked chapters are not charged again.", "chapterPrice": "Price per paid chapter (coins)", "priceHint": "Set 0 coins to publish a free chapter. Recommended range: 10–50 coins.", "subscriptionPrice": "Monthly author subscription (coins)"
   },
   "library": {
     "availableOffline": "Available offline",

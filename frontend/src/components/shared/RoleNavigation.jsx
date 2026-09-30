@@ -60,7 +60,7 @@ export function WorkspaceSwitcher({ currentRole, compact = false }) {
 export function RoleHeaderLinks({ includeWallet = false, currentRole = 'reader' }) {
   const { t } = useLocale()
   const suffix = `?workspace=${currentRole}`
-  const walletPath = currentRole === 'author' ? '/author/wallet' : '/reader/wallet'
+  const walletPath = currentRole === 'author' ? '/author/earnings' : '/reader/wallet'
   return (
     <nav className="hidden items-center gap-4 text-xs font-medium text-muted xl:flex">
       <Link className="hover:text-brand" to={`/?workspace=${currentRole}`}>{t('navigation.discover')}</Link>

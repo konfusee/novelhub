@@ -33,6 +33,7 @@ import { MediaLibraryPage } from './pages/author/MediaLibraryPage'
 import { AiWritingAssistantPage } from './pages/author/AiWritingAssistantPage'
 import { SubmissionReviewPage } from './pages/author/SubmissionReviewPage'
 import { AuthorAnalyticsPage } from './pages/author/AuthorAnalyticsPage'
+import { AuthorEarningsPage } from './pages/author/AuthorEarningsPage'
 import { ModeratorOverviewPage } from './pages/moderator/ModeratorOverviewPage'
 import { SubmissionQueuePage } from './pages/moderator/SubmissionQueuePage'
 import { ContentReviewDetailPage } from './pages/moderator/ContentReviewDetailPage'
@@ -180,9 +181,9 @@ function AppRoutes() {
           element={role('author', <SubmissionReviewPage />, true)}
         />
         <Route path="/author/analytics" element={role('author', <AuthorAnalyticsPage />, true)} />
-        <Route path="/author/earnings" element={role('author', <RoleUtilityPage role="author" eyebrow="Creator finance" title="Earnings & Payouts" description="Track story revenue, royalty statements, payout readiness, and completed creator payments separately from Reader Wallet." />, true)} />
+        <Route path="/author/earnings" element={role('author', <AuthorEarningsPage />, true)} />
         <Route path="/author/profile" element={role('author', <RoleUtilityPage role="author" eyebrow="Author account" title="Author Profile" description="Manage your public pen name, biography, verification details, and author storefront." />, true)} />
-        <Route path="/author/wallet" element={role('author', <RoleUtilityPage role="author" eyebrow="Reader purchases" title="Wallet & Coins" description="Authors can top up coins and purchase stories from other creators; their own published stories remain available without charge." />, true)} />
+        <Route path="/author/wallet" element={role('author', <AuthorEarningsPage />, true)} />
         <Route path="/author/settings" element={role('author', <ReaderProfilePage workspace="author" />, true)} />
         <Route path="/author/settings/:section" element={role('author', <ReaderProfilePage workspace="author" />, true)} />
         <Route path="/author/account" element={role('author', <AccountPage workspace="author" />, true)} />

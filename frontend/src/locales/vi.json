@@ -96,7 +96,7 @@
     "privacyPolicy": "Chính sách bảo mật",
     "termsOfUse": "Điều khoản sử dụng"
   },
-  "wallet": { "coins": "{{count}} xu" },
+  "wallet": { "coins": "{{count}} xu", "coinUnit": "xu" },
   "reader": {
     "addNote": "Thêm ghi chú",
     "alignment": "Căn chỉnh văn bản",
@@ -269,6 +269,9 @@
   },
   "history": {
     "eyebrow": "Bản ghi thư viện cá nhân · đồng bộ 4 phút trước", "title": "Lịch sử & Tiến độ đọc", "clear": "Xóa lịch sử", "export": "Xuất nhật ký", "storiesProgress": "Truyện đang đọc", "activeStories": "truyện đang hoạt động", "chaptersMonth": "Chương đã đọc tháng này", "vsLastMonth": "+12% so với tháng trước", "audioHours": "Giờ nghe truyện", "hours": "giờ", "streak": "Chuỗi ngày đọc hiện tại", "consecutiveDays": "ngày liên tiếp", "readingTab": "Lịch sử đọc · {{count}}", "listeningTab": "Lịch sử nghe · {{count}}", "completedTab": "Kho đã hoàn thành · {{count}}", "weeklyMinutes": "Số phút đọc hằng tuần", "weeklyTarget": "Mục tiêu: 45 phút mỗi ngày · Tổng tuần này: 395 phút", "thisWeek": "Tuần này", "lastWeek": "Tuần trước", "recentSessions": "Phiên gần đây", "sessions": "{{count}} phiên", "audio": "Âm thanh", "story": "Truyện", "byAuthor": "Tác giả {{author}}", "finished": "Đã hoàn thành {{progress}}%", "reread": "Đọc lại", "resume": "Tiếp tục", "genreAffinity": "Thể loại yêu thích", "genreDescription": "Dựa trên thời gian đọc tháng này", "monthlyTarget": "Mục tiêu đọc tháng 10", "targetDescription": "Bạn còn 16 chương để hoàn thành huy hiệu đọc tháng 10.", "activeSync": "Đồng bộ đọc đang hoạt động", "connected": "Đã kết nối"
+  },
+  "authorFinance": {
+    "eyebrow": "Doanh thu tác giả · tài khoản sáng tác", "title": "Doanh thu & Giá chương", "description": "Theo dõi lượt mua chương và đăng ký tác giả theo ngày, tuần hoặc tháng; xem khoản thanh toán dự kiến cuối tháng và thiết lập giá xuất bản.", "today": "Hôm nay", "thisWeek": "Tuần này", "thisMonth": "Tháng này", "chapterBuyers": "Người mua chương", "newSubscribers": "Đăng ký tác giả mới", "coinsEarned": "Xu đã kiếm", "netRevenue": "Doanh thu ròng", "revenueTrend": "Xu hướng mua & đăng ký", "revenueTrendDescription": "Tổng hợp lượt mở khóa chương trả phí và đăng ký tác giả mới.", "creatorShare": "Tác giả nhận 70%", "days": { "mon": "T2", "tue": "T3", "wed": "T4", "thu": "T5", "fri": "T6", "sat": "T7", "sun": "CN" }, "salesByChapter": "Doanh thu theo chương", "salesDescription": "Doanh thu sau khi trừ phần chia sẻ của nền tảng NovelHub.", "story": "Tác phẩm", "chapter": "Chương", "price": "Giá", "buyers": "Người mua", "authorCoins": "Xu của tác giả", "estimatedPayout": "Khoản dự kiến nhận cuối tháng", "payoutDate": "Dự kiến thanh toán vào ngày làm việc cuối cùng của tháng sau khi đối soát giao dịch.", "pricingTitle": "Giá chương & gói đăng ký", "pricingDescription": "Giá mới áp dụng cho các giao dịch tương lai. Chương đã mở khóa sẽ không bị tính phí lại.", "chapterPrice": "Giá mỗi chương trả phí (xu)", "priceHint": "Đặt 0 xu để phát hành chương miễn phí. Khoảng đề xuất: 10–50 xu.", "subscriptionPrice": "Gói đăng ký tác giả hằng tháng (xu)"
   },
   "library": {
     "availableOffline": "Có thể đọc ngoại tuyến",
