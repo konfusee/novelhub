@@ -16,10 +16,7 @@ import { Badge, Button, Card, Modal } from '../../components/ui'
 import { coinPackages, transactions } from '../../data/mock/wallet'
 
 const filters = [
-  ['all', 'All Transactions'],
-  ['added', 'Coins Added'],
-  ['unlock', 'Chapters Unlocked'],
-  ['tip', 'Author Tips'],
+  ['all', 'Tất cả giao dịch'], ['added', 'Xu đã nạp'], ['unlock', 'Chương đã mở khóa'], ['tip', 'Ủng hộ tác giả'],
 ]
 
 export function WalletPage() {
@@ -38,9 +35,9 @@ export function WalletPage() {
     setBalance(current => current + selected.total)
     setRecords(current => [
       {
-        date: 'Just now',
+        date: 'Vừa xong',
         type: 'added',
-        label: 'Recharge',
+        label: 'Nạp xu',
         item: `${selected.label} (${selected.price})`,
         amount: selected.total,
         balance: balance + selected.total,
@@ -53,50 +50,48 @@ export function WalletPage() {
     <ReaderLayout>
       <main className="page-reader py-7">
         <p className="text-[10px] uppercase tracking-[.2em] text-brand">
-          Financial Ledger · Reader Account #NH-94821
+          Sổ giao dịch · Tài khoản độc giả #NH-94821
         </p>
-        <h1 className="mt-2 text-3xl font-bold sm:text-4xl">Wallet &amp; Coins</h1>
+        <h1 className="mt-2 text-3xl font-bold sm:text-4xl">Ví &amp; Xu</h1>
         <p className="mt-2 max-w-3xl text-sm text-muted">
-          Manage your balance, unlock serialized chapters, and support your favorite authors safely
-          with transparent micro-tokens.
+          Quản lý số dư, mở khóa chương và ủng hộ tác giả yêu thích bằng hệ thống xu minh bạch.
         </p>
         <div className="mt-6 grid min-w-0 grid-cols-[minmax(0,1fr)] items-start gap-6 xl:grid-cols-[minmax(0,1fr)_330px]">
           <div className="min-w-0 space-y-6">
             <Card>
               <div className="flex flex-col justify-between gap-5 sm:flex-row sm:items-center">
                 <div>
-                  <p className="text-xs text-muted">Available Reader Balance</p>
+                  <p className="text-xs text-muted">Số dư khả dụng</p>
                   <p className="mt-2 flex items-center gap-3 text-4xl font-bold">
                     <span className="grid size-11 place-items-center rounded-full bg-orange/20 text-orange">
                       <Coins />
                     </span>
-                    {balance.toLocaleString()} <span className="text-lg text-orange">Coins</span>
+                    {balance.toLocaleString()} <span className="text-lg text-orange">Xu</span>
                   </p>
                   <p className="mt-2 text-[10px] text-muted">
-                    Conversion Index: <strong className="text-ink">100 Coins ≈ $0.99 USD</strong> ·
-                    Non-expiring credit
+                    Quy đổi: <strong className="text-ink">100 xu ≈ 0,99 USD</strong> · Xu không hết hạn
                   </p>
                 </div>
                 <div>
                   <Button onClick={() => setSelected(coinPackages[1])}>
                     <Plus size={16} />
-                    Recharge Balance
+                    Nạp thêm xu
                   </Button>
                   <p className="mt-2 flex items-center gap-1 text-[10px] text-brand">
                     <LockKeyhole size={12} />
-                    256-bit mock checkout
+                    Thanh toán mô phỏng bảo mật 256-bit
                   </p>
                 </div>
               </div>
               <div className="mt-5 flex items-center justify-between border-t border-line pt-5">
                 <div>
-                  <strong className="text-sm">Auto-unlock new chapters when released</strong>
+                  <strong className="text-sm">Tự động mở khóa chương mới khi phát hành</strong>
                   <p className="text-xs text-muted">
-                    Automatically use stored coins for bookmarked novels.
+                    Tự động dùng xu trong ví cho các truyện đã đánh dấu.
                   </p>
                 </div>
                 <button
-                  aria-label="Toggle auto unlock"
+                  aria-label="Bật hoặc tắt tự động mở khóa"
                   onClick={() => setAutoUnlock(!autoUnlock)}
                   className={`h-7 w-12 rounded-full p-1 ${autoUnlock ? 'bg-brand' : 'bg-line'}`}
                 >
@@ -107,9 +102,9 @@ export function WalletPage() {
               </div>
             </Card>
             <section>
-              <h2 className="text-xl font-semibold">Top Up Coins Packages</h2>
+              <h2 className="text-xl font-semibold">Các gói nạp xu</h2>
               <p className="text-xs text-muted">
-                Instant refill directly applied to your digital reading ledger.
+                Xu được cộng ngay vào tài khoản đọc của bạn.
               </p>
               <div className="mt-4 grid grid-cols-2 gap-3 lg:grid-cols-4">
                 {coinPackages.map(pack => (
@@ -129,7 +124,7 @@ export function WalletPage() {
                     <p className="mt-4 text-2xl font-bold">{pack.coins.toLocaleString()}</p>
                     {pack.bonus && (
                       <p className="text-[10px] text-orange">
-                        +{pack.bonus} Bonus · {pack.total.toLocaleString()} Total
+                        +{pack.bonus} xu thưởng · Tổng {pack.total.toLocaleString()} xu
                       </p>
                     )}
                     <p className="mt-4 text-xs leading-5 text-muted">{pack.note}</p>
@@ -140,7 +135,7 @@ export function WalletPage() {
                         onClick={() => setSelected(pack)}
                         className="mt-3 w-full min-h-9 px-2 py-1 text-xs"
                       >
-                        {pack.badge ? 'Purchase Pack' : 'Select Tier'}
+                        {pack.badge ? 'Mua gói' : 'Chọn gói'}
                       </Button>
                     </div>
                   </Card>
@@ -150,14 +145,14 @@ export function WalletPage() {
             <Card>
               <div className="flex items-center justify-between">
                 <div>
-                  <h2 className="text-xl font-semibold">Transaction History</h2>
+                  <h2 className="text-xl font-semibold">Lịch sử giao dịch</h2>
                   <p className="text-xs text-muted">
-                    Detailed ledger of unlocks, refills, and creator gratuities.
+                    Chi tiết các lần mở khóa, nạp xu và ủng hộ tác giả.
                   </p>
                 </div>
-                <button onClick={() => window.alert('Transaction CSV exported (mock).')} className="flex items-center gap-1 text-xs text-brand">
+                <button onClick={() => window.alert('Đã xuất CSV giao dịch (mô phỏng).')} className="flex items-center gap-1 text-xs text-brand">
                   <Download size={14} />
-                  Export
+                  Xuất dữ liệu
                 </button>
               </div>
               <div className="mt-5 flex gap-2 overflow-x-auto">
@@ -175,12 +170,7 @@ export function WalletPage() {
                 <table className="w-full min-w-[650px] text-left text-xs">
                   <thead className="border-y border-line text-[10px] uppercase tracking-wider text-muted">
                     <tr>
-                      <th className="py-3">Date &amp; Time</th>
-                      <th>Type</th>
-                      <th>Item Details</th>
-                      <th>Amount</th>
-                      <th>Balance</th>
-                      <th>Status</th>
+                      <th className="py-3">Ngày &amp; giờ</th><th>Loại</th><th>Chi tiết</th><th>Số xu</th><th>Số dư</th><th>Trạng thái</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -201,11 +191,11 @@ export function WalletPage() {
                         <td>{item.item}</td>
                         <td className={item.amount > 0 ? 'font-semibold text-brand' : ''}>
                           {item.amount > 0 ? '+' : ''}
-                          {item.amount.toLocaleString()} Coins
+                          {item.amount.toLocaleString()} xu
                         </td>
                         <td className="text-muted">{item.balance.toLocaleString()}</td>
                         <td>
-                          <Badge tone="green">Completed</Badge>
+                          <Badge tone="green">Hoàn tất</Badge>
                         </td>
                       </tr>
                     ))}
@@ -221,17 +211,16 @@ export function WalletPage() {
                   <BadgeDollarSign />
                 </span>
                 <div>
-                  <h2 className="text-lg font-semibold">Where do your coins go?</h2>
-                  <p className="text-xs text-muted">Direct Creator Economics</p>
+                  <h2 className="text-lg font-semibold">Xu của bạn được phân bổ thế nào?</h2>
+                  <p className="text-xs text-muted">Hỗ trợ trực tiếp nhà sáng tạo</p>
                 </div>
               </div>
               <p className="mt-5 text-sm leading-6 text-muted">
-                NovelHub operates on a fair, ethical serial ecosystem. When you spend coins, funds
-                directly power the writers shaping these worlds.
+                NovelHub xây dựng hệ sinh thái truyện dài minh bạch. Khi bạn dùng xu, khoản tiền sẽ trực tiếp hỗ trợ các tác giả.
               </p>
               <div className="mt-4 rounded-2xl bg-elevated p-4">
                 <div className="flex justify-between text-sm">
-                  <span>Indie Creators Share</span>
+                  <span>Phần chia sẻ cho tác giả độc lập</span>
                   <strong className="text-brand">70%</strong>
                 </div>
                 <div className="mt-3 flex h-2 overflow-hidden rounded-full">
@@ -242,17 +231,14 @@ export function WalletPage() {
               </div>
               <p className="mt-4 flex gap-2 rounded-xl bg-orange/10 p-3 text-xs text-orange">
                 <Heart size={15} />
-                Over $1.4M in micro-royalties paid to independent authors.
+                Hơn 1,4 triệu USD tiền bản quyền nhỏ đã được trả cho các tác giả độc lập.
               </p>
             </Card>
             <Card>
-              <h2 className="text-lg font-semibold">Coins &amp; Wallet FAQ</h2>
+              <h2 className="text-lg font-semibold">Câu hỏi về Xu &amp; Ví</h2>
               <div className="mt-4 divide-y divide-line">
                 {[
-                  'Do purchased coins expire?',
-                  'What is the chapter unlock price?',
-                  'Can I request a coin refund?',
-                  'What are bonus coins?',
+                  'Xu đã mua có hết hạn không?', 'Giá mở khóa chương là bao nhiêu?', 'Tôi có thể yêu cầu hoàn xu không?', 'Xu thưởng là gì?',
                 ].map((question, index) => (
                   <button
                     key={question}
@@ -265,8 +251,7 @@ export function WalletPage() {
                     </span>
                     {faq === index && (
                       <p className="mt-2 font-normal leading-5 text-muted">
-                        Coins never expire and remain attached to your reader profile. Support can
-                        review eligible transactions.
+                        Xu không hết hạn và luôn gắn với hồ sơ độc giả. Bộ phận hỗ trợ có thể xem xét các giao dịch đủ điều kiện.
                       </p>
                     )}
                   </button>
@@ -276,9 +261,9 @@ export function WalletPage() {
             <Card className="flex gap-3 bg-purple/10">
               <Sparkles className="shrink-0 text-orange" />
               <div>
-                <strong className="text-sm">Daily Reading Reward</strong>
+                <strong className="text-sm">Thưởng đọc hằng ngày</strong>
                 <p className="mt-1 text-xs text-muted">
-                  Read 20 mins today to earn +5 free coins toward your next chapter.
+                  Đọc 20 phút hôm nay để nhận 5 xu miễn phí cho chương tiếp theo.
                 </p>
               </div>
             </Card>
@@ -286,7 +271,7 @@ export function WalletPage() {
         </div>
         <Modal
           open={Boolean(selected)}
-          title="Confirm mock purchase"
+          title="Xác nhận giao dịch mô phỏng"
           onClose={() => setSelected(null)}
         >
           {selected && (
@@ -294,17 +279,17 @@ export function WalletPage() {
               <div className="flex items-center justify-between rounded-2xl bg-elevated p-4">
                 <div>
                   <strong>{selected.label}</strong>
-                  <p className="text-xs text-muted">{selected.total.toLocaleString()} coins</p>
+                  <p className="text-xs text-muted">{selected.total.toLocaleString()} xu</p>
                 </div>
                 <strong className="text-xl">{selected.price}</strong>
               </div>
               <p className="mt-4 flex items-center gap-2 text-xs text-muted">
                 <ShieldCheck className="text-brand" />
-                UI demo only — no real payment is processed.
+                Đây chỉ là giao diện mô phỏng — không có thanh toán thật.
               </p>
               <Button onClick={purchase} className="mt-5 w-full">
                 <Check size={16} />
-                Complete Mock Purchase
+                Hoàn tất giao dịch mô phỏng
               </Button>
             </div>
           )}
