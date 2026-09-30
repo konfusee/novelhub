@@ -7,15 +7,17 @@ import { Badge, Button, Card } from '../../components/ui'
 import { chapterPreview, storyDetail } from '../../data/mock/reader'
 
 const tabs = ['Chapters', 'Synopsis & Details', 'Reviews & Discussions', 'Related Audiobooks']
-export function StoryDetailPage() {
+export function StoryDetailPage({ embedded = false }) {
   const navigate = useNavigate()
   const { storyId = 'demo' } = useParams()
   const [tab, setTab] = useState('Chapters')
   const [bookmarked, setBookmarked] = useState(false)
   const [following, setFollowing] = useState(false)
+  const [oldestFirst, setOldestFirst] = useState(true)
+  const [notice, setNotice] = useState('')
   return (
     <div className="min-h-screen bg-page text-ink">
-      <PublicHeader />
+      {!embedded && <PublicHeader />}
       <main className="page-public space-y-7 py-7">
         <p className="text-xs text-muted">
           Home / Fantasy / <strong className="text-ink">The Silent Forest</strong>
@@ -71,7 +73,7 @@ export function StoryDetailPage() {
                 <BookOpen size={16} />
                 Read Preview
               </Button>
-              <Button variant="secondary">
+              <Button variant="secondary" onClick={() => navigate(`/listen/${storyId}/chapter-1`)}>
                 <Headphones size={16} />
                 Listen Preview
               </Button>
@@ -84,11 +86,13 @@ export function StoryDetailPage() {
               </button>
               <button
                 aria-label="Share"
+                onClick={() => setNotice('Story link copied for sharing (demo).')}
                 className="grid size-11 place-items-center rounded-2xl border border-line"
               >
                 <Share2 size={17} />
               </button>
             </div>
+            {notice && <p role="status" className="mt-3 text-xs text-brand">{notice}</p>}
             <div className="mt-5 rounded-2xl border border-brand/30 bg-brand/5 p-4 text-xs leading-5">
               <strong className="text-brand">Guest Reading Mode:</strong> Create a free account to
               unlock full chapters, sync bookmarks, and join author discussions.
@@ -112,7 +116,7 @@ export function StoryDetailPage() {
             <div className="p-5">
               <div className="mb-4 flex items-center justify-between text-xs text-muted">
                 <span>Displaying 1–5 of 148 chapters</span>
-                <button className="text-brand">Oldest First ▾</button>
+                <button onClick={() => setOldestFirst(value => !value)} className="text-brand">{oldestFirst ? 'Oldest First' : 'Newest First'} ▾</button>
               </div>
               {tab === 'Chapters' ? (
                 <ChapterList chapters={chapterPreview} storyId={storyId} />
@@ -126,7 +130,7 @@ export function StoryDetailPage() {
             </div>
             <div className="flex flex-col items-center justify-between gap-3 border-t border-line bg-elevated p-5 text-xs text-muted sm:flex-row">
               <span>Sign in to access all remaining 143 chapters.</span>
-              <Button>Unlock All Free</Button>
+              <Button onClick={() => navigate('/register')}>Unlock All Free</Button>
             </div>
           </section>
           <aside className="space-y-5">
@@ -169,7 +173,7 @@ export function StoryDetailPage() {
             <Card className="p-5">
               <div className="flex items-center justify-between">
                 <h3 className="font-bold">Community Rating</h3>
-                <button className="text-xs text-brand">View all 1.2K</button>
+                <button onClick={() => setTab('Reviews & Discussions')} className="text-xs text-brand">View all 1.2K</button>
               </div>
               <div className="mt-5 flex gap-5">
                 <div className="text-center">
@@ -203,7 +207,7 @@ export function StoryDetailPage() {
           </aside>
         </div>
       </main>
-      <footer className="border-t border-line bg-surface">
+      {!embedded && <footer className="border-t border-line bg-surface">
         <div className="mx-auto flex max-w-[1360px] flex-wrap justify-between gap-4 px-5 py-7 text-xs text-muted md:px-8 lg:px-12">
           <strong className="text-ink">
             Novel<span className="text-brand">Hub</span>
@@ -211,7 +215,7 @@ export function StoryDetailPage() {
           <span>Terms · Privacy · Content Guidelines · Help Center</span>
           <span>© 2026 NovelHub</span>
         </div>
-      </footer>
+      </footer>}
     </div>
   )
 }

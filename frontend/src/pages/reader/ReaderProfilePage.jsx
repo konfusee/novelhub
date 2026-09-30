@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { useLocation, useNavigate } from 'react-router-dom'
 import {
   BookOpen,
   Camera,
@@ -6,6 +7,7 @@ import {
   Eye,
   Headphones,
   Palette,
+  Pause,
   Play,
   Save,
   ShieldCheck,
@@ -14,12 +16,17 @@ import {
 import { ReaderLayout } from '../../layouts'
 import { Avatar, Badge, Button, Card, Input, Tabs } from '../../components/ui'
 import { useTheme } from '../../context/ThemeContext'
+import { useAuth } from '../../context/AuthContext'
 
 export function ReaderProfilePage() {
+  const location = useLocation()
+  const navigate = useNavigate()
   const { theme, setTheme } = useTheme()
-  const [section, setSection] = useState('profile')
-  const [name, setName] = useState('Elena Rostova')
-  const [handle, setHandle] = useState('@elena_reader')
+  const { currentUser } = useAuth()
+  const sectionFromPath = location.pathname.split('/').at(-1)
+  const section = ['reading', 'listening', 'appearance', 'privacy'].includes(sectionFromPath) ? sectionFromPath : 'profile'
+  const [name, setName] = useState(currentUser?.name || 'NovelHub Reader')
+  const [handle, setHandle] = useState(`@${(currentUser?.name || 'novelhub_reader').toLowerCase().replace(/[^a-z0-9]+/g, '_')}`)
   const [bio, setBio] = useState('Passionate reader of slow-burn fantasy & cozy mysteries. 📚✨')
   const [fontSize, setFontSize] = useState(18)
   const [spacing, setSpacing] = useState(1.8)
@@ -28,13 +35,31 @@ export function ReaderProfilePage() {
   const [skip, setSkip] = useState(15)
   const [autoplay, setAutoplay] = useState(true)
   const [saved, setSaved] = useState(true)
+  const [genres, setGenres] = useState(['Fantasy', 'Romance', 'Mystery'])
+  const [audioPlaying, setAudioPlaying] = useState(false)
+  const [twoFactor, setTwoFactor] = useState(false)
+  const [notice, setNotice] = useState('')
   const changed = () => setSaved(false)
+  const changeSection = value => {
+    navigate(value === 'profile' ? '/reader/profile' : `/reader/profile/${value}`)
+  }
   const save = () => {
     localStorage.setItem(
       'novelhub.reader.preferences',
       JSON.stringify({ name, handle, bio, fontSize, spacing, canvas, speed, skip, autoplay }),
     )
     setSaved(true)
+    setNotice('Your preferences were saved.')
+  }
+  const discard = () => {
+    setFontSize(18)
+    setSpacing(1.8)
+    setCanvas('parchment')
+    setSpeed(1)
+    setSkip(15)
+    setAutoplay(true)
+    setSaved(true)
+    setNotice('Unsaved preference changes were discarded.')
   }
   return (
     <ReaderLayout>
@@ -55,7 +80,7 @@ export function ReaderProfilePage() {
         <div className="mt-6 overflow-x-auto">
           <Tabs
             value={section}
-            onChange={setSection}
+            onChange={changeSection}
             items={[
               { value: 'profile', label: 'Profile Info' },
               { value: 'reading', label: 'Reading Settings' },
@@ -67,6 +92,8 @@ export function ReaderProfilePage() {
         </div>
         <div className="mt-6 grid items-start gap-6 xl:grid-cols-[minmax(0,1fr)_360px]">
           <div className="space-y-5">
+            {notice && <p role="status" className="rounded-2xl border border-brand/20 bg-brand/10 px-4 py-3 text-xs text-brand">{notice}</p>}
+            {section === 'profile' && (
             <Card>
               <SectionTitle
                 icon={UserRound}
@@ -77,6 +104,7 @@ export function ReaderProfilePage() {
                 <div className="relative">
                   <Avatar name={name} className="size-20 text-xl" />
                   <button
+                    onClick={() => setNotice('Avatar picker opened in demo mode.')}
                     aria-label="Change avatar"
                     className="absolute -bottom-1 -right-1 grid size-8 place-items-center rounded-full bg-brand text-white"
                   >
@@ -84,7 +112,7 @@ export function ReaderProfilePage() {
                   </button>
                 </div>
                 <div>
-                  <Button variant="secondary" className="min-h-9 py-1.5">
+                  <Button onClick={() => setNotice('Avatar picker opened in demo mode.')} variant="secondary" className="min-h-9 py-1.5">
                     Upload New Avatar
                   </Button>
                   <p className="mt-2 text-[10px] text-muted">JPG or PNG, minimum 400×400px.</p>
@@ -125,17 +153,19 @@ export function ReaderProfilePage() {
               <div className="mt-5">
                 <p className="text-xs font-semibold">Favorite Genres</p>
                 <div className="mt-2 flex flex-wrap gap-2">
-                  {['Fantasy', 'Romance', 'Mystery'].map(item => (
-                    <Badge tone="green" key={item}>
-                      {item} ×
-                    </Badge>
+                  {genres.map(item => (
+                    <button type="button" key={item} onClick={() => { setGenres(current => current.filter(genre => genre !== item)); changed() }}>
+                      <Badge tone="green">{item} ×</Badge>
+                    </button>
                   ))}
-                  <button className="rounded-full border border-dashed border-line px-3 py-1 text-xs">
+                  <button onClick={() => { setGenres(current => current.includes('Sci-Fi') ? current : [...current, 'Sci-Fi']); changed() }} className="rounded-full border border-dashed border-line px-3 py-1 text-xs">
                     + Add Genre
                   </button>
                 </div>
               </div>
             </Card>
+            )}
+            {section === 'reading' && (
             <Card>
               <SectionTitle icon={BookOpen} title="Reading Settings" note="Typography & canvas" />
               <p className="mt-5 text-xs font-semibold">
@@ -192,6 +222,8 @@ export function ReaderProfilePage() {
                 ))}
               </div>
             </Card>
+            )}
+            {section === 'listening' && (
             <Card>
               <SectionTitle
                 icon={Headphones}
@@ -244,6 +276,8 @@ export function ReaderProfilePage() {
                 </button>
               </ControlRow>
             </Card>
+            )}
+            {section === 'appearance' && (
             <Card>
               <SectionTitle
                 icon={Palette}
@@ -269,6 +303,8 @@ export function ReaderProfilePage() {
                 ))}
               </div>
             </Card>
+            )}
+            {section === 'privacy' && (
             <Card>
               <SectionTitle
                 icon={ShieldCheck}
@@ -279,13 +315,15 @@ export function ReaderProfilePage() {
                 <Badge tone="green">Friends only</Badge>
               </ControlRow>
               <ControlRow label="Two-factor authentication">
-                <Button variant="secondary" className="min-h-9 py-1.5">
-                  Configure
+                <Button onClick={() => { setTwoFactor(value => !value); setNotice(twoFactor ? 'Two-factor authentication disabled for this demo.' : 'Two-factor authentication enabled for this demo.') }} variant="secondary" className="min-h-9 py-1.5">
+                  {twoFactor ? 'Disable' : 'Configure'}
                 </Button>
               </ControlRow>
             </Card>
+            )}
           </div>
           <aside className="space-y-5 xl:sticky xl:top-24">
+            {(section === 'reading' || section === 'appearance') && (
             <Card className={canvas === 'navy' ? 'bg-[#081321] text-white' : 'bg-reader text-ink'}>
               <div className="flex items-center justify-between">
                 <span className="flex items-center gap-2 text-xs font-semibold">
@@ -315,6 +353,8 @@ export function ReaderProfilePage() {
                 <span>62%</span>
               </div>
             </Card>
+            )}
+            {section === 'listening' && (
             <Card>
               <div className="flex items-center justify-between">
                 <strong className="text-sm">Narrator Sync Test</strong>
@@ -330,11 +370,12 @@ export function ReaderProfilePage() {
                     <div className="h-full w-[42%] bg-brand" />
                   </div>
                 </div>
-                <button className="grid size-10 place-items-center rounded-full bg-brand text-white">
-                  <Play size={16} />
+                <button onClick={() => setAudioPlaying(value => !value)} className="grid size-10 place-items-center rounded-full bg-brand text-white" aria-label={audioPlaying ? 'Pause sample' : 'Play sample'}>
+                  {audioPlaying ? <Pause size={16} /> : <Play size={16} />}
                 </button>
               </div>
             </Card>
+            )}
             <Card className="bg-elevated">
               <p className="text-xl italic text-brand">“Good stories make a kinder tomorrow.”</p>
               <p className="mt-3 text-xs text-muted">
@@ -351,7 +392,7 @@ export function ReaderProfilePage() {
             {saved ? 'Preferences saved' : 'Unsaved preferences: review your changes.'}
           </p>
           <div className="ml-auto flex gap-2">
-            <Button variant="secondary" onClick={() => setSaved(true)}>
+            <Button variant="secondary" onClick={discard}>
               Discard
             </Button>
             <Button onClick={save}>

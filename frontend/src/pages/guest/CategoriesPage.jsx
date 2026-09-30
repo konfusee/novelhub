@@ -85,13 +85,14 @@ export function CategoriesPage({ embedded = false }) {
               </p>
               <h2 className="mt-1 text-xl font-bold">Popular This Week</h2>
             </div>
-            <button className="flex items-center gap-1 text-xs font-semibold text-brand">
+            <button onClick={() => window.location.assign('/search')} className="flex items-center gap-1 text-xs font-semibold text-brand">
               Explore all <ArrowRight size={14} />
             </button>
           </div>
           <div className="mt-5 grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-6">
             {popularTags.map((tag, index) => (
               <button
+                onClick={() => setQuery(tag.replace('#', ''))}
                 className="rounded-xl border border-line bg-page px-3 py-3 text-center hover:border-brand"
                 key={tag}
               >
@@ -135,7 +136,7 @@ export function CategoriesPage({ embedded = false }) {
                 <p className="mt-2 text-xs leading-5 text-muted">{item.description}</p>
                 <div className="mt-auto flex items-center justify-between pt-5 text-[10px]">
                   <span>By {item.author}</span>
-                  <button className="font-semibold text-brand">Read Preview →</button>
+                  <button onClick={() => window.location.assign('/stories/demo')} className="font-semibold text-brand">Read Preview →</button>
                 </div>
               </Card>
             ))}
@@ -150,8 +151,8 @@ export function CategoriesPage({ embedded = false }) {
             </p>
           </div>
           <div className="flex shrink-0 gap-3">
-            <Button>Create an Account</Button>
-            <Button variant="secondary">Learn More</Button>
+            <Button onClick={() => window.location.assign('/register')}>Create an Account</Button>
+            <Button onClick={() => window.location.assign('/')} variant="secondary">Learn More</Button>
           </div>
         </section>
       </main>

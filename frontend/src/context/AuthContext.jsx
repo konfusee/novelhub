@@ -49,13 +49,13 @@ export const mockAccounts = {
     id: 'user-moderator',
     name: 'Sarah Jenkins',
     email: 'moderator@novelhub.test',
-    roles: ['moderator'],
+    roles: ['reader', 'moderator'],
   },
   admin: {
     id: 'user-admin',
     name: 'Marcus Vance',
     email: 'admin@novelhub.test',
-    roles: ['admin'],
+    roles: ['reader', 'admin'],
   },
 }
 const read = (key, fallback) => {
@@ -67,7 +67,11 @@ const read = (key, fallback) => {
 }
 
 export function AuthProvider({ children }) {
-  const [currentUser, setCurrentUser] = useState(() => read(SESSION_KEY, null))
+  const [currentUser, setCurrentUser] = useState(() => {
+    const session = read(SESSION_KEY, null)
+    const updatedDemo = session && Object.values(mockAccounts).find(user => user.id === session.id)
+    return updatedDemo || session
+  })
   const persist = user => {
     setCurrentUser(user)
     user

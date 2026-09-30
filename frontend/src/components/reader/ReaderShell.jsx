@@ -33,6 +33,7 @@ import { useAuth } from '../../context/AuthContext'
 import { Avatar, IconButton, Input } from '../ui'
 import { SiteFooter } from '../shared/SiteFooter'
 import { LanguageSwitcher } from '../shared/LanguageSwitcher'
+import { RoleHeaderLinks, WorkspaceSwitcher } from '../shared/RoleNavigation'
 
 const navigation = [
   ['Home', '/reader', Home],
@@ -40,13 +41,13 @@ const navigation = [
   ['Explore', '/reader/explore', Search],
   ['Library', '/reader/library', Library],
   ['My List', '/reader/following', BookHeart],
-  ['Audiobooks', '/listen/demo/chapter-1', Headphones],
+  ['Audiobooks', '/reader/audiobooks', Headphones],
   ['History', '/reader/history', History],
   ['Notifications', '/reader/notifications', Bell],
-  ['Messages', '/reader/notifications', MessageCircle],
+  ['Messages', '/reader/messages', MessageCircle],
   ['Wallet', '/reader/wallet', WalletCards],
   ['Profile', '/reader/profile', UserRound],
-  ['Settings', '/reader/profile', Settings],
+  ['Settings', '/reader/settings', Settings],
 ]
 
 function NavItems({ onNavigate }) {
@@ -134,6 +135,7 @@ export function ReaderShell({ children }) {
             Novel<span className="text-brand">Hub</span>
           </span>
         </Link>
+        {!collapsed && <WorkspaceSwitcher currentRole="reader" />}
         <div className={collapsed ? '[&_span]:hidden [&_a]:justify-center [&_a]:px-2' : ''}><NavItems /></div>
         <div className={`mt-auto rounded-2xl border border-line bg-elevated p-4 ${collapsed ? 'hidden' : ''}`}>
           <div className="flex items-center gap-2 text-sm font-semibold">
@@ -180,6 +182,7 @@ export function ReaderShell({ children }) {
             <X size={19} />
           </IconButton>
         </div>
+        <WorkspaceSwitcher currentRole="reader" />
         <NavItems onNavigate={() => setMenuOpen(false)} />
       </aside>
 
@@ -194,14 +197,10 @@ export function ReaderShell({ children }) {
               placeholder="Search stories, authors, tags..."
               className="hidden w-full max-w-md sm:flex"
             />
-            <div className="ml-auto hidden items-center gap-5 text-xs font-medium text-muted xl:flex">
-              <Link to="/categories">Browse Books</Link>
-              <Link to="/search">Audio Lounge</Link>
-              <Link to="/reader/following">Serial Updates</Link>
-            </div>
-            <button className="ml-auto hidden items-center gap-2 rounded-xl border border-line bg-surface px-3 py-2 text-xs font-semibold sm:flex xl:ml-0">
+            <div className="ml-auto"><RoleHeaderLinks includeWallet currentRole="reader" /></div>
+            <Link to="/reader/wallet" className="ml-auto hidden items-center gap-2 rounded-xl border border-line bg-surface px-3 py-2 text-xs font-semibold sm:flex xl:ml-0">
               <span className="text-orange">●</span> 450 coins <span className="text-brand">+</span>
-            </button>
+            </Link>
             <IconButton label="Toggle theme" onClick={toggleTheme}>
               {resolvedTheme === 'dark' ? <Sun size={18} /> : <Moon size={18} />}
             </IconButton>
@@ -239,7 +238,7 @@ export function ReaderShell({ children }) {
               <Bell size={18} />
               <span className="absolute right-2 top-2 size-2 rounded-full bg-rose" />
             </IconButton>
-            <button className="flex items-center gap-2">
+            <Link to="/reader/profile" className="flex items-center gap-2">
               <Avatar name={currentUser?.name || 'Reader'} />
               <span className="hidden text-left xl:block">
                 <strong className="block text-xs">{currentUser?.name || 'Reader'}</strong>
@@ -248,7 +247,7 @@ export function ReaderShell({ children }) {
                 </span>
               </span>
               <ChevronDown size={15} className="hidden text-muted xl:block" />
-            </button>
+            </Link>
             <IconButton label="Log out" onClick={logout}>
               <LogOut size={18} />
             </IconButton>
