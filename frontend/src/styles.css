@@ -295,14 +295,20 @@ button {
   padding-inline: 1.25rem;
 }
 .page-reader,
-.page-author {
-  max-width: 1480px;
-  padding-inline: 1rem;
-}
+.page-author,
 .page-moderator,
 .page-admin {
   max-width: 1540px;
   padding-inline: 1rem;
+}
+
+.workspace-content > * {
+  animation: workspace-enter 180ms ease-out;
+}
+
+@keyframes workspace-enter {
+  from { opacity: 0.72; transform: translateY(2px); }
+  to { opacity: 1; transform: translateY(0); }
 }
 
 @media (min-width: 640px) {

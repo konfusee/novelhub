@@ -1,10 +1,7 @@
 import { Outlet } from 'react-router-dom'
 import { BookOpen } from 'lucide-react'
 import { PageContainer } from '../components/ui'
-import { ReaderShell } from '../components/reader/ReaderShell'
-import { AuthorShell } from '../components/author/AuthorShell'
-import { ModeratorShell } from '../components/moderator/ModeratorShell'
-import { AdminShell } from '../components/admin/AdminShell'
+import { AppShell } from '../components/shell/AppShell'
 
 function RoleLayout({ role, navigation = [] }) {
   return (
@@ -35,12 +32,10 @@ function RoleLayout({ role, navigation = [] }) {
 export const PublicLayout = () => (
   <RoleLayout role="Discover" navigation={['Discover', 'Categories', 'Rankings']} />
 )
-export const ReaderLayout = ({ children }) => <ReaderShell>{children || <Outlet />}</ReaderShell>
+export const ReaderLayout = ({ children }) => <AppShell workspace="reader">{children || <Outlet />}</AppShell>
 export const ReaderImmersiveLayout = ({ children }) => (
   <div className="min-h-screen bg-reader text-ink">{children || <Outlet />}</div>
 )
-export const AuthorLayout = ({ children }) => <AuthorShell>{children || <Outlet />}</AuthorShell>
-export const ModeratorLayout = ({ children }) => (
-  <ModeratorShell>{children || <Outlet />}</ModeratorShell>
-)
-export const AdminLayout = ({ children }) => <AdminShell>{children || <Outlet />}</AdminShell>
+export const AuthorLayout = ({ children }) => <AppShell workspace="author">{children || <Outlet />}</AppShell>
+export const ModeratorLayout = ({ children }) => <AppShell workspace="moderator">{children || <Outlet />}</AppShell>
+export const AdminLayout = ({ children }) => <AppShell workspace="admin">{children || <Outlet />}</AppShell>
