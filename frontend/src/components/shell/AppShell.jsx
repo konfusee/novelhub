@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { Link, useLocation } from 'react-router-dom'
-import { BookOpen, ChevronLeft, ChevronRight, Settings, HelpCircle, ShieldCheck, X } from 'lucide-react'
+import { BookOpen, Menu, Settings, HelpCircle, ShieldCheck, X } from 'lucide-react'
 import { IconButton } from '../ui'
 import { SiteFooter } from '../shared/SiteFooter'
 import { SharedWorkspaceHeader, WorkspaceSwitcher } from '../shared/RoleNavigation'
@@ -60,13 +60,23 @@ function AppSidebar({ workspace, collapsed, mobile = false, onCollapse, onNaviga
           <span className="grid size-9 shrink-0 place-items-center rounded-xl bg-brand text-white"><BookOpen size={20} /></span>
           {!collapsed && <span className="truncate">Novel<span className="text-brand">Hub</span><small className="block truncate text-[9px] font-medium text-muted">{t(meta.labelKey)} · {t('common.workspace')}</small></span>}
         </Link>
-        {!mobile && <IconButton label={t(collapsed ? 'common.expandSidebar' : 'common.collapseSidebar')} onClick={onCollapse} className="ml-auto size-8 rounded-lg">{collapsed ? <ChevronRight size={16} /> : <ChevronLeft size={16} />}</IconButton>}
       </div>
       <WorkspaceSwitcher currentRole={workspace} compact={collapsed} />
       <div className="min-h-0 flex-1 space-y-5 overflow-y-auto overflow-x-visible pb-4">
         {groups.map(group => <SidebarGroup key={group.labelKey} group={group} activePath={activePath} collapsed={collapsed} onNavigate={onNavigate} />)}
       </div>
-      {!collapsed && <div className="border-t border-line px-3 pt-3 text-[10px] text-muted">NovelHub · {t(meta.labelKey)}</div>}
+      <div className={`mt-2 border-t border-line pt-3 ${collapsed ? 'flex justify-center' : 'flex items-center justify-between px-2'}`}>
+        {!collapsed && <span className="truncate text-[10px] text-muted">NovelHub · {t(meta.labelKey)}</span>}
+        {!mobile && (
+          <IconButton
+            label={t(collapsed ? 'common.expandSidebar' : 'common.collapseSidebar')}
+            onClick={onCollapse}
+            className="size-10 shrink-0 rounded-xl"
+          >
+            <Menu size={19} />
+          </IconButton>
+        )}
+      </div>
     </div>
   )
 }
