@@ -4,35 +4,37 @@ import { ROLE_HOME, useAuth } from '../../context/AuthContext'
 import { useTheme } from '../../context/ThemeContext'
 import { Avatar, IconButton, Input } from '../ui'
 import { LanguageSwitcher } from './LanguageSwitcher'
+import { useLocale } from '../../context/LocaleContext'
 
 const roleMeta = {
-  reader: ['Reader', BookOpen],
-  author: ['Author Studio', UserRound],
-  moderator: ['Moderator', ShieldCheck],
-  admin: ['Admin', Crown],
+  reader: ['navigation.reader', BookOpen],
+  author: ['navigation.authorStudio', UserRound],
+  moderator: ['navigation.moderator', ShieldCheck],
+  admin: ['navigation.admin', Crown],
 }
 
 export function WorkspaceSwitcher({ currentRole, compact = false }) {
+  const { t } = useLocale()
   const { roles } = useAuth()
   const available = roles.filter(role => roleMeta[role])
   const workspaces = available.length ? available : [currentRole]
 
   return (
     <details className="group relative mb-4">
-      <summary title={compact ? 'Switch workspace' : undefined} aria-label="Switch workspace" className={`flex cursor-pointer list-none items-center rounded-xl border border-line bg-elevated text-xs font-semibold ${compact ? 'mx-auto size-10 justify-center' : 'gap-2 px-3 py-2'}`}>
-        {!compact && 'Switch workspace'}
+      <summary title={compact ? t('common.switchWorkspace') : undefined} aria-label={t('common.switchWorkspace')} className={`flex cursor-pointer list-none items-center rounded-xl border border-line bg-elevated text-xs font-semibold ${compact ? 'mx-auto size-10 justify-center' : 'gap-2 px-3 py-2'}`}>
+        {!compact && t('common.switchWorkspace')}
         <ChevronDown size={14} className={`${compact ? '' : 'ml-auto'} transition group-open:rotate-180`} />
       </summary>
       <div className={`${compact ? 'absolute left-full top-0 z-50 ml-3 w-52' : 'mt-2'} grid gap-1 rounded-xl border border-line bg-surface p-1.5 shadow-lg`}>
         {workspaces.map(role => {
-          const [label, Icon] = roleMeta[role]
+          const [labelKey, Icon] = roleMeta[role]
           return (
             <Link
               key={role}
               to={ROLE_HOME[role]}
               className={`flex items-center gap-2 rounded-lg px-2.5 py-2 text-xs ${role === currentRole ? 'bg-brand text-white' : 'text-muted hover:bg-elevated hover:text-ink'}`}
             >
-              <Icon size={15} /> {label}
+              <Icon size={15} /> {t(labelKey)}
             </Link>
           )
         })}
@@ -42,28 +44,30 @@ export function WorkspaceSwitcher({ currentRole, compact = false }) {
 }
 
 export function RoleHeaderLinks({ includeWallet = false, currentRole = 'reader' }) {
+  const { t } = useLocale()
   const suffix = `?workspace=${currentRole}`
   const walletPath = currentRole === 'author' ? '/author/wallet' : '/reader/wallet'
   return (
     <nav className="hidden items-center gap-4 text-xs font-medium text-muted xl:flex">
-      <Link className="hover:text-brand" to={`/?workspace=${currentRole}`}>Discover</Link>
-      <Link className="hover:text-brand" to={`/categories${suffix}`}>Categories</Link>
-      <Link className="hover:text-brand" to={`/rankings${suffix}`}>Rankings</Link>
-      <Link className="hover:text-brand" to={`/search${suffix}`}>Explore</Link>
-      <Link className="hover:text-brand" to="/reader/library">Library</Link>
-      {includeWallet && <Link className="hover:text-brand" to={walletPath}>Wallet</Link>}
+      <Link className="hover:text-brand" to={`/?workspace=${currentRole}`}>{t('navigation.discover')}</Link>
+      <Link className="hover:text-brand" to={`/categories${suffix}`}>{t('navigation.categories')}</Link>
+      <Link className="hover:text-brand" to={`/rankings${suffix}`}>{t('navigation.rankings')}</Link>
+      <Link className="hover:text-brand" to={`/search${suffix}`}>{t('navigation.explore')}</Link>
+      <Link className="hover:text-brand" to="/reader/library">{t('navigation.library')}</Link>
+      {includeWallet && <Link className="hover:text-brand" to={walletPath}>{t('navigation.wallet')}</Link>}
     </nav>
   )
 }
 
 export function WorkspaceHeaderAccount() {
+  const { t } = useLocale()
   const { currentUser, logout } = useAuth()
   return (
     <div className="flex items-center gap-2">
-      <Link to="/reader/profile" aria-label="Open reader profile" className="rounded-full">
+      <Link to="/reader/profile" aria-label={t('common.openProfile')} className="rounded-full">
         <Avatar name={currentUser?.name || 'NovelHub user'} className="size-9 text-xs" />
       </Link>
-      <IconButton label="Log out" onClick={logout} className="size-9 rounded-xl">
+      <IconButton label={t('auth.logOut')} onClick={logout} className="size-9 rounded-xl">
         <LogOut size={16} />
       </IconButton>
     </div>
@@ -78,17 +82,18 @@ const commonPaths = role => ({
 })
 
 export function SharedSidebarCommon({ currentRole, onNavigate }) {
+  const { t } = useLocale()
   const { pathname } = useLocation()
   const paths = commonPaths(currentRole)
   const items = [
-    ['Profile', paths.profile, UserRound],
-    ['Settings', paths.settings, Settings],
-    ['Account', paths.account, ShieldCheck],
-    ['Help & Support', paths.support, HelpCircle],
+    ['navigation.profile', paths.profile, UserRound],
+    ['navigation.settings', paths.settings, Settings],
+    ['navigation.account', paths.account, ShieldCheck],
+    ['common.helpSupport', paths.support, HelpCircle],
   ]
   return (
     <div className="mt-5 border-t border-line pt-4">
-      <p className="mb-2 px-3 text-[9px] font-semibold uppercase tracking-[.18em] text-muted">Account</p>
+      <p className="mb-2 px-3 text-[9px] font-semibold uppercase tracking-[.18em] text-muted">{t('navigation.account')}</p>
       <nav className="space-y-1">
         {items.map(([label, path, Icon]) => (
           <Link
@@ -97,7 +102,7 @@ export function SharedSidebarCommon({ currentRole, onNavigate }) {
             onClick={onNavigate}
             className={`flex items-center gap-3 rounded-xl px-3 py-2.5 text-xs font-medium ${pathname.startsWith(path) ? 'bg-brand text-white' : 'text-muted hover:bg-elevated hover:text-ink'}`}
           >
-            <Icon size={17} /> {label}
+            <Icon size={17} /> {t(label)}
           </Link>
         ))}
       </nav>
@@ -106,29 +111,30 @@ export function SharedSidebarCommon({ currentRole, onNavigate }) {
 }
 
 export function SharedWorkspaceHeader({ currentRole, workspaceLabel, onOpenMenu, offsetClass = '', children }) {
+  const { t } = useLocale()
   const { resolvedTheme, setTheme } = useTheme()
   const walletPath = currentRole === 'author' ? '/author/wallet' : '/reader/wallet'
   return (
     <header data-app-header className={`fixed left-0 right-0 top-0 z-30 border-b border-line bg-surface/95 shadow-sm backdrop-blur transition-[left,right] ${offsetClass}`}>
       <div className="flex h-16 items-center gap-3 px-4 sm:px-6 xl:px-8">
-        <IconButton label="Open menu" className="md:hidden" onClick={onOpenMenu}><Menu size={19} /></IconButton>
-        <Input icon={Search} placeholder="Search stories, authors, tags..." className="hidden w-full max-w-md sm:flex" />
-        <span className="hidden w-36 truncate rounded-full bg-brand/10 px-3 py-1.5 text-center text-[10px] font-semibold text-brand md:block">{workspaceLabel} Workspace</span>
+        <IconButton label={t('common.openMenu')} className="md:hidden" onClick={onOpenMenu}><Menu size={19} /></IconButton>
+        <Input icon={Search} placeholder={t('common.searchStoriesAuthorsTags')} className="hidden w-full max-w-md sm:flex" />
+        <span className="hidden max-w-48 shrink-0 truncate rounded-full bg-brand/10 px-3 py-1.5 text-center text-[10px] font-semibold text-brand md:block">{workspaceLabel} · {t('common.workspace')}</span>
         <div className="ml-auto"><RoleHeaderLinks includeWallet currentRole={currentRole} /></div>
         <Link to={walletPath} className="hidden items-center gap-2 rounded-xl border border-line bg-surface px-3 py-2 text-xs font-semibold sm:flex">
-          <span className="text-orange">●</span> 450 coins <span className="text-brand">+</span>
+          <span className="text-orange">●</span> {t('wallet.coins', { count: 450 })} <span className="text-brand">+</span>
         </Link>
-        <IconButton label="Toggle theme" onClick={() => setTheme(resolvedTheme === 'dark' ? 'light' : 'dark')}>
+        <IconButton label={t('common.toggleTheme')} onClick={() => setTheme(resolvedTheme === 'dark' ? 'light' : 'dark')}>
           {resolvedTheme === 'dark' ? <Sun size={18} /> : <Moon size={18} />}
         </IconButton>
         <LanguageSwitcher compact />
         {children}
-        <IconButton label="Notifications" className="relative hidden sm:grid">
+        <IconButton label={t('common.notifications')} className="relative hidden sm:grid">
           <Bell size={18} /><span className="absolute right-2 top-2 size-2 rounded-full bg-rose" />
         </IconButton>
         <WorkspaceHeaderAccount />
       </div>
-      <div className="px-4 pb-3 sm:hidden"><Input icon={Search} placeholder="Search stories..." /></div>
+      <div className="px-4 pb-3 sm:hidden"><Input icon={Search} placeholder={t('common.searchStories')} /></div>
     </header>
   )
 }

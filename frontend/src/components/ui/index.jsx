@@ -1,4 +1,5 @@
 import { X } from 'lucide-react'
+import { useLocale } from '../../context/LocaleContext'
 const cn = (...classes) => classes.filter(Boolean).join(' ')
 export function Button({ variant = 'primary', className, ...props }) {
   const styles = {
@@ -121,6 +122,7 @@ export function Avatar({ name = 'NovelHub user', src, className }) {
   )
 }
 export function Modal({ open, title, onClose, children }) {
+  const { t } = useLocale()
   if (!open) return null
   return (
     <div
@@ -131,7 +133,7 @@ export function Modal({ open, title, onClose, children }) {
       <Card className="w-full max-w-lg bg-elevated">
         <div className="mb-4 flex items-center justify-between">
           <h2 className="text-xl font-semibold">{title}</h2>
-          <IconButton label="Close" onClick={onClose}>
+          <IconButton label={t('common.close')} onClick={onClose}>
             <X size={18} />
           </IconButton>
         </div>
@@ -141,6 +143,7 @@ export function Modal({ open, title, onClose, children }) {
   )
 }
 export function Drawer({ open, title, onClose, children }) {
+  const { t } = useLocale()
   return (
     <aside
       className={cn(
@@ -151,7 +154,7 @@ export function Drawer({ open, title, onClose, children }) {
     >
       <div className="mb-6 flex items-center justify-between">
         <h2 className="text-xl font-semibold">{title}</h2>
-        <IconButton label="Close" onClick={onClose}>
+        <IconButton label={t('common.close')} onClick={onClose}>
           <X size={18} />
         </IconButton>
       </div>
