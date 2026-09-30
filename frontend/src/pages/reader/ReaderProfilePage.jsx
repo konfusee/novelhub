@@ -13,17 +13,28 @@ import {
   ShieldCheck,
   UserRound,
 } from 'lucide-react'
-import { ReaderLayout } from '../../layouts'
+import { AdminLayout, AuthorLayout, ModeratorLayout, ReaderLayout } from '../../layouts'
 import { Avatar, Badge, Button, Card, Input, Tabs } from '../../components/ui'
 import { useTheme } from '../../context/ThemeContext'
 import { useAuth } from '../../context/AuthContext'
+import { useLocale } from '../../context/LocaleContext'
 
-export function ReaderProfilePage() {
+const workspaceLayouts = {
+  reader: ReaderLayout,
+  author: AuthorLayout,
+  moderator: ModeratorLayout,
+  admin: AdminLayout,
+}
+
+export function ReaderProfilePage({ workspace = 'reader' }) {
+  const Layout = workspaceLayouts[workspace] || ReaderLayout
   const location = useLocation()
   const navigate = useNavigate()
   const { theme, setTheme } = useTheme()
   const { currentUser } = useAuth()
-  const isSettings = location.pathname.startsWith('/reader/settings')
+  const { t } = useLocale()
+  const settingsRoot = workspace === 'admin' ? '/admin/preferences' : `/${workspace}/settings`
+  const isSettings = location.pathname.startsWith(settingsRoot)
   const sectionFromPath = location.pathname.split('/').at(-1)
   const section = isSettings && ['reading', 'listening', 'appearance', 'privacy', 'security'].includes(sectionFromPath)
     ? sectionFromPath
@@ -44,15 +55,15 @@ export function ReaderProfilePage() {
   const [notice, setNotice] = useState('')
   const changed = () => setSaved(false)
   const changeSection = value => {
-    navigate(`/reader/settings/${value}`)
+    navigate(`${settingsRoot}/${value}`)
   }
   const save = () => {
     localStorage.setItem(
-      'novelhub.reader.preferences',
+      'novelhub.user.preferences',
       JSON.stringify({ name, handle, bio, genres, fontSize, spacing, canvas, speed, skip, autoplay, twoFactor }),
     )
     setSaved(true)
-    setNotice(isSettings ? 'Your preferences were saved.' : 'Your profile was saved.')
+    setNotice(t(isSettings ? 'settings.preferencesSavedNotice' : 'settings.profileSavedNotice'))
   }
   const discard = () => {
     setName(currentUser?.name || 'NovelHub Reader')
@@ -67,24 +78,24 @@ export function ReaderProfilePage() {
     setAutoplay(true)
     setTwoFactor(false)
     setSaved(true)
-    setNotice(isSettings ? 'Unsaved preference changes were discarded.' : 'Unsaved profile changes were discarded.')
+    setNotice(t(isSettings ? 'settings.preferencesDiscarded' : 'settings.profileDiscarded'))
   }
   return (
-    <ReaderLayout>
-      <main className="page-reader pb-12 pt-7">
+    <Layout>
+      <main className={`page-${workspace} pb-12 pt-7`}>
         <div className="flex flex-col justify-between gap-3 sm:flex-row sm:items-center">
           <div>
             <p className="text-[10px] uppercase tracking-[.18em] text-brand">
-              {isSettings ? 'Reader preferences' : 'Public identity'} · Reader ID #NV-88291
+              {t(isSettings ? 'settings.sharedPreferences' : 'settings.publicIdentity')} · {t('settings.userId', { id: 'NV-88291' })}
             </p>
             <h1 className="mt-2 text-3xl font-bold sm:text-4xl">
-              {isSettings ? 'Reader Settings' : 'Reader Profile'}
+              {t(isSettings ? 'settings.title' : 'settings.userProfile')}
             </h1>
           </div>
           <p className="max-w-md text-sm text-muted">
             {isSettings
-              ? 'Configure reading, listening, appearance, privacy, and account safeguards.'
-              : 'Manage the identity and interests shown on your NovelHub profile.'}
+              ? t('settings.description')
+              : t('settings.profileDescription')}
           </p>
         </div>
         {isSettings && <div className="mt-6 overflow-x-auto">
@@ -92,11 +103,11 @@ export function ReaderProfilePage() {
             value={section}
             onChange={changeSection}
             items={[
-              { value: 'reading', label: 'Reading Preferences' },
-              { value: 'listening', label: 'Listening Preferences' },
-              { value: 'appearance', label: 'Appearance' },
-              { value: 'privacy', label: 'Privacy' },
-              { value: 'security', label: 'Security' },
+              { value: 'reading', label: t('settings.tabs.reading') },
+              { value: 'listening', label: t('settings.tabs.listening') },
+              { value: 'appearance', label: t('settings.tabs.appearance') },
+              { value: 'privacy', label: t('settings.tabs.privacy') },
+              { value: 'security', label: t('settings.tabs.security') },
             ]}
           />
         </div>}
@@ -177,9 +188,9 @@ export function ReaderProfilePage() {
             )}
             {section === 'reading' && (
             <Card>
-              <SectionTitle icon={BookOpen} title="Reading Settings" note="Typography & canvas" />
+              <SectionTitle icon={BookOpen} title={t('settings.reading.title')} note={t('settings.reading.note')} />
               <p className="mt-5 text-xs font-semibold">
-                Default Font Size <span className="float-right text-brand">{fontSize}px</span>
+                {t('settings.reading.fontSize')} <span className="float-right text-brand">{fontSize}px</span>
               </p>
               <input
                 type="range"
@@ -192,7 +203,7 @@ export function ReaderProfilePage() {
                 }}
                 className="mt-2 w-full accent-brand"
               />
-              <p className="mt-5 text-xs font-semibold">Line Spacing &amp; Rhythm</p>
+              <p className="mt-5 text-xs font-semibold">{t('settings.reading.lineSpacing')}</p>
               <div className="mt-2 grid grid-cols-3 gap-2">
                 {[1.4, 1.8, 2.2].map(value => (
                   <Choice
@@ -203,17 +214,17 @@ export function ReaderProfilePage() {
                       changed()
                     }}
                     title={`${value}×`}
-                    note={value === 1.4 ? 'Compact' : value === 1.8 ? 'Relaxed' : 'Spacious'}
+                    note={t(value === 1.4 ? 'settings.reading.compact' : value === 1.8 ? 'settings.reading.relaxed' : 'settings.reading.spacious')}
                   />
                 ))}
               </div>
-              <p className="mt-5 text-xs font-semibold">Preferred Reader Canvas</p>
+              <p className="mt-5 text-xs font-semibold">{t('settings.reading.canvas')}</p>
               <div className="mt-2 grid grid-cols-3 gap-2">
                 {[
-                  ['parchment', 'Parchment', '#fcf8f2'],
-                  ['cream', 'Soft Cream', '#fffdf9'],
-                  ['navy', 'Dark Navy', '#081321'],
-                ].map(([value, label, color]) => (
+                  ['parchment', 'settings.reading.parchment', '#fcf8f2'],
+                  ['cream', 'settings.reading.cream', '#fffdf9'],
+                  ['navy', 'settings.reading.navy', '#081321'],
+                ].map(([value, labelKey, color]) => (
                   <button
                     key={value}
                     onClick={() => {
@@ -226,7 +237,7 @@ export function ReaderProfilePage() {
                       color: value === 'navy' ? 'white' : '#172033',
                     }}
                   >
-                    {label}
+                    {t(labelKey)}
                     {canvas === value && <Check size={13} className="float-right" />}
                   </button>
                 ))}
@@ -237,10 +248,10 @@ export function ReaderProfilePage() {
             <Card>
               <SectionTitle
                 icon={Headphones}
-                title="Listening Preferences"
-                note="Audio Lounge & Narration"
+                title={t('settings.listening.title')}
+                note={t('settings.listening.note')}
               />
-              <ControlRow label="Default Playback Speed">
+              <ControlRow label={t('settings.listening.speed')}>
                 <div className="flex rounded-xl bg-elevated p-1">
                   {[0.8, 1, 1.25, 1.5].map(value => (
                     <button
@@ -256,7 +267,7 @@ export function ReaderProfilePage() {
                   ))}
                 </div>
               </ControlRow>
-              <ControlRow label="Skip Interval">
+              <ControlRow label={t('settings.listening.skip')}>
                 <div className="flex gap-2">
                   {[10, 15, 30].map(value => (
                     <button
@@ -272,7 +283,7 @@ export function ReaderProfilePage() {
                   ))}
                 </div>
               </ControlRow>
-              <ControlRow label="Autoplay Next Chapter">
+              <ControlRow label={t('settings.listening.autoplay')}>
                 <button
                   onClick={() => {
                     setAutoplay(!autoplay)
@@ -291,15 +302,15 @@ export function ReaderProfilePage() {
             <Card>
               <SectionTitle
                 icon={Palette}
-                title="Appearance & Themes"
-                note="System chrome & navigation"
+                title={t('settings.appearance.title')}
+                note={t('settings.appearance.note')}
               />
               <div className="mt-5 grid gap-3 sm:grid-cols-3">
                 {[
-                  ['light', 'Light Theme'],
-                  ['dark', 'Dark Theme'],
-                  ['system', 'System'],
-                ].map(([value, label]) => (
+                  ['light', 'settings.appearance.light'],
+                  ['dark', 'settings.appearance.dark'],
+                  ['system', 'settings.appearance.system'],
+                ].map(([value, labelKey]) => (
                   <Choice
                     key={value}
                     active={theme === value}
@@ -307,8 +318,8 @@ export function ReaderProfilePage() {
                       setTheme(value)
                       changed()
                     }}
-                    title={label}
-                    note={value === 'system' ? 'Follow device' : `${label} palette`}
+                    title={t(labelKey)}
+                    note={t(value === 'system' ? 'settings.appearance.followDevice' : 'settings.appearance.palette')}
                   />
                 ))}
               </div>
@@ -318,11 +329,11 @@ export function ReaderProfilePage() {
             <Card>
               <SectionTitle
                 icon={ShieldCheck}
-                title="Privacy"
-                note="Activity visibility"
+                title={t('settings.privacy.title')}
+                note={t('settings.privacy.note')}
               />
-              <ControlRow label="Public reading activity">
-                <Badge tone="green">Friends only</Badge>
+              <ControlRow label={t('settings.privacy.activity')}>
+                <Badge tone="green">{t('settings.privacy.friendsOnly')}</Badge>
               </ControlRow>
             </Card>
             )}
@@ -330,12 +341,12 @@ export function ReaderProfilePage() {
             <Card>
               <SectionTitle
                 icon={ShieldCheck}
-                title="Security"
-                note="Account safeguards"
+                title={t('settings.security.title')}
+                note={t('settings.security.note')}
               />
-              <ControlRow label="Two-factor authentication">
-                <Button onClick={() => { setTwoFactor(value => !value); setNotice(twoFactor ? 'Two-factor authentication disabled for this demo.' : 'Two-factor authentication enabled for this demo.') }} variant="secondary" className="min-h-9 py-1.5">
-                  {twoFactor ? 'Disable' : 'Configure'}
+              <ControlRow label={t('settings.security.twoFactor')}>
+                <Button onClick={() => { setTwoFactor(value => !value); setNotice(t(twoFactor ? 'settings.security.disabledNotice' : 'settings.security.enabledNotice')) }} variant="secondary" className="min-h-9 py-1.5">
+                  {t(twoFactor ? 'settings.security.disable' : 'settings.security.configure')}
                 </Button>
               </ControlRow>
             </Card>
@@ -347,7 +358,7 @@ export function ReaderProfilePage() {
               <div className="flex items-center justify-between">
                 <span className="flex items-center gap-2 text-xs font-semibold">
                   <Eye size={15} />
-                  Live Reader Sample
+                  {t('settings.preview.title')}
                 </span>
                 <Badge tone="green">
                   {fontSize}px · {spacing}×
@@ -376,8 +387,8 @@ export function ReaderProfilePage() {
             {isSettings && section === 'listening' && (
             <Card>
               <div className="flex items-center justify-between">
-                <strong className="text-sm">Narrator Sync Test</strong>
-                <span className="text-xs text-orange">{speed}× Cadence</span>
+                <strong className="text-sm">{t('settings.preview.narrator')}</strong>
+                <span className="text-xs text-orange">{speed}× {t('settings.preview.cadence')}</span>
               </div>
               <div className="mt-4 flex items-center gap-3">
                 <span className="grid size-14 place-items-center rounded-xl bg-orange/20">
@@ -389,7 +400,7 @@ export function ReaderProfilePage() {
                     <div className="h-full w-[42%] bg-brand" />
                   </div>
                 </div>
-                <button onClick={() => setAudioPlaying(value => !value)} className="grid size-10 place-items-center rounded-full bg-brand text-white" aria-label={audioPlaying ? 'Pause sample' : 'Play sample'}>
+                <button onClick={() => setAudioPlaying(value => !value)} className="grid size-10 place-items-center rounded-full bg-brand text-white" aria-label={t(audioPlaying ? 'settings.preview.pause' : 'settings.preview.play')}>
                   {audioPlaying ? <Pause size={16} /> : <Play size={16} />}
                 </button>
               </div>
@@ -407,23 +418,23 @@ export function ReaderProfilePage() {
         <section className="relative z-10 mt-8 rounded-3xl border border-line bg-surface p-4 shadow-sm sm:p-5">
         <div className="flex flex-col items-stretch justify-between gap-4 sm:flex-row sm:items-center">
           <p className="hidden text-xs text-muted sm:block">
-            {saved
-              ? isSettings ? 'Preferences saved' : 'Profile saved'
-              : isSettings ? 'Unsaved preferences: review your changes.' : 'Unsaved profile changes: review your changes.'}
+            {t(saved
+              ? isSettings ? 'settings.preferencesSaved' : 'settings.profileSaved'
+              : isSettings ? 'settings.preferencesUnsaved' : 'settings.profileUnsaved')}
           </p>
           <div className="flex gap-2 sm:ml-auto">
             <Button variant="secondary" onClick={discard}>
-              Discard
+              {t('common.discard')}
             </Button>
             <Button className="flex-1 sm:flex-none" onClick={save}>
               <Save size={15} />
-              Save Changes
+              {t('common.saveChanges')}
             </Button>
           </div>
         </div>
         </section>
       </main>
-    </ReaderLayout>
+    </Layout>
   )
 }
 

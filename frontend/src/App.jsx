@@ -48,6 +48,7 @@ import { AuthorAgreementPage } from './pages/admin/AuthorAgreementPage'
 import { ForbiddenPage, NotFoundPage } from './pages/system/SystemPages'
 import { LegalPage } from './pages/system/LegalPage'
 import { RoleUtilityPage } from './pages/system/RoleUtilityPage'
+import { AccountPage } from './pages/system/AccountPage'
 import { SiteFooter } from './components/shared/SiteFooter'
 import { AdminLayout, AuthorLayout, ModeratorLayout, ReaderLayout } from './layouts'
 
@@ -149,7 +150,7 @@ function AppRoutes() {
         <Route path="/reader/settings/appearance" element={role('reader', <ReaderProfilePage />)} />
         <Route path="/reader/settings/privacy" element={role('reader', <ReaderProfilePage />)} />
         <Route path="/reader/settings/security" element={role('reader', <ReaderProfilePage />)} />
-        <Route path="/reader/account" element={role('reader', <RoleUtilityPage role="reader" eyebrow="Shared account" title="Account" description="Manage sign-in methods, contact information, connected devices, and account security." />)} />
+        <Route path="/reader/account" element={role('reader', <AccountPage workspace="reader" />)} />
         <Route path="/reader/support" element={role('reader', <RoleUtilityPage role="reader" eyebrow="NovelHub help" title="Help & Support" description="Find product guidance, accessibility help, frequently asked questions, and support channels." />)} />
         <Route
           path="/read/:storyId/:chapterId"
@@ -182,8 +183,9 @@ function AppRoutes() {
         <Route path="/author/earnings" element={role('author', <RoleUtilityPage role="author" eyebrow="Creator finance" title="Earnings & Payouts" description="Track story revenue, royalty statements, payout readiness, and completed creator payments separately from Reader Wallet." />, true)} />
         <Route path="/author/profile" element={role('author', <RoleUtilityPage role="author" eyebrow="Author account" title="Author Profile" description="Manage your public pen name, biography, verification details, and author storefront." />, true)} />
         <Route path="/author/wallet" element={role('author', <RoleUtilityPage role="author" eyebrow="Reader purchases" title="Wallet & Coins" description="Authors can top up coins and purchase stories from other creators; their own published stories remain available without charge." />, true)} />
-        <Route path="/author/settings" element={role('author', <RoleUtilityPage role="author" eyebrow="Studio preferences" title="Author Settings" description="Configure publishing defaults, collaboration, notifications, security, and workspace preferences." />, true)} />
-        <Route path="/author/account" element={role('author', <RoleUtilityPage role="author" eyebrow="Shared account" title="Account" description="Manage sign-in methods, contact information, connected devices, and account security." />, true)} />
+        <Route path="/author/settings" element={role('author', <ReaderProfilePage workspace="author" />, true)} />
+        <Route path="/author/settings/:section" element={role('author', <ReaderProfilePage workspace="author" />, true)} />
+        <Route path="/author/account" element={role('author', <AccountPage workspace="author" />, true)} />
         <Route path="/author/support" element={role('author', <RoleUtilityPage role="author" eyebrow="NovelHub help" title="Help & Support" description="Find creator guidance, publishing help, frequently asked questions, and support channels." />, true)} />
         <Route path="/moderator" element={role('moderator', <ModeratorOverviewPage />)} />
         <Route path="/moderator/submissions" element={role('moderator', <SubmissionQueuePage />)} />
@@ -197,9 +199,10 @@ function AppRoutes() {
         <Route path="/moderator/decisions" element={role('moderator', <RoleUtilityPage role="moderator" eyebrow="Moderation history" title="Decisions" description="Review completed moderation decisions, reasoning, policy references, and appeal status." />)} />
         <Route path="/moderator/escalations" element={role('moderator', <RoleUtilityPage role="moderator" eyebrow="Priority desk" title="Escalations" description="Handle urgent safety, copyright, and policy cases that require senior review." />)} />
         <Route path="/moderator/audit-trail" element={role('moderator', <RoleUtilityPage role="moderator" eyebrow="Accountability" title="Audit Trail" description="Trace moderation activity with immutable event details and reviewer attribution." />)} />
-        <Route path="/moderator/settings" element={role('moderator', <RoleUtilityPage role="moderator" eyebrow="Workspace preferences" title="Moderator Settings" description="Configure queue assignments, review notifications, availability, and moderator profile preferences." />)} />
+        <Route path="/moderator/settings" element={role('moderator', <ReaderProfilePage workspace="moderator" />)} />
+        <Route path="/moderator/settings/:section" element={role('moderator', <ReaderProfilePage workspace="moderator" />)} />
         <Route path="/moderator/profile" element={role('moderator', <RoleUtilityPage role="moderator" eyebrow="Shared profile" title="Profile" description="Manage your display identity and shared NovelHub profile information." />)} />
-        <Route path="/moderator/account" element={role('moderator', <RoleUtilityPage role="moderator" eyebrow="Shared account" title="Account" description="Manage sign-in methods, contact information, connected devices, and account security." />)} />
+        <Route path="/moderator/account" element={role('moderator', <AccountPage workspace="moderator" />)} />
         <Route path="/moderator/support" element={role('moderator', <RoleUtilityPage role="moderator" eyebrow="NovelHub help" title="Help & Support" description="Find moderation guidance, policy references, and support channels." />)} />
         <Route
           path="/moderator/similarity-review/:reviewId"
@@ -211,9 +214,10 @@ function AppRoutes() {
         <Route path="/admin/roles" element={role('admin', <RolesPermissionsPage />)} />
         <Route path="/admin/categories" element={role('admin', <CategoriesConfigurationPage />)} />
         <Route path="/admin/settings" element={role('admin', <PlatformSettingsPage />)} />
-        <Route path="/admin/preferences" element={role('admin', <RoleUtilityPage role="admin" eyebrow="Workspace preferences" title="Admin Settings" description="Configure personal notifications, availability, language, appearance, and administrative workspace preferences." />)} />
+        <Route path="/admin/preferences" element={role('admin', <ReaderProfilePage workspace="admin" />)} />
+        <Route path="/admin/preferences/:section" element={role('admin', <ReaderProfilePage workspace="admin" />)} />
         <Route path="/admin/profile" element={role('admin', <RoleUtilityPage role="admin" eyebrow="Shared profile" title="Profile" description="Manage your display identity and shared NovelHub profile information." />)} />
-        <Route path="/admin/account" element={role('admin', <RoleUtilityPage role="admin" eyebrow="Shared account" title="Account" description="Manage sign-in methods, contact information, connected devices, and account security." />)} />
+        <Route path="/admin/account" element={role('admin', <AccountPage workspace="admin" />)} />
         <Route path="/admin/support" element={role('admin', <RoleUtilityPage role="admin" eyebrow="NovelHub help" title="Help & Support" description="Find administration guidance, operational documentation, and support channels." />)} />
         <Route path="/admin/content" element={role('admin', <RoleUtilityPage role="admin" eyebrow="Content governance" title="Content Configuration" description="Manage publication rules, discovery metadata, content ratings, and platform-wide defaults." />)} />
         <Route path="/admin/services" element={role('admin', <RoleUtilityPage role="admin" eyebrow="Infrastructure" title="Services & Infrastructure" description="Monitor external services, storage, search, audio processing, and operational capacity." />)} />
