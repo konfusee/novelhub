@@ -1,28 +1,20 @@
 import { useState } from 'react'
 import { Link, useLocation } from 'react-router-dom'
 import {
-  Bell,
   BookOpen,
   ClipboardCheck,
   FileSearch,
   Flag,
   Gauge,
   History,
-  Menu,
-  Moon,
   Scale,
-  Search,
   ShieldAlert,
-  Sun,
   UserRoundCheck,
-  Settings,
   X,
 } from 'lucide-react'
-import { useTheme } from '../../context/ThemeContext'
-import { Avatar, IconButton, Input } from '../ui'
+import { Avatar, IconButton } from '../ui'
 import { SiteFooter } from '../shared/SiteFooter'
-import { LanguageSwitcher } from '../shared/LanguageSwitcher'
-import { WorkspaceHeaderAccount, WorkspaceSwitcher } from '../shared/RoleNavigation'
+import { SharedSidebarCommon, SharedWorkspaceHeader, WorkspaceSwitcher } from '../shared/RoleNavigation'
 
 const groups = [
   [
@@ -41,7 +33,6 @@ const groups = [
       ['Decisions', '/moderator/decisions', UserRoundCheck],
       ['Escalations', '/moderator/escalations', Scale],
       ['Audit Trail', '/moderator/audit-trail', History],
-      ['Moderator Settings', '/moderator/settings', Settings],
     ],
   ],
 ]
@@ -95,7 +86,6 @@ function Nav({ close }) {
 }
 export function ModeratorShell({ children }) {
   const [open, setOpen] = useState(false)
-  const { resolvedTheme, setTheme } = useTheme()
   return (
     <div className="min-h-screen bg-page text-ink">
       <aside className="fixed inset-y-0 left-0 z-40 hidden w-56 flex-col border-r border-line bg-surface p-4 lg:flex">
@@ -118,6 +108,7 @@ export function ModeratorShell({ children }) {
         <div className="min-h-0 flex-1 overflow-y-auto">
           <WorkspaceSwitcher currentRole="moderator" />
           <Nav />
+          <SharedSidebarCommon currentRole="moderator" />
         </div>
         <p className="border-t border-line pt-4 text-[10px] text-muted">
           Shift 03h 45m · SLA 98.4%
@@ -140,36 +131,10 @@ export function ModeratorShell({ children }) {
         </div>
         <WorkspaceSwitcher currentRole="moderator" />
         <Nav close={() => setOpen(false)} />
+        <SharedSidebarCommon currentRole="moderator" onNavigate={() => setOpen(false)} />
       </aside>
       <div className="flex min-h-screen flex-col lg:pl-56">
-        <header className="fixed left-0 right-0 top-0 z-30 flex min-h-16 items-center gap-3 border-b border-line bg-surface/95 px-4 shadow-sm backdrop-blur lg:left-56 sm:px-6 xl:px-8">
-          <IconButton label="Menu" className="lg:hidden" onClick={() => setOpen(true)}>
-            <Menu size={18} />
-          </IconButton>
-          <div className="hidden sm:block">
-            <p className="text-[9px] text-muted">Moderator Console</p>
-            <strong className="text-xs">Overview &amp; Operations Hub</strong>
-          </div>
-          <Input
-            icon={Search}
-            placeholder="Search submission ID..."
-            className="ml-auto hidden w-64 md:flex"
-          />
-          <select aria-label="Filter priority" className="hidden rounded-xl border border-line bg-surface px-3 py-2 text-xs sm:block">
-            <option>All Priority</option><option>Urgent</option><option>High</option><option>Normal</option>
-          </select>
-          <IconButton label="Notifications">
-            <Bell size={17} />
-          </IconButton>
-          <LanguageSwitcher compact />
-          <WorkspaceHeaderAccount />
-          <IconButton
-            label="Theme"
-            onClick={() => setTheme(resolvedTheme === 'dark' ? 'light' : 'dark')}
-          >
-            {resolvedTheme === 'dark' ? <Sun size={17} /> : <Moon size={17} />}
-          </IconButton>
-        </header>
+        <SharedWorkspaceHeader currentRole="moderator" onOpenMenu={() => setOpen(true)} offsetClass="lg:left-56" />
         <main className="flex-1 pt-16">{children}</main>
         <SiteFooter />
       </div>

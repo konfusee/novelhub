@@ -1,30 +1,21 @@
 import { useState } from 'react'
 import { Link, useLocation } from 'react-router-dom'
 import {
-  Activity,
-  Bell,
   BookOpen,
   Boxes,
   FolderTree,
   History,
   LayoutDashboard,
-  Menu,
-  Moon,
-  Search,
-  Settings,
   ShieldCheck,
   SlidersHorizontal,
-  Sun,
   UserCog,
   UsersRound,
   WalletCards,
   X,
 } from 'lucide-react'
-import { useTheme } from '../../context/ThemeContext'
-import { Avatar, IconButton, Input } from '../ui'
+import { Avatar, IconButton } from '../ui'
 import { SiteFooter } from '../shared/SiteFooter'
-import { LanguageSwitcher } from '../shared/LanguageSwitcher'
-import { WorkspaceHeaderAccount, WorkspaceSwitcher } from '../shared/RoleNavigation'
+import { SharedSidebarCommon, SharedWorkspaceHeader, WorkspaceSwitcher } from '../shared/RoleNavigation'
 
 const groups = [
   [
@@ -51,7 +42,6 @@ const groups = [
     'Platform',
     [
       ['Services & Infrastructure', '/admin/services', Boxes],
-      ['System Settings', '/admin/settings', Settings],
       ['Audit Logs', '/admin/audit-logs', History],
       ['Moderation Oversight', '/admin/moderation', ShieldCheck],
       ['Wallet Transactions', '/admin/transactions', WalletCards],
@@ -95,10 +85,9 @@ function Nav({ close }) {
 }
 export function AdminShell({ children }) {
   const [open, setOpen] = useState(false)
-  const { resolvedTheme, setTheme } = useTheme()
   return (
     <div className="min-h-screen bg-page text-ink">
-      <aside className="fixed inset-y-0 left-0 z-40 hidden w-60 flex-col border-r border-line bg-surface p-4 lg:flex">
+      <aside className="fixed inset-y-0 left-0 z-40 hidden w-56 flex-col border-r border-line bg-surface p-4 lg:flex">
         <Link to="/admin" className="mb-6 flex items-center gap-2 px-2 text-xl font-bold">
           <span className="grid size-9 place-items-center rounded-xl bg-brand text-white">
             <BookOpen size={19} />
@@ -118,6 +107,7 @@ export function AdminShell({ children }) {
         <div className="min-h-0 flex-1 overflow-y-auto">
           <WorkspaceSwitcher currentRole="admin" />
           <Nav />
+          <SharedSidebarCommon currentRole="admin" />
         </div>
         <p className="border-t border-line pt-4 text-[10px] text-muted">Security Center · v4.8.2</p>
       </aside>
@@ -139,37 +129,10 @@ export function AdminShell({ children }) {
         </div>
         <WorkspaceSwitcher currentRole="admin" />
         <Nav close={() => setOpen(false)} />
+        <SharedSidebarCommon currentRole="admin" onNavigate={() => setOpen(false)} />
       </aside>
-      <div className="flex min-h-screen flex-col lg:pl-60">
-        <header className="fixed left-0 right-0 top-0 z-30 flex min-h-16 items-center gap-3 border-b border-line bg-surface/95 px-4 shadow-sm backdrop-blur lg:left-60 sm:px-6 xl:px-8">
-          <IconButton label="Menu" className="lg:hidden" onClick={() => setOpen(true)}>
-            <Menu size={18} />
-          </IconButton>
-          <div className="hidden sm:block">
-            <p className="text-[9px] text-muted">Admin Console</p>
-            <strong className="text-xs">Operations &amp; System Health</strong>
-          </div>
-          <span className="hidden items-center gap-2 rounded-full bg-brand/10 px-4 py-2 text-xs text-brand md:flex">
-            <Activity size={14} />
-            All Core Systems Operational
-          </span>
-          <Input
-            icon={Search}
-            placeholder="Global admin search..."
-            className="ml-auto hidden w-60 xl:flex"
-          />
-          <IconButton label="Notifications">
-            <Bell size={17} />
-          </IconButton>
-          <LanguageSwitcher compact />
-          <WorkspaceHeaderAccount />
-          <IconButton
-            label="Theme"
-            onClick={() => setTheme(resolvedTheme === 'dark' ? 'light' : 'dark')}
-          >
-            {resolvedTheme === 'dark' ? <Sun size={17} /> : <Moon size={17} />}
-          </IconButton>
-        </header>
+      <div className="flex min-h-screen flex-col lg:pl-56">
+        <SharedWorkspaceHeader currentRole="admin" onOpenMenu={() => setOpen(true)} offsetClass="lg:left-56" />
         <main className="flex-1 pt-16">{children}</main>
         <SiteFooter />
       </div>

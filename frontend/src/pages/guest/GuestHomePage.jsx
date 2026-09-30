@@ -323,15 +323,6 @@ export function GuestHomePage({ embedded = false }) {
           </aside>
         </div>
       </main>
-      {!embedded && <footer className="mt-12 border-t border-line bg-surface">
-        <div className="mx-auto flex max-w-[1360px] flex-col justify-between gap-4 px-5 py-8 text-xs text-muted sm:flex-row md:px-8 lg:px-12">
-          <strong className="text-ink">
-            Novel<span className="text-brand">Hub</span>
-          </strong>
-          <span>Stories for a calmer, brighter you</span>
-          <span>© 2026 NovelHub</span>
-        </div>
-      </footer>}
     </div>
   )
 }

@@ -4,36 +4,25 @@ import {
   Bell,
   BookHeart,
   BookOpen,
-  Bookmark,
   ChevronLeft,
   ChevronRight,
-  ChevronDown,
   Compass,
   Flame,
   Headphones,
   History,
   Home,
   Library,
-  LogOut,
-  Menu,
   MessageCircle,
-  Moon,
-  PenLine,
   PanelLeft,
   PanelRight,
   Search,
   Settings,
-  Sun,
-  UserRound,
   WalletCards,
   X,
 } from 'lucide-react'
-import { useTheme } from '../../context/ThemeContext'
-import { useAuth } from '../../context/AuthContext'
-import { Avatar, IconButton, Input } from '../ui'
+import { IconButton } from '../ui'
 import { SiteFooter } from '../shared/SiteFooter'
-import { LanguageSwitcher } from '../shared/LanguageSwitcher'
-import { RoleHeaderLinks, WorkspaceSwitcher } from '../shared/RoleNavigation'
+import { SharedSidebarCommon, SharedWorkspaceHeader, WorkspaceSwitcher } from '../shared/RoleNavigation'
 
 const navigation = [
   ['Home', '/reader', Home],
@@ -46,16 +35,11 @@ const navigation = [
   ['Notifications', '/reader/notifications', Bell],
   ['Messages', '/reader/messages', MessageCircle],
   ['Wallet', '/reader/wallet', WalletCards],
-  ['Profile', '/reader/profile', UserRound],
-  ['Settings', '/reader/settings', Settings],
 ]
 
 function NavItems({ onNavigate }) {
   const { pathname } = useLocation()
-  const { hasRole } = useAuth()
-  const items = hasRole('author')
-    ? [...navigation, ['Creator Studio', '/author', PenLine]]
-    : navigation
+  const items = navigation
   return (
     <nav className="space-y-1">
       {items.map(([label, href, Icon]) => {
@@ -90,9 +74,6 @@ export function ReaderShell({ children }) {
   const [sidebarPosition, setSidebarPosition] = useState(
     () => localStorage.getItem('novelhub.readerSidebarPosition') || 'left',
   )
-  const { resolvedTheme, setTheme } = useTheme()
-  const { currentUser, logout } = useAuth()
-  const toggleTheme = () => setTheme(resolvedTheme === 'dark' ? 'light' : 'dark')
   const toggleSidebar = () => {
     setCollapsed(current => {
       localStorage.setItem('novelhub.readerSidebarCollapsed', String(!current))
@@ -137,6 +118,7 @@ export function ReaderShell({ children }) {
         </Link>
         {!collapsed && <WorkspaceSwitcher currentRole="reader" />}
         <div className={collapsed ? '[&_span]:hidden [&_a]:justify-center [&_a]:px-2' : ''}><NavItems /></div>
+        {!collapsed && <SharedSidebarCommon currentRole="reader" />}
         <div className={`mt-auto rounded-2xl border border-line bg-elevated p-4 ${collapsed ? 'hidden' : ''}`}>
           <div className="flex items-center gap-2 text-sm font-semibold">
             <Flame className="text-orange" size={18} /> Keep it going!
@@ -184,27 +166,11 @@ export function ReaderShell({ children }) {
         </div>
         <WorkspaceSwitcher currentRole="reader" />
         <NavItems onNavigate={() => setMenuOpen(false)} />
+        <SharedSidebarCommon currentRole="reader" onNavigate={() => setMenuOpen(false)} />
       </aside>
 
       <div className={`flex min-h-screen flex-col transition-[padding] ${contentSpacing}`}>
-        <header className={`fixed left-0 right-0 top-0 z-30 border-b border-line bg-page/95 shadow-sm backdrop-blur transition-[left,right] ${headerSpacing}`}>
-          <div className="flex h-16 items-center gap-3 px-4 sm:px-6 xl:px-8">
-            <IconButton label="Open menu" className="lg:hidden" onClick={() => setMenuOpen(true)}>
-              <Menu size={20} />
-            </IconButton>
-            <Input
-              icon={Search}
-              placeholder="Search stories, authors, tags..."
-              className="hidden w-full max-w-md sm:flex"
-            />
-            <div className="ml-auto"><RoleHeaderLinks includeWallet currentRole="reader" /></div>
-            <Link to="/reader/wallet" className="ml-auto hidden items-center gap-2 rounded-xl border border-line bg-surface px-3 py-2 text-xs font-semibold sm:flex xl:ml-0">
-              <span className="text-orange">●</span> 450 coins <span className="text-brand">+</span>
-            </Link>
-            <IconButton label="Toggle theme" onClick={toggleTheme}>
-              {resolvedTheme === 'dark' ? <Sun size={18} /> : <Moon size={18} />}
-            </IconButton>
-            <LanguageSwitcher compact />
+        <SharedWorkspaceHeader currentRole="reader" onOpenMenu={() => setMenuOpen(true)} offsetClass={headerSpacing}>
             <div className="relative">
               <IconButton label="Layout settings" onClick={() => setLayoutOpen(open => !open)}>
                 <Settings size={18} />
@@ -231,31 +197,7 @@ export function ReaderShell({ children }) {
                 </div>
               )}
             </div>
-            <IconButton label="Bookmarks" className="hidden sm:grid">
-              <Bookmark size={18} />
-            </IconButton>
-            <IconButton label="Notifications" className="relative hidden sm:grid">
-              <Bell size={18} />
-              <span className="absolute right-2 top-2 size-2 rounded-full bg-rose" />
-            </IconButton>
-            <Link to="/reader/profile" className="flex items-center gap-2">
-              <Avatar name={currentUser?.name || 'Reader'} />
-              <span className="hidden text-left xl:block">
-                <strong className="block text-xs">{currentUser?.name || 'Reader'}</strong>
-                <span className="flex items-center gap-1 text-[10px] text-muted">
-                  <Flame size={11} className="text-orange" /> 18 day streak
-                </span>
-              </span>
-              <ChevronDown size={15} className="hidden text-muted xl:block" />
-            </Link>
-            <IconButton label="Log out" onClick={logout}>
-              <LogOut size={18} />
-            </IconButton>
-          </div>
-          <div className="px-4 pb-3 sm:hidden">
-            <Input icon={Search} placeholder="Search stories..." />
-          </div>
-        </header>
+        </SharedWorkspaceHeader>
         <main className="flex-1 pt-[7rem] sm:pt-16">{children}</main>
         <SiteFooter />
       </div>

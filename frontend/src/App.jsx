@@ -144,6 +144,8 @@ function AppRoutes() {
         <Route path="/reader/audiobooks" element={role('reader', <RoleUtilityPage role="reader" eyebrow="Listening" title="My Audiobooks" description="Continue listening, manage downloaded audio, and browse your saved narration queue." />)} />
         <Route path="/reader/messages" element={role('reader', <RoleUtilityPage role="reader" eyebrow="Community" title="Messages" description="Keep up with author announcements, reading clubs, and conversations around your favorite stories." />)} />
         <Route path="/reader/settings" element={role('reader', <RoleUtilityPage role="reader" eyebrow="Account" title="Reader Settings" description="Manage language, appearance, reading preferences, notifications, and account options." />)} />
+        <Route path="/reader/account" element={role('reader', <RoleUtilityPage role="reader" eyebrow="Shared account" title="Account" description="Manage sign-in methods, contact information, connected devices, and account security." />)} />
+        <Route path="/reader/support" element={role('reader', <RoleUtilityPage role="reader" eyebrow="NovelHub help" title="Help & Support" description="Find product guidance, accessibility help, frequently asked questions, and support channels." />)} />
         <Route
           path="/read/:storyId/:chapterId"
           element={role('reader', <FullChapterReaderPage />)}
@@ -176,6 +178,8 @@ function AppRoutes() {
         <Route path="/author/profile" element={role('author', <RoleUtilityPage role="author" eyebrow="Author account" title="Author Profile" description="Manage your public pen name, biography, verification details, and author storefront." />, true)} />
         <Route path="/author/wallet" element={role('author', <RoleUtilityPage role="author" eyebrow="Reader purchases" title="Wallet & Coins" description="Authors can top up coins and purchase stories from other creators; their own published stories remain available without charge." />, true)} />
         <Route path="/author/settings" element={role('author', <RoleUtilityPage role="author" eyebrow="Studio preferences" title="Author Settings" description="Configure publishing defaults, collaboration, notifications, security, and workspace preferences." />, true)} />
+        <Route path="/author/account" element={role('author', <RoleUtilityPage role="author" eyebrow="Shared account" title="Account" description="Manage sign-in methods, contact information, connected devices, and account security." />, true)} />
+        <Route path="/author/support" element={role('author', <RoleUtilityPage role="author" eyebrow="NovelHub help" title="Help & Support" description="Find creator guidance, publishing help, frequently asked questions, and support channels." />, true)} />
         <Route path="/moderator" element={role('moderator', <ModeratorOverviewPage />)} />
         <Route path="/moderator/submissions" element={role('moderator', <SubmissionQueuePage />)} />
         <Route
@@ -189,6 +193,9 @@ function AppRoutes() {
         <Route path="/moderator/escalations" element={role('moderator', <RoleUtilityPage role="moderator" eyebrow="Priority desk" title="Escalations" description="Handle urgent safety, copyright, and policy cases that require senior review." />)} />
         <Route path="/moderator/audit-trail" element={role('moderator', <RoleUtilityPage role="moderator" eyebrow="Accountability" title="Audit Trail" description="Trace moderation activity with immutable event details and reviewer attribution." />)} />
         <Route path="/moderator/settings" element={role('moderator', <RoleUtilityPage role="moderator" eyebrow="Workspace preferences" title="Moderator Settings" description="Configure queue assignments, review notifications, availability, and moderator profile preferences." />)} />
+        <Route path="/moderator/profile" element={role('moderator', <RoleUtilityPage role="moderator" eyebrow="Shared profile" title="Profile" description="Manage your display identity and shared NovelHub profile information." />)} />
+        <Route path="/moderator/account" element={role('moderator', <RoleUtilityPage role="moderator" eyebrow="Shared account" title="Account" description="Manage sign-in methods, contact information, connected devices, and account security." />)} />
+        <Route path="/moderator/support" element={role('moderator', <RoleUtilityPage role="moderator" eyebrow="NovelHub help" title="Help & Support" description="Find moderation guidance, policy references, and support channels." />)} />
         <Route
           path="/moderator/similarity-review/:reviewId"
           element={role('moderator', <SimilarityRiskReviewPage />)}
@@ -199,6 +206,9 @@ function AppRoutes() {
         <Route path="/admin/roles" element={role('admin', <RolesPermissionsPage />)} />
         <Route path="/admin/categories" element={role('admin', <CategoriesConfigurationPage />)} />
         <Route path="/admin/settings" element={role('admin', <PlatformSettingsPage />)} />
+        <Route path="/admin/profile" element={role('admin', <RoleUtilityPage role="admin" eyebrow="Shared profile" title="Profile" description="Manage your display identity and shared NovelHub profile information." />)} />
+        <Route path="/admin/account" element={role('admin', <RoleUtilityPage role="admin" eyebrow="Shared account" title="Account" description="Manage sign-in methods, contact information, connected devices, and account security." />)} />
+        <Route path="/admin/support" element={role('admin', <RoleUtilityPage role="admin" eyebrow="NovelHub help" title="Help & Support" description="Find administration guidance, operational documentation, and support channels." />)} />
         <Route path="/admin/content" element={role('admin', <RoleUtilityPage role="admin" eyebrow="Content governance" title="Content Configuration" description="Manage publication rules, discovery metadata, content ratings, and platform-wide defaults." />)} />
         <Route path="/admin/services" element={role('admin', <RoleUtilityPage role="admin" eyebrow="Infrastructure" title="Services & Infrastructure" description="Monitor external services, storage, search, audio processing, and operational capacity." />)} />
         <Route path="/admin/audit-logs" element={role('admin', <RoleUtilityPage role="admin" eyebrow="Security" title="Audit Logs" description="Search administrative events, authentication records, configuration changes, and protected actions." />)} />
