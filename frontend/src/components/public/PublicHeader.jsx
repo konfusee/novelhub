@@ -4,7 +4,6 @@ import { useState } from 'react'
 import { useTheme } from '../../context/ThemeContext'
 import { getAccountHome, useAuth } from '../../context/AuthContext'
 import { useLocale } from '../../context/LocaleContext'
-import { LanguageSwitcher } from '../shared/LanguageSwitcher'
 export function PublicHeader() {
   const { resolvedTheme, setTheme } = useTheme()
   const { currentUser, isAuthenticated, hasRole, logout } = useAuth()
@@ -44,7 +43,6 @@ export function PublicHeader() {
         <Link to="/search" aria-label={t('navigation.explore')} className="ml-auto hidden text-muted md:block">
           <Search size={19} />
         </Link>
-        <LanguageSwitcher />
         <button
           className="grid size-10 place-items-center rounded-full text-muted"
           aria-label={t('common.toggleTheme')}

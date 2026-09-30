@@ -3,7 +3,6 @@ import { Link, useLocation } from 'react-router-dom'
 import { ROLE_HOME, useAuth } from '../../context/AuthContext'
 import { useTheme } from '../../context/ThemeContext'
 import { Avatar, IconButton, Input } from '../ui'
-import { LanguageSwitcher } from './LanguageSwitcher'
 import { useLocale } from '../../context/LocaleContext'
 
 const roleMeta = {
@@ -141,7 +140,6 @@ export function SharedWorkspaceHeader({ currentRole, workspaceLabel, onOpenMenu,
         <IconButton label={t('common.toggleTheme')} onClick={() => setTheme(resolvedTheme === 'dark' ? 'light' : 'dark')}>
           {resolvedTheme === 'dark' ? <Sun size={18} /> : <Moon size={18} />}
         </IconButton>
-        <LanguageSwitcher compact />
         {children}
         <IconButton label={t('common.notifications')} className="relative hidden sm:grid">
           <Bell size={18} /><span className="absolute right-2 top-2 size-2 rounded-full bg-rose" />

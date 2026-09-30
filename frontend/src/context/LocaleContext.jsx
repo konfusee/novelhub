@@ -1,10 +1,7 @@
-import { createContext, useContext, useEffect, useMemo, useState } from 'react'
-import en from '../locales/en.json'
+import { createContext, useContext, useMemo } from 'react'
 import vi from '../locales/vi.json'
 
 const LocaleContext = createContext(null)
-const dictionaries = { en, vi }
-const supportedLocales = Object.keys(dictionaries)
 
 function resolveMessage(dictionary, key) {
   return key.split('.').reduce((value, segment) => value?.[segment], dictionary)
@@ -15,33 +12,19 @@ function interpolate(message, variables = {}) {
 }
 
 export function LocaleProvider({ children }) {
-  const [locale, setLocaleState] = useState(() => {
-    const saved = localStorage.getItem('novelhub.locale')
-    return supportedLocales.includes(saved) ? saved : 'en'
-  })
-  const setLocale = nextLocale => {
-    if (supportedLocales.includes(nextLocale)) setLocaleState(nextLocale)
-  }
-
-  useEffect(() => {
-    localStorage.setItem('novelhub.locale', locale)
-    document.documentElement.lang = locale
-  }, [locale])
-
   const value = useMemo(() => ({
-    locale,
-    setLocale,
+    locale: 'vi',
     t: (key, variables) => {
-      const message = resolveMessage(dictionaries[locale], key)
+      const message = resolveMessage(vi, key)
       if (typeof message !== 'string') {
-        if (import.meta.env.DEV) console.warn(`[i18n] Missing ${locale} translation: ${key}`)
+        if (import.meta.env.DEV) console.warn(`[content] Thiếu nội dung tiếng Việt: ${key}`)
         return key
       }
       return interpolate(message, variables)
     },
-    formatDate: valueToFormat => new Intl.DateTimeFormat(locale === 'vi' ? 'vi-VN' : 'en-US', { dateStyle: 'medium' }).format(new Date(valueToFormat)),
-    formatNumber: valueToFormat => new Intl.NumberFormat(locale === 'vi' ? 'vi-VN' : 'en-US').format(valueToFormat),
-  }), [locale])
+    formatDate: valueToFormat => new Intl.DateTimeFormat('vi-VN', { dateStyle: 'medium' }).format(new Date(valueToFormat)),
+    formatNumber: valueToFormat => new Intl.NumberFormat('vi-VN').format(valueToFormat),
+  }), [])
 
   return <LocaleContext.Provider value={value}>{children}</LocaleContext.Provider>
 }

@@ -1,10 +1,6 @@
 import { readFileSync } from 'node:fs'
 
-const locales = ['en', 'vi']
-const dictionaries = Object.fromEntries(locales.map(locale => [
-  locale,
-  JSON.parse(readFileSync(new URL(`../src/locales/${locale}.json`, import.meta.url), 'utf8')),
-]))
+const dictionary = JSON.parse(readFileSync(new URL('../src/locales/vi.json', import.meta.url), 'utf8'))
 
 function flatten(value, prefix = '') {
   return Object.entries(value).flatMap(([key, nested]) => {
@@ -13,17 +9,9 @@ function flatten(value, prefix = '') {
   })
 }
 
-const reference = new Set(flatten(dictionaries.en))
-let failed = false
-for (const locale of locales) {
-  const keys = new Set(flatten(dictionaries[locale]))
-  const missing = [...reference].filter(key => !keys.has(key))
-  const extra = [...keys].filter(key => !reference.has(key))
-  if (missing.length || extra.length) {
-    failed = true
-    console.error(`${locale}: missing [${missing.join(', ')}], extra [${extra.join(', ')}]`)
-  }
+const keys = new Set(flatten(dictionary))
+if (!keys.size) {
+  console.error('Từ điển tiếng Việt đang trống.')
+  process.exit(1)
 }
-
-if (failed) process.exit(1)
-console.log(`i18n dictionaries are synchronized (${reference.size} keys across ${locales.length} locales).`)
+console.log(`Nguồn nội dung tiếng Việt hợp lệ (${keys.size} khóa).`)

@@ -2,13 +2,11 @@ import { useState } from 'react'
 import { FlaskConical, X } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 import { getAccountHome, useAuth } from '../../context/AuthContext'
-import { useLocale } from '../../context/LocaleContext'
 import { useTheme } from '../../context/ThemeContext'
 import { useMockData } from '../../context/MockDataContext'
 export function DevPanel() {
   const [open, setOpen] = useState(false)
   const { currentUser, switchAccount } = useAuth()
-  const { locale, setLocale } = useLocale()
   const { resolvedTheme, setTheme } = useTheme()
   const { data, setSimulation, reset } = useMockData()
   const navigate = useNavigate()
@@ -22,26 +20,25 @@ export function DevPanel() {
       {open && (
         <div className="mb-2 w-72 rounded-2xl border border-line bg-surface p-4 shadow-2xl">
           <div className="flex items-center justify-between">
-            <strong className="text-sm">NovelHub test tools</strong>
-            <button aria-label="Close test tools" onClick={() => setOpen(false)}>
+            <strong className="text-sm">Công cụ kiểm thử NovelHub</strong>
+            <button aria-label="Đóng công cụ kiểm thử" onClick={() => setOpen(false)}>
               <X size={16} />
             </button>
           </div>
           <Control
-            label="Account"
+            label="Tài khoản"
             value={currentUser?.roles?.at(-1) || 'guest'}
             options={['guest', 'reader', 'author', 'moderator', 'admin']}
             onChange={changeAccount}
           />
-          <Control label="Language" value={locale} options={['en', 'vi']} onChange={setLocale} />
           <Control
-            label="Theme"
+            label="Giao diện"
             value={resolvedTheme}
             options={['light', 'dark']}
             onChange={setTheme}
           />
           <Control
-            label="State"
+            label="Trạng thái"
             value={data.simulation}
             options={['normal', 'loading', 'empty', 'error']}
             onChange={setSimulation}
@@ -50,14 +47,14 @@ export function DevPanel() {
             onClick={reset}
             className="mt-4 w-full rounded-xl border border-line px-3 py-2 text-xs"
           >
-            Reset mock data
+            Đặt lại dữ liệu mô phỏng
           </button>
         </div>
       )}
       <button
         onClick={() => setOpen(!open)}
         className="ml-auto grid size-12 place-items-center rounded-full bg-purple text-white shadow-xl"
-        aria-label="Open test tools"
+        aria-label="Mở công cụ kiểm thử"
       >
         <FlaskConical size={20} />
       </button>
