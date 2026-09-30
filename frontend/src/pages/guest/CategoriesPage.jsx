@@ -7,7 +7,7 @@ import { Badge, Button, Card, Input } from '../../components/ui'
 import { categories, popularTags } from '../../data/mock/categories'
 import { extendedStories, hiddenGems } from '../../data/mock/stories'
 
-const filters = ['All', 'Popular', 'New', 'Trending', 'Completed']
+const filters = [['All', 'Tất cả'], ['Popular', 'Phổ biến'], ['New', 'Mới'], ['Trending', 'Thịnh hành'], ['Completed', 'Đã hoàn thành']]
 
 export function CategoriesPage({ embedded = false }) {
   const [query, setQuery] = useState('')
@@ -31,29 +31,29 @@ export function CategoriesPage({ embedded = false }) {
       <main className="page-public space-y-10 py-8">
         <header>
           <p className="text-xs font-semibold uppercase tracking-[.18em] text-brand">
-            Discover your next world
+            Khám phá thế giới tiếp theo
           </p>
-          <h1 className="mt-2 text-3xl font-bold tracking-tight md:text-4xl">Browse Categories</h1>
+          <h1 className="mt-2 text-3xl font-bold tracking-tight md:text-4xl">Khám phá thể loại</h1>
           <p className="mt-2 text-sm text-muted">
-            Explore worlds of imagination curated by genre, mood, and reader favorites.
+            Khám phá những thế giới tưởng tượng theo thể loại, cảm xúc và lựa chọn của độc giả.
           </p>
         </header>
         <section className="flex flex-col gap-3 md:flex-row md:items-center">
           <Input
             icon={Search}
-            placeholder="Filter by keyword or subgenre..."
+            placeholder="Lọc theo từ khóa hoặc thể loại phụ..."
             value={query}
             onChange={event => setQuery(event.target.value)}
             className="md:max-w-sm"
           />
           <div className="flex gap-2 overflow-x-auto pb-1">
-            {filters.map(item => (
+            {filters.map(([value, label]) => (
               <button
-                key={item}
-                onClick={() => setFilter(item)}
-                className={`shrink-0 rounded-full border px-4 py-2 text-xs font-medium ${filter === item ? 'border-brand bg-brand text-white' : 'border-line bg-surface text-muted hover:border-brand'}`}
+                key={value}
+                onClick={() => setFilter(value)}
+                className={`shrink-0 rounded-full border px-4 py-2 text-xs font-medium ${filter === value ? 'border-brand bg-brand text-white' : 'border-line bg-surface text-muted hover:border-brand'}`}
               >
-                {item}
+                {label}
               </button>
             ))}
           </div>
@@ -61,12 +61,12 @@ export function CategoriesPage({ embedded = false }) {
         <section>
           <div className="mb-4 flex items-end justify-between">
             <div>
-              <h2 className="text-xl font-bold">All Genres</h2>
+              <h2 className="text-xl font-bold">Tất cả thể loại</h2>
               {selectedGenre && (
-                <p className="mt-1 text-xs text-brand">Selected: {selectedGenre}</p>
+                <p className="mt-1 text-xs text-brand">Đã chọn: {selectedGenre}</p>
               )}
             </div>
-            <span className="text-xs text-muted">{visibleCategories.length} core categories</span>
+            <span className="text-xs text-muted">{visibleCategories.length} thể loại chính</span>
           </div>
           <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
             {visibleCategories.map(category => (
@@ -74,19 +74,19 @@ export function CategoriesPage({ embedded = false }) {
             ))}
           </div>
           {!visibleCategories.length && (
-            <Card className="text-center text-sm text-muted">No genres match “{query}”.</Card>
+            <Card className="text-center text-sm text-muted">Không có thể loại phù hợp “{query}”.</Card>
           )}
         </section>
         <Card className="p-5 md:p-7">
           <div className="flex flex-wrap items-end justify-between gap-3">
             <div>
               <p className="text-[10px] font-semibold uppercase tracking-[.18em] text-orange">
-                Curated collection
+                Bộ sưu tập tuyển chọn
               </p>
-              <h2 className="mt-1 text-xl font-bold">Popular This Week</h2>
+              <h2 className="mt-1 text-xl font-bold">Phổ biến tuần này</h2>
             </div>
             <button onClick={() => window.location.assign('/search')} className="flex items-center gap-1 text-xs font-semibold text-brand">
-              Explore all <ArrowRight size={14} />
+              Khám phá tất cả <ArrowRight size={14} />
             </button>
           </div>
           <div className="mt-5 grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-6">
@@ -98,22 +98,22 @@ export function CategoriesPage({ embedded = false }) {
               >
                 <strong className="block text-xs">{tag}</strong>
                 <span className="mt-1 block text-[9px] text-muted">
-                  {420 + index * 175} stories
+                  {420 + index * 175} truyện
                 </span>
               </button>
             ))}
           </div>
         </Card>
-        <StoryShelf title="Fantasy — Epic Worlds & Magic" stories={fantasy} />
-        <StoryShelf title="Romance — Heartfelt Journeys" stories={romance} />
-        <StoryShelf title="Sci-Fi & Cyberpunk — Future Horizons" stories={scifi} />
+        <StoryShelf title="Kỳ ảo — Thế giới sử thi & phép thuật" stories={fantasy} />
+        <StoryShelf title="Lãng mạn — Hành trình cảm xúc" stories={romance} />
+        <StoryShelf title="Khoa học viễn tưởng & Cyberpunk — Chân trời tương lai" stories={scifi} />
         <section>
           <p className="text-[10px] font-semibold uppercase tracking-[.18em] text-brand">
-            Editorial picks
+            Ban biên tập tuyển chọn
           </p>
-          <h2 className="mt-1 text-2xl font-bold">Hidden Gems</h2>
+          <h2 className="mt-1 text-2xl font-bold">Viên ngọc ẩn</h2>
           <p className="mt-1 text-xs text-muted">
-            Carefully reviewed stories with extraordinary prose waiting to be discovered.
+            Những tác phẩm có văn phong đặc sắc đã được tuyển chọn kỹ và đang chờ bạn khám phá.
           </p>
           <div className="mt-5 grid gap-4 md:grid-cols-3">
             {hiddenGems.map(item => (
@@ -130,13 +130,13 @@ export function CategoriesPage({ embedded = false }) {
                   >
                     {item.genre}
                   </Badge>
-                  <span className="text-[10px] text-muted">{item.chapters} chapters</span>
+                  <span className="text-[10px] text-muted">{item.chapters} chương</span>
                 </div>
                 <h3 className="mt-4 text-lg font-semibold">{item.title}</h3>
                 <p className="mt-2 text-xs leading-5 text-muted">{item.description}</p>
                 <div className="mt-auto flex items-center justify-between pt-5 text-[10px]">
-                  <span>By {item.author}</span>
-                  <button onClick={() => window.location.assign('/stories/demo')} className="font-semibold text-brand">Read Preview →</button>
+                  <span>Tác giả {item.author}</span>
+                  <button onClick={() => window.location.assign('/stories/demo')} className="font-semibold text-brand">Đọc thử →</button>
                 </div>
               </Card>
             ))}
@@ -144,15 +144,14 @@ export function CategoriesPage({ embedded = false }) {
         </section>
         <section className="flex flex-col items-start justify-between gap-5 rounded-3xl border border-line bg-surface p-7 md:flex-row md:items-center md:p-10">
           <div>
-            <h2 className="text-2xl font-bold">Join NovelHub Today</h2>
+            <h2 className="text-2xl font-bold">Tham gia NovelHub hôm nay</h2>
             <p className="mt-2 max-w-2xl text-sm text-muted">
-              Unlock personalized recommendations, sync reading progress, and build your digital
-              library across every device.
+              Mở khóa đề xuất cá nhân, đồng bộ tiến độ đọc và xây dựng thư viện số trên mọi thiết bị.
             </p>
           </div>
           <div className="flex shrink-0 gap-3">
-            <Button onClick={() => window.location.assign('/register')}>Create an Account</Button>
-            <Button onClick={() => window.location.assign('/')} variant="secondary">Learn More</Button>
+            <Button onClick={() => window.location.assign('/register')}>Tạo tài khoản</Button>
+            <Button onClick={() => window.location.assign('/')} variant="secondary">Tìm hiểu thêm</Button>
           </div>
         </section>
       </main>
