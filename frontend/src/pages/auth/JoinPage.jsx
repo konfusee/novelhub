@@ -28,29 +28,31 @@ import {
   mockAccounts,
   useAuth,
 } from '../../context/AuthContext'
+import { useLocale } from '../../context/LocaleContext'
 
 const accountOptions = [
   {
     value: 'reader',
-    title: 'Reader',
-    description: 'Read, listen, collect, and discuss stories.',
+    titleKey: 'auth.reader',
+    descriptionKey: 'auth.readerDescription',
     icon: Library,
   },
   {
     value: 'author',
-    title: 'Author',
-    description: 'Everything in Reader, plus publishing tools.',
+    titleKey: 'auth.author',
+    descriptionKey: 'auth.authorDescription',
     icon: PenLine,
   },
 ]
 
 const benefits = [
-  { icon: BookOpen, text: 'Keep your library and reading progress in one place.' },
-  { icon: Headphones, text: 'Move naturally between reading and listening.' },
-  { icon: ShieldCheck, text: 'Publish through a clear, moderated workflow.' },
+  { icon: BookOpen, textKey: 'auth.benefitLibrary' },
+  { icon: Headphones, textKey: 'auth.benefitListening' },
+  { icon: ShieldCheck, textKey: 'auth.benefitPublishing' },
 ]
 
 export function JoinPage({ initialMode }) {
+  const { t } = useLocale()
   const location = useLocation()
   const navigate = useNavigate()
   const { login, register } = useAuth()
@@ -124,24 +126,22 @@ export function JoinPage({ initialMode }) {
         <Card className="w-full p-5 sm:p-7 lg:p-8">
           <div className="grid grid-cols-2 rounded-2xl border border-line bg-elevated p-1">
             <ModeButton active={isLogin} onClick={() => switchMode('login')}>
-              Sign in
+              {t('auth.signIn')}
             </ModeButton>
             <ModeButton active={!isLogin} onClick={() => switchMode('register')}>
-              Create account
+              {t('auth.createAccount')}
             </ModeButton>
           </div>
 
           <div className="mt-7">
             <p className="text-xs font-semibold uppercase tracking-[.18em] text-brand">
-              {isLogin ? 'Welcome back' : 'Join NovelHub'}
+              {t(isLogin ? 'auth.welcomeBack' : 'auth.join')}
             </p>
             <h1 className="mt-2 text-2xl font-bold tracking-tight sm:text-3xl">
-              {isLogin ? 'Continue your story' : 'Create your reading identity'}
+              {t(isLogin ? 'auth.continueStory' : 'auth.createIdentity')}
             </h1>
             <p className="mt-2 text-sm leading-6 text-muted">
-              {isLogin
-                ? 'Sign in to return to your library and latest chapter.'
-                : 'Choose how you want to begin. You can become an Author later.'}
+              {t(isLogin ? 'auth.returnDescription' : 'auth.chooseStart')}
             </p>
           </div>
 
@@ -149,32 +149,33 @@ export function JoinPage({ initialMode }) {
             {!isLogin && (
               <>
                 <fieldset>
-                  <legend className="mb-2 text-xs font-semibold">Account type</legend>
+                  <legend className="mb-2 text-xs font-semibold">{t('auth.accountType')}</legend>
                   <div className="grid gap-3 sm:grid-cols-2">
                     {accountOptions.map(option => (
                       <AccountOption
                         key={option.value}
                         option={option}
+                        t={t}
                         selected={accountType === option.value}
                         onSelect={() => setAccountType(option.value)}
                       />
                     ))}
                   </div>
                 </fieldset>
-                <Field label="Display name" icon={UserRound}>
+                <Field label={t('auth.displayName')} icon={UserRound}>
                   <input
                     required
                     autoComplete="name"
                     value={form.name}
                     onChange={event => update('name', event.target.value)}
-                    placeholder="How readers will know you"
+                    placeholder={t('auth.displayNamePlaceholder')}
                     className="min-w-0 flex-1 bg-transparent text-sm outline-none placeholder:text-muted"
                   />
                 </Field>
               </>
             )}
 
-            <Field label="Email address" icon={Mail}>
+            <Field label={t('auth.email')} icon={Mail}>
               <input
                 required
                 autoComplete="email"
@@ -187,12 +188,12 @@ export function JoinPage({ initialMode }) {
             </Field>
 
             <Field
-              label="Password"
+              label={t('auth.password')}
               icon={LockKeyhole}
               action={
                 isLogin ? (
                   <button type="button" onClick={() => setError('Password reset instructions are available in the full backend flow.')} className="font-medium text-brand hover:underline">
-                    Forgot password?
+                    {t('auth.forgotPassword')}
                   </button>
                 ) : null
               }
@@ -204,14 +205,14 @@ export function JoinPage({ initialMode }) {
                 type={showPassword ? 'text' : 'password'}
                 value={form.password}
                 onChange={event => update('password', event.target.value)}
-                placeholder={isLogin ? 'Enter your password' : 'At least 6 characters'}
+                placeholder={t(isLogin ? 'auth.enterPassword' : 'auth.passwordMin')}
                 className="min-w-0 flex-1 bg-transparent text-sm outline-none placeholder:text-muted"
               />
               <button
                 type="button"
                 onClick={() => setShowPassword(current => !current)}
                 className="grid size-8 shrink-0 place-items-center rounded-lg text-muted hover:bg-elevated hover:text-ink"
-                aria-label={showPassword ? 'Hide password' : 'Show password'}
+                aria-label={t(showPassword ? 'auth.hidePassword' : 'auth.showPassword')}
               >
                 {showPassword ? <EyeOff size={17} /> : <Eye size={17} />}
               </button>
@@ -221,13 +222,13 @@ export function JoinPage({ initialMode }) {
               <AgreementCheck
                 label={
                   <span>
-                    I accept the{' '}
+                    {t('auth.termsAcceptBefore')}{' '}
                     <button type="button" onClick={event => { event.preventDefault(); setLegalDocument('terms') }} className="font-semibold text-brand hover:underline">
-                      Terms of Service
+                      {t('legal.termsTitle')}
                     </button>{' '}
-                    and{' '}
+                    {t('auth.termsAnd')}{' '}
                     <button type="button" onClick={event => { event.preventDefault(); setLegalDocument('privacy') }} className="font-semibold text-brand hover:underline">
-                      Privacy Policy
+                      {t('legal.privacyTitle')}
                     </button>.
                   </span>
                 }
@@ -254,14 +255,14 @@ export function JoinPage({ initialMode }) {
               className="w-full"
             >
               {busy ? (
-                'Please wait…'
+                t('auth.pleaseWait')
               ) : isLogin ? (
                 <>
-                  Sign in <ArrowRight size={16} />
+                  {t('auth.signIn')} <ArrowRight size={16} />
                 </>
               ) : (
                 <>
-                  Create account <CheckCircle2 size={16} />
+                  {t('auth.createAccount')} <CheckCircle2 size={16} />
                 </>
               )}
             </Button>
@@ -270,13 +271,13 @@ export function JoinPage({ initialMode }) {
           {isLogin && <DemoAccounts onSelect={useDemoAccount} />}
 
           <p className="mt-6 text-center text-xs text-muted">
-            {isLogin ? 'New to NovelHub?' : 'Already have an account?'}{' '}
+            {t(isLogin ? 'auth.newToNovelHub' : 'auth.alreadyAccount')}{' '}
             <button
               type="button"
               onClick={() => switchMode(isLogin ? 'register' : 'login')}
               className="font-semibold text-brand hover:underline"
             >
-              {isLogin ? 'Create an account' : 'Sign in'}
+              {t(isLogin ? 'auth.createAccount' : 'auth.signIn')}
             </button>
           </p>
         </Card>
@@ -286,7 +287,7 @@ export function JoinPage({ initialMode }) {
         <div className="fixed inset-0 z-[110] grid place-items-center bg-black/55 p-4" onClick={() => setLegalDocument(null)}>
           <div role="dialog" aria-modal="true" className="max-h-[88vh] w-full max-w-3xl overflow-y-auto rounded-3xl bg-surface p-6 shadow-2xl sm:p-8" onClick={event => event.stopPropagation()}>
             <div className="mb-5 flex justify-end">
-              <button type="button" onClick={() => setLegalDocument(null)} className="grid size-10 place-items-center rounded-full border border-line text-muted hover:text-ink" aria-label="Close">
+              <button type="button" onClick={() => setLegalDocument(null)} className="grid size-10 place-items-center rounded-full border border-line text-muted hover:text-ink" aria-label={t('auth.closeLegal')}>
                 <X size={18} />
               </button>
             </div>
@@ -299,6 +300,7 @@ export function JoinPage({ initialMode }) {
 }
 
 function AuthIntroduction({ isLogin }) {
+  const { t } = useLocale()
   return (
     <section className="overflow-hidden rounded-3xl border border-line bg-elevated p-6 sm:p-8 lg:p-10">
       <Link to="/" className="inline-flex items-center gap-3 text-xl font-bold">
@@ -311,27 +313,27 @@ function AuthIntroduction({ isLogin }) {
       </Link>
       <div className="mt-10 max-w-lg">
         <span className="inline-flex items-center gap-2 rounded-full bg-brand/10 px-3 py-1.5 text-xs font-semibold text-brand">
-          <Sparkles size={14} /> Stories feel better together
+          <Sparkles size={14} /> {t('auth.storiesTogether')}
         </span>
         <h2 className="mt-5 text-3xl font-bold leading-tight tracking-[-.03em] sm:text-4xl">
-          {isLogin ? 'Your next chapter is waiting.' : 'A calmer place for every kind of reader.'}
+          {t(isLogin ? 'auth.introLoginTitle' : 'auth.introRegisterTitle')}
         </h2>
         <p className="mt-4 text-sm leading-6 text-muted">
-          Read, listen, collect, and create through one account designed around stories—not noise.
+          {t('auth.introDescription')}
         </p>
       </div>
       <div className="mt-8 space-y-3 border-t border-line pt-6">
-        {benefits.map(({ icon: Icon, text }) => (
-          <div key={text} className="flex items-center gap-3 text-sm">
+        {benefits.map(({ icon: Icon, textKey }) => (
+          <div key={textKey} className="flex items-center gap-3 text-sm">
             <span className="grid size-9 shrink-0 place-items-center rounded-xl bg-surface text-brand">
               <Icon size={17} />
             </span>
-            <span className="leading-5 text-muted">{text}</span>
+            <span className="leading-5 text-muted">{t(textKey)}</span>
           </div>
         ))}
       </div>
       <p className="mt-8 text-xs font-medium text-muted">
-        3M+ readers · 100K+ stories · Free to join
+        {t('auth.freeToJoin')}
       </p>
     </section>
   )
@@ -352,7 +354,7 @@ function ModeButton({ active, children, onClick }) {
   )
 }
 
-function AccountOption({ option, selected, onSelect }) {
+function AccountOption({ option, selected, onSelect, t }) {
   const Icon = option.icon
   return (
     <button
@@ -369,8 +371,8 @@ function AccountOption({ option, selected, onSelect }) {
         <Icon size={18} />
       </span>
       <span>
-        <strong className="block text-sm">{option.title}</strong>
-        <span className="mt-1 block text-xs leading-5 text-muted">{option.description}</span>
+        <strong className="block text-sm">{t(option.titleKey)}</strong>
+        <span className="mt-1 block text-xs leading-5 text-muted">{t(option.descriptionKey)}</span>
       </span>
       {selected && (
         <span className="absolute right-3 top-3 grid size-5 place-items-center rounded-full bg-brand text-white">

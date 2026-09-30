@@ -18,6 +18,7 @@ import { ContinueCard } from '../../components/reader/ContinueCard'
 import { Badge, Button, Card, SectionHeader } from '../../components/ui'
 import { readerHome } from '../../data/mock/reader'
 import { useAuth } from '../../context/AuthContext'
+import { useLocale } from '../../context/LocaleContext'
 
 function StoryTile({ story }) {
   const [saved, setSaved] = useState(false)
@@ -114,6 +115,7 @@ function NowPlaying() {
 
 export function ReaderHomePage() {
   const { currentUser } = useAuth()
+  const { t } = useLocale()
   return (
     <ReaderLayout>
       <main className="page-reader py-6">
@@ -123,21 +125,21 @@ export function ReaderHomePage() {
               <div className="flex flex-col justify-between gap-6 md:flex-row md:items-center">
                 <div>
                   <p className="text-xs font-semibold uppercase tracking-[.2em] text-brand">
-                    Your reading sanctuary
+                    {t('readerHome.sanctuary')}
                   </p>
                   <h1 className="mt-2 text-3xl font-bold tracking-tight sm:text-4xl">
-                    Welcome back, {currentUser?.name?.split(' ')[0] || 'Reader'}
+                    {t('readerHome.welcome', { name: currentUser?.name?.split(' ')[0] || t('auth.reader') })}
                   </h1>
-                  <p className="mt-2 text-sm text-muted">Your next favorite chapter is waiting.</p>
+                  <p className="mt-2 text-sm text-muted">{t('readerHome.nextChapterWaiting')}</p>
                   <Button onClick={() => window.location.assign('/reader/library')} className="mt-5">
-                    Open Reader <ArrowRight size={16} />
+                    {t('readerHome.openReader')} <ArrowRight size={16} />
                   </Button>
                 </div>
                 <div className="w-full max-w-sm rounded-2xl bg-elevated p-5">
                   <div className="flex items-center justify-between">
                     <div>
-                      <p className="text-xs text-muted">Today&apos;s goal</p>
-                      <strong className="mt-1 block text-lg">35 of 45 minutes</strong>
+                      <p className="text-xs text-muted">{t('readerHome.goal')}</p>
+                      <strong className="mt-1 block text-lg">{t('readerHome.goalProgress', { current: 35, total: 45 })}</strong>
                     </div>
                     <span className="grid size-12 place-items-center rounded-full border-4 border-brand text-xs font-bold text-brand">
                       78%
@@ -147,7 +149,7 @@ export function ReaderHomePage() {
                     <div className="h-full w-[78%] rounded-full bg-brand" />
                   </div>
                   <p className="mt-3 flex items-center gap-2 text-xs text-muted">
-                    <Flame size={14} className="text-orange" /> 12 more minutes to keep your streak
+                    <Flame size={14} className="text-orange" /> {t('readerHome.streakRemaining', { count: 12 })}
                   </p>
                 </div>
               </div>
@@ -155,7 +157,7 @@ export function ReaderHomePage() {
 
             <section>
               <SectionHeader
-                title="Pick up where you left off"
+                title={t('readerHome.pickUp')}
                 description="Your stories, ready when you are"
               />
               <div className="mt-4 grid gap-4 md:grid-cols-2">
@@ -166,11 +168,11 @@ export function ReaderHomePage() {
 
             <section>
               <SectionHeader
-                title="Recommended for you"
+                title={t('readerHome.recommended')}
                 description="Curated from your reading taste"
                 action={
                   <button onClick={() => window.location.assign('/search')} className="flex items-center gap-1 text-xs font-semibold text-brand">
-                    See all <ChevronRight size={15} />
+                    {t('readerHome.seeAll')} <ChevronRight size={15} />
                   </button>
                 }
               />
@@ -183,7 +185,7 @@ export function ReaderHomePage() {
 
             <section>
               <SectionHeader
-                title="Because you read Fantasy"
+                title={t('readerHome.becauseFantasy')}
                 action={<button onClick={() => window.alert('Recommendations refreshed (mock).')} className="text-xs font-semibold text-brand">Refresh picks</button>}
               />
               <div className="mt-4 grid gap-3 sm:grid-cols-3">
@@ -207,7 +209,7 @@ export function ReaderHomePage() {
 
             <section>
               <SectionHeader
-                title="Recently updated"
+                title={t('readerHome.recentlyUpdated')}
                 description="New chapters from stories you follow"
               />
               <Card className="mt-4 divide-y divide-line p-0">

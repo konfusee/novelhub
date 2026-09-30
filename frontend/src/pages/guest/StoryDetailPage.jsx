@@ -5,12 +5,19 @@ import { PublicHeader } from '../../components/public/PublicHeader'
 import { ChapterList } from '../../components/public/ChapterList'
 import { Badge, Button, Card } from '../../components/ui'
 import { chapterPreview, storyDetail } from '../../data/mock/reader'
+import { useLocale } from '../../context/LocaleContext'
 
-const tabs = ['Chapters', 'Synopsis & Details', 'Reviews & Discussions', 'Related Audiobooks']
+const tabs = [
+  ['chapters', 'storyDetail.chapters'],
+  ['synopsis', 'storyDetail.synopsis'],
+  ['reviews', 'storyDetail.reviews'],
+  ['audiobooks', 'storyDetail.relatedAudiobooks'],
+]
 export function StoryDetailPage({ embedded = false }) {
+  const { t } = useLocale()
   const navigate = useNavigate()
   const { storyId = 'demo' } = useParams()
-  const [tab, setTab] = useState('Chapters')
+  const [tab, setTab] = useState('chapters')
   const [bookmarked, setBookmarked] = useState(false)
   const [following, setFollowing] = useState(false)
   const [oldestFirst, setOldestFirst] = useState(true)
@@ -26,7 +33,7 @@ export function StoryDetailPage({ embedded = false }) {
           <div className="relative grid min-h-80 place-items-center overflow-hidden rounded-2xl border border-line bg-[#173b3f] text-7xl text-white">
             <span>🌲</span>
             <Badge tone="green" className="absolute left-3 top-3">
-              Free Preview
+              {t('storyDetail.freePreview')}
             </Badge>
             <span className="absolute bottom-5 text-center text-lg font-bold tracking-[.2em]">
               THE SILENT
@@ -41,8 +48,8 @@ export function StoryDetailPage({ embedded = false }) {
                 ML
               </span>
               <strong>{storyDetail.author}</strong>
-              <Badge tone="green">Verified Author</Badge>
-              <span className="text-muted">• {storyDetail.followers} Followers</span>
+              <Badge tone="green">{t('storyDetail.verifiedAuthor')}</Badge>
+              <span className="text-muted">• {storyDetail.followers} {t('storyDetail.followers')}</span>
             </div>
             <div className="mt-5 flex flex-wrap gap-x-5 gap-y-2 border-y border-line py-3 text-xs">
               <span className="flex items-center gap-1 font-semibold">
@@ -50,13 +57,13 @@ export function StoryDetailPage({ embedded = false }) {
                 {storyDetail.rating} <span className="text-muted">({storyDetail.ratings})</span>
               </span>
               <span>
-                <strong>{storyDetail.reads}</strong> Reads
+                <strong>{storyDetail.reads}</strong> {t('storyDetail.reads')}
               </span>
               <span>
-                <strong>{storyDetail.chapters}</strong> Chapters
+                <strong>{storyDetail.chapters}</strong> {t('storyDetail.chapters')}
               </span>
               <span>
-                Status: <strong className="text-brand">{storyDetail.status}</strong>
+                {t('storyDetail.status')} <strong className="text-brand">{storyDetail.status}</strong>
               </span>
               <span>{storyDetail.language}</span>
             </div>
@@ -71,21 +78,21 @@ export function StoryDetailPage({ embedded = false }) {
             <div className="mt-6 flex flex-wrap gap-3">
               <Button onClick={() => navigate(`/stories/${storyId}/preview/chapter-1`)}>
                 <BookOpen size={16} />
-                Read Preview
+                {t('storyDetail.readPreview')}
               </Button>
               <Button variant="secondary" onClick={() => navigate(`/listen/${storyId}/chapter-1`)}>
                 <Headphones size={16} />
-                Listen Preview
+                {t('storyDetail.listenPreview')}
               </Button>
               <button
                 onClick={() => setBookmarked(!bookmarked)}
-                aria-label="Bookmark"
+                aria-label={t('storyDetail.bookmark')}
                 className={`grid size-11 place-items-center rounded-2xl border ${bookmarked ? 'border-brand bg-brand text-white' : 'border-line'}`}
               >
                 <Bookmark size={17} />
               </button>
               <button
-                aria-label="Share"
+                aria-label={t('storyDetail.share')}
                 onClick={() => setNotice('Story link copied for sharing (demo).')}
                 className="grid size-11 place-items-center rounded-2xl border border-line"
               >
@@ -94,43 +101,43 @@ export function StoryDetailPage({ embedded = false }) {
             </div>
             {notice && <p role="status" className="mt-3 text-xs text-brand">{notice}</p>}
             <div className="mt-5 rounded-2xl border border-brand/30 bg-brand/5 p-4 text-xs leading-5">
-              <strong className="text-brand">Guest Reading Mode:</strong> Create a free account to
-              unlock full chapters, sync bookmarks, and join author discussions.
+              <strong className="text-brand">{t('storyDetail.guestMode')}</strong>{' '}
+              {t('storyDetail.guestModeDescription')}
             </div>
           </div>
         </Card>
         <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_340px]">
           <section className="overflow-hidden rounded-3xl border border-line bg-surface">
             <nav className="flex gap-1 overflow-x-auto border-b border-line p-3">
-              {tabs.map(item => (
+              {tabs.map(([value, labelKey]) => (
                 <button
-                  onClick={() => setTab(item)}
-                  className={`shrink-0 rounded-xl px-4 py-2 text-xs font-semibold ${tab === item ? 'bg-brand text-white' : 'text-muted'}`}
-                  key={item}
+                  onClick={() => setTab(value)}
+                  className={`shrink-0 rounded-xl px-4 py-2 text-xs font-semibold ${tab === value ? 'bg-brand text-white' : 'text-muted'}`}
+                  key={value}
                 >
-                  {item}
-                  {item === 'Chapters' ? ' 148' : ''}
+                  {t(labelKey)}
+                  {value === 'chapters' ? ' 148' : ''}
                 </button>
               ))}
             </nav>
             <div className="p-5">
               <div className="mb-4 flex items-center justify-between text-xs text-muted">
-                <span>Displaying 1–5 of 148 chapters</span>
-                <button onClick={() => setOldestFirst(value => !value)} className="text-brand">{oldestFirst ? 'Oldest First' : 'Newest First'} ▾</button>
+                <span>{t('storyDetail.displayingChapters', { count: 148 })}</span>
+                <button onClick={() => setOldestFirst(value => !value)} className="text-brand">{t(oldestFirst ? 'storyDetail.oldestFirst' : 'storyDetail.newestFirst')} ▾</button>
               </div>
-              {tab === 'Chapters' ? (
+              {tab === 'chapters' ? (
                 <ChapterList chapters={chapterPreview} storyId={storyId} />
               ) : (
                 <div className="rounded-2xl bg-reader p-6 text-sm leading-7 text-muted">
-                  {tab === 'Synopsis & Details'
+                  {tab === 'synopsis'
                     ? storyDetail.synopsis
-                    : `${tab} content is available after joining NovelHub.`}
+                    : t('storyDetail.guestModeDescription')}
                 </div>
               )}
             </div>
             <div className="flex flex-col items-center justify-between gap-3 border-t border-line bg-elevated p-5 text-xs text-muted sm:flex-row">
-              <span>Sign in to access all remaining 143 chapters.</span>
-              <Button onClick={() => navigate('/register')}>Unlock All Free</Button>
+              <span>{t('storyDetail.signInRemaining', { count: 143 })}</span>
+              <Button onClick={() => navigate('/register')}>{t('storyDetail.unlockFree')}</Button>
             </div>
           </section>
           <aside className="space-y-5">
@@ -151,15 +158,15 @@ export function StoryDetailPage({ embedded = false }) {
               <div className="mt-4 grid grid-cols-3 border-y border-line py-3 text-center text-xs">
                 <span>
                   <strong className="block">4</strong>
-                  <small>Works</small>
+                  <small>{t('storyDetail.works')}</small>
                 </span>
                 <span>
                   <strong className="block">15.2K</strong>
-                  <small>Followers</small>
+                  <small>{t('storyDetail.followers')}</small>
                 </span>
                 <span>
                   <strong className="block">3.4M</strong>
-                  <small>Reads</small>
+                  <small>{t('storyDetail.reads')}</small>
                 </span>
               </div>
               <Button
@@ -167,19 +174,19 @@ export function StoryDetailPage({ embedded = false }) {
                 onClick={() => setFollowing(!following)}
                 className="mt-4 w-full"
               >
-                {following ? 'Following' : 'Follow Author'}
+                {t(following ? 'storyDetail.following' : 'storyDetail.followAuthor')}
               </Button>
             </Card>
             <Card className="p-5">
               <div className="flex items-center justify-between">
-                <h3 className="font-bold">Community Rating</h3>
-                <button onClick={() => setTab('Reviews & Discussions')} className="text-xs text-brand">View all 1.2K</button>
+                <h3 className="font-bold">{t('storyDetail.communityRating')}</h3>
+                <button onClick={() => setTab('reviews')} className="text-xs text-brand">{t('storyDetail.viewAll', { count: '1.2K' })}</button>
               </div>
               <div className="mt-5 flex gap-5">
                 <div className="text-center">
                   <strong className="text-4xl">4.8</strong>
                   <p className="text-orange">★★★★★</p>
-                  <small className="text-muted">12,450 ratings</small>
+                  <small className="text-muted">{t('storyDetail.ratings', { count: '12,450' })}</small>
                 </div>
                 <div className="flex-1 space-y-2">
                   {[82, 12, 4, 1, 1].map((value, index) => (

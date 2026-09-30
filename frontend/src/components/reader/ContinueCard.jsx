@@ -1,8 +1,10 @@
 import { useState } from 'react'
 import { BookOpen, Bookmark, Pause, Play } from 'lucide-react'
 import { Button, Card } from '../ui'
+import { useLocale } from '../../context/LocaleContext'
 
 export function ContinueCard({ item, audio = false }) {
+  const { t } = useLocale()
   const [saved, setSaved] = useState(false)
   const [playing, setPlaying] = useState(false)
   return (
@@ -18,7 +20,7 @@ export function ContinueCard({ item, audio = false }) {
           <div className="flex items-start justify-between gap-2">
             <div>
               <p className="text-[10px] font-semibold uppercase tracking-[.18em] text-brand">
-                {audio ? 'Continue listening' : 'Continue reading'}
+                {t(audio ? 'readerHome.continueListening' : 'readerHome.continueReading')}
               </p>
               <h3 className="mt-1 truncate font-semibold">{item.title}</h3>
               <p className="text-xs text-muted">{item.author}</p>
@@ -41,7 +43,7 @@ export function ContinueCard({ item, audio = false }) {
         className="mt-4 w-full min-h-10 py-2 text-xs"
       >
         {audio ? playing ? <Pause size={15} /> : <Play size={15} /> : <BookOpen size={15} />}{' '}
-        {audio && playing ? 'Pause' : audio ? 'Continue listening' : 'Continue reading'}
+        {t(audio && playing ? 'readerHome.pause' : audio ? 'readerHome.continueListening' : 'readerHome.continueReading')}
       </Button>
     </Card>
   )
