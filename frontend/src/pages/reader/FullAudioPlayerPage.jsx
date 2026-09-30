@@ -25,7 +25,7 @@ export function FullAudioPlayerPage() {
   const [playing, setPlaying] = useState(true)
   const [progress, setProgress] = useState(34)
   const [speed, setSpeed] = useState(1.25)
-  const [timer, setTimer] = useState('30m')
+  const [timer, setTimer] = useState('30 phút')
   const [volume, setVolume] = useState(78)
   const [chapter, setChapter] = useState(6)
   const [saved, setSaved] = useState(false)
@@ -36,7 +36,7 @@ export function FullAudioPlayerPage() {
         <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_430px]">
           <Card className="p-5 sm:p-7">
             <div className="flex flex-wrap items-center gap-2 border-b border-line pb-5 text-xs text-muted">
-              <span>Audio Lounge</span>
+              <span>Phòng nghe</span>
               <span>/</span>
               <span>{audio.genre}</span>
               <span>/</span>
@@ -48,12 +48,12 @@ export function FullAudioPlayerPage() {
                   onClick={() => setSaved(!saved)}
                 >
                   <BookMarked size={15} />
-                  {saved ? 'In Library' : 'Add to Library'}
+                  {saved ? 'Đã có trong thư viện' : 'Thêm vào thư viện'}
                 </Button>
-                <IconButton label="Download" className="size-9">
+                <IconButton label="Tải xuống" className="size-9">
                   <Download size={15} />
                 </IconButton>
-                <IconButton label="Share" className="size-9">
+                <IconButton label="Chia sẻ" className="size-9">
                   <Share2 size={15} />
                 </IconButton>
               </div>
@@ -65,29 +65,29 @@ export function FullAudioPlayerPage() {
               >
                 <Headphones size={74} className="opacity-50" />
                 <Badge className="absolute bottom-4 left-4 bg-black/50 text-white">
-                  Studio Master
+                  Bản thu phòng thu
                 </Badge>
-                <Badge className="absolute bottom-4 right-4 bg-orange text-white">Lossless</Badge>
+                <Badge className="absolute bottom-4 right-4 bg-orange text-white">Không suy hao</Badge>
               </div>
               <div className="flex flex-col justify-center">
                 <div className="flex gap-2">
                   <Badge tone="orange">{audio.genre}</Badge>
-                  <Badge>Part 1 of 3</Badge>
+                  <Badge>Phần 1 / 3</Badge>
                 </div>
                 <h1 className="mt-4 text-4xl font-bold tracking-tight sm:text-5xl">
                   {audio.title}
                 </h1>
                 <p className="mt-3 text-xl font-semibold text-brand">{audio.author}</p>
                 <p className="mt-3 text-sm leading-6 text-muted">
-                  Narrated with emotional resonance by{' '}
+                  Được truyền tải đầy cảm xúc bởi{' '}
                   <strong className="text-ink">Liam Vance</strong> &amp;{' '}
                   <strong className="text-ink">Maya Chen</strong>
                 </p>
                 <Card className="mt-5 bg-elevated p-4">
-                  <p className="text-xs text-muted">Currently Playing</p>
+                  <p className="text-xs text-muted">Đang phát</p>
                   <div className="mt-1 flex items-end justify-between">
                     <strong>
-                      Chapter {chapter}: {audio.queue[chapter - 1][0]}
+                      Chương {chapter}: {audio.queue[chapter - 1][0]}
                     </strong>
                     <span className="text-sm font-semibold text-orange">
                       {audio.queue[chapter - 1][1]}
@@ -99,11 +99,11 @@ export function FullAudioPlayerPage() {
             <section className="mt-8">
               <div className="flex justify-between text-xs">
                 <strong>14:32</strong>
-                <span className="text-muted">● Streaming 320kbps</span>
+                <span className="text-muted">● Phát trực tuyến 320kbps</span>
                 <span>−28:15</span>
               </div>
               <input
-                aria-label="Audio progress"
+                aria-label="Tiến độ âm thanh"
                 type="range"
                 min="0"
                 max="100"
@@ -112,66 +112,66 @@ export function FullAudioPlayerPage() {
                 className="mt-3 w-full accent-orange"
               />
               <div className="mt-7 flex items-center justify-center gap-3 sm:gap-6">
-                <IconButton label="Shuffle" className="border-0 bg-transparent">
+                <IconButton label="Phát ngẫu nhiên" className="border-0 bg-transparent">
                   <Shuffle size={19} />
                 </IconButton>
                 <IconButton
-                  label="Previous chapter"
+                  label="Chương trước"
                   className="border-0 bg-transparent"
                   onClick={() => setChapter(Math.max(1, chapter - 1))}
                 >
                   <SkipBack size={21} />
                 </IconButton>
                 <button
-                  aria-label="Back 15 seconds"
+                  aria-label="Lùi 15 giây"
                   onClick={() => setProgress(Math.max(0, progress - 5))}
                   className="grid size-11 place-items-center rounded-full border border-line"
                 >
                   <RotateCcw size={20} />
                 </button>
                 <button
-                  aria-label={playing ? 'Pause' : 'Play'}
+                  aria-label={playing ? 'Tạm dừng' : 'Phát'}
                   onClick={() => setPlaying(!playing)}
                   className="grid size-16 place-items-center rounded-full bg-orange text-[#172033] shadow-lg"
                 >
                   {playing ? <Pause size={28} /> : <Play size={28} />}
                 </button>
                 <button
-                  aria-label="Forward 15 seconds"
+                  aria-label="Tiến 15 giây"
                   onClick={() => setProgress(Math.min(100, progress + 5))}
                   className="grid size-11 place-items-center rounded-full border border-line"
                 >
                   <RotateCw size={20} />
                 </button>
                 <IconButton
-                  label="Next chapter"
+                  label="Chương tiếp theo"
                   className="border-0 bg-transparent"
                   onClick={() => setChapter(Math.min(audio.queue.length, chapter + 1))}
                 >
                   <SkipForward size={21} />
                 </IconButton>
-                <IconButton label="Repeat" className="border-0 bg-transparent">
+                <IconButton label="Lặp lại" className="border-0 bg-transparent">
                   <Repeat2 size={19} />
                 </IconButton>
               </div>
               <div className="mt-8 space-y-3 border-t border-line pt-6">
                 <ControlPills
-                  label="Speed"
+                  label="Tốc độ"
                   values={[1, 1.25, 1.5, 2]}
                   value={speed}
                   onChange={setSpeed}
                   suffix="x"
                 />
                 <ControlPills
-                  label="Timer"
-                  values={['Off', '15m', '30m', '45m', 'End']}
+                  label="Hẹn giờ"
+                  values={['Tắt', '15 phút', '30 phút', '45 phút', 'Hết chương']}
                   value={timer}
                   onChange={setTimer}
                 />
                 <div className="flex items-center gap-3 rounded-2xl bg-elevated px-4 py-2">
                   <Volume2 size={17} />
                   <input
-                    aria-label="Volume"
+                    aria-label="Âm lượng"
                     type="range"
                     min="0"
                     max="100"
@@ -188,8 +188,8 @@ export function FullAudioPlayerPage() {
             <Card className="p-5">
               <div className="flex items-center justify-between">
                 <div>
-                  <h2 className="text-2xl font-semibold">Audio Queue</h2>
-                  <p className="text-xs text-muted">18 tracks · 8 hrs 42 mins total</p>
+                  <h2 className="text-2xl font-semibold">Hàng đợi âm thanh</h2>
+                  <p className="text-xs text-muted">18 bản · tổng 8 giờ 42 phút</p>
                 </div>
                 <ListMusic className="text-brand" />
               </div>
@@ -218,7 +218,7 @@ export function FullAudioPlayerPage() {
                           {number}. {title}
                         </strong>
                         <span className="text-[11px] text-muted">
-                          {done ? 'Completed' : active ? 'Now Playing' : 'Queued'}
+                          {done ? 'Đã hoàn thành' : active ? 'Đang phát' : 'Trong hàng đợi'}
                         </span>
                       </div>
                       <span className="text-xs text-muted">{time}</span>
@@ -228,7 +228,7 @@ export function FullAudioPlayerPage() {
               </div>
             </Card>
             <Card>
-              <h2 className="font-semibold">Narration &amp; Production</h2>
+              <h2 className="font-semibold">Lồng tiếng &amp; Sản xuất</h2>
               <div className="mt-4 space-y-4">
                 {audio.cast.map(([name, role]) => (
                   <div className="flex items-center gap-3" key={name}>
@@ -246,15 +246,15 @@ export function FullAudioPlayerPage() {
                 ))}
               </div>
               <p className="mt-5 rounded-2xl bg-elevated p-4 text-sm italic leading-6">
-                “Recorded at SoundForge Studios with custom analog ambient score accompaniment.”
+                “Được thu tại SoundForge Studios với phần nhạc nền analog được thiết kế riêng.”
               </p>
             </Card>
             <Card className="flex items-center justify-between">
               <div>
-                <p className="text-xs text-muted">Love this audiobook?</p>
-                <strong className="text-sm">Save it for later</strong>
+                <p className="text-xs text-muted">Bạn yêu thích truyện âm thanh này?</p>
+                <strong className="text-sm">Lưu để nghe sau</strong>
               </div>
-              <button onClick={() => setSaved(value => !value)} aria-label={saved ? 'Remove favorite' : 'Favorite'}>
+              <button onClick={() => setSaved(value => !value)} aria-label={saved ? 'Bỏ yêu thích' : 'Yêu thích'}>
                 <Heart className={saved ? 'fill-rose text-rose' : 'text-muted'} />
               </button>
             </Card>

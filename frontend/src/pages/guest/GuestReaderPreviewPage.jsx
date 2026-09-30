@@ -33,8 +33,8 @@ export function GuestReaderPreviewPage() {
             <ArrowLeft size={17} />
             <span className="hidden sm:inline">The Silent Forest</span>
           </Link>
-          <button onClick={() => window.alert('Chapter selector opened (mock).')} className="mx-auto flex min-w-0 max-w-sm flex-1 items-center justify-between rounded-xl border border-line bg-page px-3 py-2 text-xs">
-            <span className="truncate">Chapter 1: The Whispering Trees</span>
+          <button onClick={() => window.alert('Đã mở bộ chọn chương (mô phỏng).')} className="mx-auto flex min-w-0 max-w-sm flex-1 items-center justify-between rounded-xl border border-line bg-page px-3 py-2 text-xs">
+            <span className="truncate">Chương 1: The Whispering Trees</span>
             <span>⌄</span>
           </button>
           <div className="hidden items-center rounded-xl border border-line bg-page p-1 sm:flex">
@@ -53,9 +53,9 @@ export function GuestReaderPreviewPage() {
             </button>
           </div>
           <label className="hidden items-center gap-2 rounded-xl border border-line bg-page px-3 py-2 xl:flex">
-            <span className="text-[10px] font-semibold text-muted">Width</span>
+            <span className="text-[10px] font-semibold text-muted">Độ rộng</span>
             <input
-              aria-label="Reading column width"
+              aria-label="Độ rộng cột đọc"
               type="range"
               min="600"
               max="960"
@@ -71,25 +71,25 @@ export function GuestReaderPreviewPage() {
           <button
             onClick={() => setLineHeight(lineHeight === 2 ? 2.3 : 2)}
             className="hidden size-9 place-items-center rounded-xl border border-line lg:grid"
-            aria-label="Line spacing"
+            aria-label="Giãn dòng"
           >
             <Menu size={16} />
           </button>
           <button
             onClick={() => setTheme(resolvedTheme === 'dark' ? 'light' : 'dark')}
             className="grid size-9 place-items-center rounded-xl border border-line"
-            aria-label="Toggle theme"
+            aria-label="Chuyển giao diện"
           >
             {resolvedTheme === 'dark' ? <Sun size={16} /> : <Moon size={16} />}
           </button>
           <Link to="/login" className="hidden text-xs font-semibold sm:block">
-            Sign In
+            Đăng nhập
           </Link>
           <Link
             to="/register"
             className="rounded-xl bg-brand px-3 py-2 text-xs font-semibold text-white"
           >
-            Join Free
+            Tham gia miễn phí
           </Link>
         </div>
       </header>
@@ -100,16 +100,16 @@ export function GuestReaderPreviewPage() {
         <article>
           <header className="mb-9 border-b border-line pb-7 text-center">
             <span className="rounded-full bg-brand/10 px-3 py-1 text-xs font-medium text-brand">
-              Free Preview
+              Đọc thử miễn phí
             </span>
             <p className="mt-5 text-xs font-semibold uppercase tracking-[.2em] text-muted">
               The Silent Forest · Mira Lane
             </p>
             <h1 className="mt-3 text-3xl font-bold tracking-tight md:text-4xl">
-              Chapter 1: The Whispering Trees
+              Chương 1: The Whispering Trees
             </h1>
             <p className="mt-3 text-xs text-muted">
-              Published Sep 12, 2026 · 2,420 words · 7 min read
+              Phát hành 12 thg 9, 2026 · 2.420 từ · đọc trong 7 phút
             </p>
           </header>
           <div className="space-y-6" style={{ fontSize, lineHeight }}>
@@ -132,31 +132,28 @@ export function GuestReaderPreviewPage() {
             <span className="mx-auto grid size-12 place-items-center rounded-full bg-brand/15 text-brand">
               <Lock size={20} />
             </span>
-            <h2 className="mt-4 text-xl font-bold sm:text-2xl">The story continues in Chapter 2</h2>
+            <h2 className="mt-4 text-xl font-bold sm:text-2xl">Câu chuyện tiếp tục ở Chương 2</h2>
             <p className="mx-auto mt-3 max-w-lg text-sm leading-6 text-muted">
-              Join over 3,000,000 readers on NovelHub. Create a free account in 30 seconds to
-              continue reading and unlock your personal library.
+              Tham gia cùng hơn 3.000.000 độc giả NovelHub. Tạo tài khoản miễn phí trong 30 giây để tiếp tục đọc và mở khóa thư viện cá nhân.
             </p>
             <div className="mt-6 flex flex-col justify-center gap-3 sm:flex-row">
               <Link
                 to="/register"
                 className="inline-flex min-h-11 items-center justify-center rounded-2xl border border-brand bg-brand px-5 py-2.5 text-sm font-semibold text-white"
               >
-                Create Free Account
+                Tạo tài khoản miễn phí
               </Link>
               <Link
                 to="/login"
                 state={{ from: '/read/demo/chapter-2' }}
                 className="inline-flex min-h-11 items-center justify-center rounded-2xl border border-line bg-surface px-5 py-2.5 text-sm font-semibold text-ink"
               >
-                Sign In
+                Đăng nhập
               </Link>
             </div>
           </div>
           <div className="grid gap-3 p-5 text-xs sm:grid-cols-3">
-            <span>✓ Sync reading progress</span>
-            <span>✓ Bookmark favorites</span>
-            <span>✓ Join discussions</span>
+            <span>✓ Đồng bộ tiến độ đọc</span><span>✓ Đánh dấu yêu thích</span><span>✓ Tham gia thảo luận</span>
           </div>
         </Card>
       </main>
@@ -170,15 +167,15 @@ export function GuestReaderPreviewPage() {
         <button
           onClick={() => setBookmarked(!bookmarked)}
           className={`grid size-9 place-items-center rounded-full ${bookmarked ? 'bg-brand text-white' : ''}`}
-          aria-label="Bookmark"
+          aria-label="Đánh dấu chương"
         >
           <Bookmark size={17} />
         </button>
         <div className="text-center">
-          <span className="block text-xs font-medium">Chapter 1</span>
-          <span className="text-[10px] text-brand">100% complete</span>
+          <span className="block text-xs font-medium">Chương 1</span>
+          <span className="text-[10px] text-brand">Đã hoàn thành 100%</span>
         </div>
-        <button onClick={() => window.alert('Join NovelHub to comment on this chapter.')} className="grid size-9 place-items-center rounded-full" aria-label="Comments">
+        <button onClick={() => window.alert('Hãy tham gia NovelHub để bình luận về chương này.')} className="grid size-9 place-items-center rounded-full" aria-label="Bình luận">
           <MessageCircle size={17} />
         </button>
         <Link
@@ -186,7 +183,7 @@ export function GuestReaderPreviewPage() {
           state={{ from: '/read/demo/chapter-2' }}
           className="flex items-center gap-1 rounded-full border border-line bg-page px-3 py-2 text-xs"
         >
-          Chapter 2 <Lock size={12} />
+          Chương 2 <Lock size={12} />
           <ChevronRight size={13} />
         </Link>
       </div>
