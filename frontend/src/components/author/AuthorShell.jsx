@@ -2,7 +2,6 @@ import { useState } from 'react'
 import { Link, useLocation } from 'react-router-dom'
 import {
   BarChart3,
-  Bell,
   BookOpen,
   Bot,
   CirclePlus,
@@ -11,21 +10,13 @@ import {
   FileText,
   Images,
   LayoutDashboard,
-  Menu,
-  Moon,
   PenLine,
-  Search,
   Send,
-  Settings,
-  Sun,
-  UserRound,
   X,
 } from 'lucide-react'
-import { useTheme } from '../../context/ThemeContext'
-import { Avatar, IconButton, Input } from '../ui'
+import { Avatar, IconButton } from '../ui'
 import { SiteFooter } from '../shared/SiteFooter'
-import { LanguageSwitcher } from '../shared/LanguageSwitcher'
-import { WorkspaceHeaderAccount, WorkspaceSwitcher } from '../shared/RoleNavigation'
+import { SharedSidebarCommon, SharedWorkspaceHeader, WorkspaceSwitcher } from '../shared/RoleNavigation'
 
 const navigation = [
   [
@@ -52,13 +43,6 @@ const navigation = [
       ['Submissions', '/author/submissions', Send],
       ['Analytics', '/author/analytics', BarChart3],
       ['Earnings & Payouts', '/author/earnings', CircleDollarSign],
-    ],
-  ],
-  [
-    'Account',
-    [
-      ['Author Profile', '/author/profile', UserRound],
-      ['Settings', '/author/settings', Settings],
     ],
   ],
 ]
@@ -104,7 +88,6 @@ function AuthorNav({ close }) {
 }
 export function AuthorShell({ children }) {
   const [open, setOpen] = useState(false)
-  const { resolvedTheme, setTheme } = useTheme()
   return (
     <div className="min-h-screen bg-page text-ink">
       <aside className="fixed inset-y-0 left-0 z-40 hidden w-56 flex-col border-r border-line bg-surface p-4 lg:flex">
@@ -120,6 +103,7 @@ export function AuthorShell({ children }) {
         <div className="min-h-0 flex-1 overflow-y-auto">
           <WorkspaceSwitcher currentRole="author" />
           <AuthorNav />
+          <SharedSidebarCommon currentRole="author" />
         </div>
         <div className="mt-4 flex items-center gap-3 border-t border-line pt-4">
           <Avatar name="Mira Lane" />
@@ -147,39 +131,10 @@ export function AuthorShell({ children }) {
         </div>
         <WorkspaceSwitcher currentRole="author" />
         <AuthorNav close={() => setOpen(false)} />
+        <SharedSidebarCommon currentRole="author" onNavigate={() => setOpen(false)} />
       </aside>
       <div className="flex min-h-screen flex-col lg:pl-56">
-        <header className="fixed left-0 right-0 top-0 z-30 flex min-h-16 items-center gap-3 border-b border-line bg-surface/95 px-4 shadow-sm backdrop-blur lg:left-56 sm:px-6 xl:px-8">
-          <IconButton label="Menu" className="lg:hidden" onClick={() => setOpen(true)}>
-            <Menu size={19} />
-          </IconButton>
-          <div className="hidden items-center gap-2 rounded-2xl border border-line bg-elevated px-4 py-2 text-xs sm:flex">
-            <span className="size-2 rounded-full bg-brand" />
-            Active Manuscript: <strong>The Silent Forest</strong>
-          </div>
-          <Input
-            icon={Search}
-            placeholder="Search drafts, chapters..."
-            className="ml-auto hidden w-64 md:flex"
-          />
-          <Link
-            to="/author/stories/demo/chapters/chapter-1/edit"
-            className="rounded-2xl bg-brand px-4 py-2.5 text-xs font-semibold text-white"
-          >
-            + New Chapter
-          </Link>
-          <IconButton label="Notifications">
-            <Bell size={17} />
-          </IconButton>
-          <LanguageSwitcher compact />
-          <WorkspaceHeaderAccount />
-          <IconButton
-            label="Theme"
-            onClick={() => setTheme(resolvedTheme === 'dark' ? 'light' : 'dark')}
-          >
-            {resolvedTheme === 'dark' ? <Sun size={17} /> : <Moon size={17} />}
-          </IconButton>
-        </header>
+        <SharedWorkspaceHeader currentRole="author" onOpenMenu={() => setOpen(true)} offsetClass="lg:left-56" />
         <main className="flex-1 pt-16">{children}</main>
         <SiteFooter />
       </div>

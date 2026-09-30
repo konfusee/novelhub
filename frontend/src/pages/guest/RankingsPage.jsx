@@ -163,15 +163,6 @@ export function RankingsPage({ embedded = false }) {
           </aside>
         </div>
       </main>
-      {!embedded && <footer className="border-t border-line bg-surface">
-        <div className="mx-auto flex max-w-[1360px] flex-wrap justify-between gap-4 px-5 py-7 text-xs text-muted md:px-8 lg:px-12">
-          <strong className="text-ink">
-            Novel<span className="text-brand">Hub</span>
-          </strong>
-          <span>Rankings FAQ · Author Guidelines · Editorial Terms · Privacy Policy</span>
-          <span>© 2026 NovelHub</span>
-        </div>
-      </footer>}
     </div>
   )
 }
