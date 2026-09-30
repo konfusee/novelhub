@@ -415,7 +415,7 @@ export function ReaderProfilePage({ workspace = 'reader' }) {
             </Card>}
           </aside>
         </div>
-        <section className="relative z-10 mt-8 rounded-3xl border border-line bg-surface p-4 shadow-sm sm:p-5">
+        {!saved && <section className="relative z-10 mt-8 rounded-3xl border border-line bg-surface p-4 shadow-sm sm:p-5">
         <div className="flex flex-col items-stretch justify-between gap-4 sm:flex-row sm:items-center">
           <p className="hidden text-xs text-muted sm:block">
             {t(saved
@@ -432,7 +432,7 @@ export function ReaderProfilePage({ workspace = 'reader' }) {
             </Button>
           </div>
         </div>
-        </section>
+        </section>}
       </main>
     </Layout>
   )
