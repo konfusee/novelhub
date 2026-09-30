@@ -8,6 +8,9 @@
     "backend": "npm run dev --prefix backend",
     "dev": "concurrently \"npm run backend\" \"npm run frontend\"",
     "build": "npm run build --prefix frontend",
+    "format": "npm run format --prefix frontend",
+    "format:check": "npm run format:check --prefix frontend",
+    "lint": "npm run lint --prefix frontend",
     "install:all": "npm install && npm install --prefix frontend && npm install --prefix backend"
   },
   "repository": {
