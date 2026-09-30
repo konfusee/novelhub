@@ -12,19 +12,19 @@ const roleMeta = {
   admin: ['Admin', Crown],
 }
 
-export function WorkspaceSwitcher({ currentRole }) {
+export function WorkspaceSwitcher({ currentRole, compact = false }) {
   const { roles } = useAuth()
   const available = roles.filter(role => roleMeta[role])
-  if (available.length < 2) return null
+  const workspaces = available.length ? available : [currentRole]
 
   return (
     <details className="group relative mb-4">
-      <summary className="flex cursor-pointer list-none items-center gap-2 rounded-xl border border-line bg-elevated px-3 py-2 text-xs font-semibold">
-        Switch workspace
-        <ChevronDown size={14} className="ml-auto transition group-open:rotate-180" />
+      <summary title={compact ? 'Switch workspace' : undefined} aria-label="Switch workspace" className={`flex cursor-pointer list-none items-center rounded-xl border border-line bg-elevated text-xs font-semibold ${compact ? 'mx-auto size-10 justify-center' : 'gap-2 px-3 py-2'}`}>
+        {!compact && 'Switch workspace'}
+        <ChevronDown size={14} className={`${compact ? '' : 'ml-auto'} transition group-open:rotate-180`} />
       </summary>
-      <div className="mt-2 grid gap-1 rounded-xl border border-line bg-surface p-1.5 shadow-lg">
-        {available.map(role => {
+      <div className={`${compact ? 'absolute left-full top-0 z-50 ml-3 w-52' : 'mt-2'} grid gap-1 rounded-xl border border-line bg-surface p-1.5 shadow-lg`}>
+        {workspaces.map(role => {
           const [label, Icon] = roleMeta[role]
           return (
             <Link
@@ -105,14 +105,15 @@ export function SharedSidebarCommon({ currentRole, onNavigate }) {
   )
 }
 
-export function SharedWorkspaceHeader({ currentRole, onOpenMenu, offsetClass = '', children }) {
+export function SharedWorkspaceHeader({ currentRole, workspaceLabel, onOpenMenu, offsetClass = '', children }) {
   const { resolvedTheme, setTheme } = useTheme()
   const walletPath = currentRole === 'author' ? '/author/wallet' : '/reader/wallet'
   return (
     <header className={`fixed left-0 right-0 top-0 z-30 border-b border-line bg-surface/95 shadow-sm backdrop-blur transition-[left,right] ${offsetClass}`}>
       <div className="flex h-16 items-center gap-3 px-4 sm:px-6 xl:px-8">
-        <IconButton label="Open menu" className="lg:hidden" onClick={onOpenMenu}><Menu size={19} /></IconButton>
+        <IconButton label="Open menu" className="md:hidden" onClick={onOpenMenu}><Menu size={19} /></IconButton>
         <Input icon={Search} placeholder="Search stories, authors, tags..." className="hidden w-full max-w-md sm:flex" />
+        <span className="hidden w-36 truncate rounded-full bg-brand/10 px-3 py-1.5 text-center text-[10px] font-semibold text-brand md:block">{workspaceLabel} Workspace</span>
         <div className="ml-auto"><RoleHeaderLinks includeWallet currentRole={currentRole} /></div>
         <Link to={walletPath} className="hidden items-center gap-2 rounded-xl border border-line bg-surface px-3 py-2 text-xs font-semibold sm:flex">
           <span className="text-orange">●</span> 450 coins <span className="text-brand">+</span>
