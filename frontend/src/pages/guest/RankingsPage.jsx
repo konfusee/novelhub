@@ -84,7 +84,7 @@ export function RankingsPage({ embedded = false }) {
             </div>
             <div className="mt-4 flex items-center justify-between text-xs text-muted">
               <span>Showing 15 of 250 indexed ranking entries</span>
-              <Button variant="secondary" className="min-h-9 py-2 text-xs">
+              <Button onClick={() => window.alert('Loaded the next 15 ranking entries (mock).')} variant="secondary" className="min-h-9 py-2 text-xs">
                 Next 15 stories →
               </Button>
             </div>
@@ -150,7 +150,7 @@ export function RankingsPage({ embedded = false }) {
               <p className="mt-2 text-xs leading-5 text-muted">
                 Discover under-the-radar novels handpicked every Friday by our community curators.
               </p>
-              <button className="mt-3 text-xs font-semibold text-brand">
+              <button onClick={() => window.location.assign('/search')} className="mt-3 text-xs font-semibold text-brand">
                 Explore Curated Collections →
               </button>
             </Card>

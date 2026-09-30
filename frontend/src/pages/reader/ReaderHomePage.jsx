@@ -17,6 +17,7 @@ import { ReaderLayout } from '../../layouts'
 import { ContinueCard } from '../../components/reader/ContinueCard'
 import { Badge, Button, Card, SectionHeader } from '../../components/ui'
 import { readerHome } from '../../data/mock/reader'
+import { useAuth } from '../../context/AuthContext'
 
 function StoryTile({ story }) {
   const [saved, setSaved] = useState(false)
@@ -112,6 +113,7 @@ function NowPlaying() {
 }
 
 export function ReaderHomePage() {
+  const { currentUser } = useAuth()
   return (
     <ReaderLayout>
       <main className="page-reader py-6">
@@ -124,10 +126,10 @@ export function ReaderHomePage() {
                     Your reading sanctuary
                   </p>
                   <h1 className="mt-2 text-3xl font-bold tracking-tight sm:text-4xl">
-                    Welcome back, Elena
+                    Welcome back, {currentUser?.name?.split(' ')[0] || 'Reader'}
                   </h1>
                   <p className="mt-2 text-sm text-muted">Your next favorite chapter is waiting.</p>
-                  <Button className="mt-5">
+                  <Button onClick={() => window.location.assign('/reader/library')} className="mt-5">
                     Open Reader <ArrowRight size={16} />
                   </Button>
                 </div>
@@ -167,7 +169,7 @@ export function ReaderHomePage() {
                 title="Recommended for you"
                 description="Curated from your reading taste"
                 action={
-                  <button className="flex items-center gap-1 text-xs font-semibold text-brand">
+                  <button onClick={() => window.location.assign('/search')} className="flex items-center gap-1 text-xs font-semibold text-brand">
                     See all <ChevronRight size={15} />
                   </button>
                 }
@@ -182,7 +184,7 @@ export function ReaderHomePage() {
             <section>
               <SectionHeader
                 title="Because you read Fantasy"
-                action={<button className="text-xs font-semibold text-brand">Refresh picks</button>}
+                action={<button onClick={() => window.alert('Recommendations refreshed (mock).')} className="text-xs font-semibold text-brand">Refresh picks</button>}
               />
               <div className="mt-4 grid gap-3 sm:grid-cols-3">
                 {readerHome.fantasyPicks.map(item => (
@@ -222,7 +224,7 @@ export function ReaderHomePage() {
                       <p className="truncate text-xs text-muted">{item.chapter}</p>
                     </div>
                     <span className="hidden text-[11px] text-muted sm:block">{item.time}</span>
-                    <Button className="min-h-9 px-3 py-1.5 text-xs">Read</Button>
+                    <Button onClick={() => window.location.assign('/stories/demo')} className="min-h-9 px-3 py-1.5 text-xs">Read</Button>
                   </div>
                 ))}
               </Card>

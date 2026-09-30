@@ -47,8 +47,9 @@ import { AuthorApplyPage } from './pages/author/AuthorApplyPage'
 import { AuthorAgreementPage } from './pages/admin/AuthorAgreementPage'
 import { ForbiddenPage, NotFoundPage } from './pages/system/SystemPages'
 import { LegalPage } from './pages/system/LegalPage'
+import { RoleUtilityPage } from './pages/system/RoleUtilityPage'
 import { SiteFooter } from './components/shared/SiteFooter'
-import { ReaderLayout } from './layouts'
+import { AdminLayout, AuthorLayout, ModeratorLayout, ReaderLayout } from './layouts'
 
 const pages = [
   GuestHomePage,
@@ -119,8 +120,8 @@ function AppRoutes() {
         <Route path="/categories" element={<AdaptivePublicPage page="categories" />} />
         <Route path="/search" element={<AdaptivePublicPage page="search" />} />
         <Route path="/rankings" element={<AdaptivePublicPage page="rankings" />} />
-        <Route path="/stories/:storyId" element={<StoryDetailPage />} />
-        <Route path="/story/:storyId" element={<StoryDetailPage />} />
+        <Route path="/stories/:storyId" element={<AdaptiveStoryPage />} />
+        <Route path="/story/:storyId" element={<AdaptiveStoryPage />} />
         <Route path="/stories/:storyId/preview/:chapterId" element={<GuestReaderPreviewPage />} />
         <Route path="/join" element={<JoinPage />} />
         <Route path="/login" element={<JoinPage initialMode="login" />} />
@@ -135,7 +136,14 @@ function AppRoutes() {
         <Route path="/reader/history" element={role('reader', <ReadingHistoryPage />)} />
         <Route path="/reader/notifications" element={role('reader', <NotificationsPage />)} />
         <Route path="/reader/profile" element={role('reader', <ReaderProfilePage />)} />
+        <Route path="/reader/profile/reading" element={role('reader', <ReaderProfilePage />)} />
+        <Route path="/reader/profile/listening" element={role('reader', <ReaderProfilePage />)} />
+        <Route path="/reader/profile/appearance" element={role('reader', <ReaderProfilePage />)} />
+        <Route path="/reader/profile/privacy" element={role('reader', <ReaderProfilePage />)} />
         <Route path="/reader/wallet" element={role('reader', <WalletPage />)} />
+        <Route path="/reader/audiobooks" element={role('reader', <RoleUtilityPage role="reader" eyebrow="Listening" title="My Audiobooks" description="Continue listening, manage downloaded audio, and browse your saved narration queue." />)} />
+        <Route path="/reader/messages" element={role('reader', <RoleUtilityPage role="reader" eyebrow="Community" title="Messages" description="Keep up with author announcements, reading clubs, and conversations around your favorite stories." />)} />
+        <Route path="/reader/settings" element={role('reader', <RoleUtilityPage role="reader" eyebrow="Account" title="Reader Settings" description="Manage language, appearance, reading preferences, notifications, and account options." />)} />
         <Route
           path="/read/:storyId/:chapterId"
           element={role('reader', <FullChapterReaderPage />)}
@@ -164,6 +172,10 @@ function AppRoutes() {
           element={role('author', <SubmissionReviewPage />, true)}
         />
         <Route path="/author/analytics" element={role('author', <AuthorAnalyticsPage />, true)} />
+        <Route path="/author/earnings" element={role('author', <RoleUtilityPage role="author" eyebrow="Creator finance" title="Earnings & Payouts" description="Track story revenue, royalty statements, payout readiness, and completed creator payments separately from Reader Wallet." />, true)} />
+        <Route path="/author/profile" element={role('author', <RoleUtilityPage role="author" eyebrow="Author account" title="Author Profile" description="Manage your public pen name, biography, verification details, and author storefront." />, true)} />
+        <Route path="/author/wallet" element={role('author', <RoleUtilityPage role="author" eyebrow="Reader purchases" title="Wallet & Coins" description="Authors can top up coins and purchase stories from other creators; their own published stories remain available without charge." />, true)} />
+        <Route path="/author/settings" element={role('author', <RoleUtilityPage role="author" eyebrow="Studio preferences" title="Author Settings" description="Configure publishing defaults, collaboration, notifications, security, and workspace preferences." />, true)} />
         <Route path="/moderator" element={role('moderator', <ModeratorOverviewPage />)} />
         <Route path="/moderator/submissions" element={role('moderator', <SubmissionQueuePage />)} />
         <Route
@@ -171,6 +183,12 @@ function AppRoutes() {
           element={role('moderator', <ContentReviewDetailPage />)}
         />
         <Route path="/moderator/reports" element={role('moderator', <ReportsQueuePage />)} />
+        <Route path="/moderator/reviews" element={role('moderator', <RoleUtilityPage role="moderator" eyebrow="Content safety" title="Content Reviews" description="Review assigned manuscripts, policy signals, age ratings, and publication readiness." />)} />
+        <Route path="/moderator/similarity-flags" element={role('moderator', <RoleUtilityPage role="moderator" eyebrow="Originality" title="Similarity Flags" description="Inspect automated similarity matches and route high-risk cases for detailed review." />)} />
+        <Route path="/moderator/decisions" element={role('moderator', <RoleUtilityPage role="moderator" eyebrow="Moderation history" title="Decisions" description="Review completed moderation decisions, reasoning, policy references, and appeal status." />)} />
+        <Route path="/moderator/escalations" element={role('moderator', <RoleUtilityPage role="moderator" eyebrow="Priority desk" title="Escalations" description="Handle urgent safety, copyright, and policy cases that require senior review." />)} />
+        <Route path="/moderator/audit-trail" element={role('moderator', <RoleUtilityPage role="moderator" eyebrow="Accountability" title="Audit Trail" description="Trace moderation activity with immutable event details and reviewer attribution." />)} />
+        <Route path="/moderator/settings" element={role('moderator', <RoleUtilityPage role="moderator" eyebrow="Workspace preferences" title="Moderator Settings" description="Configure queue assignments, review notifications, availability, and moderator profile preferences." />)} />
         <Route
           path="/moderator/similarity-review/:reviewId"
           element={role('moderator', <SimilarityRiskReviewPage />)}
@@ -181,6 +199,11 @@ function AppRoutes() {
         <Route path="/admin/roles" element={role('admin', <RolesPermissionsPage />)} />
         <Route path="/admin/categories" element={role('admin', <CategoriesConfigurationPage />)} />
         <Route path="/admin/settings" element={role('admin', <PlatformSettingsPage />)} />
+        <Route path="/admin/content" element={role('admin', <RoleUtilityPage role="admin" eyebrow="Content governance" title="Content Configuration" description="Manage publication rules, discovery metadata, content ratings, and platform-wide defaults." />)} />
+        <Route path="/admin/services" element={role('admin', <RoleUtilityPage role="admin" eyebrow="Infrastructure" title="Services & Infrastructure" description="Monitor external services, storage, search, audio processing, and operational capacity." />)} />
+        <Route path="/admin/audit-logs" element={role('admin', <RoleUtilityPage role="admin" eyebrow="Security" title="Audit Logs" description="Search administrative events, authentication records, configuration changes, and protected actions." />)} />
+        <Route path="/admin/moderation" element={role('admin', <RoleUtilityPage role="admin" eyebrow="Governance" title="Moderation Oversight" description="Track policy enforcement, queue health, escalations, appeals, and moderator performance." />)} />
+        <Route path="/admin/transactions" element={role('admin', <RoleUtilityPage role="admin" eyebrow="Platform finance" title="Wallet Transactions" description="Review coin top-ups, chapter purchases, refunds, adjustments, and transaction anomalies across the platform." />)} />
         <Route path="/403" element={<ForbiddenPage />} />
         <Route path="/ui-preview" element={<UIPreviewPage />} />
         {pages.map((Page, index) => (
@@ -207,7 +230,8 @@ function ReaderExplorePage() {
 }
 
 function AdaptivePublicPage({ page }) {
-  const { isAuthenticated } = useAuth()
+  const { isAuthenticated, hasRole } = useAuth()
+  const { search } = useLocation()
   const pagesByName = {
     home: GuestHomePage,
     categories: CategoriesPage,
@@ -218,10 +242,15 @@ function AdaptivePublicPage({ page }) {
 
   if (!isAuthenticated) return <Page />
 
+  const requestedWorkspace = new URLSearchParams(search).get('workspace')
+  const workspace = ['admin', 'moderator', 'author', 'reader'].find(
+    roleName => roleName === requestedWorkspace && hasRole(roleName),
+  ) || 'reader'
+  const Layout = { reader: ReaderLayout, author: AuthorLayout, moderator: ModeratorLayout, admin: AdminLayout }[workspace]
   return (
-    <ReaderLayout>
+    <Layout>
       <Page embedded />
-    </ReaderLayout>
+    </Layout>
   )
 }
 
@@ -231,6 +260,16 @@ function AdaptiveLegalPage({ type }) {
   return (
     <ReaderLayout>
       <LegalPage type={type} embedded />
+    </ReaderLayout>
+  )
+}
+
+function AdaptiveStoryPage() {
+  const { isAuthenticated } = useAuth()
+  if (!isAuthenticated) return <StoryDetailPage />
+  return (
+    <ReaderLayout>
+      <StoryDetailPage embedded />
     </ReaderLayout>
   )
 }

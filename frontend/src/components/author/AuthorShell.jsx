@@ -6,7 +6,7 @@ import {
   BookOpen,
   Bot,
   CirclePlus,
-  Compass,
+  CircleDollarSign,
   FileClock,
   FileText,
   Images,
@@ -25,13 +25,13 @@ import { useTheme } from '../../context/ThemeContext'
 import { Avatar, IconButton, Input } from '../ui'
 import { SiteFooter } from '../shared/SiteFooter'
 import { LanguageSwitcher } from '../shared/LanguageSwitcher'
+import { WorkspaceHeaderAccount, WorkspaceSwitcher } from '../shared/RoleNavigation'
 
 const navigation = [
   [
     'Overview',
     [
       ['Author Dashboard', '/author', LayoutDashboard],
-      ['Discover NovelHub', '/', Compass],
       ['My Stories', '/author/stories/demo', BookOpen],
       ['Drafts', '/author/drafts', FileClock],
     ],
@@ -51,14 +51,14 @@ const navigation = [
     [
       ['Submissions', '/author/submissions', Send],
       ['Analytics', '/author/analytics', BarChart3],
+      ['Earnings & Payouts', '/author/earnings', CircleDollarSign],
     ],
   ],
   [
     'Account',
     [
-      ['Author Profile', '/reader/profile', UserRound],
-      ['Settings', '/reader/profile', Settings],
-      ['Reader Dashboard', '/reader', BookOpen],
+      ['Author Profile', '/author/profile', UserRound],
+      ['Settings', '/author/settings', Settings],
     ],
   ],
 ]
@@ -118,6 +118,7 @@ export function AuthorShell({ children }) {
           </span>
         </Link>
         <div className="min-h-0 flex-1 overflow-y-auto">
+          <WorkspaceSwitcher currentRole="author" />
           <AuthorNav />
         </div>
         <div className="mt-4 flex items-center gap-3 border-t border-line pt-4">
@@ -144,6 +145,7 @@ export function AuthorShell({ children }) {
             <X size={18} />
           </IconButton>
         </div>
+        <WorkspaceSwitcher currentRole="author" />
         <AuthorNav close={() => setOpen(false)} />
       </aside>
       <div className="flex min-h-screen flex-col lg:pl-56">
@@ -151,10 +153,10 @@ export function AuthorShell({ children }) {
           <IconButton label="Menu" className="lg:hidden" onClick={() => setOpen(true)}>
             <Menu size={19} />
           </IconButton>
-          <button className="hidden items-center gap-2 rounded-2xl border border-line bg-elevated px-4 py-2 text-xs sm:flex">
+          <div className="hidden items-center gap-2 rounded-2xl border border-line bg-elevated px-4 py-2 text-xs sm:flex">
             <span className="size-2 rounded-full bg-brand" />
             Active Manuscript: <strong>The Silent Forest</strong>
-          </button>
+          </div>
           <Input
             icon={Search}
             placeholder="Search drafts, chapters..."
@@ -170,6 +172,7 @@ export function AuthorShell({ children }) {
             <Bell size={17} />
           </IconButton>
           <LanguageSwitcher compact />
+          <WorkspaceHeaderAccount />
           <IconButton
             label="Theme"
             onClick={() => setTheme(resolvedTheme === 'dark' ? 'light' : 'dark')}

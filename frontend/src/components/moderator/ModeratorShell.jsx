@@ -4,7 +4,6 @@ import {
   Bell,
   BookOpen,
   ClipboardCheck,
-  Compass,
   FileSearch,
   Flag,
   Gauge,
@@ -16,31 +15,33 @@ import {
   ShieldAlert,
   Sun,
   UserRoundCheck,
+  Settings,
   X,
 } from 'lucide-react'
 import { useTheme } from '../../context/ThemeContext'
 import { Avatar, IconButton, Input } from '../ui'
 import { SiteFooter } from '../shared/SiteFooter'
 import { LanguageSwitcher } from '../shared/LanguageSwitcher'
+import { WorkspaceHeaderAccount, WorkspaceSwitcher } from '../shared/RoleNavigation'
 
 const groups = [
   [
     'Moderation',
     [
       ['Overview', '/moderator', Gauge],
-      ['Discover NovelHub', '/', Compass],
       ['Submission Queue', '/moderator/submissions', ClipboardCheck],
-      ['Content Reviews', '/moderator/submissions/demo', FileSearch],
+      ['Content Reviews', '/moderator/reviews', FileSearch],
       ['Reports', '/moderator/reports', Flag],
-      ['Similarity Flags', '/moderator/similarity-review/demo', ShieldAlert],
+      ['Similarity Flags', '/moderator/similarity-flags', ShieldAlert],
     ],
   ],
   [
     'History',
     [
-      ['Decisions', '/moderator/submissions', UserRoundCheck],
-      ['Escalations', '/moderator/reports', Scale],
-      ['Audit Trail', '/moderator/submissions', History],
+      ['Decisions', '/moderator/decisions', UserRoundCheck],
+      ['Escalations', '/moderator/escalations', Scale],
+      ['Audit Trail', '/moderator/audit-trail', History],
+      ['Moderator Settings', '/moderator/settings', Settings],
     ],
   ],
 ]
@@ -115,6 +116,7 @@ export function ModeratorShell({ children }) {
           </div>
         </div>
         <div className="min-h-0 flex-1 overflow-y-auto">
+          <WorkspaceSwitcher currentRole="moderator" />
           <Nav />
         </div>
         <p className="border-t border-line pt-4 text-[10px] text-muted">
@@ -136,6 +138,7 @@ export function ModeratorShell({ children }) {
             <X size={18} />
           </IconButton>
         </div>
+        <WorkspaceSwitcher currentRole="moderator" />
         <Nav close={() => setOpen(false)} />
       </aside>
       <div className="flex min-h-screen flex-col lg:pl-56">
@@ -152,13 +155,14 @@ export function ModeratorShell({ children }) {
             placeholder="Search submission ID..."
             className="ml-auto hidden w-64 md:flex"
           />
-          <button className="hidden rounded-xl border border-line px-3 py-2 text-xs sm:block">
-            All Priority
-          </button>
+          <select aria-label="Filter priority" className="hidden rounded-xl border border-line bg-surface px-3 py-2 text-xs sm:block">
+            <option>All Priority</option><option>Urgent</option><option>High</option><option>Normal</option>
+          </select>
           <IconButton label="Notifications">
             <Bell size={17} />
           </IconButton>
           <LanguageSwitcher compact />
+          <WorkspaceHeaderAccount />
           <IconButton
             label="Theme"
             onClick={() => setTheme(resolvedTheme === 'dark' ? 'light' : 'dark')}

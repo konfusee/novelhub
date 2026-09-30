@@ -5,7 +5,6 @@ import {
   Bell,
   BookOpen,
   Boxes,
-  Compass,
   FolderTree,
   History,
   LayoutDashboard,
@@ -18,19 +17,20 @@ import {
   Sun,
   UserCog,
   UsersRound,
+  WalletCards,
   X,
 } from 'lucide-react'
 import { useTheme } from '../../context/ThemeContext'
 import { Avatar, IconButton, Input } from '../ui'
 import { SiteFooter } from '../shared/SiteFooter'
 import { LanguageSwitcher } from '../shared/LanguageSwitcher'
+import { WorkspaceHeaderAccount, WorkspaceSwitcher } from '../shared/RoleNavigation'
 
 const groups = [
   [
     'Overview',
     [
       ['Dashboard', '/admin', LayoutDashboard],
-      ['Discover NovelHub', '/', Compass],
     ],
   ],
   [
@@ -44,16 +44,17 @@ const groups = [
     'Content',
     [
       ['Categories & Taxonomy', '/admin/categories', FolderTree],
-      ['Content Configuration', '/admin/categories', SlidersHorizontal],
+      ['Content Configuration', '/admin/content', SlidersHorizontal],
     ],
   ],
   [
     'Platform',
     [
-      ['Services & Infrastructure', '/admin/settings', Boxes],
+      ['Services & Infrastructure', '/admin/services', Boxes],
       ['System Settings', '/admin/settings', Settings],
-      ['Audit Logs', '/admin/settings', History],
-      ['Moderation Oversight', '/admin/settings', ShieldCheck],
+      ['Audit Logs', '/admin/audit-logs', History],
+      ['Moderation Oversight', '/admin/moderation', ShieldCheck],
+      ['Wallet Transactions', '/admin/transactions', WalletCards],
     ],
   ],
 ]
@@ -115,6 +116,7 @@ export function AdminShell({ children }) {
           </div>
         </div>
         <div className="min-h-0 flex-1 overflow-y-auto">
+          <WorkspaceSwitcher currentRole="admin" />
           <Nav />
         </div>
         <p className="border-t border-line pt-4 text-[10px] text-muted">Security Center · v4.8.2</p>
@@ -135,6 +137,7 @@ export function AdminShell({ children }) {
             <X size={18} />
           </IconButton>
         </div>
+        <WorkspaceSwitcher currentRole="admin" />
         <Nav close={() => setOpen(false)} />
       </aside>
       <div className="flex min-h-screen flex-col lg:pl-60">
@@ -159,6 +162,7 @@ export function AdminShell({ children }) {
             <Bell size={17} />
           </IconButton>
           <LanguageSwitcher compact />
+          <WorkspaceHeaderAccount />
           <IconButton
             label="Theme"
             onClick={() => setTheme(resolvedTheme === 'dark' ? 'light' : 'dark')}
