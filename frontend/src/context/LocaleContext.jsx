@@ -1,435 +1,51 @@
-import { createContext, useContext, useEffect, useMemo, useRef, useState } from 'react'
+import { createContext, useContext, useEffect, useMemo, useState } from 'react'
+import en from '../locales/en.json'
+import vi from '../locales/vi.json'
+
 const LocaleContext = createContext(null)
-const messages = {
-  en: {
-    discover: 'Discover',
-    categories: 'Categories',
-    rankings: 'Rankings',
-    search: 'Search',
-    login: 'Log in',
-    signup: 'Sign up',
-    library: 'Library',
-    authorDashboard: 'Author Dashboard',
-    logout: 'Log out',
-    'reader.back': 'Back to Library',
-    'reader.fontSize': 'Font size',
-    'reader.contentWidth': 'Content width',
-    'reader.lineHeight': 'Line height',
-    'reader.paragraphSpacing': 'Paragraph spacing',
-    'reader.alignment': 'Text alignment',
-    'reader.bookmark': 'Bookmark chapter',
-    'reader.bookmarked': 'Chapter bookmarked',
-    'reader.unbookmarked': 'Bookmark removed',
-    'reader.highlight': 'Highlight',
-    'reader.addNote': 'Add note',
-    'reader.notes': 'Notes',
-    'reader.chapters': 'Chapters',
-    'reader.settings': 'Reading settings',
-    'reader.more': 'More',
-    'reader.copy': 'Copy',
-    'reader.share': 'Share',
-    'reader.report': 'Report',
-    'reader.focus': 'Focus mode',
-    'reader.exitFocus': 'Exit focus mode',
-    'reader.left': 'Align left',
-    'reader.justify': 'Justify',
-    'reader.compact': 'Compact',
-    'reader.comfortable': 'Comfortable',
-    'reader.relaxed': 'Relaxed',
-    'reader.notePlaceholder': 'Write your note…',
-    'reader.noNotes': 'No notes in this chapter yet.',
-    'reader.cancel': 'Cancel',
-    'reader.save': 'Save',
-    'reader.delete': 'Delete',
-    'reader.edit': 'Edit',
-    'reader.jump': 'Jump to text',
-    'reader.searchChapters': 'Search chapters…',
-    'reader.previous': 'Previous chapter',
-    'reader.next': 'Next chapter',
-  },
-  vi: {
-    discover: 'Khám phá',
-    categories: 'Thể loại',
-    rankings: 'Xếp hạng',
-    search: 'Tìm kiếm',
-    login: 'Đăng nhập',
-    signup: 'Đăng ký',
-    library: 'Thư viện',
-    authorDashboard: 'Trang tác giả',
-    logout: 'Đăng xuất',
-    'reader.back': 'Về thư viện',
-    'reader.fontSize': 'Cỡ chữ',
-    'reader.contentWidth': 'Độ rộng nội dung',
-    'reader.lineHeight': 'Giãn dòng',
-    'reader.paragraphSpacing': 'Khoảng cách đoạn',
-    'reader.alignment': 'Căn chỉnh văn bản',
-    'reader.bookmark': 'Đánh dấu chương',
-    'reader.bookmarked': 'Đã đánh dấu chương',
-    'reader.unbookmarked': 'Đã bỏ đánh dấu',
-    'reader.highlight': 'Đánh dấu đoạn',
-    'reader.addNote': 'Thêm ghi chú',
-    'reader.notes': 'Ghi chú',
-    'reader.chapters': 'Danh sách chương',
-    'reader.settings': 'Cài đặt đọc',
-    'reader.more': 'Thêm',
-    'reader.copy': 'Sao chép',
-    'reader.share': 'Chia sẻ',
-    'reader.report': 'Báo cáo',
-    'reader.focus': 'Chế độ tập trung',
-    'reader.exitFocus': 'Thoát chế độ tập trung',
-    'reader.left': 'Căn trái',
-    'reader.justify': 'Căn đều',
-    'reader.compact': 'Gọn',
-    'reader.comfortable': 'Thoải mái',
-    'reader.relaxed': 'Rộng',
-    'reader.notePlaceholder': 'Viết ghi chú của bạn…',
-    'reader.noNotes': 'Chưa có ghi chú trong chương này.',
-    'reader.cancel': 'Hủy',
-    'reader.save': 'Lưu',
-    'reader.delete': 'Xóa',
-    'reader.edit': 'Sửa',
-    'reader.jump': 'Đi đến đoạn',
-    'reader.searchChapters': 'Tìm chương…',
-    'reader.previous': 'Chương trước',
-    'reader.next': 'Chương sau',
-  },
+const dictionaries = { en, vi }
+const supportedLocales = Object.keys(dictionaries)
+
+function resolveMessage(dictionary, key) {
+  return key.split('.').reduce((value, segment) => value?.[segment], dictionary)
 }
 
-const viPhrases = {
-  'Back to Library': 'Về thư viện',
-  'Font size': 'Cỡ chữ',
-  'Font size −': 'Giảm cỡ chữ',
-  'Font size +': 'Tăng cỡ chữ',
-  'Content width': 'Độ rộng nội dung',
-  'Line height': 'Giãn dòng',
-  'Paragraph spacing': 'Khoảng cách đoạn',
-  'Text alignment': 'Căn chỉnh văn bản',
-  'Bookmark chapter': 'Đánh dấu chương',
-  'Chapter bookmarked': 'Đã đánh dấu chương',
-  'Bookmark removed': 'Đã bỏ đánh dấu',
-  Highlight: 'Đánh dấu đoạn',
-  'Add note': 'Thêm ghi chú',
-  Notes: 'Ghi chú',
-  Chapters: 'Danh sách chương',
-  'Reading settings': 'Cài đặt đọc',
-  Copy: 'Sao chép',
-  Share: 'Chia sẻ',
-  Report: 'Báo cáo',
-  'Focus mode': 'Chế độ tập trung',
-  'Exit focus mode': 'Thoát chế độ tập trung',
-  'Align left': 'Căn trái',
-  Justify: 'Căn đều',
-  Compact: 'Gọn',
-  Comfortable: 'Thoải mái',
-  Relaxed: 'Rộng',
-  'Write your note…': 'Viết ghi chú của bạn…',
-  'No notes in this chapter yet.': 'Chưa có ghi chú trong chương này.',
-  'Jump to text': 'Đi đến đoạn',
-  Edit: 'Sửa',
-  'Search chapters…': 'Tìm chương…',
-  'Previous chapter': 'Chương trước',
-  'Next chapter': 'Chương sau',
-  Home: 'Trang chủ',
-  Explore: 'Khám phá',
-  Library: 'Thư viện',
-  'My Library': 'Thư viện của tôi',
-  'My List': 'Danh sách của tôi',
-  Audiobooks: 'Truyện âm thanh',
-  History: 'Lịch sử',
-  Notifications: 'Thông báo',
-  Messages: 'Tin nhắn',
-  Wallet: 'Ví',
-  Profile: 'Hồ sơ',
-  Settings: 'Cài đặt',
-  Overview: 'Tổng quan',
-  Stories: 'Truyện',
-  Drafts: 'Bản nháp',
-  'Create Story': 'Tạo truyện',
-  Import: 'Nhập nội dung',
-  Media: 'Thư viện media',
-  'AI Assistant': 'Trợ lý AI',
-  Submissions: 'Bản gửi duyệt',
-  Analytics: 'Phân tích',
-  Dashboard: 'Bảng điều khiển',
-  Users: 'Người dùng',
-  'Roles & Permissions': 'Vai trò & quyền hạn',
-  Categories: 'Thể loại',
-  Reports: 'Báo cáo',
-  Decisions: 'Quyết định',
-  Escalations: 'Chuyển cấp',
-  'Audit Trail': 'Nhật ký kiểm toán',
-  'Submission Queue': 'Hàng đợi duyệt',
-  'Content Reviews': 'Duyệt nội dung',
-  'Similarity Flags': 'Cờ tương đồng',
-  'Author Dashboard': 'Bảng điều khiển tác giả',
-  'Moderator Dashboard': 'Bảng điều khiển kiểm duyệt',
-  'Admin Dashboard': 'Bảng điều khiển quản trị',
-  'Reader Dashboard': 'Bảng điều khiển người đọc',
-  'Discover NovelHub': 'Khám phá NovelHub',
-  Discover: 'Khám phá',
-  Information: 'Thông tin',
-  'New releases': 'Truyện mới',
-  Authors: 'Tác giả',
-  'Terms of use': 'Điều khoản sử dụng',
-  'Privacy policy': 'Chính sách bảo mật',
-  'Copyright contact': 'Liên hệ bản quyền',
-  'Contact us': 'Liên hệ với chúng tôi',
-  'Become an author': 'Trở thành tác giả',
-  'Back to home': 'Về trang chủ',
-  'A modern home for reading and listening, where readers discover new stories and authors grow their communities.':
-    'Không gian đọc và nghe truyện hiện đại, nơi độc giả khám phá tác phẩm mới và tác giả xây dựng cộng đồng của mình.',
-  'My Stories': 'Truyện của tôi',
-  'New Story': 'Truyện mới',
-  'Chapter Editor': 'Trình soạn chương',
-  'Import PDF': 'Nhập PDF',
-  'Media Library': 'Thư viện media',
-  'Author Profile': 'Hồ sơ tác giả',
-  'Creator Studio': 'Studio sáng tác',
-  'Categories & Taxonomy': 'Thể loại & phân loại',
-  'Content Configuration': 'Cấu hình nội dung',
-  'Services & Infrastructure': 'Dịch vụ & hạ tầng',
-  'System Settings': 'Cài đặt hệ thống',
-  'Audit Logs': 'Nhật ký kiểm toán',
-  'Moderation Oversight': 'Giám sát kiểm duyệt',
-  'Browse Categories': 'Khám phá thể loại',
-  'Stories for a': 'Những câu chuyện cho',
-  Brighter: 'Tươi sáng',
-  Tomorrow: 'Ngày mai',
-  'Search Results': 'Kết quả tìm kiếm',
-  'Editorial Rankings': 'Bảng xếp hạng biên tập',
-  'Create your reading identity': 'Tạo hồ sơ đọc truyện của bạn',
-  'Welcome back, Elena': 'Chào mừng trở lại, Elena',
-  'My List & Following': 'Danh sách & theo dõi',
-  'Reading History & Progress': 'Lịch sử & tiến trình đọc',
-  'Notifications Center': 'Trung tâm thông báo',
-  'Reader Profile & Preferences': 'Hồ sơ & tùy chọn người đọc',
-  'Wallet & Coins': 'Ví & xu',
-  'Create New Story': 'Tạo truyện mới',
-  'Drafts & In-Progress Manuscripts': 'Bản nháp & bản thảo đang viết',
-  'Import Manuscript from PDF': 'Nhập bản thảo từ PDF',
-  'Media & Asset Library': 'Thư viện media & tài nguyên',
-  'AI Writing Assistant & Editorial Lab': 'Trợ lý viết AI & phòng biên tập',
-  'Submit Manuscript for Moderation & Publishing': 'Gửi bản thảo để duyệt & xuất bản',
-  'Author Analytics & Reader Insights': 'Phân tích tác giả & hành vi độc giả',
-  'Moderator Operations Overview': 'Tổng quan vận hành kiểm duyệt',
-  'Editorial Submission Queue': 'Hàng đợi bản thảo biên tập',
-  'Reports Queue': 'Hàng đợi báo cáo',
-  'Platform Operations Dashboard': 'Bảng điều khiển vận hành nền tảng',
-  'Users & Accounts': 'Người dùng & tài khoản',
-  'Roles & Permissions Governance': 'Quản trị vai trò & quyền hạn',
-  'Categories, Tags & Content Configuration': 'Cấu hình thể loại, thẻ & nội dung',
-  'Platform Settings, External Services & Audit': 'Cài đặt nền tảng, dịch vụ & kiểm toán',
-  'Become a NovelHub Author': 'Trở thành tác giả NovelHub',
-  'Author agreement': 'Thỏa thuận tác giả',
-  'Additional Workflows': 'Luồng bổ sung',
-  'Visual Assets': 'Tài nguyên hình ảnh',
-  'UI Preview · 36 Screens': 'Xem trước UI · 36 màn hình',
-  'Trending Stories': 'Truyện thịnh hành',
-  'Browse by Category': 'Khám phá theo thể loại',
-  'Featured This Week': 'Nổi bật tuần này',
-  'All Genres': 'Tất cả thể loại',
-  'Popular This Week': 'Phổ biến tuần này',
-  Filters: 'Bộ lọc',
-  'Join NovelHub Today': 'Tham gia NovelHub hôm nay',
-  'Reader Preview': 'Xem trước trình đọc',
-  'Audio Player Preview': 'Xem trước trình phát audio',
-  'Continue Reading': 'Đọc tiếp',
-  'Continue Listening': 'Nghe tiếp',
-  'Top Up Coins Packages': 'Gói nạp xu',
-  'Transaction History': 'Lịch sử giao dịch',
-  'Where do your coins go?': 'Xu của bạn được phân bổ thế nào?',
-  'Coins & Wallet FAQ': 'Câu hỏi về xu & ví',
-  'Audio Queue': 'Hàng đợi audio',
-  'Narration & Production': 'Thuyết minh & sản xuất',
-  'Continue Writing': 'Tiếp tục sáng tác',
-  'Reader Feedback': 'Phản hồi độc giả',
-  'Pick up where you left off': 'Tiếp tục từ nơi bạn dừng lại',
-  'Recommended for you': 'Đề xuất cho bạn',
-  'Because you read Fantasy': 'Vì bạn đọc truyện Fantasy',
-  'Recently updated': 'Mới cập nhật gần đây',
-  'Weekly Reading Goal': 'Mục tiêu đọc hằng tuần',
-  'Featured Collections': 'Bộ sưu tập nổi bật',
-  'Suggested Authors': 'Tác giả đề xuất',
-  'Weekly Reading Minutes': 'Số phút đọc trong tuần',
-  'Recent Sessions': 'Phiên đọc gần đây',
-  'Genre Affinity': 'Thể loại yêu thích',
-  'Profile Information': 'Thông tin hồ sơ',
-  'Reading Settings': 'Cài đặt đọc',
-  'Listening Preferences': 'Tùy chọn nghe',
-  'Appearance & Themes': 'Giao diện & chủ đề',
-  'Privacy & Security': 'Quyền riêng tư & bảo mật',
-  'Recent Story Performance & Draft Status': 'Hiệu suất truyện & trạng thái bản nháp',
-  'Tone Sliders': 'Điều chỉnh giọng văn',
-  'Generated Suggestions': 'Gợi ý được tạo',
-  'Lore Bible & Continuity': 'Bách khoa thế giới & tính nhất quán',
-  'Editorial Persona': 'Phong cách biên tập',
-  'Title & Manuscript Overview': 'Tiêu đề & tổng quan bản thảo',
-  'Genre Classification & Discovery Tags': 'Phân loại thể loại & thẻ khám phá',
-  'Live Reader App Preview': 'Xem trước ứng dụng đọc',
-  'Creator Guidelines Checklist': 'Danh sách hướng dẫn dành cho nhà sáng tạo',
-  'Story Health & Milestones': 'Sức khỏe truyện & cột mốc',
-  'Detected Chapters & Hierarchy': 'Chương & cấu trúc đã phát hiện',
-  'Extraction Inspector': 'Trình kiểm tra trích xuất',
-  'Target Destination': 'Đích đến',
-  'Asset Details': 'Chi tiết tài nguyên',
-  'Pre-flight Submission Checklist': 'Danh sách kiểm tra trước khi gửi',
-  'Author Notes to Moderator': 'Ghi chú của tác giả cho kiểm duyệt viên',
-  'Publication Pipeline & Review SLA': 'Quy trình xuất bản & SLA duyệt',
-  'Recent Review History': 'Lịch sử duyệt gần đây',
-  'Readership Growth & Daily Reads': 'Tăng trưởng độc giả & lượt đọc hằng ngày',
-  'Format Distribution': 'Phân bố định dạng',
-  'Chapter-by-Chapter Retention & Reader Drop-off Curve':
-    'Giữ chân theo chương & đường cong rời bỏ',
-  'Reader Demographics & Discovery Channels': 'Nhân khẩu học độc giả & kênh khám phá',
-  'Reader Profile & Devices': 'Hồ sơ độc giả & thiết bị',
-  'Urgent Priority Action Items': 'Hạng mục ưu tiên khẩn cấp',
-  'Workload & Intake Volume by Category': 'Khối lượng công việc theo thể loại',
-  'Recent Moderator Decisions & Audit Stream': 'Quyết định kiểm duyệt & nhật ký gần đây',
-  'Policy Directives': 'Chỉ thị chính sách',
-  'Queue Velocity & SLA': 'Tốc độ hàng đợi & SLA',
-  'Escalation Desk': 'Bộ phận chuyển cấp',
-  'Submission Chapters': 'Các chương đã gửi',
-  'Submission Specs': 'Thông số bản gửi',
-  'Automated Vector Analysis & Plagiarism Heuristics':
-    'Phân tích vector tự động & tín hiệu đạo văn',
-  'No drafts found': 'Không tìm thấy bản nháp',
-  'No titles found': 'Không tìm thấy truyện',
-  'No results found': 'Không tìm thấy kết quả',
-  'Platform Growth & Activity Trends': 'Tăng trưởng & hoạt động nền tảng',
-  'Recent Critical Administrative Actions': 'Hoạt động quản trị quan trọng gần đây',
-  'Service Health': 'Tình trạng dịch vụ',
-  'Storage & Capacity': 'Lưu trữ & dung lượng',
-  'Platform Safeguards': 'Cơ chế bảo vệ nền tảng',
-  'Core System Roles': 'Vai trò hệ thống cốt lõi',
-  'Core Publishing Categories L1 Taxonomy': 'Phân loại thể loại xuất bản L1',
-  'Core Publishing Categories': 'Nhóm thể loại xuất bản cốt lõi',
-  'L1 Taxonomy': 'Phân loại L1',
-  'Tag Vocabulary & AI Ingestion': 'Từ vựng thẻ & nhập liệu AI',
-  'Content Ratings & Age Gate': 'Xếp hạng nội dung & giới hạn tuổi',
-  'External Services & Infrastructure Gateway': 'Dịch vụ ngoài & cổng hạ tầng',
-  'Platform Global Configuration Parameters': 'Tham số cấu hình toàn nền tảng',
-  'Immutable System Audit Logs Stream': 'Luồng nhật ký kiểm toán bất biến',
-  'Fantasy — Epic Worlds & Magic': 'Fantasy — Thế giới sử thi & phép thuật',
-  'Romance — Heartfelt Journeys': 'Lãng mạn — Hành trình từ trái tim',
-  'Sci-Fi & Cyberpunk — Future Horizons': 'Khoa học viễn tưởng & Cyberpunk — Chân trời tương lai',
-  'Hidden Gems': 'Tác phẩm tiềm ẩn',
-  'Active Works': 'Tác phẩm đang hoạt động',
-  'words authored this week': 'từ đã viết trong tuần này',
-  'Enjoyed this chapter?': 'Bạn thích chương này chứ?',
-  'Chapter discussion': 'Thảo luận chương',
-  'The story continues in Chapter 2': 'Câu chuyện tiếp tục ở Chương 2',
-  'A calmer place for every kind of reader.': 'Một không gian bình yên cho mọi độc giả.',
-  Previous: 'Trước',
-  Next: 'Tiếp',
-  Cancel: 'Hủy',
-  Save: 'Lưu',
-  Close: 'Đóng',
-  Continue: 'Tiếp tục',
-  'Learn More': 'Tìm hiểu thêm',
-  'Create an Account': 'Tạo tài khoản',
-  'Create account': 'Tạo tài khoản',
-  'Sign in': 'Đăng nhập',
-  'Welcome back': 'Chào mừng trở lại',
-  'Continue your story': 'Tiếp tục câu chuyện của bạn',
-  'Sign in to return to your library and latest chapter.':
-    'Đăng nhập để trở lại thư viện và chương bạn đọc gần nhất.',
-  'Join NovelHub': 'Tham gia NovelHub',
-  'Choose how you want to begin. You can become an Author later.':
-    'Chọn cách bạn muốn bắt đầu. Bạn có thể trở thành Tác giả sau.',
-  'Account type': 'Loại tài khoản',
-  Reader: 'Độc giả',
-  Author: 'Tác giả',
-  'Read, listen, collect, and discuss stories.': 'Đọc, nghe, lưu và thảo luận truyện.',
-  'Everything in Reader, plus publishing tools.':
-    'Tất cả tính năng Độc giả, kèm công cụ xuất bản.',
-  'Display name': 'Tên hiển thị',
-  'How readers will know you': 'Tên mà độc giả sẽ biết đến bạn',
-  'Email address': 'Địa chỉ email',
-  Password: 'Mật khẩu',
-  'Forgot password?': 'Quên mật khẩu?',
-  'Enter your password': 'Nhập mật khẩu',
-  'At least 6 characters': 'Ít nhất 6 ký tự',
-  'Please wait…': 'Vui lòng chờ…',
-  'New to NovelHub?': 'Bạn mới đến NovelHub?',
-  'Already have an account?': 'Bạn đã có tài khoản?',
-  'Your next chapter is waiting.': 'Chương tiếp theo đang chờ bạn.',
-  'Read, listen, collect, and create through one account designed around stories—not noise.':
-    'Đọc, nghe, lưu và sáng tác bằng một tài khoản được thiết kế xoay quanh những câu chuyện.',
-  'Demo accounts': 'Tài khoản dùng thử',
-  'Search stories, authors, tags...': 'Tìm truyện, tác giả, thẻ...',
-  'Search stories...': 'Tìm truyện...',
-  'Browse Books': 'Khám phá sách',
-  'Audio Lounge': 'Phòng truyện audio',
-  'Serial Updates': 'Truyện dài kỳ mới cập nhật',
-  'Log out': 'Đăng xuất',
-  'Read Preview': 'Đọc thử',
-  'Start Reading': 'Bắt đầu đọc',
-  'Follow Author': 'Theo dõi tác giả',
-  Following: 'Đang theo dõi',
-  'View All Drafts →': 'Xem tất cả bản nháp →',
-  Export: 'Xuất dữ liệu',
-  'Reset Filters': 'Đặt lại bộ lọc',
-  'Open Page': 'Mở trang',
-  'Go back': 'Quay lại',
-  'This shelf is restricted': 'Khu vực này bị giới hạn',
-  'That chapter was not found': 'Không tìm thấy chương này',
+function interpolate(message, variables = {}) {
+  return message.replace(/\{\{(\w+)\}\}/g, (_, key) => String(variables[key] ?? `{{${key}}}`))
 }
-
-const translatableAttributes = ['placeholder', 'aria-label', 'title']
 
 export function LocaleProvider({ children }) {
-  const [locale, setLocale] = useState(() => localStorage.getItem('novelhub.locale') || 'en')
-  const originals = useRef(new WeakMap())
-  const attributeOriginals = useRef(new WeakMap())
+  const [locale, setLocaleState] = useState(() => {
+    const saved = localStorage.getItem('novelhub.locale')
+    return supportedLocales.includes(saved) ? saved : 'en'
+  })
+  const setLocale = nextLocale => {
+    if (supportedLocales.includes(nextLocale)) setLocaleState(nextLocale)
+  }
+
   useEffect(() => {
     localStorage.setItem('novelhub.locale', locale)
     document.documentElement.lang = locale
   }, [locale])
-  useEffect(() => {
-    const translateNode = node => {
-      if (node.nodeType === Node.TEXT_NODE) {
-        if (!originals.current.has(node)) originals.current.set(node, node.nodeValue)
-        const original = originals.current.get(node)
-        const trimmed = original.trim()
-        const translated = locale === 'vi' ? viPhrases[trimmed] : null
-        const nextValue = translated ? original.replace(trimmed, translated) : original
-        if (node.nodeValue !== nextValue) node.nodeValue = nextValue
-        return
+
+  const value = useMemo(() => ({
+    locale,
+    setLocale,
+    t: (key, variables) => {
+      const message = resolveMessage(dictionaries[locale], key)
+      if (typeof message !== 'string') {
+        if (import.meta.env.DEV) console.warn(`[i18n] Missing ${locale} translation: ${key}`)
+        return key
       }
-      if (node.nodeType !== Node.ELEMENT_NODE) return
-      if (!attributeOriginals.current.has(node)) attributeOriginals.current.set(node, {})
-      const saved = attributeOriginals.current.get(node)
-      translatableAttributes.forEach(attribute => {
-        if (!node.hasAttribute(attribute)) return
-        if (!(attribute in saved)) saved[attribute] = node.getAttribute(attribute)
-        const original = saved[attribute]
-        node.setAttribute(attribute, locale === 'vi' ? viPhrases[original] || original : original)
-      })
-      node.childNodes.forEach(translateNode)
-    }
-    translateNode(document.body)
-    const observer = new MutationObserver(records => {
-      records.forEach(record => record.addedNodes.forEach(translateNode))
-    })
-    observer.observe(document.body, { childList: true, subtree: true })
-    return () => observer.disconnect()
-  }, [locale])
-  const value = useMemo(
-    () => ({
-      locale,
-      setLocale,
-      t: key => messages[locale]?.[key] || key,
-      formatDate: value =>
-        new Intl.DateTimeFormat(locale === 'vi' ? 'vi-VN' : 'en-US', {
-          dateStyle: 'medium',
-        }).format(new Date(value)),
-      formatNumber: value =>
-        new Intl.NumberFormat(locale === 'vi' ? 'vi-VN' : 'en-US').format(value),
-    }),
-    [locale],
-  )
+      return interpolate(message, variables)
+    },
+    formatDate: valueToFormat => new Intl.DateTimeFormat(locale === 'vi' ? 'vi-VN' : 'en-US', { dateStyle: 'medium' }).format(new Date(valueToFormat)),
+    formatNumber: valueToFormat => new Intl.NumberFormat(locale === 'vi' ? 'vi-VN' : 'en-US').format(valueToFormat),
+  }), [locale])
+
   return <LocaleContext.Provider value={value}>{children}</LocaleContext.Provider>
 }
+
 // eslint-disable-next-line react-refresh/only-export-components
 export const useLocale = () => {
   const value = useContext(LocaleContext)

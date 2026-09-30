@@ -5,11 +5,14 @@ import { IconButton } from '../ui'
 import { SiteFooter } from '../shared/SiteFooter'
 import { SharedWorkspaceHeader, WorkspaceSwitcher } from '../shared/RoleNavigation'
 import { workspaceMeta, workspaceNavigation } from '../../navigation/workspaceNavigation'
+import { useLocale } from '../../context/LocaleContext'
 
 const SIDEBAR_KEY = 'novelhub.sidebar.collapsed'
 
 function SidebarItem({ item, active, collapsed, onNavigate }) {
-  const [label, path, Icon] = item
+  const { t } = useLocale()
+  const [labelKey, path, Icon] = item
+  const label = t(labelKey)
   return (
     <Link
       to={path}
@@ -26,9 +29,10 @@ function SidebarItem({ item, active, collapsed, onNavigate }) {
 }
 
 function SidebarGroup({ group, activePath, collapsed, onNavigate }) {
+  const { t } = useLocale()
   return (
     <section className="space-y-1">
-      {!collapsed && <p className="mb-2 px-3 text-[9px] font-semibold uppercase tracking-[.18em] text-muted">{group.label}</p>}
+      {!collapsed && <p className="mb-2 px-3 text-[9px] font-semibold uppercase tracking-[.18em] text-muted">{t(group.labelKey)}</p>}
       {group.items.map(item => <SidebarItem key={item[1]} item={item} active={item[1] === activePath} collapsed={collapsed} onNavigate={onNavigate} />)}
     </section>
   )
@@ -36,13 +40,14 @@ function SidebarGroup({ group, activePath, collapsed, onNavigate }) {
 
 function commonNavigation(workspace) {
   const base = `/${workspace}`
-  return { label: 'Account', items: [
-    ['Settings', `${base}/settings`, Settings], ['Account', `${base}/account`, ShieldCheck],
-    ['Help & Support', `${base}/support`, HelpCircle],
+  return { labelKey: 'navigation.account', items: [
+    ['navigation.settings', `${base}/settings`, Settings], ['navigation.account', `${base}/account`, ShieldCheck],
+    ['common.helpSupport', `${base}/support`, HelpCircle],
   ] }
 }
 
 function AppSidebar({ workspace, collapsed, mobile = false, onCollapse, onNavigate }) {
+  const { t } = useLocale()
   const { pathname } = useLocation()
   const meta = workspaceMeta[workspace]
   const groups = [...workspaceNavigation[workspace], commonNavigation(workspace)]
@@ -52,20 +57,21 @@ function AppSidebar({ workspace, collapsed, mobile = false, onCollapse, onNaviga
       <div className={`mb-4 flex h-12 items-center ${collapsed ? 'justify-center' : 'gap-2 px-2'}`}>
         <Link to={meta.home} className="flex min-w-0 items-center gap-2 font-bold">
           <span className="grid size-9 shrink-0 place-items-center rounded-xl bg-brand text-white"><BookOpen size={20} /></span>
-          {!collapsed && <span className="truncate">Novel<span className="text-brand">Hub</span><small className="block truncate text-[9px] font-medium text-muted">{meta.label} Workspace</small></span>}
+          {!collapsed && <span className="truncate">Novel<span className="text-brand">Hub</span><small className="block truncate text-[9px] font-medium text-muted">{t(meta.labelKey)} · {t('common.workspace')}</small></span>}
         </Link>
-        {!mobile && <IconButton label={collapsed ? 'Expand sidebar' : 'Collapse sidebar'} onClick={onCollapse} className="ml-auto size-8 rounded-lg">{collapsed ? <ChevronRight size={16} /> : <ChevronLeft size={16} />}</IconButton>}
+        {!mobile && <IconButton label={t(collapsed ? 'common.expandSidebar' : 'common.collapseSidebar')} onClick={onCollapse} className="ml-auto size-8 rounded-lg">{collapsed ? <ChevronRight size={16} /> : <ChevronLeft size={16} />}</IconButton>}
       </div>
       <WorkspaceSwitcher currentRole={workspace} compact={collapsed} />
       <div className="min-h-0 flex-1 space-y-5 overflow-y-auto overflow-x-visible pb-4">
-        {groups.map(group => <SidebarGroup key={group.label} group={group} activePath={activePath} collapsed={collapsed} onNavigate={onNavigate} />)}
+        {groups.map(group => <SidebarGroup key={group.labelKey} group={group} activePath={activePath} collapsed={collapsed} onNavigate={onNavigate} />)}
       </div>
-      {!collapsed && <div className="border-t border-line px-3 pt-3 text-[10px] text-muted">One product · {meta.label}</div>}
+      {!collapsed && <div className="border-t border-line px-3 pt-3 text-[10px] text-muted">NovelHub · {t(meta.labelKey)}</div>}
     </div>
   )
 }
 
 export function AppShell({ workspace, children }) {
+  const { t } = useLocale()
   const [collapsed, setCollapsed] = useState(() => localStorage.getItem(SIDEBAR_KEY) === 'true')
   const [mobileOpen, setMobileOpen] = useState(false)
   const toggleCollapsed = () => setCollapsed(value => {
@@ -81,13 +87,13 @@ export function AppShell({ workspace, children }) {
         <div className="hidden h-full lg:block"><AppSidebar workspace={workspace} collapsed={collapsed} onCollapse={toggleCollapsed} /></div>
         <div className="h-full lg:hidden"><AppSidebar workspace={workspace} collapsed /></div>
       </aside>
-      {mobileOpen && <button type="button" aria-label="Close navigation" className="fixed inset-0 z-40 bg-black/45 md:hidden" onClick={() => setMobileOpen(false)} />}
+      {mobileOpen && <button type="button" aria-label={t('common.closeNavigation')} className="fixed inset-0 z-40 bg-black/45 md:hidden" onClick={() => setMobileOpen(false)} />}
       <aside data-app-sidebar className={`fixed inset-y-0 left-0 z-50 w-[min(320px,88vw)] border-r border-line bg-surface shadow-2xl transition-transform duration-200 md:hidden ${mobileOpen ? 'translate-x-0' : '-translate-x-full'}`}>
-        <IconButton label="Close menu" onClick={() => setMobileOpen(false)} className="absolute right-3 top-3 z-10"><X size={18} /></IconButton>
+        <IconButton label={t('common.closeMenu')} onClick={() => setMobileOpen(false)} className="absolute right-3 top-3 z-10"><X size={18} /></IconButton>
         <AppSidebar workspace={workspace} collapsed={false} mobile onNavigate={() => setMobileOpen(false)} />
       </aside>
       <div data-app-content className={`flex min-h-screen flex-col transition-[padding] duration-200 ${contentOffset}`}>
-        <SharedWorkspaceHeader workspaceLabel={workspaceMeta[workspace].label} currentRole={workspace} onOpenMenu={() => setMobileOpen(true)} offsetClass={`${headerOffset} duration-200`} />
+        <SharedWorkspaceHeader workspaceLabel={t(workspaceMeta[workspace].labelKey)} currentRole={workspace} onOpenMenu={() => setMobileOpen(true)} offsetClass={`${headerOffset} duration-200`} />
         <main className="workspace-content flex-1 pt-[7rem] sm:pt-16">{children}</main>
         <SiteFooter />
       </div>

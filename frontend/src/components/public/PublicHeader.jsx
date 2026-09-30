@@ -11,14 +11,14 @@ export function PublicHeader() {
   const { t } = useLocale()
   const [open, setOpen] = useState(false)
   const links = [
-    [t('discover'), '//'],
-    [t('categories'), '/categories'],
-    [t('rankings'), '/rankings'],
+    [t('navigation.discover'), '//'],
+    [t('navigation.categories'), '/categories'],
+    [t('navigation.rankings'), '/rankings'],
   ].map(([label, to]) => [label, to === '//' ? '/' : to])
-  if (isAuthenticated) links.push([t('library'), '/reader/library'])
-  if (hasRole('author')) links.push([t('authorDashboard'), '/author'])
-  if (hasRole('moderator')) links.push(['Moderator Dashboard', '/moderator'])
-  if (hasRole('admin')) links.push(['Admin Dashboard', '/admin'])
+  if (isAuthenticated) links.push([t('navigation.library'), '/reader/library'])
+  if (hasRole('author')) links.push([t('navigation.authorStudio'), '/author'])
+  if (hasRole('moderator')) links.push([t('navigation.moderator'), '/moderator'])
+  if (hasRole('admin')) links.push([t('navigation.admin'), '/admin'])
   return (
     <header className="sticky top-0 z-40 border-b border-line bg-surface/95">
       <div className="mx-auto flex min-h-18 max-w-[1360px] items-center gap-5 px-5 md:px-8 lg:px-12">
@@ -41,13 +41,13 @@ export function PublicHeader() {
             </NavLink>
           ))}
         </nav>
-        <Link to="/search" aria-label="Search" className="ml-auto hidden text-muted md:block">
+        <Link to="/search" aria-label={t('navigation.explore')} className="ml-auto hidden text-muted md:block">
           <Search size={19} />
         </Link>
         <LanguageSwitcher />
         <button
           className="grid size-10 place-items-center rounded-full text-muted"
-          aria-label="Toggle theme"
+          aria-label={t('common.toggleTheme')}
           onClick={() => setTheme(resolvedTheme === 'dark' ? 'light' : 'dark')}
         >
           {resolvedTheme === 'dark' ? <Sun size={19} /> : <Moon size={19} />}
@@ -57,31 +57,31 @@ export function PublicHeader() {
             <Link
               className="hidden sm:grid size-9 place-items-center rounded-full bg-brand text-sm font-semibold text-white"
               to={getAccountHome(currentUser)}
-              aria-label={`${currentUser.name} profile`}
+              aria-label={`${t('common.openProfile')}: ${currentUser.name}`}
             >
               {currentUser.name[0]}
             </Link>
-            <button onClick={logout} className="hidden text-muted sm:block" aria-label="Log out">
+            <button onClick={logout} className="hidden text-muted sm:block" aria-label={t('auth.logOut')}>
               <LogOut size={18} />
             </button>
           </>
         ) : (
           <div className="hidden items-center gap-2 sm:flex">
             <Link className="text-xs font-semibold" to="/login">
-              {t('login')}
+              {t('auth.logIn')}
             </Link>
             <Link
               className="rounded-xl bg-brand px-3 py-2 text-xs font-semibold text-white"
               to="/register"
             >
-              {t('signup')}
+              {t('auth.signUp')}
             </Link>
           </div>
         )}
         <button
           className="grid size-10 place-items-center lg:hidden"
           onClick={() => setOpen(!open)}
-          aria-label="Open navigation"
+          aria-label={t('common.openMenu')}
         >
           <Menu size={20} />
         </button>
@@ -95,7 +95,7 @@ export function PublicHeader() {
           ))}
           {!isAuthenticated && (
             <Link to="/login" className="py-2 text-sm text-brand">
-              {t('login')} / {t('signup')}
+              {t('auth.logIn')} / {t('auth.signUp')}
             </Link>
           )}
         </nav>

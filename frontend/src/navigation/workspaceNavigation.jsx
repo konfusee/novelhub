@@ -7,59 +7,59 @@ import {
 } from 'lucide-react'
 
 export const workspaceMeta = {
-  reader: { label: 'Reader', home: '/reader' },
-  author: { label: 'Author Studio', home: '/author' },
-  moderator: { label: 'Moderator', home: '/moderator' },
-  admin: { label: 'Admin', home: '/admin' },
+  reader: { labelKey: 'navigation.reader', home: '/reader' },
+  author: { labelKey: 'navigation.authorStudio', home: '/author' },
+  moderator: { labelKey: 'navigation.moderator', home: '/moderator' },
+  admin: { labelKey: 'navigation.admin', home: '/admin' },
 }
 
 export const workspaceNavigation = {
   reader: [
-    { label: 'Main', items: [
-      ['Home', '/reader', Home, true], ['Discover', '/', Compass],
-      ['Explore', '/reader/explore', Search], ['Library', '/reader/library', Library],
-      ['My List', '/reader/following', BookHeart],
+    { labelKey: 'navigation.main', items: [
+      ['navigation.home', '/reader', Home, true], ['navigation.discover', '/', Compass],
+      ['navigation.explore', '/reader/explore', Search], ['navigation.library', '/reader/library', Library],
+      ['navigation.myList', '/reader/following', BookHeart],
     ] },
-    { label: 'Activity', items: [
-      ['Audiobooks', '/reader/audiobooks', Headphones], ['History', '/reader/history', History],
-      ['Messages', '/reader/messages', MessageCircle], ['Wallet', '/reader/wallet', WalletCards],
+    { labelKey: 'navigation.activity', items: [
+      ['navigation.audiobooks', '/reader/audiobooks', Headphones], ['navigation.history', '/reader/history', History],
+      ['navigation.messages', '/reader/messages', MessageCircle], ['navigation.wallet', '/reader/wallet', WalletCards],
     ] },
   ],
   author: [
-    { label: 'Main', items: [
-      ['Dashboard', '/author', LayoutDashboard, true], ['My Stories', '/author/stories/demo', BookOpen],
-      ['Drafts', '/author/drafts', FileClock], ['New Story', '/author/stories/new', CirclePlus],
+    { labelKey: 'navigation.main', items: [
+      ['navigation.dashboard', '/author', LayoutDashboard, true], ['navigation.myStories', '/author/stories/demo', BookOpen],
+      ['navigation.drafts', '/author/drafts', FileClock], ['navigation.newStory', '/author/stories/new', CirclePlus],
     ] },
-    { label: 'Create', items: [
-      ['Chapter Editor', '/author/stories/demo/chapters/chapter-1/edit', PenLine],
-      ['Import PDF', '/author/import', FileText], ['Media Library', '/author/media', Images],
-      ['AI Assistant', '/author/ai', Bot],
+    { labelKey: 'navigation.create', items: [
+      ['navigation.chapterEditor', '/author/stories/demo/chapters/chapter-1/edit', PenLine],
+      ['navigation.importPdf', '/author/import', FileText], ['navigation.mediaLibrary', '/author/media', Images],
+      ['navigation.aiAssistant', '/author/ai', Bot],
     ] },
-    { label: 'Publish', items: [
-      ['Submissions', '/author/submissions', Send], ['Analytics', '/author/analytics', BarChart3],
-      ['Revenue', '/author/earnings', CircleDollarSign],
+    { labelKey: 'navigation.publish', items: [
+      ['navigation.submissions', '/author/submissions', Send], ['navigation.analytics', '/author/analytics', BarChart3],
+      ['navigation.revenue', '/author/earnings', CircleDollarSign],
     ] },
   ],
   moderator: [
-    { label: 'Moderation', items: [
-      ['Dashboard', '/moderator', Gauge, true], ['Pending Reviews', '/moderator/submissions', ClipboardCheck],
-      ['Content Reviews', '/moderator/reviews', FileSearch], ['Reports', '/moderator/reports', Flag],
-      ['Similarity Flags', '/moderator/similarity-flags', ShieldAlert],
+    { labelKey: 'navigation.moderation', items: [
+      ['navigation.dashboard', '/moderator', Gauge, true], ['navigation.pendingReviews', '/moderator/submissions', ClipboardCheck],
+      ['navigation.contentReviews', '/moderator/reviews', FileSearch], ['navigation.reports', '/moderator/reports', Flag],
+      ['navigation.similarityFlags', '/moderator/similarity-flags', ShieldAlert],
     ] },
-    { label: 'History', items: [
-      ['Decisions', '/moderator/decisions', UserRoundCheck], ['Escalations', '/moderator/escalations', Scale],
-      ['Audit Trail', '/moderator/audit-trail', History],
+    { labelKey: 'navigation.history', items: [
+      ['navigation.decisions', '/moderator/decisions', UserRoundCheck], ['navigation.escalations', '/moderator/escalations', Scale],
+      ['navigation.auditTrail', '/moderator/audit-trail', History],
     ] },
   ],
   admin: [
-    { label: 'Main', items: [['Dashboard', '/admin', LayoutDashboard, true]] },
-    { label: 'Management', items: [
-      ['Users', '/admin/users', UsersRound], ['Roles', '/admin/roles', UserCog],
-      ['Categories', '/admin/categories', FolderTree], ['Content', '/admin/content', SlidersHorizontal],
+    { labelKey: 'navigation.main', items: [['navigation.dashboard', '/admin', LayoutDashboard, true]] },
+    { labelKey: 'navigation.management', items: [
+      ['navigation.users', '/admin/users', UsersRound], ['navigation.roles', '/admin/roles', UserCog],
+      ['navigation.categories', '/admin/categories', FolderTree], ['navigation.content', '/admin/content', SlidersHorizontal],
     ] },
-    { label: 'Platform', items: [
-      ['Services', '/admin/services', Boxes], ['Audit Logs', '/admin/audit-logs', History],
-      ['Moderation', '/admin/moderation', ShieldCheck], ['Transactions', '/admin/transactions', WalletCards],
+    { labelKey: 'navigation.platform', items: [
+      ['navigation.services', '/admin/services', Boxes], ['navigation.auditLogs', '/admin/audit-logs', History],
+      ['navigation.moderation', '/admin/moderation', ShieldCheck], ['navigation.transactions', '/admin/transactions', WalletCards],
     ] },
   ],
 }

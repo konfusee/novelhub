@@ -1,13 +1,13 @@
 import { useLocale } from '../../context/LocaleContext'
 
 export function LanguageSwitcher({ compact = false }) {
-  const { locale, setLocale } = useLocale()
+  const { locale, setLocale, t } = useLocale()
 
   return (
     <div
       className="flex items-center rounded-xl border border-line bg-surface p-1"
       role="group"
-      aria-label={locale === 'vi' ? 'Chọn ngôn ngữ' : 'Choose language'}
+      aria-label={t('common.chooseLanguage')}
     >
       {['vi', 'en'].map(language => (
         <button
