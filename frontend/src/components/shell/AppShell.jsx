@@ -77,16 +77,16 @@ export function AppShell({ workspace, children }) {
   const headerOffset = collapsed ? 'md:left-[72px] lg:left-[72px]' : 'md:left-[72px] lg:left-[260px]'
   return (
     <div className="min-h-screen bg-page text-ink">
-      <aside className={`fixed inset-y-0 left-0 z-40 hidden w-[72px] border-r border-line transition-[width] duration-200 md:block ${desktopWidth}`}>
+      <aside data-app-sidebar className={`fixed inset-y-0 left-0 z-40 hidden w-[72px] border-r border-line transition-[width] duration-200 md:block ${desktopWidth}`}>
         <div className="hidden h-full lg:block"><AppSidebar workspace={workspace} collapsed={collapsed} onCollapse={toggleCollapsed} /></div>
         <div className="h-full lg:hidden"><AppSidebar workspace={workspace} collapsed /></div>
       </aside>
       {mobileOpen && <button type="button" aria-label="Close navigation" className="fixed inset-0 z-40 bg-black/45 md:hidden" onClick={() => setMobileOpen(false)} />}
-      <aside className={`fixed inset-y-0 left-0 z-50 w-[min(320px,88vw)] border-r border-line bg-surface shadow-2xl transition-transform duration-200 md:hidden ${mobileOpen ? 'translate-x-0' : '-translate-x-full'}`}>
+      <aside data-app-sidebar className={`fixed inset-y-0 left-0 z-50 w-[min(320px,88vw)] border-r border-line bg-surface shadow-2xl transition-transform duration-200 md:hidden ${mobileOpen ? 'translate-x-0' : '-translate-x-full'}`}>
         <IconButton label="Close menu" onClick={() => setMobileOpen(false)} className="absolute right-3 top-3 z-10"><X size={18} /></IconButton>
         <AppSidebar workspace={workspace} collapsed={false} mobile onNavigate={() => setMobileOpen(false)} />
       </aside>
-      <div className={`flex min-h-screen flex-col transition-[padding] duration-200 ${contentOffset}`}>
+      <div data-app-content className={`flex min-h-screen flex-col transition-[padding] duration-200 ${contentOffset}`}>
         <SharedWorkspaceHeader workspaceLabel={workspaceMeta[workspace].label} currentRole={workspace} onOpenMenu={() => setMobileOpen(true)} offsetClass={`${headerOffset} duration-200`} />
         <main className="workspace-content flex-1 pt-[7rem] sm:pt-16">{children}</main>
         <SiteFooter />
