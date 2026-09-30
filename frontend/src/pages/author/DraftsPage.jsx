@@ -1,0 +1,288 @@
+import { useMemo, useState } from 'react'
+import {
+  BookOpen,
+  CheckCircle2,
+  Cloud,
+  Copy,
+  FilePlus2,
+  Grid2X2,
+  History,
+  List,
+  MoreHorizontal,
+  Search,
+  Trash2,
+  Upload,
+  WandSparkles,
+} from 'lucide-react'
+import { useNavigate } from 'react-router-dom'
+import { AuthorLayout } from '../../layouts'
+import { authorDrafts } from '../../data/mock/author'
+import { Badge, Button, Card, Input, Modal, Select } from '../../components/ui'
+
+const filterItems = ['All Drafts', 'Story Chapters', 'Standalone Concepts', 'Ready for Review']
+const snapshots = [
+  ['Today, 14:32', 'Ch 16: Ironwood Tree', '+480 words added'],
+  ['Yesterday, 21:15', 'Echoes – Astrolabe', 'Grammar sync pass'],
+  ['Oct 24, 09:40', 'Sci-Fi Concept #2', 'Initial premise logged'],
+  ['Oct 18, 17:02', 'Whispers Alternate', 'Branch created'],
+]
+
+export function DraftsPage() {
+  const navigate = useNavigate()
+  const [filter, setFilter] = useState('All Drafts')
+  const [query, setQuery] = useState('')
+  const [sort, setSort] = useState('Last Edited')
+  const [view, setView] = useState('grid')
+  const [drafts, setDrafts] = useState(authorDrafts)
+  const [newOpen, setNewOpen] = useState(false)
+  const [restored, setRestored] = useState('')
+  const shown = useMemo(
+    () =>
+      drafts
+        .filter(
+          draft =>
+            (filter === 'All Drafts' ||
+              (filter === 'Story Chapters' && draft.type.includes('Chapter')) ||
+              (filter === 'Standalone Concepts' && draft.type === 'Standalone Concept') ||
+              (filter === 'Ready for Review' && draft.meta === 'Ready for Review')) &&
+            `${draft.title} ${draft.story}`.toLowerCase().includes(query.toLowerCase()),
+        )
+        .sort((a, b) =>
+          sort === 'Word Count'
+            ? Number(b.words.replace(',', '')) - Number(a.words.replace(',', ''))
+            : sort === 'Title'
+              ? a.title.localeCompare(b.title)
+              : a.id - b.id,
+        ),
+    [drafts, filter, query, sort],
+  )
+  const addDraft = () => {
+    setDrafts(current => [
+      {
+        ...authorDrafts[2],
+        id: Date.now(),
+        title: 'Untitled Manuscript',
+        edited: 'Just now',
+        words: '0',
+      },
+      ...current,
+    ])
+    setNewOpen(false)
+  }
+  return (
+    <AuthorLayout>
+      <main className="page-author py-7">
+        <div className="flex flex-col justify-between gap-5 lg:flex-row lg:items-end">
+          <div>
+            <p className="text-[10px] uppercase tracking-[.18em] text-brand">
+              Manuscript Vault · Live Draft Session
+            </p>
+            <h1 className="mt-2 text-3xl font-bold sm:text-4xl">
+              Drafts &amp; In-Progress Manuscripts
+            </h1>
+            <p className="mt-2 max-w-2xl text-sm text-muted">
+              Manage unfinished chapters, unassigned story concepts, and offline sync logs.
+            </p>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            <Button variant="secondary">
+              <Upload size={15} />
+              Import Manuscript
+            </Button>
+            <Button onClick={() => setNewOpen(true)}>
+              <FilePlus2 size={15} />
+              New Draft
+            </Button>
+          </div>
+        </div>
+        <Card className="mt-6 p-4">
+          <div className="flex flex-col gap-4 xl:flex-row xl:items-center">
+            <div className="flex gap-2 overflow-x-auto">
+              {filterItems.map(item => (
+                <button
+                  key={item}
+                  onClick={() => setFilter(item)}
+                  className={`shrink-0 rounded-full border px-4 py-2 text-xs ${filter === item ? 'border-brand bg-brand font-semibold text-white' : 'border-line bg-surface'}`}
+                >
+                  {item}
+                  {item === 'All Drafts' ? ' (14)' : item === 'Story Chapters' ? ' (9)' : ''}
+                </button>
+              ))}
+            </div>
+            <div className="ml-auto flex flex-col gap-2 sm:flex-row">
+              <Input
+                icon={Search}
+                value={query}
+                onChange={event => setQuery(event.target.value)}
+                placeholder="Search drafts, tags, serials..."
+                className="sm:w-64"
+              />
+              <Select value={sort} onChange={event => setSort(event.target.value)}>
+                <option>Last Edited</option>
+                <option>Word Count</option>
+                <option>Title</option>
+              </Select>
+              <div className="flex rounded-xl border border-line bg-elevated p-1">
+                <button
+                  onClick={() => setView('grid')}
+                  aria-label="Grid view"
+                  className={`rounded-lg p-2 ${view === 'grid' ? 'bg-surface text-brand' : ''}`}
+                >
+                  <Grid2X2 size={16} />
+                </button>
+                <button
+                  onClick={() => setView('list')}
+                  aria-label="List view"
+                  className={`rounded-lg p-2 ${view === 'list' ? 'bg-surface text-brand' : ''}`}
+                >
+                  <List size={16} />
+                </button>
+              </div>
+            </div>
+          </div>
+        </Card>
+        <section
+          className={`mt-6 grid gap-5 ${view === 'grid' ? 'md:grid-cols-2' : 'grid-cols-1'}`}
+        >
+          {shown.map((draft, index) => (
+            <DraftCard
+              key={draft.id}
+              draft={draft}
+              featured={index === 0 && view === 'grid'}
+              onEdit={() => navigate('/author/stories/demo/chapters/chapter-1/edit')}
+              onDelete={() => setDrafts(current => current.filter(item => item.id !== draft.id))}
+            />
+          ))}
+        </section>
+        {!shown.length && (
+          <Card className="mt-6 py-16 text-center">
+            <BookOpen className="mx-auto text-muted" />
+            <h2 className="mt-3 font-semibold">No drafts found</h2>
+            <p className="mt-1 text-sm text-muted">
+              Try another filter or create a new manuscript.
+            </p>
+          </Card>
+        )}
+        <Card className="mt-7">
+          <div className="flex flex-col justify-between gap-3 border-b border-line pb-5 sm:flex-row sm:items-center">
+            <div>
+              <h2 className="flex items-center gap-2 text-lg font-semibold">
+                <History className="text-brand" />
+                Autosave &amp; Cloud Version History
+              </h2>
+              <p className="mt-1 text-xs text-muted">
+                Recover lost prose, compare timestamped snapshots, and restore manuscript branches
+                from the last 30 days.
+              </p>
+            </div>
+            <div className="text-xs text-muted">
+              Cloud Storage: 14.2 MB / 500 MB{' '}
+              <Button variant="secondary" className="ml-2 min-h-9 px-3 py-1 text-xs">
+                Manage Backups
+              </Button>
+            </div>
+          </div>
+          <div className="mt-5 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+            {snapshots.map(([date, title, note]) => (
+              <div key={title} className="rounded-2xl border border-line bg-elevated p-4">
+                <div className="flex items-center justify-between text-[10px] text-muted">
+                  <span>{date}</span>
+                  <span className="size-2 rounded-full bg-brand" />
+                </div>
+                <strong className="mt-2 block text-xs">{title}</strong>
+                <p className="mt-1 text-[10px] text-muted">{note}</p>
+                <button
+                  onClick={() => setRestored(title)}
+                  className="mt-4 flex items-center gap-1 text-[11px] font-medium text-brand"
+                >
+                  <History size={13} />
+                  {restored === title ? 'Snapshot Restored' : 'Restore Snapshot'}
+                </button>
+              </div>
+            ))}
+          </div>
+        </Card>
+        <Modal open={newOpen} title="Create New Draft" onClose={() => setNewOpen(false)}>
+          <p className="text-sm text-muted">
+            Start an unassigned manuscript. You can attach it to a story later.
+          </p>
+          <Input className="mt-4" defaultValue="Untitled Manuscript" />
+          <div className="mt-5 flex justify-end gap-2">
+            <Button variant="secondary" onClick={() => setNewOpen(false)}>
+              Cancel
+            </Button>
+            <Button onClick={addDraft}>
+              <FilePlus2 size={15} />
+              Create Draft
+            </Button>
+          </div>
+        </Modal>
+      </main>
+    </AuthorLayout>
+  )
+}
+
+function DraftCard({ draft, featured, onEdit, onDelete }) {
+  return (
+    <Card className={`${featured ? 'md:min-h-96' : ''} flex flex-col`}>
+      <div className="flex items-center gap-2">
+        <Badge tone={draft.tone}>{draft.type}</Badge>
+        {draft.meta.includes('Cloud') && (
+          <Badge>
+            <Cloud size={12} />
+            Cloud Synced
+          </Badge>
+        )}
+        <span className="ml-auto text-[10px] text-muted">Last edited: {draft.edited}</span>
+        <button aria-label="Draft options">
+          <MoreHorizontal size={16} />
+        </button>
+      </div>
+      <p className="mt-5 flex items-center gap-2 text-xs font-semibold text-brand">
+        <BookOpen size={14} />
+        Story: {draft.story}
+      </p>
+      <h2 className={`mt-2 font-semibold ${featured ? 'text-2xl' : 'text-lg'}`}>{draft.title}</h2>
+      <p className="mt-3 line-clamp-3 text-sm leading-6 text-muted">{draft.excerpt}</p>
+      <div className="mt-5 grid grid-cols-3 gap-3 rounded-2xl border border-line bg-elevated p-4 text-xs">
+        <div>
+          <span className="text-[10px] text-muted">Word Count</span>
+          <strong className="block">{draft.words} words</strong>
+        </div>
+        <div>
+          <span className="text-[10px] text-muted">Reading Pace</span>
+          <strong className="block">~8.5 mins</strong>
+        </div>
+        <div>
+          <span className="text-[10px] text-muted">Target</span>
+          <strong className="block text-brand">{draft.progress}%</strong>
+        </div>
+      </div>
+      <div className="mt-auto flex flex-wrap items-center gap-2 border-t border-line pt-5">
+        <button className="p-2 text-muted hover:text-brand" aria-label="Duplicate draft">
+          <Copy size={15} />
+        </button>
+        <button
+          onClick={onDelete}
+          className="p-2 text-muted hover:text-rose"
+          aria-label="Delete draft"
+        >
+          <Trash2 size={15} />
+        </button>
+        {draft.meta === 'Ready for Review' && (
+          <span className="flex items-center gap-1 text-[10px] text-brand">
+            <CheckCircle2 size={13} />
+            Ready
+          </span>
+        )}
+        <Button variant="secondary" className="ml-auto min-h-9 px-3 py-1 text-xs">
+          Preview
+        </Button>
+        <Button onClick={onEdit} className="min-h-9 px-3 py-1 text-xs">
+          <WandSparkles size={14} />
+          Continue Editing
+        </Button>
+      </div>
+    </Card>
+  )
+}
