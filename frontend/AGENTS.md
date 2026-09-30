@@ -158,6 +158,20 @@ The public surface uses `src/components/public/PublicHeader.jsx`; public footer 
 
 ## 11. Page and Layout Consistency
 
+### Page and tab semantic consistency
+
+- Every page, route, tab, sidebar item, navigation label, and CTA MUST accurately describe the content and primary action it contains.
+- Route, page title, active navigation state, breadcrumb (when present), and rendered content MUST represent the same information hierarchy.
+- A user who sees only a label SHOULD be able to predict the destination and its primary content.
+- Profile is for identity/public-person information; Account is for account-level data; Security is for authentication/session safeguards; Privacy is for visibility/data preferences; Settings is for application or workspace preferences.
+- Global Settings MUST remain consistent across workspaces. Workspace-specific preferences MUST not be mixed with unrelated global account settings.
+- Global Appearance and Reader appearance are different scopes: global Appearance controls application chrome/theme; Reading Preferences controls the long-form reader canvas and typography.
+- User Profile and Author Profile are different concepts. Shared identity data SHOULD be reused; pen name, author biography, storefront, and publishing identity belong to Author Profile.
+- New settings MUST be placed in the most semantically appropriate existing category before creating a new tab. Do not over-split one small control or overload a generic tab with unrelated controls.
+- Developers MUST search the existing Settings/Profile/Account architecture, route mappings, and translation terminology before adding a section.
+- When content is correct and its label is wrong, prefer renaming. When the label is correct and content is misplaced, move the content. Use the smallest information-architecture change that resolves the mismatch.
+- VI and EN MUST use one stable terminology mapping; do not alternate between synonyms for the same navigation concept without a product reason.
+
 - Shared page geometry is defined by `.page-public`, `.page-reader`, `.page-author`, `.page-moderator`, and `.page-admin` in `src/styles.css`.
 - `PageContainer` in `src/components/ui/index.jsx` is the default standalone content container.
 - Related screens MUST align max-width, responsive padding, section gap, heading hierarchy, card treatment, filter placement, table behavior, and state presentation.
