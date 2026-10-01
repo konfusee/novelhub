@@ -25,7 +25,7 @@ export function ContinueCard({ item, audio = false }) {
               <h3 className="mt-1 truncate font-semibold">{item.title}</h3>
               <p className="text-xs text-muted">{item.author}</p>
             </div>
-            <button aria-label="Save story" onClick={() => setSaved(!saved)} className="text-muted">
+            <button aria-label="Lưu truyện" onClick={() => setSaved(!saved)} className="text-muted">
               <Bookmark size={19} className={saved ? 'fill-brand text-brand' : ''} />
             </button>
           </div>

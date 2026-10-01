@@ -118,7 +118,7 @@ export function ReaderProfilePage({ workspace = 'reader' }) {
             <Card>
               <SectionTitle
                 icon={UserRound}
-                title="Profile Information"
+                title="Thông tin hồ sơ"
                 note="Publicly visible to serial commentators"
               />
               <div className="mt-5 flex items-center gap-4">
@@ -126,7 +126,7 @@ export function ReaderProfilePage({ workspace = 'reader' }) {
                   <Avatar name={name} className="size-20 text-xl" />
                   <button
                     onClick={() => setNotice('Avatar picker opened in demo mode.')}
-                    aria-label="Change avatar"
+                    aria-label="Đổi ảnh đại diện"
                     className="absolute -bottom-1 -right-1 grid size-8 place-items-center rounded-full bg-brand text-white"
                   >
                     <Camera size={15} />
@@ -136,7 +136,7 @@ export function ReaderProfilePage({ workspace = 'reader' }) {
                   <Button onClick={() => setNotice('Avatar picker opened in demo mode.')} variant="secondary" className="min-h-9 py-1.5">
                     Upload New Avatar
                   </Button>
-                  <p className="mt-2 text-[10px] text-muted">JPG or PNG, minimum 400×400px.</p>
+                  <p className="mt-2 text-[10px] text-muted">JPG hoặc PNG, tối thiểu 400×400px.</p>
                 </div>
               </div>
               <div className="mt-5 grid gap-4 sm:grid-cols-2">
@@ -172,7 +172,7 @@ export function ReaderProfilePage({ workspace = 'reader' }) {
                 <span className="float-right text-[10px] text-muted">{bio.length} / 160</span>
               </Field>
               <div className="mt-5">
-                <p className="text-xs font-semibold">Favorite Genres</p>
+                <p className="text-xs font-semibold">Thể loại yêu thích</p>
                 <div className="mt-2 flex flex-wrap gap-2">
                   {genres.map(item => (
                     <button type="button" key={item} onClick={() => { setGenres(current => current.filter(genre => genre !== item)); changed() }}>

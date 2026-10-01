@@ -63,17 +63,17 @@ export function ReaderSettings({
       />
       <div className="flex items-center gap-1.5">
         <button
-          aria-label="Parchment tone"
+          aria-label="Tông màu giấy cổ"
           onClick={() => setTone('parchment')}
           className={`size-6 rounded-full bg-[#fcf8f2] ${tone === 'parchment' ? 'ring-2 ring-brand' : 'border border-line'}`}
         />
         <button
-          aria-label="Cream tone"
+          aria-label="Tông màu kem"
           onClick={() => setTone('cream')}
           className={`size-6 rounded-full bg-[#fffdf9] ${tone === 'cream' ? 'ring-2 ring-brand' : 'border border-line'}`}
         />
         <button
-          aria-label="Midnight tone"
+          aria-label="Tông màu đêm"
           onClick={() => setTone('midnight')}
           className={`grid size-6 place-items-center rounded-full bg-[#081321] text-white ${tone === 'midnight' ? 'ring-2 ring-brand' : 'border border-line'}`}
         >

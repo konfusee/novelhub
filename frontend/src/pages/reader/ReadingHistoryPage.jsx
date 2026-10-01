@@ -219,13 +219,13 @@ export function ReadingHistoryPage() {
               </div>
               <div className="mt-4 space-y-2 text-xs text-muted">
                 <p>
-                  ▣ MacBook Pro Reader <span className="float-right">Active now</span>
+                  ▣ Trình đọc MacBook Pro <span className="float-right">Đang hoạt động</span>
                 </p>
                 <p>
-                  ▯ iPhone 15 Pro <span className="float-right">Synced 2h ago</span>
+                  ▯ iPhone 15 Pro <span className="float-right">Đồng bộ 2 giờ trước</span>
                 </p>
                 <p>
-                  ▭ PaperWhite Kindle <span className="float-right">Yesterday</span>
+                  ▭ Kindle PaperWhite <span className="float-right">Hôm qua</span>
                 </p>
               </div>
             </Card>

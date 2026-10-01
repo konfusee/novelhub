@@ -52,7 +52,7 @@ function StreakCard() {
     <Card>
       <div className="flex items-center justify-between">
         <div>
-          <p className="text-xs text-muted">Reading streak</p>
+          <p className="text-xs text-muted">Chuỗi ngày đọc</p>
           <h3 className="mt-1 flex items-center gap-2 text-2xl font-bold">
             <Flame className="fill-orange/20 text-orange" /> 18 days
           </h3>
@@ -83,7 +83,7 @@ function NowPlaying() {
   return (
     <Card>
       <div className="flex items-center justify-between">
-        <h3 className="font-semibold">Now playing</h3>
+        <h3 className="font-semibold">Đang phát</h3>
         <Headphones size={18} className="text-brand" />
       </div>
       <div className="mt-4 flex items-center gap-3">
@@ -186,7 +186,7 @@ export function ReaderHomePage() {
             <section>
               <SectionHeader
                 title={t('readerHome.becauseFantasy')}
-                action={<button onClick={() => window.alert('Recommendations refreshed (mock).')} className="text-xs font-semibold text-brand">Refresh picks</button>}
+                action={<button onClick={() => window.alert('Đã làm mới đề xuất (mô phỏng).')} className="text-xs font-semibold text-brand">Làm mới đề xuất</button>}
               />
               <div className="mt-4 grid gap-3 sm:grid-cols-3">
                 {readerHome.fantasyPicks.map(item => (
@@ -226,7 +226,7 @@ export function ReaderHomePage() {
                       <p className="truncate text-xs text-muted">{item.chapter}</p>
                     </div>
                     <span className="hidden text-[11px] text-muted sm:block">{item.time}</span>
-                    <Button onClick={() => window.location.assign('/stories/demo')} className="min-h-9 px-3 py-1.5 text-xs">Read</Button>
+                    <Button onClick={() => window.location.assign('/stories/demo')} className="min-h-9 px-3 py-1.5 text-xs">Đọc</Button>
                   </div>
                 ))}
               </Card>
@@ -238,7 +238,7 @@ export function ReaderHomePage() {
             <NowPlaying />
             <Card>
               <div className="flex items-center justify-between">
-                <h3 className="font-semibold">Upcoming releases</h3>
+                <h3 className="font-semibold">Sắp phát hành</h3>
                 <BellRing size={18} className="text-rose" />
               </div>
               <div className="mt-4 space-y-4">
@@ -260,7 +260,7 @@ export function ReaderHomePage() {
               <p className="mt-4 text-lg font-medium italic leading-7">
                 “A reader lives a thousand lives before they rest.”
               </p>
-              <p className="mt-3 text-xs text-muted">Your daily inspiration</p>
+              <p className="mt-3 text-xs text-muted">Cảm hứng mỗi ngày của bạn</p>
             </Card>
           </aside>
         </div>
