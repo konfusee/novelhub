@@ -14,7 +14,18 @@ import { ModeratorLayout } from '../../layouts'
 import { submissionQueue } from '../../data/mock/moderation'
 import { Badge, Button, Card, Input, Modal, Select } from '../../components/ui'
 
-const tabs = ['All', 'Unassigned', 'Assigned to Me', 'Urgent / SLA Warning']
+const tabs = [
+  { value: 'All', label: 'Tất cả' },
+  { value: 'Unassigned', label: 'Chưa phân công' },
+  { value: 'Assigned to Me', label: 'Đã phân công cho tôi' },
+  { value: 'Urgent / SLA Warning', label: 'Khẩn cấp / Cảnh báo SLA' },
+]
+const priorityLabels = { 'High Priority': 'Ưu tiên cao', Normal: 'Bình thường', 'Urgent Alert': 'Cảnh báo khẩn', 'Similarity Alert': 'Cảnh báo tương đồng' }
+const genreLabels = { 'Fantasy & Mythic': 'Kỳ ảo và Thần thoại', 'Sci-Fi & Cyberpunk': 'Khoa học viễn tưởng và Cyberpunk', 'Cyberpunk Thriller': 'Giật gân Cyberpunk', 'Romance & Drama': 'Lãng mạn và Chính kịch', 'High Fantasy': 'Kỳ ảo cao cấp' }
+const riskLabels = { '98% Clean Verifiable': '98% sạch, có thể xác minh', '100% Passed Syntax & NLP': '100% đạt kiểm tra cú pháp và NLP', 'Rating Mismatch Flag': 'Cảnh báo sai phân loại', '100% Clean': '100% sạch', '42% Lore Overlap': '42% trùng lặp thế giới truyện' }
+const formatAge = value => value.replace('h ago', ' giờ trước')
+const formatSla = value => value.replace('h', ' giờ').replace('m', ' phút')
+const formatPayload = value => value.replace(' chapters', ' chương').replace(' words', ' từ')
 
 export function SubmissionQueuePage() {
   const navigate = useNavigate()
@@ -61,23 +72,23 @@ export function SubmissionQueuePage() {
         <div className="flex flex-col justify-between gap-3 lg:flex-row lg:items-center">
           <div>
             <p className="text-xs text-muted">
-              Moderator Console /{' '}
-              <strong className="text-brand">Submission Queue &amp; Ingestion Pipeline</strong>
+              Bảng điều khiển kiểm duyệt /{' '}
+              <strong className="text-brand">Hàng đợi bản thảo và quy trình tiếp nhận</strong>
             </p>
-            <h1 className="mt-2 text-2xl font-bold">Editorial Submission Queue</h1>
+            <h1 className="mt-2 text-2xl font-bold">Hàng đợi biên tập</h1>
           </div>
           <div className="flex flex-wrap gap-3 rounded-2xl border border-line bg-elevated px-4 py-3 text-xs">
             <span>
-              <strong className="text-brand">● 24</strong> Pending
+              <strong className="text-brand">● 24</strong> đang chờ
             </span>
             <span>
-              <strong className="text-orange">● 8</strong> High Priority
+              <strong className="text-orange">● 8</strong> ưu tiên cao
             </span>
             <span>
-              Avg Wait: <strong>3.4 hrs</strong>
+              Chờ trung bình: <strong>3,4 giờ</strong>
             </span>
             <span>
-              SLA Target: <strong>24 hrs</strong>
+              Mục tiêu SLA: <strong>24 giờ</strong>
             </span>
           </div>
         </div>
@@ -87,22 +98,22 @@ export function SubmissionQueuePage() {
               icon={Search}
               value={query}
               onChange={event => setQuery(event.target.value)}
-              placeholder="Filter queue by story, manuscript ID, author..."
+              placeholder="Lọc theo truyện, mã bản thảo, tác giả..."
               className="xl:w-80"
             />
             <div className="flex max-w-full gap-2 overflow-x-auto xl:flex-1">
               {tabs.map(item => (
                 <button
-                  key={item}
-                  onClick={() => setTab(item)}
-                  className={`shrink-0 rounded-full px-4 py-2 text-xs ${tab === item ? 'bg-surface font-semibold text-brand shadow-sm' : 'text-muted'}`}
+                  key={item.value}
+                  onClick={() => setTab(item.value)}
+                  className={`shrink-0 rounded-full px-4 py-2 text-xs ${tab === item.value ? 'bg-surface font-semibold text-brand shadow-sm' : 'text-muted'}`}
                 >
-                  {item}{' '}
-                  {item === 'All'
+                  {item.label}{' '}
+                  {item.value === 'All'
                     ? '(24)'
-                    : item === 'Unassigned'
+                    : item.value === 'Unassigned'
                       ? '(14)'
-                      : item === 'Assigned to Me'
+                      : item.value === 'Assigned to Me'
                         ? '(6)'
                         : '(4)'}
                 </button>
@@ -111,16 +122,16 @@ export function SubmissionQueuePage() {
           </div>
           <div className="mt-4 flex flex-col gap-2 border-t border-line pt-4 lg:flex-row">
             <Select value={genre} onChange={event => setGenre(event.target.value)}>
-              <option>All Genres</option>
-              <option>Fantasy &amp; Mythic</option>
-              <option>Sci-Fi &amp; Cyberpunk</option>
-              <option>Cyberpunk Thriller</option>
-              <option>Romance &amp; Drama</option>
-              <option>High Fantasy</option>
+              <option value="All Genres">Tất cả thể loại</option>
+              <option value="Fantasy & Mythic">Kỳ ảo và Thần thoại</option>
+              <option value="Sci-Fi & Cyberpunk">Khoa học viễn tưởng và Cyberpunk</option>
+              <option value="Cyberpunk Thriller">Giật gân Cyberpunk</option>
+              <option value="Romance & Drama">Lãng mạn và Chính kịch</option>
+              <option value="High Fantasy">Kỳ ảo cao cấp</option>
             </Select>
             <Select value={risk} onChange={event => setRisk(event.target.value)}>
-              <option>All Verification Levels</option>
-              <option>High AI / Plagiarism Risk</option>
+              <option value="All Verification Levels">Tất cả mức xác minh</option>
+              <option value="High AI / Plagiarism Risk">Rủi ro AI / đạo văn cao</option>
             </Select>
             <Button
               variant="ghost"
@@ -132,7 +143,7 @@ export function SubmissionQueuePage() {
               }}
             >
               <Filter size={14} />
-              Reset Filters
+              Đặt lại bộ lọc
             </Button>
             <Button
               variant="secondary"
@@ -141,19 +152,19 @@ export function SubmissionQueuePage() {
               className="lg:ml-auto"
             >
               <UserPlus size={15} />
-              Bulk Assign ({selected.length})
+              Phân công hàng loạt ({selected.length})
             </Button>
           </div>
           <p className="mt-3 text-[10px] italic text-muted">
-            Direct bulk approval disabled by policy · assignment only
+            Chính sách không cho phép phê duyệt hàng loạt trực tiếp · chỉ được phân công
           </p>
         </Card>
         <div className="mt-6 hidden grid-cols-12 gap-4 px-5 text-[10px] font-semibold uppercase tracking-[.14em] text-muted xl:grid">
-          <div className="col-span-4">Manuscript &amp; Author Metadata</div>
-          <div className="col-span-2">Intake Age &amp; SLA</div>
-          <div className="col-span-2">Taxonomy &amp; Payload</div>
-          <div className="col-span-2">Automated Audit</div>
-          <div className="col-span-2 text-right">Assignment &amp; Decisions</div>
+          <div className="col-span-4">Thông tin bản thảo và tác giả</div>
+          <div className="col-span-2">Thời gian tiếp nhận và SLA</div>
+          <div className="col-span-2">Phân loại và nội dung</div>
+          <div className="col-span-2">Kiểm tra tự động</div>
+          <div className="col-span-2 text-right">Phân công và quyết định</div>
         </div>
         <section className="mt-3 min-w-0 space-y-4">
           {rows.map(row => (
@@ -170,11 +181,11 @@ export function SubmissionQueuePage() {
         {!rows.length && (
           <Card className="mt-4 py-14 text-center">
             <Search className="mx-auto text-muted" />
-            <p className="mt-3 text-sm text-muted">No submissions match these filters.</p>
+            <p className="mt-3 text-sm text-muted">Không có bản thảo nào khớp bộ lọc.</p>
           </Card>
         )}
         <div className="mt-6 flex flex-col justify-between gap-3 border-t border-line pt-4 text-xs sm:flex-row sm:items-center">
-          <span>Showing 1 to {rows.length} of 24 submissions · Queue refreshed 42s ago</span>
+          <span>Đang hiển thị 1–{rows.length} / 24 bản thảo · Làm mới 42 giây trước</span>
           <div className="flex items-center gap-2">
             <Button
               variant="secondary"
@@ -182,7 +193,7 @@ export function SubmissionQueuePage() {
               onClick={() => setPage(value => Math.max(1, value - 1))}
               className="min-h-9 px-3 py-1 text-xs"
             >
-              Previous
+              Trước
             </Button>
             {[1, 2, 3].map(value => (
               <button
@@ -198,13 +209,13 @@ export function SubmissionQueuePage() {
               onClick={() => setPage(value => Math.min(5, value + 1))}
               className="min-h-9 px-3 py-1 text-xs"
             >
-              Next
+              Sau
             </Button>
           </div>
         </div>
-        <Modal open={assignOpen} title="Assign Submissions" onClose={() => setAssignOpen(false)}>
+        <Modal open={assignOpen} title="Phân công bản thảo" onClose={() => setAssignOpen(false)}>
           <p className="text-sm text-muted">
-            Assign {selected.length} selected item(s) to a moderator.
+            Phân công {selected.length} mục đã chọn cho một kiểm duyệt viên.
           </p>
           <Select
             value={assignee}
@@ -217,11 +228,11 @@ export function SubmissionQueuePage() {
           </Select>
           <div className="mt-5 flex justify-end gap-2">
             <Button variant="secondary" onClick={() => setAssignOpen(false)}>
-              Cancel
+              Hủy
             </Button>
             <Button onClick={assign}>
               <UserPlus size={15} />
-              Confirm Assignment
+              Xác nhận phân công
             </Button>
           </div>
         </Modal>
@@ -253,12 +264,12 @@ function QueueRow({ row, checked, onCheck, onClaim, onReview }) {
             </span>
             <div className="min-w-0">
               <div className="flex flex-wrap items-center gap-2">
-                <Badge tone={row.tone}>{row.priority}</Badge>
+                <Badge tone={row.tone}>{priorityLabels[row.priority] ?? row.priority}</Badge>
                 <span className="text-xs text-muted">#{row.id}</span>
               </div>
               <h2 className="mt-2 truncate font-semibold">{row.title}</h2>
               <p className="mt-1 text-xs">
-                {row.author} <span className="text-brand">· Verified Creator</span>
+                {row.author} <span className="text-brand">· Tác giả đã xác minh</span>
               </p>
             </div>
           </div>
@@ -266,47 +277,47 @@ function QueueRow({ row, checked, onCheck, onClaim, onReview }) {
         <div className="xl:col-span-2">
           <p className="flex items-center gap-2 text-xs">
             <Clock3 size={14} />
-            {row.age}
+            {formatAge(row.age)}
           </p>
           <Badge tone={row.tone === 'red' ? 'red' : 'orange'} className="mt-2">
-            SLA: {row.sla} remaining
+            SLA: còn {formatSla(row.sla)}
           </Badge>
         </div>
         <div className="xl:col-span-2">
           <div className="flex gap-2">
-            <Badge>{row.genre}</Badge>
+            <Badge>{genreLabels[row.genre] ?? row.genre}</Badge>
             <Badge>{row.rating}</Badge>
           </div>
-          <p className="mt-2 text-xs">{row.payload}</p>
+          <p className="mt-2 text-xs">{formatPayload(row.payload)}</p>
         </div>
         <div className="xl:col-span-2">
           <p
             className={`flex items-center gap-2 text-xs font-semibold ${row.tone === 'red' ? 'text-rose' : row.tone === 'purple' ? 'text-purple' : 'text-brand'}`}
           >
             {row.tone === 'red' ? <AlertTriangle size={14} /> : <ShieldCheck size={14} />}{' '}
-            {row.risk}
+            {riskLabels[row.risk] ?? row.risk}
           </p>
-          <p className="mt-2 text-[10px] text-muted">Automated advisory scan completed</p>
+          <p className="mt-2 text-[10px] text-muted">Đã hoàn tất quét tư vấn tự động</p>
         </div>
         <div className="xl:col-span-2 xl:text-right">
           <p className="text-xs text-muted">
             {row.assigned === 'Unassigned' ? (
-              'Status: Unassigned'
+              'Trạng thái: Chưa phân công'
             ) : (
               <>
-                Assigned: <strong className="text-ink">{row.assigned}</strong>
+                Đã phân công: <strong className="text-ink">{row.assigned}</strong>
               </>
             )}
           </p>
           <div className="mt-3 flex justify-end gap-2">
             <Button onClick={onClaim} variant="secondary" className="min-h-9 px-3 py-1 text-xs">
-              {row.assigned === 'Unassigned' ? 'Claim' : 'Reassign'}
+              {row.assigned === 'Unassigned' ? 'Nhận xử lý' : 'Phân công lại'}
             </Button>
             <Button
               onClick={onReview}
               className={`${row.tone === 'red' ? 'border-rose bg-rose' : row.tone === 'purple' ? 'border-purple bg-purple' : ''} min-h-9 px-3 py-1 text-xs`}
             >
-              Review <ChevronRight size={14} />
+              Xét duyệt <ChevronRight size={14} />
             </Button>
           </div>
         </div>

@@ -16,18 +16,18 @@ import { ModeratorLayout } from '../../layouts'
 import { Badge, Button, Card, Modal } from '../../components/ui'
 
 const chapters = [
-  ['Ch. 13: Silver Passage', 'Clean'],
-  ['Ch. 14: Echoes', 'Clean'],
-  ['Ch. 15: The Threshold', 'Clean'],
-  ['Ch. 16: Heart of Ironwood', '1 Flag'],
-  ['Ch. 17: Afterlight', 'Pending'],
+  ['Chương 13: Silver Passage', 'Sạch'],
+  ['Chương 14: Echoes', 'Sạch'],
+  ['Chương 15: The Threshold', 'Sạch'],
+  ['Chương 16: Heart of Ironwood', '1 cảnh báo'],
+  ['Chương 17: Afterlight', 'Đang chờ'],
 ]
 const policyChecks = [
-  'Original author rights verified',
-  'Cover artwork meets 1600×2400 specs',
-  'Content rating PG-13 matches narrative violence',
-  'No prohibited commercial spam or external links',
-  'Chapter formatting & sans-serif Poppins compliant',
+  'Đã xác minh quyền tác giả gốc',
+  'Ảnh bìa đáp ứng chuẩn 1600×2400',
+  'Phân loại PG-13 phù hợp mức bạo lực trong truyện',
+  'Không có nội dung quảng cáo hoặc liên kết ngoài bị cấm',
+  'Định dạng chương và phông Poppins không chân đạt chuẩn',
 ]
 const prose = [
   'The canopy of the ancient Ironwood did not sway with the wind. It stood rigid, carved of petrified amber and obsidian vines that drank what little starlight escaped the northern haze. Kaelen tightened his wrist bindings, feeling the steady hum of the meridian sigil pulsing beneath his glove.',
@@ -43,7 +43,7 @@ export function ContentReviewDetailPage() {
   const [reviewed, setReviewed] = useState(false)
   const [checks, setChecks] = useState(policyChecks.map(() => true))
   const [notes, setNotes] = useState(
-    'Prose verified. Action scenes in Ch. 16 adhere to standard PG-13 fantasy guidelines. No explicit gore. Tags are accurate and appropriate for reader discovery.',
+    'Đã xác minh văn phong. Các cảnh hành động ở Chương 16 tuân thủ hướng dẫn kỳ ảo PG-13. Không có máu me trực diện. Thẻ chính xác và phù hợp để độc giả khám phá.',
   )
   const [decision, setDecision] = useState(null)
   const [completed, setCompleted] = useState('')
@@ -53,28 +53,28 @@ export function ContentReviewDetailPage() {
         <div className="flex flex-col gap-4 border-b border-line pb-4 lg:flex-row lg:items-center">
           <button onClick={() => window.location.assign('/moderator/submissions')} className="flex items-center gap-2 text-xs text-brand">
             <ArrowLeft size={14} />
-            Return to Submission Queue
+            Quay lại hàng đợi bản thảo
           </button>
           <div className="lg:border-l lg:border-line lg:pl-5">
             <p className="text-xs">
-              Reviewing Manuscript <strong>#MS-88402</strong>
+              Đang xét duyệt bản thảo <strong>#MS-88402</strong>
             </p>
             <p className="text-[10px] text-muted">
-              Elena Vance · Verified Author · Submitted 18h ago
+              Elena Vance · Tác giả đã xác minh · Gửi 18 giờ trước
             </p>
           </div>
           <Badge tone="orange" className="lg:ml-auto">
-            SLA Timer: 5h 42m remaining
+            SLA: còn 5 giờ 42 phút
           </Badge>
-          <Button onClick={() => setDecision('Approve')} className="min-h-9 text-xs">
-            Approve
+          <Button onClick={() => setDecision('Phê duyệt')} className="min-h-9 text-xs">
+            Phê duyệt
           </Button>
           <Button
-            onClick={() => setDecision('Request Changes')}
+            onClick={() => setDecision('Yêu cầu chỉnh sửa')}
             variant="secondary"
             className="min-h-9 text-xs"
           >
-            Request Changes
+            Yêu cầu chỉnh sửa
           </Button>
         </div>
         <div className="mt-5 grid items-start gap-5 xl:grid-cols-[210px_minmax(0,1fr)_330px]">
@@ -91,15 +91,15 @@ export function ContentReviewDetailPage() {
                 <div>
                   <Badge tone="orange">PG-13</Badge>
                   <h2 className="mt-2 text-xs font-semibold">The Silent Forest: Volume II</h2>
-                  <p className="mt-1 text-[9px] text-muted">Fantasy · 14,200 words</p>
+                  <p className="mt-1 text-[9px] text-muted">Kỳ ảo · 14.200 từ</p>
                 </div>
               </div>
               <p className="mt-4 border-t border-line pt-3 text-[10px] text-muted">
-                Batch: 5 Chapters · Batch #4 of 6
+                Lô: 5 chương · Lô #4 / 6
               </p>
             </Card>
             <Card className="p-4">
-              <h2 className="text-xs font-semibold">Submission Chapters</h2>
+              <h2 className="text-xs font-semibold">Các chương gửi duyệt</h2>
               <div className="mt-4 space-y-2">
                 {chapters.map(([title, status], index) => (
                   <button
@@ -111,26 +111,26 @@ export function ContentReviewDetailPage() {
                       <CheckCircle2 size={13} />
                       <span className="truncate text-[10px]">{title}</span>
                       <Badge
-                        tone={status === '1 Flag' ? 'orange' : 'neutral'}
+                        tone={status === '1 cảnh báo' ? 'orange' : 'neutral'}
                         className="ml-auto px-2 py-0.5 text-[8px]"
                       >
                         {status}
                       </Badge>
                     </div>
                     {activeChapter === index && (
-                      <p className="mt-1 pl-5 text-[8px] text-muted">Active in Reviewer Canvas</p>
+                      <p className="mt-1 pl-5 text-[8px] text-muted">Đang mở trong vùng xét duyệt</p>
                     )}
                   </button>
                 ))}
               </div>
             </Card>
             <Card className="p-4">
-              <h2 className="text-xs font-semibold">Submission Specs</h2>
+              <h2 className="text-xs font-semibold">Thông số bản gửi</h2>
               <div className="mt-3 space-y-2 text-[9px] text-muted">
-                <p>Target Audience: Young Adult (14+)</p>
-                <p>Cover Ratio: 1600 × 2400</p>
-                <p>Copyright Match: 100%</p>
-                <p>Monetization: Coin lock (Ch. 15+)</p>
+                <p>Độc giả mục tiêu: Thanh thiếu niên (14+)</p>
+                <p>Tỷ lệ bìa: 1600 × 2400</p>
+                <p>Khớp bản quyền: 100%</p>
+                <p>Kiếm tiền: Khóa bằng xu (từ Chương 15)</p>
               </div>
             </Card>
           </aside>
@@ -139,19 +139,19 @@ export function ContentReviewDetailPage() {
               The Silent Forest · Volume II
             </p>
             <h1 className="mt-2 text-2xl font-bold sm:text-3xl">
-              Chapter 16: Heart of the Ironwood
+              Chương 16: Heart of the Ironwood
             </h1>
             <p className="mt-2 text-[10px] text-muted">
-              Word Count: 2,150 words · Reading Time: ~9 min · Font: Poppins 17px/31px
+              Số từ: 2.150 · Thời gian đọc: ~9 phút · Phông: Poppins 17px/31px
             </p>
             <div className="mt-6 rounded-2xl border border-line bg-surface p-4">
               <strong className="flex items-center gap-2 text-xs">
                 <FileText size={14} className="text-brand" />
-                Author Submission Note (Elena Vance):
+                Ghi chú gửi duyệt của tác giả (Elena Vance):
               </strong>
               <p className="mt-2 text-[10px] leading-5 text-muted">
-                Volume II continues the lore from Vol I. Ch. 16 contains mythological combat
-                adhering to standard PG-13 rules.
+                Tập II tiếp nối thế giới truyện từ Tập I. Chương 16 có cảnh chiến đấu thần thoại
+                tuân thủ tiêu chuẩn PG-13.
               </p>
             </div>
             <div className="mt-7 space-y-6">
@@ -174,15 +174,15 @@ export function ContentReviewDetailPage() {
             <div className="mt-8 flex flex-col justify-between gap-3 border-t border-line pt-5 sm:flex-row sm:items-center">
               <span className="flex items-center gap-2 text-[10px] text-brand">
                 <CheckCircle2 size={14} />
-                End of Chapter 16 Verification Mark · 2,150 words rendered
+                Dấu xác minh cuối Chương 16 · Đã hiển thị 2.150 từ
               </span>
               <div className="flex gap-2">
                 <Button onClick={() => setActiveChapter(value => Math.max(0, value - 1))} variant="secondary" className="min-h-8 px-3 py-1 text-[10px]">
                   <ChevronLeft size={12} />
-                  Previous
+                  Trước
                 </Button>
                 <Button onClick={() => setActiveChapter(value => Math.min(chapters.length - 1, value + 1))} variant="secondary" className="min-h-8 px-3 py-1 text-[10px]">
-                  Next
+                  Sau
                   <ChevronRight size={12} />
                 </Button>
               </div>
@@ -193,34 +193,34 @@ export function ContentReviewDetailPage() {
               <div className="flex justify-between">
                 <h2 className="flex items-center gap-2 font-semibold">
                   <Sparkles size={16} className="text-purple" />
-                  AI Telemetry &amp; Signals
+                  Chỉ số và tín hiệu AI
                 </h2>
-                <Badge tone="purple">Engine v4.2</Badge>
+                <Badge tone="purple">Bộ máy v4.2</Badge>
               </div>
               <p className="mt-2 text-[9px] text-muted">
-                Signals are supporting telemetry only, not automated verdicts.
+                Tín hiệu chỉ là dữ liệu hỗ trợ, không phải phán quyết tự động.
               </p>
               <div className="mt-4 grid grid-cols-2 gap-2">
-                <Signal label="Content Safety Score" value="98.2%" note="Clean Narrative" />
+                <Signal label="Điểm an toàn nội dung" value="98,2%" note="Nội dung sạch" />
                 <Signal
-                  label="Violence/Gore Index"
+                  label="Chỉ số bạo lực/máu me"
                   value="14%"
-                  note="PG-13 Safe Zone"
+                  note="Vùng an toàn PG-13"
                   tone="orange"
                 />
-                <Signal label="Plagiarism Index" value="1.2%" note="100% Original Prose" />
+                <Signal label="Chỉ số đạo văn" value="1,2%" note="Văn phong gốc 100%" />
                 <Signal
-                  label="Pacing Alignment"
+                  label="Mức phù hợp nhịp độ"
                   value="94%"
-                  note="Serialized Fantasy Arc"
+                  note="Mạch truyện kỳ ảo dài kỳ"
                   tone="purple"
                 />
               </div>
             </Card>
             <Card>
               <div className="flex justify-between">
-                <h2 className="font-semibold">Editorial Policy Checklist</h2>
-                <Badge tone="green">{checks.filter(Boolean).length} of 5</Badge>
+                <h2 className="font-semibold">Danh sách kiểm tra chính sách biên tập</h2>
+                <Badge tone="green">{checks.filter(Boolean).length} / 5</Badge>
               </div>
               <div className="mt-4 space-y-3">
                 {policyChecks.map((label, index) => (
@@ -244,7 +244,7 @@ export function ContentReviewDetailPage() {
               </div>
             </Card>
             <Card>
-              <h2 className="font-semibold">Moderator Notes &amp; Justification</h2>
+              <h2 className="font-semibold">Ghi chú và lý do của kiểm duyệt viên</h2>
               <textarea
                 value={notes}
                 maxLength={500}
@@ -252,43 +252,43 @@ export function ContentReviewDetailPage() {
                 className="mt-3 min-h-28 w-full rounded-2xl border border-line bg-elevated p-3 text-xs leading-5 outline-none"
               />
               <p className="mt-2 text-right text-[9px] text-muted">
-                {notes.length} / 500 characters
+                {notes.length} / 500 ký tự
               </p>
             </Card>
             <Card>
-              <p className="text-[9px] uppercase tracking-[.15em] text-muted">Final Disposition</p>
+              <p className="text-[9px] uppercase tracking-[.15em] text-muted">Quyết định cuối cùng</p>
               {completed && (
                 <Badge tone="green" className="mt-3 w-full justify-center">
-                  Decision recorded: {completed}
+                  Đã ghi nhận quyết định: {completed}
                 </Badge>
               )}
-              <Button onClick={() => setDecision('Approve & Publish')} className="mt-3 w-full">
+              <Button onClick={() => setDecision('Phê duyệt và xuất bản')} className="mt-3 w-full">
                 <CheckCircle2 size={15} />
-                Approve &amp; Publish
+                Phê duyệt và xuất bản
               </Button>
               <Button
-                onClick={() => setDecision('Request Author Changes')}
+                onClick={() => setDecision('Yêu cầu tác giả chỉnh sửa')}
                 variant="secondary"
                 className="mt-2 w-full text-orange"
               >
-                Request Author Changes
+                Yêu cầu tác giả chỉnh sửa
               </Button>
               <div className="mt-2 grid grid-cols-2 gap-2">
                 <Button
-                  onClick={() => setDecision('Escalate to Legal')}
+                  onClick={() => setDecision('Chuyển bộ phận pháp lý')}
                   variant="secondary"
                   className="px-2 text-[10px]"
                 >
                   <Scale size={13} />
-                  Escalate
+                  Chuyển cấp
                 </Button>
                 <Button
-                  onClick={() => setDecision('Reject Submission')}
+                  onClick={() => setDecision('Từ chối bản thảo')}
                   variant="secondary"
                   className="px-2 text-[10px] text-rose"
                 >
                   <Gavel size={13} />
-                  Reject
+                  Từ chối
                 </Button>
               </div>
             </Card>
@@ -296,7 +296,7 @@ export function ContentReviewDetailPage() {
         </div>
         <Modal
           open={Boolean(decision)}
-          title="Record Moderator Decision"
+          title="Ghi nhận quyết định kiểm duyệt"
           onClose={() => setDecision(null)}
         >
           <div className="flex gap-3 rounded-2xl bg-elevated p-4">
@@ -304,18 +304,18 @@ export function ContentReviewDetailPage() {
             <div>
               <strong className="text-sm">{decision}</strong>
               <p className="mt-1 text-xs leading-5 text-muted">
-                This mock action will append the decision to the local audit stream only.
+                Thao tác mẫu này chỉ thêm quyết định vào nhật ký kiểm tra cục bộ.
               </p>
             </div>
           </div>
           <textarea
             className="mt-4 min-h-24 w-full rounded-2xl border border-line bg-surface p-3 text-sm outline-none"
-            placeholder="Decision justification..."
+            placeholder="Lý do đưa ra quyết định..."
             defaultValue={notes}
           />
           <div className="mt-5 flex justify-end gap-2">
             <Button variant="secondary" onClick={() => setDecision(null)}>
-              Cancel
+              Hủy
             </Button>
             <Button
               onClick={() => {
@@ -323,7 +323,7 @@ export function ContentReviewDetailPage() {
                 setDecision(null)
               }}
             >
-              Confirm Decision
+              Xác nhận quyết định
             </Button>
           </div>
         </Modal>
@@ -337,14 +337,14 @@ function FlaggedText({ children, reviewed, onReview }) {
     <div className="rounded-2xl border border-orange bg-orange/10 p-5">
       <div className="flex flex-wrap items-center gap-2 text-[9px] text-orange">
         <AlertTriangle size={13} />
-        Trigger Tag Check: Mythological battle &amp; physical injury
-        <Badge tone="orange">Matches PG-13 criteria</Badge>
+        Kiểm tra thẻ cảnh báo: Chiến đấu thần thoại và thương tích
+        <Badge tone="orange">Phù hợp tiêu chí PG-13</Badge>
       </div>
       <p className="mt-4 text-sm leading-8 sm:text-base sm:leading-9">{children}</p>
       <div className="mt-4 flex items-center justify-between gap-3 border-t border-orange/30 pt-3 text-[9px] text-muted">
-        <span>Reviewer Telemetry: 14% kinetic impact intensity · Defensive encounter</span>
+        <span>Chỉ số xét duyệt: Cường độ va chạm 14% · Giao chiến phòng vệ</span>
         <button onClick={onReview} className="font-semibold text-brand">
-          {reviewed ? 'Reviewed ✓' : 'Mark as Reviewed'}
+          {reviewed ? 'Đã xem xét ✓' : 'Đánh dấu đã xem xét'}
         </button>
       </div>
     </div>
