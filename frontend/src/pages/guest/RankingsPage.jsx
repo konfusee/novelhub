@@ -84,7 +84,7 @@ export function RankingsPage({ embedded = false }) {
             </div>
             <div className="mt-4 flex items-center justify-between text-xs text-muted">
               <span>Hiển thị 15 / 250 mục xếp hạng</span>
-              <Button onClick={() => window.alert('Loaded the next 15 ranking entries (mock).')} variant="secondary" className="min-h-9 py-2 text-xs">
+              <Button onClick={() => window.alert('Đã tải 15 mục xếp hạng tiếp theo (mô phỏng).')} variant="secondary" className="min-h-9 py-2 text-xs">
                 15 truyện tiếp theo →
               </Button>
             </div>

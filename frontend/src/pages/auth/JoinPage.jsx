@@ -415,19 +415,19 @@ function AgreementCheck({ label, checked, onChange }) {
 
 function AuthorAgreement({ form, update }) {
   const items = [
-    ['authorGuidelines', 'Author Guidelines'],
-    ['publishing', 'Publishing Rules'],
-    ['rights', 'Copyright and rights declaration'],
-    ['revenue', 'Revenue share agreement'],
+    ['authorGuidelines', 'Hướng dẫn dành cho tác giả'],
+    ['publishing', 'Quy định xuất bản'],
+    ['rights', 'Tuyên bố bản quyền và quyền sở hữu'],
+    ['revenue', 'Thỏa thuận chia sẻ doanh thu'],
   ]
   return (
     <div className="rounded-2xl border border-brand/30 bg-brand/5 p-4">
       <div className="flex items-start gap-3">
         <ShieldCheck size={19} className="mt-0.5 shrink-0 text-brand" />
         <div>
-          <strong className="text-sm">Author publishing agreement</strong>
+          <strong className="text-sm">Thỏa thuận xuất bản dành cho tác giả</strong>
           <p className="mt-1 text-xs leading-5 text-muted">
-            Mock revenue share: 80% Author / 20% NovelHub
+            Tỷ lệ chia sẻ mô phỏng: 80% tác giả / 20% NovelHub
           </p>
         </div>
       </div>
@@ -435,7 +435,7 @@ function AuthorAgreement({ form, update }) {
         {items.map(([key, label]) => (
           <AgreementCheck
             key={key}
-            label={`I accept the ${label}.`}
+            label={`Tôi đồng ý với ${label}.`}
             checked={form[key]}
             onChange={value => update(key, value)}
           />
@@ -446,11 +446,12 @@ function AuthorAgreement({ form, update }) {
 }
 
 function DemoAccounts({ onSelect }) {
+  const roleLabels = { guest: 'Khách', reader: 'Độc giả', author: 'Tác giả', moderator: 'Kiểm duyệt viên', admin: 'Quản trị viên' }
   return (
     <div className="mt-6 border-t border-line pt-5">
       <div className="flex items-center justify-between gap-3">
-        <p className="text-xs font-semibold">Demo accounts</p>
-        <span className="text-[10px] text-muted">Password: {MOCK_PASSWORD}</span>
+        <p className="text-xs font-semibold">Tài khoản dùng thử</p>
+        <span className="text-[10px] text-muted">Mật khẩu: {MOCK_PASSWORD}</span>
       </div>
       <div className="mt-3 grid grid-cols-2 gap-2">
         {Object.entries(mockAccounts).map(([role, user]) => (
@@ -460,7 +461,7 @@ function DemoAccounts({ onSelect }) {
             onClick={() => onSelect(user)}
             className="rounded-xl border border-line bg-surface px-3 py-2 text-left hover:border-brand"
           >
-            <strong className="block text-[11px] capitalize">{role}</strong>
+            <strong className="block text-[11px]">{roleLabels[role] || role}</strong>
             <span className="block truncate text-[10px] text-muted">{user.email}</span>
           </button>
         ))}

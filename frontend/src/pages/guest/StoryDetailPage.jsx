@@ -27,7 +27,7 @@ export function StoryDetailPage({ embedded = false }) {
       {!embedded && <PublicHeader />}
       <main className="page-public space-y-7 py-7">
         <p className="text-xs text-muted">
-          Home / Fantasy / <strong className="text-ink">The Silent Forest</strong>
+          Trang chủ / Kỳ ảo / <strong className="text-ink">The Silent Forest</strong>
         </p>
         <Card className="grid gap-7 p-5 sm:p-7 lg:grid-cols-[240px_minmax(0,1fr)]">
           <div className="relative grid min-h-80 place-items-center overflow-hidden rounded-2xl border border-line bg-[#173b3f] text-7xl text-white">
@@ -93,7 +93,7 @@ export function StoryDetailPage({ embedded = false }) {
               </button>
               <button
                 aria-label={t('storyDetail.share')}
-                onClick={() => setNotice('Story link copied for sharing (demo).')}
+                onClick={() => setNotice('Đã sao chép liên kết truyện để chia sẻ (mô phỏng).')}
                 className="grid size-11 place-items-center rounded-2xl border border-line"
               >
                 <Share2 size={17} />
@@ -147,13 +147,12 @@ export function StoryDetailPage({ embedded = false }) {
                   ML
                 </span>
                 <div>
-                  <h3 className="font-bold">About Mira Lane</h3>
-                  <p className="text-xs text-muted">Fantasy & Speculative Fiction author</p>
+                  <h3 className="font-bold">Giới thiệu Mira Lane</h3>
+                  <p className="text-xs text-muted">Tác giả kỳ ảo &amp; giả tưởng suy đoán</p>
                 </div>
               </div>
               <p className="mt-4 text-xs leading-5 text-muted">
-                Storyteller crafting worlds bathed in twilight and ancient ruins. Winner of the 2024
-                NovelHub Fantasy Guild Award.
+                Người kể chuyện kiến tạo những thế giới phủ ánh hoàng hôn và tàn tích cổ xưa. Chủ nhân Giải thưởng Hội Kỳ ảo NovelHub 2024.
               </p>
               <div className="mt-4 grid grid-cols-3 border-y border-line py-3 text-center text-xs">
                 <span>
@@ -206,8 +205,7 @@ export function StoryDetailPage({ embedded = false }) {
               <div className="mt-5 border-t border-line pt-4">
                 <strong className="text-xs">Kaelen_Reader</strong>
                 <p className="mt-2 text-xs italic leading-5 text-muted">
-                  “The prose in chapter 2 gave me goosebumps. The lore feels alive and the tension
-                  doesn’t let up.”
+                  “Văn phong ở chương 2 khiến tôi nổi da gà. Thế giới truyện rất sống động và mạch căng thẳng không hề ngắt quãng.”
                 </p>
               </div>
             </Card>

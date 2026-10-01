@@ -69,7 +69,7 @@ function Hero() {
                 GENTLE STORIES
               </div>
               <div className="absolute bottom-10 left-8 h-11 w-56 max-w-[76%] rotate-1 rounded-lg border border-line bg-brand px-5 py-3 text-[10px] tracking-widest text-white">
-                BRIGHTER TOMORROW
+                NGÀY MAI TƯƠI SÁNG
               </div>
               <div className="absolute bottom-20 left-5 h-10 w-48 max-w-[72%] -rotate-1 rounded-lg border border-line bg-[#d8c7b4] px-5 py-3 text-[10px] tracking-widest text-[#55483f]">
                 NOVELHUB TALES
@@ -79,7 +79,7 @@ function Hero() {
                 <br />
                 STORIES
                 <br />
-                <span className="text-orange">BRIGHTER</span>
+                <span className="text-orange">TƯƠI SÁNG</span>
                 <br />
                 DAYS
               </div>
@@ -91,10 +91,10 @@ function Hero() {
             <span className="size-2 rounded-full bg-line" />
           </div>
           <div className="absolute bottom-4 right-7 flex gap-2">
-            <button onClick={() => window.alert('Previous featured story selected (mock).')} className="grid size-8 place-items-center rounded-full border border-line bg-surface">
+            <button onClick={() => window.alert('Đã chọn truyện nổi bật trước đó (mô phỏng).')} className="grid size-8 place-items-center rounded-full border border-line bg-surface">
               <ChevronLeft size={15} />
             </button>
-            <button onClick={() => window.alert('Next featured story selected (mock).')} className="grid size-8 place-items-center rounded-full border border-line bg-surface">
+            <button onClick={() => window.alert('Đã chọn truyện nổi bật tiếp theo (mô phỏng).')} className="grid size-8 place-items-center rounded-full border border-line bg-surface">
               <ChevronRight size={15} />
             </button>
           </div>
@@ -144,7 +144,7 @@ function ContinueCard({ audio = false }) {
           {audio ? 'Whispers of You' : 'The Silent Forest'}
         </h3>
         <p className="mt-1 truncate text-xs text-muted">
-          {audio ? 'Chapter 5 · The Letter' : 'Chapter 12 · A New Beginning'}
+          {audio ? 'Chương 5 · The Letter' : 'Chương 12 · A New Beginning'}
         </p>
         <div className="my-3 h-1.5 overflow-hidden rounded-full bg-elevated">
           <div className={audio ? 'h-full w-[32%] bg-orange' : 'h-full w-[68%] bg-brand'} />
@@ -154,7 +154,7 @@ function ContinueCard({ audio = false }) {
             {audio ? <Headphones size={14} /> : <BookOpen size={14} />} {t('common.continue')}
           </Button>
           <button
-            onClick={() => window.alert('Story bookmark updated (mock).')}
+            onClick={() => window.alert('Đã cập nhật đánh dấu truyện (mô phỏng).')}
             aria-label={t('story.bookmark')}
             className="grid size-9 place-items-center rounded-xl border border-line"
           >
@@ -175,7 +175,7 @@ function ReaderPreview() {
       <h3 className="font-bold">{t('home.readerPreview')}</h3>
       <div className="mt-4">
         <h4 className="font-semibold">The Silent Forest</h4>
-        <p className="text-xs text-muted">Chapter 1 · The Whispering Trees</p>
+        <p className="text-xs text-muted">Chương 1 · The Whispering Trees</p>
       </div>
       <div
         className="mt-4 rounded-2xl border border-line bg-reader p-4 text-ink"
@@ -248,7 +248,7 @@ function AudioPreview() {
         <span>10:24</span>
       </div>
       <div className="mt-4 flex items-center justify-around">
-        <button onClick={() => window.alert('Skipped back 15 seconds (mock).')} className="text-xs text-muted">↺ 15</button>
+        <button onClick={() => window.alert('Đã lùi 15 giây (mô phỏng).')} className="text-xs text-muted">↺ 15</button>
         <button
           onClick={() => setPlaying(!playing)}
           className="grid size-14 place-items-center rounded-full bg-brand text-white"
@@ -256,7 +256,7 @@ function AudioPreview() {
         >
           {playing ? <Pause /> : <Play />}
         </button>
-        <button onClick={() => window.alert('Skipped forward 15 seconds (mock).')} className="text-xs text-muted">15 ↻</button>
+        <button onClick={() => window.alert('Đã tiến 15 giây (mô phỏng).')} className="text-xs text-muted">15 ↻</button>
       </div>
     </Card>
   )
