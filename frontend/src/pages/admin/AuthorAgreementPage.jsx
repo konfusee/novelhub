@@ -13,17 +13,17 @@ export function AuthorAgreementPage() {
   const save = () => {
     if (!valid) return
     saveAgreement('user-author', share)
-    setMessage('Agreement saved to mock storage. The author view now uses this split.')
+    setMessage('Đã lưu thỏa thuận vào kho dữ liệu mẫu. Khu vực tác giả hiện dùng tỷ lệ này.')
   }
   return (
     <AdminLayout>
       <main className="mx-auto max-w-3xl px-5 py-8">
-        <h1 className="text-2xl font-bold">Mira Lane · Revenue Agreement</h1>
-        <p className="mt-2 text-sm text-muted">Financial / Agreement Settings</p>
+        <h1 className="text-2xl font-bold">Mira Lane · Thỏa thuận doanh thu</h1>
+        <p className="mt-2 text-sm text-muted">Tài chính / Cài đặt thỏa thuận</p>
         <Card className="mt-6">
           <div className="grid gap-5 sm:grid-cols-2">
             <label className="text-sm font-semibold">
-              Author share
+              Tỷ lệ của tác giả
               <input
                 type="number"
                 min="0"
@@ -34,7 +34,7 @@ export function AuthorAgreementPage() {
               />
             </label>
             <label className="text-sm font-semibold">
-              NovelHub share
+              Tỷ lệ của NovelHub
               <input
                 readOnly
                 value={Number.isFinite(platform) ? platform : ''}
@@ -43,8 +43,7 @@ export function AuthorAgreementPage() {
             </label>
           </div>
           <p className={`mt-4 text-sm ${valid ? 'text-brand' : 'text-rose'}`}>
-            Total: {valid ? 100 : Number(share) + platform}% · both values must remain between 0 and
-            100.
+            Tổng: {valid ? 100 : Number(share) + platform}% · cả hai giá trị phải nằm trong khoảng 0 đến 100.
           </p>
           {message && (
             <p role="status" className="mt-4 rounded-2xl bg-brand/10 p-3 text-sm text-brand">
@@ -53,7 +52,7 @@ export function AuthorAgreementPage() {
           )}
           <Button disabled={!valid} onClick={save} className="mt-6">
             <Save size={16} />
-            Save agreement
+            Lưu thỏa thuận
           </Button>
         </Card>
       </main>
