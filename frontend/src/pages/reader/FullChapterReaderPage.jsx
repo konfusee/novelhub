@@ -11,6 +11,12 @@ const BOOKMARK_KEY = 'novelhub.reader.bookmarks.v1'
 const ANNOTATIONS_KEY = 'novelhub.reader.annotations.v1'
 const POSITION_KEY = 'novelhub.reader.position.v1'
 const fontOptions = [14, 16, 18, 20, 22, 24, 26, 28]
+const DEFAULT_READER_FONT = "'Be Vietnam Pro', ui-sans-serif, sans-serif"
+const readerFonts = [
+  ['Be Vietnam Pro', DEFAULT_READER_FONT],
+  ['Arial', 'Arial, ui-sans-serif, sans-serif'],
+  ['Giao diện hệ thống', 'ui-sans-serif, system-ui, sans-serif'],
+]
 const colors = { yellow: '#f4df8d', green: '#9fd8b9', blue: '#9ec9e8', pink: '#e9afc0' }
 const readStored = (key, fallback) => { try { return JSON.parse(localStorage.getItem(key)) ?? fallback } catch { return fallback } }
 
@@ -40,14 +46,18 @@ function SettingsPanel({ settings, update, t }) {
     <div><p className="mb-2 text-xs font-semibold">{t('reader.lineHeight')}</p><div className="grid grid-cols-4 gap-2">{[1.4,1.6,1.8,2].map(value => <Button key={value} variant={settings.lineHeight === value ? 'primary' : 'secondary'} className="min-h-9 px-2 py-1 text-xs" onClick={() => update('lineHeight',value)}>{value}</Button>)}</div></div>
     <div><p className="mb-2 text-xs font-semibold">{t('reader.paragraphSpacing')}</p><div className="grid grid-cols-3 gap-2">{[['compact',12],['comfortable',22],['relaxed',32]].map(([key,value]) => <Button key={key} variant={settings.paragraphGap === value ? 'primary' : 'secondary'} className="min-h-9 px-2 py-1 text-[10px]" onClick={() => update('paragraphGap',value)}>{t(`reader.${key}`)}</Button>)}</div></div>
     <div><p className="mb-2 text-xs font-semibold">{t('reader.alignment')}</p><div className="grid grid-cols-2 gap-2"><Button variant={settings.align === 'left' ? 'primary' : 'secondary'} onClick={() => update('align','left')}><AlignLeft size={15}/>{t('reader.left')}</Button><Button variant={settings.align === 'justify' ? 'primary' : 'secondary'} onClick={() => update('align','justify')}><AlignJustify size={15}/>{t('reader.justify')}</Button></div></div>
-    <div><p className="mb-2 text-xs font-semibold">Phông chữ</p><select value={settings.fontFamily} onChange={e => update('fontFamily',e.target.value)} className="min-h-11 w-full rounded-2xl border border-line bg-surface px-3 text-sm"><option value="Inter, system-ui, sans-serif">Inter</option><option value="Roboto, system-ui, sans-serif">Roboto</option><option value="'Noto Sans', system-ui, sans-serif">Noto Sans</option><option value="Arial, system-ui, sans-serif">Arial / Giao diện hệ thống</option></select></div>
+    <div><p className="mb-2 text-xs font-semibold">Phông chữ</p><select value={settings.fontFamily} onChange={e => update('fontFamily',e.target.value)} className="min-h-11 w-full rounded-2xl border border-line bg-surface px-3 text-sm">{readerFonts.map(([label,value])=><option value={value} key={label}>{label}</option>)}</select></div>
   </div>
 }
 
 export function FullChapterReaderPage() {
   const { t } = useLocale()
   const articleRef = useRef(null)
-  const [settings,setSettings] = useState(() => ({ fontSize:18,width:820,lineHeight:1.8,paragraphGap:22,align:'left',fontFamily:'Inter, system-ui, sans-serif',progress:0,...readStored(SETTINGS_KEY,{}) }))
+  const [settings,setSettings] = useState(() => {
+    const stored = readStored(SETTINGS_KEY,{})
+    const allowedFonts = readerFonts.map(([,value]) => value)
+    return { fontSize:18,width:820,lineHeight:1.8,paragraphGap:22,align:'left',progress:0,...stored,fontFamily:allowedFonts.includes(stored.fontFamily) ? stored.fontFamily : DEFAULT_READER_FONT }
+  })
   const [bookmarked,setBookmarked] = useState(() => readStored(BOOKMARK_KEY,[]).includes('demo-14'))
   const [annotations,setAnnotations] = useState(() => readStored(ANNOTATIONS_KEY,[]))
   const [selection,setSelection] = useState(null)

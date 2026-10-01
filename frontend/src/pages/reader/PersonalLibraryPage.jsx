@@ -82,12 +82,12 @@ export function PersonalLibraryPage() {
 
         <section className="mt-6 border-b border-line pb-4">
           <div className="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
-            <div className="flex gap-1 overflow-x-auto pb-1">
+            <div className="nh-tab-rail flex snap-x snap-mandatory gap-1 overflow-x-auto pb-1">
               {tabs.map(([value, label]) => (
                 <button
                   key={value}
                   onClick={() => setTab(value)}
-                  className={`shrink-0 rounded-full px-4 py-2 text-xs font-semibold ${tab === value ? 'bg-brand text-white' : 'text-muted hover:bg-elevated'}`}
+                  className={`shrink-0 snap-start rounded-full px-4 py-2 text-xs font-semibold ${tab === value ? 'bg-brand text-white' : 'text-muted hover:bg-elevated'}`}
                 >
                   {label} ({countFor(value)})
                 </button>

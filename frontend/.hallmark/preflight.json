@@ -1,0 +1,21 @@
+{
+  "scannedAt": "2026-10-01",
+  "framework": "React 19 + Vite 8 + Tailwind CSS 4",
+  "fontStack": "Poppins via Google Fonts",
+  "palette": "CSS custom properties with warm paper and jade accent",
+  "motion": "motion-cut; CSS-only workspace entrance",
+  "spacing": "Tailwind utilities; no explicit project spacing scale before Hallmark",
+  "preserved": [
+    "warm paper palette",
+    "jade brand accent",
+    "light and dark themes",
+    "workspace shell"
+  ],
+  "introduced": [
+    "Studio theme tokens",
+    "4pt spacing scale",
+    "paired typography",
+    "named easing and durations",
+    "responsive overflow safeguards"
+  ]
+}

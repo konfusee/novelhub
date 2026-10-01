@@ -55,7 +55,7 @@ export function JoinPage({ initialMode }) {
   const { t } = useLocale()
   const location = useLocation()
   const navigate = useNavigate()
-  const { login, register } = useAuth()
+  const { login, loginWithGoogle, register } = useAuth()
   const queryMode = new URLSearchParams(location.search).get('mode')
   const mode = initialMode || queryMode || 'register'
   const isLogin = mode === 'login'
@@ -117,6 +117,24 @@ export function JoinPage({ initialMode }) {
     }
   }
 
+  const continueWithGoogle = async () => {
+    setBusy(true)
+    setError('')
+    try {
+      await new Promise(resolve => setTimeout(resolve, 250))
+      const user = loginWithGoogle({ accountType: isLogin ? 'reader' : accountType })
+      const requestedPath = location.state?.from
+      navigate(
+        requestedPath && canAccessPath(user, requestedPath) ? requestedPath : getAccountHome(user),
+        { replace: true },
+      )
+    } catch (reason) {
+      setError(reason.message)
+    } finally {
+      setBusy(false)
+    }
+  }
+
   return (
     <div className="min-h-screen bg-page text-ink">
       <PublicHeader />
@@ -169,7 +187,7 @@ export function JoinPage({ initialMode }) {
                     value={form.name}
                     onChange={event => update('name', event.target.value)}
                     placeholder={t('auth.displayNamePlaceholder')}
-                    className="min-w-0 flex-1 bg-transparent text-sm outline-none placeholder:text-muted"
+                    className="min-w-0 flex-1 bg-transparent text-sm outline-none placeholder:text-muted focus-visible:outline-none"
                   />
                 </Field>
               </>
@@ -183,7 +201,7 @@ export function JoinPage({ initialMode }) {
                 value={form.email}
                 onChange={event => update('email', event.target.value)}
                 placeholder="you@example.com"
-                className="min-w-0 flex-1 bg-transparent text-sm outline-none placeholder:text-muted"
+                className="min-w-0 flex-1 bg-transparent text-sm outline-none placeholder:text-muted focus-visible:outline-none"
               />
             </Field>
 
@@ -206,7 +224,7 @@ export function JoinPage({ initialMode }) {
                 value={form.password}
                 onChange={event => update('password', event.target.value)}
                 placeholder={t(isLogin ? 'auth.enterPassword' : 'auth.passwordMin')}
-                className="min-w-0 flex-1 bg-transparent text-sm outline-none placeholder:text-muted"
+                className="min-w-0 flex-1 bg-transparent text-sm outline-none placeholder:text-muted focus-visible:outline-none"
               />
               <button
                 type="button"
@@ -268,6 +286,23 @@ export function JoinPage({ initialMode }) {
             </Button>
           </form>
 
+          <div className="my-5 flex items-center gap-3 text-[11px] text-muted" aria-hidden="true">
+            <span className="h-px flex-1 bg-line" />
+            <span>{t('auth.orContinueWith')}</span>
+            <span className="h-px flex-1 bg-line" />
+          </div>
+
+          <Button
+            type="button"
+            variant="secondary"
+            disabled={busy || (!isLogin && (!form.terms || !authorReady))}
+            onClick={continueWithGoogle}
+            className="w-full"
+          >
+            <GoogleMark />
+            {t(isLogin ? 'auth.signInWithGoogle' : 'auth.signUpWithGoogle')}
+          </Button>
+
           {isLogin && <DemoAccounts onSelect={useDemoAccount} />}
 
           <p className="mt-6 text-center text-xs text-muted">
@@ -296,6 +331,17 @@ export function JoinPage({ initialMode }) {
         </div>
       )}
     </div>
+  )
+}
+
+function GoogleMark() {
+  return (
+    <svg aria-hidden="true" viewBox="0 0 24 24" className="size-[18px] shrink-0">
+      <path fill="var(--color-google-blue)" d="M21.6 12.2c0-.7-.1-1.4-.2-2H12v3.9h5.4a4.6 4.6 0 0 1-2 3v2.5h3.3c1.9-1.8 2.9-4.4 2.9-7.4Z" />
+      <path fill="var(--color-google-green)" d="M12 22c2.7 0 5-.9 6.7-2.4l-3.3-2.5c-.9.6-2.1 1-3.4 1a5.9 5.9 0 0 1-5.5-4.1H3.1v2.6A10 10 0 0 0 12 22Z" />
+      <path fill="var(--color-google-yellow)" d="M6.5 14a6 6 0 0 1 0-3.8V7.6H3.1a10 10 0 0 0 0 9L6.5 14Z" />
+      <path fill="var(--color-google-red)" d="M12 6.1c1.5 0 2.8.5 3.9 1.5l2.9-2.9A9.8 9.8 0 0 0 3.1 7.6l3.4 2.6A5.9 5.9 0 0 1 12 6.1Z" />
+    </svg>
   )
 }
 
@@ -390,7 +436,7 @@ function Field({ label, icon: Icon, action, children }) {
         {label}
         {action}
       </span>
-      <span className="flex min-h-12 items-center gap-3 rounded-2xl border border-line bg-surface px-3 focus-within:border-brand focus-within:ring-1 focus-within:ring-brand">
+      <span data-input-shell className="flex min-h-12 items-center gap-3 rounded-2xl border border-line bg-surface px-3">
         <Icon size={17} className="shrink-0 text-muted" />
         {children}
       </span>

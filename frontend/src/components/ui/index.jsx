@@ -62,14 +62,15 @@ export function Badge({ tone = 'neutral', className, ...props }) {
 export function Input({ icon: Icon, className, ...props }) {
   return (
     <label
+      data-input-shell
       className={cn(
-        'flex min-h-11 items-center gap-2 rounded-2xl border border-line bg-surface px-3 focus-within:border-brand focus-within:ring-1 focus-within:ring-brand',
+        'flex min-h-11 items-center gap-2 rounded-2xl border border-line bg-surface px-3',
         className,
       )}
     >
       {Icon && <Icon size={18} className="text-muted" />}
       <input
-        className="min-w-0 flex-1 bg-transparent text-sm text-ink outline-none placeholder:text-muted"
+        className="min-w-0 flex-1 bg-transparent text-sm text-ink outline-none placeholder:text-muted focus-visible:outline-none"
         {...props}
       />
     </label>

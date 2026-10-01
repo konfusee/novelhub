@@ -117,7 +117,7 @@ function Categories() {
             key={category.name}
           >
             <span className="block text-2xl">{category.icon}</span>
-            <span className="mt-2 block truncate text-[11px] font-medium">{t(`genres.${category.name.toLowerCase().replaceAll(' ', '').replace('-', '')}`)}</span>
+            <span className="mt-2 block truncate text-[11px] font-medium">{category.name}</span>
           </button>
         ))}
       </div>

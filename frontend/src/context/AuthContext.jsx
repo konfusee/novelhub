@@ -101,6 +101,20 @@ export function AuthProvider({ children }) {
     persist(user)
     return user
   }
+  const loginWithGoogle = ({ accountType = 'reader' } = {}) => {
+    const user = {
+      id: `google-${accountType}`,
+      name: accountType === 'author' ? 'Tác giả Google' : 'Độc giả Google',
+      email: `${accountType}@google.novelhub.test`,
+      roles: accountType === 'author' ? ['reader', 'author'] : ['reader'],
+      provider: 'google',
+    }
+    if (accountType === 'author') {
+      user.authorProfile = { status: 'active', agreementAccepted: true }
+    }
+    persist(user)
+    return user
+  }
   const becomeAuthor = () => {
     if (!currentUser) return
     persist({
@@ -115,6 +129,7 @@ export function AuthProvider({ children }) {
     roles: currentUser?.roles || [],
     hasRole: role => currentUser?.roles?.includes(role),
     login,
+    loginWithGoogle,
     logout: () => persist(null),
     register,
     becomeAuthor,

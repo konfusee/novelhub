@@ -1,0 +1,91 @@
+/* Hallmark · pre-emit critique: P5 H4 E5 S5 R5 V4 */
+/* NovelHub Studio tokens · warm paper · jade accent · editorial utility */
+:root {
+  --color-paper: oklch(96.8% 0.012 78);
+  --color-paper-2: oklch(99.1% 0.006 78);
+  --color-paper-3: oklch(93.8% 0.016 78);
+  --color-reader: oklch(98.2% 0.009 78);
+  --color-ink: oklch(24% 0.035 258);
+  --color-muted: oklch(54% 0.025 258);
+  --color-rule: oklch(86% 0.018 78);
+  --color-rule-strong: oklch(72% 0.025 78);
+  --color-accent: oklch(52% 0.105 170);
+  --color-accent-strong: oklch(43% 0.11 170);
+  --color-accent-soft: oklch(92% 0.035 170);
+  --color-accent-ink: oklch(98% 0.008 78);
+  --color-warm: oklch(72% 0.14 55);
+  --color-purple: oklch(61% 0.19 296);
+  --color-rose: oklch(64% 0.15 8);
+  --color-danger: oklch(55% 0.19 25);
+  --color-success: oklch(50% 0.11 155);
+  --color-focus: oklch(57% 0.15 170);
+  --color-google-blue: oklch(62% 0.18 256);
+  --color-google-green: oklch(64% 0.16 149);
+  --color-google-yellow: oklch(80% 0.17 84);
+  --color-google-red: oklch(61% 0.21 29);
+
+  --font-display: 'Be Vietnam Pro', ui-sans-serif, sans-serif;
+  --font-body: 'Be Vietnam Pro', ui-sans-serif, sans-serif;
+  --font-outlier: 'Be Vietnam Pro', ui-sans-serif, sans-serif;
+
+  --space-3xs: 0.125rem;
+  --space-2xs: 0.25rem;
+  --space-xs: 0.5rem;
+  --space-sm: 0.75rem;
+  --space-md: 1rem;
+  --space-lg: 1.5rem;
+  --space-xl: 2.5rem;
+  --space-2xl: 4rem;
+  --space-3xl: 6rem;
+  --space-4xl: 9rem;
+
+  --text-xs: 0.75rem;
+  --text-sm: 0.875rem;
+  --text-base: 1rem;
+  --text-md: 1.25rem;
+  --text-lg: 1.5625rem;
+  --text-xl: 1.953rem;
+  --text-2xl: 2.441rem;
+  --text-3xl: 3.052rem;
+  --text-display: clamp(2.75rem, 5vw + 1rem, 5.25rem);
+
+  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-in: cubic-bezier(0.7, 0, 0.84, 0);
+  --ease-in-out: cubic-bezier(0.65, 0, 0.35, 1);
+  --dur-micro: 120ms;
+  --dur-short: 220ms;
+  --dur-long: 420ms;
+
+  --rule-thin: 1px;
+  --rule-focus: 2px;
+  --radius-sm: 0.5rem;
+  --radius-md: 0.875rem;
+  --radius-lg: 1.5rem;
+  --radius-pill: 999px;
+  --shadow-whisper: 0 1px 2px oklch(20% 0.015 258 / 0.06);
+
+  --z-base: 1;
+  --z-raised: 10;
+  --z-dropdown: 100;
+  --z-sticky: 200;
+  --z-modal: 400;
+  --z-toast: 500;
+  --z-tooltip: 600;
+}
+
+:root.dark {
+  --color-paper: oklch(17% 0.025 258);
+  --color-paper-2: oklch(23% 0.035 258);
+  --color-paper-3: oklch(28% 0.04 258);
+  --color-reader: oklch(20% 0.027 258);
+  --color-ink: oklch(95% 0.008 78);
+  --color-muted: oklch(72% 0.025 258);
+  --color-rule: oklch(34% 0.04 258);
+  --color-rule-strong: oklch(46% 0.045 258);
+  --color-accent: oklch(68% 0.12 170);
+  --color-accent-strong: oklch(76% 0.1 170);
+  --color-accent-soft: oklch(29% 0.055 170);
+  --color-accent-ink: oklch(18% 0.025 258);
+  --color-focus: oklch(73% 0.13 170);
+  --shadow-whisper: 0 1px 2px oklch(8% 0.015 258 / 0.35);
+}

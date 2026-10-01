@@ -12,19 +12,23 @@ function interpolate(message, variables = {}) {
 }
 
 export function LocaleProvider({ children }) {
-  const value = useMemo(() => ({
-    locale: 'vi',
-    t: (key, variables) => {
-      const message = resolveMessage(vi, key)
-      if (typeof message !== 'string') {
-        if (import.meta.env.DEV) console.warn(`[content] Thiếu nội dung tiếng Việt: ${key}`)
-        return key
-      }
-      return interpolate(message, variables)
-    },
-    formatDate: valueToFormat => new Intl.DateTimeFormat('vi-VN', { dateStyle: 'medium' }).format(new Date(valueToFormat)),
-    formatNumber: valueToFormat => new Intl.NumberFormat('vi-VN').format(valueToFormat),
-  }), [])
+  const value = useMemo(
+    () => ({
+      locale: 'vi',
+      t: (key, variables) => {
+        const message = resolveMessage(vi, key)
+        if (typeof message !== 'string') {
+          if (import.meta.env.DEV) console.warn(`[content] Thiếu nội dung tiếng Việt: ${key}`)
+          return key
+        }
+        return interpolate(message, variables)
+      },
+      formatDate: valueToFormat =>
+        new Intl.DateTimeFormat('vi-VN', { dateStyle: 'medium' }).format(new Date(valueToFormat)),
+      formatNumber: valueToFormat => new Intl.NumberFormat('vi-VN').format(valueToFormat),
+    }),
+    [],
+  )
 
   return <LocaleContext.Provider value={value}>{children}</LocaleContext.Provider>
 }
