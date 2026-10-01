@@ -210,7 +210,7 @@ export function ReaderHomePage() {
             <section>
               <SectionHeader
                 title={t('readerHome.recentlyUpdated')}
-                description="New chapters from stories you follow"
+                description="Chương mới từ những truyện bạn theo dõi"
               />
               <Card className="mt-4 divide-y divide-line p-0">
                 {readerHome.updates.map(item => (
