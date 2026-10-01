@@ -45,6 +45,7 @@ const chapterGroups = [
   },
 ]
 const utilityTabs = ['Outline', 'Notes', 'AI Assistant', 'Checklist']
+const utilityLabels = { Outline: 'Dàn ý', Notes: 'Ghi chú', 'AI Assistant': 'Trợ lý AI', Checklist: 'Danh sách kiểm tra' }
 
 export function ChapterEditorPage() {
   const [title, setTitle] = useState('Chapter 16: Heart of the Ironwood')
@@ -67,30 +68,30 @@ export function ChapterEditorPage() {
           <button
             onClick={() => setLeftOpen(value => !value)}
             className="rounded-xl border border-line p-2 xl:hidden"
-            aria-label="Toggle chapter outline"
+            aria-label="Bật tắt dàn ý chương"
           >
             <PanelLeft size={18} />
           </button>
           <div className="min-w-0 flex-1">
-            <p className="text-[10px] text-muted">My Works / The Silent Forest</p>
+            <p className="text-[10px] text-muted">Tác phẩm của tôi / The Silent Forest</p>
             <strong className="block truncate text-sm text-brand">{title}</strong>
           </div>
           <Badge tone={saved ? 'green' : 'orange'}>
-            {saved ? 'Saved locally' : 'Unsaved changes'}
+            {saved ? 'Đã lưu cục bộ' : 'Có thay đổi chưa lưu'}
           </Badge>
-          <Badge>{words} words</Badge>
-          <Badge>9 min read</Badge>
-          <Button onClick={() => window.alert('Reader preview opened (mock).')} variant="secondary" className="min-h-9 px-3 py-1 text-xs">
+          <Badge>{words} từ</Badge>
+          <Badge>Đọc trong 9 phút</Badge>
+          <Button onClick={() => window.alert('Đã mở bản xem trước cho độc giả (bản mẫu).')} variant="secondary" className="min-h-9 px-3 py-1 text-xs">
             <Eye size={14} />
-            Preview
+            Xem trước
           </Button>
           <Button onClick={() => setSubmitOpen(true)} className="min-h-9 px-3 py-1 text-xs">
-            Submit Chapter <Send size={14} />
+            Gửi chương <Send size={14} />
           </Button>
           <button
             onClick={() => setRightOpen(value => !value)}
             className="rounded-xl border border-line p-2 xl:hidden"
-            aria-label="Toggle writing assistant"
+            aria-label="Bật tắt trợ lý sáng tác"
           >
             <PanelRight size={18} />
           </button>
@@ -116,9 +117,9 @@ export function ChapterEditorPage() {
               <div className="flex flex-wrap items-center justify-between gap-3 border-t border-line pt-5 text-xs text-muted">
                 <span className="flex items-center gap-2">
                   <Save size={14} />
-                  {saved ? 'Draft saved locally and synchronized.' : 'Changes waiting to be saved.'}
+                  {saved ? 'Bản nháp đã được lưu cục bộ và đồng bộ.' : 'Các thay đổi đang chờ lưu.'}
                 </span>
-                <button onClick={() => window.alert('Chapter 17 opened (mock).')} className="font-semibold text-brand">Continue to Chapter 17 →</button>
+                <button onClick={() => window.alert('Đã mở Chương 17 (bản mẫu).')} className="font-semibold text-brand">Tiếp tục đến Chương 17 →</button>
               </div>
             </article>
           </main>
@@ -137,14 +138,14 @@ export function ChapterEditorPage() {
             }}
           />
         </div>
-        <Modal open={submitOpen} title="Submit Chapter" onClose={() => setSubmitOpen(false)}>
+        <Modal open={submitOpen} title="Gửi chương" onClose={() => setSubmitOpen(false)}>
           <p className="text-sm leading-6 text-muted">
-            Chapter 16 will be added to the editorial review queue. This is a frontend preview; no
-            data will be sent.
+            Chương 16 sẽ được thêm vào hàng đợi biên tập. Đây là bản xem trước giao diện; không có
+            dữ liệu nào được gửi đi.
           </p>
           <div className="mt-5 flex justify-end gap-2">
             <Button variant="secondary" onClick={() => setSubmitOpen(false)}>
-              Keep Editing
+              Tiếp tục chỉnh sửa
             </Button>
             <Button
               onClick={() => {
@@ -153,7 +154,7 @@ export function ChapterEditorPage() {
               }}
             >
               <Check size={15} />
-              Submit Mock
+              Gửi bản mẫu
             </Button>
           </div>
         </Modal>
@@ -170,11 +171,11 @@ function ChapterTree({ open, onClose }) {
       <div className="flex items-center justify-between border-b border-line pb-4">
         <div>
           <strong className="text-sm">The Silent Forest</strong>
-          <p className="text-[10px] text-muted">Fantasy · Serialized</p>
+          <p className="text-[10px] text-muted">Kỳ ảo · Dài kỳ</p>
         </div>
         {open && (
           <button onClick={onClose} className="text-xs text-brand xl:hidden">
-            Close
+            Đóng
           </button>
         )}
       </div>
@@ -184,7 +185,7 @@ function ChapterTree({ open, onClose }) {
             <div className="flex items-start gap-2">
               <ChevronDown size={14} className="mt-0.5 text-brand" />
               <strong className="flex-1 text-[11px] tracking-[.1em] text-brand">{group.act}</strong>
-              <span className="text-[10px] text-muted">{group.count} CH.</span>
+              <span className="text-[10px] text-muted">{group.count} CHƯƠNG</span>
             </div>
             <div className="mt-2 space-y-1 border-l border-line pl-3">
               {group.chapters.map(chapter => {
@@ -192,7 +193,7 @@ function ChapterTree({ open, onClose }) {
                 return (
                   <button
                     key={chapter}
-                    onClick={() => window.alert(`${chapter} selected.`)}
+                    onClick={() => window.alert(`Đã chọn ${chapter}.`)}
                     className={`flex w-full items-center gap-2 rounded-xl px-3 py-2 text-left text-xs ${active ? 'bg-brand/10 font-semibold text-brand' : 'text-muted hover:bg-elevated'}`}
                   >
                     <span className="truncate">{chapter}</span>
@@ -206,9 +207,9 @@ function ChapterTree({ open, onClose }) {
           </section>
         ))}
       </div>
-      <Button onClick={() => window.alert('A new chapter draft was added (mock).')} variant="secondary" className="mt-8 w-full">
+      <Button onClick={() => window.alert('Đã thêm bản nháp chương mới (bản mẫu).')} variant="secondary" className="mt-8 w-full">
         <BookOpen size={15} />
-        Add Chapter
+        Thêm chương
       </Button>
     </aside>
   )
@@ -216,25 +217,25 @@ function ChapterTree({ open, onClose }) {
 
 function Toolbar({ onSave }) {
   const tools = [
-    [Bold, 'Bold'],
-    [Italic, 'Italic'],
-    [Underline, 'Underline'],
-    [Heading2, 'Heading 2'],
-    [Heading3, 'Heading 3'],
-    [Quote, 'Quote'],
-    [AlignLeft, 'Divider'],
-    [MessageSquare, 'Dialogue'],
-    [AtSign, 'Mention'],
-    [Image, 'Image'],
+    [Bold, 'In đậm', 'bold'],
+    [Italic, 'In nghiêng', 'italic'],
+    [Underline, 'Gạch chân', 'underline'],
+    [Heading2, 'Tiêu đề 2', 'formatBlock'],
+    [Heading3, 'Tiêu đề 3', 'formatBlock'],
+    [Quote, 'Trích dẫn', 'formatBlock'],
+    [AlignLeft, 'Đường phân cách', 'insertHorizontalRule'],
+    [MessageSquare, 'Hội thoại', 'formatBlock'],
+    [AtSign, 'Đề cập', 'insertText'],
+    [Image, 'Hình ảnh', 'insertImage'],
   ]
   return (
     <div className="sticky top-16 z-20 flex flex-wrap items-center justify-between gap-2 border-b border-line bg-surface/95 px-4 py-2 backdrop-blur">
       <div className="flex flex-wrap gap-1">
-        {tools.map(([Icon, label]) => (
+        {tools.map(([Icon, label, command]) => (
           <button
             key={label}
             title={label}
-            onClick={() => document.execCommand?.(label.toLowerCase())}
+            onClick={() => document.execCommand?.(command)}
             className="grid size-9 place-items-center rounded-xl hover:bg-elevated hover:text-brand"
           >
             <Icon size={16} />
@@ -242,10 +243,10 @@ function Toolbar({ onSave }) {
         ))}
       </div>
       <div className="flex items-center gap-3 text-[10px] text-muted">
-        <span>Para 18 · Line 142</span>
+        <span>Đoạn 18 · Dòng 142</span>
         <Button onClick={onSave} variant="secondary" className="min-h-8 px-3 py-1 text-[10px]">
           <Save size={13} />
-          Save
+          Lưu
         </Button>
       </div>
     </div>
@@ -264,13 +265,13 @@ function WriterUtility({ open, onClose, tab, setTab, suggested, onSuggest, onIns
             onClick={() => setTab(item)}
             className={`shrink-0 border-b-2 px-3 py-3 text-xs ${tab === item ? 'border-purple font-semibold text-purple' : 'border-transparent text-muted'}`}
           >
-            {item}
+            {utilityLabels[item]}
           </button>
         ))}
       </div>
       {open && (
         <button onClick={onClose} className="m-3 text-xs text-brand xl:hidden">
-          Close panel
+          Đóng bảng
         </button>
       )}
       <div className="space-y-5 p-5">
@@ -280,48 +281,48 @@ function WriterUtility({ open, onClose, tab, setTab, suggested, onSuggest, onIns
               <div className="flex items-center justify-between">
                 <strong className="flex items-center gap-2 text-sm">
                   <ListTree size={16} className="text-purple" />
-                  Pacing Analysis
+                  Phân tích nhịp độ
                 </strong>
-                <Badge tone="green">Good Balance</Badge>
+                <Badge tone="green">Cân bằng tốt</Badge>
               </div>
               <p className="mt-3 text-xs leading-5 text-muted">
-                Excellent balance of sensory imagery (62%) and dialogue (38%). Scene tension
-                steadily elevates toward the spring discovery.
+                Hình ảnh cảm giác (62%) và hội thoại (38%) được cân bằng tốt. Sức căng của cảnh
+                tăng đều về phía thời điểm phát hiện dòng suối.
               </p>
             </Card>
             <Card className="border-purple/40 bg-purple/10 p-4">
               <strong className="flex items-center gap-2 text-sm text-purple">
                 <Sparkles size={16} />
-                Contextual Next Transition
+                Chuyển đoạn tiếp theo theo ngữ cảnh
               </strong>
               <p className="mt-3 text-xs leading-5 text-muted">
-                Suggest a seamless atmospheric bridge as Kaelen prepares to decipher the contracting
-                water runes.
+                Gợi ý một nhịp nối không khí liền mạch khi Kaelen chuẩn bị giải mã các ký tự nước
+                đang co lại.
               </p>
               <Button onClick={onSuggest} className="mt-4 w-full border-purple bg-purple">
                 <Sparkles size={14} />
-                Suggest Next Paragraph
+                Gợi ý đoạn tiếp theo
               </Button>
               {suggested && (
                 <div className="mt-4 rounded-2xl bg-surface p-3">
-                  <p className="text-[10px] text-muted">Suggested candidate:</p>
+                  <p className="text-[10px] text-muted">Phương án gợi ý:</p>
                   <p className="mt-1 text-xs italic leading-5">
                     “Before the third ring could collapse, a sudden silence fell over the canopy...”
                   </p>
                   <button onClick={onInsert} className="mt-2 text-xs font-semibold text-purple">
-                    Insert into Editor →
+                    Chèn vào trình soạn thảo →
                   </button>
                 </div>
               )}
             </Card>
             <Card className="p-4">
-              <strong className="text-xs">Continuity Watchdog</strong>
+              <strong className="text-xs">Theo dõi tính nhất quán</strong>
               <p className="mt-3 text-xs font-semibold">
-                Kaelen <span className="float-right font-normal text-muted">Protagonist</span>
+                Kaelen <span className="float-right font-normal text-muted">Nhân vật chính</span>
               </p>
               <p className="mt-2 text-[11px] leading-5 text-muted">
-                ✓ Active item: Bronze astrolabe accurately tracked from Ch. 15.
-                <br />ⓘ Right hand wounded in Ch. 12; currently carrying tool.
+                ✓ Vật phẩm hiện tại: la bàn thiên văn bằng đồng được theo dõi chính xác từ Chương 15.
+                <br />ⓘ Tay phải bị thương ở Chương 12; hiện đang cầm dụng cụ.
               </p>
             </Card>
           </>
@@ -337,9 +338,9 @@ function UtilityPlaceholder({ tab }) {
     <div className="grid min-h-72 place-items-center text-center">
       <div>
         <Sparkles className="mx-auto text-purple" />
-        <h2 className="mt-3 font-semibold">{tab}</h2>
+        <h2 className="mt-3 font-semibold">{utilityLabels[tab]}</h2>
         <p className="mt-2 text-xs leading-5 text-muted">
-          Mock author utilities for the current chapter are ready here.
+          Các tiện ích tác giả cho chương hiện tại đã sẵn sàng tại đây.
         </p>
       </div>
     </div>
