@@ -29,7 +29,7 @@ export function MockDataProvider({ children }) {
   const saveAgreement = (id, authorShare) => {
     const value = Number(authorShare)
     if (!Number.isFinite(value) || value < 0 || value > 100)
-      throw new Error('Author share must be between 0 and 100.')
+      throw new Error('Tỷ lệ của tác giả phải nằm trong khoảng từ 0 đến 100.')
     update({
       ...data,
       agreements: {

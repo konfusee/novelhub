@@ -29,18 +29,21 @@ export function DevPanel() {
             label="Tài khoản"
             value={currentUser?.roles?.at(-1) || 'guest'}
             options={['guest', 'reader', 'author', 'moderator', 'admin']}
+            optionLabels={{ guest: 'Khách', reader: 'Độc giả', author: 'Tác giả', moderator: 'Kiểm duyệt viên', admin: 'Quản trị viên' }}
             onChange={changeAccount}
           />
           <Control
             label="Giao diện"
             value={resolvedTheme}
             options={['light', 'dark']}
+            optionLabels={{ light: 'Sáng', dark: 'Tối' }}
             onChange={setTheme}
           />
           <Control
             label="Trạng thái"
             value={data.simulation}
             options={['normal', 'loading', 'empty', 'error']}
+            optionLabels={{ normal: 'Bình thường', loading: 'Đang tải', empty: 'Trống', error: 'Lỗi' }}
             onChange={setSimulation}
           />
           <button
@@ -61,7 +64,7 @@ export function DevPanel() {
     </div>
   )
 }
-function Control({ label, value, options, onChange }) {
+function Control({ label, value, options, optionLabels = {}, onChange }) {
   return (
     <label className="mt-3 block text-[10px] font-semibold uppercase tracking-wider text-muted">
       {label}
@@ -71,7 +74,7 @@ function Control({ label, value, options, onChange }) {
         className="mt-1 w-full rounded-xl border border-line bg-elevated px-3 py-2 text-xs text-ink"
       >
         {options.map(item => (
-          <option key={item}>{item}</option>
+          <option key={item} value={item}>{optionLabels[item] ?? item}</option>
         ))}
       </select>
     </label>

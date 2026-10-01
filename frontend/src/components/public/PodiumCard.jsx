@@ -14,7 +14,7 @@ export function PodiumCard({ story }) {
               <Crown size={11} /> Champion #1
             </>
           ) : (
-            `Rank #0${story.rank}`
+            `Hạng #0${story.rank}`
           )}
         </Badge>
         <Badge tone={story.change.includes('↓') ? 'red' : 'green'}>{story.change}</Badge>
@@ -24,7 +24,7 @@ export function PodiumCard({ story }) {
         {story.genre}
       </Badge>
       <h3 className={`${champion ? 'text-xl' : 'text-lg'} mt-2 font-bold`}>{story.title}</h3>
-      <p className="text-xs text-muted">by {story.author}</p>
+      <p className="text-xs text-muted">tác giả {story.author}</p>
       {champion && (
         <p className="mt-3 line-clamp-2 text-xs leading-5 text-muted">
           The wind moved gently through the ancient trees, carrying whispers of forgotten stories.
@@ -36,7 +36,7 @@ export function PodiumCard({ story }) {
           {story.rating}
         </span>
         <span>
-          <strong>{story.reads}</strong> reads
+          <strong>{story.reads}</strong> lượt đọc
         </span>
       </div>
       <Button onClick={() => window.location.assign(`/stories/${story.id || 'demo'}`)} variant={champion ? 'primary' : 'secondary'} className="mt-auto min-h-9 py-2 text-xs">

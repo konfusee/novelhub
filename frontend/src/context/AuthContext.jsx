@@ -84,7 +84,7 @@ export function AuthProvider({ children }) {
       item => item.email.toLowerCase() === email.toLowerCase(),
     )
     if (!user || password !== MOCK_PASSWORD)
-      throw new Error('Invalid email or password. Use a demo account and password 123456.')
+      throw new Error('Email hoặc mật khẩu không hợp lệ. Hãy dùng tài khoản mẫu và mật khẩu 123456.')
     persist(user)
     return user
   }

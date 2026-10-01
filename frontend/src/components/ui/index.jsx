@@ -106,7 +106,7 @@ export function Tabs({ items, value, onChange }) {
     </div>
   )
 }
-export function Avatar({ name = 'NovelHub user', src, className }) {
+export function Avatar({ name = 'Người dùng NovelHub', src, className }) {
   return src ? (
     <img className={cn('size-10 rounded-full object-cover', className)} src={src} alt={name} />
   ) : (

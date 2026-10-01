@@ -123,7 +123,7 @@ export const communityReports = [
     severity: 'High',
     status: 'In Review',
     title: 'Copyright & Plagiarism Claim',
-    target: 'Whispers of the Deep (Chapter 4)',
+    target: 'Whispers of the Deep (Chương 4)',
     age: '45m ago',
     reporters: '3 readers flagged',
     lead: '@kael_lore',
