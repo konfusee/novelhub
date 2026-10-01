@@ -17,6 +17,8 @@ import { authorStats, authorStories } from '../../data/mock/author'
 import { Badge, Button, Card, Tabs } from '../../components/ui'
 
 const icons = [BookOpen, Headphones, UsersRound, Coins]
+const statusLabels = { Published: 'Đã xuất bản', 'In Review': 'Đang xét duyệt', Draft: 'Bản nháp' }
+const metricLabels = { Unpublished: 'Chưa xuất bản' }
 export function AuthorDashboardPage() {
   const [filter, setFilter] = useState('all')
   const [reply, setReply] = useState('')
@@ -52,23 +54,23 @@ export function AuthorDashboardPage() {
         <section className="mt-7">
           <div className="flex items-center justify-between">
             <h2 className="text-xl font-semibold">
-              Continue Writing <Badge className="ml-2">2 Active Works</Badge>
+              Tiếp tục sáng tác <Badge className="ml-2">2 tác phẩm đang viết</Badge>
             </h2>
-            <button onClick={() => window.location.assign('/author/drafts')} className="text-xs text-brand">View All Drafts →</button>
+            <button onClick={() => window.location.assign('/author/drafts')} className="text-xs text-brand">Xem tất cả bản nháp →</button>
           </div>
           <div className="mt-4 grid gap-4 md:grid-cols-2">
             <DraftCard
               title="The Silent Forest"
-              chapter="Chapter 16: Heart of the Ironwood"
+              chapter="Chương 16: Heart of the Ironwood"
               progress={72}
-              words="2,840 / 3,500 words"
+              words="2.840 / 3.500 từ"
               primary
             />
             <DraftCard
               title="Echoes of Eldoria"
-              chapter="Chapter 3: The Crystal Archivist"
+              chapter="Chương 3: The Crystal Archivist"
               progress={38}
-              words="1,420 / 4,000 words"
+              words="1.420 / 4.000 từ"
             />
           </div>
         </section>
@@ -78,20 +80,20 @@ export function AuthorDashboardPage() {
               <div className="flex flex-col justify-between gap-3 sm:flex-row sm:items-center">
                 <div>
                   <h2 className="text-xl font-semibold">
-                    Recent Story Performance &amp; Draft Status
+                    Hiệu suất truyện và trạng thái bản nháp gần đây
                   </h2>
                   <p className="text-xs text-muted">
-                    Manage active serialization and review pipelines
+                    Quản lý truyện đang đăng và quy trình xét duyệt
                   </p>
                 </div>
                 <Tabs
                   value={filter}
                   onChange={setFilter}
                   items={[
-                    { value: 'all', label: 'All' },
-                    { value: 'published', label: 'Published' },
-                    { value: 'review', label: 'In Review' },
-                    { value: 'draft', label: 'Drafts' },
+                    { value: 'all', label: 'Tất cả' },
+                    { value: 'published', label: 'Đã xuất bản' },
+                    { value: 'review', label: 'Đang xét duyệt' },
+                    { value: 'draft', label: 'Bản nháp' },
                   ]}
                 />
               </div>
@@ -121,11 +123,12 @@ export function AuthorDashboardPage() {
                                   : 'neutral'
                             }
                           >
-                            {story.status}
+                            {statusLabels[story.status] ?? story.status}
                           </Badge>
                         </div>
                         <p className="mt-1 text-xs text-muted">
-                          {story.chapters} Chapters · ★ {story.rating} · {story.reads}
+                          {story.chapters} chương · ★ {metricLabels[story.rating] ?? story.rating} ·{' '}
+                          {story.reads.replace(' words', ' từ')} {story.reads.includes('words') ? '' : 'lượt đọc'}
                         </p>
                       </div>
                       <Button onClick={() => window.location.assign('/author/stories/demo')}
@@ -134,10 +137,10 @@ export function AuthorDashboardPage() {
                       >
                         {story.status === 'Published' ? <Plus size={14} /> : <Send size={14} />}{' '}
                         {story.status === 'Published'
-                          ? 'Add Chapter'
+                          ? 'Thêm chương'
                           : story.status === 'In Review'
-                            ? 'View Submission'
-                            : 'Submit Review'}
+                            ? 'Xem bản gửi duyệt'
+                            : 'Gửi xét duyệt'}
                       </Button>
                     </div>
                   ))}
@@ -146,18 +149,18 @@ export function AuthorDashboardPage() {
             <Card className="flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
               <div>
                 <p className="text-[10px] uppercase tracking-[.18em] text-brand">
-                  Weekly Writing Velocity
+                  Tiến độ sáng tác tuần
                 </p>
-                <h2 className="mt-2 text-xl font-semibold">18,450 words authored this week</h2>
+                <h2 className="mt-2 text-xl font-semibold">Đã viết 18.450 từ trong tuần này</h2>
                 <p className="mt-1 text-sm text-muted">
-                  You surpassed your regular author sprint target by 24%.
+                  Bạn đã vượt mục tiêu viết nhanh thường kỳ 24%.
                 </p>
               </div>
               <div className="text-center">
-                <strong className="text-3xl text-brand">6 Days</strong>
-                <p className="text-xs text-muted">Daily Streak 🔥</p>
+                <strong className="text-3xl text-brand">6 ngày</strong>
+                <p className="text-xs text-muted">Chuỗi sáng tác hằng ngày 🔥</p>
               </div>
-              <Button onClick={() => window.alert('Sprint goal settings opened (mock).')} variant="secondary">Sprint Goal Settings</Button>
+              <Button onClick={() => window.alert('Đã mở cài đặt mục tiêu viết nhanh (bản mẫu).')} variant="secondary">Cài đặt mục tiêu</Button>
             </Card>
           </div>
           <aside className="min-w-0 space-y-5">
@@ -165,35 +168,35 @@ export function AuthorDashboardPage() {
               <div className="flex items-center justify-between">
                 <h2 className="flex items-center gap-2 font-semibold">
                   <Bot className="text-purple" />
-                  AI Writing Assistant
+                  Trợ lý sáng tác AI
                 </h2>
-                <Badge tone="purple">Active 4.5</Badge>
+                <Badge tone="purple">Đang hoạt động 4.5</Badge>
               </div>
               <p className="mt-3 text-xs text-muted">
-                Analyzing: <strong className="text-ink">The Silent Forest (Ch. 16)</strong>
+                Đang phân tích: <strong className="text-ink">The Silent Forest (Chương 16)</strong>
               </p>
               <div className="mt-4 space-y-3">
-                <Insight title="Chapter Pacing Alert">
-                  Scene 3 transition feels abrupt. Consider adding environmental suspense.
+                <Insight title="Cảnh báo nhịp độ chương">
+                  Chuyển cảnh 3 còn đột ngột. Hãy cân nhắc tăng thêm không khí hồi hộp.
                 </Insight>
-                <Insight title="Lore Continuity Check">
-                  The Ironwood pendant was last referenced in Chapter 4.
+                <Insight title="Kiểm tra tính nhất quán thế giới truyện">
+                  Mặt dây chuyền Ironwood được nhắc đến lần gần nhất ở Chương 4.
                 </Insight>
               </div>
               <Button onClick={() => window.location.assign('/author/ai')} className="mt-4 w-full border-purple bg-purple">
                 <Sparkles size={15} />
-                Full Manuscript Audit
+                Kiểm tra toàn bộ bản thảo
               </Button>
             </Card>
             <Card>
               <div className="flex items-center justify-between">
-                <h2 className="font-semibold">Reader Feedback</h2>
-                <Badge>9+ New</Badge>
+                <h2 className="font-semibold">Phản hồi của độc giả</h2>
+                <Badge>9+ mới</Badge>
               </div>
               <div className="mt-4 space-y-3">
                 {[
-                  'That revelation with the guardian spirit took my breath away!',
-                  'The audiobook narrator did justice to the battle chant.',
+                  'Màn hé lộ về linh hồn hộ vệ khiến tôi thật sự bất ngờ!',
+                  'Người kể sách nói đã thể hiện rất hay đoạn chiến ca.',
                 ].map((text, index) => (
                   <div key={text} className="rounded-2xl bg-elevated p-3">
                     <div className="flex items-center">
@@ -208,7 +211,7 @@ export function AuthorDashboardPage() {
                 value={reply}
                 onChange={e => setReply(e.target.value)}
                 className="mt-4 w-full rounded-xl border border-line bg-surface px-3 py-2 text-xs outline-none focus:border-brand"
-                placeholder="Send author reply..."
+                placeholder="Gửi phản hồi tới độc giả..."
               />
             </Card>
             <Card className="flex items-center gap-3">
@@ -216,8 +219,8 @@ export function AuthorDashboardPage() {
                 <Flame />
               </span>
               <div>
-                <strong className="text-sm">NovelHub Guild Tier: Level 4</strong>
-                <p className="text-xs text-muted">Top 5% author ranking · 850 XP until Level 5</p>
+                <strong className="text-sm">Hạng Hội NovelHub: Cấp 4</strong>
+                <p className="text-xs text-muted">Top 5% bảng xếp hạng tác giả · còn 850 XP để lên Cấp 5</p>
               </div>
             </Card>
           </aside>
@@ -235,7 +238,7 @@ function DraftCard({ title, chapter, progress, words, primary = false }) {
         </div>
         <div className="min-w-0">
           <Badge tone={primary ? 'green' : 'orange'}>
-            {primary ? 'Primary Project' : 'Secondary Serial'}
+            {primary ? 'Dự án chính' : 'Truyện dài phụ'}
           </Badge>
           <h3 className="mt-2 text-lg font-semibold">{title}</h3>
           <p className="text-xs text-muted">{chapter}</p>
@@ -245,7 +248,7 @@ function DraftCard({ title, chapter, progress, words, primary = false }) {
         <div className="flex-1">
           <div className="flex justify-between text-[10px]">
             <span>
-              <strong>{progress}% drafted</strong>
+              <strong>Đã viết {progress}%</strong>
             </span>
             <span className="text-brand">{words}</span>
           </div>
@@ -255,7 +258,7 @@ function DraftCard({ title, chapter, progress, words, primary = false }) {
         </div>
         <Button onClick={() => window.location.assign('/author/stories/demo/chapters/chapter-1/edit')} className="min-h-9 px-4 py-1 text-xs">
           <Edit3 size={14} />
-          {primary ? 'Resume Writing' : 'Open Draft'}
+          {primary ? 'Viết tiếp' : 'Mở bản nháp'}
         </Button>
       </div>
     </Card>

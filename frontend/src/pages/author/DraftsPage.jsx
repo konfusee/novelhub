@@ -19,13 +19,31 @@ import { AuthorLayout } from '../../layouts'
 import { authorDrafts } from '../../data/mock/author'
 import { Badge, Button, Card, Input, Modal, Select } from '../../components/ui'
 
-const filterItems = ['All Drafts', 'Story Chapters', 'Standalone Concepts', 'Ready for Review']
-const snapshots = [
-  ['Today, 14:32', 'Ch 16: Ironwood Tree', '+480 words added'],
-  ['Yesterday, 21:15', 'Echoes – Astrolabe', 'Grammar sync pass'],
-  ['Oct 24, 09:40', 'Sci-Fi Concept #2', 'Initial premise logged'],
-  ['Oct 18, 17:02', 'Whispers Alternate', 'Branch created'],
+const filterItems = [
+  { value: 'All Drafts', label: 'Tất cả bản nháp' },
+  { value: 'Story Chapters', label: 'Chương truyện' },
+  { value: 'Standalone Concepts', label: 'Ý tưởng độc lập' },
+  { value: 'Ready for Review', label: 'Sẵn sàng xét duyệt' },
 ]
+const snapshots = [
+  ['Hôm nay, 14:32', 'Chương 16: Ironwood Tree', 'Đã thêm 480 từ'],
+  ['Hôm qua, 21:15', 'Echoes – Astrolabe', 'Đã đồng bộ kiểm tra ngữ pháp'],
+  ['24/10, 09:40', 'Ý tưởng khoa học viễn tưởng #2', 'Đã lưu tiền đề ban đầu'],
+  ['18/10, 17:02', 'Whispers Alternate', 'Đã tạo nhánh'],
+]
+const draftTypeLabels = {
+  'Story Chapter': 'Chương truyện',
+  'Chapter Draft': 'Bản nháp chương',
+  'Standalone Concept': 'Ý tưởng độc lập',
+  'Special Edition': 'Phiên bản đặc biệt',
+}
+const draftMetaLabels = {
+  'Cloud Synced': 'Đã đồng bộ đám mây',
+  'Synced to Cloud': 'Đã đồng bộ đám mây',
+  'Tag: Worldbuilding': 'Thẻ: Xây dựng thế giới',
+  'Ready for Review': 'Sẵn sàng xét duyệt',
+}
+const editedLabels = { Yesterday: 'Hôm qua', '12 mins ago': '12 phút trước', '3 days ago': '3 ngày trước', 'Oct 18': '18/10' }
 
 export function DraftsPage() {
   const navigate = useNavigate()
@@ -61,8 +79,8 @@ export function DraftsPage() {
       {
         ...authorDrafts[2],
         id: Date.now(),
-        title: 'Untitled Manuscript',
-        edited: 'Just now',
+        title: 'Bản thảo chưa đặt tên',
+        edited: 'Vừa xong',
         words: '0',
       },
       ...current,
@@ -75,23 +93,23 @@ export function DraftsPage() {
         <div className="flex flex-col justify-between gap-5 lg:flex-row lg:items-end">
           <div>
             <p className="text-[10px] uppercase tracking-[.18em] text-brand">
-              Manuscript Vault · Live Draft Session
+              Kho bản thảo · Phiên soạn thảo trực tiếp
             </p>
             <h1 className="mt-2 text-3xl font-bold sm:text-4xl">
-              Drafts &amp; In-Progress Manuscripts
+              Bản nháp và bản thảo đang viết
             </h1>
             <p className="mt-2 max-w-2xl text-sm text-muted">
-              Manage unfinished chapters, unassigned story concepts, and offline sync logs.
+              Quản lý chương chưa hoàn thiện, ý tưởng chưa gán truyện và lịch sử đồng bộ ngoại tuyến.
             </p>
           </div>
           <div className="flex flex-wrap gap-2">
             <Button onClick={() => window.location.assign('/author/import')} variant="secondary">
               <Upload size={15} />
-              Import Manuscript
+              Nhập bản thảo
             </Button>
             <Button onClick={() => setNewOpen(true)}>
               <FilePlus2 size={15} />
-              New Draft
+              Bản nháp mới
             </Button>
           </div>
         </div>
@@ -100,12 +118,12 @@ export function DraftsPage() {
             <div className="flex gap-2 overflow-x-auto">
               {filterItems.map(item => (
                 <button
-                  key={item}
-                  onClick={() => setFilter(item)}
-                  className={`shrink-0 rounded-full border px-4 py-2 text-xs ${filter === item ? 'border-brand bg-brand font-semibold text-white' : 'border-line bg-surface'}`}
+                  key={item.value}
+                  onClick={() => setFilter(item.value)}
+                  className={`shrink-0 rounded-full border px-4 py-2 text-xs ${filter === item.value ? 'border-brand bg-brand font-semibold text-white' : 'border-line bg-surface'}`}
                 >
-                  {item}
-                  {item === 'All Drafts' ? ' (14)' : item === 'Story Chapters' ? ' (9)' : ''}
+                  {item.label}
+                  {item.value === 'All Drafts' ? ' (14)' : item.value === 'Story Chapters' ? ' (9)' : ''}
                 </button>
               ))}
             </div>
@@ -114,25 +132,25 @@ export function DraftsPage() {
                 icon={Search}
                 value={query}
                 onChange={event => setQuery(event.target.value)}
-                placeholder="Search drafts, tags, serials..."
+                placeholder="Tìm bản nháp, thẻ, truyện dài..."
                 className="sm:w-64"
               />
               <Select value={sort} onChange={event => setSort(event.target.value)}>
-                <option>Last Edited</option>
-                <option>Word Count</option>
-                <option>Title</option>
+                <option value="Last Edited">Chỉnh sửa gần nhất</option>
+                <option value="Word Count">Số từ</option>
+                <option value="Title">Tiêu đề</option>
               </Select>
               <div className="flex rounded-xl border border-line bg-elevated p-1">
                 <button
                   onClick={() => setView('grid')}
-                  aria-label="Grid view"
+                  aria-label="Chế độ lưới"
                   className={`rounded-lg p-2 ${view === 'grid' ? 'bg-surface text-brand' : ''}`}
                 >
                   <Grid2X2 size={16} />
                 </button>
                 <button
                   onClick={() => setView('list')}
-                  aria-label="List view"
+                  aria-label="Chế độ danh sách"
                   className={`rounded-lg p-2 ${view === 'list' ? 'bg-surface text-brand' : ''}`}
                 >
                   <List size={16} />
@@ -157,9 +175,9 @@ export function DraftsPage() {
         {!shown.length && (
           <Card className="mt-6 py-16 text-center">
             <BookOpen className="mx-auto text-muted" />
-            <h2 className="mt-3 font-semibold">No drafts found</h2>
+            <h2 className="mt-3 font-semibold">Không tìm thấy bản nháp</h2>
             <p className="mt-1 text-sm text-muted">
-              Try another filter or create a new manuscript.
+              Hãy thử bộ lọc khác hoặc tạo bản thảo mới.
             </p>
           </Card>
         )}
@@ -168,17 +186,17 @@ export function DraftsPage() {
             <div>
               <h2 className="flex items-center gap-2 text-lg font-semibold">
                 <History className="text-brand" />
-                Autosave &amp; Cloud Version History
+                Tự động lưu và lịch sử phiên bản đám mây
               </h2>
               <p className="mt-1 text-xs text-muted">
-                Recover lost prose, compare timestamped snapshots, and restore manuscript branches
-                from the last 30 days.
+                Khôi phục nội dung bị mất, so sánh các bản lưu theo thời gian và phục hồi nhánh bản
+                thảo trong 30 ngày gần nhất.
               </p>
             </div>
             <div className="text-xs text-muted">
-              Cloud Storage: 14.2 MB / 500 MB{' '}
-              <Button onClick={() => window.alert('Backup manager opened (mock).')} variant="secondary" className="ml-2 min-h-9 px-3 py-1 text-xs">
-                Manage Backups
+              Bộ nhớ đám mây: 14,2 MB / 500 MB{' '}
+              <Button onClick={() => window.alert('Đã mở trình quản lý sao lưu (bản mẫu).')} variant="secondary" className="ml-2 min-h-9 px-3 py-1 text-xs">
+                Quản lý sao lưu
               </Button>
             </div>
           </div>
@@ -196,24 +214,24 @@ export function DraftsPage() {
                   className="mt-4 flex items-center gap-1 text-[11px] font-medium text-brand"
                 >
                   <History size={13} />
-                  {restored === title ? 'Snapshot Restored' : 'Restore Snapshot'}
+                  {restored === title ? 'Đã khôi phục bản lưu' : 'Khôi phục bản lưu'}
                 </button>
               </div>
             ))}
           </div>
         </Card>
-        <Modal open={newOpen} title="Create New Draft" onClose={() => setNewOpen(false)}>
+        <Modal open={newOpen} title="Tạo bản nháp mới" onClose={() => setNewOpen(false)}>
           <p className="text-sm text-muted">
-            Start an unassigned manuscript. You can attach it to a story later.
+            Bắt đầu một bản thảo chưa gán. Bạn có thể gắn bản thảo vào truyện sau.
           </p>
-          <Input className="mt-4" defaultValue="Untitled Manuscript" />
+          <Input className="mt-4" defaultValue="Bản thảo chưa đặt tên" />
           <div className="mt-5 flex justify-end gap-2">
             <Button variant="secondary" onClick={() => setNewOpen(false)}>
-              Cancel
+              Hủy
             </Button>
             <Button onClick={addDraft}>
               <FilePlus2 size={15} />
-              Create Draft
+              Tạo bản nháp
             </Button>
           </div>
         </Modal>
@@ -226,61 +244,62 @@ function DraftCard({ draft, featured, onEdit, onDelete }) {
   return (
     <Card className={`${featured ? 'md:min-h-96' : ''} flex flex-col`}>
       <div className="flex items-center gap-2">
-        <Badge tone={draft.tone}>{draft.type}</Badge>
+        <Badge tone={draft.tone}>{draftTypeLabels[draft.type] ?? draft.type}</Badge>
         {draft.meta.includes('Cloud') && (
           <Badge>
             <Cloud size={12} />
-            Cloud Synced
+            Đã đồng bộ đám mây
           </Badge>
         )}
-        <span className="ml-auto text-[10px] text-muted">Last edited: {draft.edited}</span>
-        <button onClick={() => window.alert('Draft options opened (mock).')} aria-label="Draft options">
+        <span className="ml-auto text-[10px] text-muted">Chỉnh sửa lần cuối: {editedLabels[draft.edited] ?? draft.edited}</span>
+        <button onClick={() => window.alert('Đã mở tùy chọn bản nháp (bản mẫu).')} aria-label="Tùy chọn bản nháp">
           <MoreHorizontal size={16} />
         </button>
       </div>
       <p className="mt-5 flex items-center gap-2 text-xs font-semibold text-brand">
         <BookOpen size={14} />
-        Story: {draft.story}
+        Truyện: {draft.story}
       </p>
       <h2 className={`mt-2 font-semibold ${featured ? 'text-2xl' : 'text-lg'}`}>{draft.title}</h2>
       <p className="mt-3 line-clamp-3 text-sm leading-6 text-muted">{draft.excerpt}</p>
+      <p className="mt-2 text-[10px] text-muted">{draftMetaLabels[draft.meta] ?? draft.meta}</p>
       <div className="mt-5 grid grid-cols-3 gap-3 rounded-2xl border border-line bg-elevated p-4 text-xs">
         <div>
-          <span className="text-[10px] text-muted">Word Count</span>
-          <strong className="block">{draft.words} words</strong>
+          <span className="text-[10px] text-muted">Số từ</span>
+          <strong className="block">{draft.words} từ</strong>
         </div>
         <div>
-          <span className="text-[10px] text-muted">Reading Pace</span>
-          <strong className="block">~8.5 mins</strong>
+          <span className="text-[10px] text-muted">Thời lượng đọc</span>
+          <strong className="block">~8,5 phút</strong>
         </div>
         <div>
-          <span className="text-[10px] text-muted">Target</span>
+          <span className="text-[10px] text-muted">Mục tiêu</span>
           <strong className="block text-brand">{draft.progress}%</strong>
         </div>
       </div>
       <div className="mt-auto flex flex-wrap items-center gap-2 border-t border-line pt-5">
-        <button onClick={() => window.alert('Draft duplicated (mock).')} className="p-2 text-muted hover:text-brand" aria-label="Duplicate draft">
+        <button onClick={() => window.alert('Đã nhân bản bản nháp (bản mẫu).')} className="p-2 text-muted hover:text-brand" aria-label="Nhân bản bản nháp">
           <Copy size={15} />
         </button>
         <button
           onClick={onDelete}
           className="p-2 text-muted hover:text-rose"
-          aria-label="Delete draft"
+          aria-label="Xóa bản nháp"
         >
           <Trash2 size={15} />
         </button>
         {draft.meta === 'Ready for Review' && (
           <span className="flex items-center gap-1 text-[10px] text-brand">
             <CheckCircle2 size={13} />
-            Ready
+            Sẵn sàng
           </span>
         )}
-        <Button onClick={() => window.alert('Draft preview opened (mock).')} variant="secondary" className="ml-auto min-h-9 px-3 py-1 text-xs">
-          Preview
+        <Button onClick={() => window.alert('Đã mở xem trước bản nháp (bản mẫu).')} variant="secondary" className="ml-auto min-h-9 px-3 py-1 text-xs">
+          Xem trước
         </Button>
         <Button onClick={onEdit} className="min-h-9 px-3 py-1 text-xs">
           <WandSparkles size={14} />
-          Continue Editing
+          Tiếp tục chỉnh sửa
         </Button>
       </div>
     </Card>
