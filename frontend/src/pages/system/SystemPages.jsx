@@ -18,14 +18,14 @@ function StatePage({ code, title, text }) {
           <div className="mt-6 flex justify-center gap-3">
             <Button variant="secondary" onClick={() => navigate(-1)}>
               <ArrowLeft size={16} />
-              Go back
+              Quay lại
             </Button>
             <Link
               className="inline-flex min-h-11 items-center gap-2 rounded-2xl bg-brand px-5 py-2.5 text-sm font-semibold text-white"
               to="/"
             >
               <Home size={16} />
-              Home
+              Trang chủ
             </Link>
           </div>
         </Card>
@@ -38,15 +38,15 @@ export const ForbiddenPage = () => {
   return (
     <StatePage
       code="403"
-      title="This shelf is restricted"
-      text={`Your account cannot open ${location.state?.from || 'this page'}. Switch to an account with the required capability.`}
+      title="Khu vực này bị giới hạn"
+      text={`Tài khoản của bạn không thể mở ${location.state?.from || 'trang này'}. Hãy chuyển sang tài khoản có quyền phù hợp.`}
     />
   )
 }
 export const NotFoundPage = () => (
   <StatePage
     code="404"
-    title="That chapter was not found"
-    text="The link may be outdated or the page may have moved. Return home and continue exploring NovelHub."
+    title="Không tìm thấy chương này"
+    text="Liên kết có thể đã cũ hoặc trang đã được chuyển. Hãy về trang chủ và tiếp tục khám phá NovelHub."
   />
 )

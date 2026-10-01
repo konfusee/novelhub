@@ -143,8 +143,8 @@ function AppRoutes() {
         <Route path="/reader/profile/appearance" element={<Navigate to="/reader/settings/appearance" replace />} />
         <Route path="/reader/profile/privacy" element={<Navigate to="/reader/settings/privacy" replace />} />
         <Route path="/reader/wallet" element={role('reader', <WalletPage />)} />
-        <Route path="/reader/audiobooks" element={role('reader', <RoleUtilityPage role="reader" eyebrow="Listening" title="My Audiobooks" description="Continue listening, manage downloaded audio, and browse your saved narration queue." />)} />
-        <Route path="/reader/messages" element={role('reader', <RoleUtilityPage role="reader" eyebrow="Community" title="Messages" description="Keep up with author announcements, reading clubs, and conversations around your favorite stories." />)} />
+        <Route path="/reader/audiobooks" element={role('reader', <RoleUtilityPage role="reader" eyebrow="Nghe truyện" title="Sách nói của tôi" description="Tiếp tục nghe, quản lý âm thanh đã tải và xem hàng đợi thuyết minh đã lưu." />)} />
+        <Route path="/reader/messages" element={role('reader', <RoleUtilityPage role="reader" eyebrow="Cộng đồng" title="Tin nhắn" description="Theo dõi thông báo từ tác giả, câu lạc bộ đọc sách và thảo luận về truyện yêu thích." />)} />
         <Route path="/reader/settings" element={role('reader', <ReaderProfilePage />)} />
         <Route path="/reader/settings/reading" element={role('reader', <ReaderProfilePage />)} />
         <Route path="/reader/settings/listening" element={role('reader', <ReaderProfilePage />)} />
@@ -152,7 +152,7 @@ function AppRoutes() {
         <Route path="/reader/settings/privacy" element={role('reader', <ReaderProfilePage />)} />
         <Route path="/reader/settings/security" element={role('reader', <ReaderProfilePage />)} />
         <Route path="/reader/account" element={role('reader', <AccountPage workspace="reader" />)} />
-        <Route path="/reader/support" element={role('reader', <RoleUtilityPage role="reader" eyebrow="NovelHub help" title="Help & Support" description="Find product guidance, accessibility help, frequently asked questions, and support channels." />)} />
+        <Route path="/reader/support" element={role('reader', <RoleUtilityPage role="reader" eyebrow="Trợ giúp NovelHub" title="Trợ giúp và hỗ trợ" description="Tìm hướng dẫn sản phẩm, hỗ trợ tiếp cận, câu hỏi thường gặp và kênh hỗ trợ." />)} />
         <Route
           path="/read/:storyId/:chapterId"
           element={role('reader', <FullChapterReaderPage />)}
@@ -182,12 +182,12 @@ function AppRoutes() {
         />
         <Route path="/author/analytics" element={role('author', <AuthorAnalyticsPage />, true)} />
         <Route path="/author/earnings" element={role('author', <AuthorEarningsPage />, true)} />
-        <Route path="/author/profile" element={role('author', <RoleUtilityPage role="author" eyebrow="Author account" title="Author Profile" description="Manage your public pen name, biography, verification details, and author storefront." />, true)} />
+        <Route path="/author/profile" element={role('author', <RoleUtilityPage role="author" eyebrow="Tài khoản tác giả" title="Hồ sơ tác giả" description="Quản lý bút danh công khai, tiểu sử, thông tin xác minh và trang tác giả." />, true)} />
         <Route path="/author/wallet" element={role('author', <AuthorEarningsPage />, true)} />
         <Route path="/author/settings" element={role('author', <ReaderProfilePage workspace="author" />, true)} />
         <Route path="/author/settings/:section" element={role('author', <ReaderProfilePage workspace="author" />, true)} />
         <Route path="/author/account" element={role('author', <AccountPage workspace="author" />, true)} />
-        <Route path="/author/support" element={role('author', <RoleUtilityPage role="author" eyebrow="NovelHub help" title="Help & Support" description="Find creator guidance, publishing help, frequently asked questions, and support channels." />, true)} />
+        <Route path="/author/support" element={role('author', <RoleUtilityPage role="author" eyebrow="Trợ giúp NovelHub" title="Trợ giúp và hỗ trợ" description="Tìm hướng dẫn sáng tác, hỗ trợ xuất bản, câu hỏi thường gặp và kênh hỗ trợ." />, true)} />
         <Route path="/moderator" element={role('moderator', <ModeratorOverviewPage />)} />
         <Route path="/moderator/submissions" element={role('moderator', <SubmissionQueuePage />)} />
         <Route
@@ -195,16 +195,16 @@ function AppRoutes() {
           element={role('moderator', <ContentReviewDetailPage />)}
         />
         <Route path="/moderator/reports" element={role('moderator', <ReportsQueuePage />)} />
-        <Route path="/moderator/reviews" element={role('moderator', <RoleUtilityPage role="moderator" eyebrow="Content safety" title="Content Reviews" description="Review assigned manuscripts, policy signals, age ratings, and publication readiness." />)} />
-        <Route path="/moderator/similarity-flags" element={role('moderator', <RoleUtilityPage role="moderator" eyebrow="Originality" title="Similarity Flags" description="Inspect automated similarity matches and route high-risk cases for detailed review." />)} />
-        <Route path="/moderator/decisions" element={role('moderator', <RoleUtilityPage role="moderator" eyebrow="Moderation history" title="Decisions" description="Review completed moderation decisions, reasoning, policy references, and appeal status." />)} />
-        <Route path="/moderator/escalations" element={role('moderator', <RoleUtilityPage role="moderator" eyebrow="Priority desk" title="Escalations" description="Handle urgent safety, copyright, and policy cases that require senior review." />)} />
-        <Route path="/moderator/audit-trail" element={role('moderator', <RoleUtilityPage role="moderator" eyebrow="Accountability" title="Audit Trail" description="Trace moderation activity with immutable event details and reviewer attribution." />)} />
+        <Route path="/moderator/reviews" element={role('moderator', <RoleUtilityPage role="moderator" eyebrow="An toàn nội dung" title="Đánh giá nội dung" description="Đánh giá bản thảo được giao, tín hiệu chính sách, xếp hạng độ tuổi và mức sẵn sàng xuất bản." />)} />
+        <Route path="/moderator/similarity-flags" element={role('moderator', <RoleUtilityPage role="moderator" eyebrow="Tính nguyên bản" title="Cờ tương đồng" description="Kiểm tra kết quả tương đồng tự động và chuyển trường hợp rủi ro cao sang đánh giá chi tiết." />)} />
+        <Route path="/moderator/decisions" element={role('moderator', <RoleUtilityPage role="moderator" eyebrow="Lịch sử kiểm duyệt" title="Quyết định" description="Xem quyết định kiểm duyệt đã hoàn tất, lý do, chính sách tham chiếu và trạng thái khiếu nại." />)} />
+        <Route path="/moderator/escalations" element={role('moderator', <RoleUtilityPage role="moderator" eyebrow="Bàn ưu tiên" title="Chuyển cấp" description="Xử lý trường hợp khẩn cấp về an toàn, bản quyền và chính sách cần đánh giá cấp cao." />)} />
+        <Route path="/moderator/audit-trail" element={role('moderator', <RoleUtilityPage role="moderator" eyebrow="Trách nhiệm giải trình" title="Nhật ký kiểm tra" description="Theo dõi hoạt động kiểm duyệt với chi tiết sự kiện bất biến và người đánh giá." />)} />
         <Route path="/moderator/settings" element={role('moderator', <ReaderProfilePage workspace="moderator" />)} />
         <Route path="/moderator/settings/:section" element={role('moderator', <ReaderProfilePage workspace="moderator" />)} />
-        <Route path="/moderator/profile" element={role('moderator', <RoleUtilityPage role="moderator" eyebrow="Shared profile" title="Profile" description="Manage your display identity and shared NovelHub profile information." />)} />
+        <Route path="/moderator/profile" element={role('moderator', <RoleUtilityPage role="moderator" eyebrow="Hồ sơ dùng chung" title="Hồ sơ" description="Quản lý danh tính hiển thị và thông tin hồ sơ NovelHub dùng chung." />)} />
         <Route path="/moderator/account" element={role('moderator', <AccountPage workspace="moderator" />)} />
-        <Route path="/moderator/support" element={role('moderator', <RoleUtilityPage role="moderator" eyebrow="NovelHub help" title="Help & Support" description="Find moderation guidance, policy references, and support channels." />)} />
+        <Route path="/moderator/support" element={role('moderator', <RoleUtilityPage role="moderator" eyebrow="Trợ giúp NovelHub" title="Trợ giúp và hỗ trợ" description="Tìm hướng dẫn kiểm duyệt, chính sách tham chiếu và kênh hỗ trợ." />)} />
         <Route
           path="/moderator/similarity-review/:reviewId"
           element={role('moderator', <SimilarityRiskReviewPage />)}
@@ -217,14 +217,14 @@ function AppRoutes() {
         <Route path="/admin/settings" element={role('admin', <PlatformSettingsPage />)} />
         <Route path="/admin/preferences" element={role('admin', <ReaderProfilePage workspace="admin" />)} />
         <Route path="/admin/preferences/:section" element={role('admin', <ReaderProfilePage workspace="admin" />)} />
-        <Route path="/admin/profile" element={role('admin', <RoleUtilityPage role="admin" eyebrow="Shared profile" title="Profile" description="Manage your display identity and shared NovelHub profile information." />)} />
+        <Route path="/admin/profile" element={role('admin', <RoleUtilityPage role="admin" eyebrow="Hồ sơ dùng chung" title="Hồ sơ" description="Quản lý danh tính hiển thị và thông tin hồ sơ NovelHub dùng chung." />)} />
         <Route path="/admin/account" element={role('admin', <AccountPage workspace="admin" />)} />
-        <Route path="/admin/support" element={role('admin', <RoleUtilityPage role="admin" eyebrow="NovelHub help" title="Help & Support" description="Find administration guidance, operational documentation, and support channels." />)} />
-        <Route path="/admin/content" element={role('admin', <RoleUtilityPage role="admin" eyebrow="Content governance" title="Content Configuration" description="Manage publication rules, discovery metadata, content ratings, and platform-wide defaults." />)} />
-        <Route path="/admin/services" element={role('admin', <RoleUtilityPage role="admin" eyebrow="Infrastructure" title="Services & Infrastructure" description="Monitor external services, storage, search, audio processing, and operational capacity." />)} />
-        <Route path="/admin/audit-logs" element={role('admin', <RoleUtilityPage role="admin" eyebrow="Security" title="Audit Logs" description="Search administrative events, authentication records, configuration changes, and protected actions." />)} />
-        <Route path="/admin/moderation" element={role('admin', <RoleUtilityPage role="admin" eyebrow="Governance" title="Moderation Oversight" description="Track policy enforcement, queue health, escalations, appeals, and moderator performance." />)} />
-        <Route path="/admin/transactions" element={role('admin', <RoleUtilityPage role="admin" eyebrow="Platform finance" title="Wallet Transactions" description="Review coin top-ups, chapter purchases, refunds, adjustments, and transaction anomalies across the platform." />)} />
+        <Route path="/admin/support" element={role('admin', <RoleUtilityPage role="admin" eyebrow="Trợ giúp NovelHub" title="Trợ giúp và hỗ trợ" description="Tìm hướng dẫn quản trị, tài liệu vận hành và kênh hỗ trợ." />)} />
+        <Route path="/admin/content" element={role('admin', <RoleUtilityPage role="admin" eyebrow="Quản trị nội dung" title="Cấu hình nội dung" description="Quản lý quy tắc xuất bản, siêu dữ liệu khám phá, xếp hạng nội dung và mặc định toàn nền tảng." />)} />
+        <Route path="/admin/services" element={role('admin', <RoleUtilityPage role="admin" eyebrow="Hạ tầng" title="Dịch vụ và hạ tầng" description="Giám sát dịch vụ ngoài, lưu trữ, tìm kiếm, xử lý âm thanh và năng lực vận hành." />)} />
+        <Route path="/admin/audit-logs" element={role('admin', <RoleUtilityPage role="admin" eyebrow="Bảo mật" title="Nhật ký kiểm tra" description="Tìm sự kiện quản trị, bản ghi xác thực, thay đổi cấu hình và thao tác được bảo vệ." />)} />
+        <Route path="/admin/moderation" element={role('admin', <RoleUtilityPage role="admin" eyebrow="Quản trị" title="Giám sát kiểm duyệt" description="Theo dõi thực thi chính sách, tình trạng hàng đợi, chuyển cấp, khiếu nại và hiệu suất kiểm duyệt." />)} />
+        <Route path="/admin/transactions" element={role('admin', <RoleUtilityPage role="admin" eyebrow="Tài chính nền tảng" title="Giao dịch ví" description="Xem nạp xu, mua chương, hoàn tiền, điều chỉnh và giao dịch bất thường trên toàn nền tảng." />)} />
         <Route path="/403" element={<ForbiddenPage />} />
         <Route path="/ui-preview" element={<UIPreviewPage />} />
         {pages.map((Page, index) => (

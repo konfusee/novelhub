@@ -21,7 +21,7 @@ export function StoryCover({ story, className = '', eager = false, badge }) {
   const [failed, setFailed] = useState(false)
   const key = story?.id || slugify(story?.title)
   const src = story?.cover || covers[key] || covers[slugify(story?.title)]
-  const label = story?.title ? `Cover artwork for ${story.title}` : 'NovelHub story cover'
+  const label = story?.title ? `Ảnh bìa của ${story.title}` : 'Ảnh bìa truyện NovelHub'
 
   return (
     <div

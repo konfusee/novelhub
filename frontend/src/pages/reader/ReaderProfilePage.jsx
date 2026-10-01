@@ -39,9 +39,9 @@ export function ReaderProfilePage({ workspace = 'reader' }) {
   const section = isSettings && ['reading', 'listening', 'appearance', 'privacy', 'security'].includes(sectionFromPath)
     ? sectionFromPath
     : isSettings ? 'reading' : 'profile'
-  const [name, setName] = useState(currentUser?.name || 'NovelHub Reader')
+  const [name, setName] = useState(currentUser?.name || 'Độc giả NovelHub')
   const [handle, setHandle] = useState(`@${(currentUser?.name || 'novelhub_reader').toLowerCase().replace(/[^a-z0-9]+/g, '_')}`)
-  const [bio, setBio] = useState('Passionate reader of slow-burn fantasy & cozy mysteries. 📚✨')
+  const [bio, setBio] = useState('Yêu thích truyện kỳ ảo phát triển chậm và trinh thám chữa lành. 📚✨')
   const [fontSize, setFontSize] = useState(18)
   const [spacing, setSpacing] = useState(1.8)
   const [canvas, setCanvas] = useState('parchment')
@@ -49,7 +49,7 @@ export function ReaderProfilePage({ workspace = 'reader' }) {
   const [skip, setSkip] = useState(15)
   const [autoplay, setAutoplay] = useState(true)
   const [saved, setSaved] = useState(true)
-  const [genres, setGenres] = useState(['Fantasy', 'Romance', 'Mystery'])
+  const [genres, setGenres] = useState(['Kỳ ảo', 'Lãng mạn', 'Bí ẩn'])
   const [audioPlaying, setAudioPlaying] = useState(false)
   const [twoFactor, setTwoFactor] = useState(false)
   const [notice, setNotice] = useState('')
@@ -66,10 +66,10 @@ export function ReaderProfilePage({ workspace = 'reader' }) {
     setNotice(t(isSettings ? 'settings.preferencesSavedNotice' : 'settings.profileSavedNotice'))
   }
   const discard = () => {
-    setName(currentUser?.name || 'NovelHub Reader')
+    setName(currentUser?.name || 'Độc giả NovelHub')
     setHandle(`@${(currentUser?.name || 'novelhub_reader').toLowerCase().replace(/[^a-z0-9]+/g, '_')}`)
-    setBio('Passionate reader of slow-burn fantasy & cozy mysteries. 📚✨')
-    setGenres(['Fantasy', 'Romance', 'Mystery'])
+    setBio('Yêu thích truyện kỳ ảo phát triển chậm và trinh thám chữa lành. 📚✨')
+    setGenres(['Kỳ ảo', 'Lãng mạn', 'Bí ẩn'])
     setFontSize(18)
     setSpacing(1.8)
     setCanvas('parchment')
@@ -119,13 +119,13 @@ export function ReaderProfilePage({ workspace = 'reader' }) {
               <SectionTitle
                 icon={UserRound}
                 title="Thông tin hồ sơ"
-                note="Publicly visible to serial commentators"
+                note="Hiển thị công khai với cộng đồng độc giả"
               />
               <div className="mt-5 flex items-center gap-4">
                 <div className="relative">
                   <Avatar name={name} className="size-20 text-xl" />
                   <button
-                    onClick={() => setNotice('Avatar picker opened in demo mode.')}
+                    onClick={() => setNotice('Đã mở trình chọn ảnh đại diện ở chế độ mẫu.')}
                     aria-label="Đổi ảnh đại diện"
                     className="absolute -bottom-1 -right-1 grid size-8 place-items-center rounded-full bg-brand text-white"
                   >
@@ -133,14 +133,14 @@ export function ReaderProfilePage({ workspace = 'reader' }) {
                   </button>
                 </div>
                 <div>
-                  <Button onClick={() => setNotice('Avatar picker opened in demo mode.')} variant="secondary" className="min-h-9 py-1.5">
-                    Upload New Avatar
+                  <Button onClick={() => setNotice('Đã mở trình chọn ảnh đại diện ở chế độ mẫu.')} variant="secondary" className="min-h-9 py-1.5">
+                    Tải ảnh đại diện mới
                   </Button>
                   <p className="mt-2 text-[10px] text-muted">JPG hoặc PNG, tối thiểu 400×400px.</p>
                 </div>
               </div>
               <div className="mt-5 grid gap-4 sm:grid-cols-2">
-                <Field label="Display Name">
+                <Field label="Tên hiển thị">
                   <Input
                     value={name}
                     onChange={e => {
@@ -149,7 +149,7 @@ export function ReaderProfilePage({ workspace = 'reader' }) {
                     }}
                   />
                 </Field>
-                <Field label="User Handle">
+                <Field label="Tên định danh">
                   <Input
                     value={handle}
                     onChange={e => {
@@ -159,7 +159,7 @@ export function ReaderProfilePage({ workspace = 'reader' }) {
                   />
                 </Field>
               </div>
-              <Field label="Reader Bio" className="mt-4">
+              <Field label="Tiểu sử độc giả" className="mt-4">
                 <textarea
                   value={bio}
                   onChange={e => {
