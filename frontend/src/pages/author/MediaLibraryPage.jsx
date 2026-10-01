@@ -21,7 +21,13 @@ import { AuthorLayout } from '../../layouts'
 import { mediaAssets } from '../../data/mock/author'
 import { Badge, Button, Card, Input, Select } from '../../components/ui'
 
-const filters = ['All Assets', 'Story Covers', 'Chapter Art & Maps', 'Audiobook Narration']
+const filters = [
+  { value: 'All Assets', label: 'Tất cả tài nguyên' },
+  { value: 'Story Covers', label: 'Bìa truyện' },
+  { value: 'Chapter Art & Maps', label: 'Minh họa chương và bản đồ' },
+  { value: 'Audiobook Narration', label: 'Thuyết minh sách nói' },
+]
+const statusLabels = { 'In Use': 'Đang sử dụng', Linked: 'Đã liên kết', Master: 'Bản gốc', Unused: 'Chưa sử dụng', Draft: 'Bản nháp', New: 'Mới' }
 
 export function MediaLibraryPage() {
   const fileRef = useRef(null)
@@ -56,8 +62,8 @@ export function MediaLibraryPage() {
       kind: file.type.startsWith('audio') ? 'audio' : 'image',
       color: '#3b6f92',
       size: `${(file.size / 1024 / 1024).toFixed(1)} MB`,
-      dimensions: 'Pending analysis',
-      story: 'Unassigned',
+      dimensions: 'Đang chờ phân tích',
+      story: 'Chưa gán',
       status: 'New',
       icon: 'NEW',
     }
@@ -72,19 +78,18 @@ export function MediaLibraryPage() {
             <div className="flex flex-col justify-between gap-5 lg:flex-row lg:items-end">
               <div>
                 <p className="text-[10px] uppercase tracking-[.18em] text-brand">
-                  Author Studio · Production{' '}
-                  <span className="ml-4 text-muted">● v2.4 Storage Mesh</span>
+                  Studio tác giả · Sản xuất{' '}
+                  <span className="ml-4 text-muted">● Mạng lưu trữ v2.4</span>
                 </p>
-                <h1 className="mt-2 text-4xl font-bold sm:text-5xl">Media &amp; Asset Library</h1>
+                <h1 className="mt-2 text-4xl font-bold sm:text-5xl">Thư viện media và tài nguyên</h1>
                 <p className="mt-2 max-w-lg text-sm leading-6 text-muted">
-                  Manage book covers, character illustrations, world maps, and recorded audiobook
-                  master files.
+                  Quản lý bìa sách, minh họa nhân vật, bản đồ thế giới và tệp thu âm sách nói gốc.
                 </p>
               </div>
               <div className="flex gap-2">
-            <Button onClick={() => window.alert('Media folders opened (mock).')} variant="secondary">
+            <Button onClick={() => window.alert('Đã mở thư mục media (bản mẫu).')} variant="secondary">
                   <FolderOpen size={16} />
-                  Batch Organize
+                  Sắp xếp hàng loạt
                 </Button>
                 <input
                   ref={fileRef}
@@ -95,7 +100,7 @@ export function MediaLibraryPage() {
                 />
                 <Button onClick={() => fileRef.current?.click()}>
                   <Upload size={16} />
-                  Upload New Media
+                  Tải media mới
                 </Button>
               </div>
             </div>
@@ -106,14 +111,14 @@ export function MediaLibraryPage() {
                 </span>
                 <div>
                   <h2 className="font-semibold">
-                    Creator Storage Capacity <Badge className="ml-2">Tier: Pro Author</Badge>
+                    Dung lượng lưu trữ tác giả <Badge className="ml-2">Hạng: Tác giả Pro</Badge>
                   </h2>
                   <p className="text-xs text-muted">
-                    Fast CDN delivery across 14 global reader nodes
+                    Phân phối CDN nhanh qua 14 điểm độc giả toàn cầu
                   </p>
                 </div>
                 <p className="sm:ml-auto">
-                  <strong>4.8 GB</strong> <span className="text-sm text-muted">used of 20 GB</span>
+                  <strong>4,8 GB</strong> <span className="text-sm text-muted">đã dùng trên 20 GB</span>
                 </p>
               </div>
               <div className="mt-5 flex h-3 overflow-hidden rounded-full bg-elevated">
@@ -122,13 +127,13 @@ export function MediaLibraryPage() {
               </div>
               <div className="mt-3 flex flex-wrap gap-5 text-[11px] text-muted">
                 <span>
-                  ● Images &amp; Art: <strong className="text-ink">1.2 GB</strong> (32 files)
+                  ● Hình ảnh và minh họa: <strong className="text-ink">1,2 GB</strong> (32 tệp)
                 </span>
                 <span className="text-orange">
-                  ● Audio Tracks &amp; Stems: <strong>3.6 GB</strong> (16 files)
+                  ● Bản âm thanh và track thành phần: <strong>3,6 GB</strong> (16 tệp)
                 </span>
                 <span>
-                  Free Space: <strong className="text-ink">15.2 GB</strong>
+                  Dung lượng trống: <strong className="text-ink">15,2 GB</strong>
                 </span>
               </div>
             </Card>
@@ -136,16 +141,16 @@ export function MediaLibraryPage() {
               <div className="flex max-w-full gap-2 overflow-x-auto">
                 {filters.map(item => (
                   <button
-                    key={item}
-                    onClick={() => setFilter(item)}
-                    className={`shrink-0 rounded-full px-4 py-2 text-xs ${filter === item ? 'bg-brand font-semibold text-white' : 'text-muted hover:bg-elevated'}`}
+                    key={item.value}
+                    onClick={() => setFilter(item.value)}
+                    className={`shrink-0 rounded-full px-4 py-2 text-xs ${filter === item.value ? 'bg-brand font-semibold text-white' : 'text-muted hover:bg-elevated'}`}
                   >
-                    {item}{' '}
-                    {item === 'All Assets'
+                    {item.label}{' '}
+                    {item.value === 'All Assets'
                       ? '(48)'
-                      : item === 'Story Covers'
+                      : item.value === 'Story Covers'
                         ? '(8)'
-                        : item === 'Chapter Art & Maps'
+                        : item.value === 'Chapter Art & Maps'
                           ? '(24)'
                           : '(16)'}
                   </button>
@@ -153,12 +158,14 @@ export function MediaLibraryPage() {
                 <div className="sticky right-0 ml-auto flex shrink-0 rounded-xl border border-line bg-elevated p-1">
                   <button
                     onClick={() => setView('grid')}
+                    aria-label="Chế độ lưới"
                     className={`rounded-lg p-2 ${view === 'grid' ? 'bg-surface text-brand' : ''}`}
                   >
                     <Grid2X2 size={16} />
                   </button>
                   <button
                     onClick={() => setView('list')}
+                    aria-label="Chế độ danh sách"
                     className={`rounded-lg p-2 ${view === 'list' ? 'bg-surface text-brand' : ''}`}
                   >
                     <List size={16} />
@@ -170,18 +177,18 @@ export function MediaLibraryPage() {
                   icon={Search}
                   value={query}
                   onChange={event => setQuery(event.target.value)}
-                  placeholder="Search assets by name or tag..."
+                  placeholder="Tìm tài nguyên theo tên hoặc thẻ..."
                   className="flex-1"
                 />
                 <Select value={story} onChange={event => setStory(event.target.value)}>
-                  <option>All Stories</option>
+                  <option value="All Stories">Tất cả truyện</option>
                   <option>The Silent Forest</option>
                   <option>Echoes of Eldoria</option>
                   <option>Whispers of You</option>
                 </Select>
                 <Select value={sort} onChange={event => setSort(event.target.value)}>
-                  <option>Newest Uploads</option>
-                  <option>Name A–Z</option>
+                  <option value="Newest Uploads">Tải lên mới nhất</option>
+                  <option value="Name A–Z">Tên A–Z</option>
                 </Select>
               </div>
             </div>
@@ -208,7 +215,7 @@ export function MediaLibraryPage() {
               className="mt-5 flex min-h-36 w-full items-center justify-center gap-3 rounded-3xl border border-dashed border-brand text-sm font-semibold text-brand"
             >
               <Upload />
-              Drop files here or browse to upload
+              Thả tệp vào đây hoặc duyệt để tải lên
             </button>
           </div>
           <AssetInspector
@@ -253,6 +260,7 @@ function AssetCard({ asset, selected, view, playing, onPlay, onSelect }) {
                 onPlay()
               }}
               className="grid size-14 place-items-center rounded-full bg-white/20"
+              aria-label={playing ? 'Tạm dừng âm thanh' : 'Phát âm thanh'}
             >
               {playing ? <Pause /> : <Play />}
             </button>
@@ -272,7 +280,7 @@ function AssetCard({ asset, selected, view, playing, onPlay, onSelect }) {
             <Image className="absolute bottom-4 right-4 opacity-40" />
           </>
         )}
-        <Badge className="absolute left-3 top-3 bg-black/40 text-white">{asset.status}</Badge>
+        <Badge className="absolute left-3 top-3 bg-black/40 text-white">{statusLabels[asset.status] ?? asset.status}</Badge>
         {selected && (
           <span className="absolute right-3 top-3 grid size-7 place-items-center rounded-full bg-brand">
             <Check size={14} />
@@ -297,7 +305,7 @@ function AssetInspector({ asset, copied, onCopy, onClose, onDelete }) {
     return (
       <aside className="hidden min-h-96 rounded-3xl border border-line bg-surface p-6 text-center 2xl:block">
         <Image className="mx-auto mt-20 text-muted" />
-        <p className="mt-3 text-sm text-muted">Select an asset to inspect</p>
+        <p className="mt-3 text-sm text-muted">Chọn một tài nguyên để kiểm tra</p>
       </aside>
     )
   return (
@@ -305,11 +313,11 @@ function AssetInspector({ asset, copied, onCopy, onClose, onDelete }) {
       <div className="flex items-start justify-between border-b border-line pb-4">
         <div>
           <p className="text-[10px] font-semibold uppercase tracking-[.15em] text-brand">
-            Asset Inspector
+            Kiểm tra tài nguyên
           </p>
-          <h2 className="mt-1 text-xl font-semibold">Asset Details</h2>
+          <h2 className="mt-1 text-xl font-semibold">Chi tiết tài nguyên</h2>
         </div>
-        <button onClick={onClose} aria-label="Close inspector">
+        <button onClick={onClose} aria-label="Đóng bảng kiểm tra">
           <X size={18} />
         </button>
       </div>
@@ -321,18 +329,18 @@ function AssetInspector({ asset, copied, onCopy, onClose, onDelete }) {
       </div>
       <h3 className="mt-4 truncate font-semibold">{asset.name}</h3>
       <div className="mt-5 space-y-3 rounded-2xl bg-elevated p-4 text-xs">
-        <Detail label="Dimensions / Duration" value={asset.dimensions} />
-        <Detail label="File Size" value={asset.size} />
+        <Detail label="Kích thước / Thời lượng" value={asset.dimensions} />
+        <Detail label="Dung lượng tệp" value={asset.size} />
         <Detail
-          label="Format / MIME"
-          value={asset.kind === 'audio' ? 'audio/wav (Lossless)' : 'image/png (Lossless)'}
+          label="Định dạng / MIME"
+          value={asset.kind === 'audio' ? 'audio/wav (Không mất dữ liệu)' : 'image/png (Không mất dữ liệu)'}
         />
-        <Detail label="Uploaded On" value="Oct 14, 2026 · 10:24 AM" />
+        <Detail label="Thời gian tải lên" value="14/10/2026 · 10:24" />
       </div>
       <div className="mt-5 rounded-2xl border border-line p-4">
-        <p className="text-[10px] uppercase tracking-[.12em] text-muted">Publishing Associations</p>
+        <p className="text-[10px] uppercase tracking-[.12em] text-muted">Liên kết xuất bản</p>
         <Badge tone="green" className="mt-3">
-          {asset.status}
+          {statusLabels[asset.status] ?? asset.status}
         </Badge>
         <p className="mt-3 flex items-center gap-2 text-xs">
           <Link2 size={14} className="text-brand" />
@@ -341,11 +349,11 @@ function AssetInspector({ asset, copied, onCopy, onClose, onDelete }) {
       </div>
       <Button variant="secondary" onClick={onCopy} className="mt-5 w-full">
         <Copy size={15} />
-        {copied ? 'Asset URL Copied' : 'Copy Asset URL'}
+        {copied ? 'Đã sao chép URL tài nguyên' : 'Sao chép URL tài nguyên'}
       </Button>
       <Button variant="ghost" onClick={onDelete} className="mt-2 w-full text-rose">
         <Trash2 size={15} />
-        Remove from Library
+        Xóa khỏi thư viện
       </Button>
     </aside>
   )

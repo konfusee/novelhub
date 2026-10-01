@@ -16,17 +16,17 @@ import { AuthorLayout } from '../../layouts'
 import { Badge, Button, Card } from '../../components/ui'
 
 const initialChapters = [
-  ['Chapter 1: The Harbor Gate', 'pp. 4–18 · 3,400 words'],
-  ["Chapter 2: The Alchemist's Lantern", 'pp. 19–35 · 4,120 words'],
-  ['Chapter 3: Beneath the Obsidian Arch', 'pp. 36–51 · 3,890 words'],
-  ['Chapter 4: The Whispering Keel', 'pp. 52–68 · 4,450 words'],
-  ['Chapter 5: Songs of the Low Tide', 'pp. 69–84 · 4,030 words'],
+  ['Chapter 1: The Harbor Gate', 'tr. 4–18 · 3.400 từ'],
+  ["Chapter 2: The Alchemist's Lantern", 'tr. 19–35 · 4.120 từ'],
+  ['Chapter 3: Beneath the Obsidian Arch', 'tr. 36–51 · 3.890 từ'],
+  ['Chapter 4: The Whispering Keel', 'tr. 52–68 · 4.450 từ'],
+  ['Chapter 5: Songs of the Low Tide', 'tr. 69–84 · 4.030 từ'],
 ]
 const steps = [
-  'Upload PDF',
-  'Structure & Chapter Detection',
-  'Review Chapter Splits',
-  'Import as Drafts',
+  'Tải PDF lên',
+  'Nhận diện cấu trúc và chương',
+  'Kiểm tra cách tách chương',
+  'Nhập thành bản nháp',
 ]
 
 export function ImportPdfPage() {
@@ -54,8 +54,8 @@ export function ImportPdfPage() {
       ...current,
       {
         id: Date.now(),
-        title: `Chapter ${current.length + 1}: Untitled Section`,
-        meta: 'Manual split · Pending analysis',
+        title: `Chương ${current.length + 1}: Phần chưa đặt tên`,
+        meta: 'Tách thủ công · Đang chờ phân tích',
         selected: true,
       },
     ])
@@ -67,16 +67,16 @@ export function ImportPdfPage() {
             <div>
               <h1 className="flex items-center gap-3 text-2xl font-bold">
                 <ArrowLeft size={20} />
-                Import Manuscript from PDF
+                Nhập bản thảo từ PDF
               </h1>
               <p className="mt-2 text-sm text-muted">
-                Transform formatted PDFs into structured, editable digital chapters ready for
-                serialization.
+                Chuyển PDF đã định dạng thành các chương số có cấu trúc, có thể chỉnh sửa và sẵn
+                sàng đăng dài kỳ.
               </p>
             </div>
             <Badge className="gap-2 px-4 py-2">
               <ShieldCheck size={15} className="text-brand" />
-              Your manuscript stays local in this UI preview
+              Bản thảo chỉ được lưu cục bộ trong bản xem trước này
             </Badge>
           </div>
           <div className="mt-6 grid gap-3 border-t border-line pt-5 sm:grid-cols-2 xl:grid-cols-4">
@@ -95,8 +95,8 @@ export function ImportPdfPage() {
                   </span>
                   <span>
                     <small className="block text-[10px] text-muted">
-                      Step {number}
-                      {number === step ? ' (Active)' : ''}
+                      Bước {number}
+                      {number === step ? ' (Đang thực hiện)' : ''}
                     </small>
                     <strong className={`text-xs ${number === step ? 'text-brand' : ''}`}>
                       {label}
@@ -127,7 +127,7 @@ export function ImportPdfPage() {
                     <div className="min-w-0 flex-1">
                       <strong className="block truncate text-sm">{fileName}</strong>
                       <p className="text-[11px] text-muted">
-                        184 pages · 62,400 words · OCR Quality: 99.4%
+                        184 trang · 62.400 từ · Chất lượng OCR: 99,4%
                       </p>
                     </div>
                     <input
@@ -143,14 +143,14 @@ export function ImportPdfPage() {
                       className="min-h-9 px-3 py-1 text-xs"
                     >
                       <RefreshCw size={14} />
-                      Reparse File
+                      Phân tích lại tệp
                     </Button>
                   </div>
                   <div className="mt-6 flex flex-wrap items-end justify-between gap-3">
                     <div>
-                      <h2 className="text-xl font-semibold">Detected Chapters &amp; Hierarchy</h2>
+                      <h2 className="text-xl font-semibold">Chương và cấu trúc đã nhận diện</h2>
                       <p className="text-xs text-muted">
-                        12 chapters identified using heading heuristic &amp; roman numeral parser.
+                        Đã nhận diện 12 chương bằng tiêu đề và bộ phân tích số La Mã.
                       </p>
                     </div>
                     <div className="flex gap-2 text-xs">
@@ -160,7 +160,7 @@ export function ImportPdfPage() {
                         }
                         className="text-brand"
                       >
-                        Select All (12)
+                        Chọn tất cả (12)
                       </button>
                       <span className="text-line">|</span>
                       <button
@@ -170,7 +170,7 @@ export function ImportPdfPage() {
                           )
                         }
                       >
-                        Deselect
+                        Bỏ chọn
                       </button>
                     </div>
                   </div>
@@ -203,28 +203,28 @@ export function ImportPdfPage() {
                     className="mt-4 flex w-full items-center justify-center gap-2 rounded-2xl border border-dashed border-brand p-4 text-xs font-semibold text-brand"
                   >
                     <Plus size={15} />
-                    Add Manual Chapter Split Marker
+                    Thêm dấu tách chương thủ công
                   </button>
                 </Card>
               </section>
               <ExtractionInspector
                 splitView={splitView}
                 setSplitView={setSplitView}
-                title={chapters.find(item => item.id === active)?.title || 'No chapter selected'}
+                title={chapters.find(item => item.id === active)?.title || 'Chưa chọn chương'}
               />
             </div>
             <Card className="mt-6">
               <div className="flex flex-col justify-between gap-4 lg:flex-row lg:items-center">
                 <div>
-                  <h2 className="text-xl font-semibold">Target Destination</h2>
+                  <h2 className="text-xl font-semibold">Nơi lưu nội dung</h2>
                   <p className="mt-1 text-xs text-muted">
-                    Choose how parsed chapters should be placed into your NovelHub catalog.
+                    Chọn cách đưa các chương đã phân tích vào danh mục NovelHub của bạn.
                   </p>
                 </div>
                 <div className="grid gap-3 sm:grid-cols-2 lg:w-3/5">
                   {[
-                    ['new', 'Create New Story', 'Chronicles of the Sunken Spire (New Book)'],
-                    ['existing', 'Append to Existing Story', 'The Silent Forest (Serial)'],
+                    ['new', 'Tạo truyện mới', 'Chronicles of the Sunken Spire (Sách mới)'],
+                    ['existing', 'Thêm vào truyện hiện có', 'The Silent Forest (Truyện dài kỳ)'],
                   ].map(([value, label, note]) => (
                     <button
                       key={value}
@@ -243,14 +243,14 @@ export function ImportPdfPage() {
             <div className="mt-5 flex flex-col gap-3 rounded-3xl border border-line bg-surface p-4 sm:flex-row sm:items-center">
               <Button variant="secondary" onClick={() => setStep(1)}>
                 <ArrowLeft size={14} />
-                Back to Upload
+                Quay lại tải lên
               </Button>
               <Button variant="secondary" onClick={() => setStep(2)}>
                 <RefreshCw size={14} />
-                Reparse Document
+                Phân tích lại tài liệu
               </Button>
               <span className="ml-auto text-xs text-muted">
-                {selected} chapters selected (62,400 words)
+                Đã chọn {selected} chương (62.400 từ)
               </span>
               <Button
                 disabled={!selected}
@@ -260,7 +260,7 @@ export function ImportPdfPage() {
                 }}
               >
                 <Import size={15} />
-                {imported ? 'Imported to Drafts' : `Import ${selected} Chapters to Drafts`}
+                {imported ? 'Đã nhập vào bản nháp' : `Nhập ${selected} chương thành bản nháp`}
               </Button>
             </div>
           </>
@@ -277,10 +277,10 @@ function UploadStage({ fileRef, chooseFile }) {
         <span className="mx-auto grid size-20 place-items-center rounded-full bg-brand/15 text-brand">
           <Upload size={34} />
         </span>
-        <h2 className="mt-5 text-2xl font-semibold">Drop your manuscript PDF here</h2>
+        <h2 className="mt-5 text-2xl font-semibold">Thả tệp PDF bản thảo vào đây</h2>
         <p className="mx-auto mt-2 max-w-md text-sm leading-6 text-muted">
-          Upload a PDF up to 50 MB. NovelHub will detect headings, scene breaks, paragraph
-          formatting and chapter boundaries.
+          Tải lên tệp PDF tối đa 50 MB. NovelHub sẽ nhận diện tiêu đề, điểm ngắt cảnh, định dạng
+          đoạn văn và ranh giới chương.
         </p>
         <input
           ref={fileRef}
@@ -291,10 +291,10 @@ function UploadStage({ fileRef, chooseFile }) {
         />
         <Button onClick={() => fileRef.current?.click()} className="mt-5">
           <Upload size={16} />
-          Choose PDF File
+          Chọn tệp PDF
         </Button>
         <p className="mt-4 text-[10px] text-muted">
-          UI-only local preview · no file is transmitted
+          Chỉ xem trước cục bộ trên giao diện · không truyền tệp ra ngoài
         </p>
       </div>
     </Card>
@@ -317,7 +317,7 @@ function ChapterDetection({ chapter, active, onActive, onToggle, onTitle }) {
           {chapter.selected && <Check size={12} />}
         </button>
         <strong className="text-[10px] uppercase tracking-[.14em] text-brand">
-          Chapter {String(chapter.id).padStart(2, '0')} · Head 1
+          Chương {String(chapter.id).padStart(2, '0')} · Tiêu đề 1
         </strong>
         <Badge className="ml-auto">{chapter.meta}</Badge>
       </div>
@@ -327,13 +327,13 @@ function ChapterDetection({ chapter, active, onActive, onToggle, onTitle }) {
         className="mt-3 w-full rounded-xl border border-line bg-elevated px-3 py-2 text-sm outline-none focus:border-brand"
       />
       <div className="mt-3 flex justify-end gap-4 text-[10px]">
-        <button onClick={() => window.alert('Split point added (mock).')} className="flex items-center gap-1">
+        <button onClick={() => window.alert('Đã thêm điểm tách (bản mẫu).')} className="flex items-center gap-1">
           <Scissors size={12} />
-          Split at Page
+          Tách tại trang
         </button>
-        <button onClick={() => window.alert('Chapter merged with the next section (mock).')} className="flex items-center gap-1">
+        <button onClick={() => window.alert('Đã gộp chương với phần tiếp theo (bản mẫu).')} className="flex items-center gap-1">
           <GitMerge size={12} />
-          Merge Below
+          Gộp với phần dưới
         </button>
       </div>
     </div>
@@ -344,21 +344,21 @@ function ExtractionInspector({ splitView, setSplitView, title }) {
     <Card className="xl:sticky xl:top-24">
       <div className="flex items-center justify-between border-b border-line pb-4">
         <div>
-          <h2 className="text-xl font-semibold">Extraction Inspector</h2>
-          <p className="text-xs text-muted">Source PDF vs extracted clean Markdown</p>
+          <h2 className="text-xl font-semibold">Kiểm tra nội dung trích xuất</h2>
+          <p className="text-xs text-muted">PDF gốc và Markdown sạch đã trích xuất</p>
         </div>
         <div className="rounded-xl border border-line p-1">
           <button
             onClick={() => setSplitView(true)}
             className={`rounded-lg px-3 py-2 text-[10px] ${splitView ? 'bg-elevated text-brand' : ''}`}
           >
-            Split View
+            Chế độ chia đôi
           </button>
           <button
             onClick={() => setSplitView(false)}
             className={`rounded-lg px-3 py-2 text-[10px] ${!splitView ? 'bg-elevated text-brand' : ''}`}
           >
-            Markdown Only
+            Chỉ Markdown
           </button>
         </div>
       </div>
@@ -381,14 +381,14 @@ function ExtractionInspector({ splitView, setSplitView, title }) {
         )}
         <div className="min-h-[520px] rounded-2xl border border-line bg-elevated p-5">
           <div className="flex items-center justify-between text-[10px] text-brand">
-            <span>Extracted Poppins Markdown</span>
-            <span>Auto-formatted</span>
+            <span>Markdown Poppins đã trích xuất</span>
+            <span>Tự động định dạng</span>
           </div>
           <Badge tone="green" className="mt-5">
-            H1 TAG DETECTED
+            ĐÃ NHẬN DIỆN THẺ H1
           </Badge>
           <h3 className="mt-3 text-xl font-semibold text-brand">{title}</h3>
-          <Badge className="mt-5">PARAGRAPH 01</Badge>
+          <Badge className="mt-5">ĐOẠN 01</Badge>
           <p className="mt-3 text-sm leading-7">
             The mist rolled across the brackish quay before sunrise, clinging to the salt-encrusted
             timbers of the northern breakwater. By the time Kael arrived with his copper lantern,
@@ -399,11 +399,11 @@ function ExtractionInspector({ splitView, setSplitView, title }) {
       <div className="mt-4 rounded-2xl bg-brand/10 p-4 text-xs">
         <p className="flex items-center gap-2">
           <CheckCircle2 size={14} className="text-brand" />
-          Strip running headers &amp; page numbers
+          Loại bỏ đầu trang lặp lại và số trang
         </p>
         <p className="mt-2 flex items-center gap-2">
           <CheckCircle2 size={14} className="text-brand" />
-          Preserve author scene breaks (* * *)
+          Giữ nguyên dấu ngắt cảnh của tác giả (* * *)
         </p>
       </div>
     </Card>
