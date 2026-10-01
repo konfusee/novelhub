@@ -18,12 +18,12 @@ import { AuthorLayout } from '../../layouts'
 import { Badge, Button, Card, Input, Modal } from '../../components/ui'
 
 const modules = [
-  ['Brainstorm & Plot Twists', 'Narrative forks & reveals', BrainCircuit],
-  ['Character Lore & Continuity', 'Voice lock & timeline sync', BookOpen],
-  ['Scene Expansion & Sensory Detail', 'Atmospheric enrichment', Sparkles],
-  ['Tone & Style Harmonizer', 'Melancholic slow-burn check', WandSparkles],
-  ['Dialogue Polish', 'Subtext & cadence', MessageSquare],
-  ['Pacing & Reader Drop-off', 'Tension curve modeling', History],
+  ['Động não và nút thắt cốt truyện', 'Nhánh kể chuyện và tình tiết hé lộ', BrainCircuit],
+  ['Thế giới nhân vật và tính nhất quán', 'Đồng bộ giọng văn và dòng thời gian', BookOpen],
+  ['Mở rộng cảnh và chi tiết cảm giác', 'Làm giàu bầu không khí', Sparkles],
+  ['Điều hòa giọng điệu và phong cách', 'Kiểm tra nhịp chậm u buồn', WandSparkles],
+  ['Trau chuốt hội thoại', 'Hàm ý và nhịp điệu', MessageSquare],
+  ['Nhịp độ và điểm rời bỏ của độc giả', 'Mô hình hóa đường cong căng thẳng', History],
 ]
 const baseSuggestions = [
   {
@@ -53,6 +53,11 @@ const lore = [
   ],
   ["Lyra's Vow & Scars", 'Carries silver pendant from the Ashen Valley raid.'],
 ]
+const suggestionTagLabels = {
+  Recommended: 'Đề xuất',
+  'Subtle Dialogue': 'Hội thoại tinh tế',
+  'Slow Pacing': 'Nhịp chậm',
+}
 
 export function AiWritingAssistantPage() {
   const [module, setModule] = useState(modules[0][0])
@@ -74,41 +79,40 @@ export function AiWritingAssistantPage() {
         <div className="flex flex-col justify-between gap-4 lg:flex-row lg:items-center">
           <div>
             <h1 className="text-2xl font-semibold sm:text-3xl">
-              AI Writing Assistant &amp; Editorial Lab
+              Trợ lý sáng tác AI và Phòng biên tập
             </h1>
             <Badge tone="purple" className="mt-2 gap-1">
               <Sparkles size={12} />
-              Creative Studio Co-pilot
+              Đồng hành cùng Studio sáng tạo
             </Badge>
             <p className="mt-2 max-w-2xl text-xs text-muted">
-              Collaborative AI mock tools to brainstorm lore, analyze narrative pacing, refine tone,
-              and maintain character continuity.
+              Công cụ AI hỗ trợ xây dựng thế giới, phân tích nhịp kể, tinh chỉnh giọng điệu và duy
+              trì tính nhất quán của nhân vật.
             </p>
           </div>
           <div className="flex gap-2">
             <Button variant="secondary" onClick={() => setHistoryOpen(true)}>
               <History size={15} />
-              Draft History
+              Lịch sử bản nháp
             </Button>
             <Button onClick={() => setSaved(true)}>
               <Save size={15} />
-              {saved ? 'Manuscript Saved' : 'Commit Manuscript'}
+              {saved ? 'Đã lưu bản thảo' : 'Lưu bản thảo'}
             </Button>
           </div>
         </div>
         <div className="mt-5 flex gap-3 rounded-2xl border border-purple/25 bg-purple/10 p-4 text-xs">
           <ShieldCheck className="shrink-0 text-purple" size={18} />
           <p>
-            <strong>Author Sovereignty Guarantee:</strong> AI suggestions are assistive prompts
-            requiring author review. You retain 100% ownership of your manuscript and derivative
-            intellectual property.
+            <strong>Cam kết quyền làm chủ của tác giả:</strong> Gợi ý AI chỉ mang tính hỗ trợ và cần
+            được tác giả xem xét. Bạn giữ 100% quyền sở hữu bản thảo và tài sản trí tuệ phái sinh.
           </p>
         </div>
         <div className="mt-6 grid items-start gap-5 xl:grid-cols-[230px_minmax(0,1fr)_250px]">
           <aside className="space-y-5">
             <Card className="p-4">
               <p className="text-[10px] font-semibold uppercase tracking-[.16em]">
-                Editorial Modules
+                Mô-đun biên tập
               </p>
               <div className="mt-4 space-y-1">
                 {modules.map(([title, note, Icon]) => (
@@ -127,16 +131,16 @@ export function AiWritingAssistantPage() {
               </div>
             </Card>
             <Card className="p-4">
-              <h2 className="text-xs font-semibold">Tone Sliders</h2>
-              <ToneSlider label="Tone: Melancholic" value={tone} setValue={setTone} />
+              <h2 className="text-xs font-semibold">Điều chỉnh sắc thái</h2>
+              <ToneSlider label="Giọng điệu: U buồn" value={tone} setValue={setTone} />
               <ToneSlider
-                label="Pacing: Deliberate"
+                label="Nhịp độ: Chậm rãi"
                 value={pacing}
                 setValue={setPacing}
                 color="orange"
               />
               <ToneSlider
-                label="Mythic Ambience"
+                label="Không khí thần thoại"
                 value={ambience}
                 setValue={setAmbience}
                 color="purple"
@@ -146,24 +150,24 @@ export function AiWritingAssistantPage() {
           <section className="min-w-0 space-y-5">
             <Card className="flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
               <div>
-                <p className="text-[10px] text-muted">Current Manuscript Target</p>
+                <p className="text-[10px] text-muted">Bản thảo đang xử lý</p>
                 <div className="mt-1 flex items-center gap-3">
                   <span className="grid size-10 place-items-center rounded-full bg-brand/15 text-brand">
                     <BookOpen size={18} />
                   </span>
                   <div>
                     <strong className="block text-sm">The Silent Forest</strong>
-                    <span className="text-[10px] text-brand">Ch. 16: Heart of the Ironwood</span>
+                    <span className="text-[10px] text-brand">Chương 16: Heart of the Ironwood</span>
                   </div>
                 </div>
               </div>
-              <Button onClick={() => window.alert('Chapter selector opened (mock).')} variant="secondary" className="min-h-9 text-xs">
-                Change Chapter
+              <Button onClick={() => window.alert('Đã mở trình chọn chương (bản mẫu).')} variant="secondary" className="min-h-9 text-xs">
+                Đổi chương
               </Button>
             </Card>
             <Card className="bg-elevated">
               <p className="text-[9px] uppercase tracking-[.16em] text-orange">
-                ● Referenced excerpt (lines 42–58)
+                ● Đoạn trích tham chiếu (dòng 42–58)
               </p>
               <p className="mt-4 rounded-3xl bg-surface p-5 text-sm italic leading-7">
                 “The damp mist clung to Lyra&apos;s woolen cloak like cold spiderwebs. Ahead, the
@@ -176,9 +180,9 @@ export function AiWritingAssistantPage() {
               <div className="flex justify-between text-xs">
                 <strong className="flex items-center gap-2">
                   <Sparkles className="text-purple" size={16} />
-                  Editorial Direction &amp; AI Prompt
+                  Định hướng biên tập và câu lệnh AI
                 </strong>
-                <span className="text-purple">Model: NovelCraft 4.2 Pro</span>
+                <span className="text-purple">Mô hình: NovelCraft 4.2 Pro</span>
               </div>
               <textarea
                 value={prompt}
@@ -194,13 +198,13 @@ export function AiWritingAssistantPage() {
                   className="ml-auto min-h-9 border-purple bg-purple px-3 py-1 text-xs"
                 >
                   <RefreshCw size={14} />
-                  Regenerate Options
+                  Tạo lại phương án
                 </Button>
               </div>
             </Card>
             <div className="flex items-center justify-between">
-              <h2 className="text-sm font-semibold">Generated Suggestions</h2>
-              <Badge tone="purple">3 Variations</Badge>
+              <h2 className="text-sm font-semibold">Gợi ý đã tạo</h2>
+              <Badge tone="purple">3 phương án</Badge>
             </div>
             {suggestions.map((suggestion, index) => (
               <Suggestion
@@ -216,10 +220,10 @@ export function AiWritingAssistantPage() {
             <Card className="p-4">
               <div className="flex items-start justify-between">
                 <div>
-                  <h2 className="text-xs font-semibold">Lore Bible &amp; Continuity</h2>
-                  <p className="mt-1 text-[9px] text-muted">Active Story Canon Tracker</p>
+                  <h2 className="text-xs font-semibold">Cẩm nang thế giới và tính nhất quán</h2>
+                  <p className="mt-1 text-[9px] text-muted">Theo dõi thiết lập chính thức của truyện</p>
                 </div>
-                <Badge tone="green">Sync 100%</Badge>
+                <Badge tone="green">Đồng bộ 100%</Badge>
               </div>
               <div className="mt-4 space-y-3">
                 {lore.map(([title, note]) => (
@@ -231,7 +235,7 @@ export function AiWritingAssistantPage() {
                     <p className="mt-2 text-[9px] leading-4 text-muted">{note}</p>
                     <span className="mt-2 flex items-center gap-1 text-[9px] text-brand">
                       <ShieldCheck size={11} />
-                      Continuity Preserved
+                      Đã bảo toàn tính nhất quán
                     </span>
                   </div>
                 ))}
@@ -241,34 +245,34 @@ export function AiWritingAssistantPage() {
                 className="mt-4 flex w-full items-center justify-center gap-2 rounded-xl border border-dashed border-line p-2 text-[10px]"
               >
                 <Plus size={13} />
-                Pin New Lore Entity
+                Ghim thực thể thế giới mới
               </button>
             </Card>
             <Card className="p-4">
-              <h2 className="text-xs font-semibold">Editorial Persona</h2>
+              <h2 className="text-xs font-semibold">Phong cách biên tập</h2>
               <div className="mt-3 flex gap-3">
                 <span className="grid size-10 place-items-center rounded-full bg-purple/15 text-purple">
                   <Bot />
                 </span>
                 <div>
-                  <strong className="text-[11px]">Literary Fantasy Editor</strong>
+                  <strong className="text-[11px]">Biên tập viên kỳ ảo văn học</strong>
                   <p className="text-[9px] text-muted">
-                    Prioritizes subtext, mood &amp; prose musicality
+                    Ưu tiên hàm ý, cảm xúc và nhạc tính của văn xuôi
                   </p>
                 </div>
               </div>
               <p className="mt-4 text-[10px]">
-                Critique Strictness: <strong className="text-purple">Constructive / High</strong>
+                Mức độ khắt khe: <strong className="text-purple">Mang tính xây dựng / Cao</strong>
               </p>
             </Card>
           </aside>
         </div>
-        <Modal open={historyOpen} title="AI Draft History" onClose={() => setHistoryOpen(false)}>
+        <Modal open={historyOpen} title="Lịch sử bản nháp AI" onClose={() => setHistoryOpen(false)}>
           <div className="space-y-3">
             {[
-              'Guardian reveal · Current',
-              'Dialogue variation · 12 min ago',
-              'Pacing audit · Yesterday',
+              'Hé lộ hộ vệ · Hiện tại',
+              'Biến thể hội thoại · 12 phút trước',
+              'Kiểm tra nhịp độ · Hôm qua',
             ].map(item => (
               <div key={item} className="rounded-2xl bg-elevated p-4 text-sm">
                 {item}
@@ -276,15 +280,15 @@ export function AiWritingAssistantPage() {
             ))}
           </div>
         </Modal>
-        <Modal open={loreOpen} title="Pin Lore Entity" onClose={() => setLoreOpen(false)}>
-          <Input placeholder="Entity name" />
+        <Modal open={loreOpen} title="Ghim thực thể thế giới" onClose={() => setLoreOpen(false)}>
+          <Input placeholder="Tên thực thể" />
           <textarea
             className="mt-3 min-h-24 w-full rounded-2xl border border-line bg-surface p-3 text-sm outline-none"
-            placeholder="Canon notes..."
+            placeholder="Ghi chú thiết lập chính thức..."
           />
           <Button onClick={() => setLoreOpen(false)} className="mt-4 w-full">
             <Plus size={15} />
-            Add to Lore Bible
+            Thêm vào cẩm nang thế giới
           </Button>
         </Modal>
       </main>
@@ -321,22 +325,22 @@ function Suggestion({ suggestion, index, inserted, onInsert }) {
           <div className="flex flex-wrap items-start justify-between gap-2">
             <h3 className="max-w-xl font-semibold">{suggestion.title}</h3>
             <Badge tone={index === 0 ? 'green' : index === 1 ? 'orange' : 'neutral'}>
-              {suggestion.tag}
+              {suggestionTagLabels[suggestion.tag] ?? suggestion.tag}
             </Badge>
           </div>
           <p className="mt-4 text-sm leading-7 text-muted">“{suggestion.body}”</p>
           <div className="mt-5 flex flex-wrap items-center gap-3 border-t border-line pt-4 text-[10px] text-muted">
-            <span className="text-brand">✓ Tone Match: {suggestion.tone}</span>
+            <span className="text-brand">✓ Khớp giọng điệu: {suggestion.tone}</span>
             <button onClick={() => navigator.clipboard?.writeText(suggestion.text || suggestion.title || 'NovelHub suggestion')} className="flex items-center gap-1">
               <Copy size={12} />
-              Copy
+              Sao chép
             </button>
-            <button onClick={() => window.alert('Suggestion refined (mock).')} className="flex items-center gap-1">
+            <button onClick={() => window.alert('Đã tinh chỉnh gợi ý (bản mẫu).')} className="flex items-center gap-1">
               <WandSparkles size={12} />
-              Refine
+              Tinh chỉnh
             </button>
             <Button onClick={onInsert} className="ml-auto min-h-8 px-3 py-1 text-[10px]">
-              {inserted ? 'Inserted' : 'Insert into Editor'}
+              {inserted ? 'Đã chèn' : 'Chèn vào trình soạn thảo'}
             </Button>
           </div>
         </div>
