@@ -48,6 +48,19 @@ const roles = [
     tags: ['Protected Role', 'Hardware 2FA'],
   },
 ]
+const roleLabels = { Reader: 'Độc giả', Author: 'Tác giả', Moderator: 'Kiểm duyệt viên', Administrator: 'Quản trị viên' }
+const roleDescriptions = {
+  Reader: 'Tài khoản công khai tiêu chuẩn. Đọc chương, mua xu, bình luận và theo dõi tác giả.',
+  Author: 'Tài khoản sáng tác có Studio tác giả, trình soạn chương, nhập PDF, ví nhuận bút và trợ lý AI.',
+  Moderator: 'Truy cập khu vực Tin cậy và An toàn, kiểm tra bản gửi, phân tích tương đồng và xử lý báo cáo.',
+  Administrator: 'Quản trị toàn bộ nền tảng, người dùng, cấu hình dịch vụ, phân loại và nhật ký kiểm tra.',
+}
+const tagLabels = {
+  'Default Role': 'Vai trò mặc định', 'Unrestricted Signup': 'Đăng ký không hạn chế',
+  'Verified Identity': 'Đã xác minh danh tính', 'Monetization Enabled': 'Đã bật kiếm tiền',
+  'Staff Only': 'Chỉ dành cho nhân viên', 'NDA Signed': 'Đã ký NDA',
+  'Protected Role': 'Vai trò được bảo vệ', 'Hardware 2FA': '2FA phần cứng',
+}
 const capabilities = [
   [
     'Content Publishing & Authoring',
@@ -126,6 +139,32 @@ const modules = [
   'Billing & Coins',
   'Platform Config',
 ]
+const moduleLabels = {
+  'All Modules': 'Tất cả mô-đun', 'Content & Stories': 'Nội dung và truyện',
+  'Reader & Social': 'Độc giả và cộng đồng', Moderation: 'Kiểm duyệt',
+  'Billing & Coins': 'Thanh toán và xu', 'Platform Config': 'Cấu hình nền tảng',
+}
+const groupLabels = {
+  'Content Publishing & Authoring': 'Xuất bản nội dung và sáng tác',
+  'Editorial & Moderation': 'Biên tập và kiểm duyệt',
+  'Monetization & Ledger': 'Kiếm tiền và sổ cái',
+  'Platform Infrastructure': 'Hạ tầng nền tảng',
+}
+const capabilityDescriptions = {
+  'Create manuscripts and upload metadata': 'Tạo bản thảo và tải lên siêu dữ liệu',
+  'Edit long-form text and autosave to cloud': 'Sửa văn bản dài và tự động lưu lên đám mây',
+  'OCR and auto-structure manuscript PDFs': 'OCR và tự động cấu trúc PDF bản thảo',
+  'Invoke NovelCraft writing assistance': 'Sử dụng trợ lý viết NovelCraft',
+  'Claim submissions and execute approval decisions': 'Nhận bản gửi và thực hiện quyết định duyệt',
+  'Inspect canonical similarity comparisons': 'Kiểm tra so sánh tương đồng với nội dung chuẩn',
+  'Triage community and content reports': 'Phân loại báo cáo cộng đồng và nội dung',
+  'Issue warnings or shadowban accounts': 'Cảnh báo hoặc hạn chế ngầm tài khoản',
+  'Purchase coins and unlock chapters': 'Mua xu và mở khóa chương',
+  'Request payout for accrued royalties': 'Yêu cầu thanh toán nhuận bút tích lũy',
+  'Manually credit or debit user balances': 'Điều chỉnh tăng hoặc giảm số dư người dùng thủ công',
+  'Modify TTS endpoints, AI keys, and storage': 'Thay đổi điểm cuối TTS, khóa AI và lưu trữ',
+  'Inspect complete administrative event stream': 'Kiểm tra toàn bộ luồng sự kiện quản trị',
+}
 
 export function RolesPermissionsPage() {
   const [module, setModule] = useState('All Modules')
@@ -156,40 +195,40 @@ export function RolesPermissionsPage() {
         <div className="flex flex-col justify-between gap-4 xl:flex-row xl:items-center">
           <div>
             <p className="text-xs text-muted">
-              Admin Console / Access Management / Roles &amp; RBAC Matrix
+              Bảng điều khiển quản trị / Quản lý truy cập / Ma trận vai trò và RBAC
             </p>
-            <h1 className="mt-1 text-2xl font-bold">Roles &amp; Permissions Governance</h1>
+            <h1 className="mt-1 text-2xl font-bold">Quản trị vai trò và quyền hạn</h1>
           </div>
           <div className="flex flex-wrap gap-2">
-            <Button variant="secondary" onClick={() => setModal('Permission policy JSON exported')}>
+            <Button variant="secondary" onClick={() => setModal('Đã xuất chính sách quyền dạng JSON')}>
               <Download size={15} />
-              Export Policy JSON
+              Xuất JSON chính sách
             </Button>
-            <Button onClick={() => setModal('Create custom role')}>
+            <Button onClick={() => setModal('Tạo vai trò tùy chỉnh')}>
               <Plus size={15} />
-              Create Custom Role
+              Tạo vai trò tùy chỉnh
             </Button>
           </div>
         </div>
         <div className="mt-5 flex items-start gap-3 rounded-3xl border border-orange/30 bg-orange/10 p-4 text-sm">
           <Shield className="shrink-0 text-orange" />
           <p className="flex-1">
-            <strong>Security Policy Notice:</strong> High-impact changes require 2FA
-            re-authentication and are logged to immutable audit records.
+            <strong>Lưu ý chính sách bảo mật:</strong> Thay đổi có tác động lớn yêu cầu xác thực lại
+            bằng 2FA và được ghi vào nhật ký kiểm tra bất biến.
           </p>
           <Badge tone="orange">POLICY_V4.2</Badge>
         </div>
         <section className="mt-7">
           <div className="flex items-center gap-3">
-            <h2 className="text-xl font-semibold">Core System Roles</h2>
-            <Badge tone="green">4 Active Types</Badge>
+            <h2 className="text-xl font-semibold">Vai trò cốt lõi của hệ thống</h2>
+            <Badge tone="green">4 loại đang hoạt động</Badge>
           </div>
           <div className="mt-4 grid gap-4 md:grid-cols-2 xl:grid-cols-4">
             {roles.map(role => (
               <RoleCard
                 key={role.name}
                 role={role}
-                onAction={() => setModal(`${role.name} policy editor`)}
+                onAction={() => setModal(`Sửa chính sách ${roleLabels[role.name]}`)}
               />
             ))}
           </div>
@@ -200,14 +239,14 @@ export function RolesPermissionsPage() {
               <Tabs
                 value={module}
                 onChange={setModule}
-                items={modules.map(value => ({ value, label: value }))}
+                items={modules.map(value => ({ value, label: moduleLabels[value] }))}
               />
             </div>
             <Input
               icon={Search}
               value={query}
               onChange={event => setQuery(event.target.value)}
-              placeholder="Search permission slug..."
+              placeholder="Tìm mã định danh quyền..."
               className="w-full xl:w-80"
             />
           </div>
@@ -215,11 +254,11 @@ export function RolesPermissionsPage() {
             <table className="w-full min-w-[850px] text-left text-xs">
               <thead className="bg-elevated text-[9px] uppercase tracking-[.12em] text-muted">
                 <tr>
-                  <th className="px-5 py-4">Permission capability / slug</th>
-                  <th>Description</th>
+                  <th className="px-5 py-4">Khả năng / mã định danh quyền</th>
+                  <th>Mô tả</th>
                   {roles.map(role => (
                     <th key={role.name} className="text-center">
-                      {role.name}
+                      {roleLabels[role.name]}
                     </th>
                   ))}
                 </tr>
@@ -233,11 +272,11 @@ export function RolesPermissionsPage() {
                   return (
                     <FragmentRow key={slug} showGroup={group !== previous} group={group}>
                       <td className="px-5 py-4 font-mono text-brand">{slug}</td>
-                      <td className="max-w-xs pr-5 text-muted">{description}</td>
+                      <td className="max-w-xs pr-5 text-muted">{capabilityDescriptions[description] ?? description}</td>
                       {matrix[row.index].map((enabled, col) => (
                         <td key={col} className="text-center">
                           <button
-                            aria-label={`Toggle ${slug} for ${roles[col].name}`}
+                            aria-label={`Bật hoặc tắt ${slug} cho ${roleLabels[roles[col].name]}`}
                             onClick={() => toggle(row.index, col)}
                             className={`mx-auto grid size-8 place-items-center rounded-full ${enabled ? 'bg-brand/15 text-brand' : 'bg-elevated text-muted'}`}
                           >
@@ -252,8 +291,8 @@ export function RolesPermissionsPage() {
             </table>
           </div>
           <div className="flex flex-wrap justify-between gap-3 border-t border-line p-4 text-[10px] text-muted">
-            <span>● Enabled scope &nbsp; ○ Explicitly denied</span>
-            <span>Showing {visible.length} active capability scopes across 4 roles</span>
+            <span>● Phạm vi đã bật &nbsp; ○ Từ chối rõ ràng</span>
+            <span>Đang hiển thị {visible.length} phạm vi quyền hoạt động trên 4 vai trò</span>
           </div>
         </Card>
         <Card className="mt-7 flex flex-col gap-4 lg:flex-row lg:items-center">
@@ -262,11 +301,11 @@ export function RolesPermissionsPage() {
           </div>
           <div className="flex-1">
             <h3 className="text-lg font-semibold">
-              {drafts} Pending Policy Modifications in Draft
+              {drafts} thay đổi chính sách đang chờ trong bản nháp
             </h3>
             <p className="text-xs text-muted">
-              Changes apply across active sessions on save. Revocations invalidate bearer refresh
-              tokens globally.
+              Khi lưu, thay đổi áp dụng cho mọi phiên đang hoạt động. Quyền bị thu hồi sẽ vô hiệu hóa
+              token làm mới trên toàn hệ thống.
             </p>
           </div>
           <Button
@@ -277,35 +316,35 @@ export function RolesPermissionsPage() {
             }}
             disabled={!drafts}
           >
-            Discard Draft
+            Hủy bản nháp
           </Button>
-          <Button onClick={() => setModal('Apply permission matrix')} disabled={!drafts}>
+          <Button onClick={() => setModal('Áp dụng ma trận quyền')} disabled={!drafts}>
             <ShieldCheck size={15} />
-            Apply Matrix · 2FA
+            Áp dụng ma trận · 2FA
           </Button>
         </Card>
         <Modal open={Boolean(modal)} title={modal} onClose={() => setModal('')}>
-          {modal === 'Create custom role' ? (
+          {modal === 'Tạo vai trò tùy chỉnh' ? (
             <div className="space-y-3">
-              <Input placeholder="Role name" />
-              <Input placeholder="Role description" />
+              <Input placeholder="Tên vai trò" />
+              <Input placeholder="Mô tả vai trò" />
               <Button onClick={() => setModal('')} className="w-full">
-                Create Mock Role
+                Tạo vai trò mẫu
               </Button>
             </div>
           ) : (
             <>
               <p className="text-sm text-muted">
-                This protected action is simulated locally for the UI preview.
+                Thao tác được bảo vệ này chỉ được mô phỏng cục bộ trong bản xem trước giao diện.
               </p>
               <Button
                 onClick={() => {
-                  if (modal.includes('Apply')) setDrafts(0)
+                  if (modal.includes('Áp dụng')) setDrafts(0)
                   setModal('')
                 }}
                 className="mt-5 w-full"
               >
-                Confirm Mock Action
+                Xác nhận thao tác mẫu
               </Button>
             </>
           )}
@@ -325,15 +364,15 @@ function RoleCard({ role, onAction }) {
         </span>
         <strong className="text-sm">
           {role.users}
-          <small className="block font-normal text-muted">users assigned</small>
+          <small className="block font-normal text-muted">người dùng được gán</small>
         </strong>
       </div>
-      <h3 className="mt-5 text-xl font-semibold">{role.name}</h3>
-      <p className="mt-3 min-h-24 text-sm leading-6 text-muted">{role.description}</p>
+      <h3 className="mt-5 text-xl font-semibold">{roleLabels[role.name]}</h3>
+      <p className="mt-3 min-h-24 text-sm leading-6 text-muted">{roleDescriptions[role.name]}</p>
       <div className="mt-3 flex flex-wrap gap-2">
         {role.tags.map((tag, index) => (
           <Badge key={tag} tone={index ? 'blue' : role.name === 'Administrator' ? 'red' : 'green'}>
-            {tag}
+            {tagLabels[tag] ?? tag}
           </Badge>
         ))}
       </div>
@@ -343,10 +382,10 @@ function RoleCard({ role, onAction }) {
         className="mt-5 w-full"
       >
         {role.name === 'Administrator'
-          ? 'Manage Keys'
+          ? 'Quản lý khóa'
           : role.name === 'Reader'
-            ? 'View Scope'
-            : 'Edit Policy'}
+            ? 'Xem phạm vi'
+            : 'Sửa chính sách'}
       </Button>
     </Card>
   )
@@ -357,7 +396,7 @@ function FragmentRow({ showGroup, group, children }) {
       {showGroup && (
         <tr className="border-y border-line bg-brand/5">
           <td colSpan="6" className="px-5 py-3 font-semibold text-brand">
-            {group}
+            {groupLabels[group] ?? group}
           </td>
         </tr>
       )}

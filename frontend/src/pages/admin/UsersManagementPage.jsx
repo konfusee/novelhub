@@ -17,6 +17,8 @@ import { Avatar, Badge, Button, Card, Input, Modal, Select, Tabs } from '../../c
 
 const roleTone = { Reader: 'blue', Author: 'green', Moderator: 'orange', Admin: 'purple' }
 const statusTone = { Active: 'green', Flagged: 'orange', Suspended: 'red' }
+const roleLabels = { Reader: 'Độc giả', Author: 'Tác giả', Moderator: 'Kiểm duyệt viên', Admin: 'Quản trị viên', Administrator: 'Quản trị viên' }
+const statusLabels = { Active: 'Đang hoạt động', Flagged: 'Bị cảnh báo', Suspended: 'Đã đình chỉ' }
 
 export function UsersManagementPage() {
   const [query, setQuery] = useState('')
@@ -40,8 +42,8 @@ export function UsersManagementPage() {
   const suspend = () => {
     setNotice(
       selected.status === 'Suspended'
-        ? `${selected.name} was reactivated (mock).`
-        : `${selected.name} was suspended (mock).`,
+        ? `${selected.name} đã được kích hoạt lại (bản mẫu).`
+        : `${selected.name} đã bị đình chỉ (bản mẫu).`,
     )
   }
   return (
@@ -49,24 +51,24 @@ export function UsersManagementPage() {
       <main className="page-admin py-6">
         <div className="flex flex-col justify-between gap-4 xl:flex-row xl:items-center">
           <div>
-            <p className="text-xs text-muted">Admin Console / Access Management</p>
-            <h1 className="mt-1 text-2xl font-bold">Users &amp; Accounts</h1>
+            <p className="text-xs text-muted">Bảng điều khiển quản trị / Quản lý truy cập</p>
+            <h1 className="mt-1 text-2xl font-bold">Người dùng và tài khoản</h1>
             <p className="mt-1 text-xs text-muted">
-              <strong className="text-brand">142,850</strong> total accounts · 1,240 authors · 48
-              staff/moderators
+              <strong className="text-brand">142.850</strong> tài khoản · 1.240 tác giả · 48 nhân
+              viên/kiểm duyệt viên
             </p>
           </div>
           <div className="flex flex-wrap gap-2">
             <Button
               variant="secondary"
-              onClick={() => setNotice('User directory CSV prepared (mock).')}
+              onClick={() => setNotice('Đã chuẩn bị CSV danh bạ người dùng (bản mẫu).')}
             >
               <Download size={15} />
-              Export Directory
+              Xuất danh bạ
             </Button>
-            <Button onClick={() => setNotice('Staff invitation opened (mock).')}>
+            <Button onClick={() => setNotice('Đã mở lời mời nhân viên (bản mẫu).')}>
               <UserPlus size={15} />
-              Invite Staff Member
+              Mời nhân viên
             </Button>
           </div>
         </div>
@@ -76,18 +78,18 @@ export function UsersManagementPage() {
               icon={Search}
               value={query}
               onChange={event => setQuery(event.target.value)}
-              placeholder="Search name, @handle, email, or user ID..."
+              placeholder="Tìm tên, @tên_người_dùng, email hoặc mã người dùng..."
             />
             <Select value={status} onChange={event => setStatus(event.target.value)}>
-              <option value="All">All statuses</option>
-              <option>Active</option>
-              <option>Flagged</option>
-              <option>Suspended</option>
+              <option value="All">Tất cả trạng thái</option>
+              <option value="Active">Đang hoạt động</option>
+              <option value="Flagged">Bị cảnh báo</option>
+              <option value="Suspended">Đã đình chỉ</option>
             </Select>
             <Select>
-              <option>Sort: Most active</option>
-              <option>Newest joined</option>
-              <option>Most coins</option>
+              <option>Sắp xếp: Hoạt động nhiều nhất</option>
+              <option>Tham gia mới nhất</option>
+              <option>Nhiều xu nhất</option>
             </Select>
           </div>
           <div className="mt-4 overflow-x-auto">
@@ -95,10 +97,10 @@ export function UsersManagementPage() {
               value={role}
               onChange={setRole}
               items={[
-                { value: 'All', label: 'All 142,850' },
-                { value: 'Reader', label: 'Readers 141,562' },
-                { value: 'Author', label: 'Authors 1,240' },
-                { value: 'Moderator', label: 'Moderators 38' },
+                { value: 'All', label: 'Tất cả 142.850' },
+                { value: 'Reader', label: 'Độc giả 141.562' },
+                { value: 'Author', label: 'Tác giả 1.240' },
+                { value: 'Moderator', label: 'Kiểm duyệt viên 38' },
               ]}
             />
           </div>
@@ -109,12 +111,12 @@ export function UsersManagementPage() {
               <table className="w-full min-w-[790px] text-left text-xs">
                 <thead className="bg-elevated text-[9px] uppercase tracking-[.14em] text-muted">
                   <tr>
-                    <th className="px-5 py-4">User &amp; handle</th>
-                    <th>System role</th>
-                    <th>Status</th>
-                    <th>Joined</th>
-                    <th>Activity &amp; coins</th>
-                    <th className="pr-5">Action</th>
+                    <th className="px-5 py-4">Người dùng và định danh</th>
+                    <th>Vai trò hệ thống</th>
+                    <th>Trạng thái</th>
+                    <th>Ngày tham gia</th>
+                    <th>Hoạt động và xu</th>
+                    <th className="pr-5">Thao tác</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-line">
@@ -137,12 +139,12 @@ export function UsersManagementPage() {
                       </td>
                       <td>
                         <Badge tone={roleTone[user.role]}>
-                          {user.role}
+                          {roleLabels[user.role] ?? user.role}
                           {user.guild ? ` · ${user.guild}` : ''}
                         </Badge>
                       </td>
                       <td>
-                        <Badge tone={statusTone[user.status]}>{user.status}</Badge>
+                        <Badge tone={statusTone[user.status]}>{statusLabels[user.status] ?? user.status}</Badge>
                       </td>
                       <td>
                         <span className="block">{user.joined}</span>
@@ -160,7 +162,7 @@ export function UsersManagementPage() {
                           }}
                           className="rounded-xl border border-line px-3 py-2 hover:border-brand hover:text-brand"
                         >
-                          Inspect
+                          Kiểm tra
                         </button>
                       </td>
                     </tr>
@@ -169,15 +171,15 @@ export function UsersManagementPage() {
               </table>
             </div>
             {users.length === 0 && (
-              <p className="p-10 text-center text-sm text-muted">No users match these filters.</p>
+              <p className="p-10 text-center text-sm text-muted">Không có người dùng nào khớp bộ lọc.</p>
             )}
             <div className="flex flex-col justify-between gap-3 border-t border-line p-4 text-xs text-muted sm:flex-row sm:items-center">
-              <span>Showing {users.length} of 142,850 accounts</span>
+              <span>Đang hiển thị {users.length} / 142.850 tài khoản</span>
               <div className="flex gap-2">
-                <button disabled className="rounded-xl border border-line px-3 py-2 disabled:opacity-40">Previous</button>
-                <button onClick={() => setNotice('Page 1 selected.')} className="rounded-xl bg-brand px-3 py-2 text-white">1</button>
-                <button onClick={() => setNotice('Page 2 selected (mock).')} className="rounded-xl border border-line px-3 py-2">2</button>
-                <button onClick={() => setNotice('Next page selected (mock).')} className="rounded-xl border border-line px-3 py-2">Next</button>
+                <button disabled className="rounded-xl border border-line px-3 py-2 disabled:opacity-40">Trước</button>
+                <button onClick={() => setNotice('Đã chọn trang 1.')} className="rounded-xl bg-brand px-3 py-2 text-white">1</button>
+                <button onClick={() => setNotice('Đã chọn trang 2 (bản mẫu).')} className="rounded-xl border border-line px-3 py-2">2</button>
+                <button onClick={() => setNotice('Đã chọn trang tiếp theo (bản mẫu).')} className="rounded-xl border border-line px-3 py-2">Sau</button>
               </div>
             </div>
           </Card>
@@ -185,11 +187,11 @@ export function UsersManagementPage() {
         </div>
         <Modal
           open={editing}
-          title={`Edit roles · ${selected.name}`}
+          title={`Sửa vai trò · ${selected.name}`}
           onClose={() => setEditing(false)}
         >
           <p className="text-sm text-muted">
-            Role changes are simulated locally for this frontend preview.
+            Thay đổi vai trò chỉ được mô phỏng cục bộ trong bản xem trước giao diện.
           </p>
           <div className="mt-4 grid gap-2">
             {['Reader', 'Author', 'Moderator', 'Administrator'].map(item => (
@@ -201,28 +203,28 @@ export function UsersManagementPage() {
                   type="checkbox"
                   defaultChecked={item === selected.role || item === 'Reader'}
                 />
-                {item}
+                {roleLabels[item] ?? item}
               </label>
             ))}
           </div>
           <div className="mt-5 flex justify-end gap-2">
             <Button variant="secondary" onClick={() => setEditing(false)}>
-              Cancel
+              Hủy
             </Button>
             <Button
               onClick={() => {
                 setEditing(false)
-                setNotice('Role changes saved (mock).')
+                setNotice('Đã lưu thay đổi vai trò (bản mẫu).')
               }}
             >
-              Save Roles
+              Lưu vai trò
             </Button>
           </div>
         </Modal>
-        <Modal open={Boolean(notice)} title="Admin action" onClose={() => setNotice('')}>
+        <Modal open={Boolean(notice)} title="Thao tác quản trị" onClose={() => setNotice('')}>
           <p className="text-sm">{notice}</p>
           <Button onClick={() => setNotice('')} className="mt-5 w-full">
-            Done
+            Hoàn tất
           </Button>
         </Modal>
       </main>
@@ -244,40 +246,40 @@ function UserInspector({ user, onEdit, onSuspend }) {
             <p className="text-xs text-muted">
               {user.handle} · #{user.id}
             </p>
-            <p className="mt-1 text-[10px] text-brand">● {user.status} · Good standing</p>
+            <p className="mt-1 text-[10px] text-brand">● {statusLabels[user.status] ?? user.status} · Tài khoản tốt</p>
           </div>
           <X size={17} className="text-muted" />
         </div>
         <div className="mt-5 grid grid-cols-2 gap-2">
           <Button variant="secondary" onClick={onEdit}>
             <Edit3 size={14} />
-            Edit Roles
+            Sửa vai trò
           </Button>
-          <Button onClick={() => window.alert('Coin adjustment dialog opened (mock).')} variant="secondary">
+          <Button onClick={() => window.alert('Đã mở hộp thoại điều chỉnh xu (bản mẫu).')} variant="secondary">
             <BadgeDollarSign size={14} />
-            Adjust Coins
+            Điều chỉnh xu
           </Button>
-          <Button onClick={() => window.alert('Warning composer opened (mock).')} variant="secondary">
+          <Button onClick={() => window.alert('Đã mở trình soạn cảnh báo (bản mẫu).')} variant="secondary">
             <AlertTriangle size={14} />
-            Issue Warning
+            Gửi cảnh báo
           </Button>
           <Button variant="danger" onClick={onSuspend}>
-            {user.status === 'Suspended' ? 'Reactivate' : 'Suspend Account'}
+            {user.status === 'Suspended' ? 'Kích hoạt lại' : 'Đình chỉ tài khoản'}
           </Button>
         </div>
       </Card>
-      <InfoCard title="Account credentials" icon={ShieldCheck}>
-        <Row label="Email address" value={user.email} />
-        <Row label="Current role" value={user.role} />
-        <Row label="Tenure" value={`${user.joined} (${user.tenure})`} />
+      <InfoCard title="Thông tin tài khoản" icon={ShieldCheck}>
+        <Row label="Địa chỉ email" value={user.email} />
+        <Row label="Vai trò hiện tại" value={roleLabels[user.role] ?? user.role} />
+        <Row label="Thời gian tham gia" value={`${user.joined} (${user.tenure})`} />
       </InfoCard>
-      <InfoCard title="Creator portfolio & metrics" icon={BookOpen}>
+      <InfoCard title="Hồ sơ sáng tác và chỉ số" icon={BookOpen}>
         <div className="grid grid-cols-3 gap-2 text-center">
-          <Metric value={user.role === 'Author' ? '6' : '0'} label="Serials" />
-          <Metric value={user.role === 'Author' ? '1.25M' : '—'} label="Total reads" />
-          <Metric value="99.4%" label="Integrity" />
+          <Metric value={user.role === 'Author' ? '6' : '0'} label="Truyện dài kỳ" />
+          <Metric value={user.role === 'Author' ? '1,25 triệu' : '—'} label="Lượt đọc" />
+          <Metric value="99,4%" label="Toàn vẹn" />
         </div>
-        <p className="mt-4 text-xs text-muted">Top published titles</p>
+        <p className="mt-4 text-xs text-muted">Tác phẩm nổi bật đã xuất bản</p>
         <ul className="mt-2 space-y-2 text-xs">
           <li>
             • The Silent Forest <span className="float-right text-muted">820K</span>
@@ -287,23 +289,23 @@ function UserInspector({ user, onEdit, onSuspend }) {
           </li>
         </ul>
       </InfoCard>
-      <InfoCard title="Financials & royalties" icon={BadgeDollarSign}>
-        <Row label="Ledger balance" value={user.coins} />
+      <InfoCard title="Tài chính và nhuận bút" icon={BadgeDollarSign}>
+        <Row label="Số dư sổ cái" value={user.coins} />
         <Row
-          label="Payout method"
-          value={user.role === 'Author' ? 'Stripe Connect · Verified' : 'Not configured'}
+          label="Phương thức nhận tiền"
+          value={user.role === 'Author' ? 'Stripe Connect · Đã xác minh' : 'Chưa cấu hình'}
         />
-        <Row label="Next cycle" value="Nov 1, 2026" />
+        <Row label="Kỳ tiếp theo" value="01/11/2026" />
       </InfoCard>
-      <InfoCard title="Audit trail · last 60 days" icon={CheckCircle2}>
+      <InfoCard title="Nhật ký kiểm tra · 60 ngày gần nhất" icon={CheckCircle2}>
         <div className="space-y-4 border-l border-line pl-4 text-xs">
           <div>
-            <strong>Security credential update</strong>
-            <p className="text-muted">Password reset authenticated via 2FA</p>
+            <strong>Cập nhật thông tin bảo mật</strong>
+            <p className="text-muted">Đặt lại mật khẩu đã được xác thực qua 2FA</p>
           </div>
           <div>
-            <strong>Account role verified</strong>
-            <p className="text-muted">Reviewed by Super Admin Marcus Vance</p>
+            <strong>Đã xác minh vai trò tài khoản</strong>
+            <p className="text-muted">Được quản trị viên cấp cao Marcus Vance xem xét</p>
           </div>
         </div>
       </InfoCard>

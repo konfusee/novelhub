@@ -19,6 +19,15 @@ const bars = [
   [91, 66],
   [78, 52],
 ]
+const statLabels = { 'Active Users (MAU)': 'Người dùng hoạt động (MAU)', 'Registered Readers': 'Độc giả đã đăng ký', 'Active Authors': 'Tác giả hoạt động', 'Published Stories': 'Truyện đã xuất bản', 'Moderation Queue': 'Hàng đợi kiểm duyệt', 'Platform Uptime': 'Thời gian hoạt động nền tảng' }
+const statNotes = { '88% total': '88% tổng số', '14,200 active': '14.200 đang hoạt động', Healthy: 'Ổn định', '30d': '30 ngày' }
+const statusLabels = { Success: 'Thành công', 'Policy Violation': 'Vi phạm chính sách', 'High Severity Alert': 'Cảnh báo nghiêm trọng cao' }
+const eventLabels = {
+  'Updated TTS Neural Voice Engine endpoint': 'Đã cập nhật điểm cuối bộ máy giọng nói TTS thần kinh',
+  'Auto-scaled storage mesh node us-east-2': 'Tự động mở rộng nút mạng lưu trữ us-east-2',
+  'Revoked publication rights for Author #AUT-9921': 'Đã thu hồi quyền xuất bản của Tác giả #AUT-9921',
+  'Mitigated IP rate-limit anomaly (142 blocked)': 'Đã xử lý bất thường giới hạn tốc độ IP (chặn 142)',
+}
 
 export function AdminDashboardPage() {
   const [metric, setMetric] = useState('signups')
@@ -32,17 +41,17 @@ export function AdminDashboardPage() {
       <main className="page-admin py-6">
         <div className="flex flex-col justify-between gap-4 lg:flex-row lg:items-center">
           <div>
-            <p className="text-xs text-muted">Admin Console / Operations &amp; System Health</p>
-            <h1 className="mt-2 text-2xl font-bold">Platform Operations Dashboard</h1>
+            <p className="text-xs text-muted">Bảng điều khiển quản trị / Vận hành và tình trạng hệ thống</p>
+            <h1 className="mt-2 text-2xl font-bold">Bảng vận hành nền tảng</h1>
           </div>
           <div className="flex flex-wrap gap-2">
-            <button onClick={() => window.alert('Live telemetry is updating in real time (mock).')} className="flex items-center gap-2 rounded-2xl border border-line px-4 py-2 text-xs">
+            <button onClick={() => window.alert('Dữ liệu trực tiếp đang cập nhật theo thời gian thực (bản mẫu).')} className="flex items-center gap-2 rounded-2xl border border-line px-4 py-2 text-xs">
               <span className="size-2 rounded-full bg-brand" />
-              Live Stream <span className="rounded-full bg-brand px-2 py-1 text-white">ON</span>
+              Luồng trực tiếp <span className="rounded-full bg-brand px-2 py-1 text-white">BẬT</span>
             </button>
             <Button variant="secondary" onClick={() => setExported(true)}>
               <Download size={15} />
-              {exported ? 'KPI Export Ready' : 'Export Weekly KPI'}
+              {exported ? 'KPI đã sẵn sàng' : 'Xuất KPI tuần'}
             </Button>
           </div>
         </div>
@@ -52,7 +61,7 @@ export function AdminDashboardPage() {
             return (
               <Card key={label} className="p-4">
                 <div className="flex justify-between">
-                  <span className="text-[10px] text-muted">{label}</span>
+                  <span className="text-[10px] text-muted">{statLabels[label] ?? label}</span>
                   <Icon
                     size={16}
                     className={
@@ -64,7 +73,7 @@ export function AdminDashboardPage() {
                 <span
                   className={`mt-2 block text-[10px] ${index === 1 ? 'text-orange' : 'text-brand'}`}
                 >
-                  {note}
+                  {statNotes[note] ?? note}
                 </span>
                 <div className="mt-3 h-1 rounded-full bg-elevated">
                   <div className="h-full w-3/4 rounded-full bg-brand" />
@@ -78,9 +87,9 @@ export function AdminDashboardPage() {
             <Card>
               <div className="flex flex-col justify-between gap-3 lg:flex-row lg:items-start">
                 <div>
-                  <h2 className="text-xl font-semibold">Platform Growth &amp; Activity Trends</h2>
+                  <h2 className="text-xl font-semibold">Tăng trưởng nền tảng và xu hướng hoạt động</h2>
                   <p className="text-xs text-muted">
-                    Comparative telemetry across ingestion rates and platform participants
+                    So sánh chỉ số tiếp nhận và người tham gia nền tảng
                   </p>
                 </div>
                 <div className="flex flex-wrap gap-2">
@@ -88,9 +97,9 @@ export function AdminDashboardPage() {
                     value={metric}
                     onChange={setMetric}
                     items={[
-                      { value: 'signups', label: 'User Signups' },
-                      { value: 'stories', label: 'Story Ingestion' },
-                      { value: 'royalty', label: 'Coin Royalty' },
+                      { value: 'signups', label: 'Đăng ký người dùng' },
+                      { value: 'stories', label: 'Tiếp nhận truyện' },
+                      { value: 'royalty', label: 'Nhuận bút xu' },
                     ]}
                   />
                   <select
@@ -98,8 +107,8 @@ export function AdminDashboardPage() {
                     onChange={event => setRange(event.target.value)}
                     className="rounded-xl border border-line bg-surface px-3 text-xs"
                   >
-                    <option value="30d">Last 30 Days</option>
-                    <option value="90d">Last 90 Days</option>
+                    <option value="30d">30 ngày gần nhất</option>
+                    <option value="90d">90 ngày gần nhất</option>
                   </select>
                 </div>
               </div>
@@ -123,43 +132,43 @@ export function AdminDashboardPage() {
                 })}
               </div>
               <div className="mt-3 grid grid-cols-4 text-center text-[9px] text-muted">
-                <span>W1</span>
-                <span>W2</span>
-                <strong className="text-ink">W3 ★</strong>
-                <span>W4</span>
+                <span>Tuần 1</span>
+                <span>Tuần 2</span>
+                <strong className="text-ink">Tuần 3 ★</strong>
+                <span>Tuần 4</span>
               </div>
               <div className="mt-6 grid gap-3 rounded-3xl bg-elevated p-5 sm:grid-cols-3">
-                <Metric label="Daily Active Users" value="245,600" note="↑ 4.1% weekly" />
+                <Metric label="Người dùng hoạt động hằng ngày" value="245.600" note="↑ 4,1% mỗi tuần" />
                 <Metric
-                  label="Avg Reading Session"
-                  value="38.5 min"
-                  note="Across 6.2 chapters/day"
+                  label="Phiên đọc trung bình"
+                  value="38,5 phút"
+                  note="Trên 6,2 chương/ngày"
                 />
                 <Metric
-                  label="Coin Circulation Flow"
-                  value="$184,200 USD"
-                  note="99.4% settlement clearance"
+                  label="Dòng lưu thông xu"
+                  value="184.200 USD"
+                  note="99,4% đối soát hoàn tất"
                 />
               </div>
             </Card>
             <Card>
               <div className="flex justify-between">
                 <div>
-                  <h2 className="text-xl font-semibold">Recent Critical Administrative Actions</h2>
+                  <h2 className="text-xl font-semibold">Thao tác quản trị quan trọng gần đây</h2>
                   <p className="text-xs text-muted">
-                    Chronological immutable audit stream for platform compliance
+                    Nhật ký kiểm tra bất biến theo thời gian phục vụ tuân thủ nền tảng
                   </p>
                 </div>
-                <button onClick={() => window.location.assign('/admin/audit-logs')} className="text-xs text-brand">View Full Audit Log →</button>
+                <button onClick={() => window.location.assign('/admin/audit-logs')} className="text-xs text-brand">Xem toàn bộ nhật ký kiểm tra →</button>
               </div>
               <div className="mt-5 overflow-x-auto">
                 <table className="w-full min-w-[680px] text-left text-xs">
                   <thead className="border-b border-line text-[9px] uppercase tracking-[.12em] text-muted">
                     <tr>
-                      <th className="pb-3">Timestamp</th>
-                      <th className="pb-3">Operator / Principal</th>
-                      <th className="pb-3">System Event &amp; Scope</th>
-                      <th className="pb-3">Outcome</th>
+                      <th className="pb-3">Thời gian</th>
+                      <th className="pb-3">Người vận hành / Chủ thể</th>
+                      <th className="pb-3">Sự kiện hệ thống và phạm vi</th>
+                      <th className="pb-3">Kết quả</th>
                       <th />
                     </tr>
                   </thead>
@@ -168,7 +177,7 @@ export function AdminDashboardPage() {
                       <tr key={time}>
                         <td className="py-4 font-mono text-muted">{time}</td>
                         <td className="py-4 font-semibold">{operator}</td>
-                        <td className="py-4">{event}</td>
+                        <td className="py-4">{eventLabels[event] ?? event}</td>
                         <td className="py-4">
                           <Badge
                             tone={
@@ -179,7 +188,7 @@ export function AdminDashboardPage() {
                                   : 'orange'
                             }
                           >
-                            {status}
+                            {statusLabels[status] ?? status}
                           </Badge>
                         </td>
                         <td>
@@ -196,10 +205,10 @@ export function AdminDashboardPage() {
             <Card>
               <div className="flex justify-between">
                 <div>
-                  <h2 className="text-xl font-semibold">Service Health</h2>
-                  <p className="text-xs text-muted">Real-time microservice ping &amp; latency</p>
+                  <h2 className="text-xl font-semibold">Tình trạng dịch vụ</h2>
+                  <p className="text-xs text-muted">Ping và độ trễ vi dịch vụ theo thời gian thực</p>
                 </div>
-                <Badge tone="green">100% OK</Badge>
+                <Badge tone="green">100% ổn định</Badge>
               </div>
               <div className="mt-5 space-y-3">
                 {serviceHealth.map(([name, stack, latency, uptime]) => (
@@ -217,11 +226,11 @@ export function AdminDashboardPage() {
               </div>
             </Card>
             <Card>
-              <h2 className="text-xl font-semibold">Storage &amp; Capacity</h2>
-              <Capacity label="PostgreSQL Primary Cluster" value="6.4 TB / 12 TB" percent={53} />
+              <h2 className="text-xl font-semibold">Lưu trữ và dung lượng</h2>
+              <Capacity label="Cụm PostgreSQL chính" value="6,4 TB / 12 TB" percent={53} />
               <Capacity
-                label="Media & Audio Object Vault"
-                value="84.2 TB / 150 TB"
+                label="Kho đối tượng media và âm thanh"
+                value="84,2 TB / 150 TB"
                 percent={56}
                 tone="orange"
               />
@@ -229,49 +238,49 @@ export function AdminDashboardPage() {
             <Card>
               <h2 className="flex items-center gap-2 text-xl font-semibold text-rose">
                 <ShieldAlert />
-                Platform Safeguards
+                Biện pháp bảo vệ nền tảng
               </h2>
               <p className="mt-2 text-xs text-muted">
-                Emergency incident response mechanisms and fail-safe triggers
+                Cơ chế ứng phó sự cố khẩn cấp và kích hoạt an toàn
               </p>
               <Toggle
-                label="Maintenance Mode"
-                note="Show maintenance splash to readers"
+                label="Chế độ bảo trì"
+                note="Hiển thị màn hình bảo trì cho độc giả"
                 value={maintenance}
                 setValue={setMaintenance}
               />
               <Toggle
-                label="Read-Only Lock"
-                note="Freeze new author submissions"
+                label="Khóa chỉ đọc"
+                note="Tạm dừng bản gửi mới của tác giả"
                 value={readOnly}
                 setValue={setReadOnly}
               />
               <Button
                 variant="secondary"
-                onClick={() => setSafeguard('Purge Global Edge CDN Cache')}
+                onClick={() => setSafeguard('Xóa bộ nhớ đệm CDN biên toàn cầu')}
                 className="mt-4 w-full"
               >
-                Purge Global Edge CDN Cache
+                Xóa bộ nhớ đệm CDN biên toàn cầu
               </Button>
             </Card>
           </aside>
         </div>
         <Modal
           open={Boolean(safeguard)}
-          title="Confirm Platform Safeguard"
+          title="Xác nhận biện pháp bảo vệ nền tảng"
           onClose={() => setSafeguard(null)}
         >
           <div className="flex gap-3 rounded-2xl bg-rose/10 p-4">
             <ShieldAlert className="shrink-0 text-rose" />
             <p className="text-sm">
-              {safeguard} will be simulated locally. No platform service will be changed.
+              {safeguard} sẽ chỉ được mô phỏng cục bộ. Không dịch vụ nền tảng nào bị thay đổi.
             </p>
           </div>
           <div className="mt-5 flex justify-end gap-2">
             <Button variant="secondary" onClick={() => setSafeguard(null)}>
-              Cancel
+              Hủy
             </Button>
-            <Button onClick={() => setSafeguard(null)}>Confirm Mock Action</Button>
+            <Button onClick={() => setSafeguard(null)}>Xác nhận thao tác mẫu</Button>
           </div>
         </Modal>
       </main>
@@ -300,7 +309,7 @@ function Capacity({ label, value, percent, tone = 'brand' }) {
           style={{ width: `${percent}%` }}
         />
       </div>
-      <p className="mt-1 text-[9px] text-muted">{percent}% utilized · replicas balanced</p>
+      <p className="mt-1 text-[9px] text-muted">Đã dùng {percent}% · các bản sao cân bằng</p>
     </div>
   )
 }
