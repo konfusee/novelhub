@@ -14,9 +14,9 @@ export function RoleUtilityPage({ role, eyebrow, title, description }) {
   const Layout = layouts[role]
   const { t } = useLocale()
   const rows = [
-    ['NH-1042', 'The Silent Forest', 'Updated 12 minutes ago', 'Active'],
-    ['NH-1038', 'Whispers of You', 'Updated 46 minutes ago', 'Review'],
-    ['NH-1027', 'Neon Hearts', 'Updated yesterday', 'Resolved'],
+    ['NH-1042', 'The Silent Forest', 'Cập nhật 12 phút trước', 'Active'],
+    ['NH-1038', 'Whispers of You', 'Cập nhật 46 phút trước', 'Review'],
+    ['NH-1027', 'Neon Hearts', 'Cập nhật hôm qua', 'Resolved'],
   ]
   return (
     <Layout>

@@ -63,23 +63,23 @@ export const stories = [
 
 export const featuredStories = [
   {
-    label: "EDITOR'S PICK",
-    title: 'A World of Possibilities',
-    description: 'Discover stories handpicked by our editorial team.',
+    label: 'BIÊN TẬP VIÊN ĐỀ XUẤT',
+    title: 'Thế giới muôn vàn khả năng',
+    description: 'Khám phá những câu chuyện được đội ngũ biên tập tuyển chọn.',
     icon: '🏰',
     tone: 'rose',
   },
   {
-    label: 'NEW AUTHORS',
-    title: 'Fresh Voices Bright Ideas',
-    description: 'Meet talented creators and their newest stories.',
+    label: 'TÁC GIẢ MỚI',
+    title: 'Giọng kể mới, ý tưởng sáng tạo',
+    description: 'Gặp gỡ những cây bút tài năng và các truyện mới nhất của họ.',
     icon: '📚',
     tone: 'orange',
   },
   {
-    label: 'LISTEN ANYWHERE',
-    title: 'Stories On the Go',
-    description: 'Enjoy immersive audio with warm narration.',
+    label: 'NGHE MỌI NƠI',
+    title: 'Truyện đồng hành mọi hành trình',
+    description: 'Thưởng thức âm thanh sống động với giọng kể ấm áp.',
     icon: '🎧',
     tone: 'green',
   },

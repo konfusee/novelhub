@@ -20,10 +20,10 @@ const genres = [
 ]
 const historyItems = [
   { ...libraryItems[0], when: 'Read 20m ago', duration: '35 mins reading time' },
-  { ...libraryItems[1], when: 'Audio session · 2h ago', duration: '20 mins listening time' },
-  { ...libraryItems[2], when: 'Read yesterday 21:15', duration: '42 mins reading time' },
-  { ...libraryItems[4], when: 'Read yesterday 14:30', duration: '28 mins reading time' },
-  { ...libraryItems[3], when: 'Finished Thursday', duration: '1hr 15m session' },
+  { ...libraryItems[1], when: 'Phiên nghe · 2 giờ trước', duration: '20 phút nghe' },
+  { ...libraryItems[2], when: 'Đọc hôm qua lúc 21:15', duration: '42 phút đọc' },
+  { ...libraryItems[4], when: 'Đọc hôm qua lúc 14:30', duration: '28 phút đọc' },
+  { ...libraryItems[3], when: 'Hoàn tất thứ Năm', duration: 'Phiên 1 giờ 15 phút' },
 ]
 
 export function ReadingHistoryPage() {
@@ -57,7 +57,7 @@ export function ReadingHistoryPage() {
               <Trash2 size={15} />
               {t('history.clear')}
             </Button>
-            <Button onClick={() => window.alert('Reading history export prepared (mock).')}>
+            <Button onClick={() => window.alert('Đã chuẩn bị bản xuất lịch sử đọc (bản mẫu).')}>
               <Download size={15} />
               {t('history.export')}
             </Button>
