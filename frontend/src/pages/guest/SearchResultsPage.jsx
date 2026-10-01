@@ -134,7 +134,7 @@ export function SearchResultsPage({ embedded = false }) {
           <Card className="mt-5 flex flex-col items-center justify-between gap-4 p-4 sm:flex-row">
             <p className="text-xs text-muted">
               Hiển thị <strong className="text-ink">{visibleResults.length ? 1 : 0}</strong> đến{' '}
-              <strong className="text-ink">{visibleResults.length}</strong> of{' '}
+              <strong className="text-ink">{visibleResults.length}</strong> trong{' '}
               <strong className="text-ink">148</strong> kết quả
             </p>
             <div className="flex gap-1">

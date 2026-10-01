@@ -47,14 +47,14 @@ function StoryTile({ story }) {
 }
 
 function StreakCard() {
-  const days = ['M', 'T', 'W', 'T', 'F', 'S', 'S']
+  const days = ['T2', 'T3', 'T4', 'T5', 'T6', 'T7', 'CN']
   return (
     <Card>
       <div className="flex items-center justify-between">
         <div>
           <p className="text-xs text-muted">Chuỗi ngày đọc</p>
           <h3 className="mt-1 flex items-center gap-2 text-2xl font-bold">
-            <Flame className="fill-orange/20 text-orange" /> 18 days
+            <Flame className="fill-orange/20 text-orange" /> 18 ngày
           </h3>
         </div>
         <CalendarDays className="text-brand" />
@@ -72,7 +72,7 @@ function StreakCard() {
         ))}
       </div>
       <p className="mt-4 rounded-xl bg-orange/10 px-3 py-2 text-xs text-orange">
-        Best streak: 24 days. Keep reading!
+        Chuỗi tốt nhất: 24 ngày. Hãy tiếp tục đọc!
       </p>
     </Card>
   )
@@ -258,7 +258,7 @@ export function ReaderHomePage() {
             <Card className="bg-elevated sm:col-span-2 2xl:col-span-1">
               <Clock3 className="text-brand" />
               <p className="mt-4 text-lg font-medium italic leading-7">
-                “A reader lives a thousand lives before they rest.”
+                “Một độc giả sống ngàn cuộc đời trước khi nghỉ ngơi.”
               </p>
               <p className="mt-3 text-xs text-muted">Cảm hứng mỗi ngày của bạn</p>
             </Card>

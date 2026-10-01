@@ -1,7 +1,7 @@
 import { Star } from 'lucide-react'
 import { Badge, Button } from '../ui'
 export function RankingRow({ item }) {
-  const tone = item.change === 'NEW' ? 'green' : item.change.includes('↓') ? 'red' : 'neutral'
+  const tone = item.change === 'MỚI' ? 'green' : item.change.includes('↓') ? 'red' : 'neutral'
   return (
     <div className="grid grid-cols-[34px_44px_minmax(0,1fr)_auto] items-center gap-3 border-b border-line px-4 py-3 last:border-0 sm:grid-cols-[34px_48px_minmax(0,1fr)_100px_50px_auto]">
       <strong className="text-sm text-orange">{String(item.rank).padStart(2, '0')}</strong>
@@ -23,7 +23,7 @@ export function RankingRow({ item }) {
         {item.change}
       </Badge>
       <Button onClick={() => window.location.assign(`/stories/${item.id || 'demo'}`)} variant="secondary" className="min-h-8 px-3 py-1 text-[10px]">
-        Preview
+        Xem thử
       </Button>
     </div>
   )

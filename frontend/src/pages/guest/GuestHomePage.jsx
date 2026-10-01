@@ -66,22 +66,22 @@ function Hero() {
           <div className="absolute inset-x-4 bottom-14 flex items-end justify-center sm:inset-x-8">
             <div className="relative h-40 w-72 max-w-full">
               <div className="absolute bottom-0 left-3 h-11 w-60 max-w-[78%] -rotate-2 rounded-lg border border-line bg-[#bd9470] px-5 py-3 text-[10px] tracking-widest text-white">
-                GENTLE STORIES
+                TRUYỆN DỊU DÀNG
               </div>
               <div className="absolute bottom-10 left-8 h-11 w-56 max-w-[76%] rotate-1 rounded-lg border border-line bg-brand px-5 py-3 text-[10px] tracking-widest text-white">
                 NGÀY MAI TƯƠI SÁNG
               </div>
               <div className="absolute bottom-20 left-5 h-10 w-48 max-w-[72%] -rotate-1 rounded-lg border border-line bg-[#d8c7b4] px-5 py-3 text-[10px] tracking-widest text-[#55483f]">
-                NOVELHUB TALES
+                TRUYỆN NOVELHUB
               </div>
               <div className="absolute bottom-0 right-0 grid h-24 w-20 place-items-center rounded-b-2xl rounded-t-md border-2 border-line bg-surface text-center text-[9px] font-semibold leading-3 text-brand">
-                GOOD
+                TRUYỆN
                 <br />
-                STORIES
+                HAY
                 <br />
                 <span className="text-orange">TƯƠI SÁNG</span>
                 <br />
-                DAYS
+                MỖI NGÀY
               </div>
             </div>
           </div>

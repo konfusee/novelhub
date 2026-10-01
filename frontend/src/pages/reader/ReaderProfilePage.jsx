@@ -409,8 +409,7 @@ export function ReaderProfilePage({ workspace = 'reader' }) {
             {isSettings && <Card className="bg-elevated">
               <p className="text-xl italic text-brand">“Những câu chuyện hay làm ngày mai thêm tử tế.”</p>
               <p className="mt-3 text-xs text-muted">
-                Every font size nuance and canvas tone you choose shapes the intimacy of your
-                reading sanctuary.
+                Mỗi lựa chọn về cỡ chữ và tông nền đều tạo nên sự gần gũi cho không gian đọc của bạn.
               </p>
             </Card>}
           </aside>
