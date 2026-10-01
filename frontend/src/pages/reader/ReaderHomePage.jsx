@@ -158,7 +158,7 @@ export function ReaderHomePage() {
             <section>
               <SectionHeader
                 title={t('readerHome.pickUp')}
-                description="Your stories, ready when you are"
+                description="Truyện của bạn luôn sẵn sàng"
               />
               <div className="mt-4 grid gap-4 md:grid-cols-2">
                 <ContinueCard item={readerHome.continueReading} />
@@ -169,7 +169,7 @@ export function ReaderHomePage() {
             <section>
               <SectionHeader
                 title={t('readerHome.recommended')}
-                description="Curated from your reading taste"
+                description="Được tuyển chọn theo sở thích đọc của bạn"
                 action={
                   <button onClick={() => window.location.assign('/search')} className="flex items-center gap-1 text-xs font-semibold text-brand">
                     {t('readerHome.seeAll')} <ChevronRight size={15} />

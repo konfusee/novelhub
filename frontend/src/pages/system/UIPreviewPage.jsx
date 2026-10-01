@@ -8,11 +8,12 @@ import { StoryCover } from '../../components/story/StoryCover'
 import { stories } from '../../data/mock/stories'
 const statusTone = { TODO: 'neutral', IN_PROGRESS: 'orange', DONE: 'green', BLOCKED: 'red' }
 const workflows = [
-  ['Author Apply', '/author/apply'],
-  ['Revenue Agreement', '/admin/users/user-author'],
-  ['403 Forbidden', '/403'],
-  ['404 Not Found', '/route-not-found'],
+  ['Đăng ký làm tác giả', '/author/apply'],
+  ['Thỏa thuận doanh thu', '/admin/users/user-author'],
+  ['403 Không có quyền', '/403'],
+  ['404 Không tìm thấy', '/route-not-found'],
 ]
+const statusLabels = { TODO: 'Cần làm', IN_PROGRESS: 'Đang thực hiện', DONE: 'Hoàn tất', BLOCKED: 'Bị chặn' }
 export function UIPreviewPage() {
   const { resolvedTheme, setTheme } = useTheme()
   const [query, setQuery] = useState('')
@@ -37,19 +38,19 @@ export function UIPreviewPage() {
             </span>
             <div>
               <p className="font-bold tracking-tight">NovelHub</p>
-              <h1 className="text-sm text-muted">UI Preview · 36 Screens</h1>
+              <h1 className="text-sm text-muted">Xem trước giao diện · 36 màn hình</h1>
             </div>
           </div>
           <div className="flex items-center gap-3">
             <span className="hidden text-sm text-muted sm:inline">
-              Development / Presentation Tool
+              Công cụ phát triển / Trình bày
             </span>
             <Button
               variant="secondary"
               onClick={() => setTheme(resolvedTheme === 'dark' ? 'light' : 'dark')}
             >
               {resolvedTheme === 'dark' ? <Sun size={17} /> : <Moon size={17} />}{' '}
-              {resolvedTheme === 'dark' ? 'Light' : 'Dark'}
+              {resolvedTheme === 'dark' ? 'Sáng' : 'Tối'}
             </Button>
           </div>
         </div>
@@ -58,10 +59,10 @@ export function UIPreviewPage() {
         <section className="mb-8 grid gap-5 lg:grid-cols-[1fr_auto] lg:items-end">
           <div>
             <p className="text-sm font-semibold uppercase tracking-[.16em] text-brand">
-              Frontend progress
+              Tiến độ frontend
             </p>
             <h2 className="mt-2 text-3xl font-semibold tracking-tight md:text-4xl">
-              {completed} / {pageRegistry.length} screens completed
+              {completed} / {pageRegistry.length} màn hình đã hoàn tất
             </h2>
             <div className="mt-4 h-2 overflow-hidden rounded-full bg-elevated">
               <div
@@ -90,23 +91,23 @@ export function UIPreviewPage() {
         <section className="mb-7 flex flex-col gap-3 rounded-3xl border border-line bg-surface p-4 md:flex-row">
           <Input
             icon={Search}
-            placeholder="Search screen..."
+            placeholder="Tìm màn hình..."
             value={query}
             onChange={e => setQuery(e.target.value)}
             className="flex-1"
           />
           <Select
-            aria-label="Filter screens"
+            aria-label="Lọc màn hình"
             value={filter}
             onChange={e => setFilter(e.target.value)}
           >
-            <option>All</option>
-            <optgroup label="Roles">
+            <option value="All">Tất cả</option>
+            <optgroup label="Vai trò">
               {pageRoles.map(role => (
                 <option key={role}>{role}</option>
               ))}
             </optgroup>
-            <optgroup label="Statuses">
+            <optgroup label="Trạng thái">
               {pageStatuses.map(status => (
                 <option key={status}>{status}</option>
               ))}
@@ -120,7 +121,7 @@ export function UIPreviewPage() {
               <Card key={page.id} className="flex min-h-56 flex-col p-5">
                 <div className="flex items-center justify-between">
                   <span className="text-sm font-bold text-brand">{page.id}</span>
-                  <Badge tone={statusTone[page.status]}>{page.status}</Badge>
+                  <Badge tone={statusTone[page.status]}>{statusLabels[page.status]}</Badge>
                 </div>
                 <h3 className="mt-5 text-lg font-semibold leading-snug">{page.name}</h3>
                 <p className="mt-2 text-sm text-muted">{page.role}</p>
@@ -132,12 +133,12 @@ export function UIPreviewPage() {
                         className="inline-flex min-h-11 flex-1 items-center justify-center rounded-2xl border border-brand bg-brand px-3 py-2.5 text-sm font-semibold text-white"
                         to={page.route}
                       >
-                        Open Page
+                        Mở trang
                       </Link>
                       <Link
                         className="inline-grid size-11 place-items-center rounded-2xl border border-line bg-surface"
                         to={page.previewRoute}
-                        aria-label={`Preview ${page.name}`}
+                        aria-label={`Xem trước ${page.name}`}
                       >
                         <ExternalLink size={17} />
                       </Link>
@@ -145,13 +146,13 @@ export function UIPreviewPage() {
                   ) : (
                     <>
                       <Button className="flex-1 px-3" disabled>
-                        Open Page
+                        Mở trang
                       </Button>
                       <Button
                         variant="secondary"
                         className="px-3"
                         disabled
-                        aria-label={`Preview ${page.name}`}
+                        aria-label={`Xem trước ${page.name}`}
                       >
                         <ExternalLink size={17} />
                       </Button>
@@ -163,12 +164,12 @@ export function UIPreviewPage() {
           })}
         </div>
         {!visible.length && (
-          <div className="py-20 text-center text-muted">No screens match your search.</div>
+          <div className="py-20 text-center text-muted">Không có màn hình nào khớp tìm kiếm.</div>
         )}
         <section className="mt-12 border-t border-line pt-8">
-          <h2 className="text-2xl font-semibold">Additional Workflows</h2>
+          <h2 className="text-2xl font-semibold">Quy trình bổ sung</h2>
           <p className="mt-1 text-sm text-muted">
-            Supporting journeys outside the numbered P01–P36 catalog.
+            Các hành trình hỗ trợ nằm ngoài danh mục đánh số P01–P36.
           </p>
           <div className="mt-5 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
             {workflows.map(([label, route]) => (
@@ -184,16 +185,16 @@ export function UIPreviewPage() {
           </div>
         </section>
         <section className="mt-10 border-t border-line pt-8">
-          <h2 className="text-2xl font-semibold">Visual Assets</h2>
+          <h2 className="text-2xl font-semibold">Tài nguyên hình ảnh</h2>
           <p className="mt-1 text-sm text-muted">
-            Original, text-free 2:3 artwork with HTML-rendered titles and resilient fallbacks.
+            Ảnh gốc tỷ lệ 2:3 không chứa chữ, tiêu đề dựng bằng HTML và có phương án dự phòng.
           </p>
           <div className="mt-5 grid grid-cols-2 gap-4 sm:grid-cols-3 lg:max-w-3xl">
             {stories.slice(0, 3).map(story => (
               <article key={story.id} className="group min-w-0">
                 <StoryCover story={story} className="aspect-[2/3] rounded-2xl border border-line" />
                 <h3 className="mt-2 truncate text-sm font-semibold">{story.title}</h3>
-                <p className="text-xs text-muted">AI artwork · WebP</p>
+                <p className="text-xs text-muted">Ảnh minh họa AI · WebP</p>
               </article>
             ))}
           </div>
