@@ -133,9 +133,9 @@ export function SearchResultsPage({ embedded = false }) {
           )}
           <Card className="mt-5 flex flex-col items-center justify-between gap-4 p-4 sm:flex-row">
             <p className="text-xs text-muted">
-              Showing <strong className="text-ink">{visibleResults.length ? 1 : 0}</strong> to{' '}
+              Hiển thị <strong className="text-ink">{visibleResults.length ? 1 : 0}</strong> đến{' '}
               <strong className="text-ink">{visibleResults.length}</strong> of{' '}
-              <strong className="text-ink">148</strong> results
+              <strong className="text-ink">148</strong> kết quả
             </p>
             <div className="flex gap-1">
               {[1, 2, 3, 15].map(item => (
@@ -178,7 +178,7 @@ export function SearchResultsPage({ embedded = false }) {
               </div>
               <div>
                 <h3 className="text-sm font-semibold">The Silent Forest</h3>
-                <p className="text-xs text-muted">by Mira Lane</p>
+                <p className="text-xs text-muted">tác giả Mira Lane</p>
                 <p className="mt-2 text-xs font-semibold text-orange">★ 4.8</p>
               </div>
             </div>
@@ -191,7 +191,7 @@ export function SearchResultsPage({ embedded = false }) {
             </button>
           </Card>
           <Card className="bg-elevated p-5 text-center">
-            <p className="italic">“Good stories make a kinder tomorrow.”</p>
+            <p className="italic">“Những câu chuyện hay làm ngày mai thêm tử tế.”</p>
             <p className="mt-3 text-xs text-muted">— NovelHub</p>
           </Card>
         </aside>

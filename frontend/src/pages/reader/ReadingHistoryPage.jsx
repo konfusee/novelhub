@@ -13,13 +13,13 @@ const metrics = [
 ]
 const weekly = [32, 48, 24, 51, 41, 49, 46]
 const genres = [
-  ['Fantasy & Mythic', 45, 'bg-brand'],
-  ['Romance & Drama', 25, 'bg-orange'],
-  ['Mystery & Thriller', 18, 'bg-purple'],
-  ['Sci-Fi & Cyberpunk', 12, 'bg-[#985016]'],
+  ['Kỳ ảo và thần thoại', 45, 'bg-brand'],
+  ['Lãng mạn và chính kịch', 25, 'bg-orange'],
+  ['Bí ẩn và giật gân', 18, 'bg-purple'],
+  ['Khoa học viễn tưởng và Cyberpunk', 12, 'bg-[#985016]'],
 ]
 const historyItems = [
-  { ...libraryItems[0], when: 'Read 20m ago', duration: '35 mins reading time' },
+  { ...libraryItems[0], when: 'Đọc 20 phút trước', duration: '35 phút đọc' },
   { ...libraryItems[1], when: 'Phiên nghe · 2 giờ trước', duration: '20 phút nghe' },
   { ...libraryItems[2], when: 'Đọc hôm qua lúc 21:15', duration: '42 phút đọc' },
   { ...libraryItems[4], when: 'Đọc hôm qua lúc 14:30', duration: '28 phút đọc' },
@@ -123,7 +123,7 @@ export function ReadingHistoryPage() {
                       style={{ height: `${period === 'week' ? value * 2 : value * 1.55}px` }}
                     />
                     <span className="mt-2 text-center text-[10px] text-muted">
-                      {['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'][index]}
+                      {['T2', 'T3', 'T4', 'T5', 'T6', 'T7', 'CN'][index]}
                     </span>
                   </div>
                 ))}
