@@ -45,6 +45,14 @@ const formatItemText = value => value
   .replace('AI Safety Score:', 'Điểm an toàn AI:')
   .replace('AI Vector Check:', 'Kiểm tra vector AI:')
   .replace('semantic overlap detected with registered IP', 'phát hiện trùng lặp ngữ nghĩa với SHTT đã đăng ký')
+  .replace('Fantasy', 'Kỳ ảo')
+  .replace('Ch. ', 'Chương ')
+  .replace('24m', '24 phút')
+  .replace('45m', '45 phút')
+  .replace('1h 10m', '1 giờ 10 phút')
+  .replace('1h 35m', '1 giờ 35 phút')
+  .replace('Graphic violence keyword density', 'Mật độ từ khóa bạo lực trực diện')
+  .replace('Plagiarism claim on Scene 4 dialogue', 'Khiếu nại đạo văn trong lời thoại Cảnh 4')
   .replace('words', 'từ')
 
 export function ModeratorOverviewPage() {

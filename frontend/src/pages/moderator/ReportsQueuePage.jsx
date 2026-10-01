@@ -27,6 +27,9 @@ const severityLabels = { High: 'Cao', Medium: 'Trung bình', Low: 'Thấp' }
 const statusLabels = { Open: 'Đang mở', 'In Review': 'Đang xét duyệt', Resolved: 'Đã giải quyết', Escalated: 'Đã chuyển cấp' }
 const titleLabels = { 'Copyright & Plagiarism Claim': 'Khiếu nại bản quyền và đạo văn', 'Comment Harassment / Toxic Behavior': 'Bình luận quấy rối / hành vi độc hại', 'Unrated Mature Content (Missing 18+ Gate)': 'Nội dung trưởng thành chưa phân loại (thiếu cổng 18+)', 'Misleading Story Metadata': 'Thông tin truyện gây hiểu nhầm' }
 const formatAge = value => value.replace('m ago', ' phút trước').replace('h ago', ' giờ trước')
+const formatTarget = value => value
+  .replace('Reader comment on ', 'Bình luận độc giả về ')
+  .replace('(Ch. ', '(Chương ')
 const formatReportMeta = value => value
   .replace('Similarity Index', 'chỉ số tương đồng')
   .replace('Trust & Safety review', 'Xét duyệt Tin cậy và An toàn')
@@ -208,7 +211,7 @@ function ReportCard({ report, active, onSelect }) {
           <h2 className="mt-2 text-xl font-semibold">{titleLabels[report.title] ?? report.title}</h2>
           <p className="mt-2 text-sm">
             <BookOpen size={14} className="mr-2 inline" />
-            Đối tượng: <strong>{report.target}</strong>
+            Đối tượng: <strong>{formatTarget(report.target)}</strong>
           </p>
           <div className="mt-4 rounded-2xl bg-elevated p-3 text-sm italic text-muted">
             “{report.excerpt}”
@@ -267,7 +270,7 @@ function IncidentInspector({ report, onResolution, onSimilarity }) {
       </div>
       <div className="mt-5 rounded-3xl border border-rose/50 bg-rose/5 p-5">
         <div className="flex justify-between text-xs">
-          <strong>Đoạn bị cảnh báo trong “{report.target}”</strong>
+          <strong>Đoạn bị cảnh báo trong “{formatTarget(report.target)}”</strong>
           <span className="text-rose">Trùng khớp chính xác (94%)</span>
         </div>
         <blockquote className="mt-4 border-l-2 border-rose pl-4 text-sm italic leading-7">
