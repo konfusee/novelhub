@@ -18,33 +18,33 @@ import { Badge, Button, Card, Modal } from '../../components/ui'
 
 const checklist = [
   [
-    'Mandatory Metadata',
-    'Title, synopsis, and cover image complete.',
-    'Cover: 1600×2400 Hi-Res · Synopsis: 180 words',
+    'Thông tin bắt buộc',
+    'Đã hoàn thiện tiêu đề, tóm tắt và ảnh bìa.',
+    'Bìa: 1600×2400 độ phân giải cao · Tóm tắt: 180 từ',
     FileCheck2,
   ],
   [
-    'Chapter Count & Word Minimums',
-    '5 chapters prepared, 14,200 total words.',
-    'Chapters 13–17 · Avg. 2,840 words/chapter',
+    'Số chương và số từ tối thiểu',
+    'Đã chuẩn bị 5 chương, tổng cộng 14.200 từ.',
+    'Chương 13–17 · Trung bình 2.840 từ/chương',
     BookCheck,
   ],
   [
-    'Content Rating & Trigger Warnings',
-    'Tagged PG-13 for mild fantasy peril.',
-    'PG-13: Peril / Action · No explicit violence flagged',
+    'Phân loại nội dung và cảnh báo nhạy cảm',
+    'Được gắn PG-13 do có hiểm nguy kỳ ảo nhẹ.',
+    'PG-13: Hiểm nguy / Hành động · Không phát hiện bạo lực trực diện',
     Tags,
   ],
   [
-    'Author Original Work & Rights Agreement',
-    'Confirmed original copyright ownership.',
-    'E-signature verified on file',
+    'Thỏa thuận tác phẩm gốc và quyền tác giả',
+    'Đã xác nhận sở hữu bản quyền tác phẩm gốc.',
+    'Chữ ký điện tử trong hồ sơ đã được xác minh',
     ShieldCheck,
   ],
   [
-    'Formatting & Typography Check',
-    'Poppins formatting validated, no broken media links.',
-    'Paragraph indents: Valid · 0 Orphan Tags',
+    'Kiểm tra định dạng và kiểu chữ',
+    'Định dạng Poppins hợp lệ, không có liên kết media hỏng.',
+    'Thụt đầu dòng: Hợp lệ · 0 thẻ mồ côi',
     Eye,
   ],
 ]
@@ -52,7 +52,7 @@ const checklist = [
 export function SubmissionReviewPage() {
   const [verified, setVerified] = useState(checklist.map(() => true))
   const [notes, setNotes] = useState(
-    'Volume II continues the lore from Volume I. Chapter 16 includes brief mythological combat scenes adhering to PG-13 guidelines.',
+    'Tập II tiếp nối thế giới truyện từ Tập I. Chương 16 có một số cảnh chiến đấu thần thoại ngắn, phù hợp hướng dẫn PG-13.',
   )
   const [detail, setDetail] = useState(null)
   const [confirmOpen, setConfirmOpen] = useState(false)
@@ -63,8 +63,8 @@ export function SubmissionReviewPage() {
     <AuthorLayout>
       <main className="page-author py-6">
         <p className="text-xs text-muted">
-          Author Studio / Novels / The Silent Forest /{' '}
-          <strong className="text-brand">Moderation &amp; Submission</strong>
+          Studio tác giả / Tiểu thuyết / The Silent Forest /{' '}
+          <strong className="text-brand">Kiểm duyệt và gửi duyệt</strong>
         </p>
         <Card className="mt-5">
           <div className="flex flex-col gap-5 sm:flex-row sm:items-center">
@@ -76,22 +76,22 @@ export function SubmissionReviewPage() {
               FOREST
             </div>
             <div className="min-w-0 flex-1">
-              <Badge tone="green">Manuscript Volume · ID: #MS-88402</Badge>
+              <Badge tone="green">Tập bản thảo · ID: #MS-88402</Badge>
               <h1 className="mt-3 text-2xl font-bold sm:text-3xl">
-                Submit Manuscript for Moderation &amp; Publishing
+                Gửi bản thảo để kiểm duyệt và xuất bản
               </h1>
               <p className="mt-2 text-sm">
-                Story: <strong>The Silent Forest — Volume II: Roots of Eldoria</strong>
+                Truyện: <strong>The Silent Forest — Tập II: Roots of Eldoria</strong>
               </p>
             </div>
             <div className="grid grid-cols-2 rounded-2xl border border-line bg-elevated p-4 text-center text-xs">
               <div className="border-r border-line px-4">
-                <span className="text-muted">Total Chapters</span>
-                <strong className="block text-base">5 New Chapters</strong>
+                <span className="text-muted">Tổng số chương</span>
+                <strong className="block text-base">5 chương mới</strong>
               </div>
               <div className="px-4">
-                <span className="text-muted">Word Count</span>
-                <strong className="block text-base text-brand">14,200 words</strong>
+                <span className="text-muted">Số từ</span>
+                <strong className="block text-base text-brand">14.200 từ</strong>
               </div>
             </div>
           </div>
@@ -102,12 +102,12 @@ export function SubmissionReviewPage() {
           </span>
           <div>
             <strong>
-              {submitted ? 'Submitted to Moderator Queue' : 'Draft Review in Progress'}
+              {submitted ? 'Đã gửi vào hàng đợi kiểm duyệt' : 'Đang kiểm tra bản nháp'}
             </strong>
             <p className="text-xs text-muted">
               {submitted
-                ? 'Editorial review is now queued with an estimated 12–24 hour SLA.'
-                : `Ready to Submit (${percent}% Checklist Passed)`}
+                ? 'Bản thảo đang chờ biên tập, thời gian dự kiến 12–24 giờ.'
+                : `Sẵn sàng gửi (${percent}% danh sách kiểm tra đạt yêu cầu)`}
             </p>
           </div>
           <div className="sm:ml-auto sm:w-56">
@@ -122,12 +122,12 @@ export function SubmissionReviewPage() {
             <Card>
               <div className="flex items-center justify-between border-b border-line pb-5">
                 <div>
-                  <h2 className="text-xl font-semibold">Pre-flight Submission Checklist</h2>
+                  <h2 className="text-xl font-semibold">Danh sách kiểm tra trước khi gửi</h2>
                   <p className="mt-1 text-xs text-muted">
-                    Mandatory validation criteria required by NovelHub Quality Standards
+                    Các tiêu chí xác thực bắt buộc theo Tiêu chuẩn Chất lượng NovelHub
                   </p>
                 </div>
-                <Badge>{passed} / 5 Verified</Badge>
+                <Badge>{passed} / 5 đã xác minh</Badge>
               </div>
               <div className="mt-5 space-y-3">
                 {checklist.map(([title, description, meta, Icon], index) => (
@@ -157,7 +157,7 @@ export function SubmissionReviewPage() {
                       onClick={() => setDetail(index)}
                       className="text-xs font-medium text-brand"
                     >
-                      Review Details
+                      Xem chi tiết
                     </button>
                   </div>
                 ))}
@@ -166,13 +166,13 @@ export function SubmissionReviewPage() {
             <Card>
               <div className="flex justify-between gap-3">
                 <div>
-                  <h2 className="text-xl font-semibold">Author Notes to Moderator</h2>
+                  <h2 className="text-xl font-semibold">Ghi chú của tác giả cho kiểm duyệt viên</h2>
                   <p className="mt-2 text-xs text-muted">
-                    Add specific lore continuity, trigger nuances, or context to help your assigned
-                    editor review swiftly.
+                    Thêm thông tin về tính nhất quán thế giới truyện, nội dung nhạy cảm hoặc bối
+                    cảnh để biên tập viên đánh giá nhanh hơn.
                   </p>
                 </div>
-                <span className="text-[10px] text-muted">Optional briefing</span>
+                <span className="text-[10px] text-muted">Thông tin không bắt buộc</span>
               </div>
               <textarea
                 value={notes}
@@ -181,11 +181,11 @@ export function SubmissionReviewPage() {
                 className="mt-5 min-h-36 w-full rounded-2xl border border-line bg-elevated p-4 text-sm leading-6 outline-none focus:border-brand"
               />
               <p className="mt-2 text-right text-[10px] text-muted">
-                {notes.length} / 500 characters
+                {notes.length} / 500 ký tự
               </p>
               <p className="mt-3 flex items-center gap-2 text-[10px] text-muted">
                 <LockKeyhole size={13} className="text-brand" />
-                This note is private between you and the editorial moderation desk.
+                Ghi chú này chỉ hiển thị cho bạn và bộ phận biên tập kiểm duyệt.
               </p>
             </Card>
             <Card className="flex flex-col gap-4 sm:flex-row sm:items-center">
@@ -193,67 +193,67 @@ export function SubmissionReviewPage() {
                 <Clock3 />
               </span>
               <div>
-                <strong className="text-sm">Immediate Dispatch Available</strong>
+                <strong className="text-sm">Có thể gửi ngay</strong>
                 <p className="text-xs text-muted">
-                  Queue assignment occurs within 10 minutes of submission.
+                  Bản thảo sẽ được phân công trong vòng 10 phút sau khi gửi.
                 </p>
               </div>
-          <Button onClick={() => window.alert('Submission preview opened (mock).')} variant="secondary" className="sm:ml-auto">
+          <Button onClick={() => window.alert('Đã mở bản xem trước nội dung gửi duyệt (bản mẫu).')} variant="secondary" className="sm:ml-auto">
                 <ArrowLeft size={14} />
-                Save &amp; Return to Editor
+                Lưu và quay lại trình soạn thảo
               </Button>
               <Button disabled={passed < 5 || submitted} onClick={() => setConfirmOpen(true)}>
                 <Send size={15} />
-                {submitted ? 'Submitted' : 'Submit for Review'}
+                {submitted ? 'Đã gửi' : 'Gửi xét duyệt'}
               </Button>
             </Card>
           </div>
           <aside className="space-y-5 xl:sticky xl:top-24">
             <Card>
               <h2 className="flex items-center gap-2 text-lg font-semibold">
-                Publication Pipeline &amp; Review SLA <BarChart3 className="text-brand" size={18} />
+                Quy trình xuất bản và thời gian xét duyệt <BarChart3 className="text-brand" size={18} />
               </h2>
               <div className="mt-5 space-y-0">
                 <PipelineStep
                   number="✓"
-                  title="Pre-flight Check"
-                  note="System validation for syntax, chapter integrity and metadata."
+                  title="Kiểm tra trước khi gửi"
+                  note="Hệ thống kiểm tra cú pháp, tính toàn vẹn chương và thông tin."
                   active
                 />
                 <PipelineStep
                   number="2"
-                  title="Moderator Queue"
-                  note="Assigned to Senior Editorial Team for content compliance."
+                  title="Hàng đợi kiểm duyệt"
+                  note="Được phân công cho Đội Biên tập Cấp cao để kiểm tra tuân thủ nội dung."
                 />
                 <PipelineStep
                   number="3"
-                  title="Approval & Release"
-                  note="Instant publication to reader catalog and subscriber alerts."
+                  title="Phê duyệt và phát hành"
+                  note="Xuất bản ngay vào danh mục độc giả và gửi thông báo tới người đăng ký."
                   muted
                 />
               </div>
             </Card>
             <Card>
-              <h2 className="text-lg font-semibold">Recent Review History</h2>
-              <p className="text-xs text-muted">Past logs for this novel series</p>
+              <h2 className="text-lg font-semibold">Lịch sử xét duyệt gần đây</h2>
+              <p className="text-xs text-muted">Nhật ký trước đây của bộ tiểu thuyết này</p>
               <div className="mt-4 rounded-2xl bg-elevated p-4">
                 <div className="flex justify-between">
-                  <strong className="text-xs">Volume I (Chapters 1–12)</strong>
-                  <Badge tone="green">Approved</Badge>
+                  <strong className="text-xs">Tập I (Chương 1–12)</strong>
+                  <Badge tone="green">Đã phê duyệt</Badge>
                 </div>
                 <p className="mt-2 text-[10px] text-muted">
-                  Reviewed on Oct 14, 2026 by Moderator Desk #4
+                  Được Bộ phận Kiểm duyệt #4 xét duyệt ngày 14/10/2026
                 </p>
                 <p className="mt-3 rounded-xl bg-surface p-3 text-xs italic leading-5">
-                  “Clean prose, captivating world-building. Tagging confirmed accurate. Ready for
-                  premium distribution.”
+                  “Văn phong sạch, thế giới cuốn hút. Thẻ phân loại chính xác. Sẵn sàng phân phối
+                  cao cấp.”
                 </p>
               </div>
             </Card>
             <Card className="text-center text-sm italic leading-6">
-              “Great stories sound even better with thoughtful editing. Our review team strives to
-              preserve your creative voice while keeping readers safe.”
-              <p className="mt-3 text-xs not-italic text-brand">— NovelHub Editorial Standards</p>
+              “Truyện hay còn trở nên tốt hơn nhờ biên tập kỹ lưỡng. Đội ngũ xét duyệt luôn cố gắng
+              giữ tiếng nói sáng tạo của bạn đồng thời bảo vệ độc giả.”
+              <p className="mt-3 text-xs not-italic text-brand">— Tiêu chuẩn Biên tập NovelHub</p>
             </Card>
           </aside>
         </div>
@@ -267,17 +267,17 @@ export function SubmissionReviewPage() {
             {detail !== null && checklist[detail][2]}
           </div>
           <Button onClick={() => setDetail(null)} className="mt-5 w-full">
-            Close Details
+            Đóng chi tiết
           </Button>
         </Modal>
-        <Modal open={confirmOpen} title="Confirm Submission" onClose={() => setConfirmOpen(false)}>
+        <Modal open={confirmOpen} title="Xác nhận gửi duyệt" onClose={() => setConfirmOpen(false)}>
           <p className="text-sm leading-6 text-muted">
-            This frontend mock will move the manuscript into the moderator queue. No external
-            request or real publication occurs.
+            Bản mô phỏng giao diện này sẽ đưa bản thảo vào hàng đợi kiểm duyệt. Không có yêu cầu ra
+            bên ngoài hoặc hoạt động xuất bản thật nào diễn ra.
           </p>
           <div className="mt-5 flex justify-end gap-2">
             <Button variant="secondary" onClick={() => setConfirmOpen(false)}>
-              Cancel
+              Hủy
             </Button>
             <Button
               onClick={() => {
@@ -286,7 +286,7 @@ export function SubmissionReviewPage() {
               }}
             >
               <Send size={15} />
-              Confirm Mock Submission
+              Xác nhận gửi bản mẫu
             </Button>
           </div>
         </Modal>
@@ -307,7 +307,7 @@ function PipelineStep({ number, title, note, active, muted }) {
       <div>
         <strong className="text-xs">{title}</strong>
         <p className="mt-1 text-[10px] leading-4 text-muted">{note}</p>
-        {active && <p className="mt-2 text-[10px] text-brand">Status: Passed &amp; Verified</p>}
+        {active && <p className="mt-2 text-[10px] text-brand">Trạng thái: Đạt và đã xác minh</p>}
       </div>
     </div>
   )

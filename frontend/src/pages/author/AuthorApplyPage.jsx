@@ -12,10 +12,10 @@ export function AuthorApplyPage() {
   const navigate = useNavigate()
   const agreement = data.agreements['user-author'] || { authorShare: 80, platformShare: 20 }
   const labels = [
-    'I agree to the Author Guidelines.',
-    'I agree to NovelHub Publishing Rules.',
-    'I confirm I own or have permission to publish my content.',
-    'I accept the current revenue-sharing agreement.',
+    'Tôi đồng ý với Hướng dẫn dành cho tác giả.',
+    'Tôi đồng ý với Quy định xuất bản của NovelHub.',
+    'Tôi xác nhận mình sở hữu hoặc có quyền xuất bản nội dung.',
+    'Tôi chấp nhận thỏa thuận chia sẻ doanh thu hiện tại.',
   ]
   const ready = checks.every(Boolean)
   const finish = () => {
@@ -30,25 +30,25 @@ export function AuthorApplyPage() {
           <span className="mx-auto grid size-14 place-items-center rounded-2xl bg-brand text-white">
             <Feather />
           </span>
-          <h1 className="mt-5 text-3xl font-bold">Become a NovelHub Author</h1>
+          <h1 className="mt-5 text-3xl font-bold">Trở thành tác giả NovelHub</h1>
           <p className="mt-2 text-sm text-muted">
-            Your existing {currentUser?.email} account keeps every Reader feature and gains
-            publishing tools.
+            Tài khoản {currentUser?.email} hiện tại vẫn giữ mọi tính năng Độc giả và được bổ sung
+            công cụ xuất bản.
           </p>
         </div>
         <Card className="mt-8">
-          <h2 className="text-xl font-semibold">Author agreement</h2>
+          <h2 className="text-xl font-semibold">Thỏa thuận tác giả</h2>
           <p className="mt-2 text-sm leading-6 text-muted">
-            Stories are submitted to Moderator review before publication. Approval is never
-            automatic.
+            Truyện phải được gửi cho Kiểm duyệt viên xét duyệt trước khi xuất bản. Việc phê duyệt
+            không bao giờ diễn ra tự động.
           </p>
           <div className="mt-5 grid gap-3 sm:grid-cols-2">
             <div className="rounded-2xl bg-brand/10 p-4">
-              <span className="text-xs text-muted">Author receives</span>
+              <span className="text-xs text-muted">Tác giả nhận</span>
               <strong className="block text-3xl text-brand">{agreement.authorShare}%</strong>
             </div>
             <div className="rounded-2xl bg-elevated p-4">
-              <span className="text-xs text-muted">NovelHub receives</span>
+              <span className="text-xs text-muted">NovelHub nhận</span>
               <strong className="block text-3xl">{agreement.platformShare}%</strong>
             </div>
           </div>
@@ -74,7 +74,7 @@ export function AuthorApplyPage() {
           </div>
           <Button disabled={!ready} onClick={finish} className="mt-6 w-full">
             <CheckCircle2 size={17} />
-            Enable Author capability
+            Kích hoạt quyền Tác giả
           </Button>
         </Card>
       </main>
