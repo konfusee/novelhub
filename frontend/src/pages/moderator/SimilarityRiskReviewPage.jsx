@@ -17,10 +17,10 @@ import { ModeratorLayout } from '../../layouts'
 import { Badge, Button, Card, Input, Modal } from '../../components/ui'
 
 const metrics = [
-  ['Semantic Overlap', '68.4%', 'Vector Cosine', 'Moderate Risk', 'orange'],
-  ['Verbatim Prose Match', '14.2%', 'Exact phrase sequence', 'Threshold Exceeded', 'red'],
-  ['Structural Chapter Rhythm', '78.0%', 'Scene beats rhythm', 'High Archetype', 'purple'],
-  ['Model Confidence', 'High', '1.4M indexed titles', 'Verified Index', 'green'],
+  ['Trùng lặp ngữ nghĩa', '68,4%', 'Cosine vector', 'Rủi ro trung bình', 'orange'],
+  ['Trùng văn bản nguyên câu', '14,2%', 'Chuỗi cụm từ chính xác', 'Vượt ngưỡng', 'red'],
+  ['Nhịp cấu trúc chương', '78,0%', 'Nhịp điểm cảnh', 'Mô-típ cao', 'purple'],
+  ['Độ tin cậy mô hình', 'Cao', '1,4M tiêu đề đã lập chỉ mục', 'Chỉ mục đã xác minh', 'green'],
 ]
 const passages = [
   {
@@ -50,7 +50,7 @@ export function SimilarityRiskReviewPage() {
   const [passage, setPassage] = useState(0)
   const [sync, setSync] = useState(true)
   const [findings, setFindings] = useState(
-    'Common fantasy folklore tropes present, but Chapter 2 opening sentence exhibits direct structural derivation. Requesting clarification.',
+    'Có các mô-típ dân gian kỳ ảo phổ biến, nhưng câu mở đầu Chương 2 cho thấy sự phái sinh cấu trúc trực tiếp. Cần yêu cầu làm rõ.',
   )
   const [softHold, setSoftHold] = useState(true)
   const [notify, setNotify] = useState(true)
@@ -63,37 +63,37 @@ export function SimilarityRiskReviewPage() {
         <div className="flex flex-col justify-between gap-3 border-b border-line pb-4 lg:flex-row lg:items-center">
           <div>
             <p className="text-xs text-muted">
-              Moderator Console / Similarity Flags &amp; IP Risk Inspection
+              Bảng điều khiển kiểm duyệt / Cảnh báo tương đồng và kiểm tra rủi ro SHTT
             </p>
             <h1 className="mt-1 text-xl font-bold">
-              Flag #SIM-3012: Chronicles of Eldor vs Registered Work
+              Cảnh báo #SIM-3012: Chronicles of Eldor so với tác phẩm đã đăng ký
             </h1>
           </div>
           <div className="flex flex-wrap gap-2">
-            <Badge tone="orange">Requires Inspection</Badge>
-            <Input icon={Search} placeholder="Search flagged text..." className="w-full sm:w-56" />
-            <Button onClick={() => window.alert('Similarity report exported (mock).')} variant="secondary">
+            <Badge tone="orange">Cần kiểm tra</Badge>
+            <Input icon={Search} placeholder="Tìm trong văn bản bị cảnh báo..." className="w-full sm:w-56" />
+            <Button onClick={() => window.alert('Đã xuất báo cáo tương đồng (bản mẫu).')} variant="secondary">
               <Download size={14} />
-              Export Audit JSON
+              Xuất JSON kiểm tra
             </Button>
           </div>
         </div>
         <div className="mt-4 flex gap-3 rounded-2xl bg-orange/10 p-4 text-xs leading-5">
           <AlertTriangle size={18} className="shrink-0 text-orange" />
           <p>
-            <strong>Notice: AI and Vector Similarity metrics are supporting evidence</strong>, not
-            conclusive proof of copyright infringement. Evaluate contextual parody, canonized
-            folklore archetypes, and stylistic intentionality.
+            <strong>Lưu ý: Chỉ số tương đồng AI và vector chỉ là bằng chứng hỗ trợ</strong>, không
+            phải kết luận vi phạm bản quyền. Cần đánh giá ngữ cảnh châm biếm, mô-típ dân gian phổ
+            biến và chủ ý phong cách.
           </p>
         </div>
         <Card className="mt-6">
           <div className="flex justify-between">
             <h2 className="flex items-center gap-2 font-semibold">
               <FileSearch size={16} className="text-brand" />
-              Automated Vector Analysis &amp; Plagiarism Heuristics
+              Phân tích vector tự động và suy đoán đạo văn
             </h2>
             <p className="text-[9px] text-muted">
-              Algorithm: Sentence-BERT Multilingual v3.2 · Cosine 0.316
+              Thuật toán: Sentence-BERT Đa ngôn ngữ v3.2 · Cosine 0,316
             </p>
           </div>
           <div className="mt-5 grid grid-cols-2 gap-3 xl:grid-cols-4">
@@ -112,7 +112,7 @@ export function SimilarityRiskReviewPage() {
                 <div className="mt-4 h-1.5 rounded-full bg-surface">
                   <div
                     className={`h-full rounded-full ${tone === 'orange' ? 'bg-orange' : tone === 'red' ? 'bg-rose' : tone === 'purple' ? 'bg-purple' : 'bg-brand'}`}
-                    style={{ width: value === 'High' ? '91%' : value }}
+                    style={{ width: value === 'Cao' ? '91%' : value.replace(',', '.') }}
                   />
                 </div>
               </div>
@@ -120,7 +120,7 @@ export function SimilarityRiskReviewPage() {
           </div>
         </Card>
         <div className="mt-5 flex flex-col gap-3 rounded-3xl border border-line bg-surface p-4 lg:flex-row lg:items-center">
-          <strong className="text-xs">Matched Passages:</strong>
+          <strong className="text-xs">Các đoạn trùng khớp:</strong>
           <div className="flex gap-2 overflow-x-auto">
             {passages.map((item, index) => (
               <button
@@ -128,7 +128,7 @@ export function SimilarityRiskReviewPage() {
                 onClick={() => setPassage(index)}
                 className={`shrink-0 rounded-full border px-4 py-2 text-[10px] ${passage === index ? 'border-brand bg-brand text-white' : 'border-line'}`}
               >
-                Passage {index + 1} of 3 · {item.match}
+                Đoạn {index + 1} / 3 · {item.match.replace('match', 'trùng').replace('words', 'từ')}
               </button>
             ))}
           </div>
@@ -141,21 +141,21 @@ export function SimilarityRiskReviewPage() {
             >
               {sync && <Check size={11} />}
             </span>
-            Synchronize dual scroll
+            Đồng bộ cuộn hai bên
           </button>
         </div>
         <section className="mt-5 grid gap-5 lg:grid-cols-2">
           <ComparisonPanel
-            label="Submitted Manuscript"
-            title="Target Manuscript: Chronicles of Eldor (Ch. 2)"
-            meta="Author: Dorian Reed · Submitted Oct 2026 · 4,120 words"
+            label="Bản thảo đã gửi"
+            title="Bản thảo mục tiêu: Chronicles of Eldor (Chương 2)"
+            meta="Tác giả: Dorian Reed · Gửi tháng 10/2026 · 4.120 từ"
             tone="orange"
             text={selected.target}
           />
           <ComparisonPanel
-            label="Published Canonical"
-            title="Reference Prior Work: Ancient Echoes of Eldoria (Ch. 5)"
-            meta="Author: Elena J. Park · Published Mar 2024 · 145,000 reads"
+            label="Tác phẩm gốc đã xuất bản"
+            title="Tác phẩm tham chiếu trước đó: Ancient Echoes of Eldoria (Chương 5)"
+            meta="Tác giả: Elena J. Park · Xuất bản tháng 03/2024 · 145.000 lượt đọc"
             tone="green"
             text={selected.reference}
           />
@@ -163,20 +163,20 @@ export function SimilarityRiskReviewPage() {
         <Card className="mt-5">
           <h2 className="flex items-center gap-2 font-semibold">
             <Sparkles size={16} className="text-purple" />
-            Synthesized Linguistic Diff &amp; Morphological Breakdown
+            Tổng hợp khác biệt ngôn ngữ và phân tích hình thái
           </h2>
           <div className="mt-4 grid gap-3 md:grid-cols-3">
-            <Diagnostic title="Direct Lexical Substitution">
-              “sleep within heartwood” → “wait within the grain” preserves rhythmic cadence and
-              dependent clause structure.
+            <Diagnostic title="Thay thế từ vựng trực tiếp">
+              “sleep within heartwood” → “wait within the grain” vẫn giữ nhịp điệu và cấu trúc mệnh
+              đề phụ thuộc.
             </Diagnostic>
-            <Diagnostic title="Identical Dependent Clauses">
-              “where no sunlight penetrates” and “memory turns to ash before twilight falls” are
-              highly aligned.
+            <Diagnostic title="Mệnh đề phụ thuộc giống nhau">
+              “where no sunlight penetrates” và “memory turns to ash before twilight falls” có mức
+              tương đồng cao.
             </Diagnostic>
-            <Diagnostic title="Folklore Worldbuilding Lexicon">
-              Realm and entity names vary, while wardens, ancient days and ash are exact or
-              near-exact.
+            <Diagnostic title="Từ vựng xây dựng thế giới dân gian">
+              Tên vùng đất và thực thể khác nhau, trong khi hộ vệ, thời cổ đại và tro gần như hoặc
+              hoàn toàn giống nhau.
             </Diagnostic>
           </div>
         </Card>
@@ -185,39 +185,39 @@ export function SimilarityRiskReviewPage() {
             <div>
               <h2 className="flex items-center gap-2 text-lg font-semibold">
                 <Gavel className="text-brand" />
-                Moderator Evaluation &amp; Final Disposition
+                Đánh giá của kiểm duyệt viên và quyết định cuối cùng
               </h2>
               <p className="text-[10px] text-muted">
-                Actions append to the immutable moderation ledger and notify creator relations in
-                this UI mock.
+                Thao tác được thêm vào sổ kiểm duyệt bất biến và thông báo cho bộ phận quan hệ tác
+                giả trong bản mẫu giao diện này.
               </p>
             </div>
-            <Badge tone="green">Reviewer Assigned: M. Rayne</Badge>
+            <Badge tone="green">Người xét duyệt: M. Rayne</Badge>
           </div>
           <div className="mt-5 grid gap-5 lg:grid-cols-[270px_minmax(0,1fr)]">
             <div className="rounded-3xl bg-elevated p-5">
               <strong className="text-xs text-orange">
-                Policy Standard #IP-04: Homage vs Infringement
+                Tiêu chuẩn Chính sách #IP-04: Tri ân và Vi phạm
               </strong>
               <p className="mt-3 text-[10px] leading-5 text-muted">
-                Fair use and homage allow thematic tropes; verbatim phrase sequences exceeding 50
-                words require author clarification.
+                Sử dụng hợp lý và tri ân cho phép mô-típ chủ đề; chuỗi cụm từ nguyên văn vượt 50 từ
+                cần tác giả giải trình.
               </p>
               <div className="mt-4 border-t border-line pt-4 text-[10px] leading-5">
                 <p>
-                  • <strong>Dismiss:</strong> standard canon or genre convention.
+                  • <strong>Bác bỏ:</strong> thiết lập hoặc quy ước thể loại tiêu chuẩn.
                 </p>
                 <p>
-                  • <strong>Clarify:</strong> phrasing derivative but author may hold co-authorship.
+                  • <strong>Làm rõ:</strong> cách diễn đạt phái sinh nhưng tác giả có thể đồng sở hữu.
                 </p>
                 <p>
-                  • <strong>Escalate:</strong> verified monetization without license.
+                  • <strong>Chuyển cấp:</strong> xác minh có kiếm tiền nhưng không có giấy phép.
                 </p>
               </div>
             </div>
             <div>
               <label className="text-xs font-semibold">
-                Moderator Internal Findings &amp; Author Notice Draft
+                Kết luận nội bộ và bản nháp thông báo cho tác giả
               </label>
               <textarea
                 value={findings}
@@ -228,53 +228,53 @@ export function SimilarityRiskReviewPage() {
                 <Toggle
                   checked={softHold}
                   onChange={setSoftHold}
-                  label="Place chapter in temporary soft-hold"
+                  label="Tạm giữ chương"
                 />
                 <Toggle
                   checked={notify}
                   onChange={setNotify}
-                  label="Send pre-templated lore clarification request"
+                  label="Gửi yêu cầu làm rõ thế giới truyện theo mẫu"
                 />
               </div>
             </div>
           </div>
           {recorded && (
             <Badge tone="green" className="mt-5">
-              Recorded: {recorded}
+              Đã ghi nhận: {recorded}
             </Badge>
           )}
           <div className="mt-5 flex flex-wrap gap-2 border-t border-line pt-4">
-            <Button onClick={() => setAction('Dismiss Flag')} variant="secondary">
+            <Button onClick={() => setAction('Bác bỏ cảnh báo')} variant="secondary">
               <X size={14} />
-              Dismiss Flag
+              Bác bỏ cảnh báo
             </Button>
-            <Button onClick={() => setAction('Attach to Submission Review')} variant="secondary">
+            <Button onClick={() => setAction('Đính kèm vào bản xét duyệt')} variant="secondary">
               <Link2 size={14} />
-              Attach to Submission #MS-88402
+              Đính kèm vào bản gửi #MS-88402
             </Button>
             <Button
-              onClick={() => setAction('Escalate to Legal Copyright Desk')}
+              onClick={() => setAction('Chuyển Bộ phận Pháp lý Bản quyền')}
               className="border-rose bg-rose"
             >
               <Scale size={14} />
-              Escalate to Legal
+              Chuyển bộ phận pháp lý
             </Button>
-            <Button onClick={() => setAction('Request Author Clarification & Proof of Lore')}>
+            <Button onClick={() => setAction('Yêu cầu tác giả giải trình và cung cấp bằng chứng')}>
               <ClipboardCheck size={14} />
-              Request Author Clarification
+              Yêu cầu tác giả giải trình
             </Button>
           </div>
         </Card>
         <Modal
           open={Boolean(action)}
-          title="Confirm Similarity Verdict"
+          title="Xác nhận kết luận tương đồng"
           onClose={() => setAction(null)}
         >
           <div className="rounded-2xl bg-elevated p-4">
             <strong>{action}</strong>
             <p className="mt-2 text-xs leading-5 text-muted">
-              Risk score, selected evidence and moderator findings will be included in the local
-              audit record.
+              Điểm rủi ro, bằng chứng được chọn và kết luận của kiểm duyệt viên sẽ được đưa vào hồ
+              sơ kiểm tra cục bộ.
             </p>
           </div>
           <textarea
@@ -283,7 +283,7 @@ export function SimilarityRiskReviewPage() {
           />
           <div className="mt-5 flex justify-end gap-2">
             <Button variant="secondary" onClick={() => setAction(null)}>
-              Cancel
+              Hủy
             </Button>
             <Button
               onClick={() => {
@@ -292,7 +292,7 @@ export function SimilarityRiskReviewPage() {
               }}
             >
               <ShieldCheck size={14} />
-              Record Verdict
+              Ghi nhận kết luận
             </Button>
           </div>
         </Modal>
@@ -320,9 +320,9 @@ function ComparisonPanel({ label, title, meta, tone, text }) {
         >
           <div className="flex justify-between text-[9px]">
             <strong className={tone === 'orange' ? 'text-orange' : 'text-brand'}>
-              {tone === 'orange' ? 'FLAGGED PASSAGE' : 'CANONICAL ORIGINAL SOURCE'}
+              {tone === 'orange' ? 'ĐOẠN BỊ CẢNH BÁO' : 'NGUỒN GỐC CHÍNH THỨC'}
             </strong>
-            <span>Lines 42–48</span>
+            <span>Dòng 42–48</span>
           </div>
           <p className="mt-3 text-sm leading-7">
             <mark className={`${tone === 'orange' ? 'bg-orange/30' : 'bg-brand/20'} text-ink`}>

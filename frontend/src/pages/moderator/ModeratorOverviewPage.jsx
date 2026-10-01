@@ -16,17 +16,36 @@ import { Badge, Button, Card, Modal } from '../../components/ui'
 
 const metricIcons = [BookOpenCheck, Flag, Bot, Scale, Gavel]
 const workload = [
-  ['Fantasy & Mythic Fiction', 42, '2h 15m remaining', 'brand'],
-  ['Romance & Contemporary Drama', 28, '3h 40m remaining', 'rose'],
-  ['Sci-Fi & Cyberpunk', 18, '4h 05m remaining', 'purple'],
-  ['Mystery & Thriller', 12, '5h 20m remaining', 'orange'],
+  ['Kỳ ảo và Thần thoại', 42, 'còn 2 giờ 15 phút', 'brand'],
+  ['Lãng mạn và Chính kịch đương đại', 28, 'còn 3 giờ 40 phút', 'rose'],
+  ['Khoa học viễn tưởng và Cyberpunk', 18, 'còn 4 giờ 05 phút', 'purple'],
+  ['Bí ẩn và Giật gân', 12, 'còn 5 giờ 20 phút', 'orange'],
 ]
 const audit = [
-  ['14:22', 'Approved Chapter 15 of “A Dragon’s Wish”', 'Pass Verified'],
-  ['14:05', 'Changes Requested for “Echoes of Void”', 'Action Required'],
-  ['13:40', 'Dismissed false report on “The Last Kingdom”', 'Dismissed'],
-  ['12:55', 'Escalated IP Dossier #IP-4402 to Senior Legal Desk', 'Tier-2 Escalation'],
+  ['14:22', 'Đã phê duyệt Chương 15 của “A Dragon’s Wish”', 'Đã xác minh đạt'],
+  ['14:05', 'Đã yêu cầu chỉnh sửa “Echoes of Void”', 'Cần hành động'],
+  ['13:40', 'Đã bác bỏ báo cáo sai về “The Last Kingdom”', 'Đã bác bỏ'],
+  ['12:55', 'Đã chuyển hồ sơ SHTT #IP-4402 tới Bộ phận Pháp lý Cấp cao', 'Chuyển cấp 2'],
 ]
+const statLabels = { 'Pending Queue': 'Hàng đợi đang chờ', 'User Reports': 'Báo cáo người dùng', 'AI Signals': 'Tín hiệu AI', Escalations: 'Chuyển cấp', 'Decisions Today': 'Quyết định hôm nay' }
+const statNotes = { '+6 this hr': '+6 trong giờ này', '4 Urgent': '4 khẩn cấp', '3 Copyright': '3 bản quyền', 'Tier-2 Legal': 'Pháp lý cấp 2', '34 Approvals': '34 phê duyệt' }
+const kindLabels = { Manuscript: 'Bản thảo', Report: 'Báo cáo', 'Similarity Flag': 'Cảnh báo tương đồng' }
+const actionLabels = { 'Quick Review': 'Xét duyệt nhanh', 'Open Dossier': 'Mở hồ sơ', Inspect: 'Kiểm tra', Compare: 'So sánh' }
+const formatItemText = value => value
+  .replace('Submitted ', 'Đã gửi ')
+  .replace('Reported ', 'Đã báo cáo ')
+  .replace('Cross-indexed ', 'Đối chiếu chỉ mục ')
+  .replace(' ago', ' trước')
+  .replace('Severity: High', 'Mức độ: Cao')
+  .replace('Severity: Medium', 'Mức độ: Trung bình')
+  .replace('Author:', 'Tác giả:')
+  .replace('Complaint:', 'Khiếu nại:')
+  .replace('Flag:', 'Cảnh báo:')
+  .replace('Trigger:', 'Tác nhân:')
+  .replace('AI Safety Score:', 'Điểm an toàn AI:')
+  .replace('AI Vector Check:', 'Kiểm tra vector AI:')
+  .replace('semantic overlap detected with registered IP', 'phát hiện trùng lặp ngữ nghĩa với SHTT đã đăng ký')
+  .replace('words', 'từ')
 
 export function ModeratorOverviewPage() {
   const [priority, setPriority] = useState('All')
@@ -41,10 +60,10 @@ export function ModeratorOverviewPage() {
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
             <p className="text-[10px] text-muted">
-              Shift: 03h 45m · Reviewed Today: <strong className="text-ink">42 items</strong> · SLA
-              Met: <strong className="text-brand">98.4%</strong>
+              Ca làm: 03 giờ 45 phút · Đã xét hôm nay: <strong className="text-ink">42 mục</strong> · SLA
+              đạt: <strong className="text-brand">98,4%</strong>
             </p>
-            <h1 className="mt-1 text-2xl font-bold">Moderator Operations Overview</h1>
+            <h1 className="mt-1 text-2xl font-bold">Tổng quan hoạt động kiểm duyệt</h1>
           </div>
           <div className="flex gap-2 overflow-x-auto">
             {['All', 'Green', 'Orange', 'Red', 'Purple'].map(item => (
@@ -53,7 +72,7 @@ export function ModeratorOverviewPage() {
                 onClick={() => setPriority(item)}
                 className={`shrink-0 rounded-full border px-3 py-2 text-xs ${priority === item ? 'border-brand bg-brand text-white' : 'border-line bg-surface'}`}
               >
-                {item === 'All' ? 'All Priority' : item}
+                {item === 'All' ? 'Tất cả mức ưu tiên' : item === 'Green' ? 'Xanh lá' : item === 'Orange' ? 'Cam' : item === 'Red' ? 'Đỏ' : 'Tím'}
               </button>
             ))}
           </div>
@@ -65,7 +84,7 @@ export function ModeratorOverviewPage() {
               <Card key={label} className="p-4">
                 <div className="flex justify-between">
                   <span className="text-[9px] font-semibold uppercase tracking-[.12em] text-muted">
-                    {label}
+                    {statLabels[label] ?? label}
                   </span>
                   <Icon
                     size={16}
@@ -82,7 +101,7 @@ export function ModeratorOverviewPage() {
                 </div>
                 <strong className="mt-4 block text-3xl">{value}</strong>
                 <Badge tone={tone} className="mt-2">
-                  {note}
+                  {statNotes[note] ?? note}
                 </Badge>
                 <div className="mt-3 h-1 rounded-full bg-elevated">
                   <div
@@ -99,9 +118,9 @@ export function ModeratorOverviewPage() {
               <div className="flex items-center justify-between">
                 <h2 className="flex items-center gap-2 text-xl font-semibold">
                   <span className="size-2 rounded-full bg-red-600" />
-                  Urgent Priority Action Items
+                  Mục hành động ưu tiên khẩn cấp
                 </h2>
-                <span className="text-[10px] text-muted">{items.length} items require action</span>
+                <span className="text-[10px] text-muted">{items.length} mục cần xử lý</span>
               </div>
               <div className="mt-5 space-y-3">
                 {items.map(item => (
@@ -113,13 +132,13 @@ export function ModeratorOverviewPage() {
               <div className="flex justify-between">
                 <div>
                   <h2 className="text-lg font-semibold">
-                    Workload &amp; Intake Volume by Category
+                    Khối lượng công việc và lượng tiếp nhận theo thể loại
                   </h2>
                   <p className="text-xs text-muted">
-                    Real-time queue distribution across publishing genres
+                    Phân bổ hàng đợi theo thể loại xuất bản theo thời gian thực
                   </p>
                 </div>
-                <Badge>Updated every 60s</Badge>
+                <Badge>Cập nhật mỗi 60 giây</Badge>
               </div>
               <div className="mt-5 space-y-5">
                 {workload.map(([label, value, sla, tone]) => (
@@ -142,9 +161,9 @@ export function ModeratorOverviewPage() {
             <Card>
               <div className="flex justify-between">
                 <h2 className="text-lg font-semibold">
-                  Recent Moderator Decisions &amp; Audit Stream
+                  Quyết định kiểm duyệt và nhật ký gần đây
                 </h2>
-                <button onClick={() => window.location.assign('/moderator/audit-trail')} className="text-xs text-brand">View Full Audit Log</button>
+                <button onClick={() => window.location.assign('/moderator/audit-trail')} className="text-xs text-brand">Xem toàn bộ nhật ký kiểm tra</button>
               </div>
               <div className="mt-5 space-y-4 border-l border-line pl-5">
                 {audit.map(([time, title, status], index) => (
@@ -156,7 +175,7 @@ export function ModeratorOverviewPage() {
                       <strong>{time}</strong> · {title} <Badge className="ml-2">{status}</Badge>
                     </p>
                     <p className="mt-1 text-[10px] text-muted">
-                      Recorded by Sarah Jenkins · Immutable audit reference
+                      Ghi nhận bởi Sarah Jenkins · Tham chiếu kiểm tra bất biến
                     </p>
                   </div>
                 ))}
@@ -167,40 +186,40 @@ export function ModeratorOverviewPage() {
             <Card>
               <h2 className="flex items-center gap-2 text-lg font-semibold">
                 <ShieldCheck className="text-brand" />
-                Policy Directives
+                Chỉ thị chính sách
               </h2>
               <div className="mt-4 rounded-2xl bg-elevated p-4">
                 <div className="flex justify-between">
                   <strong className="text-xs">Creator Rights v4.2</strong>
-                  <Badge tone="green">Active</Badge>
+                  <Badge tone="green">Đang áp dụng</Badge>
                 </div>
                 <p className="mt-2 text-[10px] leading-5 text-muted">
-                  Fair use excerpt guidelines extended to 350 words for critical commentary and
-                  satire.
+                  Hướng dẫn trích dẫn sử dụng hợp lý được mở rộng đến 350 từ cho nội dung bình luận
+                  phản biện và châm biếm.
                 </p>
               </div>
               <div className="mt-3 rounded-2xl border border-orange/40 bg-orange/10 p-4">
                 <strong className="flex gap-2 text-xs text-orange">
                   <AlertTriangle size={14} />
-                  AI Signal Guidance
+                  Hướng dẫn tín hiệu AI
                 </strong>
                 <p className="mt-2 text-[10px] leading-5 text-muted">
-                  Automated telemetry scores are advisory benchmarks, not conclusive verdicts.
+                  Điểm đo lường tự động chỉ là mốc tham khảo, không phải kết luận cuối cùng.
                 </p>
               </div>
             </Card>
             <Card>
-              <h2 className="text-lg font-semibold">Queue Velocity &amp; SLA</h2>
+              <h2 className="text-lg font-semibold">Tốc độ hàng đợi và SLA</h2>
               <div className="mt-4 space-y-5">
-                <Sla label="Pre-Flight Triage" value={100} />
-                <Sla label="Publishing Approval SLA" value={94} />
-                <Sla label="User Report Resolution" value={96} />
+                <Sla label="Phân loại sơ bộ" value={100} />
+                <Sla label="SLA phê duyệt xuất bản" value={94} />
+                <Sla label="Giải quyết báo cáo người dùng" value={96} />
               </div>
             </Card>
             <Card>
-              <h2 className="text-lg font-semibold">Escalation Desk</h2>
+              <h2 className="text-lg font-semibold">Bộ phận chuyển cấp</h2>
               <div className="mt-4 space-y-3">
-                {['Senior Legal Desk', 'Lead Moderator'].map((name, index) => (
+                {['Bộ phận Pháp lý Cấp cao', 'Trưởng nhóm Kiểm duyệt'].map((name, index) => (
                   <div key={name} className="flex items-center gap-3 rounded-2xl bg-elevated p-3">
                     <span
                       className={`grid size-9 place-items-center rounded-full ${index ? 'bg-orange/20 text-orange' : 'bg-brand/20 text-brand'}`}
@@ -209,36 +228,36 @@ export function ModeratorOverviewPage() {
                     </span>
                     <div>
                       <strong className="text-xs">{name}</strong>
-                      <p className="text-[9px] text-muted">Online · On-call specialist</p>
+                      <p className="text-[9px] text-muted">Trực tuyến · Chuyên gia trực ca</p>
                     </div>
-                    <Button onClick={() => window.alert('Moderator ping sent (mock).')} variant="secondary" className="ml-auto min-h-8 px-2 py-1 text-[9px]">
-                      Ping
+                    <Button onClick={() => window.alert('Đã gửi tín hiệu tới kiểm duyệt viên (bản mẫu).')} variant="secondary" className="ml-auto min-h-8 px-2 py-1 text-[9px]">
+                      Báo hiệu
                     </Button>
                   </div>
                 ))}
               </div>
-              <button onClick={() => window.alert('Emergency queue freeze requested (mock).')} className="mt-4 w-full rounded-2xl border border-dashed border-line p-3 text-xs text-muted">
-                Trigger Emergency Queue Freeze
+              <button onClick={() => window.alert('Đã yêu cầu đóng băng hàng đợi khẩn cấp (bản mẫu).')} className="mt-4 w-full rounded-2xl border border-dashed border-line p-3 text-xs text-muted">
+                Kích hoạt đóng băng hàng đợi khẩn cấp
               </button>
             </Card>
           </aside>
         </div>
         <Modal
           open={Boolean(selected)}
-          title={selected ? `${selected.kind} #${selected.id}` : ''}
+          title={selected ? `${kindLabels[selected.kind] ?? selected.kind} #${selected.id}` : ''}
           onClose={() => setSelected(null)}
         >
           <h3 className="font-semibold">{selected?.title}</h3>
-          <p className="mt-2 text-sm leading-6 text-muted">{selected?.detail}</p>
+          <p className="mt-2 text-sm leading-6 text-muted">{selected && formatItemText(selected.detail)}</p>
           <textarea
             value={decision}
             onChange={event => setDecision(event.target.value)}
             className="mt-4 min-h-24 w-full rounded-2xl border border-line bg-surface p-3 text-sm outline-none"
-            placeholder="Add internal decision note..."
+            placeholder="Thêm ghi chú quyết định nội bộ..."
           />
           <div className="mt-5 flex justify-end gap-2">
             <Button variant="secondary" onClick={() => setSelected(null)}>
-              Defer
+              Hoãn xử lý
             </Button>
             <Button
               onClick={() => {
@@ -247,7 +266,7 @@ export function ModeratorOverviewPage() {
               }}
             >
               <CheckCircle2 size={15} />
-              Record Decision
+              Ghi nhận quyết định
             </Button>
           </div>
         </Modal>
@@ -273,17 +292,17 @@ function UrgentItem({ item, onOpen }) {
       </span>
       <div className="min-w-0 flex-1">
         <Badge tone={item.tone}>
-          {item.kind} #{item.id}
+          {kindLabels[item.kind] ?? item.kind} #{item.id}
         </Badge>
-        <p className="mt-1 text-[10px] text-muted">{item.meta}</p>
+        <p className="mt-1 text-[10px] text-muted">{formatItemText(item.meta)}</p>
         <h3 className="mt-2 font-semibold">{item.title}</h3>
-        <p className="mt-1 text-[10px] text-muted">{item.detail}</p>
+        <p className="mt-1 text-[10px] text-muted">{formatItemText(item.detail)}</p>
       </div>
       <Button
         onClick={onOpen}
         className={`${item.tone === 'red' ? 'border-rose bg-rose' : item.tone === 'purple' ? 'border-purple bg-purple' : ''} shrink-0`}
       >
-        {item.action}
+        {actionLabels[item.action] ?? item.action}
       </Button>
     </div>
   )
@@ -293,7 +312,7 @@ function Sla({ label, value }) {
     <div>
       <div className="flex justify-between text-xs">
         <span>{label}</span>
-        <strong className="text-brand">{value}% Compliant</strong>
+        <strong className="text-brand">Đạt {value}%</strong>
       </div>
       <div className="mt-2 h-1.5 rounded-full bg-elevated">
         <div className="h-full rounded-full bg-brand" style={{ width: `${value}%` }} />
