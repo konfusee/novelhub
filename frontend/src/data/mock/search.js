@@ -10,7 +10,7 @@ export const searchResults = [
     description:
       'Under the watchful gleam of a crescent moon, a celestial sorceress finds herself bound to an immortal guardian whose fate will either save or shatter her world.',
     format: 'Audio',
-    duration: '4h 32m audio available',
+    duration: 'Có 4 giờ 32 phút âm thanh',
     color: '#35566d',
     icon: '🌙',
   },
@@ -25,7 +25,7 @@ export const searchResults = [
     description:
       'When the sky bleeds red for the first time in three centuries, an exiled commander is called back to defend the borders against creatures of legend.',
     format: 'Story',
-    duration: 'Updated 2 hours ago',
+    duration: 'Cập nhật 2 giờ trước',
     color: '#673b4b',
     icon: '🌕',
   },
@@ -40,7 +40,7 @@ export const searchResults = [
     description:
       'A reclusive pianist meets a wandering violinist on a misty seaside promenade, sparking a collaboration of melodies that echo through their lives.',
     format: 'Audio',
-    duration: '2h 15m narration',
+    duration: 'Thuyết minh 2 giờ 15 phút',
     color: '#334764',
     icon: '🎹',
   },
@@ -55,7 +55,7 @@ export const searchResults = [
     description:
       'Every midnight, a hidden garden blooms with memories that do not belong to its caretaker.',
     format: 'Story',
-    duration: 'Updated yesterday',
+    duration: 'Cập nhật hôm qua',
     color: '#386059',
     icon: '🌿',
   },

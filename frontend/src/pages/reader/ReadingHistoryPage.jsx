@@ -209,7 +209,7 @@ export function ReadingHistoryPage() {
               </p>
             </Card>
             <Card className="bg-elevated">
-              <p className="text-lg italic leading-7">“Good stories make a kinder tomorrow.”</p>
+              <p className="text-lg italic leading-7">“Những câu chuyện hay làm ngày mai thêm tử tế.”</p>
               <p className="mt-4 text-xs text-muted">— NovelHub Curator Notes</p>
             </Card>
             <Card>

@@ -33,7 +33,7 @@ export function AccountPage({ workspace = 'reader' }) {
             <Card>
               <SectionTitle icon={UserRound} title={t('account.credentials')} />
               <div className="mt-5 flex items-center gap-4">
-                <Avatar name={currentUser?.name || 'NovelHub user'} className="size-16 text-lg" />
+                <Avatar name={currentUser?.name || 'Người dùng NovelHub'} className="size-16 text-lg" />
                 <div>
                   <strong>{currentUser?.name}</strong>
                   <p className="mt-1 text-xs text-muted">{t('account.userId', { id: currentUser?.id || '—' })}</p>

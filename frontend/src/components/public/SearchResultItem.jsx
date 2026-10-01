@@ -4,6 +4,12 @@ import { Bookmark, Clock, Eye, Star } from 'lucide-react'
 import { Badge, Button, Card } from '../ui'
 import { StoryCover } from '../story/StoryCover'
 import { useLocale } from '../../context/LocaleContext'
+const formatLabels = { Audio: 'Truyện âm thanh', Story: 'Truyện chữ' }
+const statusLabels = { Completed: 'Đã hoàn tất', Ongoing: 'Đang phát hành' }
+const genreLabels = {
+  Romance: 'Lãng mạn', Fantasy: 'Kỳ ảo', Magic: 'Phép thuật', Adventure: 'Phiêu lưu',
+  Action: 'Hành động', Drama: 'Chính kịch', 'Slice of Life': 'Đời thường', Mystery: 'Bí ẩn',
+}
 export function SearchResultItem({ result }) {
   const { t } = useLocale()
   const navigate = useNavigate()
@@ -15,7 +21,7 @@ export function SearchResultItem({ result }) {
         className="aspect-[2/3] w-24 shrink-0 rounded-xl border border-line sm:w-28"
         badge={
           <span className="absolute left-2 top-2 rounded-full bg-brand px-2 py-1 text-[9px] font-semibold uppercase text-white">
-            {result.format}
+            {formatLabels[result.format] ?? result.format}
           </span>
         }
       />
@@ -40,7 +46,7 @@ export function SearchResultItem({ result }) {
             <Eye size={13} />
             {t('story.readCount', { count: result.reads })}
           </span>
-          <Badge tone={result.status === 'Completed' ? 'green' : 'orange'}>{result.status}</Badge>
+          <Badge tone={result.status === 'Completed' ? 'green' : 'orange'}>{statusLabels[result.status] ?? result.status}</Badge>
         </div>
         <div className="mt-3 hidden flex-wrap gap-1.5 sm:flex">
           {result.genres.map(genre => (
@@ -48,7 +54,7 @@ export function SearchResultItem({ result }) {
               className="rounded-full border border-line px-2.5 py-1 text-[10px] text-muted"
               key={genre}
             >
-              {genre}
+              {genreLabels[genre] ?? genre}
             </span>
           ))}
         </div>

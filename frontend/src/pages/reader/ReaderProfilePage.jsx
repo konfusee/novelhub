@@ -366,7 +366,7 @@ export function ReaderProfilePage({ workspace = 'reader' }) {
               </div>
               <div className="mt-5 border-y border-line py-5">
                 <p className="text-[10px] uppercase tracking-[.18em] text-orange">
-                  Chapter 14 · The Silver Compass
+                  Chương 14 · The Silver Compass
                 </p>
                 <h2 className="mt-2 text-lg font-semibold">The Whisper in the Pines</h2>
                 <p className="mt-4" style={{ fontSize, lineHeight: spacing }}>
@@ -407,7 +407,7 @@ export function ReaderProfilePage({ workspace = 'reader' }) {
             </Card>
             )}
             {isSettings && <Card className="bg-elevated">
-              <p className="text-xl italic text-brand">“Good stories make a kinder tomorrow.”</p>
+              <p className="text-xl italic text-brand">“Những câu chuyện hay làm ngày mai thêm tử tế.”</p>
               <p className="mt-3 text-xs text-muted">
                 Every font size nuance and canvas tone you choose shapes the intimacy of your
                 reading sanctuary.

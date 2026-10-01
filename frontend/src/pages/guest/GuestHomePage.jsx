@@ -321,7 +321,7 @@ export function GuestHomePage({ embedded = false }) {
             <AudioPreview />
             <Card className="bg-elevated">
               <p className="text-2xl font-medium italic leading-relaxed">
-                “Good stories make a kinder tomorrow.”
+                “Những câu chuyện hay làm ngày mai thêm tử tế.”
               </p>
               <p className="mt-5 text-xs text-muted">— NovelHub</p>
             </Card>

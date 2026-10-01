@@ -78,7 +78,7 @@ export function WorkspaceHeaderAccount() {
   return (
     <div className="flex items-center gap-2">
       <Link to="/reader/profile" aria-label={t('common.openProfile')} className="rounded-full">
-        <Avatar name={currentUser?.name || 'NovelHub user'} className="size-9 text-xs" />
+        <Avatar name={currentUser?.name || 'Người dùng NovelHub'} className="size-9 text-xs" />
       </Link>
       <IconButton label={t('auth.logOut')} onClick={logout} className="size-9 rounded-xl">
         <LogOut size={16} />
