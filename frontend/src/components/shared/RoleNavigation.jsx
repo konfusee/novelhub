@@ -58,26 +58,33 @@ export function WorkspaceSwitcher({ currentRole, compact = false }) {
 
 export function RoleHeaderLinks({ includeWallet = false, currentRole = 'reader' }) {
   const { t } = useLocale()
+  const { pathname } = useLocation()
   const suffix = `?workspace=${currentRole}`
   const walletPath = currentRole === 'author' ? '/author/earnings' : '/reader/wallet'
+  const items = [
+    ['navigation.discover', `/?workspace=${currentRole}`, ['/', '/discover']],
+    ['navigation.categories', `/categories${suffix}`, ['/categories', '/browse']],
+    ['navigation.rankings', `/rankings${suffix}`, ['/rankings']],
+    ['navigation.explore', `/search${suffix}`, ['/search', '/reader/explore']],
+    ['navigation.library', '/reader/library', ['/reader/library', '/library']],
+  ]
+  if (includeWallet) items.push(['navigation.wallet', walletPath, currentRole === 'author' ? ['/author/earnings', '/author/wallet'] : ['/reader/wallet']])
   return (
     <nav className="hidden items-center gap-4 text-xs font-medium text-muted xl:flex">
-      <Link className="hover:text-brand" to={`/?workspace=${currentRole}`}>{t('navigation.discover')}</Link>
-      <Link className="hover:text-brand" to={`/categories${suffix}`}>{t('navigation.categories')}</Link>
-      <Link className="hover:text-brand" to={`/rankings${suffix}`}>{t('navigation.rankings')}</Link>
-      <Link className="hover:text-brand" to={`/search${suffix}`}>{t('navigation.explore')}</Link>
-      <Link className="hover:text-brand" to="/reader/library">{t('navigation.library')}</Link>
-      {includeWallet && <Link className="hover:text-brand" to={walletPath}>{t('navigation.wallet')}</Link>}
+      {items.map(([label, path, matches]) => {
+        const active = matches.some(match => pathname === match || (match !== '/' && pathname.startsWith(`${match}/`)))
+        return <Link key={label} aria-current={active ? 'page' : undefined} className={`border-b-2 py-2 ${active ? 'border-brand font-semibold text-brand' : 'border-transparent hover:text-brand'}`} to={path}>{t(label)}</Link>
+      })}
     </nav>
   )
 }
 
-export function WorkspaceHeaderAccount() {
+export function WorkspaceHeaderAccount({ currentRole = 'reader' }) {
   const { t } = useLocale()
   const { currentUser, logout } = useAuth()
   return (
     <div className="flex items-center gap-2">
-      <Link to="/reader/profile" aria-label={t('common.openProfile')} className="rounded-full">
+      <Link to={commonPaths(currentRole).profile} aria-label={t('common.openProfile')} className="rounded-full">
         <Avatar name={currentUser?.name || 'Người dùng NovelHub'} className="size-9 text-xs" />
       </Link>
       <IconButton label={t('auth.logOut')} onClick={logout} className="size-9 rounded-xl">
@@ -89,7 +96,7 @@ export function WorkspaceHeaderAccount() {
 
 const commonPaths = role => ({
   profile: role === 'reader' ? '/reader/profile' : `/${role}/profile`,
-  settings: `/${role}/settings`,
+  settings: role === 'admin' ? '/admin/preferences' : `/${role}/settings`,
   account: `/${role}/account`,
   support: `/${role}/support`,
 })
@@ -144,7 +151,7 @@ export function SharedWorkspaceHeader({ currentRole, workspaceLabel, onOpenMenu,
         <IconButton label={t('common.notifications')} className="relative hidden sm:grid">
           <Bell size={18} /><span className="absolute right-2 top-2 size-2 rounded-full bg-rose" />
         </IconButton>
-        <WorkspaceHeaderAccount />
+        <WorkspaceHeaderAccount currentRole={currentRole} />
       </div>
       <div className="px-4 pb-3 sm:hidden"><Input icon={Search} placeholder={t('common.searchStories')} /></div>
     </header>

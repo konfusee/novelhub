@@ -51,3 +51,13 @@ The fixes keep the existing visual system and routes:
 - Paginate the current four-item search mock in two-item pages, reset pagination when query/tab changes, derive displayed counts from results, and honor initial `q` / `format=audio` links. Author actions switch back to story results.
 
 Verification: 39 routes × six widths (320, 375, 414, 768, 1024, 1440) × light/dark passed all 468 layout/runtime checks. Focused checks covered hero arrows/indicators and wrapping, changed pagination content, tab resets, empty search, audio/query links, hover border containment, internal button/card overflow and empty-notification footer spacing at every width/theme. Mobile and desktop screenshots were reviewed. Lint, icon checks, Vietnamese content checks, build and whitespace checks passed. Existing API/mock limitations and the large-bundle warning remain.
+
+## Follow-up — sidebar labels, active navigation and save actions
+
+- Add Profile to the shared sidebar for all four workspaces and target the matching profile from the header avatar.
+- Show a single immediate hover/focus tooltip outside the sidebar scroller. Keep vertical scrolling and focus clearance without a horizontal scrollbar; dismiss the tooltip on Escape, pointer leave, blur, navigation, scroll or resize.
+- Mark the current header destination with a brand underline, stronger weight and `aria-current`, including public, library, search and author-wallet aliases.
+- Show account save/discard actions only when email differs from the local saved form baseline; hide them after saving, discarding or returning to the saved value.
+- Keep author status tabs on one horizontal row through the shared `Tabs.singleRow` variant. Narrow screens scroll within that row; story rows wrap their action when necessary so the title retains readable width.
+
+Verification: 48 role/width/theme sidebar and account edit/revert/discard/save flows passed at six widths in light/dark themes. All 60 active-header route checks and 12 final single-row/title checks passed. Expanded-sidebar header geometry was also checked at 1280, 1440 and 1920 px. All 110 collapsed-icon hover checks passed, along with keyboard focus/Escape, horizontal containment, navigation cleanup, tablet scroll dismissal and mobile navigation. Mobile/desktop screenshots were reviewed. Lint, locale/icon integrity, production build and whitespace checks passed. Account persistence remains the existing local mock behavior.

@@ -1,6 +1,7 @@
-import { useState } from 'react'
+import { useEffect, useId, useState } from 'react'
+import { createPortal } from 'react-dom'
 import { Link, useLocation } from 'react-router-dom'
-import { NovelHubMark, Menu, Settings, HelpCircle, ShieldCheck, X } from '../icons'
+import { NovelHubMark, Menu, Settings, HelpCircle, ShieldCheck, UserRound, X } from '../icons'
 import { IconButton } from '../ui'
 import { SiteFooter } from '../shared/SiteFooter'
 import { SharedWorkspaceHeader, WorkspaceSwitcher } from '../shared/RoleNavigation'
@@ -9,31 +10,43 @@ import { useLocale } from '../../context/LocaleContext'
 
 const SIDEBAR_KEY = 'novelhub.sidebar.collapsed'
 
-function SidebarItem({ item, active, collapsed, onNavigate }) {
+function SidebarItem({ item, active, collapsed, onNavigate, tooltipId, tooltipPath, onTooltipChange }) {
   const { t } = useLocale()
   const [labelKey, path, Icon] = item
   const label = t(labelKey)
+  const hideTooltip = () => onTooltipChange(current => current?.path === path ? null : current)
+  const showTooltip = event => {
+    if (!collapsed) return
+    const box = event.currentTarget.getBoundingClientRect()
+    const sidebar = event.currentTarget.closest('[data-app-sidebar]')?.getBoundingClientRect()
+    onTooltipChange({ path, label, left: (sidebar?.right ?? box.right) + 12, top: Math.max(20, Math.min(innerHeight - 20, box.top + box.height / 2)) })
+  }
   return (
     <Link
       to={path}
-      onClick={onNavigate}
-      title={collapsed ? label : undefined}
+      onClick={() => { hideTooltip(); onNavigate?.() }}
+      onMouseEnter={showTooltip}
+      onMouseLeave={hideTooltip}
+      onFocus={showTooltip}
+      onBlur={hideTooltip}
+      onKeyDown={event => { if (event.key === 'Escape') hideTooltip() }}
       aria-label={collapsed ? label : undefined}
+      aria-describedby={collapsed && tooltipPath === path ? tooltipId : undefined}
+      aria-current={active ? 'page' : undefined}
       className={`group relative flex h-10 items-center gap-3 rounded-xl px-3 text-xs font-medium transition-colors ${collapsed ? 'justify-center px-0' : ''} ${active ? 'bg-brand text-white shadow-sm' : 'text-muted hover:bg-elevated hover:text-ink'}`}
     >
       <Icon size={17} className="shrink-0" />
       {!collapsed && <span className="truncate">{label}</span>}
-      {collapsed && <span className="pointer-events-none absolute left-full z-50 ml-3 hidden whitespace-nowrap rounded-lg bg-ink px-2.5 py-1.5 text-[10px] text-page shadow-lg group-hover:block">{label}</span>}
     </Link>
   )
 }
 
-function SidebarGroup({ group, activePath, collapsed, onNavigate }) {
+function SidebarGroup({ group, activePath, collapsed, onNavigate, tooltipId, tooltipPath, onTooltipChange }) {
   const { t } = useLocale()
   return (
     <section className="space-y-1">
       {!collapsed && <p className="mb-2 px-3 text-[9px] font-semibold uppercase tracking-[.18em] text-muted">{t(group.labelKey)}</p>}
-      {group.items.map(item => <SidebarItem key={item[1]} item={item} active={item[1] === activePath} collapsed={collapsed} onNavigate={onNavigate} />)}
+      {group.items.map(item => <SidebarItem key={item[1]} item={item} active={item[1] === activePath} collapsed={collapsed} onNavigate={onNavigate} tooltipId={tooltipId} tooltipPath={tooltipPath} onTooltipChange={onTooltipChange} />)}
     </section>
   )
 }
@@ -42,6 +55,7 @@ function commonNavigation(workspace) {
   const base = `/${workspace}`
   const settingsPath = workspace === 'admin' ? '/admin/preferences' : `${base}/settings`
   return { labelKey: 'navigation.account', items: [
+    ['navigation.profile', `${base}/profile`, UserRound],
     ['navigation.settings', settingsPath, Settings], ['navigation.account', `${base}/account`, ShieldCheck],
     ['common.helpSupport', `${base}/support`, HelpCircle],
   ] }
@@ -50,6 +64,18 @@ function commonNavigation(workspace) {
 function AppSidebar({ workspace, collapsed, mobile = false, onCollapse, onNavigate }) {
   const { t } = useLocale()
   const { pathname } = useLocation()
+  const tooltipId = useId()
+  const [tooltip, setTooltip] = useState(null)
+  useEffect(() => {
+    if (!collapsed || !tooltip) return
+    const hide = () => setTooltip(null)
+    window.addEventListener('scroll', hide, true)
+    window.addEventListener('resize', hide)
+    return () => {
+      window.removeEventListener('scroll', hide, true)
+      window.removeEventListener('resize', hide)
+    }
+  }, [collapsed, tooltip])
   const meta = workspaceMeta[workspace]
   const groups = [...workspaceNavigation[workspace], commonNavigation(workspace)]
   const activePath = groups.flatMap(group => group.items).filter(([, path, , exact]) => exact ? pathname === path : path === '/' ? pathname === '/' : pathname.startsWith(path)).sort((a, b) => b[1].length - a[1].length)[0]?.[1]
@@ -62,8 +88,8 @@ function AppSidebar({ workspace, collapsed, mobile = false, onCollapse, onNaviga
         </Link>
       </div>
       <WorkspaceSwitcher currentRole={workspace} compact={collapsed} />
-      <div className="min-h-0 flex-1 space-y-5 overflow-y-auto overflow-x-visible pb-4">
-        {groups.map(group => <SidebarGroup key={group.labelKey} group={group} activePath={activePath} collapsed={collapsed} onNavigate={onNavigate} />)}
+      <div data-sidebar-navigation className="-mx-1 min-h-0 flex-1 space-y-5 overflow-y-auto overflow-x-hidden px-1 pb-4">
+        {groups.map(group => <SidebarGroup key={group.labelKey} group={group} activePath={activePath} collapsed={collapsed} onNavigate={onNavigate} tooltipId={tooltipId} tooltipPath={tooltip?.path} onTooltipChange={setTooltip} />)}
       </div>
       <div className={`mt-2 border-t border-line pt-3 ${collapsed ? 'flex justify-center' : 'flex items-center justify-between px-2'}`}>
         {!collapsed && <span className="truncate text-[10px] text-muted">NovelHub · {t(meta.labelKey)}</span>}
@@ -77,6 +103,10 @@ function AppSidebar({ workspace, collapsed, mobile = false, onCollapse, onNaviga
           </IconButton>
         )}
       </div>
+      {collapsed && tooltip && createPortal(
+        <span id={tooltipId} role="tooltip" style={{ left: tooltip.left, top: tooltip.top, maxWidth: `calc(100vw - ${tooltip.left + 8}px)` }} className="pointer-events-none fixed z-[60] -translate-y-1/2 truncate rounded-lg bg-ink px-3 py-2 text-xs font-medium text-page shadow-lg">{tooltip.label}</span>,
+        document.body,
+      )}
     </div>
   )
 }

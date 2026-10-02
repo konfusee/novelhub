@@ -151,7 +151,7 @@ The public surface uses `src/components/public/PublicHeader.jsx`; public footer 
 - Workspace metadata and menu configuration belong in `src/navigation/workspaceNavigation.jsx`.
 - Authorization belongs in `src/context/AuthContext.jsx` and `src/app/RouteGuards.jsx`; hiding a menu is not authorization.
 - Sidebar collapse persistence uses `novelhub.sidebar.collapsed`; changes MUST preserve this state across route, locale, theme, and workspace changes.
-- Common Settings, Account, and Help/Support entries MUST remain structurally stable. Profile is currently exposed globally from the header; if restored to the sidebar, implement it once for every workspace.
+- Common Profile, Settings, Account, and Help/Support entries MUST remain structurally stable. Profile is defined once in the shared sidebar for every workspace; the header avatar targets that workspace's profile route.
 - Workspace switching MUST show only roles held by the current account and use `ROLE_HOME`.
 - Author retains Reader capabilities, including reader purchases/wallet behavior, without duplicating the Reader shell.
 - Each distinct navigation item SHOULD resolve to a meaningful route. Do not point unrelated tabs to one route merely to make them clickable.
@@ -177,7 +177,7 @@ The public surface uses `src/components/public/PublicHeader.jsx`; public footer 
 - Related screens MUST align max-width, responsive padding, section gap, heading hierarchy, card treatment, filter placement, table behavior, and state presentation.
 - Use flexible `min-width`, `max-width`, grid/flex, `gap`, wrap, and truncation. MUST NOT tune fixed widths for only English or Vietnamese.
 - Page shells should be `min-h-screen`/flex-column where appropriate so the footer follows short content and never overlays it.
-- Save/discard action bars belong after page content and before the footer. Fixed/sticky actions MUST reserve content space and MUST NOT cover the footer.
+- Save/discard action bars belong after page content and before the footer, and are shown only while editable values differ from their saved baseline. Saving, discarding or restoring the original values hides the account action bar. Fixed/sticky actions MUST reserve content space and MUST NOT cover the footer.
 - Specialized immersive reader/editor pages MAY opt out of standard content width when their task requires it, but not out of theme, accessibility, or i18n requirements.
 
 ## 12. Responsive Design
@@ -372,6 +372,16 @@ Reason: Fix the reported behavior while preserving routes, twelve-column content
 Affected: Shared CSS/UI primitives, public home/categories/search, search result cards and notification filter rails. Verification is recorded in `UI_SYSTEM_CHANGE.md`.
 
 Status: Accepted through the user's explicit request to fix buttons, navigation, page length and text overflow.
+
+### 2026-10-02 — Profile navigation, current-page state and conditional actions
+
+Context: The user reported a missing sidebar Profile entry, horizontal overflow on collapsed-icon hover, header links with no current-page indication, an always-visible account save bar, and a wrapping author status filter.
+
+Decision: Add Profile once to the shared common sidebar navigation for all workspaces. Collapsed links show immediate hover/focus tooltips portaled outside the vertical scroller, with horizontal overflow disabled and focus clearance retained. Tooltips dismiss on Escape, blur, pointer leave, navigation, scroll or resize. Header navigation shows the current route with a brand underline, stronger weight and `aria-current`, including route aliases. Account actions render only when email differs from its saved baseline and offer discard/save. Shared Tabs supports an opt-in `singleRow` mode; author status filters use it and scroll horizontally on narrow screens.
+
+Affected: `AppShell`, `RoleNavigation`, account forms, shared `Tabs`, and the author dashboard. Existing profile routes, collapsed-state persistence, vertical navigation scrolling and wrapping tabs elsewhere are preserved.
+
+Status: Accepted through the user's explicit navigation, save-bar and one-line tab requests.
 
 ## 25. Deprecated Patterns
 

@@ -89,9 +89,9 @@ export function Select({ className, children, ...props }) {
     </select>
   )
 }
-export function Tabs({ items, value, onChange, label }) {
+export function Tabs({ items, value, onChange, label, singleRow = false }) {
   return (
-    <div role="group" aria-label={label} className="nh-tab-rail inline-flex max-w-full flex-wrap gap-1 rounded-2xl border border-line bg-elevated p-1">
+    <div role="group" aria-label={label} className={`nh-tab-rail inline-flex max-w-full gap-1 rounded-2xl border border-line bg-elevated p-1 ${singleRow ? 'flex-nowrap overflow-x-auto' : 'flex-wrap'}`}>
       {items.map(item => (
         <button
           key={item.value}

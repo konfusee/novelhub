@@ -77,7 +77,7 @@ export function AuthorDashboardPage() {
         <div className="nh-grid-12 mt-7 grid min-w-0 items-start gap-6 nh-layout-xl-8-4">
           <div className="min-w-0 space-y-5">
             <Card>
-              <div className="flex flex-col justify-between gap-3 sm:flex-row sm:items-center">
+              <div className="flex flex-col justify-between gap-3">
                 <div>
                   <h2 className="text-xl font-semibold">
                     Hiệu suất truyện và trạng thái bản nháp gần đây
@@ -87,6 +87,8 @@ export function AuthorDashboardPage() {
                   </p>
                 </div>
                 <Tabs
+                  singleRow
+                  label="Trạng thái truyện"
                   value={filter}
                   onChange={setFilter}
                   items={[
@@ -104,16 +106,16 @@ export function AuthorDashboardPage() {
                       filter === 'all' || story.status.toLowerCase().replace('in ', '') === filter,
                   )
                   .map(story => (
-                    <div key={story.title} className="flex items-center gap-3 py-4">
+                    <div key={story.title} className="flex flex-wrap items-center gap-3 py-4">
                       <div
                         className="grid h-16 w-11 shrink-0 place-items-center rounded-lg text-xs font-bold text-white"
                         style={{ backgroundColor: story.color }}
                       >
                         NH
                       </div>
-                      <div className="min-w-0 flex-1">
-                        <div className="flex items-center gap-2">
-                          <h3 className="truncate text-sm font-semibold">{story.title}</h3>
+                      <div className="min-w-0 flex-[1_0_65%]">
+                        <div className="flex flex-wrap items-center gap-2">
+                          <h3 className="min-w-0 break-words text-sm font-semibold">{story.title}</h3>
                           <Badge
                             tone={
                               story.status === 'Published'

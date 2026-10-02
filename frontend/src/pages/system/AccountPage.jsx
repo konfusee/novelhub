@@ -17,7 +17,8 @@ export function AccountPage({ workspace = 'reader' }) {
   const { currentUser } = useAuth()
   const { t } = useLocale()
   const [email, setEmail] = useState(currentUser?.email || '')
-  const [saved, setSaved] = useState(true)
+  const [savedEmail, setSavedEmail] = useState(email)
+  const changed = email !== savedEmail
 
   return (
     <Layout>
@@ -39,10 +40,10 @@ export function AccountPage({ workspace = 'reader' }) {
                   <p className="mt-1 text-xs text-muted">{t('account.userId', { id: currentUser?.id || '—' })}</p>
                 </div>
               </div>
-              <label className="mt-5 block">
-                <span className="mb-2 block text-xs font-semibold">{t('auth.email')}</span>
-                <Input icon={Mail} type="email" value={email} onChange={event => { setEmail(event.target.value); setSaved(false) }} />
-              </label>
+              <div className="mt-5">
+                <label htmlFor="account-email" className="mb-2 block text-xs font-semibold">{t('auth.email')}</label>
+                <Input id="account-email" icon={Mail} type="email" autoComplete="email" value={email} onChange={event => setEmail(event.target.value)} />
+              </div>
             </Card>
 
             <Card>
@@ -73,12 +74,15 @@ export function AccountPage({ workspace = 'reader' }) {
           </Card>
         </div>
 
-        <section className="mt-7 flex flex-col items-stretch justify-between gap-3 rounded-3xl border border-line bg-surface p-4 sm:flex-row sm:items-center">
-          <p className="text-xs text-muted">{saved ? t('account.saved') : t('account.unsaved')}</p>
-          <Button onClick={() => setSaved(true)} disabled={saved}>
-            <Save size={15} /> {t('common.save')}
-          </Button>
-        </section>
+        {changed && <section aria-label={t('account.unsaved')} className="mt-7 flex flex-col items-stretch justify-between gap-3 rounded-3xl border border-line bg-surface p-4 sm:flex-row sm:items-center">
+          <p className="text-xs text-muted">{t('account.unsaved')}</p>
+          <div className="flex flex-wrap gap-2 sm:ml-auto">
+            <Button variant="secondary" onClick={() => setEmail(savedEmail)}>{t('common.discard')}</Button>
+            <Button onClick={() => setSavedEmail(email)}>
+              <Save size={15} /> {t('common.saveChanges')}
+            </Button>
+          </div>
+        </section>}
       </main>
     </Layout>
   )
