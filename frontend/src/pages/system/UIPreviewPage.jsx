@@ -1,11 +1,12 @@
 import { useMemo, useState } from 'react'
-import { BookOpen, ExternalLink, Moon, Search, Sun } from 'lucide-react'
+import { NovelHubMark, ExternalLink, Moon, Search, Sun } from '../../components/icons'
 import { Link } from 'react-router-dom'
 import { pageRegistry, pageRoles, pageStatuses } from '../../data/pageRegistry'
 import { useTheme } from '../../context/ThemeContext'
 import { Badge, Button, Card, Input, PageContainer, Select } from '../../components/ui'
 import { StoryCover } from '../../components/story/StoryCover'
 import { stories } from '../../data/mock/stories'
+import { IconGallery } from '../../components/icons/IconGallery'
 const statusTone = { TODO: 'neutral', IN_PROGRESS: 'orange', DONE: 'green', BLOCKED: 'red' }
 const workflows = [
   ['Đăng ký làm tác giả', '/author/apply'],
@@ -34,7 +35,7 @@ export function UIPreviewPage() {
         <div className="mx-auto flex max-w-[1360px] flex-wrap items-center justify-between gap-4 px-5 py-5 md:px-8 lg:px-12">
           <div className="flex items-center gap-3">
             <span className="grid size-11 place-items-center rounded-2xl bg-brand text-white">
-              <BookOpen size={24} />
+              <NovelHubMark size={24} />
             </span>
             <div>
               <p className="font-bold tracking-tight">NovelHub</p>
@@ -71,7 +72,7 @@ export function UIPreviewPage() {
               />
             </div>
           </div>
-          <div className="grid grid-cols-2 gap-2 sm:grid-cols-5">
+          <div className="nh-grid-12 grid nh-cols-2 gap-2 nh-sm-cols-3">
             {pageRoles.map(role => {
               const pages = pageRegistry.filter(p => p.role === role)
               return (
@@ -114,7 +115,7 @@ export function UIPreviewPage() {
             </optgroup>
           </Select>
         </section>
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+        <div className="nh-grid-12 grid gap-4 nh-sm-cols-2 nh-lg-cols-3 nh-xl-cols-4">
           {visible.map(page => {
             const available = page.status !== 'TODO'
             return (
@@ -171,7 +172,7 @@ export function UIPreviewPage() {
           <p className="mt-1 text-sm text-muted">
             Các hành trình hỗ trợ nằm ngoài danh mục đánh số P01–P36.
           </p>
-          <div className="mt-5 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+          <div className="nh-grid-12 mt-5 grid gap-3 nh-sm-cols-2 nh-lg-cols-4">
             {workflows.map(([label, route]) => (
               <Link
                 key={label}
@@ -189,7 +190,7 @@ export function UIPreviewPage() {
           <p className="mt-1 text-sm text-muted">
             Ảnh gốc tỷ lệ 2:3 không chứa chữ, tiêu đề dựng bằng HTML và có phương án dự phòng.
           </p>
-          <div className="mt-5 grid grid-cols-2 gap-4 sm:grid-cols-3 lg:max-w-3xl">
+          <div className="nh-grid-12 mt-5 grid nh-cols-2 gap-4 nh-sm-cols-3 lg:max-w-3xl">
             {stories.slice(0, 3).map(story => (
               <article key={story.id} className="group min-w-0">
                 <StoryCover story={story} className="aspect-[2/3] rounded-2xl border border-line" />
@@ -199,6 +200,7 @@ export function UIPreviewPage() {
             ))}
           </div>
         </section>
+        <IconGallery />
       </PageContainer>
     </div>
   )

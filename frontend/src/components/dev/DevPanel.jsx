@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { FlaskConical, X } from 'lucide-react'
+import { FlaskConical, X } from '../icons'
 import { useNavigate } from 'react-router-dom'
 import { getAccountHome, useAuth } from '../../context/AuthContext'
 import { useTheme } from '../../context/ThemeContext'

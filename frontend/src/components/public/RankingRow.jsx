@@ -1,4 +1,4 @@
-import { Star } from 'lucide-react'
+import { Star } from '../icons'
 import { Badge, Button } from '../ui'
 export function RankingRow({ item }) {
   const tone = item.change === 'MỚI' ? 'green' : item.change.includes('↓') ? 'red' : 'neutral'

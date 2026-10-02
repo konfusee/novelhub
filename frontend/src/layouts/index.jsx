@@ -1,5 +1,5 @@
 import { Outlet } from 'react-router-dom'
-import { BookOpen } from 'lucide-react'
+import { NovelHubMark } from '../components/icons'
 import { PageContainer } from '../components/ui'
 import { AppShell } from '../components/shell/AppShell'
 
@@ -8,7 +8,7 @@ function RoleLayout({ role, navigation = [] }) {
     <div className="min-h-screen bg-page text-ink">
       <header className="border-b border-line bg-surface">
         <div className="mx-auto flex max-w-[1360px] items-center gap-3 px-5 py-4 md:px-8 lg:px-12">
-          <BookOpen className="text-brand" />
+          <NovelHubMark className="text-brand" />
           <strong>NovelHub</strong>
           <span className="ml-auto text-sm text-muted">{role}</span>
         </div>

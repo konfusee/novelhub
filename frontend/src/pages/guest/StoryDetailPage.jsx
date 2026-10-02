@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Bookmark, BookOpen, Headphones, Share2, Star } from 'lucide-react'
+import { Bookmark, BookOpen, Headphones, Share2, Star } from '../../components/icons'
 import { useNavigate, useParams } from 'react-router-dom'
 import { PublicHeader } from '../../components/public/PublicHeader'
 import { ChapterList } from '../../components/public/ChapterList'
@@ -29,7 +29,7 @@ export function StoryDetailPage({ embedded = false }) {
         <p className="text-xs text-muted">
           Trang chủ / Kỳ ảo / <strong className="text-ink">The Silent Forest</strong>
         </p>
-        <Card className="grid gap-7 p-5 sm:p-7 lg:grid-cols-[240px_minmax(0,1fr)]">
+        <Card className="nh-grid-12 grid gap-7 p-5 sm:p-7 nh-layout-lg-3-9">
           <div className="relative grid min-h-80 place-items-center overflow-hidden rounded-2xl border border-line bg-[#173b3f] text-7xl text-white">
             <span>🌲</span>
             <Badge tone="green" className="absolute left-3 top-3">
@@ -106,7 +106,7 @@ export function StoryDetailPage({ embedded = false }) {
             </div>
           </div>
         </Card>
-        <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_340px]">
+        <div className="nh-grid-12 grid gap-6 nh-layout-lg-8-4">
           <section className="overflow-hidden rounded-3xl border border-line bg-surface">
             <nav className="flex gap-1 overflow-x-auto border-b border-line p-3">
               {tabs.map(([value, labelKey]) => (
@@ -154,7 +154,7 @@ export function StoryDetailPage({ embedded = false }) {
               <p className="mt-4 text-xs leading-5 text-muted">
                 Người kể chuyện kiến tạo những thế giới phủ ánh hoàng hôn và tàn tích cổ xưa. Chủ nhân Giải thưởng Hội Kỳ ảo NovelHub 2024.
               </p>
-              <div className="mt-4 grid grid-cols-3 border-y border-line py-3 text-center text-xs">
+              <div className="nh-grid-12 mt-4 grid nh-cols-3 border-y border-line py-3 text-center text-xs">
                 <span>
                   <strong className="block">4</strong>
                   <small>{t('storyDetail.works')}</small>

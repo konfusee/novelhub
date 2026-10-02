@@ -2,7 +2,7 @@
  * states: default · hover · focus · active · disabled · loading · error · success
  * contrast: pass (46–50)
  */
-import { Mail } from 'lucide-react'
+import { Mail } from '../icons'
 import { Input } from './index'
 
 const states = [

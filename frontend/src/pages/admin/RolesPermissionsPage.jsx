@@ -10,7 +10,7 @@ import {
   ShieldCheck,
   UserRound,
   X,
-} from 'lucide-react'
+} from '../../components/icons'
 import { AdminLayout } from '../../layouts'
 import { Badge, Button, Card, Input, Modal, Tabs } from '../../components/ui'
 
@@ -223,7 +223,7 @@ export function RolesPermissionsPage() {
             <h2 className="text-xl font-semibold">Vai trò cốt lõi của hệ thống</h2>
             <Badge tone="green">4 loại đang hoạt động</Badge>
           </div>
-          <div className="mt-4 grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+          <div className="nh-grid-12 mt-4 grid gap-4 nh-md-cols-2 nh-xl-cols-4">
             {roles.map(role => (
               <RoleCard
                 key={role.name}

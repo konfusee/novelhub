@@ -9,7 +9,7 @@ import {
   Sparkles,
   Trophy,
   UsersRound,
-} from 'lucide-react'
+} from '../../components/icons'
 import { AuthorLayout } from '../../layouts'
 import { Badge, Button, Card, Select } from '../../components/ui'
 
@@ -64,7 +64,7 @@ export function AuthorAnalyticsPage() {
             </Button>
           </div>
         </div>
-        <section className="mt-6 grid grid-cols-2 gap-3 xl:grid-cols-4">
+        <section className="nh-grid-12 mt-6 grid nh-cols-1 nh-sm-cols-2 gap-3 nh-xl-cols-4">
           <Kpi
             icon={BookOpen}
             label="Tổng lượt đọc truyện"
@@ -93,7 +93,7 @@ export function AuthorAnalyticsPage() {
             tone="orange"
           />
         </section>
-        <div className="mt-6 grid gap-5 xl:grid-cols-[minmax(0,1fr)_300px]">
+        <div className="nh-grid-12 mt-6 grid gap-5 nh-layout-xl-8-4">
           <Card>
             <div className="flex flex-wrap justify-between gap-3">
               <div>
@@ -178,7 +178,7 @@ export function AuthorAnalyticsPage() {
               <span className="text-muted">— Mốc cơ sở nền tảng (68%)</span>
             </div>
           </div>
-          <div className="mt-6 grid grid-cols-3 gap-2 sm:grid-cols-5">
+          <div className="nh-grid-12 mt-6 grid nh-cols-3 gap-2 nh-sm-cols-3">
             {retention.map((value, index) => (
               <button
                 key={index}
@@ -207,7 +207,7 @@ export function AuthorAnalyticsPage() {
             </Button>
           </div>
         </Card>
-        <div className="mt-6 grid gap-5 xl:grid-cols-[minmax(0,1.4fr)_minmax(300px,.6fr)]">
+        <div className="nh-grid-12 mt-6 grid gap-5 nh-layout-xl-7-5">
           <Card>
             <h2 className="text-lg font-semibold">Đặc điểm độc giả và kênh khám phá</h2>
             <p className="text-xs text-muted">

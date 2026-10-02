@@ -8,7 +8,7 @@ import {
   MoreVertical,
   Play,
   Trash2,
-} from 'lucide-react'
+} from '../icons'
 import { Badge, Button, Card } from '../ui'
 import { useLocale } from '../../context/LocaleContext'
 

@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react'
-import { ArrowRight, Search } from 'lucide-react'
+import { ArrowRight, Search } from '../../components/icons'
 import { PublicHeader } from '../../components/public/PublicHeader'
 import { CategoryCard } from '../../components/public/CategoryCard'
 import { StoryShelf } from '../../components/public/StoryShelf'
@@ -68,7 +68,7 @@ export function CategoriesPage({ embedded = false }) {
             </div>
             <span className="text-xs text-muted">{visibleCategories.length} thể loại chính</span>
           </div>
-          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+          <div className="nh-grid-12 grid gap-3 nh-sm-cols-2 nh-lg-cols-3">
             {visibleCategories.map(category => (
               <CategoryCard key={category.name} category={category} onSelect={setSelectedGenre} />
             ))}
@@ -89,7 +89,7 @@ export function CategoriesPage({ embedded = false }) {
               Khám phá tất cả <ArrowRight size={14} />
             </button>
           </div>
-          <div className="mt-5 grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-6">
+          <div className="nh-grid-12 mt-5 grid nh-cols-2 gap-2 nh-sm-cols-3 nh-lg-cols-6">
             {popularTags.map((tag, index) => (
               <button
                 onClick={() => setQuery(tag.replace('#', ''))}
@@ -115,7 +115,7 @@ export function CategoriesPage({ embedded = false }) {
           <p className="mt-1 text-xs text-muted">
             Những tác phẩm có văn phong đặc sắc đã được tuyển chọn kỹ và đang chờ bạn khám phá.
           </p>
-          <div className="mt-5 grid gap-4 md:grid-cols-3">
+          <div className="nh-grid-12 mt-5 grid gap-4 nh-md-cols-3">
             {hiddenGems.map(item => (
               <Card key={item.title} className="flex flex-col p-5">
                 <div className="flex items-center justify-between">
@@ -149,7 +149,7 @@ export function CategoriesPage({ embedded = false }) {
               Mở khóa đề xuất cá nhân, đồng bộ tiến độ đọc và xây dựng thư viện số trên mọi thiết bị.
             </p>
           </div>
-          <div className="flex shrink-0 gap-3">
+          <div className="flex flex-wrap gap-3">
             <Button onClick={() => window.location.assign('/register')}>Tạo tài khoản</Button>
             <Button onClick={() => window.location.assign('/')} variant="secondary">Tìm hiểu thêm</Button>
           </div>

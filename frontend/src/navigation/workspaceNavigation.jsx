@@ -33,7 +33,7 @@ import {
   UserRoundCheck,
   UsersRound,
   WalletCards,
-} from 'lucide-react'
+} from '../components/icons'
 
 export const workspaceMeta = {
   reader: { labelKey: 'navigation.reader', home: '/reader' },

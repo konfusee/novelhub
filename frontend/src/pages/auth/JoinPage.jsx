@@ -2,6 +2,7 @@ import { useState } from 'react'
 import {
   ArrowRight,
   BookOpen,
+  NovelHubMark,
   Check,
   CheckCircle2,
   Eye,
@@ -15,7 +16,7 @@ import {
   Sparkles,
   UserRound,
   X,
-} from 'lucide-react'
+} from '../../components/icons'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { PublicHeader } from '../../components/public/PublicHeader'
 import { SiteFooter } from '../../components/shared/SiteFooter'
@@ -138,11 +139,11 @@ export function JoinPage({ initialMode }) {
   return (
     <div className="min-h-screen bg-page text-ink">
       <PublicHeader />
-      <main className="mx-auto grid w-full max-w-[1360px] items-start gap-6 px-5 py-8 md:px-8 lg:min-h-[calc(100vh-72px)] lg:grid-cols-2 lg:items-center lg:gap-8 lg:px-12 lg:py-10">
+      <main className="nh-grid-12 mx-auto grid w-full max-w-[1360px] items-start gap-6 px-5 py-8 md:px-8 lg:min-h-[calc(100vh-72px)] nh-lg-cols-2 lg:items-center lg:gap-8 lg:px-12 lg:py-10">
         <AuthIntroduction isLogin={isLogin} />
 
         <Card className="w-full p-5 sm:p-7 lg:p-8">
-          <div className="grid grid-cols-2 rounded-2xl border border-line bg-elevated p-1">
+          <div className="nh-grid-12 grid nh-cols-2 rounded-2xl border border-line bg-elevated p-1">
             <ModeButton active={isLogin} onClick={() => switchMode('login')}>
               {t('auth.signIn')}
             </ModeButton>
@@ -168,7 +169,7 @@ export function JoinPage({ initialMode }) {
               <>
                 <fieldset>
                   <legend className="mb-2 text-xs font-semibold">{t('auth.accountType')}</legend>
-                  <div className="grid gap-3 sm:grid-cols-2">
+                  <div className="nh-grid-12 grid gap-3 nh-sm-cols-2">
                     {accountOptions.map(option => (
                       <AccountOption
                         key={option.value}
@@ -351,7 +352,7 @@ function AuthIntroduction({ isLogin }) {
     <section className="overflow-hidden rounded-3xl border border-line bg-elevated p-6 sm:p-8 lg:p-10">
       <Link to="/" className="inline-flex items-center gap-3 text-xl font-bold">
         <span className="grid size-11 place-items-center rounded-2xl bg-brand text-white">
-          <BookOpen size={22} />
+          <NovelHubMark size={22} />
         </span>
         <span>
           Novel<span className="text-brand">Hub</span>
@@ -499,7 +500,7 @@ function DemoAccounts({ onSelect }) {
         <p className="text-xs font-semibold">Tài khoản dùng thử</p>
         <span className="text-[10px] text-muted">Mật khẩu: {MOCK_PASSWORD}</span>
       </div>
-      <div className="mt-3 grid grid-cols-2 gap-2">
+      <div className="nh-grid-12 mt-3 grid nh-cols-2 gap-2">
         {Object.entries(mockAccounts).map(([role, user]) => (
           <button
             type="button"

@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { BookOpenCheck, Info, ShieldCheck, Star } from 'lucide-react'
+import { BookOpenCheck, Info, ShieldCheck, Star } from '../../components/icons'
 import { PublicHeader } from '../../components/public/PublicHeader'
 import { PodiumCard } from '../../components/public/PodiumCard'
 import { RankingRow } from '../../components/public/RankingRow'
@@ -59,7 +59,7 @@ export function RankingsPage({ embedded = false }) {
             <Star size={13} className="fill-orange text-orange" />
             Dẫn đầu tuần này
           </p>
-          <div className="grid gap-4 lg:grid-cols-3 lg:items-end">
+          <div className="nh-grid-12 grid gap-4 nh-lg-cols-3 lg:items-end">
             <div className="lg:order-1">
               <PodiumCard story={podium[1]} />
             </div>
@@ -71,7 +71,7 @@ export function RankingsPage({ embedded = false }) {
             </div>
           </div>
         </section>
-        <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_300px]">
+        <div className="nh-grid-12 grid gap-6 nh-layout-lg-8-4">
           <section>
             <div className="mb-4 flex items-center justify-between">
               <h2 className="text-xl font-bold">Hạng #04 — #15</h2>
@@ -122,7 +122,7 @@ export function RankingsPage({ embedded = false }) {
                 Author of #1 hit The Silent Forest. Former mythologist exploring human resilience
                 and untamed wilderness.
               </p>
-              <div className="mt-4 grid grid-cols-2 gap-3 border-y border-line py-3 text-center text-xs">
+              <div className="nh-grid-12 mt-4 grid nh-cols-2 gap-3 border-y border-line py-3 text-center text-xs">
                 <span>
                   <strong className="block">48.2K</strong>
                   <small className="text-muted">Người theo dõi</small>
@@ -148,7 +148,7 @@ export function RankingsPage({ embedded = false }) {
                 Khám phá tiểu thuyết tiềm năng được đội ngũ cộng đồng tuyển chọn mỗi thứ Sáu.
               </p>
               <button onClick={() => window.location.assign('/search')} className="mt-3 text-xs font-semibold text-brand">
-                Khám phá bộ sưu tập tuyển chọn →
+                Xem bộ sưu tập →
               </button>
             </Card>
             <Card className="flex gap-3 p-4">

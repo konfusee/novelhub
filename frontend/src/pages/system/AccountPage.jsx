@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Laptop, LockKeyhole, Mail, Save, ShieldCheck, Smartphone, UserRound } from 'lucide-react'
+import { Laptop, LockKeyhole, Mail, Save, ShieldCheck, Smartphone, UserRound } from '../../components/icons'
 import { AdminLayout, AuthorLayout, ModeratorLayout, ReaderLayout } from '../../layouts'
 import { Avatar, Button, Card, Input } from '../../components/ui'
 import { useAuth } from '../../context/AuthContext'
@@ -28,7 +28,7 @@ export function AccountPage({ workspace = 'reader' }) {
           <p className="mt-2 max-w-3xl text-sm leading-6 text-muted">{t('account.description')}</p>
         </header>
 
-        <div className="mt-6 grid items-start gap-6 xl:grid-cols-[minmax(0,1fr)_360px]">
+        <div className="nh-grid-12 mt-6 grid items-start gap-6 nh-layout-xl-8-4">
           <div className="space-y-5">
             <Card>
               <SectionTitle icon={UserRound} title={t('account.credentials')} />

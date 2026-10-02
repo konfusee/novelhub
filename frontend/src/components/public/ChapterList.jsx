@@ -1,4 +1,4 @@
-import { Lock } from 'lucide-react'
+import { Lock } from '../icons'
 import { Link } from 'react-router-dom'
 import { Badge } from '../ui'
 import { useAuth } from '../../context/AuthContext'

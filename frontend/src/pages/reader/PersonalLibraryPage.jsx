@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react'
-import { Check, Cloud, Filter, Grid2X2, List, Search, Trophy } from 'lucide-react'
+import { Check, Cloud, Filter, Grid2X2, List, Search, Trophy } from '../../components/icons'
 import { ReaderLayout } from '../../layouts'
 import { LibraryCard } from '../../components/reader/LibraryCard'
 import { Badge, Button, Card, Input, Select } from '../../components/ui'
@@ -137,7 +137,7 @@ export function PersonalLibraryPage() {
 
         {filtered.length ? (
           <section
-            className={`mt-6 ${view === 'grid' ? 'grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4 2xl:grid-cols-5' : 'space-y-3'}`}
+            className={`mt-6 ${view === 'grid' ? 'nh-grid-12 nh-cols-1 gap-3 nh-sm-cols-3 nh-lg-cols-4' : 'space-y-3'}`}
           >
             {filtered.map(item => (
               <LibraryCard
@@ -178,7 +178,7 @@ export function PersonalLibraryPage() {
               </p>
             </div>
           </div>
-          <div className="flex w-full gap-2 sm:w-auto">
+          <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row">
             <Button onClick={() => window.location.assign('/reader/history')} variant="secondary" className="flex-1">
               Xem thống kê
             </Button>

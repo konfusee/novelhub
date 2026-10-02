@@ -8,7 +8,7 @@ import {
   Search,
   ShieldCheck,
   UserPlus,
-} from 'lucide-react'
+} from '../../components/icons'
 import { useNavigate } from 'react-router-dom'
 import { ModeratorLayout } from '../../layouts'
 import { submissionQueue } from '../../data/mock/moderation'
@@ -120,7 +120,7 @@ export function SubmissionQueuePage() {
               ))}
             </div>
           </div>
-          <div className="mt-4 flex flex-col gap-2 border-t border-line pt-4 lg:flex-row">
+          <div className="mt-4 flex flex-col flex-wrap gap-2 border-t border-line pt-4 lg:flex-row">
             <Select value={genre} onChange={event => setGenre(event.target.value)}>
               <option value="All Genres">Tất cả thể loại</option>
               <option value="Fantasy & Mythic">Kỳ ảo và Thần thoại</option>
@@ -309,7 +309,7 @@ function QueueRow({ row, checked, onCheck, onClaim, onReview }) {
               </>
             )}
           </p>
-          <div className="mt-3 flex justify-end gap-2">
+          <div className="mt-3 flex flex-wrap justify-end gap-2">
             <Button onClick={onClaim} variant="secondary" className="min-h-9 px-3 py-1 text-xs">
               {row.assigned === 'Unassigned' ? 'Nhận xử lý' : 'Phân công lại'}
             </Button>

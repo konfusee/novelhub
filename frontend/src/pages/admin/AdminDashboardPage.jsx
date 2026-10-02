@@ -7,7 +7,7 @@ import {
   Gauge,
   ShieldAlert,
   UserRoundCheck,
-} from 'lucide-react'
+} from '../../components/icons'
 import { AdminLayout } from '../../layouts'
 import { adminAudit, adminStats, serviceHealth } from '../../data/mock/admin'
 import { Badge, Button, Card, Modal, Tabs } from '../../components/ui'
@@ -55,7 +55,7 @@ export function AdminDashboardPage() {
             </Button>
           </div>
         </div>
-        <section className="mt-6 grid grid-cols-2 gap-3 xl:grid-cols-6">
+        <section className="nh-grid-12 mt-6 grid nh-cols-1 nh-sm-cols-2 gap-3 nh-xl-cols-3">
           {adminStats.map(([label, value, note], index) => {
             const Icon = icons[index]
             return (
@@ -82,7 +82,7 @@ export function AdminDashboardPage() {
             )
           })}
         </section>
-        <div className="mt-6 grid min-w-0 grid-cols-[minmax(0,1fr)] items-start gap-6 xl:grid-cols-[minmax(0,1fr)_320px]">
+        <div className="nh-grid-12 mt-6 grid min-w-0 items-start gap-6 nh-layout-xl-8-4">
           <div className="min-w-0 space-y-6">
             <Card>
               <div className="flex flex-col justify-between gap-3 lg:flex-row lg:items-start">
@@ -131,13 +131,13 @@ export function AdminDashboardPage() {
                   )
                 })}
               </div>
-              <div className="mt-3 grid grid-cols-4 text-center text-[9px] text-muted">
+              <div className="nh-grid-12 mt-3 grid nh-cols-4 text-center text-[9px] text-muted">
                 <span>Tuần 1</span>
                 <span>Tuần 2</span>
                 <strong className="text-ink">Tuần 3 ★</strong>
                 <span>Tuần 4</span>
               </div>
-              <div className="mt-6 grid gap-3 rounded-3xl bg-elevated p-5 sm:grid-cols-3">
+              <div className="nh-grid-12 mt-6 grid gap-3 rounded-3xl bg-elevated p-5 nh-sm-cols-3">
                 <Metric label="Người dùng hoạt động hằng ngày" value="245.600" note="↑ 4,1% mỗi tuần" />
                 <Metric
                   label="Phiên đọc trung bình"

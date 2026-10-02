@@ -20,7 +20,7 @@ import {
   Send,
   Sparkles,
   Underline,
-} from 'lucide-react'
+} from '../../components/icons'
 import { AuthorLayout } from '../../layouts'
 import { Badge, Button, Card, Modal } from '../../components/ui'
 
@@ -96,7 +96,7 @@ export function ChapterEditorPage() {
             <PanelRight size={18} />
           </button>
         </div>
-        <div className="grid min-h-0 flex-1 xl:grid-cols-[250px_minmax(0,1fr)_330px]">
+        <div className="nh-grid-12 grid min-h-0 flex-1 nh-layout-xl-3-6-3">
           <ChapterTree open={leftOpen} onClose={() => setLeftOpen(false)} />
           <main className="min-w-0">
             <Toolbar onSave={() => setSaved(true)} />

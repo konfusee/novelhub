@@ -10,7 +10,7 @@ import {
   Search,
   ShieldCheck,
   SlidersHorizontal,
-} from 'lucide-react'
+} from '../../components/icons'
 import { AdminLayout } from '../../layouts'
 import { Badge, Button, Card, Input, Modal, Select, Tabs } from '../../components/ui'
 
@@ -159,7 +159,7 @@ export function PlatformSettingsPage() {
           <p className="text-xs text-muted">
             Trạng thái vận hành, dữ liệu mạng dịch vụ và thông tin xác thực cổng.
           </p>
-          <div className="mt-4 grid gap-4 md:grid-cols-2 2xl:grid-cols-4">
+          <div className="nh-grid-12 mt-4 grid gap-4 nh-md-cols-2 nh-2xl-cols-4">
             {services.filter(service => section === 'External Services & APIs' || service[0].toLowerCase().includes(section.split(' ')[0].toLowerCase()) || (section === 'Storage & Media Mesh' && service[0].includes('Storage'))).map(service => (
               <ServiceCard
                 key={service[0]}
@@ -179,7 +179,7 @@ export function PlatformSettingsPage() {
               </p>
             </div>
           </div>
-          <div className="mt-6 grid gap-5 lg:grid-cols-2">
+          <div className="nh-grid-12 mt-6 grid gap-5 nh-lg-cols-2">
             <Field label="Tên trang" defaultValue="NovelHub" />
             <Field label="Khẩu hiệu nền tảng" defaultValue="Những câu chuyện cho ngày mai tươi sáng hơn." />
             <label className="text-xs font-semibold">
@@ -199,7 +199,7 @@ export function PlatformSettingsPage() {
           </div>
           <div className="mt-6">
             <p className="text-xs font-semibold">Ngưỡng khóa chương mặc định</p>
-            <div className="mt-2 grid gap-3 sm:grid-cols-3">
+            <div className="nh-grid-12 mt-2 grid gap-3 nh-sm-cols-3">
               {['Từ chương 3', 'Từ chương 4 cần xu để mở khóa', 'Từ chương 6'].map(
                 (item, index) => (
                   <label
@@ -235,7 +235,7 @@ export function PlatformSettingsPage() {
             </div>
             <Badge tone="green">Đã xác minh lưu trữ WORM</Badge>
           </div>
-          <div className="mt-5 grid gap-3 lg:grid-cols-[1fr_220px]">
+          <div className="nh-grid-12 mt-5 grid gap-3 nh-layout-lg-8-4">
             <Input
               icon={Search}
               value={query}

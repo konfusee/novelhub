@@ -12,7 +12,7 @@ import {
   Send,
   ShieldCheck,
   Tags,
-} from 'lucide-react'
+} from '../../components/icons'
 import { AuthorLayout } from '../../layouts'
 import { Badge, Button, Card, Modal } from '../../components/ui'
 
@@ -84,7 +84,7 @@ export function SubmissionReviewPage() {
                 Truyện: <strong>The Silent Forest — Tập II: Roots of Eldoria</strong>
               </p>
             </div>
-            <div className="grid grid-cols-2 rounded-2xl border border-line bg-elevated p-4 text-center text-xs">
+            <div className="nh-grid-12 grid nh-cols-2 rounded-2xl border border-line bg-elevated p-4 text-center text-xs">
               <div className="border-r border-line px-4">
                 <span className="text-muted">Tổng số chương</span>
                 <strong className="block text-base">5 chương mới</strong>
@@ -117,7 +117,7 @@ export function SubmissionReviewPage() {
             <p className="mt-1 text-right text-xs font-semibold text-brand">{percent}%</p>
           </div>
         </div>
-        <div className="mt-6 grid items-start gap-6 xl:grid-cols-[minmax(0,1fr)_320px]">
+        <div className="nh-grid-12 mt-6 grid items-start gap-6 nh-layout-xl-8-4">
           <div className="space-y-6">
             <Card>
               <div className="flex items-center justify-between border-b border-line pb-5">

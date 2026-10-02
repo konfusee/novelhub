@@ -13,7 +13,7 @@ import {
   ShieldCheck,
   Sparkles,
   WandSparkles,
-} from 'lucide-react'
+} from '../../components/icons'
 import { AuthorLayout } from '../../layouts'
 import { Badge, Button, Card, Input, Modal } from '../../components/ui'
 
@@ -90,7 +90,7 @@ export function AiWritingAssistantPage() {
               trì tính nhất quán của nhân vật.
             </p>
           </div>
-          <div className="flex gap-2">
+          <div className="flex flex-wrap gap-2">
             <Button variant="secondary" onClick={() => setHistoryOpen(true)}>
               <History size={15} />
               Lịch sử bản nháp
@@ -108,7 +108,7 @@ export function AiWritingAssistantPage() {
             được tác giả xem xét. Bạn giữ 100% quyền sở hữu bản thảo và tài sản trí tuệ phái sinh.
           </p>
         </div>
-        <div className="mt-6 grid items-start gap-5 xl:grid-cols-[230px_minmax(0,1fr)_250px]">
+        <div className="nh-grid-12 mt-6 grid items-start gap-5 nh-layout-xl-3-6-3">
           <aside className="space-y-5">
             <Card className="p-4">
               <p className="text-[10px] font-semibold uppercase tracking-[.16em]">

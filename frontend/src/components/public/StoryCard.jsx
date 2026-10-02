@@ -1,4 +1,4 @@
-import { Eye, Star } from 'lucide-react'
+import { Eye, Star } from '../icons'
 import { Link } from 'react-router-dom'
 import { StoryCover } from '../story/StoryCover'
 export function StoryCard({ story }) {

@@ -9,7 +9,13 @@ import {
   Heart,
   Pause,
   Play,
-} from 'lucide-react'
+  Castle,
+  Leaf,
+  RotateCcw,
+  RotateCw,
+  AlignJustify,
+} from '../../components/icons'
+import * as icons from '../../components/icons'
 import { categories } from '../../data/mock/categories'
 import { featuredStories, stories } from '../../data/mock/stories'
 import { PublicHeader } from '../../components/public/PublicHeader'
@@ -22,7 +28,7 @@ function Hero() {
   const { t } = useLocale()
   return (
     <section className="relative overflow-hidden rounded-3xl border border-line bg-surface">
-      <div className="grid lg:grid-cols-[1.02fr_.98fr]">
+      <div className="nh-grid-12 grid nh-layout-lg-6-6">
         <div className="p-7 sm:p-10 lg:p-12">
           <p className="text-[11px] font-semibold tracking-[.28em] text-muted">
             {t('home.eyebrow')}
@@ -42,7 +48,7 @@ function Hero() {
               <Headphones size={16} /> {t('home.startListening')}
             </Button>
           </div>
-          <div className="mt-9 grid grid-cols-2 gap-5 border-t border-line pt-6 sm:grid-cols-4">
+          <div className="nh-grid-12 mt-9 grid nh-cols-2 gap-5 border-t border-line pt-6 nh-sm-cols-4">
             {[
               ['3M+', t('home.readers')],
               ['100K+', t('home.stories')],
@@ -57,11 +63,11 @@ function Hero() {
           </div>
         </div>
         <div className="nh-hero-art relative min-h-80 overflow-hidden bg-elevated p-7 lg:min-h-full">
-          <div className="absolute left-8 top-8 text-6xl opacity-70">🌿</div>
+          <Leaf className="absolute left-8 top-8 text-brand opacity-70" size={60} />
           <div className="absolute right-8 top-8 rotate-[-6deg] text-right text-sm font-medium italic text-muted">
             A kinder world
             <br />
-            through stories <span className="text-rose">♥</span>
+            through stories <Heart size={14} className="inline text-rose" />
           </div>
           <div className="absolute inset-x-4 bottom-14 flex items-end justify-center sm:inset-x-8">
             <div className="relative h-40 w-72 max-w-full">
@@ -109,17 +115,19 @@ function Categories() {
   return (
     <section>
       <SectionTitle>{t('home.browseCategory')}</SectionTitle>
-      <div className="grid grid-cols-4 gap-3 sm:grid-cols-8">
-        {categories.map(category => (
+      <div className="nh-grid-12 nh-cols-2 nh-sm-cols-3 gap-3">
+        {categories.map(category => {
+          const Icon = icons[category.icon] || BookOpen
+          return (
           <button
             onClick={() => window.location.assign(`/categories?genre=${encodeURIComponent(category.name)}`)}
             className="rounded-2xl border border-line bg-surface px-2 py-4 text-center hover:border-brand"
             key={category.name}
           >
-            <span className="block text-2xl">{category.icon}</span>
+            <Icon size={28} className="mx-auto text-brand" />
             <span className="mt-2 block truncate text-[11px] font-medium">{category.name}</span>
           </button>
-        ))}
+        )})}
       </div>
     </section>
   )
@@ -214,7 +222,7 @@ function ReaderPreview() {
               onClick={() => setSpacing(value)}
               className={`rounded-lg border px-2 py-1 ${spacing === value ? 'border-brand text-brand' : 'border-line'}`}
             >
-              ≡
+              <AlignJustify size={16} />
             </button>
           ))}
         </div>
@@ -248,7 +256,7 @@ function AudioPreview() {
         <span>10:24</span>
       </div>
       <div className="mt-4 flex items-center justify-around">
-        <button onClick={() => window.alert('Đã lùi 15 giây (mô phỏng).')} className="text-xs text-muted">↺ 15</button>
+        <button onClick={() => window.alert('Đã lùi 15 giây (mô phỏng).')} className="flex items-center gap-1 text-xs text-muted"><RotateCcw size={16} />15</button>
         <button
           onClick={() => setPlaying(!playing)}
           className="grid size-14 place-items-center rounded-full bg-brand text-white"
@@ -256,7 +264,7 @@ function AudioPreview() {
         >
           {playing ? <Pause /> : <Play />}
         </button>
-        <button onClick={() => window.alert('Đã tiến 15 giây (mô phỏng).')} className="text-xs text-muted">15 ↻</button>
+        <button onClick={() => window.alert('Đã tiến 15 giây (mô phỏng).')} className="flex items-center gap-1 text-xs text-muted">15<RotateCw size={16} /></button>
       </div>
     </Card>
   )
@@ -269,24 +277,24 @@ export function GuestHomePage({ embedded = false }) {
       {!embedded && <PublicHeader />}
       <main className="page-public space-y-8 py-6">
         <Hero />
-        <div className="grid gap-8 xl:grid-cols-[minmax(0,1fr)_320px]">
+        <div className="nh-grid-12 grid gap-8 nh-layout-xl-8-4">
           <div className="space-y-8">
             <section>
               <SectionTitle>{t('home.trending')}</SectionTitle>
-              <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
+              <div className="nh-grid-12 grid nh-cols-2 gap-3 nh-sm-cols-3 nh-lg-cols-6">
                 {stories.map(story => (
                   <StoryCard key={story.id} story={story} />
                 ))}
               </div>
             </section>
             <Categories />
-            <section className="grid gap-4 md:grid-cols-2">
+            <section className="nh-grid-12 grid gap-4 nh-md-cols-2">
               <ContinueCard />
               <ContinueCard audio />
             </section>
             <section>
               <SectionTitle>{t('home.featured')}</SectionTitle>
-              <div className="grid gap-4 md:grid-cols-3">
+              <div className="nh-grid-12 grid gap-4 nh-md-cols-3">
                 {featuredStories.map(item => (
                   <Card key={item.title} className="flex min-h-48 flex-col p-5">
                     <span className="text-[10px] font-semibold tracking-wide text-rose">
@@ -296,7 +304,7 @@ export function GuestHomePage({ embedded = false }) {
                     <p className="mt-2 text-xs leading-5 text-muted">{item.description}</p>
                     <div className="mt-auto flex items-end justify-between">
                       <button onClick={() => window.location.assign('/search')} className="text-xs font-semibold text-brand">{t('navigation.explore')} →</button>
-                      <span className="text-3xl">{item.icon}</span>
+                      {item.tone === 'green' ? <Headphones size={32} className="text-brand" /> : item.tone === 'orange' ? <BookOpen size={32} className="text-orange" /> : <Castle size={32} className="text-rose" />}
                     </div>
                   </Card>
                 ))}
@@ -308,12 +316,12 @@ export function GuestHomePage({ embedded = false }) {
                 <p className="mt-2 max-w-lg text-sm text-muted">
                   {t('home.joinDescription')}
                 </p>
-                <div className="mt-5 flex gap-3">
+                <div className="mt-5 flex flex-wrap gap-3">
                   <Button onClick={() => window.location.assign('/register')}>{t('home.createAccount')}</Button>
                   <Button onClick={() => window.location.assign('/')} variant="secondary">{t('home.learnMore')}</Button>
                 </div>
               </div>
-              <div className="text-7xl">📚🌿</div>
+              <div className="flex gap-3 text-brand"><BookOpen size={64} /><Leaf size={48} /></div>
             </section>
           </div>
           <aside className="space-y-5">

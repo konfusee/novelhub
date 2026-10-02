@@ -13,7 +13,7 @@ import {
   Trash2,
   Upload,
   WandSparkles,
-} from 'lucide-react'
+} from '../../components/icons'
 import { useNavigate } from 'react-router-dom'
 import { AuthorLayout } from '../../layouts'
 import { authorDrafts } from '../../data/mock/author'
@@ -160,7 +160,7 @@ export function DraftsPage() {
           </div>
         </Card>
         <section
-          className={`mt-6 grid gap-5 ${view === 'grid' ? 'md:grid-cols-2' : 'grid-cols-1'}`}
+          className={`nh-grid-12 mt-6 gap-5 ${view === 'grid' ? 'nh-md-cols-2' : 'nh-cols-1'}`}
         >
           {shown.map((draft, index) => (
             <DraftCard
@@ -200,7 +200,7 @@ export function DraftsPage() {
               </Button>
             </div>
           </div>
-          <div className="mt-5 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+          <div className="nh-grid-12 mt-5 grid gap-3 nh-sm-cols-2 nh-xl-cols-4">
             {snapshots.map(([date, title, note]) => (
               <div key={title} className="rounded-2xl border border-line bg-elevated p-4">
                 <div className="flex items-center justify-between text-[10px] text-muted">
@@ -263,7 +263,7 @@ function DraftCard({ draft, featured, onEdit, onDelete }) {
       <h2 className={`mt-2 font-semibold ${featured ? 'text-2xl' : 'text-lg'}`}>{draft.title}</h2>
       <p className="mt-3 line-clamp-3 text-sm leading-6 text-muted">{draft.excerpt}</p>
       <p className="mt-2 text-[10px] text-muted">{draftMetaLabels[draft.meta] ?? draft.meta}</p>
-      <div className="mt-5 grid grid-cols-3 gap-3 rounded-2xl border border-line bg-elevated p-4 text-xs">
+      <div className="nh-grid-12 mt-5 grid nh-cols-3 gap-3 rounded-2xl border border-line bg-elevated p-4 text-xs">
         <div>
           <span className="text-[10px] text-muted">Số từ</span>
           <strong className="block">{draft.words} từ</strong>

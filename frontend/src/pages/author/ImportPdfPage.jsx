@@ -11,7 +11,7 @@ import {
   Scissors,
   ShieldCheck,
   Upload,
-} from 'lucide-react'
+} from '../../components/icons'
 import { AuthorLayout } from '../../layouts'
 import { Badge, Button, Card } from '../../components/ui'
 
@@ -79,7 +79,7 @@ export function ImportPdfPage() {
               Bản thảo chỉ được lưu cục bộ trong bản xem trước này
             </Badge>
           </div>
-          <div className="mt-6 grid gap-3 border-t border-line pt-5 sm:grid-cols-2 xl:grid-cols-4">
+          <div className="nh-grid-12 mt-6 grid gap-3 border-t border-line pt-5 nh-sm-cols-2 nh-xl-cols-4">
             {steps.map((label, index) => {
               const number = index + 1
               return (
@@ -117,7 +117,7 @@ export function ImportPdfPage() {
           <UploadStage fileRef={fileRef} chooseFile={chooseFile} />
         ) : (
           <>
-            <div className="mt-6 grid items-start gap-6 xl:grid-cols-[minmax(0,1.15fr)_minmax(360px,.85fr)]">
+            <div className="nh-grid-12 mt-6 grid items-start gap-6 nh-layout-xl-7-5">
               <section>
                 <Card>
                   <div className="flex flex-col gap-3 bg-elevated p-4 sm:flex-row sm:items-center">
@@ -221,7 +221,7 @@ export function ImportPdfPage() {
                     Chọn cách đưa các chương đã phân tích vào danh mục NovelHub của bạn.
                   </p>
                 </div>
-                <div className="grid gap-3 sm:grid-cols-2 lg:w-3/5">
+                <div className="nh-grid-12 grid gap-3 nh-sm-cols-2 lg:w-3/5">
                   {[
                     ['new', 'Tạo truyện mới', 'Chronicles of the Sunken Spire (Sách mới)'],
                     ['existing', 'Thêm vào truyện hiện có', 'The Silent Forest (Truyện dài kỳ)'],
@@ -240,7 +240,7 @@ export function ImportPdfPage() {
                 </div>
               </div>
             </Card>
-            <div className="mt-5 flex flex-col gap-3 rounded-3xl border border-line bg-surface p-4 sm:flex-row sm:items-center">
+            <div className="mt-5 flex flex-col flex-wrap gap-3 rounded-3xl border border-line bg-surface p-4 sm:flex-row sm:items-center">
               <Button variant="secondary" onClick={() => setStep(1)}>
                 <ArrowLeft size={14} />
                 Quay lại tải lên
@@ -260,7 +260,7 @@ export function ImportPdfPage() {
                 }}
               >
                 <Import size={15} />
-                {imported ? 'Đã nhập vào bản nháp' : `Nhập ${selected} chương thành bản nháp`}
+                {imported ? 'Đã nhập vào bản nháp' : `Nhập ${selected} chương`}
               </Button>
             </div>
           </>

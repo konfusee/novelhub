@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Save } from 'lucide-react'
+import { Save } from '../../components/icons'
 import { AdminLayout } from '../../layouts'
 import { Button, Card } from '../../components/ui'
 import { useMockData } from '../../context/MockDataContext'
@@ -21,7 +21,7 @@ export function AuthorAgreementPage() {
         <h1 className="text-2xl font-bold">Mira Lane · Thỏa thuận doanh thu</h1>
         <p className="mt-2 text-sm text-muted">Tài chính / Cài đặt thỏa thuận</p>
         <Card className="mt-6">
-          <div className="grid gap-5 sm:grid-cols-2">
+          <div className="nh-grid-12 grid gap-5 nh-sm-cols-2">
             <label className="text-sm font-semibold">
               Tỷ lệ của tác giả
               <input

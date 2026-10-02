@@ -16,7 +16,7 @@ import {
   SkipBack,
   SkipForward,
   Volume2,
-} from 'lucide-react'
+} from '../../components/icons'
 import { ReaderLayout } from '../../layouts'
 import { Badge, Button, Card, IconButton } from '../../components/ui'
 import { audioPlayerData as audio } from '../../data/mock/reader'
@@ -33,7 +33,7 @@ export function FullAudioPlayerPage() {
     <ReaderLayout>
       <div className="fixed inset-x-0 top-0 z-50 h-0.5 bg-orange" />
       <main className="page-reader py-6">
-        <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_430px]">
+        <div className="nh-grid-12 grid gap-6 nh-layout-xl-7-5">
           <Card className="p-5 sm:p-7">
             <div className="flex flex-wrap items-center gap-2 border-b border-line pb-5 text-xs text-muted">
               <span>Phòng nghe</span>
@@ -58,7 +58,7 @@ export function FullAudioPlayerPage() {
                 </IconButton>
               </div>
             </div>
-            <section className="mt-7 grid gap-6 md:grid-cols-[280px_1fr]">
+            <section className="nh-grid-12 mt-7 grid gap-6 nh-layout-md-4-8">
               <div
                 className="relative grid aspect-[3/4] place-items-center overflow-hidden rounded-3xl text-white shadow-lg"
                 style={{ backgroundColor: audio.color }}

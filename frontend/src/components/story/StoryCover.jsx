@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { BookOpen } from 'lucide-react'
+import { BookOpen } from '../icons'
 import fantasyCover from '../../assets/covers/fantasy-cover-silent-forest.webp'
 import romanceCover from '../../assets/covers/romance-cover-whispers-of-you.webp'
 import scifiCover from '../../assets/covers/scifi-cover-neon-hearts.webp'

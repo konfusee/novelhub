@@ -11,7 +11,7 @@ import {
   Send,
   Sparkles,
   UsersRound,
-} from 'lucide-react'
+} from '../../components/icons'
 import { AuthorLayout } from '../../layouts'
 import { authorStats, authorStories } from '../../data/mock/author'
 import { Badge, Button, Card, Tabs } from '../../components/ui'
@@ -25,7 +25,7 @@ export function AuthorDashboardPage() {
   return (
     <AuthorLayout>
       <main className="page-author py-6">
-        <section className="grid grid-cols-2 gap-3 xl:grid-cols-4">
+        <section className="nh-grid-12 grid nh-cols-1 nh-sm-cols-2 gap-3 nh-xl-cols-4">
           {authorStats.map(([label, value, delta], index) => {
             const Icon = icons[index]
             return (
@@ -58,7 +58,7 @@ export function AuthorDashboardPage() {
             </h2>
             <button onClick={() => window.location.assign('/author/drafts')} className="text-xs text-brand">Xem tất cả bản nháp →</button>
           </div>
-          <div className="mt-4 grid gap-4 md:grid-cols-2">
+          <div className="nh-grid-12 mt-4 grid gap-4 nh-md-cols-2">
             <DraftCard
               title="The Silent Forest"
               chapter="Chương 16: Heart of the Ironwood"
@@ -74,7 +74,7 @@ export function AuthorDashboardPage() {
             />
           </div>
         </section>
-        <div className="mt-7 grid min-w-0 grid-cols-[minmax(0,1fr)] items-start gap-6 xl:grid-cols-[minmax(0,1fr)_320px]">
+        <div className="nh-grid-12 mt-7 grid min-w-0 items-start gap-6 nh-layout-xl-8-4">
           <div className="min-w-0 space-y-5">
             <Card>
               <div className="flex flex-col justify-between gap-3 sm:flex-row sm:items-center">

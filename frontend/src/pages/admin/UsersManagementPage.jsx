@@ -10,7 +10,7 @@ import {
   ShieldCheck,
   UserPlus,
   X,
-} from 'lucide-react'
+} from '../../components/icons'
 import { AdminLayout } from '../../layouts'
 import { adminUsers } from '../../data/mock/admin'
 import { Avatar, Badge, Button, Card, Input, Modal, Select, Tabs } from '../../components/ui'
@@ -73,7 +73,7 @@ export function UsersManagementPage() {
           </div>
         </div>
         <Card className="mt-6">
-          <div className="grid gap-3 lg:grid-cols-[minmax(260px,1fr)_190px_190px]">
+          <div className="nh-grid-12 grid gap-3 nh-layout-lg-6-3-3">
             <Input
               icon={Search}
               value={query}
@@ -105,7 +105,7 @@ export function UsersManagementPage() {
             />
           </div>
         </Card>
-        <div className="mt-5 grid items-start gap-5 2xl:grid-cols-[minmax(0,1fr)_360px]">
+        <div className="nh-grid-12 mt-5 grid items-start gap-5 nh-layout-2xl-8-4">
           <Card className="overflow-hidden p-0">
             <div className="overflow-x-auto">
               <table className="w-full min-w-[790px] text-left text-xs">
@@ -250,7 +250,7 @@ function UserInspector({ user, onEdit, onSuspend }) {
           </div>
           <X size={17} className="text-muted" />
         </div>
-        <div className="mt-5 grid grid-cols-2 gap-2">
+        <div className="nh-grid-12 mt-5 grid nh-cols-2 gap-2">
           <Button variant="secondary" onClick={onEdit}>
             <Edit3 size={14} />
             Sửa vai trò
@@ -274,7 +274,7 @@ function UserInspector({ user, onEdit, onSuspend }) {
         <Row label="Thời gian tham gia" value={`${user.joined} (${user.tenure})`} />
       </InfoCard>
       <InfoCard title="Hồ sơ sáng tác và chỉ số" icon={BookOpen}>
-        <div className="grid grid-cols-3 gap-2 text-center">
+        <div className="nh-grid-12 grid nh-cols-3 gap-2 text-center">
           <Metric value={user.role === 'Author' ? '6' : '0'} label="Truyện dài kỳ" />
           <Metric value={user.role === 'Author' ? '1,25 triệu' : '—'} label="Lượt đọc" />
           <Metric value="99,4%" label="Toàn vẹn" />

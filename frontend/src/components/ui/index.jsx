@@ -1,4 +1,4 @@
-import { X } from 'lucide-react'
+import { X } from '../icons'
 import { useLocale } from '../../context/LocaleContext'
 const cn = (...classes) => classes.filter(Boolean).join(' ')
 export function Button({ variant = 'primary', className, ...props }) {
@@ -23,7 +23,7 @@ export function IconButton({ label, className, children, ...props }) {
     <button
       aria-label={label}
       className={cn(
-        'inline-grid size-11 place-items-center rounded-2xl border border-line bg-surface text-ink hover:border-brand hover:text-brand',
+        'inline-grid size-11 shrink-0 place-items-center rounded-2xl border border-line bg-surface text-ink hover:border-brand hover:text-brand',
         className,
       )}
       {...props}
@@ -64,7 +64,7 @@ export function Input({ icon: Icon, className, ...props }) {
     <label
       data-input-shell
       className={cn(
-        'flex min-h-11 items-center gap-2 rounded-2xl border border-line bg-surface px-3',
+        'flex min-h-11 min-w-0 items-center gap-2 rounded-2xl border border-line bg-surface px-3',
         className,
       )}
     >
@@ -80,7 +80,7 @@ export function Select({ className, children, ...props }) {
   return (
     <select
       className={cn(
-        'min-h-11 rounded-2xl border border-line bg-surface px-4 text-sm text-ink outline-none focus:border-brand',
+        'min-h-11 min-w-0 max-w-full rounded-2xl border border-line bg-surface px-4 text-sm text-ink outline-none focus:border-brand',
         className,
       )}
       {...props}
@@ -91,13 +91,13 @@ export function Select({ className, children, ...props }) {
 }
 export function Tabs({ items, value, onChange }) {
   return (
-    <div className="inline-flex rounded-2xl border border-line bg-elevated p-1">
+    <div className="nh-tab-rail inline-flex max-w-full overflow-x-auto rounded-2xl border border-line bg-elevated p-1">
       {items.map(item => (
         <button
           key={item.value}
           onClick={() => onChange(item.value)}
           className={cn(
-            'rounded-xl px-4 py-2 text-sm font-medium',
+            'shrink-0 rounded-xl px-4 py-2 text-sm font-medium',
             value === item.value ? 'bg-surface text-brand' : 'text-muted',
           )}
         >

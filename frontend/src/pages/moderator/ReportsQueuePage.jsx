@@ -11,7 +11,7 @@ import {
   ShieldCheck,
   UserRoundCheck,
   X,
-} from 'lucide-react'
+} from '../../components/icons'
 import { useNavigate } from 'react-router-dom'
 import { ModeratorLayout } from '../../layouts'
 import { communityReports } from '../../data/mock/moderation'
@@ -128,7 +128,7 @@ export function ReportsQueuePage() {
             </div>
           </div>
         </Card>
-        <div className="mt-5 grid min-h-[760px] gap-5 xl:grid-cols-[minmax(0,1fr)_520px]">
+        <div className="nh-grid-12 mt-5 grid min-h-[760px] gap-5 nh-layout-xl-7-5">
           <section>
             <div className="mb-3 flex justify-between text-xs text-muted">
               <span>Đang hiển thị 1–{rows.length} / 15 báo cáo sự cố chờ xử lý</span>
@@ -279,7 +279,7 @@ function IncidentInspector({ report, onResolution, onSimilarity }) {
         </blockquote>
         <p className="mt-3 text-xs text-muted">Vị trí: Đoạn 24–26</p>
       </div>
-      <div className="mt-5 grid grid-cols-2 gap-3">
+      <div className="nh-grid-12 mt-5 grid nh-cols-2 gap-3">
         <Card className="p-4">
           <p className="text-[10px] uppercase text-muted">Tác giả bị báo cáo</p>
           <strong className="mt-3 block">@erik_pen</strong>
@@ -304,7 +304,7 @@ function IncidentInspector({ report, onResolution, onSimilarity }) {
         <ShieldCheck size={15} />
         Mở so sánh tương đồng (P31)
       </Button>
-      <div className="mt-3 grid grid-cols-2 gap-2">
+      <div className="nh-grid-12 mt-3 grid nh-cols-2 gap-2">
         <Button onClick={() => onResolution('Bác bỏ do không có căn cứ')} variant="secondary">
           <X size={14} />
           Bác bỏ

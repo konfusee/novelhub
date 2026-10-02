@@ -1,4 +1,4 @@
-import { Headphones, Moon, Sun } from 'lucide-react'
+import { Headphones, Moon, Sun } from '../icons'
 
 const OptionGroup = ({ label, values, value, onChange }) => (
   <div className="flex items-center gap-1">

@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Bookmark, Clock, Eye, Star } from 'lucide-react'
+import { Bookmark, Clock, Eye, Star } from '../icons'
 import { Badge, Button, Card } from '../ui'
 import { StoryCover } from '../story/StoryCover'
 import { useLocale } from '../../context/LocaleContext'

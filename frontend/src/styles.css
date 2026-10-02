@@ -302,7 +302,7 @@ html[data-reader-focus='true'] [data-app-header] {
 }
 
 @media (max-width: 639px) {
-  .reader-page [aria-hidden] {
+  .reader-page aside[aria-hidden] {
     inset: auto 0 0;
     width: 100%;
     max-width: none;
@@ -313,7 +313,7 @@ html[data-reader-focus='true'] [data-app-header] {
     border-radius: 1.5rem 1.5rem 0 0;
     transform: translateY(100%);
   }
-  .reader-page [aria-hidden='false'] {
+  .reader-page aside[aria-hidden='false'] {
     transform: translateY(0);
   }
 }
@@ -517,4 +517,80 @@ button[data-state='success'] {
 @keyframes workspace-enter-reduced {
   from { opacity: 0.72; }
   to { opacity: 1; }
+}
+
+/* Hallmark · editorial · Folio icons and twelve-column content geometry. */
+/* Hallmark · pre-emit critique: P5 H4 E4 S5 R5 V4 */
+.nh-grid-12 {
+  display: grid;
+  grid-template-columns: repeat(var(--layout-columns), minmax(0, 1fr));
+  min-width: 0;
+  column-gap: var(--space-xs);
+}
+.nh-grid-12 > * {
+  min-width: 0;
+  grid-column: span 12 / span 12;
+}
+[data-nh-icon] {
+  flex-shrink: 0;
+  vertical-align: middle;
+}
+  .nh-grid-12.nh-cols-1 > * { grid-column: span 12 / span 12; }
+  .nh-grid-12.nh-cols-2 > * { grid-column: span 6 / span 6; }
+  .nh-grid-12.nh-cols-3 > * { grid-column: span 4 / span 4; }
+  .nh-grid-12.nh-cols-4 > * { grid-column: span 3 / span 3; }
+@media (min-width: 640px) {
+  .nh-grid-12 { column-gap: var(--space-md); }
+  .nh-grid-12.nh-sm-cols-2 > * { grid-column: span 6 / span 6; }
+  .nh-grid-12.nh-sm-cols-3 > * { grid-column: span 4 / span 4; }
+  .nh-grid-12.nh-sm-cols-4 > * { grid-column: span 3 / span 3; }
+}
+@media (min-width: 768px) {
+  .nh-grid-12.nh-md-cols-2 > * { grid-column: span 6 / span 6; }
+  .nh-grid-12.nh-md-cols-3 > * { grid-column: span 4 / span 4; }
+  .nh-grid-12.nh-layout-md-4-8 > :nth-child(1) { grid-column: span 4 / span 4; }
+  .nh-grid-12.nh-layout-md-4-8 > :nth-child(2) { grid-column: span 8 / span 8; }
+  .nh-grid-12.nh-layout-md-6-3-3 > :nth-child(1) { grid-column: span 6 / span 6; }
+  .nh-grid-12.nh-layout-md-6-3-3 > :nth-child(2) { grid-column: span 3 / span 3; }
+  .nh-grid-12.nh-layout-md-6-3-3 > :nth-child(3) { grid-column: span 3 / span 3; }
+}
+@media (min-width: 1024px) {
+  .nh-grid-12 { column-gap: var(--space-lg); }
+  .nh-grid-12.nh-lg-cols-2 > * { grid-column: span 6 / span 6; }
+  .nh-grid-12.nh-lg-cols-3 > * { grid-column: span 4 / span 4; }
+  .nh-grid-12.nh-lg-cols-4 > * { grid-column: span 3 / span 3; }
+  .nh-grid-12.nh-lg-cols-6 > * { grid-column: span 2 / span 2; }
+  .nh-grid-12.nh-layout-lg-3-9 > :nth-child(1) { grid-column: span 3 / span 3; }
+  .nh-grid-12.nh-layout-lg-3-9 > :nth-child(2) { grid-column: span 9 / span 9; }
+  .nh-grid-12.nh-layout-lg-4-8 > :nth-child(1) { grid-column: span 4 / span 4; }
+  .nh-grid-12.nh-layout-lg-4-8 > :nth-child(2) { grid-column: span 8 / span 8; }
+  .nh-grid-12.nh-layout-lg-6-3-3 > :nth-child(1) { grid-column: span 6 / span 6; }
+  .nh-grid-12.nh-layout-lg-6-3-3 > :nth-child(2) { grid-column: span 3 / span 3; }
+  .nh-grid-12.nh-layout-lg-6-3-3 > :nth-child(3) { grid-column: span 3 / span 3; }
+  .nh-grid-12.nh-layout-lg-6-6 > :nth-child(1) { grid-column: span 6 / span 6; }
+  .nh-grid-12.nh-layout-lg-6-6 > :nth-child(2) { grid-column: span 6 / span 6; }
+  .nh-grid-12.nh-layout-lg-8-4 > :nth-child(1) { grid-column: span 8 / span 8; }
+  .nh-grid-12.nh-layout-lg-8-4 > :nth-child(2) { grid-column: span 4 / span 4; }
+}
+@media (min-width: 1280px) {
+  .nh-grid-12.nh-xl-cols-2 > * { grid-column: span 6 / span 6; }
+  .nh-grid-12.nh-xl-cols-3 > * { grid-column: span 4 / span 4; }
+  .nh-grid-12.nh-xl-cols-4 > * { grid-column: span 3 / span 3; }
+  .nh-grid-12.nh-xl-cols-6 > * { grid-column: span 2 / span 2; }
+  .nh-grid-12.nh-layout-xl-2-7-3 > :nth-child(1) { grid-column: span 2 / span 2; }
+  .nh-grid-12.nh-layout-xl-2-7-3 > :nth-child(2) { grid-column: span 7 / span 7; }
+  .nh-grid-12.nh-layout-xl-2-7-3 > :nth-child(3) { grid-column: span 3 / span 3; }
+  .nh-grid-12.nh-layout-xl-3-6-3 > :nth-child(1) { grid-column: span 3 / span 3; }
+  .nh-grid-12.nh-layout-xl-3-6-3 > :nth-child(2) { grid-column: span 6 / span 6; }
+  .nh-grid-12.nh-layout-xl-3-6-3 > :nth-child(3) { grid-column: span 3 / span 3; }
+  .nh-grid-12.nh-layout-xl-7-5 > :nth-child(1) { grid-column: span 7 / span 7; }
+  .nh-grid-12.nh-layout-xl-7-5 > :nth-child(2) { grid-column: span 5 / span 5; }
+  .nh-grid-12.nh-layout-xl-8-4 > :nth-child(1) { grid-column: span 8 / span 8; }
+  .nh-grid-12.nh-layout-xl-8-4 > :nth-child(2) { grid-column: span 4 / span 4; }
+}
+@media (min-width: 1536px) {
+  .nh-grid-12.nh-2xl-cols-1 > * { grid-column: span 12 / span 12; }
+  .nh-grid-12.nh-2xl-cols-4 > * { grid-column: span 3 / span 3; }
+  .nh-grid-12.nh-layout-2xl-8-4 > :nth-child(1) { grid-column: span 8 / span 8; }
+  .nh-grid-12.nh-layout-2xl-8-4 > :nth-child(2) { grid-column: span 4 / span 4; }
 }

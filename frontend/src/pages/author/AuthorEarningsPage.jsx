@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react'
-import { BadgeDollarSign, BookOpen, CalendarDays, Coins, Save, UsersRound } from 'lucide-react'
+import { BadgeDollarSign, BookOpen, CalendarDays, Coins, Save, UsersRound } from '../../components/icons'
 import { AuthorLayout } from '../../layouts'
 import { Badge, Button, Card, Input, Select, Tabs } from '../../components/ui'
 import { useLocale } from '../../context/LocaleContext'
@@ -43,14 +43,14 @@ export function AuthorEarningsPage() {
           ]} />
         </header>
 
-        <section className="mt-6 grid grid-cols-2 gap-3 xl:grid-cols-4">
+        <section className="nh-grid-12 mt-6 grid nh-cols-1 nh-sm-cols-2 gap-3 nh-xl-cols-4">
           <Metric icon={BookOpen} label={t('authorFinance.chapterBuyers')} value={formatNumber(data.buyers)} />
           <Metric icon={UsersRound} label={t('authorFinance.newSubscribers')} value={formatNumber(data.subscriptions)} tone="purple" />
           <Metric icon={Coins} label={t('authorFinance.coinsEarned')} value={formatNumber(data.coins)} tone="orange" />
           <Metric icon={BadgeDollarSign} label={t('authorFinance.netRevenue')} value={`$${data.payout.toFixed(2)}`} />
         </section>
 
-        <div className="mt-6 grid items-start gap-6 xl:grid-cols-[minmax(0,1fr)_360px]">
+        <div className="nh-grid-12 mt-6 grid items-start gap-6 nh-layout-xl-8-4">
           <div className="space-y-6">
             <Card>
               <div className="flex flex-wrap items-start justify-between gap-3">

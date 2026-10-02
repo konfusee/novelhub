@@ -12,7 +12,7 @@ import {
   ShieldCheck,
   Sparkles,
   X,
-} from 'lucide-react'
+} from '../../components/icons'
 import { ModeratorLayout } from '../../layouts'
 import { Badge, Button, Card, Input, Modal } from '../../components/ui'
 
@@ -96,7 +96,7 @@ export function SimilarityRiskReviewPage() {
               Thuật toán: Sentence-BERT Đa ngôn ngữ v3.2 · Cosine 0,316
             </p>
           </div>
-          <div className="mt-5 grid grid-cols-2 gap-3 xl:grid-cols-4">
+          <div className="nh-grid-12 mt-5 grid nh-cols-2 gap-3 nh-xl-cols-4">
             {metrics.map(([label, value, note, status, tone]) => (
               <div key={label} className="rounded-3xl border border-line bg-elevated p-4">
                 <div className="flex flex-wrap justify-between gap-2">
@@ -144,7 +144,7 @@ export function SimilarityRiskReviewPage() {
             Đồng bộ cuộn hai bên
           </button>
         </div>
-        <section className="mt-5 grid gap-5 lg:grid-cols-2">
+        <section className="nh-grid-12 mt-5 grid gap-5 nh-lg-cols-2">
           <ComparisonPanel
             label="Bản thảo đã gửi"
             title="Bản thảo mục tiêu: Chronicles of Eldor (Chương 2)"
@@ -165,7 +165,7 @@ export function SimilarityRiskReviewPage() {
             <Sparkles size={16} className="text-purple" />
             Tổng hợp khác biệt ngôn ngữ và phân tích hình thái
           </h2>
-          <div className="mt-4 grid gap-3 md:grid-cols-3">
+          <div className="nh-grid-12 mt-4 grid gap-3 nh-md-cols-3">
             <Diagnostic title="Thay thế từ vựng trực tiếp">
               “sleep within heartwood” → “wait within the grain” vẫn giữ nhịp điệu và cấu trúc mệnh
               đề phụ thuộc.
@@ -194,7 +194,7 @@ export function SimilarityRiskReviewPage() {
             </div>
             <Badge tone="green">Người xét duyệt: M. Rayne</Badge>
           </div>
-          <div className="mt-5 grid gap-5 lg:grid-cols-[270px_minmax(0,1fr)]">
+          <div className="nh-grid-12 mt-5 grid gap-5 nh-layout-lg-4-8">
             <div className="rounded-3xl bg-elevated p-5">
               <strong className="text-xs text-orange">
                 Tiêu chuẩn Chính sách #IP-04: Tri ân và Vi phạm
@@ -233,7 +233,7 @@ export function SimilarityRiskReviewPage() {
                 <Toggle
                   checked={notify}
                   onChange={setNotify}
-                  label="Gửi yêu cầu làm rõ thế giới truyện theo mẫu"
+                  label="Yêu cầu làm rõ thế giới truyện"
                 />
               </div>
             </div>
@@ -250,7 +250,7 @@ export function SimilarityRiskReviewPage() {
             </Button>
             <Button onClick={() => setAction('Đính kèm vào bản xét duyệt')} variant="secondary">
               <Link2 size={14} />
-              Đính kèm vào bản gửi #MS-88402
+              Đính kèm #MS-88402
             </Button>
             <Button
               onClick={() => setAction('Chuyển Bộ phận Pháp lý Bản quyền')}

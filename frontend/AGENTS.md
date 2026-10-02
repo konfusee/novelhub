@@ -43,7 +43,7 @@ Existing code is evidence, not automatically the correct standard. Record recurr
 - Tailwind CSS 4 through `@tailwindcss/vite`, plus CSS custom properties and a small amount of global CSS.
 - Context-based state: auth, theme, locale, and mock data.
 - Axios API client.
-- Lucide React is the single icon library.
+- NovelHub Folio in `src/components/icons/` is the single owned interface icon set (accepted user request, 2026-10-02). Its original SVG paths also supply the public sprite and brand favicon.
 - ESLint flat configuration; Prettier is installed and exposed through package scripts but has no repository-specific config.
 - npm and `package-lock.json` are authoritative for dependencies.
 - Google Poppins is imported by `src/styles.css`; the product is sans-serif only.
@@ -259,7 +259,7 @@ Keep mock data structured and separate from JSX when it represents backend entit
 - Use PascalCase component files and components, camelCase functions/variables, and UPPER_SNAKE_CASE for stable storage keys/constants when appropriate.
 - Keep route pages in `src/pages/<domain>` and reusable UI outside `pages`.
 - Prefer named exports for components, matching current conventions; `App` and the Axios client are existing default-export exceptions.
-- Use `lucide-react`; MUST NOT add another icon dependency for a few icons.
+- Use named exports from `src/components/icons/`; add missing meanings to the shared Folio source and SVG sprite. MUST NOT add another icon dependency for a few icons.
 - Avoid broad formatting or unrelated refactors in a scoped task.
 - Use `rg`/`rg --files` to search before editing.
 
@@ -348,6 +348,18 @@ Reason: Predictable React rendering, persisted instant switching, interpolation,
 Affected: `src/context/LocaleContext.jsx`, `src/locales/`, `scripts/check-i18n.mjs`.
 
 Status: Accepted
+
+### 2026-10-02 — Responsive twelve-column grid and owned Folio icons
+
+Context: The user requested twelve-column layouts with mobile adaptation, a replacement favicon and a custom icon set across the system.
+
+Decision: Main layouts and compatible content collections use `.nh-grid-12` with responsive spans; main panels fill twelve columns on mobile. All active Lucide imports now use NovelHub Folio, and brand placements share the book/N mark. Table rows, calendars and immersive controls may keep intrinsic inner layouts.
+
+Reason: Consistent fluid geometry and an editable, original icon family without a new dependency. Existing routes, palette, typography and workspace behavior are preserved.
+
+Affected: `src/styles.css`, `tokens.css`, page layouts, all icon consumers, category cards, `src/components/icons/`, `/ui-preview#icons`, `index.html`, public favicon/brand/sprite assets. See `UI_SYSTEM_CHANGE.md` and `ICON_SYSTEM.md`.
+
+Status: Accepted through the user's explicit system-wide request.
 
 ## 25. Deprecated Patterns
 

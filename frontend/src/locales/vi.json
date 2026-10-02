@@ -560,5 +560,14 @@
     "unsaved": "Bạn có thay đổi tài khoản chưa lưu.",
     "userId": "Mã người dùng: {{id}}"
   },
+  "icons": {
+    "title": "Bộ icon NovelHub Folio",
+    "description": "{{count}} biểu tượng SVG riêng, xem tại kích thước 16, 24 và 32 px.",
+    "search": "Tìm tên icon",
+    "brand": "Logo sách mở NovelHub",
+    "brandDescription": "Sách mở kết hợp chữ N, đồng bộ với favicon và thanh điều hướng.",
+    "download": "Tải bộ SVG",
+    "empty": "Không tìm thấy icon phù hợp."
+  },
   "errors": { "missingTranslation": "Thiếu bản dịch: {{key}}" }
 }

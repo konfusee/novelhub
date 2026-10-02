@@ -71,6 +71,7 @@
   --z-modal: 400;
   --z-toast: 500;
   --z-tooltip: 600;
+  --layout-columns: 12;
 }
 
 :root.dark {

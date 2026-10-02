@@ -11,7 +11,7 @@ import {
   Scale,
   ShieldAlert,
   Sparkles,
-} from 'lucide-react'
+} from '../../components/icons'
 import { ModeratorLayout } from '../../layouts'
 import { Badge, Button, Card, Modal } from '../../components/ui'
 
@@ -77,7 +77,7 @@ export function ContentReviewDetailPage() {
             Yêu cầu chỉnh sửa
           </Button>
         </div>
-        <div className="mt-5 grid items-start gap-5 xl:grid-cols-[210px_minmax(0,1fr)_330px]">
+        <div className="nh-grid-12 mt-5 grid items-start gap-5 nh-layout-xl-2-7-3">
           <aside className="space-y-4">
             <Card className="p-4">
               <div className="flex gap-3">
@@ -200,7 +200,7 @@ export function ContentReviewDetailPage() {
               <p className="mt-2 text-[9px] text-muted">
                 Tín hiệu chỉ là dữ liệu hỗ trợ, không phải phán quyết tự động.
               </p>
-              <div className="mt-4 grid grid-cols-2 gap-2">
+              <div className="nh-grid-12 mt-4 grid nh-cols-2 gap-2">
                 <Signal label="Điểm an toàn nội dung" value="98,2%" note="Nội dung sạch" />
                 <Signal
                   label="Chỉ số bạo lực/máu me"
@@ -273,7 +273,7 @@ export function ContentReviewDetailPage() {
               >
                 Yêu cầu tác giả chỉnh sửa
               </Button>
-              <div className="mt-2 grid grid-cols-2 gap-2">
+              <div className="nh-grid-12 mt-2 grid nh-cols-2 gap-2">
                 <Button
                   onClick={() => setDecision('Chuyển bộ phận pháp lý')}
                   variant="secondary"

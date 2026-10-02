@@ -12,7 +12,7 @@ import {
   Play,
   Sparkles,
   Star,
-} from 'lucide-react'
+} from '../../components/icons'
 import { ReaderLayout } from '../../layouts'
 import { ContinueCard } from '../../components/reader/ContinueCard'
 import { Badge, Button, Card, SectionHeader } from '../../components/ui'
@@ -119,7 +119,7 @@ export function ReaderHomePage() {
   return (
     <ReaderLayout>
       <main className="page-reader py-6">
-        <div className="grid gap-6 2xl:grid-cols-[minmax(0,1fr)_310px]">
+        <div className="nh-grid-12 grid gap-6 nh-layout-2xl-8-4">
           <div className="min-w-0 space-y-7">
             <section className="overflow-hidden rounded-3xl border border-line bg-surface p-6 sm:p-8">
               <div className="flex flex-col justify-between gap-6 md:flex-row md:items-center">
@@ -160,7 +160,7 @@ export function ReaderHomePage() {
                 title={t('readerHome.pickUp')}
                 description="Truyện của bạn luôn sẵn sàng"
               />
-              <div className="mt-4 grid gap-4 md:grid-cols-2">
+              <div className="nh-grid-12 mt-4 grid gap-4 nh-md-cols-2">
                 <ContinueCard item={readerHome.continueReading} />
                 <ContinueCard item={readerHome.continueListening} audio />
               </div>
@@ -176,7 +176,7 @@ export function ReaderHomePage() {
                   </button>
                 }
               />
-              <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-4">
+              <div className="nh-grid-12 mt-4 grid nh-cols-2 gap-3 nh-sm-cols-4">
                 {readerHome.recommendations.map(story => (
                   <StoryTile key={story.title} story={story} />
                 ))}
@@ -188,7 +188,7 @@ export function ReaderHomePage() {
                 title={t('readerHome.becauseFantasy')}
                 action={<button onClick={() => window.alert('Đã làm mới đề xuất (mô phỏng).')} className="text-xs font-semibold text-brand">Làm mới đề xuất</button>}
               />
-              <div className="mt-4 grid gap-3 sm:grid-cols-3">
+              <div className="nh-grid-12 mt-4 grid gap-3 nh-sm-cols-3">
                 {readerHome.fantasyPicks.map(item => (
                   <Card key={item.title} className="flex items-center gap-3 p-3">
                     <div
@@ -233,7 +233,7 @@ export function ReaderHomePage() {
             </section>
           </div>
 
-          <aside className="grid content-start gap-5 sm:grid-cols-2 2xl:grid-cols-1">
+          <aside className="nh-grid-12 grid content-start gap-5 nh-sm-cols-2 nh-2xl-cols-1">
             <StreakCard />
             <NowPlaying />
             <Card>

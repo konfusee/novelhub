@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { BookOpen, Bookmark, Pause, Play } from 'lucide-react'
+import { BookOpen, Bookmark, Pause, Play } from '../icons'
 import { Button, Card } from '../ui'
 import { useLocale } from '../../context/LocaleContext'
 

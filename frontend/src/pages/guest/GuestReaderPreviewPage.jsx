@@ -9,7 +9,7 @@ import {
   MessageCircle,
   Moon,
   Sun,
-} from 'lucide-react'
+} from '../../components/icons'
 import { Link } from 'react-router-dom'
 import { useTheme } from '../../context/ThemeContext'
 import { Card } from '../../components/ui'
@@ -152,7 +152,7 @@ export function GuestReaderPreviewPage() {
               </Link>
             </div>
           </div>
-          <div className="grid gap-3 p-5 text-xs sm:grid-cols-3">
+          <div className="nh-grid-12 grid gap-3 p-5 text-xs nh-sm-cols-3">
             <span>✓ Đồng bộ tiến độ đọc</span><span>✓ Đánh dấu yêu thích</span><span>✓ Tham gia thảo luận</span>
           </div>
         </Card>

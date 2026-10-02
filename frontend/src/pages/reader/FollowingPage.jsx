@@ -9,7 +9,7 @@ import {
   Sparkles,
   Target,
   UsersRound,
-} from 'lucide-react'
+} from '../../components/icons'
 import { ReaderLayout } from '../../layouts'
 import { SavedStoryCard } from '../../components/reader/SavedStoryCard'
 import { Button, Card, Input, Select } from '../../components/ui'
@@ -48,7 +48,7 @@ export function FollowingPage() {
   return (
     <ReaderLayout>
       <main className="page-reader py-7">
-        <div className="grid gap-7 xl:grid-cols-[minmax(0,1fr)_320px]">
+        <div className="nh-grid-12 grid gap-7 nh-layout-xl-8-4">
           <div className="min-w-0">
             <p className="text-xs text-muted">
               {t('navigation.library')} <span className="mx-2">›</span>{' '}
@@ -72,7 +72,7 @@ export function FollowingPage() {
               ))}
             </div>
             <section className="mt-7">
-              <div className="flex items-center justify-between gap-3">
+              <div className="flex flex-wrap items-center justify-between gap-3">
                 <h2 className="text-xl font-semibold">{t('following.featuredCollections')}</h2>
                 <button
                   onClick={() => setTab('collections')}
@@ -81,7 +81,7 @@ export function FollowingPage() {
                   {t('following.viewCollections', { count: 4 })} →
                 </button>
               </div>
-              <div className="mt-4 grid gap-4 md:grid-cols-2">
+              <div className="nh-grid-12 mt-4 grid gap-4 nh-md-cols-2">
                 {followingData.collections.map(item => (
                   <Card key={item.title} className="flex min-h-48 overflow-hidden p-5">
                     <div className="flex-1">
@@ -136,7 +136,7 @@ export function FollowingPage() {
                   </p>
                 </Card>
               ) : tab === 'collections' ? (
-                <div className="mt-4 grid gap-4 md:grid-cols-2">
+                <div className="nh-grid-12 mt-4 grid gap-4 nh-md-cols-2">
                   {followingData.collections.map(item => (
                     <Card key={item.title}>
                       <FolderHeart className="text-brand" />
@@ -146,7 +146,7 @@ export function FollowingPage() {
                   ))}
                 </div>
               ) : stories.length ? (
-                <div className="mt-4 grid gap-4 md:grid-cols-2">
+                <div className="nh-grid-12 mt-4 grid gap-4 nh-md-cols-2">
                   {stories.map(story => (
                     <SavedStoryCard key={story.id} story={story} />
                   ))}

@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { CheckCircle2, Feather } from 'lucide-react'
+import { CheckCircle2, Feather } from '../../components/icons'
 import { useNavigate } from 'react-router-dom'
 import { PublicHeader } from '../../components/public/PublicHeader'
 import { Button, Card } from '../../components/ui'
@@ -42,7 +42,7 @@ export function AuthorApplyPage() {
             Truyện phải được gửi cho Kiểm duyệt viên xét duyệt trước khi xuất bản. Việc phê duyệt
             không bao giờ diễn ra tự động.
           </p>
-          <div className="mt-5 grid gap-3 sm:grid-cols-2">
+          <div className="nh-grid-12 mt-5 grid gap-3 nh-sm-cols-2">
             <div className="rounded-2xl bg-brand/10 p-4">
               <span className="text-xs text-muted">Tác giả nhận</span>
               <strong className="block text-3xl text-brand">{agreement.authorShare}%</strong>

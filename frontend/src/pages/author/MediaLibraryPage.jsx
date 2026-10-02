@@ -16,7 +16,7 @@ import {
   Trash2,
   Upload,
   X,
-} from 'lucide-react'
+} from '../../components/icons'
 import { AuthorLayout } from '../../layouts'
 import { mediaAssets } from '../../data/mock/author'
 import { Badge, Button, Card, Input, Select } from '../../components/ui'
@@ -73,7 +73,7 @@ export function MediaLibraryPage() {
   return (
     <AuthorLayout>
       <main className="page-author py-7">
-        <div className="grid items-start gap-6 2xl:grid-cols-[minmax(0,1fr)_360px]">
+        <div className="nh-grid-12 grid items-start gap-6 nh-layout-2xl-8-4">
           <div className="min-w-0">
             <div className="flex flex-col justify-between gap-5 lg:flex-row lg:items-end">
               <div>
@@ -86,7 +86,7 @@ export function MediaLibraryPage() {
                   Quản lý bìa sách, minh họa nhân vật, bản đồ thế giới và tệp thu âm sách nói gốc.
                 </p>
               </div>
-              <div className="flex gap-2">
+              <div className="flex flex-wrap gap-2">
             <Button onClick={() => window.alert('Đã mở thư mục media (bản mẫu).')} variant="secondary">
                   <FolderOpen size={16} />
                   Sắp xếp hàng loạt
@@ -193,7 +193,7 @@ export function MediaLibraryPage() {
               </div>
             </div>
             <section
-              className={`mt-5 grid gap-4 ${view === 'grid' ? 'sm:grid-cols-2 xl:grid-cols-3' : 'grid-cols-1'}`}
+              className={`nh-grid-12 mt-5 gap-4 ${view === 'grid' ? 'nh-sm-cols-2 nh-xl-cols-3' : 'nh-cols-1'}`}
             >
               {shown.map(asset => (
                 <AssetCard

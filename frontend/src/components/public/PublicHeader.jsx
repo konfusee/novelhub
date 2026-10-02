@@ -1,4 +1,4 @@
-import { BookOpen, LogOut, Menu, Moon, Search, Sun } from 'lucide-react'
+import { NovelHubMark, LogOut, Menu, Moon, Search, Sun } from '../icons'
 import { Link, NavLink } from 'react-router-dom'
 import { useState } from 'react'
 import { useTheme } from '../../context/ThemeContext'
@@ -20,10 +20,10 @@ export function PublicHeader() {
   if (hasRole('admin')) links.push([t('navigation.admin'), '/admin'])
   return (
     <header className="sticky top-0 z-40 border-b border-line bg-surface/95">
-      <div className="mx-auto flex min-h-18 max-w-[1360px] items-center gap-5 px-5 md:px-8 lg:px-12">
+      <div className="mx-auto flex min-h-18 max-w-[1360px] items-center gap-2 px-5 sm:gap-5 md:px-8 lg:px-12">
         <Link to="/" className="flex shrink-0 items-center gap-2 text-xl font-bold">
           <span className="grid size-9 place-items-center rounded-xl bg-brand text-white">
-            <BookOpen size={19} />
+            <NovelHubMark size={19} />
           </span>
           Novel<span className="-ml-2 text-brand">Hub</span>
         </Link>
@@ -44,7 +44,7 @@ export function PublicHeader() {
           <Search size={19} />
         </Link>
         <button
-          className="grid size-10 place-items-center rounded-full text-muted"
+          className="ml-auto grid size-10 shrink-0 place-items-center rounded-full text-muted md:ml-0"
           aria-label={t('common.toggleTheme')}
           onClick={() => setTheme(resolvedTheme === 'dark' ? 'light' : 'dark')}
         >
@@ -77,7 +77,7 @@ export function PublicHeader() {
           </div>
         )}
         <button
-          className="grid size-10 place-items-center lg:hidden"
+          className="grid size-10 shrink-0 place-items-center lg:hidden"
           onClick={() => setOpen(!open)}
           aria-label={t('common.openMenu')}
         >

@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { Link, useLocation } from 'react-router-dom'
-import { BookOpen, Menu, Settings, HelpCircle, ShieldCheck, X } from 'lucide-react'
+import { NovelHubMark, Menu, Settings, HelpCircle, ShieldCheck, X } from '../icons'
 import { IconButton } from '../ui'
 import { SiteFooter } from '../shared/SiteFooter'
 import { SharedWorkspaceHeader, WorkspaceSwitcher } from '../shared/RoleNavigation'
@@ -57,7 +57,7 @@ function AppSidebar({ workspace, collapsed, mobile = false, onCollapse, onNaviga
     <div className="flex h-full flex-col bg-surface p-3">
       <div className={`mb-4 flex h-12 items-center ${collapsed ? 'justify-center' : 'gap-2 px-2'}`}>
         <Link to={meta.home} className="flex min-w-0 items-center gap-2 font-bold">
-          <span className="grid size-9 shrink-0 place-items-center rounded-xl bg-brand text-white"><BookOpen size={20} /></span>
+          <span className="grid size-9 shrink-0 place-items-center rounded-xl bg-brand text-white"><NovelHubMark size={20} /></span>
           {!collapsed && <span className="truncate">Novel<span className="text-brand">Hub</span><small className="block truncate text-[9px] font-medium text-muted">{t(meta.labelKey)} · {t('common.workspace')}</small></span>}
         </Link>
       </div>

@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react'
-import { BookOpen, Download, Flame, Headphones, Play, RotateCcw, Trash2 } from 'lucide-react'
+import { BookOpen, Download, Flame, Headphones, Play, RotateCcw, Trash2 } from '../../components/icons'
 import { ReaderLayout } from '../../layouts'
 import { Badge, Button, Card, Tabs } from '../../components/ui'
 import { libraryItems } from '../../data/mock/reader'
@@ -52,7 +52,7 @@ export function ReadingHistoryPage() {
               {t('history.title')}
             </h1>
           </div>
-          <div className="flex gap-2">
+          <div className="flex flex-wrap gap-2">
             <Button variant="secondary" onClick={() => setItems([])}>
               <Trash2 size={15} />
               {t('history.clear')}
@@ -63,7 +63,7 @@ export function ReadingHistoryPage() {
             </Button>
           </div>
         </div>
-        <section className="mt-6 grid grid-cols-2 gap-3 xl:grid-cols-4">
+        <section className="nh-grid-12 mt-6 grid nh-cols-1 nh-sm-cols-2 gap-3 nh-xl-cols-4">
           {metrics.map(([title, value, detail, Icon]) => (
             <Card key={title} className="p-4">
               <div className="flex justify-between gap-2">
@@ -90,7 +90,7 @@ export function ReadingHistoryPage() {
             ]}
           />
         </div>
-        <div className="mt-6 grid gap-6 xl:grid-cols-[minmax(0,1fr)_330px]">
+        <div className="nh-grid-12 mt-6 grid gap-6 nh-layout-xl-8-4">
           <div className="space-y-6">
             <Card>
               <div className="flex items-start justify-between">
@@ -145,7 +145,7 @@ export function ReadingHistoryPage() {
                       NH
                     </div>
                     <div className="min-w-0 flex-1">
-                      <div className="flex gap-2">
+                      <div className="flex flex-wrap gap-2">
                         <Badge tone={item.type === 'audio' ? 'orange' : 'green'}>
                           {t(item.type === 'audio' ? 'history.audio' : 'history.story')}
                         </Badge>

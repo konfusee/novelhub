@@ -13,7 +13,7 @@ import {
   Plus,
   Search,
   Sparkles,
-} from 'lucide-react'
+} from '../../components/icons'
 import { AuthorLayout } from '../../layouts'
 import { managedChapters } from '../../data/mock/author'
 import { Badge, Button, Card, Input, Tabs } from '../../components/ui'
@@ -145,7 +145,7 @@ export function StoryManagerPage() {
             </div>
           </Card>
         ) : (
-          <div className="mt-5 grid items-start gap-6 xl:grid-cols-[minmax(0,1fr)_310px]">
+          <div className="nh-grid-12 mt-5 grid items-start gap-6 nh-layout-xl-8-4">
             <section className="min-w-0">
               <Card className="rounded-b-none p-4">
                 <div className="flex flex-col gap-3 sm:flex-row sm:items-center">

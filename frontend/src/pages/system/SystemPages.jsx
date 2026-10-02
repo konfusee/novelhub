@@ -1,4 +1,4 @@
-import { ArrowLeft, Home, ShieldX } from 'lucide-react'
+import { ArrowLeft, Home, ShieldX } from '../../components/icons'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { Button, Card } from '../../components/ui'
 import { PublicHeader } from '../../components/public/PublicHeader'

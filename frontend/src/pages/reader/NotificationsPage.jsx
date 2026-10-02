@@ -8,7 +8,7 @@ import {
   Trash2,
   UserRound,
   WalletCards,
-} from 'lucide-react'
+} from '../../components/icons'
 import { ReaderLayout } from '../../layouts'
 import { Badge, Button, Card } from '../../components/ui'
 import { notifications as initialNotifications } from '../../data/mock/notifications'
@@ -47,7 +47,7 @@ export function NotificationsPage() {
               Theo dõi chương mới, thảo luận cộng đồng và tác phẩm mới từ tác giả.
             </p>
           </div>
-          <div className="flex gap-2">
+          <div className="flex flex-wrap gap-2">
             <Button variant="secondary" onClick={markAll}>
               <CheckCheck size={16} />
               Đánh dấu tất cả đã đọc
@@ -64,7 +64,7 @@ export function NotificationsPage() {
               <strong className="text-sm">Tùy chọn thông báo</strong>
               <p className="mt-1 text-xs text-muted">Đã bật thông báo truyện và tác giả.</p>
             </div>
-            <div className="flex gap-2">
+            <div className="flex flex-wrap gap-2">
               <Badge tone="green">Đã bật email</Badge>
               <Badge tone="green">Đã bật thông báo đẩy</Badge>
             </div>
@@ -98,7 +98,7 @@ export function NotificationsPage() {
               key={item.id}
               className={`relative p-4 sm:p-5 ${item.unread ? 'border-brand/50' : ''}`}
             >
-              <div className="flex gap-4">
+              <div className="flex flex-col gap-4 sm:flex-row">
                 <button
                   onClick={() => toggleRead(item.id)}
                   className="relative grid size-16 shrink-0 place-items-center rounded-2xl text-xl font-bold text-white"
@@ -129,7 +129,7 @@ export function NotificationsPage() {
                   </div>
                   <h2 className="mt-2 text-base font-semibold sm:text-lg">{item.title}</h2>
                   <p className="mt-1 text-sm leading-6 text-muted">{item.body}</p>
-                  <div className="mt-4 flex items-center gap-2 border-t border-line pt-3">
+                  <div className="mt-4 flex flex-wrap items-center gap-2 border-t border-line pt-3">
                     <Button onClick={() => window.alert(`${item.action} opened (mock).`)} className="min-h-9 px-4 py-1.5 text-xs">{item.action}</Button>
                     <button onClick={() => toggleRead(item.id)} className="text-xs text-muted">
                       {item.unread ? 'Đánh dấu đã đọc' : 'Đánh dấu chưa đọc'}

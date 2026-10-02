@@ -1,4 +1,4 @@
-import { Crown, Star } from 'lucide-react'
+import { Crown, Star } from '../icons'
 import { Badge, Button, Card } from '../ui'
 import { StoryCover } from '../story/StoryCover'
 export function PodiumCard({ story }) {

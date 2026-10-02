@@ -1,4 +1,4 @@
-import { Bell, BookOpen, ChevronDown, Crown, HelpCircle, LogOut, Menu, Moon, Search, Settings, ShieldCheck, Sun, UserRound } from 'lucide-react'
+import { Bell, BookOpen, ChevronDown, Coins, Crown, HelpCircle, LogOut, Menu, Moon, Plus, Search, Settings, ShieldCheck, Sun, UserRound } from '../icons'
 import { Link, useLocation } from 'react-router-dom'
 import { ROLE_HOME, useAuth } from '../../context/AuthContext'
 import { useTheme } from '../../context/ThemeContext'
@@ -132,10 +132,10 @@ export function SharedWorkspaceHeader({ currentRole, workspaceLabel, onOpenMenu,
       <div className="flex h-16 items-center gap-3 px-4 sm:px-6 xl:px-8">
         <IconButton label={t('common.openMenu')} className="md:hidden" onClick={onOpenMenu}><Menu size={19} /></IconButton>
         <Input icon={Search} placeholder={t('common.searchStoriesAuthorsTags')} className="hidden w-full max-w-md sm:flex" />
-        <span className={`hidden max-w-48 shrink-0 truncate rounded-full px-3 py-1.5 text-center text-[10px] font-semibold md:block ${workspaceAccent[currentRole] || workspaceAccent.reader}`}>{workspaceLabel} · {t('common.workspace')}</span>
+        <span className={`hidden max-w-48 shrink-0 truncate rounded-full px-3 py-1.5 text-center text-[10px] font-semibold xl:block ${workspaceAccent[currentRole] || workspaceAccent.reader}`}>{workspaceLabel} · {t('common.workspace')}</span>
         <div className="ml-auto"><RoleHeaderLinks includeWallet currentRole={currentRole} /></div>
         <Link to={walletPath} className="hidden items-center gap-2 rounded-xl border border-line bg-surface px-3 py-2 text-xs font-semibold sm:flex">
-          <span className="text-orange">●</span> {t('wallet.coins', { count: 450 })} <span className="text-brand">+</span>
+          <Coins size={16} className="text-orange" /> {t('wallet.coins', { count: 450 })} <Plus size={14} className="text-brand" />
         </Link>
         <IconButton label={t('common.toggleTheme')} onClick={() => setTheme(resolvedTheme === 'dark' ? 'light' : 'dark')}>
           {resolvedTheme === 'dark' ? <Sun size={18} /> : <Moon size={18} />}

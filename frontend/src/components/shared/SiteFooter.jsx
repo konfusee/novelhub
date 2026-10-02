@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { ArrowUp, BookOpen, Globe2, Headphones, MessageCircle } from 'lucide-react'
+import { ArrowUp, NovelHubMark, Globe2, Headphones, MessageCircle } from '../icons'
 import { Link } from 'react-router-dom'
 import { useLocale } from '../../context/LocaleContext'
 
@@ -50,11 +50,11 @@ export function SiteFooter() {
   }, [])
   return (
     <footer className="relative mt-auto border-t-4 border-brand bg-[#080b10] text-slate-300">
-      <div className="mx-auto grid max-w-[1360px] gap-12 px-6 py-14 md:grid-cols-[1.3fr_1fr_1fr] md:px-10 lg:px-14">
+      <div className="nh-grid-12 mx-auto grid max-w-[1360px] gap-12 px-6 py-14 nh-layout-md-6-3-3 md:px-10 lg:px-14">
         <div>
           <Link to="/" className="inline-flex items-center gap-3 text-2xl font-bold text-white">
             <span className="grid size-11 place-items-center rounded-xl bg-brand text-white">
-              <BookOpen size={23} />
+              <NovelHubMark size={23} />
             </span>
             Novel<span className="-ml-3 text-brand">Hub</span>
           </Link>

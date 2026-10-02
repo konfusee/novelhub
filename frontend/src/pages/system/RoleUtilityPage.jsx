@@ -1,4 +1,4 @@
-import { Activity, CheckCircle2, Clock3, Search } from 'lucide-react'
+import { Activity, CheckCircle2, Clock3, Search } from '../../components/icons'
 import { AdminLayout, AuthorLayout, ModeratorLayout, ReaderLayout } from '../../layouts'
 import { Badge, Card, Input } from '../../components/ui'
 import { useLocale } from '../../context/LocaleContext'
@@ -26,7 +26,7 @@ export function RoleUtilityPage({ role, eyebrow, title, description }) {
           <h1 className="mt-2 text-3xl font-bold tracking-tight">{title}</h1>
           <p className="mt-2 max-w-3xl text-sm leading-6 text-muted">{description}</p>
         </header>
-        <section className="grid gap-4 sm:grid-cols-3">
+        <section className="nh-grid-12 grid gap-4 nh-sm-cols-3">
           {[
             [t('workspace.openItems'), '24', Activity],
             [t('workspace.dueToday'), '8', Clock3],

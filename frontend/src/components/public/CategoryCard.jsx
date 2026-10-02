@@ -1,3 +1,5 @@
+import * as icons from '../icons'
+
 const toneClasses = {
   purple: 'bg-purple/15 text-purple',
   rose: 'bg-rose/15 text-rose',
@@ -7,6 +9,7 @@ const toneClasses = {
   neutral: 'bg-elevated text-muted',
 }
 export function CategoryCard({ category, onSelect }) {
+  const Icon = icons[category.icon] || icons.BookOpen
   return (
     <button
       onClick={() => onSelect?.(category.name)}
@@ -15,7 +18,7 @@ export function CategoryCard({ category, onSelect }) {
       <span
         className={`grid size-11 shrink-0 place-items-center rounded-xl text-xl ${toneClasses[category.tone]}`}
       >
-        {category.icon}
+        <Icon size={24} />
       </span>
       <span className="min-w-0">
         <strong className="block text-sm group-hover:text-brand">{category.name}</strong>

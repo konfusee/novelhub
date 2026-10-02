@@ -10,7 +10,7 @@ import {
   RefreshCw,
   Search,
   Sparkles,
-} from 'lucide-react'
+} from '../../components/icons'
 import { AdminLayout } from '../../layouts'
 import { Badge, Button, Card, Input, Modal, Tabs } from '../../components/ui'
 
@@ -185,7 +185,7 @@ export function CategoriesConfigurationPage() {
             </button>
           </div>
         </Card>}
-        <div className="mt-6 grid gap-6 xl:grid-cols-2">
+        <div className="nh-grid-12 mt-6 grid gap-6 nh-xl-cols-2">
           {active === 'tags' && <Card>
             <div className="flex justify-between">
               <div>
@@ -257,7 +257,7 @@ export function CategoriesConfigurationPage() {
           {active === 'lifecycle' && <Card className="xl:col-span-2">
             <h2 className="text-xl font-semibold">Trạng thái vòng đời truyện</h2>
             <p className="mt-1 text-xs text-muted">Trạng thái xuất bản kiểm soát khả năng hiển thị, chỉnh sửa, kiểm duyệt và truy cập của độc giả.</p>
-            <div className="mt-5 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+            <div className="nh-grid-12 mt-5 grid gap-3 nh-sm-cols-2 nh-lg-cols-3">
               {['Bản nháp', 'Chờ duyệt', 'Yêu cầu chỉnh sửa', 'Đã duyệt', 'Đã xuất bản', 'Đã lưu trữ'].map((state, index) => (
                 <div key={state} className="rounded-2xl border border-line bg-elevated p-4">
                   <Badge tone={index < 2 ? 'orange' : index === 4 ? 'green' : 'neutral'}>{state}</Badge>

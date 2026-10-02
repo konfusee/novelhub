@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { ArrowRight, Bell, BellOff, Heart } from 'lucide-react'
+import { ArrowRight, Bell, BellOff, Heart } from '../icons'
 import { Badge, Button, Card } from '../ui'
 import { useLocale } from '../../context/LocaleContext'
 
@@ -8,7 +8,7 @@ export function SavedStoryCard({ story }) {
   const [favorite, setFavorite] = useState(story.favorite)
   const [alerts, setAlerts] = useState(story.alerts)
   return (
-    <Card className="flex gap-4 p-4">
+    <Card className="flex flex-col gap-4 p-4 sm:flex-row">
       <div
         className="relative grid h-40 w-24 shrink-0 place-items-center rounded-2xl text-xl font-bold text-white"
         style={{ backgroundColor: story.color }}
@@ -18,7 +18,7 @@ export function SavedStoryCard({ story }) {
       </div>
       <div className="min-w-0 flex flex-1 flex-col">
         <div className="flex items-start justify-between gap-2">
-          <div>
+          <div className="min-w-0">
             <h3 className="truncate text-lg font-semibold">{story.title}</h3>
             <p className="mt-1 text-xs text-muted">{story.author}</p>
           </div>
@@ -29,7 +29,7 @@ export function SavedStoryCard({ story }) {
         <p className="mt-4 rounded-xl bg-elevated px-3 py-2 text-xs text-brand">
           ● &nbsp;{story.update}
         </p>
-        <div className="mt-auto flex items-center justify-between border-t border-line pt-3">
+        <div className="mt-4 flex flex-wrap items-center justify-between gap-3 border-t border-line pt-3">
           <button
             onClick={() => setAlerts(!alerts)}
             className="flex items-center gap-1.5 text-xs text-muted"

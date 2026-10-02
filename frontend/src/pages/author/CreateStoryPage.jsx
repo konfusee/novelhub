@@ -9,7 +9,7 @@ import {
   Save,
   Sparkles,
   Tags,
-} from 'lucide-react'
+} from '../../components/icons'
 import { AuthorLayout } from '../../layouts'
 import { Badge, Button, Card, Input, Select } from '../../components/ui'
 
@@ -67,7 +67,7 @@ export function CreateStoryPage() {
             )}
           </div>
         </div>
-        <div className="mt-6 grid items-start gap-6 xl:grid-cols-[minmax(0,1fr)_350px]">
+        <div className="nh-grid-12 mt-6 grid items-start gap-6 nh-layout-xl-8-4">
           <div className="space-y-5">
             <Card>
               <SectionTitle
@@ -139,7 +139,7 @@ export function CreateStoryPage() {
                   + Thêm thẻ tùy chỉnh
                 </button>
               </div>
-              <div className="mt-6 grid gap-4 sm:grid-cols-2">
+              <div className="nh-grid-12 mt-6 grid gap-4 nh-sm-cols-2">
                 <div>
                   <p className="text-xs font-semibold">Phân loại nội dung hướng đến</p>
                   {['PG-13', '18+'].map(value => (

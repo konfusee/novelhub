@@ -1,4 +1,4 @@
-import { ShieldCheck } from 'lucide-react'
+import { ShieldCheck } from '../../components/icons'
 import { PublicHeader } from '../../components/public/PublicHeader'
 import { Card } from '../../components/ui'
 import { useLocale } from '../../context/LocaleContext'

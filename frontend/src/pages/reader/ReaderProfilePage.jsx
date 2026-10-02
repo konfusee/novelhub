@@ -12,7 +12,7 @@ import {
   Save,
   ShieldCheck,
   UserRound,
-} from 'lucide-react'
+} from '../../components/icons'
 import { AdminLayout, AuthorLayout, ModeratorLayout, ReaderLayout } from '../../layouts'
 import { Avatar, Badge, Button, Card, Input, Tabs } from '../../components/ui'
 import { useTheme } from '../../context/ThemeContext'
@@ -111,7 +111,7 @@ export function ReaderProfilePage({ workspace = 'reader' }) {
             ]}
           />
         </div>}
-        <div className="mt-6 grid items-start gap-6 xl:grid-cols-[minmax(0,1fr)_360px]">
+        <div className="nh-grid-12 mt-6 grid items-start gap-6 nh-layout-xl-8-4">
           <div className="space-y-5">
             {notice && <p role="status" className="rounded-2xl border border-brand/20 bg-brand/10 px-4 py-3 text-xs text-brand">{notice}</p>}
             {section === 'profile' && (
@@ -134,12 +134,12 @@ export function ReaderProfilePage({ workspace = 'reader' }) {
                 </div>
                 <div>
                   <Button onClick={() => setNotice('Đã mở trình chọn ảnh đại diện ở chế độ mẫu.')} variant="secondary" className="min-h-9 py-1.5">
-                    Tải ảnh đại diện mới
+                    Tải ảnh mới
                   </Button>
                   <p className="mt-2 text-[10px] text-muted">JPG hoặc PNG, tối thiểu 400×400px.</p>
                 </div>
               </div>
-              <div className="mt-5 grid gap-4 sm:grid-cols-2">
+              <div className="nh-grid-12 mt-5 grid gap-4 nh-sm-cols-2">
                 <Field label="Tên hiển thị">
                   <Input
                     value={name}
@@ -204,7 +204,7 @@ export function ReaderProfilePage({ workspace = 'reader' }) {
                 className="mt-2 w-full accent-brand"
               />
               <p className="mt-5 text-xs font-semibold">{t('settings.reading.lineSpacing')}</p>
-              <div className="mt-2 grid grid-cols-3 gap-2">
+              <div className="nh-grid-12 mt-2 grid nh-cols-3 gap-2">
                 {[1.4, 1.8, 2.2].map(value => (
                   <Choice
                     key={value}
@@ -219,7 +219,7 @@ export function ReaderProfilePage({ workspace = 'reader' }) {
                 ))}
               </div>
               <p className="mt-5 text-xs font-semibold">{t('settings.reading.canvas')}</p>
-              <div className="mt-2 grid grid-cols-3 gap-2">
+              <div className="nh-grid-12 mt-2 grid nh-cols-3 gap-2">
                 {[
                   ['parchment', 'settings.reading.parchment', '#fcf8f2'],
                   ['cream', 'settings.reading.cream', '#fffdf9'],
@@ -305,7 +305,7 @@ export function ReaderProfilePage({ workspace = 'reader' }) {
                 title={t('settings.appearance.title')}
                 note={t('settings.appearance.note')}
               />
-              <div className="mt-5 grid gap-3 sm:grid-cols-3">
+              <div className="nh-grid-12 mt-5 grid gap-3 nh-sm-cols-3">
                 {[
                   ['light', 'settings.appearance.light'],
                   ['dark', 'settings.appearance.dark'],

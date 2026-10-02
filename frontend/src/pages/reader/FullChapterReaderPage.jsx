@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { AlignJustify, AlignLeft, ArrowLeft, ArrowRight, Bookmark, BookOpen, Check, Copy, Flag, Focus, Highlighter, List, Menu, MessageSquareText, NotebookPen, Settings2, Share2, Trash2 } from 'lucide-react'
+import { AlignJustify, AlignLeft, ArrowLeft, ArrowRight, Bookmark, BookOpen, Check, Copy, Flag, Focus, Highlighter, List, Menu, MessageSquareText, NotebookPen, Settings2, Share2, Trash2 } from '../../components/icons'
 import { ReaderLayout } from '../../layouts'
 import { Button, Card, Drawer, IconButton, Input } from '../../components/ui'
 import { useLocale } from '../../context/LocaleContext'

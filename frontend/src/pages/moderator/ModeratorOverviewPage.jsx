@@ -9,7 +9,7 @@ import {
   Gavel,
   Scale,
   ShieldCheck,
-} from 'lucide-react'
+} from '../../components/icons'
 import { ModeratorLayout } from '../../layouts'
 import { moderationStats, urgentModerationItems } from '../../data/mock/moderation'
 import { Badge, Button, Card, Modal } from '../../components/ui'
@@ -85,7 +85,7 @@ export function ModeratorOverviewPage() {
             ))}
           </div>
         </div>
-        <section className="mt-6 grid grid-cols-2 gap-3 xl:grid-cols-5">
+        <section className="nh-grid-12 mt-6 grid nh-cols-1 nh-sm-cols-2 gap-3 nh-xl-cols-3">
           {moderationStats.map(([label, value, note, tone], index) => {
             const Icon = metricIcons[index]
             return (
@@ -120,7 +120,7 @@ export function ModeratorOverviewPage() {
             )
           })}
         </section>
-        <div className="mt-6 grid items-start gap-6 xl:grid-cols-[minmax(0,1fr)_310px]">
+        <div className="nh-grid-12 mt-6 grid items-start gap-6 nh-layout-xl-8-4">
           <div className="space-y-6">
             <Card>
               <div className="flex items-center justify-between">

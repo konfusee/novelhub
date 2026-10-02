@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react'
-import { Filter, Flame, Search, X } from 'lucide-react'
+import { Filter, Flame, Search, X } from '../../components/icons'
 import { PublicHeader } from '../../components/public/PublicHeader'
 import { SearchFilters } from '../../components/public/SearchFilters'
 import { SearchResultItem } from '../../components/public/SearchResultItem'
@@ -92,7 +92,7 @@ export function SearchResultsPage({ embedded = false }) {
           </div>
         </div>
       </section>
-      <main className="page-public grid gap-6 py-8 lg:grid-cols-[250px_minmax(0,1fr)] xl:grid-cols-[250px_minmax(0,1fr)_250px]">
+      <main className="nh-grid-12 page-public grid gap-6 py-8 nh-layout-lg-3-9 nh-layout-xl-3-6-3">
         <aside className="hidden self-start rounded-3xl border border-line bg-surface p-5 lg:block">
           <SearchFilters
             checked={checked}
@@ -102,7 +102,7 @@ export function SearchResultsPage({ embedded = false }) {
           />
         </aside>
         <section className="min-w-0">
-          <div className="mb-5 grid grid-cols-2 gap-1 rounded-2xl border border-line bg-surface p-1 sm:grid-cols-4">
+          <div className="nh-grid-12 mb-5 grid nh-cols-2 gap-1 rounded-2xl border border-line bg-surface p-1 nh-sm-cols-4">
             {resultTabs.map(item => (
               <button
                 onClick={() => setTab(item)}

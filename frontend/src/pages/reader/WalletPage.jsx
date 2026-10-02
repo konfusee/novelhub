@@ -10,7 +10,7 @@ import {
   Plus,
   ShieldCheck,
   Sparkles,
-} from 'lucide-react'
+} from '../../components/icons'
 import { ReaderLayout } from '../../layouts'
 import { Badge, Button, Card, Modal } from '../../components/ui'
 import { coinPackages, transactions } from '../../data/mock/wallet'
@@ -56,7 +56,7 @@ export function WalletPage() {
         <p className="mt-2 max-w-3xl text-sm text-muted">
           Quản lý số dư, mở khóa chương và ủng hộ tác giả yêu thích bằng hệ thống xu minh bạch.
         </p>
-        <div className="mt-6 grid min-w-0 grid-cols-[minmax(0,1fr)] items-start gap-6 xl:grid-cols-[minmax(0,1fr)_330px]">
+        <div className="nh-grid-12 mt-6 grid min-w-0 items-start gap-6 nh-layout-xl-8-4">
           <div className="min-w-0 space-y-6">
             <Card>
               <div className="flex flex-col justify-between gap-5 sm:flex-row sm:items-center">
@@ -106,7 +106,7 @@ export function WalletPage() {
               <p className="text-xs text-muted">
                 Xu được cộng ngay vào tài khoản đọc của bạn.
               </p>
-              <div className="mt-4 grid grid-cols-2 gap-3 lg:grid-cols-4">
+              <div className="nh-grid-12 mt-4 grid nh-cols-2 gap-3 nh-lg-cols-4">
                 {coinPackages.map(pack => (
                   <Card
                     key={pack.id}
