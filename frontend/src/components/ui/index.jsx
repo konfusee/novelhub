@@ -10,7 +10,7 @@ export function Button({ variant = 'primary', className, ...props }) {
   return (
     <button
       className={cn(
-        'inline-flex min-h-11 items-center justify-center gap-2 rounded-2xl border px-5 py-2.5 text-sm font-semibold transition-colors disabled:pointer-events-none disabled:opacity-50',
+        'inline-flex min-h-11 max-w-full items-center justify-center gap-2 rounded-2xl border px-5 py-2.5 text-sm font-semibold transition-colors disabled:pointer-events-none disabled:opacity-50',
         styles[variant],
         className,
       )}
@@ -89,12 +89,14 @@ export function Select({ className, children, ...props }) {
     </select>
   )
 }
-export function Tabs({ items, value, onChange }) {
+export function Tabs({ items, value, onChange, label }) {
   return (
-    <div className="nh-tab-rail inline-flex max-w-full overflow-x-auto rounded-2xl border border-line bg-elevated p-1">
+    <div role="group" aria-label={label} className="nh-tab-rail inline-flex max-w-full flex-wrap gap-1 rounded-2xl border border-line bg-elevated p-1">
       {items.map(item => (
         <button
           key={item.value}
+          type="button"
+          aria-pressed={value === item.value}
           onClick={() => onChange(item.value)}
           className={cn(
             'shrink-0 rounded-xl px-4 py-2 text-sm font-medium',

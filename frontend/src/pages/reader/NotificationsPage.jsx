@@ -70,7 +70,7 @@ export function NotificationsPage() {
             </div>
           </Card>
         )}
-        <div className="mt-5 flex gap-2 overflow-x-auto pb-2">
+        <div className="-mx-1 mt-5 flex gap-2 overflow-x-auto p-1 pb-2">
           {filters.map(([value, label, Icon]) => (
             <button
               key={value}

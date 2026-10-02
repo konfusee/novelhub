@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Bookmark, Clock, Eye, Star } from '../icons'
+import { Bookmark, Clock, Eye, Headphones, BookOpen, Star } from '../icons'
 import { Badge, Button, Card } from '../ui'
 import { StoryCover } from '../story/StoryCover'
 import { useLocale } from '../../context/LocaleContext'
@@ -15,25 +15,26 @@ export function SearchResultItem({ result }) {
   const navigate = useNavigate()
   const [bookmarked, setBookmarked] = useState(false)
   return (
-    <Card className="flex gap-4 p-4 sm:gap-5 sm:p-5">
+    <Card data-search-result={result.id} className="flex gap-3 p-4 sm:gap-5 sm:p-5">
       <StoryCover
         story={result}
-        className="aspect-[2/3] w-24 shrink-0 rounded-xl border border-line sm:w-28"
+        className="aspect-[2/3] w-20 shrink-0 self-start rounded-xl border border-line sm:w-28"
         badge={
-          <span className="absolute left-2 top-2 rounded-full bg-brand px-2 py-1 text-[9px] font-semibold uppercase text-white">
-            {formatLabels[result.format] ?? result.format}
+          <span title={formatLabels[result.format] ?? result.format} aria-label={formatLabels[result.format] ?? result.format} className="absolute left-2 top-2 inline-flex items-center gap-1 rounded-full bg-brand px-2 py-1 text-[9px] font-semibold text-white">
+            {result.format === 'Audio' ? <Headphones size={12} /> : <BookOpen size={12} />}
+            <span className="hidden sm:inline">{result.format === 'Audio' ? 'Âm thanh' : 'Truyện chữ'}</span>
           </span>
         }
       />
       <div className="min-w-0 flex-1">
         <div className="flex items-start gap-3">
           <div className="min-w-0 flex-1">
-            <h3 className="truncate text-base font-bold sm:text-lg">{result.title}</h3>
-            <p className="mt-1 text-xs">
+            <h3 className="break-words text-base font-bold sm:text-lg">{result.title}</h3>
+            <p className="mt-1 break-words text-xs">
               {t('history.byAuthor', { author: result.author })}
             </p>
           </div>
-          <button onClick={() => setBookmarked(value => !value)} aria-label={t(bookmarked ? 'story.removeBookmark' : 'story.bookmark')}>
+          <button className="grid size-9 shrink-0 place-items-center rounded-xl" aria-pressed={bookmarked} onClick={() => setBookmarked(value => !value)} aria-label={t(bookmarked ? 'story.removeBookmark' : 'story.bookmark')}>
             <Bookmark size={18} className={bookmarked ? 'fill-brand text-brand' : 'text-muted'} />
           </button>
         </div>
@@ -59,9 +60,9 @@ export function SearchResultItem({ result }) {
           ))}
         </div>
         <p className="mt-3 line-clamp-2 text-xs leading-5 text-muted">{result.description}</p>
-        <div className="mt-4 flex items-center justify-between border-t border-line pt-3">
-          <span className="hidden items-center gap-1 text-xs text-muted sm:flex">
-            <Clock size={13} />
+        <div className="mt-4 flex flex-wrap items-center justify-between gap-3 border-t border-line pt-3">
+          <span className="flex min-w-0 items-center gap-1 text-xs text-muted">
+            <Clock size={13} className="shrink-0" />
             {result.duration}
           </span>
           <Button onClick={() => navigate(`/stories/${result.id}`)} className="ml-auto min-h-9 px-4 py-2 text-xs">{t('story.readPreview')}</Button>

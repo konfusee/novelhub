@@ -207,7 +207,6 @@ body {
 }
 
 .nh-hero-art > * {
-  position: relative;
   z-index: 1;
 }
 
@@ -322,11 +321,13 @@ section {
   min-width: 0;
   max-width: 100%;
 }
-button,
-input,
-select,
-textarea {
-  font: inherit;
+@layer base {
+  button,
+  input,
+  select,
+  textarea {
+    font: inherit;
+  }
 }
 button {
   cursor: pointer;
@@ -338,7 +339,7 @@ button {
     transform var(--dur-micro) var(--ease-out);
 }
 button:active:not(:disabled) {
-  transform: translateY(1px);
+  filter: brightness(0.96);
 }
 button:disabled,
 button[aria-disabled='true'] {
@@ -432,6 +433,14 @@ button[data-state='success'] {
   animation: workspace-enter var(--dur-short) var(--ease-out);
 }
 
+.workspace-content {
+  min-height: 100svh;
+}
+
+:where(.page-public, .page-reader, .page-author, .page-moderator, .page-admin, .page-shell) {
+  padding-bottom: clamp(4rem, 7vw, 6rem);
+}
+
 @keyframes workspace-enter {
   from { opacity: 0.72; transform: translateY(2px); }
   to { opacity: 1; transform: translateY(0); }
@@ -484,12 +493,6 @@ button[data-state='success'] {
   }
   main > section:first-child p {
     max-width: 100%;
-  }
-}
-
-@media (hover: hover) and (pointer: fine) {
-  button:hover:not(:disabled) {
-    transform: translateY(-1px);
   }
 }
 

@@ -37,3 +37,17 @@ Preserve icon component names/props for callers and move imports to the owned mo
 - Guest header checked separately at every width/theme. Screenshots reviewed for mobile and desktop workspaces and the icon gallery.
 - Mobile navigation opens/closes on route selection; theme toggle works; sidebar collapse persists after reload. All 166 SVG paths render, gallery search returns matching icons, and its empty state works.
 - Build retains the existing large-bundle warning; route splitting is outside this change. The app currently supplies Vietnamese content only; no English parity check is claimed.
+
+## Follow-up — control clipping, navigation and footer spacing
+
+The screenshot defects were caused by shared hover translation inside clipped filter rails, an unlayered font reset overriding button/input typography, fixed-width search tabs, and short workspace content. The hero arrows only opened mock alerts; search pagination changed its selected number without changing results.
+
+The fixes keep the existing visual system and routes:
+
+- Put form font inheritance in the base layer; use press brightness without global button translation and reserve space around filter rails for borders/focus.
+- Reuse intrinsic, wrapping shared tabs with exposed selection state. Let result titles/authors wrap, keep bookmark controls from shrinking, shorten cover badges and wrap duration/action rows when necessary.
+- Give workspace content a minimum height of `100svh` and standard page containers 64–96 px of bottom padding before the footer.
+- Replace hero alerts with a three-position carousel supporting arrows, direct indicators, wrapping and accessible labels. Preserve the welcome artwork and use existing covers for the featured stories; give the mobile art panel enough height to separate cover and caption.
+- Paginate the current four-item search mock in two-item pages, reset pagination when query/tab changes, derive displayed counts from results, and honor initial `q` / `format=audio` links. Author actions switch back to story results.
+
+Verification: 39 routes × six widths (320, 375, 414, 768, 1024, 1440) × light/dark passed all 468 layout/runtime checks. Focused checks covered hero arrows/indicators and wrapping, changed pagination content, tab resets, empty search, audio/query links, hover border containment, internal button/card overflow and empty-notification footer spacing at every width/theme. Mobile and desktop screenshots were reviewed. Lint, icon checks, Vietnamese content checks, build and whitespace checks passed. Existing API/mock limitations and the large-bundle warning remain.

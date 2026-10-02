@@ -361,6 +361,18 @@ Affected: `src/styles.css`, `tokens.css`, page layouts, all icon consumers, cate
 
 Status: Accepted through the user's explicit system-wide request.
 
+### 2026-10-02 — Control clipping and short-page geometry
+
+Context: User screenshots showed missing pill borders, overlapping search labels, a mock-only hero carousel and a footer too close to empty notification content.
+
+Decision: Keep form font inheritance in Tailwind's base layer so component size/weight utilities apply. Shared button hover/press feedback must not move controls outside clipped rails. Tabs wrap whole labels at intrinsic widths. Workspace content fills at least one small viewport, and standard page containers reserve 64–96 px before the footer. Hero controls and search pagination update real local content, with counts derived from the current mock dataset.
+
+Reason: Fix the reported behavior while preserving routes, twelve-column content layouts, palette and existing component ownership.
+
+Affected: Shared CSS/UI primitives, public home/categories/search, search result cards and notification filter rails. Verification is recorded in `UI_SYSTEM_CHANGE.md`.
+
+Status: Accepted through the user's explicit request to fix buttons, navigation, page length and text overflow.
+
 ## 25. Deprecated Patterns
 
 - **DOM-wide translation via `MutationObserver` — DEPRECATED.** Use keyed dictionaries through `useLocale()`.

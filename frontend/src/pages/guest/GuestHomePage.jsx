@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { Link, useNavigate } from 'react-router-dom'
 import {
   ArrowRight,
   BookOpen,
@@ -20,31 +21,36 @@ import { categories } from '../../data/mock/categories'
 import { featuredStories, stories } from '../../data/mock/stories'
 import { PublicHeader } from '../../components/public/PublicHeader'
 import { StoryCard } from '../../components/public/StoryCard'
+import { StoryCover } from '../../components/story/StoryCover'
 import { SectionTitle } from '../../components/public/SectionTitle'
 import { Button, Card } from '../../components/ui'
 import { useLocale } from '../../context/LocaleContext'
 
 function Hero() {
   const { t } = useLocale()
+  const navigate = useNavigate()
+  const [slide, setSlide] = useState(0)
+  const featured = slide === 1 ? stories[1] : stories[0]
+  const changeSlide = direction => setSlide(current => (current + direction + 3) % 3)
   return (
-    <section className="relative overflow-hidden rounded-3xl border border-line bg-surface">
+    <section aria-label={t('home.featured')} aria-roledescription="carousel" className="relative overflow-hidden rounded-3xl border border-line bg-surface">
       <div className="nh-grid-12 grid nh-layout-lg-6-6">
         <div className="p-7 sm:p-10 lg:p-12">
           <p className="text-[11px] font-semibold tracking-[.28em] text-muted">
             {t('home.eyebrow')}
           </p>
-          <h1 className="mt-4 text-4xl font-bold leading-[1.08] tracking-[-.04em] sm:text-5xl lg:text-[54px]">
-            {t('home.heroLineOne')}<br />
-            <span className="text-brand">{t('home.heroHighlight')}</span> {t('home.heroLineTwo')}
+          <h1 aria-live="polite" className="mt-4 break-words text-4xl font-bold leading-[1.08] tracking-[-.04em] sm:text-5xl lg:text-[54px]">
+            {t(slide === 0 ? 'home.heroLineOne' : slide === 1 ? 'home.audioHeroTitle' : 'home.storyHeroTitle')}<br />
+            <span className="text-brand">{slide === 0 ? t('home.heroHighlight') : featured.title}</span> {slide === 0 && t('home.heroLineTwo')}
           </h1>
           <p className="mt-5 max-w-lg text-sm leading-6 text-muted sm:text-base">
             {t('home.heroDescription')}
           </p>
           <div className="mt-7 flex flex-col items-stretch gap-3 sm:flex-row sm:flex-wrap sm:items-center">
-            <Button onClick={() => window.location.assign('/search')}>
+            <Button onClick={() => navigate(slide === 0 ? '/search' : `/stories/${featured.id}`)}>
               {t('home.exploreStories')} <ArrowRight size={16} />
             </Button>
-            <Button onClick={() => window.location.assign('/search?format=audio')} variant="secondary">
+            <Button onClick={() => navigate('/search?format=audio')} variant="secondary">
               <Headphones size={16} /> {t('home.startListening')}
             </Button>
           </div>
@@ -62,14 +68,14 @@ function Hero() {
             ))}
           </div>
         </div>
-        <div className="nh-hero-art relative min-h-80 overflow-hidden bg-elevated p-7 lg:min-h-full">
+        <div className="nh-hero-art relative min-h-96 overflow-hidden bg-elevated p-7 lg:min-h-full">
           <Leaf className="absolute left-8 top-8 text-brand opacity-70" size={60} />
           <div className="absolute right-8 top-8 rotate-[-6deg] text-right text-sm font-medium italic text-muted">
             A kinder world
             <br />
             through stories <Heart size={14} className="inline text-rose" />
           </div>
-          <div className="absolute inset-x-4 bottom-14 flex items-end justify-center sm:inset-x-8">
+          {slide === 0 ? <div className="absolute inset-x-4 bottom-20 flex items-end justify-center sm:inset-x-8">
             <div className="relative h-40 w-72 max-w-full">
               <div className="absolute bottom-0 left-3 h-11 w-60 max-w-[78%] -rotate-2 rounded-lg border border-line bg-[#bd9470] px-5 py-3 text-[10px] tracking-widest text-white">
                 TRUYỆN DỊU DÀNG
@@ -90,19 +96,21 @@ function Hero() {
                 MỖI NGÀY
               </div>
             </div>
-          </div>
-          <div className="absolute bottom-5 left-7 flex gap-2">
-            <span className="size-2 rounded-full bg-brand" />
-            <span className="size-2 rounded-full bg-line" />
-            <span className="size-2 rounded-full bg-line" />
-          </div>
-          <div className="absolute bottom-4 right-7 flex gap-2">
-            <button onClick={() => window.alert('Đã chọn truyện nổi bật trước đó (mô phỏng).')} className="grid size-8 place-items-center rounded-full border border-line bg-surface">
-              <ChevronLeft size={15} />
-            </button>
-            <button onClick={() => window.alert('Đã chọn truyện nổi bật tiếp theo (mô phỏng).')} className="grid size-8 place-items-center rounded-full border border-line bg-surface">
-              <ChevronRight size={15} />
-            </button>
+          </div> : <Link to={`/stories/${featured.id}`} aria-label={featured.title} className="absolute bottom-20 left-1/2 w-36 max-w-[45%] -translate-x-1/2 sm:w-44">
+            <StoryCover story={featured} eager className="aspect-[2/3] w-full rounded-xl border border-line shadow-lg" />
+          </Link>}
+          <div className="absolute inset-x-4 bottom-4 flex items-center justify-between gap-2">
+            <div className="flex" aria-label={t('home.chooseSlide')}>
+              {[0, 1, 2].map(index => <button key={index} type="button" aria-label={t('home.slide', { number: index + 1 })} aria-pressed={slide === index} onClick={() => setSlide(index)} className="grid size-11 place-items-center rounded-full"><span className={`size-2 rounded-full ${slide === index ? 'bg-brand' : 'bg-line'}`} /></button>)}
+            </div>
+            <div className="flex gap-2">
+              <button type="button" aria-label={t('home.previousSlide')} onClick={() => changeSlide(-1)} className="grid size-11 place-items-center rounded-full border border-line bg-surface">
+                <ChevronLeft size={15} />
+              </button>
+              <button type="button" aria-label={t('home.nextSlide')} onClick={() => changeSlide(1)} className="grid size-11 place-items-center rounded-full border border-line bg-surface">
+                <ChevronRight size={15} />
+              </button>
+            </div>
           </div>
         </div>
       </div>

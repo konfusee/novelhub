@@ -41,12 +41,13 @@ export function CategoriesPage({ embedded = false }) {
         <section className="flex flex-col gap-3 md:flex-row md:items-center">
           <Input
             icon={Search}
-            placeholder="Lọc theo từ khóa hoặc thể loại phụ..."
+            placeholder="Tìm thể loại..."
+            aria-label="Lọc theo từ khóa hoặc thể loại phụ"
             value={query}
             onChange={event => setQuery(event.target.value)}
-            className="md:max-w-sm"
+            className="md:w-72 md:shrink-0"
           />
-          <div className="flex gap-2 overflow-x-auto pb-1">
+          <div className="-m-1 flex gap-2 overflow-x-auto p-1">
             {filters.map(([value, label]) => (
               <button
                 key={value}
