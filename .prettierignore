@@ -1,0 +1,7 @@
+node_modules
+dist
+coverage
+package-lock.json
+# Docs are hand-wrapped prose; keep their formatting stable.
+docs
+plans
