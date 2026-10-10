@@ -118,7 +118,7 @@ another lane; record the gate or return to the team.
   attempt keys, batch-version completion CAS, evidence batch terminal/manual
   states, allowed Moderator decision states and active authorization epoch.
 - Backend/domain records verified local login, email-match Google linking, hashed
-  recovery/session invalidation, role cardinality, suspension/role removal,
+  email tokens/session invalidation, role cardinality, suspension/role removal,
   anonymization, and claim expiry.
 - Database/integration agrees on webhook authentication, payment-code and
   transaction uniqueness, exact amount/expiry matching, exception Admin review,
@@ -151,7 +151,7 @@ The team records observed outcomes, not invented command lines. Acceptance is co
   stale lease/batch completion and viewing stored evidence perform no new
   analysis attempt.
 - Identity smoke permits Google email-match linking, preserves unique provider
-  subject, blocks unverified local login, and verifies one-time recovery.
+  subject, blocks unverified local login, and verifies single-use email verification and password-reset tokens.
 - a duplicate confirmed top-up/provider callback cannot credit the wallet
   twice or cross purpose/unit; an eligible unlock cannot debit/allocate twice
   and preserves price/access and negotiated allocation snapshots in an
@@ -198,7 +198,7 @@ or inventing behavior beyond confirmed decisions.
 
 | Contract | Later verification evidence | Acceptance owner |
 |---|---|---|
-| Identity/roles/ownership | Backend unit tests for role/provider separation; recovery challenge/session invalidation and Google-link conflict integration evidence; active authorization epoch/owner-keyed read tests; UI denial/unknown rendering | Backend/domain + Frontend, reviewed by Integration/review |
+| Identity/roles/ownership | Backend unit tests for role/provider separation; email-token/session invalidation and Google-link conflict integration evidence; active authorization epoch/owner-keyed read tests; UI denial/unknown rendering | Backend/domain + Frontend, reviewed by Integration/review |
 | Immutable revision and mandatory evidence | Approved AST/themes/optional alt, immutable package, old-live edits, requested/first-release order, claim expiry, exact evidence/stage guards and no-rerun; no OCR. | Backend/domain + Database/integration |
 | Moderation/reports | Atomic decision evidence for exact batch/version, terminal-state/authorization epoch; report original revision snapshot/hash/unavailable marker and stale target CAS scenarios | Backend/domain, reviewed by Integration/review |
 | External boundaries | Provider adapter status and durable lease/attempt checks; source-event-keyed outbox retry/duplicate delivery evidence; PDF import evidence proves no source-PDF object/mediaAsset or persistent URL/path/key/binary, cleanup on success/failure/cancel/timeout, and extracted draft/status survival; bounded statistics seam; no live secrets | Database/integration, reviewed by Integration/review |

@@ -61,8 +61,9 @@ Reader and may hold at most one additional staff role: Author, Moderator, or
 Admin; Author and Moderator are mutually exclusive, and any account that ever
 held Author is permanently barred from Moderator. Local email/password
 accounts must verify email before login. Passwords are stored as a hash
-on the account only, never plaintext, and never returned by normal reads. Recovery uses a one-time hashed challenge with
-expiry and consumed/revoked state and invalidates sessions. Google linking
+on the account only, never plaintext, and never returned by normal reads. Email verification and password
+reset use single-use, expiring emailed tokens stored only as hashes; a reset
+signs out all sessions. Google linking
 matches the existing account email; provider-subject uniqueness remains an
 integrity constraint.
 Admin approves or rejects Author applications with reason; rejected applicants
@@ -396,8 +397,8 @@ relevant design phase.
   audited without Moderator/AI review. Former Authors can never be Moderators.
   Account reinstatement is `suspended → active`; history is preserved.
 - Users cannot access another account's progress, wallet, earnings, withdrawal
-  data, or unauthorized media; password hashes, recovery/session
-  state, and tokens are not plaintext, source code, or logs
+  data, or unauthorized media; password hashes, email tokens, session
+  state, and other tokens are not plaintext, source code, or logs
   (`NFR-SEC-03`–`NFR-SEC-05`).
 - Confirmed provider top-ups and successful unlocks are idempotent. Wallet and
   ledger purpose/type/unit are explicit; balance deduction, entitlement,

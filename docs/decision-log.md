@@ -372,8 +372,12 @@ rationale, without reopening confirmed business rules.
   as a hash only (never plaintext), excluded from normal reads (`select: false`)
   and absent for Google-only accounts; a separate credential collection was
   rejected because each account has at most one password; local email/password login requires verified
-  email. Recovery stores a one-time hashed challenge with expiry,
-  consumed/revoked state, and session invalidation. Google linking matches
+  email. Email verification and password reset share one `emailTokens` collection
+  (`purpose: email-verification | password-reset`): each emailed token is stored
+  only as a hash, expires, is single-use, and a new token revokes older unused
+  tokens of the same purpose. Verification activates the account; a reset sets
+  the new password hash and increments `credentialVersion`, signing out all
+  sessions. Google linking matches
   the existing account email; provider-subject uniqueness is enforced with
   compare-and-set and does not reintroduce the superseded prohibition.
 - **Typed finance records:** wallets and ledger entries carry explicit

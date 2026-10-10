@@ -68,14 +68,14 @@ The following are proposed domain aggregates. An aggregate owner is the authorit
 
 ### 1. Account and access aggregate
 
-- **Entities:** `Account` (with embedded `password`), `RecoveryChallenge`, `Session`, `ExternalIdentity`, `RoleAssignment`, `Permission`, `AuthorApplication`.
-- **Owner:** the account owns profile, credential/recovery/session lifecycle and linked identities; Admin owns role assignments and application decisions. An applicant owns submission of their own application.
+- **Entities:** `Account` (with embedded `password`), `EmailToken`, `Session`, `ExternalIdentity`, `RoleAssignment`, `Permission`, `AuthorApplication`.
+- **Owner:** the account owns profile, credential/email-token/session lifecycle and linked identities; Admin owns role assignments and application decisions. An applicant owns submission of their own application.
 - **Lifecycle:** Account `pending-verification → active → suspended/anonymized`,
   with `suspended → active` on reinstatement; anonymization is deletion.
   Credentials/sessions active → revoked; identity email-match → linked;
   AuthorApplication submitted → approved/rejected (reapply anytime);
   role active → revoked. Reader remains after Author-role removal.
-- **Invariants:** provider identity is verified before linking; a provider claim cannot grant NovelHub role; protected actions require active role plus resource ownership/permission; the embedded account password stores only a hash, never plaintext, and is excluded from normal reads; recovery challenges are one-time, hashed, expiring, consumed/revoked, and invalidate sessions; application decision is distinct from withdrawal processing; a decision names the deciding Admin and reason; account personal records are isolated (`FR-AUTH-04`, `FR-AUTH-05`, `FR-AUTH-07`, `FR-ADMIN-02`, `FR-ADMIN-09`, `FR-ADMIN-10`, `BR-14`, `UC-ADM-06`, `UC-ADM-10`).
+- **Invariants:** provider identity is verified before linking; a provider claim cannot grant NovelHub role; protected actions require active role plus resource ownership/permission; the embedded account password stores only a hash, never plaintext, and is excluded from normal reads; email tokens (verification and password reset) are single-use, hashed, expiring and revocable; a used password-reset token invalidates sessions; application decision is distinct from withdrawal processing; a decision names the deciding Admin and reason; account personal records are isolated (`FR-AUTH-04`, `FR-AUTH-05`, `FR-AUTH-07`, `FR-ADMIN-02`, `FR-ADMIN-09`, `FR-ADMIN-10`, `BR-14`, `UC-ADM-06`, `UC-ADM-10`).
 - **Confirmed authorization:** every account is a Reader plus at most one
   additional staff role; Author and Moderator cannot combine. Any account
   that ever held Author is permanently barred from Moderator. Suspended
