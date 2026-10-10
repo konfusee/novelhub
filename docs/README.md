@@ -21,6 +21,16 @@ The detailed domain, MongoDB, review, and foundation phases remain owned by
 `plans/` and are linked from the active plan. This README
 is navigation, not a second plan or a collection inventory.
 
+## Source material
+
+[`source/`](./source/) holds the original requirement inputs: the requirements
+spec (`novelhub_requirements_spec.md`, owner of `FR-*`/`BR-*`/`NFR-*` IDs), the
+use-case catalogue (`use-case-list.md`, owner of `UC-*` IDs), the Moderator
+use-case CSV, the context and Moderator diagrams, and the scripts that generate
+those diagrams. They are kept unchanged as traceability evidence. Where they
+disagree with the decision log, the decision log wins. `SRS.md` and
+`SRS-mismatches.md` are external working files and are not in the repository.
+
 ## Authority and editing contract
 
 1. The accepted target contract and decisions recorded as **confirmed** in
