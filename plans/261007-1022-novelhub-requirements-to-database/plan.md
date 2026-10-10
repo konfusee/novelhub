@@ -102,7 +102,7 @@ The monorepo foundation MUST NOT begin until the curated requirements baseline a
 | 2 | [Domain Model and Invariants](./phase-02-domain-model.md) | draft-for-review |
 | 3 | [MongoDB Logical Design](./phase-03-mongodb-logical-design.md) | draft-for-review |
 | 4 | [Database Design Review and Freeze Gate](./phase-04-database-review.md) | accepted for foundation by project owner (2026-10-10) |
-| 5 | [Shared Local Foundation](./phase-05-shared-foundation.md) | in progress on `main` |
+| 5 | [Shared Local Foundation](./phase-05-shared-foundation.md) | skeleton and all 47 core models done on `main` (JavaScript, npm workspaces, Express 5, Mongoose 9, Vitest, shared VPS MongoDB replica set); auth, services and routes not started |
 
 ## Success Criteria
 
