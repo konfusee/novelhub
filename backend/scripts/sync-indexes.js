@@ -2,9 +2,11 @@
 // Run after changing a model: `npm run db:sync-indexes --workspace backend`.
 import mongoose from 'mongoose';
 import { loadEnv } from '../src/config/env.js';
+import { loadDotenv } from '../src/config/load-dotenv.js';
 import { connectDatabase, disconnectDatabase } from '../src/db/connection.js';
 import '../src/models/index.js';
 
+loadDotenv();
 const env = loadEnv();
 await connectDatabase(env.MONGODB_URI);
 try {

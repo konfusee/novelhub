@@ -5,9 +5,9 @@
   "type": "module",
   "main": "src/server.js",
   "scripts": {
-    "dev": "node --watch --env-file-if-exists=.env src/server.js",
-    "start": "node --env-file-if-exists=.env src/server.js",
-    "db:sync-indexes": "node --env-file-if-exists=.env scripts/sync-indexes.js",
+    "dev": "node --watch src/server.js",
+    "start": "node src/server.js",
+    "db:sync-indexes": "node scripts/sync-indexes.js",
     "lint": "eslint .",
     "test": "vitest run",
     "test:watch": "vitest"

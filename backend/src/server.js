@@ -1,9 +1,11 @@
 import { createApp } from './app.js';
 import { loadEnv } from './config/env.js';
+import { loadDotenv } from './config/load-dotenv.js';
 import { createLogger } from './config/logger.js';
 import { connectDatabase, disconnectDatabase } from './db/connection.js';
 import './models/index.js';
 
+loadDotenv();
 const env = loadEnv();
 const logger = createLogger(env.LOG_LEVEL);
 
