@@ -101,8 +101,8 @@ The monorepo foundation MUST NOT begin until the curated requirements baseline a
 | 1 | [Requirements Baseline and Traceability](./phase-01-start.md) | draft-for-review |
 | 2 | [Domain Model and Invariants](./phase-02-domain-model.md) | draft-for-review |
 | 3 | [MongoDB Logical Design](./phase-03-mongodb-logical-design.md) | draft-for-review |
-| 4 | [Database Design Review and Freeze Gate](./phase-04-database-review.md) | draft-for-review |
-| 5 | [Shared Local Foundation](./phase-05-shared-foundation.md) | draft-for-review; blocked until Phase 4 |
+| 4 | [Database Design Review and Freeze Gate](./phase-04-database-review.md) | accepted for foundation by project owner (2026-10-10) |
+| 5 | [Shared Local Foundation](./phase-05-shared-foundation.md) | in progress on `main` |
 
 ## Success Criteria
 

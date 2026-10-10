@@ -147,7 +147,7 @@ All business rules are confirmed. The only remaining items are:
 - [ ] Document growth is bounded; binary media is external; vectors/passages are bounded or externally indexed.
 - [ ] Read/write paths include role, ownership, publication, entitlement and exact-revision checks.
 - [ ] Stage lease/claim, deterministic attempt identity, evidence batch/version CAS, authorization epoch, and allowed terminal decision states prevent stale or pending decisions.
-- [ ] Google email-match linking is allowed with provider-subject uniqueness; local login requires verified email, recovery is one-time/hashed, and accepted risk/mitigation is in decision log.
+- [ ] Google email-match linking is allowed with provider-subject uniqueness; local login requires verified email, email verification/password-reset tokens are single-use/hashed, and accepted risk/mitigation is in decision log.
 - [ ] Transient supported-PDF input is never persisted as a media object or
   source URL/path/key/binary: request memory and any temporary parser file are
   cleaned on successful extraction, extraction failure, cancellation, and
@@ -198,6 +198,10 @@ The following is a design acceptance matrix, not a command list. The implementat
 | Retention/index migration causes irreversible data loss | Medium × High | No TTL in V1; migration backup/rollback preserves immutable history. |
 
 ## Acceptance record and rollback
+
+**Recorded decision (2026-10-10):** the project owner accepted the design for
+foundation and authorized the foundation build to start on `main`; teammates
+review the resulting code on GitHub.
 
 The acceptance owner records one of:
 
