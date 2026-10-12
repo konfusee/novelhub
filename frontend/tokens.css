@@ -1,0 +1,138 @@
+/* Hallmark · pre-emit critique: P5 H4 E5 S5 R5 V4 */
+/* NovelHub Studio tokens · warm paper · jade accent · editorial utility */
+/* Raw values only. Product UI consumes the semantic layer mapped in src/styles.css. */
+:root {
+  --color-paper: oklch(96.8% 0.012 78);
+  --color-paper-2: oklch(99.1% 0.006 78);
+  --color-paper-3: oklch(93.8% 0.016 78);
+  --color-reader: oklch(98.2% 0.009 78);
+  --color-ink: oklch(24% 0.035 258);
+  --color-navy-ink: #0f1b2e;
+  --color-muted: #6b7280;
+  --color-rule: oklch(86% 0.018 78);
+  --color-rule-strong: oklch(72% 0.025 78);
+  --color-rule-hairline: oklch(24% 0.035 258 / 0.08);
+
+  /* User palette (source of truth): jade · orange · purple · rose. */
+  --color-accent: #2e7d6b;
+  --color-accent-strong: color-mix(in oklab, var(--color-accent) 82%, var(--color-ink));
+  --color-accent-soft: color-mix(in oklab, var(--color-accent) 12%, var(--color-paper-2));
+  --color-accent-ink: #ffffff;
+  --color-warm: #f4a261;
+  --color-warm-text: color-mix(in oklab, var(--color-warm) 46%, var(--color-ink));
+  --color-warm-ink: var(--color-navy-ink);
+  --color-purple: #8e5cf7;
+  --color-purple-text: color-mix(in oklab, var(--color-purple) 72%, var(--color-ink));
+  --color-purple-ink: #ffffff;
+  --color-rose: #e76f8e;
+  --color-rose-text: color-mix(in oklab, var(--color-rose) 56%, var(--color-ink));
+  --color-rose-ink: var(--color-navy-ink);
+
+  --color-danger: oklch(55% 0.19 25);
+  --color-success: oklch(50% 0.11 155);
+  --color-focus: oklch(57% 0.15 170);
+  --color-overlay: oklch(24% 0.035 258 / 0.42);
+  --color-footer-bg: oklch(15% 0.022 258);
+  --color-google-blue: oklch(62% 0.18 256);
+  --color-google-green: oklch(64% 0.16 149);
+  --color-google-yellow: oklch(80% 0.17 84);
+  --color-google-red: oklch(61% 0.21 29);
+
+  --font-display: 'Be Vietnam Pro', ui-sans-serif, sans-serif;
+  --font-body: 'Be Vietnam Pro', ui-sans-serif, sans-serif;
+  --font-outlier: 'Be Vietnam Pro', ui-sans-serif, sans-serif;
+
+  --space-3xs: 0.125rem;
+  --space-2xs: 0.25rem;
+  --space-xs: 0.5rem;
+  --space-sm: 0.75rem;
+  --space-md: 1rem;
+  --space-lg: 1.5rem;
+  --space-xl: 2.5rem;
+  --space-2xl: 4rem;
+  --space-3xl: 6rem;
+  --space-4xl: 9rem;
+
+  /*
+   * Type sizes are exposed as Tailwind utilities from src/styles.css @theme
+   * (text-h1, text-h2, text-h3, text-body, text-caption, text-display).
+   * Do not declare --text-* here: those names override Tailwind's own text-lg/xl/2xl/3xl scale.
+   */
+
+  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-in: cubic-bezier(0.7, 0, 0.84, 0);
+  --ease-in-out: cubic-bezier(0.65, 0, 0.35, 1);
+  --ease-spring: cubic-bezier(0.32, 0.72, 0, 1);
+  --dur-micro: 120ms;
+  --dur-short: 200ms;
+  --dur-long: 420ms;
+  --dur-reveal: 800ms;
+
+  --rule-thin: 1px;
+  --rule-focus: 2px;
+  /* Tailwind maps these to rounded-sm / rounded-md / rounded-lg (lg is intentionally 24px). */
+  --radius-sm: 0.5rem;
+  --radius-md: 0.875rem;
+  --radius-lg: 1.5rem;
+  --radius-pill: 999px;
+  --radius-card: 1.5rem;
+  --radius-bezel: 2rem;
+  --bezel-gap: 0.375rem;
+
+  /* Tinted, diffuse elevation. Never pure black. */
+  --shadow-tint: 24% 0.035 258;
+  --shadow-whisper-value: 0 1px 2px oklch(var(--shadow-tint) / 0.06);
+  --shadow-soft-value:
+    0 1px 2px oklch(var(--shadow-tint) / 0.04), 0 12px 32px -18px oklch(var(--shadow-tint) / 0.18);
+  --shadow-lift-value:
+    0 2px 6px oklch(var(--shadow-tint) / 0.05), 0 24px 56px -24px oklch(var(--shadow-tint) / 0.26);
+  --shadow-float-value:
+    0 4px 12px oklch(var(--shadow-tint) / 0.06), 0 32px 72px -28px oklch(var(--shadow-tint) / 0.32);
+  --shadow-inset-highlight: inset 0 1px 0 oklch(100% 0 0 / 0.65);
+
+  --z-base: 1;
+  --z-raised: 10;
+  --z-dropdown: 100;
+  --z-sticky: 200;
+  --z-modal: 400;
+  --z-toast: 500;
+  --z-tooltip: 600;
+  --layout-columns: 12;
+}
+
+:root.dark {
+  --color-paper: oklch(17% 0.025 258);
+  --color-paper-2: oklch(22.5% 0.032 258);
+  --color-paper-3: oklch(27.5% 0.038 258);
+  --color-reader: oklch(20% 0.027 258);
+  --color-ink: oklch(95% 0.008 78);
+  --color-muted: #94a3b8;
+  --color-rule: oklch(34% 0.04 258);
+  --color-rule-strong: oklch(46% 0.045 258);
+  --color-rule-hairline: oklch(95% 0.008 78 / 0.09);
+
+  --color-accent: #3baf92;
+  --color-accent-strong: color-mix(in oklab, var(--color-accent) 80%, var(--color-ink));
+  --color-accent-soft: color-mix(in oklab, var(--color-accent) 16%, var(--color-paper-2));
+  --color-accent-ink: var(--color-navy-ink);
+  --color-warm-text: var(--color-warm);
+  --color-purple: #9d72ff;
+  --color-purple-text: color-mix(in oklab, var(--color-purple) 82%, var(--color-ink));
+  --color-purple-ink: var(--color-navy-ink);
+  --color-rose: #f07c98;
+  --color-rose-text: color-mix(in oklab, var(--color-rose) 88%, var(--color-ink));
+
+  --color-focus: oklch(73% 0.13 170);
+  --color-overlay: oklch(9% 0.02 258 / 0.62);
+  --color-footer-bg: oklch(13% 0.022 258);
+
+  --shadow-tint: 8% 0.02 258;
+  --shadow-whisper-value: 0 1px 2px oklch(var(--shadow-tint) / 0.35);
+  --shadow-soft-value:
+    0 1px 2px oklch(var(--shadow-tint) / 0.3), 0 12px 32px -18px oklch(var(--shadow-tint) / 0.6);
+  --shadow-lift-value:
+    0 2px 6px oklch(var(--shadow-tint) / 0.3), 0 24px 56px -24px oklch(var(--shadow-tint) / 0.7);
+  --shadow-float-value:
+    0 4px 12px oklch(var(--shadow-tint) / 0.35), 0 32px 72px -28px oklch(var(--shadow-tint) / 0.8);
+  --shadow-inset-highlight: inset 0 1px 0 oklch(100% 0 0 / 0.06);
+}
