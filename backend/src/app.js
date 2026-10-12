@@ -5,8 +5,15 @@ import { pinoHttp } from 'pino-http';
 import { logSerializers } from './config/logger.js';
 import { errorHandler, notFound } from './middleware/errors.js';
 import { healthRouter } from './routes/health.routes.js';
+import { createAuthRouter } from './routes/auth.routes.js';
 
-export function createApp({ logger, corsOrigin }) {
+export function createApp({
+  logger,
+  corsOrigin,
+  nodeEnv = 'development',
+  cookieName = 'novelhub_session',
+  sessionTtlDays = 7,
+}) {
   const app = express();
   app.disable('x-powered-by');
   app.use(helmet());
@@ -16,6 +23,7 @@ export function createApp({ logger, corsOrigin }) {
   if (logger) app.use(pinoHttp({ logger, serializers: logSerializers }));
 
   app.use('/api', healthRouter);
+  app.use('/api', createAuthRouter({ nodeEnv, cookieName, sessionTtlDays }));
 
   app.use(notFound);
   app.use(errorHandler);

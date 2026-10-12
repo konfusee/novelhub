@@ -12,7 +12,13 @@ const logger = createLogger(env.LOG_LEVEL);
 await connectDatabase(env.MONGODB_URI, { autoIndex: env.NODE_ENV !== 'production' });
 logger.info('connected to MongoDB');
 
-const server = createApp({ logger, corsOrigin: env.CORS_ORIGIN }).listen(env.PORT, () => {
+const server = createApp({
+  logger,
+  corsOrigin: env.CORS_ORIGIN,
+  nodeEnv: env.NODE_ENV,
+  cookieName: env.AUTH_COOKIE_NAME,
+  sessionTtlDays: env.SESSION_TTL_DAYS,
+}).listen(env.PORT, () => {
   logger.info(`NovelHub API listening on http://localhost:${env.PORT}`);
 });
 
