@@ -5,7 +5,6 @@ import { apiRequest } from '../api/client';
 const AuthContext = createContext(null);
 const SESSION_KEY = 'novelhub.session.v1';
 const USERS_KEY = 'novelhub.users.v1';
-export const MOCK_PASSWORD = '123456';
 export const ROLE_HOME = {
   guest: '/',
   reader: '/reader',
@@ -32,33 +31,6 @@ export const canAccessPath = (user, path = '/') => {
   return true;
 };
 
-export const mockAccounts = {
-  reader: {
-    id: 'user-reader',
-    name: 'Elena Park',
-    email: 'reader@novelhub.test',
-    roles: ['reader'],
-  },
-  author: {
-    id: 'user-author',
-    name: 'Mira Lane',
-    email: 'author@novelhub.test',
-    roles: ['reader', 'author'],
-    authorProfile: { status: 'active', agreementAccepted: true },
-  },
-  moderator: {
-    id: 'user-moderator',
-    name: 'Sarah Jenkins',
-    email: 'moderator@novelhub.test',
-    roles: ['reader', 'moderator'],
-  },
-  admin: {
-    id: 'user-admin',
-    name: 'Marcus Vance',
-    email: 'admin@novelhub.test',
-    roles: ['reader', 'admin'],
-  },
-};
 const read = (key, fallback) => {
   try {
     return JSON.parse(localStorage.getItem(key)) ?? fallback;
@@ -148,11 +120,6 @@ export function AuthProvider({ children }) {
     },
     register,
     becomeAuthor,
-    switchAccount: (role) => {
-      const user = role === 'guest' ? null : mockAccounts[role];
-      persist(user);
-      return user;
-    },
   };
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }

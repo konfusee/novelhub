@@ -1,21 +1,13 @@
 import { useId, useState } from 'react';
 import { FlaskConical, X } from '../icons';
-import { useNavigate } from 'react-router';
-import { getAccountHome, useAuth } from '../../context/AuthContext';
 import { useTheme } from '../../context/ThemeContext';
 import { MOCK_LATENCIES, useMockData } from '../../context/MockDataContext';
 import { ApiStatus } from '../ApiStatus';
 import { Select } from '../ui';
 export function DevPanel() {
   const [open, setOpen] = useState(false);
-  const { currentUser, switchAccount } = useAuth();
   const { resolvedTheme, setTheme } = useTheme();
   const { data, setSimulation, setLatency, reset } = useMockData();
-  const navigate = useNavigate();
-  const changeAccount = (role) => {
-    const user = switchAccount(role);
-    navigate(getAccountHome(user), { replace: true });
-  };
   if (!import.meta.env.DEV) return null;
   return (
     <div className="fixed bottom-[max(1rem,env(safe-area-inset-bottom))] right-[max(1rem,env(safe-area-inset-right))] z-[100] text-ink">
@@ -35,19 +27,6 @@ export function DevPanel() {
           <div className="mt-2 text-xs text-muted">
             <ApiStatus />
           </div>
-          <Control
-            label="Tài khoản"
-            value={currentUser?.roles?.at(-1) || 'guest'}
-            options={['guest', 'reader', 'author', 'moderator', 'admin']}
-            optionLabels={{
-              guest: 'Khách',
-              reader: 'Độc giả',
-              author: 'Tác giả',
-              moderator: 'Kiểm duyệt viên',
-              admin: 'Quản trị viên',
-            }}
-            onChange={changeAccount}
-          />
           <Control
             label="Giao diện"
             value={resolvedTheme}
