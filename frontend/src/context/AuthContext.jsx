@@ -1,5 +1,6 @@
 /* eslint-disable react-refresh/only-export-components */
-import { createContext, useContext, useState } from 'react';
+import { createContext, useContext, useEffect, useState } from 'react';
+import { apiRequest } from '../api/client';
 
 const AuthContext = createContext(null);
 const SESSION_KEY = 'novelhub.session.v1';
@@ -67,28 +68,28 @@ const read = (key, fallback) => {
 };
 
 export function AuthProvider({ children }) {
-  const [currentUser, setCurrentUser] = useState(() => {
-    const session = read(SESSION_KEY, null);
-    const updatedDemo =
-      session && Object.values(mockAccounts).find((user) => user.id === session.id);
-    return updatedDemo || session;
-  });
+  const [currentUser, setCurrentUser] = useState(null);
+  const [authLoading, setAuthLoading] = useState(true);
+  useEffect(() => {
+    const controller = new AbortController();
+    apiRequest('/auth/me', { signal: controller.signal })
+      .then(({ user }) => setCurrentUser(user))
+      .catch(() => setCurrentUser(null))
+      .finally(() => setAuthLoading(false));
+    return () => controller.abort();
+  }, []);
   const persist = (user) => {
     setCurrentUser(user);
     user
       ? localStorage.setItem(SESSION_KEY, JSON.stringify(user))
       : localStorage.removeItem(SESSION_KEY);
   };
-  const login = (email, password) => {
-    const custom = read(USERS_KEY, []);
-    const user = [...Object.values(mockAccounts), ...custom].find(
-      (item) => item.email.toLowerCase() === email.toLowerCase(),
-    );
-    if (!user || password !== MOCK_PASSWORD)
-      throw new Error(
-        'Email hoặc mật khẩu không hợp lệ. Hãy dùng tài khoản mẫu và mật khẩu 123456.',
-      );
-    persist(user);
+  const login = async (email, password) => {
+    const { user } = await apiRequest('/auth/login', {
+      method: 'POST',
+      body: { email, password },
+    });
+    setCurrentUser(user);
     return user;
   };
   const register = ({ name, email, accountType = 'reader' }) => {
@@ -129,12 +130,22 @@ export function AuthProvider({ children }) {
   };
   const value = {
     currentUser,
+    authLoading,
     isAuthenticated: Boolean(currentUser),
     roles: currentUser?.roles || [],
     hasRole: (role) => currentUser?.roles?.includes(role),
     login,
     loginWithGoogle,
-    logout: () => persist(null),
+    logout: async () => {
+      try {
+        await apiRequest('/auth/logout', { method: 'POST' });
+      } catch {
+        // Local state must still be cleared when the server is unreachable.
+      } finally {
+        setCurrentUser(null);
+        localStorage.removeItem(SESSION_KEY);
+      }
+    },
     register,
     becomeAuthor,
     switchAccount: (role) => {

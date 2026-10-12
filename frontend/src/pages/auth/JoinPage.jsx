@@ -22,8 +22,6 @@ import { LegalContent } from '../system/LegalPage';
 import {
   canAccessPath,
   getAccountHome,
-  MOCK_PASSWORD,
-  mockAccounts,
   useAuth,
 } from '../../context/AuthContext';
 import { useLocale } from '../../context/LocaleContext';
@@ -107,11 +105,6 @@ export function JoinPage({ initialMode }) {
     });
   };
 
-  const fillDemoAccount = (user) => {
-    resetFeedback();
-    setForm((current) => ({ ...current, email: user.email, password: MOCK_PASSWORD }));
-  };
-
   const agreementErrors = () => {
     const next = {};
     if (isLogin) return next;
@@ -158,12 +151,10 @@ export function JoinPage({ initialMode }) {
     if (showErrors({ ...credentialErrors(), ...agreementErrors() })) return;
     setBusy(true);
     try {
-      await new Promise((resolve) => setTimeout(resolve, 250));
-      finishAuth(
-        isLogin
-          ? login(form.email.trim(), form.password)
-          : register({ name: form.name.trim(), email: form.email.trim(), accountType }),
-      );
+      const user = isLogin
+        ? await login(form.email.trim(), form.password)
+        : register({ name: form.name.trim(), email: form.email.trim(), accountType });
+      finishAuth(user);
     } catch (reason) {
       setError(reason.message);
       setBusy(false);
@@ -173,6 +164,10 @@ export function JoinPage({ initialMode }) {
   const continueWithGoogle = async () => {
     setError('');
     setNotice('');
+    if (isLogin) {
+      setError('Đăng nhập Google chưa được cấu hình trên máy chủ. Vui lòng dùng email và mật khẩu.');
+      return;
+    }
     if (showErrors(agreementErrors())) return;
     setBusy(true);
     try {
@@ -309,7 +304,7 @@ export function JoinPage({ initialMode }) {
                         onClick={() => {
                           setError('');
                           setNotice(
-                            'Hướng dẫn đặt lại mật khẩu sẽ có trong luồng backend hoàn chỉnh. Tài khoản dùng thử dùng mật khẩu 123456.',
+                            'Luồng đặt lại mật khẩu chưa được triển khai. Hãy liên hệ quản trị viên nếu bạn mất quyền truy cập.',
                           );
                         }}
                         className="rounded-full text-xs font-semibold text-brand-strong underline-offset-4 hover:underline"
@@ -436,7 +431,11 @@ export function JoinPage({ initialMode }) {
                 </div>
               </form>
 
-              {isLogin && <DemoAccounts onSelect={fillDemoAccount} />}
+              {isLogin && (
+                <p className="mt-4 text-center text-xs leading-5 text-muted">
+                  Tài khoản phát triển được tạo an toàn bằng lệnh seed của backend.
+                </p>
+              )}
             </div>
           </Card>
 
@@ -685,34 +684,3 @@ function AuthorAgreementChecklist({ form, update, error }) {
   );
 }
 
-function DemoAccounts({ onSelect }) {
-  const roleLabels = {
-    guest: 'Khách',
-    reader: 'Độc giả',
-    author: 'Tác giả',
-    moderator: 'Kiểm duyệt viên',
-    admin: 'Quản trị viên',
-  };
-  return (
-    <div className="mt-5 rounded-3xl border border-dashed border-line px-4 py-3">
-      <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1 text-xs">
-        <p className="font-semibold">Tài khoản dùng thử</p>
-        <span className="text-muted">Mật khẩu: {MOCK_PASSWORD}</span>
-      </div>
-      <div className="mt-2 flex flex-wrap gap-1.5">
-        {Object.entries(mockAccounts).map(([role, user]) => (
-          <button
-            type="button"
-            key={user.email}
-            title={user.email}
-            onClick={() => onSelect(user)}
-            className="min-h-8 rounded-full border border-line bg-surface px-3 py-1 text-xs font-semibold text-ink/80 transition-[border-color,background-color,color,transform] duration-200 hover:border-brand hover:bg-brand-soft hover:text-brand-strong active:scale-[0.98] pointer-coarse:min-h-11"
-          >
-            {roleLabels[role] || role}
-            <span className="sr-only"> ({user.email})</span>
-          </button>
-        ))}
-      </div>
-    </div>
-  );
-}
