@@ -10,9 +10,17 @@ session tokens are never persisted or returned.
 
 The API contract is:
 
+- `POST /api/auth/register` creates a pending local Reader account and sends verification;
+- `POST /api/auth/verify-email` consumes a single-use verification token;
+- `POST /api/auth/resend-verification` revokes older verification tokens;
 - `POST /api/auth/login` with `{ "email": "...", "password": "..." }`;
 - `GET /api/auth/me` to restore the authenticated user after refresh;
-- `POST /api/auth/logout` to revoke the current session.
+- `POST /api/auth/logout` to revoke the current session;
+- `POST /api/auth/forgot-password` returns the same response for known and unknown emails;
+- `POST /api/auth/reset-password` consumes a token, changes the hash and revokes sessions;
+- `GET /api/auth/google/start` begins Google Authorization Code + PKCE;
+- `GET /api/auth/google/callback` validates state and Google OIDC identity;
+- `POST /api/auth/author-application` submits an application without granting a role.
 
 All accounts receive Reader access. Active records in `roleAssignments` add
 `author`, `moderator`, or `admin`. Frontend route guards improve navigation, but
@@ -32,6 +40,33 @@ Edit `backend/.env` and replace `MONGODB_URI` placeholders with credentials
 obtained from the project owner. Keep `CORS_ORIGIN=http://localhost:5173`. The
 default cookie name and seven-day lifetime are suitable for local development.
 
+Development verification and reset links are written to the backend console.
+This fallback is disabled in production. Authentication email delivery uses a
+shared adapter with at most three attempts; a production Gmail/SMTP adapter and
+credentials must be supplied by deployment infrastructure.
+
+## Google OAuth configuration
+
+Create a Google Cloud OAuth 2.0 Web application after configuring the consent
+screen. For local development use:
+
+- Authorized JavaScript origin: `http://localhost:5173`
+- Authorized redirect URI: `http://localhost:4000/api/auth/google/callback`
+
+Then set only in the ignored `backend/.env`:
+
+```dotenv
+GOOGLE_CLIENT_ID=your-web-client-id
+GOOGLE_CLIENT_SECRET=your-web-client-secret
+GOOGLE_REDIRECT_URI=http://localhost:4000/api/auth/google/callback
+```
+
+Google authentication uses Authorization Code flow, PKCE, a ten-minute
+HttpOnly state cookie, issuer/audience/expiration/signature checks, and requires
+`email_verified=true`. A new identity creates an active passwordless Reader. A
+verified matching email links to the existing account while preserving all
+NovelHub roles. Google never assigns roles.
+
 Verify database connectivity:
 
 ```powershell
@@ -47,6 +82,10 @@ npm run dev:frontend
 ```
 
 Open `http://localhost:5173/login`.
+
+Registration is available at `/register`. After submitting, copy the
+development verification URL from the backend console into the browser. Password
+recovery starts at `/forgot-password`; its reset URL is delivered the same way.
 
 ## Create a development account
 
@@ -98,6 +137,11 @@ database. The first run downloads its MongoDB binary.
   cookies are enabled, and call `/api/auth/me` with credentials included.
 - **HTTP 429:** wait 15 minutes after repeated failed logins before retrying from
   the same client address.
+- **Google unavailable:** configure all three Google variables and make the
+  callback URI exactly match Google Cloud Console. Live OAuth cannot be tested
+  without an external client credential.
+- **CSRF rejected:** authenticated POST requests must originate from a value in
+  `CORS_ORIGIN`. Browser fetches already include this header; scripts must set it.
 
 ## Security and team integration notes
 
@@ -107,3 +151,9 @@ authorization changes invalidate stale sessions. The frontend consumes only the
 safe user shape `{ id, name, email, roles }`; teammates should use `useAuth()` for
 `currentUser`, `isAuthenticated`, `roles`, `hasRole`, and `logout` rather than
 reading cookies or creating a second auth store.
+
+Other backend fields must protect routes with `requireAuth({ cookieName })` and
+then `requireRole('author' | 'moderator' | 'admin')` where appropriate. Both
+`req.auth.account` and the compatible `req.account` alias contain the trusted
+database account. Admin does not inherit Moderator. Client-side route guards are
+navigation aids only and never replace backend authorization.
