@@ -3,8 +3,6 @@ import { createContext, useContext, useEffect, useState } from 'react';
 import { apiRequest } from '../api/client';
 
 const AuthContext = createContext(null);
-const SESSION_KEY = 'novelhub.session.v1';
-const USERS_KEY = 'novelhub.users.v1';
 export const ROLE_HOME = {
   guest: '/',
   reader: '/reader',
@@ -31,14 +29,6 @@ export const canAccessPath = (user, path = '/') => {
   return true;
 };
 
-const read = (key, fallback) => {
-  try {
-    return JSON.parse(localStorage.getItem(key)) ?? fallback;
-  } catch {
-    return fallback;
-  }
-};
-
 export function AuthProvider({ children }) {
   const [currentUser, setCurrentUser] = useState(null);
   const [authLoading, setAuthLoading] = useState(true);
@@ -50,12 +40,6 @@ export function AuthProvider({ children }) {
       .finally(() => setAuthLoading(false));
     return () => controller.abort();
   }, []);
-  const persist = (user) => {
-    setCurrentUser(user);
-    user
-      ? localStorage.setItem(SESSION_KEY, JSON.stringify(user))
-      : localStorage.removeItem(SESSION_KEY);
-  };
   const login = async (email, password) => {
     const { user } = await apiRequest('/auth/login', {
       method: 'POST',
@@ -64,34 +48,11 @@ export function AuthProvider({ children }) {
     setCurrentUser(user);
     return user;
   };
-  const register = ({ name, email, accountType = 'reader' }) => {
-    const user = {
-      id: `user-${Date.now()}`,
-      name,
-      email,
-      roles: accountType === 'author' ? ['reader', 'author'] : ['reader'],
-    };
-    if (accountType === 'author')
-      user.authorProfile = { status: 'active', agreementAccepted: true };
-    const users = read(USERS_KEY, []);
-    localStorage.setItem(USERS_KEY, JSON.stringify([...users, user]));
-    persist(user);
-    return user;
-  };
-  const loginWithGoogle = ({ accountType = 'reader' } = {}) => {
-    const user = {
-      id: `google-${accountType}`,
-      name: accountType === 'author' ? 'Tác giả Google' : 'Độc giả Google',
-      email: `${accountType}@google.novelhub.test`,
-      roles: accountType === 'author' ? ['reader', 'author'] : ['reader'],
-      provider: 'google',
-    };
-    if (accountType === 'author') {
-      user.authorProfile = { status: 'active', agreementAccepted: true };
-    }
-    persist(user);
-    return user;
-  };
+  const register = ({ name, email, password, accountType = 'reader' }) =>
+    apiRequest('/auth/register', {
+      method: 'POST',
+      body: { displayName: name, email, password, acceptedTerms: true, accountType },
+    });
   const applyForAuthor = async () =>
     apiRequest('/auth/author-application', { method: 'POST', body: {} });
   const value = {
@@ -101,7 +62,6 @@ export function AuthProvider({ children }) {
     roles: currentUser?.roles || [],
     hasRole: (role) => currentUser?.roles?.includes(role),
     login,
-    loginWithGoogle,
     logout: async () => {
       try {
         await apiRequest('/auth/logout', { method: 'POST' });
@@ -109,7 +69,6 @@ export function AuthProvider({ children }) {
         // Local state must still be cleared when the server is unreachable.
       } finally {
         setCurrentUser(null);
-        localStorage.removeItem(SESSION_KEY);
       }
     },
     register,

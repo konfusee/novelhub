@@ -36,6 +36,9 @@ const GuestReaderPreviewPage = lazy(() =>
   })),
 );
 const JoinPage = lazy(() => import('./pages/auth/JoinPage').then((m) => ({ default: m.JoinPage })));
+const AuthRecoveryPage = lazy(() =>
+  import('./pages/auth/AuthRecoveryPage').then((m) => ({ default: m.AuthRecoveryPage })),
+);
 const ReaderHomePage = lazy(() =>
   import('./pages/reader/ReaderHomePage').then((m) => ({ default: m.ReaderHomePage })),
 );
@@ -233,6 +236,9 @@ function AppRoutes() {
           <Route path="/join" element={<JoinPage />} />
           <Route path="/login" element={<JoinPage initialMode="login" />} />
           <Route path="/register" element={<JoinPage initialMode="register" />} />
+          <Route path="/verify-email" element={<AuthRecoveryPage mode="verify" />} />
+          <Route path="/forgot-password" element={<AuthRecoveryPage mode="forgot" />} />
+          <Route path="/reset-password" element={<AuthRecoveryPage mode="reset" />} />
           <Route path="/terms" element={<AdaptiveLegalPage type="terms" />} />
           <Route path="/privacy" element={<AdaptiveLegalPage type="privacy" />} />
           <Route path="/reader" element={role('reader', <ReaderHomePage />)} />

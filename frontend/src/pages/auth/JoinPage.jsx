@@ -56,7 +56,7 @@ export function JoinPage({ initialMode }) {
   const { t } = useLocale();
   const location = useLocation();
   const navigate = useNavigate();
-  const { login, loginWithGoogle, register } = useAuth();
+  const { login, register } = useAuth();
   const queryMode = new URLSearchParams(location.search).get('mode');
   const mode = initialMode || queryMode || 'register';
   const isLogin = mode === 'login';
@@ -151,10 +151,22 @@ export function JoinPage({ initialMode }) {
     if (showErrors({ ...credentialErrors(), ...agreementErrors() })) return;
     setBusy(true);
     try {
-      const user = isLogin
-        ? await login(form.email.trim(), form.password)
-        : register({ name: form.name.trim(), email: form.email.trim(), accountType });
-      finishAuth(user);
+      if (isLogin) {
+        finishAuth(await login(form.email.trim(), form.password));
+      } else {
+        const result = await register({
+          name: form.name.trim(),
+          email: form.email.trim(),
+          password: form.password,
+          accountType,
+        });
+        setNotice(
+          result.emailDelivered
+            ? 'Tài khoản đã được tạo. Hãy kiểm tra email để xác minh trước khi đăng nhập.'
+            : 'Tài khoản đã được tạo nhưng email xác minh chưa gửi được. Hãy dùng chức năng gửi lại.',
+        );
+        setBusy(false);
+      }
     } catch (reason) {
       setError(reason.message);
       setBusy(false);
@@ -164,19 +176,7 @@ export function JoinPage({ initialMode }) {
   const continueWithGoogle = async () => {
     setError('');
     setNotice('');
-    if (isLogin) {
-      setError('Đăng nhập Google chưa được cấu hình trên máy chủ. Vui lòng dùng email và mật khẩu.');
-      return;
-    }
-    if (showErrors(agreementErrors())) return;
-    setBusy(true);
-    try {
-      await new Promise((resolve) => setTimeout(resolve, 250));
-      finishAuth(loginWithGoogle({ accountType: isLogin ? 'reader' : accountType }));
-    } catch (reason) {
-      setError(reason.message);
-      setBusy(false);
-    }
+    setError('Google OAuth cần cấu hình máy chủ trước khi sử dụng.');
   };
 
   const describedBy = (key) => (fieldErrors[key] ? `join-${key}-error` : undefined);
@@ -301,12 +301,7 @@ export function JoinPage({ initialMode }) {
                     isLogin ? (
                       <button
                         type="button"
-                        onClick={() => {
-                          setError('');
-                          setNotice(
-                            'Luồng đặt lại mật khẩu chưa được triển khai. Hãy liên hệ quản trị viên nếu bạn mất quyền truy cập.',
-                          );
-                        }}
+                        onClick={() => navigate('/forgot-password')}
                         className="rounded-full text-xs font-semibold text-brand-strong underline-offset-4 hover:underline"
                       >
                         {t('auth.forgotPassword')}
