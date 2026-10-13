@@ -227,3 +227,57 @@ describe('session authentication API', () => {
     expect(await Session.countDocuments({ accountId: account._id, status: 'revoked' })).toBe(1);
   });
 });
+
+describe('password recovery', () => {
+  it('returns a generic response for known and unknown emails', async () => {
+    const known = await request(app)
+      .post('/api/auth/forgot-password')
+      .send({ email: 'reader@example.test' });
+    const unknown = await request(app)
+      .post('/api/auth/forgot-password')
+      .send({ email: 'unknown@example.test' });
+    expect(known.status).toBe(200);
+    expect(unknown.status).toBe(200);
+    expect(known.body).toEqual(unknown.body);
+    expect(deliveredEmails).toHaveLength(1);
+    expect(deliveredEmails[0].actionUrl).toContain('/reset-password?token=');
+  });
+
+  it('resets once, revokes sessions, and accepts only the new password', async () => {
+    const agent = request.agent(app);
+    expect(
+      (await agent.post('/api/auth/login').send({ email: 'reader@example.test', password })).status,
+    ).toBe(200);
+    await request(app).post('/api/auth/forgot-password').send({ email: 'reader@example.test' });
+    const token = new URL(deliveredEmails[0].actionUrl).searchParams.get('token');
+    const nextPassword = 'a brand new secure password';
+    expect(
+      (await request(app).post('/api/auth/reset-password').send({ token, password: nextPassword })).status,
+    ).toBe(200);
+    expect((await agent.get('/api/auth/me')).status).toBe(401);
+    expect((await request(app).post('/api/auth/reset-password').send({ token, password })).status).toBe(400);
+    expect(
+      (await request(app).post('/api/auth/login').send({ email: 'reader@example.test', password })).status,
+    ).toBe(401);
+    expect(
+      (await request(app).post('/api/auth/login').send({ email: 'reader@example.test', password: nextPassword })).status,
+    ).toBe(200);
+  });
+
+  it('rejects expired and malformed reset tokens', async () => {
+    const { EmailToken } = await import('../src/models/identity/email-token.model.js');
+    const { digestEmailToken } = await import('../src/auth/email-tokens.js');
+    await EmailToken.create({
+      accountId: account._id,
+      purpose: 'password-reset',
+      tokenHash: digestEmailToken('x'.repeat(32)),
+      expiresAt: new Date(Date.now() - 1000),
+    });
+    expect(
+      (await request(app).post('/api/auth/reset-password').send({ token: 'x'.repeat(32), password })).status,
+    ).toBe(400);
+    expect(
+      (await request(app).post('/api/auth/reset-password').send({ token: 'short', password })).status,
+    ).toBe(400);
+  });
+});

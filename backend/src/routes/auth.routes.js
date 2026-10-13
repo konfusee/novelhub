@@ -41,6 +41,9 @@ const tokenSchema = z.object({ token: z.string().min(32).max(256) }).strict();
 const emailSchema = z
   .object({ email: z.string().trim().email().max(254).transform((value) => value.toLowerCase()) })
   .strict();
+const resetPasswordSchema = z
+  .object({ token: z.string().min(32).max(256), password: z.string().min(10).max(1024) })
+  .strict();
 const attempts = new Map();
 const WINDOW_MS = 15 * 60 * 1000;
 const MAX_ATTEMPTS = 10;
@@ -182,6 +185,91 @@ export function createAuthRouter(config) {
         await deliverToken({ email: account.email, token, purpose: 'email-verification' });
       }
       res.json({ message: 'If the account is awaiting verification, a new email has been sent.' });
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  router.post('/auth/forgot-password', async (req, res, next) => {
+    try {
+      const parsed = emailSchema.safeParse(req.body);
+      if (!parsed.success) return next(new HttpError(400, 'validation_error', 'Valid email is required'));
+      const account = await Account.findOne({
+        normalizedEmail: parsed.data.email,
+        status: 'active',
+        emailVerifiedAt: { $ne: null },
+        password: { $exists: true },
+      });
+      if (account) {
+        const token = await withTransaction((session) =>
+          issueEmailToken({
+            accountId: account._id,
+            purpose: 'password-reset',
+            ttlMinutes: config.passwordResetTtlMinutes,
+            session,
+          }),
+        );
+        try {
+          await deliverToken({ email: account.email, token, purpose: 'password-reset' });
+        } catch (error) {
+          config.logger?.error({ err: error, accountId: account._id }, 'password reset email failed');
+        }
+      }
+      res.json({ message: 'If an eligible account exists, password reset instructions have been sent.' });
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  router.post('/auth/reset-password', async (req, res, next) => {
+    try {
+      const parsed = resetPasswordSchema.safeParse(req.body);
+      if (!parsed.success) return next(new HttpError(400, 'validation_error', 'Token and a valid password are required'));
+      const passwordHash = await hashPassword(parsed.data.password);
+      await withTransaction(async (session) => {
+        const usedAt = new Date();
+        const emailToken = await EmailToken.findOneAndUpdate(
+          {
+            tokenHash: digestEmailToken(parsed.data.token),
+            purpose: 'password-reset',
+            usedAt: null,
+            revokedAt: null,
+            expiresAt: { $gt: usedAt },
+          },
+          { $set: { usedAt } },
+          { returnDocument: 'after', session },
+        );
+        if (!emailToken) throw new HttpError(400, 'invalid_token', 'Reset link is invalid or expired');
+        const account = await Account.findOneAndUpdate(
+          { _id: emailToken.accountId, status: 'active', emailVerifiedAt: { $ne: null } },
+          {
+            $set: {
+              password: { hash: passwordHash, algorithm: 'scrypt', updatedAt: usedAt },
+            },
+            $inc: { credentialVersion: 1 },
+          },
+          { returnDocument: 'after', session },
+        );
+        if (!account) throw new HttpError(400, 'invalid_token', 'Reset link is invalid or expired');
+        await Promise.all([
+          Session.updateMany(
+            { accountId: account._id, status: 'active' },
+            { $set: { status: 'revoked', revokedAt: usedAt } },
+            { session },
+          ),
+          EmailToken.updateMany(
+            {
+              accountId: account._id,
+              purpose: 'password-reset',
+              usedAt: null,
+              revokedAt: null,
+            },
+            { $set: { revokedAt: usedAt } },
+            { session },
+          ),
+        ]);
+      });
+      res.json({ message: 'Password has been reset. Sign in with the new password.' });
     } catch (error) {
       next(error);
     }
