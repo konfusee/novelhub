@@ -1,4 +1,5 @@
 import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { useState } from 'react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { AuthProvider, useAuth } from './AuthContext';
 
@@ -10,7 +11,8 @@ const user = {
 };
 
 function Harness() {
-  const { authLoading, currentUser, login, logout } = useAuth();
+  const { authLoading, currentUser, login, logout, register } = useAuth();
+  const [registration, setRegistration] = useState('');
   return (
     <div>
       <span>{authLoading ? 'loading' : currentUser?.email || 'guest'}</span>
@@ -20,6 +22,20 @@ function Harness() {
       <button type="button" onClick={() => logout()}>
         logout
       </button>
+      <button
+        type="button"
+        onClick={() =>
+          register({
+            name: 'New Reader',
+            email: 'new@example.test',
+            password: 'secure-password',
+            accountType: 'reader',
+          }).then(({ account }) => setRegistration(account.status))
+        }
+      >
+        register
+      </button>
+      <span>{registration}</span>
     </div>
   );
 }
@@ -77,5 +93,42 @@ describe('AuthProvider', () => {
     );
     fireEvent.click(screen.getByText('logout'));
     await waitFor(() => expect(screen.getByText('guest')).toBeTruthy());
+  });
+
+  it('registers through the API without creating a local authenticated session', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async (url) => {
+        if (url === '/api/auth/register') {
+          return new Response(
+            JSON.stringify({ account: { email: 'new@example.test', status: 'pending-verification' } }),
+            { status: 201 },
+          );
+        }
+        return new Response(JSON.stringify({ error: { code: 'unauthorized' } }), { status: 401 });
+      }),
+    );
+    render(
+      <AuthProvider>
+        <Harness />
+      </AuthProvider>,
+    );
+    expect(await screen.findByText('guest')).toBeTruthy();
+    fireEvent.click(screen.getByText('register'));
+    expect(await screen.findByText('pending-verification')).toBeTruthy();
+    expect(screen.getByText('guest')).toBeTruthy();
+    expect(fetch).toHaveBeenCalledWith(
+      '/api/auth/register',
+      expect.objectContaining({
+        method: 'POST',
+        body: JSON.stringify({
+          displayName: 'New Reader',
+          email: 'new@example.test',
+          password: 'secure-password',
+          acceptedTerms: true,
+          accountType: 'reader',
+        }),
+      }),
+    );
   });
 });
