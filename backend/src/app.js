@@ -13,6 +13,10 @@ export function createApp({
   nodeEnv = 'development',
   cookieName = 'novelhub_session',
   sessionTtlDays = 7,
+  frontendUrl = 'http://localhost:5173',
+  emailVerificationTtlMinutes = 60,
+  passwordResetTtlMinutes = 30,
+  emailDelivery,
 }) {
   const app = express();
   app.disable('x-powered-by');
@@ -23,7 +27,19 @@ export function createApp({
   if (logger) app.use(pinoHttp({ logger, serializers: logSerializers }));
 
   app.use('/api', healthRouter);
-  app.use('/api', createAuthRouter({ nodeEnv, cookieName, sessionTtlDays }));
+  app.use(
+    '/api',
+    createAuthRouter({
+      nodeEnv,
+      cookieName,
+      sessionTtlDays,
+      frontendUrl,
+      emailVerificationTtlMinutes,
+      passwordResetTtlMinutes,
+      emailDelivery,
+      logger,
+    }),
+  );
 
   app.use(notFound);
   app.use(errorHandler);

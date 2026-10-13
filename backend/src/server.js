@@ -18,6 +18,9 @@ const server = createApp({
   nodeEnv: env.NODE_ENV,
   cookieName: env.AUTH_COOKIE_NAME,
   sessionTtlDays: env.SESSION_TTL_DAYS,
+  frontendUrl: env.FRONTEND_URL,
+  emailVerificationTtlMinutes: env.EMAIL_VERIFICATION_TTL_MINUTES,
+  passwordResetTtlMinutes: env.PASSWORD_RESET_TTL_MINUTES,
 }).listen(env.PORT, () => {
   logger.info(`NovelHub API listening on http://localhost:${env.PORT}`);
 });

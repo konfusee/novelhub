@@ -9,11 +9,21 @@ import { Session } from '../src/models/identity/session.model.js';
 import { useTestDatabase } from './db.js';
 
 useTestDatabase();
+const deliveredEmails = [];
 const app = createApp({
   corsOrigin: 'http://localhost:5173',
   nodeEnv: 'test',
   cookieName: 'novelhub_session',
   sessionTtlDays: 7,
+  frontendUrl: 'http://localhost:5173',
+  emailVerificationTtlMinutes: 60,
+  passwordResetTtlMinutes: 30,
+  emailDelivery: {
+    async send(message) {
+      deliveredEmails.push(message);
+      return { accepted: true };
+    },
+  },
 });
 const password = 'correct horse battery staple';
 let account;
@@ -34,7 +44,72 @@ async function createAccount(overrides = {}) {
 }
 
 beforeEach(async () => {
+  deliveredEmails.length = 0;
   account = await createAccount();
+});
+
+describe('email registration and verification', () => {
+  const registration = {
+    displayName: 'New Reader',
+    email: 'new-reader@example.test',
+    password: 'a secure password',
+    acceptedTerms: true,
+    accountType: 'reader',
+  };
+
+  it('creates a pending Reader with a hash and sends a verification link', async () => {
+    const response = await request(app).post('/api/auth/register').send(registration);
+    expect(response.status).toBe(201);
+    expect(response.body.account).toMatchObject({
+      email: registration.email,
+      status: 'pending-verification',
+    });
+    const created = await Account.findOne({ normalizedEmail: registration.email }).select('+password');
+    expect(created.password.hash).not.toBe(registration.password);
+    await expect(verifyPassword(registration.password, created.password.hash)).resolves.toBe(true);
+    await expect(
+      (await import('../src/auth/session.js')).publicUser(created),
+    ).resolves.toMatchObject({ roles: ['reader'] });
+    expect(deliveredEmails).toHaveLength(1);
+    expect(deliveredEmails[0].actionUrl).toContain('/verify-email?token=');
+    expect(
+      (await request(app).post('/api/auth/login').send({ email: registration.email, password: registration.password })).status,
+    ).toBe(401);
+  });
+
+  it('verifies once, activates the account, and permits login', async () => {
+    await request(app).post('/api/auth/register').send(registration);
+    const token = new URL(deliveredEmails[0].actionUrl).searchParams.get('token');
+    const verified = await request(app).post('/api/auth/verify-email').send({ token });
+    expect(verified.status).toBe(200);
+    expect(verified.body.account.status).toBe('active');
+    expect((await request(app).post('/api/auth/verify-email').send({ token })).status).toBe(400);
+    expect(
+      (await request(app).post('/api/auth/login').send({ email: registration.email, password: registration.password })).status,
+    ).toBe(200);
+  });
+
+  it('rejects duplicates, invalid data, and privileged role injection', async () => {
+    expect((await request(app).post('/api/auth/register').send(registration)).status).toBe(201);
+    expect((await request(app).post('/api/auth/register').send(registration)).status).toBe(409);
+    expect(
+      (await request(app).post('/api/auth/register').send({ ...registration, password: 'short' })).status,
+    ).toBe(400);
+    expect(
+      (await request(app).post('/api/auth/register').send({ ...registration, email: 'x2@example.test', roles: ['admin'] })).status,
+    ).toBe(400);
+  });
+
+  it('revokes the older token when verification is resent', async () => {
+    await request(app).post('/api/auth/register').send(registration);
+    const oldToken = new URL(deliveredEmails[0].actionUrl).searchParams.get('token');
+    expect(
+      (await request(app).post('/api/auth/resend-verification').send({ email: registration.email })).status,
+    ).toBe(200);
+    const newToken = new URL(deliveredEmails[1].actionUrl).searchParams.get('token');
+    expect((await request(app).post('/api/auth/verify-email').send({ token: oldToken })).status).toBe(400);
+    expect((await request(app).post('/api/auth/verify-email').send({ token: newToken })).status).toBe(200);
+  });
 });
 
 describe('password security', () => {

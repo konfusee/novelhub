@@ -1,6 +1,8 @@
 import { Router } from 'express';
 import { z } from 'zod';
 import { verifyPassword } from '../auth/password.js';
+import { hashPassword } from '../auth/password.js';
+import { digestEmailToken, issueEmailToken } from '../auth/email-tokens.js';
 import {
   cookieOptions,
   digestToken,
@@ -12,12 +14,32 @@ import { requireAuth } from '../middleware/auth.js';
 import { HttpError } from '../middleware/errors.js';
 import { Account } from '../models/identity/account.model.js';
 import { Session } from '../models/identity/session.model.js';
+import { EmailToken } from '../models/identity/email-token.model.js';
+import { withTransaction } from '../db/connection.js';
+import {
+  createDevelopmentEmailDelivery,
+  sendWithRetry,
+  unavailableEmailDelivery,
+} from '../email/delivery.js';
 
 const credentialsSchema = z
   .object({
     email: z.string().trim().email().max(254).transform((value) => value.toLowerCase()),
     password: z.string().min(1).max(1024),
   })
+  .strict();
+const registrationSchema = z
+  .object({
+    displayName: z.string().trim().min(2).max(80),
+    email: z.string().trim().email().max(254).transform((value) => value.toLowerCase()),
+    password: z.string().min(10).max(1024),
+    acceptedTerms: z.literal(true),
+    accountType: z.enum(['reader', 'author']).default('reader'),
+  })
+  .strict();
+const tokenSchema = z.object({ token: z.string().min(32).max(256) }).strict();
+const emailSchema = z
+  .object({ email: z.string().trim().email().max(254).transform((value) => value.toLowerCase()) })
   .strict();
 const attempts = new Map();
 const WINDOW_MS = 15 * 60 * 1000;
@@ -44,6 +66,126 @@ export function createAuthRouter(config) {
   const router = Router();
   const options = cookieOptions(config);
   const authenticate = requireAuth({ cookieName: config.cookieName });
+  const emailDelivery =
+    config.emailDelivery ??
+    (config.nodeEnv === 'production'
+      ? unavailableEmailDelivery()
+      : createDevelopmentEmailDelivery({ logger: config.logger }));
+
+  async function deliverToken({ email, token, purpose }) {
+    const path = purpose === 'email-verification' ? '/verify-email' : '/reset-password';
+    const actionUrl = `${config.frontendUrl}${path}?token=${encodeURIComponent(token)}`;
+    return sendWithRetry(emailDelivery, {
+      to: email,
+      subject: purpose === 'email-verification' ? 'Verify your NovelHub email' : 'Reset your NovelHub password',
+      actionUrl,
+    });
+  }
+
+  router.post('/auth/register', async (req, res, next) => {
+    try {
+      const parsed = registrationSchema.safeParse(req.body);
+      if (!parsed.success) {
+        return next(new HttpError(400, 'validation_error', 'Registration details are invalid'));
+      }
+      const { displayName, email, password } = parsed.data;
+      const passwordHash = await hashPassword(password);
+      const result = await withTransaction(async (session) => {
+        if (await Account.exists({ normalizedEmail: email }).session(session)) {
+          throw new HttpError(409, 'email_in_use', 'An account with this email already exists');
+        }
+        const [account] = await Account.create(
+          [
+            {
+              displayName,
+              email,
+              status: 'pending-verification',
+              password: { hash: passwordHash, algorithm: 'scrypt', updatedAt: new Date() },
+            },
+          ],
+          { session },
+        );
+        const token = await issueEmailToken({
+          accountId: account._id,
+          purpose: 'email-verification',
+          ttlMinutes: config.emailVerificationTtlMinutes,
+          session,
+        });
+        return { account, token };
+      });
+      let emailDelivered = true;
+      try {
+        await deliverToken({ email, token: result.token, purpose: 'email-verification' });
+      } catch (error) {
+        emailDelivered = false;
+        config.logger?.error({ err: error, accountId: result.account._id }, 'verification email failed');
+      }
+      res.status(201).json({
+        account: { id: result.account._id.toString(), email, status: result.account.status },
+        emailDelivered,
+        authorApplicationRequired: parsed.data.accountType === 'author',
+      });
+    } catch (error) {
+      if (error?.code === 11000) {
+        return next(new HttpError(409, 'email_in_use', 'An account with this email already exists'));
+      }
+      next(error);
+    }
+  });
+
+  router.post('/auth/verify-email', async (req, res, next) => {
+    try {
+      const parsed = tokenSchema.safeParse(req.body);
+      if (!parsed.success) return next(new HttpError(400, 'validation_error', 'Token is required'));
+      const account = await withTransaction(async (session) => {
+        const usedAt = new Date();
+        const emailToken = await EmailToken.findOneAndUpdate(
+          {
+            tokenHash: digestEmailToken(parsed.data.token),
+            purpose: 'email-verification',
+            usedAt: null,
+            revokedAt: null,
+            expiresAt: { $gt: usedAt },
+          },
+          { $set: { usedAt } },
+          { returnDocument: 'after', session },
+        );
+        if (!emailToken) throw new HttpError(400, 'invalid_token', 'Verification link is invalid or expired');
+        const updated = await Account.findOneAndUpdate(
+          { _id: emailToken.accountId, status: 'pending-verification', emailVerifiedAt: null },
+          { $set: { status: 'active', emailVerifiedAt: usedAt } },
+          { returnDocument: 'after', session },
+        );
+        if (!updated) throw new HttpError(400, 'invalid_token', 'Verification link is invalid or expired');
+        return updated;
+      });
+      res.json({ account: { id: account._id.toString(), email: account.email, status: account.status } });
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  router.post('/auth/resend-verification', async (req, res, next) => {
+    try {
+      const parsed = emailSchema.safeParse(req.body);
+      if (!parsed.success) return next(new HttpError(400, 'validation_error', 'Valid email is required'));
+      const account = await Account.findOne({ normalizedEmail: parsed.data.email, status: 'pending-verification' });
+      if (account) {
+        const token = await withTransaction((session) =>
+          issueEmailToken({
+            accountId: account._id,
+            purpose: 'email-verification',
+            ttlMinutes: config.emailVerificationTtlMinutes,
+            session,
+          }),
+        );
+        await deliverToken({ email: account.email, token, purpose: 'email-verification' });
+      }
+      res.json({ message: 'If the account is awaiting verification, a new email has been sent.' });
+    } catch (error) {
+      next(error);
+    }
+  });
 
   router.post('/auth/login', checkRateLimit, async (req, res, next) => {
     try {
