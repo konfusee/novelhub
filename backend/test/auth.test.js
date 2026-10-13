@@ -147,7 +147,9 @@ describe('session authentication API', () => {
     expect(current.status).toBe(200);
     expect(current.body.user.id).toBe(account._id.toString());
 
-    expect((await agent.post('/api/auth/logout')).status).toBe(204);
+    expect(
+      (await agent.post('/api/auth/logout').set('Origin', 'http://localhost:5173')).status,
+    ).toBe(204);
     expect((await agent.get('/api/auth/me')).status).toBe(401);
     expect(await Session.countDocuments({ accountId: account._id, status: 'revoked' })).toBe(1);
   });
@@ -287,11 +289,36 @@ describe('author application authorization', () => {
     expect((await request(app).post('/api/auth/author-application').send({})).status).toBe(401);
     const agent = request.agent(app);
     await agent.post('/api/auth/login').send({ email: 'reader@example.test', password });
-    const submitted = await agent.post('/api/auth/author-application').send({});
+    const submitted = await agent
+      .post('/api/auth/author-application')
+      .set('Origin', 'http://localhost:5173')
+      .send({});
     expect(submitted.status).toBe(201);
     expect(submitted.body.application.status).toBe('submitted');
-    expect((await agent.post('/api/auth/author-application').send({})).status).toBe(200);
+    expect(
+      (
+        await agent
+          .post('/api/auth/author-application')
+          .set('Origin', 'http://localhost:5173')
+          .send({})
+      ).status,
+    ).toBe(200);
     expect((await agent.get('/api/auth/me')).body.user.roles).toEqual(['reader']);
+  });
+});
+
+describe('CSRF protection', () => {
+  it('rejects authenticated mutations without an allowed Origin', async () => {
+    const agent = request.agent(app);
+    await agent.post('/api/auth/login').send({ email: 'reader@example.test', password });
+    expect((await agent.post('/api/auth/logout')).status).toBe(403);
+    expect(
+      (await agent.post('/api/auth/logout').set('Origin', 'https://attacker.example')).status,
+    ).toBe(403);
+    expect((await agent.get('/api/auth/me')).status).toBe(200);
+    expect(
+      (await agent.post('/api/auth/logout').set('Origin', 'http://localhost:5173')).status,
+    ).toBe(204);
   });
 });
 
