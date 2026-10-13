@@ -294,3 +294,77 @@ describe('author application authorization', () => {
     expect((await agent.get('/api/auth/me')).body.user.roles).toEqual(['reader']);
   });
 });
+
+describe('Google OAuth account registration and linking', () => {
+  function googleApp(identity) {
+    return createApp({
+      corsOrigin: 'http://localhost:5173',
+      nodeEnv: 'test',
+      cookieName: 'novelhub_session',
+      sessionTtlDays: 7,
+      frontendUrl: 'http://localhost:5173',
+      googleProvider: {
+        authorizationUrl: ({ state }) => `https://accounts.example/authorize?state=${state}`,
+        async exchange() {
+          return identity;
+        },
+      },
+    });
+  }
+
+  async function completeGoogle(agent) {
+    const start = await agent.get('/api/auth/google/start');
+    const state = new URL(start.headers.location).searchParams.get('state');
+    return agent.get(`/api/auth/google/callback?code=test-code&state=${state}`);
+  }
+
+  it('creates a new passwordless Reader and authenticates returning identity', async () => {
+    const appWithGoogle = googleApp({
+      sub: 'google-new-subject',
+      email: 'google-new@example.test',
+      name: 'Google Reader',
+    });
+    const first = request.agent(appWithGoogle);
+    expect((await completeGoogle(first)).status).toBe(302);
+    expect((await first.get('/api/auth/me')).body.user.roles).toEqual(['reader']);
+    const created = await Account.findOne({ normalizedEmail: 'google-new@example.test' }).select('+password');
+    expect(created.password).toBeUndefined();
+    const second = request.agent(appWithGoogle);
+    expect((await completeGoogle(second)).status).toBe(302);
+    expect(await Account.countDocuments({ normalizedEmail: 'google-new@example.test' })).toBe(1);
+  });
+
+  it('links a verified matching email and preserves NovelHub roles', async () => {
+    await RoleAssignment.create({ accountId: account._id, role: 'author', grantedBy: account._id });
+    const agent = request.agent(
+      googleApp({ sub: 'google-link-subject', email: account.email, name: 'Ignored Provider Name' }),
+    );
+    expect((await completeGoogle(agent)).status).toBe(302);
+    expect((await agent.get('/api/auth/me')).body.user.roles).toEqual(['reader', 'author']);
+    expect(await Account.countDocuments({ normalizedEmail: account.normalizedEmail })).toBe(1);
+  });
+
+  it('rejects callback state tampering and missing configuration', async () => {
+    const configured = request.agent(
+      googleApp({ sub: 'subject', email: 'state@example.test', name: 'State Test' }),
+    );
+    await configured.get('/api/auth/google/start');
+    expect((await configured.get('/api/auth/google/callback?code=x&state=tampered')).status).toBe(400);
+    expect((await request(app).get('/api/auth/google/start')).status).toBe(503);
+  });
+});
+
+describe('Google identity claim validation', () => {
+  it.each([
+    ['bad structure', 'invalid'],
+    [
+      'issuer',
+      `${Buffer.from(JSON.stringify({ alg: 'RS256', kid: 'k' })).toString('base64url')}.${Buffer.from(
+        JSON.stringify({ iss: 'attacker', aud: 'client', exp: Math.floor(Date.now() / 1000) + 60, sub: 's', email: 'e@x.test', email_verified: true }),
+      ).toString('base64url')}.signature`,
+    ],
+  ])('rejects invalid %s', async (_case, token) => {
+    const { verifyGoogleIdToken } = await import('../src/auth/google-oidc.js');
+    await expect(verifyGoogleIdToken(token, 'client')).rejects.toThrow();
+  });
+});

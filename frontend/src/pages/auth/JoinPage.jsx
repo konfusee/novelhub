@@ -56,7 +56,7 @@ export function JoinPage({ initialMode }) {
   const { t } = useLocale();
   const location = useLocation();
   const navigate = useNavigate();
-  const { login, register } = useAuth();
+  const { login, loginWithGoogle, register } = useAuth();
   const queryMode = new URLSearchParams(location.search).get('mode');
   const mode = initialMode || queryMode || 'register';
   const isLogin = mode === 'login';
@@ -176,7 +176,7 @@ export function JoinPage({ initialMode }) {
   const continueWithGoogle = async () => {
     setError('');
     setNotice('');
-    setError('Google OAuth cần cấu hình máy chủ trước khi sử dụng.');
+    loginWithGoogle();
   };
 
   const describedBy = (key) => (fieldErrors[key] ? `join-${key}-error` : undefined);

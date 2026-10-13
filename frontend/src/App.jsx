@@ -1,7 +1,7 @@
-import { Navigate, Route, Routes, useLocation } from 'react-router';
+import { Navigate, Route, Routes, useLocation, useNavigate } from 'react-router';
 import { lazy, Suspense, useEffect } from 'react';
 import { ThemeProvider } from './context/ThemeContext';
-import { AuthProvider, useAuth } from './context/AuthContext';
+import { AuthProvider, getAccountHome, useAuth } from './context/AuthContext';
 import { LocaleProvider } from './context/LocaleContext';
 import { MockDataProvider } from './context/MockDataContext';
 import { RoleRoute } from './app/RouteGuards';
@@ -239,6 +239,7 @@ function AppRoutes() {
           <Route path="/verify-email" element={<AuthRecoveryPage mode="verify" />} />
           <Route path="/forgot-password" element={<AuthRecoveryPage mode="forgot" />} />
           <Route path="/reset-password" element={<AuthRecoveryPage mode="reset" />} />
+          <Route path="/auth/google-complete" element={<GoogleAuthComplete />} />
           <Route path="/terms" element={<AdaptiveLegalPage type="terms" />} />
           <Route path="/privacy" element={<AdaptiveLegalPage type="privacy" />} />
           <Route path="/reader" element={role('reader', <ReaderHomePage />)} />
@@ -614,6 +615,15 @@ function AppRoutes() {
       <DevPanel />
     </>
   );
+}
+
+function GoogleAuthComplete() {
+  const { authLoading, currentUser } = useAuth();
+  const navigate = useNavigate();
+  useEffect(() => {
+    if (!authLoading) navigate(currentUser ? getAccountHome(currentUser) : '/login', { replace: true });
+  }, [authLoading, currentUser, navigate]);
+  return <RouteFallback />;
 }
 
 function ReaderExplorePage() {

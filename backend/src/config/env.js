@@ -11,6 +11,9 @@ const envSchema = z.object({
   FRONTEND_URL: z.string().url().default('http://localhost:5173'),
   EMAIL_VERIFICATION_TTL_MINUTES: z.coerce.number().int().min(5).max(1440).default(60),
   PASSWORD_RESET_TTL_MINUTES: z.coerce.number().int().min(5).max(240).default(30),
+  GOOGLE_CLIENT_ID: z.string().min(1).optional(),
+  GOOGLE_CLIENT_SECRET: z.string().min(1).optional(),
+  GOOGLE_REDIRECT_URI: z.string().url().optional(),
 });
 
 /**

@@ -1,4 +1,5 @@
 import { Router } from 'express';
+import { createHash, randomBytes } from 'node:crypto';
 import { z } from 'zod';
 import { verifyPassword } from '../auth/password.js';
 import { hashPassword } from '../auth/password.js';
@@ -16,12 +17,14 @@ import { Account } from '../models/identity/account.model.js';
 import { Session } from '../models/identity/session.model.js';
 import { EmailToken } from '../models/identity/email-token.model.js';
 import { AuthorApplication } from '../models/identity/author-application.model.js';
+import { ExternalIdentity } from '../models/identity/external-identity.model.js';
 import { withTransaction } from '../db/connection.js';
 import {
   createDevelopmentEmailDelivery,
   sendWithRetry,
   unavailableEmailDelivery,
 } from '../email/delivery.js';
+import { createGoogleProvider } from '../auth/google-oidc.js';
 
 const credentialsSchema = z
   .object({
@@ -75,6 +78,8 @@ export function createAuthRouter(config) {
     (config.nodeEnv === 'production'
       ? unavailableEmailDelivery()
       : createDevelopmentEmailDelivery({ logger: config.logger }));
+  const googleProvider = config.googleProvider ?? (config.google ? createGoogleProvider(config.google) : null);
+  const oauthCookieOptions = { ...options, maxAge: 10 * 60 * 1000 };
 
   async function deliverToken({ email, token, purpose }) {
     const path = purpose === 'email-verification' ? '/verify-email' : '/reset-password';
@@ -290,6 +295,79 @@ export function createAuthRouter(config) {
         status: 'submitted',
       });
       res.status(201).json({ application: { id: application._id.toString(), status: application.status } });
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  router.get('/auth/google/start', (req, res, next) => {
+    if (!googleProvider) return next(new HttpError(503, 'google_unavailable', 'Google sign-in is not configured'));
+    const state = randomBytes(24).toString('base64url');
+    const verifier = randomBytes(32).toString('base64url');
+    const challenge = createHash('sha256').update(verifier).digest('base64url');
+    res
+      .cookie('novelhub_oauth_state', state, oauthCookieOptions)
+      .cookie('novelhub_oauth_verifier', verifier, oauthCookieOptions)
+      .redirect(googleProvider.authorizationUrl({ state, codeChallenge: challenge }));
+  });
+
+  router.get('/auth/google/callback', async (req, res, next) => {
+    try {
+      if (!googleProvider) throw new HttpError(503, 'google_unavailable', 'Google sign-in is not configured');
+      const expectedState = readCookie(req.headers.cookie, 'novelhub_oauth_state');
+      const verifier = readCookie(req.headers.cookie, 'novelhub_oauth_verifier');
+      if (!req.query.code || !req.query.state || req.query.state !== expectedState || !verifier) {
+        throw new HttpError(400, 'invalid_oauth_state', 'Google sign-in state is invalid');
+      }
+      const identity = await googleProvider.exchange({ code: req.query.code, codeVerifier: verifier });
+      const account = await withTransaction(async (session) => {
+        const linked = await ExternalIdentity.findOne({
+          provider: 'google',
+          providerSubject: identity.sub,
+          status: 'linked',
+        })
+          .select('+providerSubject')
+          .session(session);
+        if (linked) return Account.findById(linked.accountId).session(session);
+        let target = await Account.findOne({ normalizedEmail: identity.email }).session(session);
+        if (target && !['active', 'pending-verification'].includes(target.status)) {
+          throw new HttpError(403, 'account_unavailable', 'This NovelHub account is unavailable');
+        }
+        if (!target) {
+          [target] = await Account.create(
+            [{ displayName: identity.name, email: identity.email, status: 'active', emailVerifiedAt: new Date() }],
+            { session },
+          );
+        } else if (target.status === 'pending-verification') {
+          target.status = 'active';
+          target.emailVerifiedAt = new Date();
+          await target.save({ session });
+        }
+        await ExternalIdentity.create(
+          [
+            {
+              accountId: target._id,
+              provider: 'google',
+              providerSubject: identity.sub,
+              emailAtLink: identity.email,
+              claimsDigest: createHash('sha256')
+                .update(`${identity.sub}\n${identity.email}`)
+                .digest('base64url'),
+            },
+          ],
+          { session },
+        );
+        return target;
+      });
+      if (!account || account.status !== 'active') throw new HttpError(403, 'account_unavailable', 'This NovelHub account is unavailable');
+      const { token } = await issueSession(account, config.sessionTtlDays);
+      const clear = { ...oauthCookieOptions };
+      delete clear.maxAge;
+      res
+        .clearCookie('novelhub_oauth_state', clear)
+        .clearCookie('novelhub_oauth_verifier', clear)
+        .cookie(config.cookieName, token, options)
+        .redirect(`${config.frontendUrl}/auth/google-complete`);
     } catch (error) {
       next(error);
     }

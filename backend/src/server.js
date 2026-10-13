@@ -21,6 +21,14 @@ const server = createApp({
   frontendUrl: env.FRONTEND_URL,
   emailVerificationTtlMinutes: env.EMAIL_VERIFICATION_TTL_MINUTES,
   passwordResetTtlMinutes: env.PASSWORD_RESET_TTL_MINUTES,
+  google:
+    env.GOOGLE_CLIENT_ID && env.GOOGLE_CLIENT_SECRET && env.GOOGLE_REDIRECT_URI
+      ? {
+          clientId: env.GOOGLE_CLIENT_ID,
+          clientSecret: env.GOOGLE_CLIENT_SECRET,
+          redirectUri: env.GOOGLE_REDIRECT_URI,
+        }
+      : undefined,
 }).listen(env.PORT, () => {
   logger.info(`NovelHub API listening on http://localhost:${env.PORT}`);
 });

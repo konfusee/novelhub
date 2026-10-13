@@ -55,6 +55,7 @@ export function AuthProvider({ children }) {
     });
   const applyForAuthor = async () =>
     apiRequest('/auth/author-application', { method: 'POST', body: {} });
+  const loginWithGoogle = () => window.location.assign('/api/auth/google/start');
   const value = {
     currentUser,
     authLoading,
@@ -62,6 +63,7 @@ export function AuthProvider({ children }) {
     roles: currentUser?.roles || [],
     hasRole: (role) => currentUser?.roles?.includes(role),
     login,
+    loginWithGoogle,
     logout: async () => {
       try {
         await apiRequest('/auth/logout', { method: 'POST' });

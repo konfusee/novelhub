@@ -17,6 +17,8 @@ export function createApp({
   emailVerificationTtlMinutes = 60,
   passwordResetTtlMinutes = 30,
   emailDelivery,
+  google,
+  googleProvider,
 }) {
   const app = express();
   app.disable('x-powered-by');
@@ -38,6 +40,8 @@ export function createApp({
       passwordResetTtlMinutes,
       emailDelivery,
       logger,
+      google,
+      googleProvider,
     }),
   );
 
