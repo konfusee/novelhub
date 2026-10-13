@@ -92,14 +92,8 @@ export function AuthProvider({ children }) {
     persist(user);
     return user;
   };
-  const becomeAuthor = () => {
-    if (!currentUser) return;
-    persist({
-      ...currentUser,
-      roles: [...new Set([...currentUser.roles, 'author'])],
-      authorProfile: { status: 'active', agreementAccepted: true },
-    });
-  };
+  const applyForAuthor = async () =>
+    apiRequest('/auth/author-application', { method: 'POST', body: {} });
   const value = {
     currentUser,
     authLoading,
@@ -119,7 +113,7 @@ export function AuthProvider({ children }) {
       }
     },
     register,
-    becomeAuthor,
+    applyForAuthor,
   };
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }

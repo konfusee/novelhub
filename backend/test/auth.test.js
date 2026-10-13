@@ -281,3 +281,16 @@ describe('password recovery', () => {
     ).toBe(400);
   });
 });
+
+describe('author application authorization', () => {
+  it('requires authentication and never grants the Author role', async () => {
+    expect((await request(app).post('/api/auth/author-application').send({})).status).toBe(401);
+    const agent = request.agent(app);
+    await agent.post('/api/auth/login').send({ email: 'reader@example.test', password });
+    const submitted = await agent.post('/api/auth/author-application').send({});
+    expect(submitted.status).toBe(201);
+    expect(submitted.body.application.status).toBe('submitted');
+    expect((await agent.post('/api/auth/author-application').send({})).status).toBe(200);
+    expect((await agent.get('/api/auth/me')).body.user.roles).toEqual(['reader']);
+  });
+});

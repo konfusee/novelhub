@@ -15,6 +15,7 @@ import { HttpError } from '../middleware/errors.js';
 import { Account } from '../models/identity/account.model.js';
 import { Session } from '../models/identity/session.model.js';
 import { EmailToken } from '../models/identity/email-token.model.js';
+import { AuthorApplication } from '../models/identity/author-application.model.js';
 import { withTransaction } from '../db/connection.js';
 import {
   createDevelopmentEmailDelivery,
@@ -270,6 +271,25 @@ export function createAuthRouter(config) {
         ]);
       });
       res.json({ message: 'Password has been reset. Sign in with the new password.' });
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  router.post('/auth/author-application', authenticate, async (req, res, next) => {
+    try {
+      const existing = await AuthorApplication.findOne({
+        applicantAccountId: req.auth.account._id,
+        status: 'submitted',
+      });
+      if (existing) {
+        return res.status(200).json({ application: { id: existing._id.toString(), status: existing.status } });
+      }
+      const application = await AuthorApplication.create({
+        applicantAccountId: req.auth.account._id,
+        status: 'submitted',
+      });
+      res.status(201).json({ application: { id: application._id.toString(), status: application.status } });
     } catch (error) {
       next(error);
     }

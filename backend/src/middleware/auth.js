@@ -7,6 +7,7 @@ export function requireAuth({ cookieName }) {
       const resolved = await resolveSession(readCookie(req.headers.cookie, cookieName));
       if (!resolved) return next(new HttpError(401, 'unauthorized', 'Authentication required'));
       req.auth = resolved;
+      req.account = resolved.account;
       next();
     } catch (error) {
       next(error);

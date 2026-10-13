@@ -1,6 +1,5 @@
 import { useState } from 'react';
 import { ArrowRight, Check, Feather, ShieldCheck } from '../../components/icons';
-import { useNavigate } from 'react-router';
 import { AuthShowcase } from '../../components/auth/AuthShowcase';
 import { PublicHeader } from '../../components/public/PublicHeader';
 import { Button, ButtonLink, Card, ProgressBar } from '../../components/ui';
@@ -16,19 +15,27 @@ const labels = [
 
 export function AuthorApplyPage() {
   const [checks, setChecks] = useState(() => labels.map(() => false));
-  const { becomeAuthor, currentUser } = useAuth();
+  const { applyForAuthor, currentUser } = useAuth();
+  const [submission, setSubmission] = useState({ status: 'idle', message: '' });
   const { data } = useMockData();
-  const navigate = useNavigate();
   const agreement = data.agreements['user-author'] || { authorShare: 80, platformShare: 20 };
   const confirmed = checks.filter(Boolean).length;
   const ready = confirmed === labels.length;
   const alreadyAuthor = currentUser?.roles?.includes('author');
 
-  const finish = (event) => {
+  const finish = async (event) => {
     event.preventDefault();
     if (!ready) return;
-    becomeAuthor();
-    navigate('/author', { replace: true });
+    setSubmission({ status: 'submitting', message: '' });
+    try {
+      await applyForAuthor();
+      setSubmission({
+        status: 'submitted',
+        message: 'Đơn đăng ký đã được gửi. Quyền Tác giả chỉ được kích hoạt sau khi Admin phê duyệt.',
+      });
+    } catch (error) {
+      setSubmission({ status: 'error', message: error.message });
+    }
   };
 
   return (
@@ -160,16 +167,21 @@ export function AuthorApplyPage() {
                   <Button
                     type="submit"
                     size="lg"
-                    disabled={!ready}
+                    disabled={!ready || submission.status === 'submitting' || submission.status === 'submitted'}
                     trailingIcon={ArrowRight}
                     className="mt-4 w-full lg:[@media(max-height:820px)]:mt-3"
                   >
-                    Kích hoạt quyền Tác giả
+                    {submission.status === 'submitting'
+                      ? 'Đang gửi đơn...'
+                      : submission.status === 'submitted'
+                        ? 'Đã gửi đơn đăng ký'
+                        : 'Gửi đơn đăng ký Tác giả'}
                   </Button>
                   <p className="mt-2 min-h-4 text-center text-xs leading-4 text-muted">
-                    {ready
-                      ? 'Đã sẵn sàng kích hoạt.'
-                      : `Xác nhận đủ ${labels.length} mục để kích hoạt.`}
+                    {submission.message ||
+                      (ready
+                        ? 'Đã sẵn sàng gửi đơn để Admin xét duyệt.'
+                        : `Xác nhận đủ ${labels.length} mục để gửi đơn.`)}
                   </p>
                 </form>
               )}

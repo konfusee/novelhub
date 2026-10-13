@@ -1,4 +1,5 @@
 import { defineModel, mutableOptions, ObjectId, Schema } from '../shared/schema.js';
+import { Account } from './account.model.js';
 
 export const ROLES = ['author', 'moderator', 'admin'];
 export const ROLE_ASSIGNMENT_STATUSES = ['active', 'revoked'];
@@ -16,6 +17,11 @@ const schema = new Schema(
 );
 schema.pre('validate', function normalizeStaffSlot() {
   if (ROLES.includes(this.role)) this.staffSlot = 'staff';
+});
+schema.pre('validate', async function preventFormerAuthorModerator() {
+  if (this.role !== 'moderator' || this.status !== 'active') return;
+  const account = await Account.findById(this.accountId).select('everAuthor');
+  if (account?.everAuthor) this.invalidate('role', 'An account that ever held Author cannot become Moderator');
 });
 schema.index(
   { accountId: 1, staffSlot: 1 },

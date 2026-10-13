@@ -5,6 +5,7 @@ import { ExternalIdentity } from '../../src/models/identity/external-identity.mo
 import { RoleAssignment } from '../../src/models/identity/role-assignment.model.js';
 import { AuthorApplication } from '../../src/models/identity/author-application.model.js';
 import { PolicyVersion } from '../../src/models/governance/policy-version.model.js';
+import { Account } from '../../src/models/identity/account.model.js';
 useTestDatabase();
 const id = '507f1f77bcf86cd799439011';
 describe('identity and governance models', () => {
@@ -47,6 +48,20 @@ describe('identity and governance models', () => {
         grantedBy: id,
       }),
     ).rejects.toMatchObject({ code: 11000 });
+  });
+  it('permanently bars former Authors from Moderator assignment', async () => {
+    const account = await Account.create({
+      displayName: 'Former Author',
+      email: 'former@example.test',
+      everAuthor: true,
+    });
+    await expect(
+      RoleAssignment.create({
+        accountId: account._id,
+        role: 'moderator',
+        grantedBy: account._id,
+      }),
+    ).rejects.toThrow(/ever held Author/);
   });
   it('allows rejected applicants to reapply', async () => {
     await AuthorApplication.create({ applicantAccountId: id, status: 'rejected' });
