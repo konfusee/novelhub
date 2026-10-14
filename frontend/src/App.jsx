@@ -224,7 +224,7 @@ function AppRoutes() {
     (['/categories', '/rankings'].includes(pathname) &&
       !new URLSearchParams(search).has('workspace')) ||
     authorAgreements.some(({ type }) => pathname === ROUTES.authorAgreement(type)) ||
-    (!isAuthenticated && ['/', '/discover'].includes(pathname));
+    (!isAuthenticated && ['/', '/discover', '/search'].includes(pathname));
   return (
     <>
       <ScrollManager />

@@ -149,7 +149,7 @@ export function SearchResultsPage({ embedded = false }) {
   return (
     <div className="min-h-screen bg-page text-ink">
       {!embedded && <PublicHeader />}
-      <section className="mt-4 border-y border-hairline bg-surface">
+      <section className="mt-4 bg-transparent">
         <div className="mx-auto grid max-w-[1360px] gap-6 px-5 py-8 md:px-8 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-end lg:px-12">
           <div className="min-w-0">
             <nav aria-label="Breadcrumb" className="text-xs text-muted">

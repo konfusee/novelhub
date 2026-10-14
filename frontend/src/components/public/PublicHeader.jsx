@@ -1,17 +1,19 @@
 import { NovelHubMark, LogOut, Menu, Moon, Search, Sun, X } from '../icons';
-import { Link, NavLink, useLocation } from 'react-router';
+import { Link, NavLink, useLocation, useNavigate } from 'react-router';
 import { useEffect, useId, useRef, useState } from 'react';
 import { useTheme } from '../../context/ThemeContext';
 import { getAccountHome, useAuth } from '../../context/AuthContext';
 import { useLocale } from '../../context/LocaleContext';
 import { ROUTES } from '../../app/routes';
-import { ButtonLink } from '../ui';
+import { ButtonLink, IconButton, Input } from '../ui';
 
 export function PublicHeader() {
   const { resolvedTheme, setTheme } = useTheme();
   const { currentUser, isAuthenticated, hasRole, logout } = useAuth();
   const { t } = useLocale();
   const [open, setOpen] = useState(false);
+  const [query, setQuery] = useState('');
+  const navigate = useNavigate();
   const headerRef = useRef(null);
   const { pathname } = useLocation();
   // The auth page has its own login/register switch; repeating it in the header is noise.
@@ -26,11 +28,15 @@ export function PublicHeader() {
   useEffect(() => {
     if (!open) return undefined;
     const onKeyDown = (event) => {
-      if (event.key === 'Escape') setOpen(false);
+      if (event.key === 'Escape') {
+        setOpen(false);
+      }
     };
     // A tap anywhere outside the header island and its menu closes the menu.
     const onPointerDown = (event) => {
-      if (!headerRef.current?.contains(event.target)) setOpen(false);
+      if (!headerRef.current?.contains(event.target)) {
+        setOpen(false);
+      }
     };
     document.addEventListener('keydown', onKeyDown);
     document.addEventListener('pointerdown', onPointerDown);
@@ -57,7 +63,7 @@ export function PublicHeader() {
           <span className="grid size-9 place-items-center rounded-xl bg-brand text-on-brand shadow-[0_8px_20px_-12px_var(--primary)]">
             <NovelHubMark size={19} />
           </span>
-          <span>
+          <span className="hidden sm:inline">
             Novel<span className="text-brand">Hub</span>
           </span>
         </Link>
@@ -79,13 +85,41 @@ export function PublicHeader() {
           ))}
         </nav>
         <div className="ml-auto flex shrink-0 items-center gap-1.5 sm:gap-2">
-          <Link
-            to="/search"
-            aria-label={t('navigation.explore')}
-            className="hidden size-10 place-items-center rounded-full text-muted transition-colors hover:bg-elevated hover:text-ink md:grid"
-          >
-            <Search size={19} />
-          </Link>
+          {isAuthenticated ? (
+            <Link
+              to="/search"
+              aria-label={t('navigation.explore')}
+              className="hidden size-10 place-items-center rounded-full text-muted transition-colors hover:bg-elevated hover:text-ink md:grid"
+            >
+              <Search size={19} />
+            </Link>
+          ) : (
+            <form
+              role="search"
+              aria-label={t('common.search')}
+              className="flex min-w-0 items-center gap-1"
+              onSubmit={(event) => {
+                event.preventDefault();
+                const q = query.trim();
+                navigate(q ? ROUTES.search + '?' + new URLSearchParams({ q }) : ROUTES.search);
+              }}
+            >
+              {pathname === ROUTES.search && (
+                <Input
+                  type="search"
+                  enterKeyHint="search"
+                  aria-label={t('common.searchStoriesAuthorsTags')}
+                  placeholder={t('common.searchStories')}
+                  value={query}
+                  onChange={(event) => setQuery(event.target.value)}
+                  className="min-h-9 w-20 px-2 sm:w-32 sm:px-3 xl:w-44"
+                />
+              )}
+              <IconButton type="submit" label={t('common.search')} shape="circle" size="sm">
+                <Search size={19} aria-hidden="true" />
+              </IconButton>
+            </form>
+          )}
           <button
             type="button"
             className="grid size-10 shrink-0 place-items-center rounded-full text-muted transition-colors hover:bg-elevated hover:text-ink"
@@ -131,7 +165,9 @@ export function PublicHeader() {
             aria-expanded={open}
             aria-controls={menuId}
             className="grid size-10 shrink-0 place-items-center rounded-full text-ink transition-colors hover:bg-elevated lg:hidden"
-            onClick={() => setOpen(!open)}
+            onClick={() => {
+              setOpen(!open);
+            }}
           >
             {open ? <X size={20} /> : <Menu size={20} />}
           </button>
