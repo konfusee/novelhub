@@ -1,3 +1,4 @@
+import { createSecurityService, installSecurityRoutes } from '../auth/security.js';
 import { createCaptchaStore } from '../auth/captcha.js';
 import { Router } from 'express';
 import { createHash, randomBytes, randomInt, timingSafeEqual } from 'node:crypto';
@@ -76,33 +77,37 @@ const otpSchema = z
     otp: z.string().regex(/^\d{6}$/),
   })
   .strict();
-const attempts = new Map();
-const WINDOW_MS = 15 * 60 * 1000;
-const MAX_ATTEMPTS = 10;
-
-function checkRateLimit(req, _res, next) {
-  const key = req.ip;
-  const now = Date.now();
-  const current = attempts.get(key);
-  if (!current || current.resetAt <= now) {
-    attempts.set(key, { count: 1, resetAt: now + WINDOW_MS });
-    return next();
-  }
-  current.count += 1;
-  if (current.count > MAX_ATTEMPTS) {
-    return next(
-      new HttpError(429, 'too_many_attempts', 'Too many login attempts. Try again later.'),
-    );
-  }
-  next();
-}
-
 export function createAuthRouter(config) {
   const router = Router();
-  const captchaStore = config.captchaStore ?? createCaptchaStore();
+  const attempts = new Map();
+  const WINDOW_MS = config.securityConfig.windowMs;
+  const MAX_ATTEMPTS = config.securityConfig.loginMaxAttempts;
+
+  function checkRateLimit(req, _res, next) {
+    const key = req.ip;
+    const now = Date.now();
+    for (const [ip, value] of attempts) if (value.resetAt <= now) attempts.delete(ip);
+    const current = attempts.get(key);
+    if (!current || current.resetAt <= now) {
+      attempts.set(key, { count: 1, resetAt: now + WINDOW_MS });
+      return next();
+    }
+    current.count += 1;
+    if (current.count > MAX_ATTEMPTS) {
+      return next(
+        new HttpError(429, 'too_many_attempts', 'Too many login attempts. Try again later.'),
+      );
+    }
+    next();
+  }
+
+  const captchaStore = config.captchaStore ?? createCaptchaStore(config.securityConfig);
   const recoveryRequests = new Map();
   const recoveryIps = new Map();
-  const otpTtlMinutes = Math.min(config.passwordResetTtlMinutes || 10, 10);
+  const otpTtlMinutes = Math.min(
+    config.passwordResetTtlMinutes,
+    config.securityConfig.codeTtlMinutes,
+  );
   function recoveryRateLimit(req, _res, next) {
     const now = Date.now();
     for (const [key, value] of recoveryIps) {
@@ -111,7 +116,7 @@ export function createAuthRouter(config) {
     const current = recoveryIps.get(req.ip) || { count: 0, resetAt: now + WINDOW_MS };
     current.count += 1;
     recoveryIps.set(req.ip, current);
-    if (current.count > 30)
+    if (current.count > config.securityConfig.recoveryMaxAttempts)
       return next(
         new HttpError(429, 'too_many_attempts', 'Too many recovery attempts. Try again later.'),
       );
@@ -124,14 +129,33 @@ export function createAuthRouter(config) {
     (config.nodeEnv === 'production'
       ? unavailableEmailDelivery()
       : createDevelopmentEmailDelivery({ logger: config.logger }));
+  const deliver = (message) =>
+    sendWithRetry(emailDelivery, message, { attempts: config.securityConfig.emailSendAttempts });
   const googleProvider =
     config.googleProvider ?? (config.google ? createGoogleProvider(config.google) : null);
-  const oauthCookieOptions = { ...options, maxAge: 10 * 60 * 1000 };
+  const security = createSecurityService({
+    securityConfig: config.securityConfig,
+    emailDelivery,
+    sessionTtlDays: config.sessionTtlDays,
+    options,
+  });
+  installSecurityRoutes(router, {
+    service: security,
+    authenticate,
+    rateLimit: recoveryRateLimit,
+    cookieName: config.cookieName,
+    options,
+    sessionTtlDays: config.sessionTtlDays,
+  });
+  const oauthCookieOptions = {
+    ...options,
+    maxAge: config.securityConfig.oauthTtlMinutes * 60 * 1000,
+  };
 
   async function deliverToken({ email, token, purpose }) {
     const path = purpose === 'email-verification' ? '/verify-email' : '/reset-password';
     const actionUrl = `${config.frontendUrl}${path}?token=${encodeURIComponent(token)}`;
-    return sendWithRetry(emailDelivery, {
+    return deliver({
       to: email,
       subject:
         purpose === 'email-verification'
@@ -291,14 +315,10 @@ export function createAuthRouter(config) {
       const email = parsed.data.email;
       if (recoveryRequests.has(email)) {
         return next(
-          new HttpError(
-            429,
-            'otp_cooldown',
-            'Please wait 60 seconds before requesting another code',
-          ),
+          new HttpError(429, 'otp_cooldown', 'Please wait before requesting another code'),
         );
       }
-      recoveryRequests.set(email, now + 60_000);
+      recoveryRequests.set(email, now + config.securityConfig.resendSeconds * 1000);
       const challenge = randomBytes(32).toString('base64url');
       const account = await Account.findOne({
         normalizedEmail: email,
@@ -333,7 +353,7 @@ export function createAuthRouter(config) {
           );
         });
         try {
-          await sendWithRetry(emailDelivery, {
+          await deliver({
             to: account.email,
             subject: 'Mã OTP đặt lại mật khẩu NovelHub',
             otp,
@@ -350,7 +370,7 @@ export function createAuthRouter(config) {
         message: 'If an eligible account exists, a password reset code has been sent.',
         challenge,
         expiresInSeconds: otpTtlMinutes * 60,
-        retryAfterSeconds: 60,
+        retryAfterSeconds: config.securityConfig.resendSeconds,
       });
     } catch (error) {
       next(error);
@@ -373,7 +393,7 @@ export function createAuthRouter(config) {
           usedAt: null,
           revokedAt: null,
           expiresAt: { $gt: new Date() },
-          attempts: { $lt: 5 },
+          attempts: { $lt: config.securityConfig.codeMaxAttempts },
         },
         { $inc: { attempts: 1 } },
         { returnDocument: 'after' },
@@ -402,7 +422,7 @@ export function createAuthRouter(config) {
         return issueEmailToken({
           accountId: consumed.accountId,
           purpose: 'password-reset',
-          ttlMinutes: 10,
+          ttlMinutes: config.securityConfig.codeTtlMinutes,
           session,
         });
       });
@@ -508,6 +528,10 @@ export function createAuthRouter(config) {
     }
   });
 
+  router.get('/auth/google/status', (_req, res) => {
+    res.json({ enabled: Boolean(googleProvider) });
+  });
+
   router.get('/auth/google/start', (req, res, next) => {
     if (!googleProvider)
       return next(new HttpError(503, 'google_unavailable', 'Google sign-in is not configured'));
@@ -520,15 +544,21 @@ export function createAuthRouter(config) {
       .redirect(googleProvider.authorizationUrl({ state, codeChallenge: challenge }));
   });
 
-  router.get('/auth/google/callback', async (req, res, next) => {
+  router.get('/auth/google/callback', async (req, res) => {
     try {
       if (!googleProvider)
         throw new HttpError(503, 'google_unavailable', 'Google sign-in is not configured');
       const expectedState = readCookie(req.headers.cookie, 'novelhub_oauth_state');
       const verifier = readCookie(req.headers.cookie, 'novelhub_oauth_verifier');
-      if (!req.query.code || !req.query.state || req.query.state !== expectedState || !verifier) {
+      if (!req.query.state || req.query.state !== expectedState || !verifier) {
         throw new HttpError(400, 'invalid_oauth_state', 'Google sign-in state is invalid');
       }
+      const clear = { ...oauthCookieOptions };
+      delete clear.maxAge;
+      res.clearCookie('novelhub_oauth_state', clear).clearCookie('novelhub_oauth_verifier', clear);
+      if (req.query.error) return res.redirect(`${config.frontendUrl}/login?googleError=cancelled`);
+      if (typeof req.query.code !== 'string')
+        throw new HttpError(400, 'invalid_oauth_state', 'Google authorization code is missing');
       const identity = await googleProvider.exchange({
         code: req.query.code,
         codeVerifier: verifier,
@@ -581,16 +611,24 @@ export function createAuthRouter(config) {
       });
       if (!account || account.status !== 'active')
         throw new HttpError(403, 'account_unavailable', 'This NovelHub account is unavailable');
+      if (account.twoFactorEnabled) {
+        const { challenge } = await security.issue(account, 'security-login', true);
+        return res.redirect(
+          config.frontendUrl + '/login?googleChallenge=' + encodeURIComponent(challenge),
+        );
+      }
       const { token } = await issueSession(account, config.sessionTtlDays);
-      const clear = { ...oauthCookieOptions };
-      delete clear.maxAge;
       res
         .clearCookie('novelhub_oauth_state', clear)
         .clearCookie('novelhub_oauth_verifier', clear)
         .cookie(config.cookieName, token, options)
         .redirect(`${config.frontendUrl}/auth/google-complete`);
     } catch (error) {
-      next(error);
+      const clear = { ...oauthCookieOptions };
+      delete clear.maxAge;
+      res.clearCookie('novelhub_oauth_state', clear).clearCookie('novelhub_oauth_verifier', clear);
+      const code = error.code === 'account_unavailable' ? 'account_unavailable' : 'failed';
+      res.redirect(`${config.frontendUrl}/login?googleError=${code}`);
     }
   });
 
@@ -612,6 +650,12 @@ export function createAuthRouter(config) {
         (await verifyPassword(parsed.data.password, account.password.hash));
       if (!valid) {
         return next(new HttpError(401, 'invalid_credentials', 'Email or password is invalid'));
+      }
+      if (account.twoFactorEnabled) {
+        return res.json({
+          requiresTwoFactor: true,
+          ...(await security.issue(account, 'security-login', parsed.data.rememberMe)),
+        });
       }
       const { token } = await issueSession(
         account,

@@ -43,7 +43,7 @@ Copy-Item backend/.env.example backend/.env
 
 Edit `backend/.env` and replace `MONGODB_URI` placeholders with credentials
 obtained from the project owner. Keep `CORS_ORIGIN=http://localhost:5173`. The
-default cookie name and seven-day lifetime are suitable for local development.
+example cookie name and seven-day lifetime are suitable for local development.
 
 Without SMTP settings, development verification links and recovery OTP codes are written to
 the backend console. With SMTP configured, both flows send real emails through
@@ -209,3 +209,41 @@ Production keeps structured JSON logs; set `LOG_LEVEL=debug` to see session chec
 CAPTCHA challenges are single-use and expire after five minutes. The local image
 CAPTCHA store is scoped to one backend process; restarting it invalidates outstanding
 challenges. It is a basic verification mechanism, not a managed anti-bot service.
+
+## Google sign-in and sign-up UI
+
+Both buttons use the same verified Google identity flow. New identities create a
+Reader; returning identities sign in or link the matching verified email. Google
+sign-up requires accepting the terms. Selecting Author returns to /author/apply
+to complete the application, without granting an Author role automatically.
+
+The UI checks GET /api/auth/google/status before leaving the app and uses
+VITE_API_BASE_URL for OAuth navigation. Cancellation and callback failures return
+to /login with a localized message. The requested destination is kept in tab
+session storage and checked against account permissions after session restoration.
+All three GOOGLE_* variables must be configured together in backend/.env.
+
+## Account security and environment ownership
+
+All runtime values are required and validated in config/env.js; toAppConfig maps
+them once for the server. createApp has no environment-specific defaults. Copy
+backend/.env.example to backend/.env, keep secrets only in the ignored .env, and
+restart the backend after editing it. Both files group server/logging, MongoDB,
+frontend/CORS, sessions, OTP limits, CAPTCHA, SMTP, Google OAuth, and dev seeding.
+Tests read the public example and inject test values; they never read private .env.
+Provider endpoints and cryptographic algorithm constants remain in source.
+
+The shared SecurityPanel uses the same backend account state on Account and
+Settings. POST /api/auth/security/challenge requests an email proof for password,
+enable, or disable; accounts with a password must supply the current password.
+Google-only accounts can create their first password using an email proof.
+POST /api/auth/security/password confirms password changes;
+POST /api/auth/security/two-factor confirms enable/disable. Each change invalidates
+older sessions and reissues the current session. Codes are hashed, scoped to one
+action/account and credential version, expire, and enforce configured attempts
+and resend limits. Failed delivery revokes the challenge.
+
+With two-factor enabled, password login returns requiresTwoFactor and a challenge
+instead of an authenticated session. Google callback returns to the login OTP
+step. POST /api/auth/two-factor/verify issues a session only after consuming the
+correct code. This is email verification, not an authenticator-app TOTP.

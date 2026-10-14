@@ -1,5 +1,5 @@
 import { createApp } from './app.js';
-import { loadEnv } from './config/env.js';
+import { loadEnv, toAppConfig } from './config/env.js';
 import { loadDotenv } from './config/load-dotenv.js';
 import { createLogger } from './config/logger.js';
 import { createSmtpEmailDelivery } from './email/delivery.js';
@@ -17,32 +17,24 @@ const emailDelivery = env.SMTP_HOST
       user: env.SMTP_USER,
       password: env.SMTP_PASSWORD,
       from: env.SMTP_FROM,
+      connectionTimeoutMs: env.SMTP_CONNECTION_TIMEOUT_MS,
+      greetingTimeoutMs: env.SMTP_GREETING_TIMEOUT_MS,
+      socketTimeoutMs: env.SMTP_SOCKET_TIMEOUT_MS,
     })
   : undefined;
 
-await connectDatabase(env.MONGODB_URI, { autoIndex: env.NODE_ENV !== 'production' });
+await connectDatabase(env.MONGODB_URI, {
+  autoIndex: env.NODE_ENV !== 'production',
+  serverSelectionTimeoutMS: env.DB_SERVER_SELECTION_TIMEOUT_MS,
+});
 logger.info('connected to MongoDB');
 
 const server = createApp({
   logger,
   emailDelivery,
-  corsOrigin: env.CORS_ORIGIN,
-  nodeEnv: env.NODE_ENV,
-  cookieName: env.AUTH_COOKIE_NAME,
-  sessionTtlDays: env.SESSION_TTL_DAYS,
-  frontendUrl: env.FRONTEND_URL,
-  emailVerificationTtlMinutes: env.EMAIL_VERIFICATION_TTL_MINUTES,
-  passwordResetTtlMinutes: env.PASSWORD_RESET_TTL_MINUTES,
-  google:
-    env.GOOGLE_CLIENT_ID && env.GOOGLE_CLIENT_SECRET && env.GOOGLE_REDIRECT_URI
-      ? {
-          clientId: env.GOOGLE_CLIENT_ID,
-          clientSecret: env.GOOGLE_CLIENT_SECRET,
-          redirectUri: env.GOOGLE_REDIRECT_URI,
-        }
-      : undefined,
+  ...toAppConfig(env),
 }).listen(env.PORT, () => {
-  logger.info(`NovelHub API listening on http://localhost:${env.PORT}`);
+  logger.info(`NovelHub API listening on port ${env.PORT}`);
 });
 
 async function shutdown(signal) {

@@ -3,6 +3,9 @@ import svgCaptcha from 'svg-captcha';
 import { digestToken } from './session.js';
 const ALPHABET = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
 export function createCaptchaStore({
+  captchaTtlMinutes,
+  captchaMaxEntries,
+  captchaMaxRequests,
   generate = () =>
     svgCaptcha.create({
       size: 6,
@@ -14,7 +17,7 @@ export function createCaptchaStore({
       fontSize: 42,
       charPreset: ALPHABET,
     }),
-} = {}) {
+}) {
   const challenges = new Map();
   const requests = new Map();
   return {
@@ -25,17 +28,17 @@ export function createCaptchaStore({
       const limit = requests.get(ip) || { count: 0, expiresAt: now + 60_000 };
       limit.count += 1;
       requests.set(ip, limit);
-      if (limit.count > 20 || challenges.size >= 10_000) return null;
+      if (limit.count > captchaMaxRequests || challenges.size >= captchaMaxEntries) return null;
       const token = randomBytes(32).toString('base64url');
       const { text: code, data: svg } = generate();
       challenges.set(digestToken(token), {
         answerHash: digestToken(token + ':' + code),
-        expiresAt: now + 5 * 60_000,
+        expiresAt: now + captchaTtlMinutes * 60_000,
       });
       return {
         token,
         image: 'data:image/svg+xml;base64,' + Buffer.from(svg).toString('base64'),
-        expiresInSeconds: 300,
+        expiresInSeconds: captchaTtlMinutes * 60,
       };
     },
     consume(token, answer) {

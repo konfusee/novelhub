@@ -1,3 +1,4 @@
+import { testConfig } from './config.js';
 import request from 'supertest';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { createCaptchaStore } from '../src/auth/captcha.js';
@@ -13,9 +14,11 @@ useTestDatabase();
 const deliveredEmails = [];
 const createTestApp = () =>
   createApp({
+    ...testConfig(),
     corsOrigin: 'http://localhost:5173',
     nodeEnv: 'test',
     captchaStore: createCaptchaStore({
+      ...testConfig().securityConfig,
       generate: () => ({ text: 'ABC234', data: '<svg xmlns="http://www.w3.org/2000/svg" />' }),
     }),
     cookieName: 'novelhub_session',
@@ -568,6 +571,7 @@ describe('CSRF protection', () => {
 describe('Google OAuth account registration and linking', () => {
   function googleApp(identity) {
     return createApp({
+      ...testConfig(),
       corsOrigin: 'http://localhost:5173',
       nodeEnv: 'test',
       cookieName: 'novelhub_session',
@@ -587,6 +591,28 @@ describe('Google OAuth account registration and linking', () => {
     const state = new URL(start.headers.location).searchParams.get('state');
     return agent.get(`/api/auth/google/callback?code=test-code&state=${state}`);
   }
+
+  it('reports availability without exposing credentials', async () => {
+    expect((await request(app).get('/api/auth/google/status')).body).toEqual({ enabled: false });
+    expect((await request(googleApp({})).get('/api/auth/google/status')).body).toEqual({
+      enabled: true,
+    });
+  });
+
+  it('returns cancellation to the login page and clears OAuth cookies', async () => {
+    const agent = request.agent(googleApp({}));
+    const start = await agent.get('/api/auth/google/start');
+    const state = new URL(start.headers.location).searchParams.get('state');
+    const result = await agent
+      .get('/api/auth/google/callback')
+      .query({ state, error: 'access_denied' });
+    expect(result.status).toBe(302);
+    expect(result.headers.location).toBe('http://localhost:5173/login?googleError=cancelled');
+    expect((await agent.get('/api/auth/me')).status).toBe(401);
+    expect(
+      result.headers['set-cookie'].every((cookie) => cookie.includes('Expires=Thu, 01 Jan 1970')),
+    ).toBe(true);
+  });
 
   it('creates a new passwordless Reader and authenticates returning identity', async () => {
     const appWithGoogle = googleApp({
@@ -626,7 +652,7 @@ describe('Google OAuth account registration and linking', () => {
     );
     await configured.get('/api/auth/google/start');
     expect((await configured.get('/api/auth/google/callback?code=x&state=tampered')).status).toBe(
-      400,
+      302,
     );
     expect((await request(app).get('/api/auth/google/start')).status).toBe(503);
   });

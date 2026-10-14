@@ -1,3 +1,4 @@
+import { testEnv } from './config.js';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import nodemailer from 'nodemailer';
 import { createSmtpEmailDelivery, sendWithRetry } from '../src/email/delivery.js';
@@ -75,14 +76,14 @@ describe('SMTP delivery', () => {
   it('retries failures up to three times and propagates rejection', async () => {
     transport.sendMail.mockResolvedValue({ accepted: [], rejected: ['reader@example.test'] });
     await expect(
-      sendWithRetry(createSmtpEmailDelivery(smtp), { to: 'reader@example.test' }),
+      sendWithRetry(createSmtpEmailDelivery(smtp), { to: 'reader@example.test' }, { attempts: 3 }),
     ).rejects.toThrow('did not accept');
     expect(transport.sendMail).toHaveBeenCalledTimes(3);
   });
 });
 
 describe('SMTP environment', () => {
-  const base = { MONGODB_URI: 'mongodb://x' };
+  const base = { ...testEnv, MONGODB_URI: 'mongodb://x' };
   it('allows blank SMTP settings in development', () => {
     expect(loadEnv({ ...base, SMTP_HOST: '', SMTP_PASSWORD: '' }).SMTP_HOST).toBeUndefined();
   });

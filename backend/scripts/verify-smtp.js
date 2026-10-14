@@ -13,6 +13,9 @@ try {
     user: env.SMTP_USER,
     password: env.SMTP_PASSWORD,
     from: env.SMTP_FROM,
+    connectionTimeoutMs: env.SMTP_CONNECTION_TIMEOUT_MS,
+    greetingTimeoutMs: env.SMTP_GREETING_TIMEOUT_MS,
+    socketTimeoutMs: env.SMTP_SOCKET_TIMEOUT_MS,
   });
   await delivery.verify();
   console.info('SMTP connection and authentication succeeded. No email was sent.');

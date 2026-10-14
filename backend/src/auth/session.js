@@ -64,11 +64,20 @@ export async function resolveSession(token) {
 }
 
 export async function publicUser(account) {
-  const assignments = await RoleAssignment.find({ accountId: account._id, status: 'active' }).lean();
+  const hasPassword = await Account.exists({
+    _id: account._id,
+    'password.hash': { $exists: true },
+  });
+  const assignments = await RoleAssignment.find({
+    accountId: account._id,
+    status: 'active',
+  }).lean();
   return {
     id: account._id.toString(),
     name: account.displayName,
     email: account.email,
+    hasPassword: Boolean(hasPassword),
+    twoFactorEnabled: Boolean(account.twoFactorEnabled),
     roles: ['reader', ...assignments.map(({ role }) => role)],
   };
 }

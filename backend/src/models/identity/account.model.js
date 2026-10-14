@@ -56,6 +56,7 @@ const accountSchema = new Schema(
     // Absent for Google-only accounts.
     password: { type: passwordSchema, default: undefined, select: false },
     emailVerifiedAt: Date,
+    twoFactorEnabled: { type: Boolean, default: false },
     // Author-entered payout details; used for future monthly evaluations only.
     bankDetails: { type: bankDetailsSchema, default: undefined, select: false },
     // Increment to sign out every session (password reset/change).

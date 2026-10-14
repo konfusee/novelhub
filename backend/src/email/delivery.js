@@ -19,7 +19,7 @@ export function unavailableEmailDelivery() {
   };
 }
 
-export async function sendWithRetry(delivery, message, { attempts = 3 } = {}) {
+export async function sendWithRetry(delivery, message, { attempts }) {
   let lastError;
   for (let attempt = 1; attempt <= attempts; attempt += 1) {
     try {
@@ -37,9 +37,9 @@ export function createSmtpEmailDelivery(config) {
     secure: config.secure,
     requireTLS: !config.secure,
     auth: { user: config.user, pass: config.password },
-    connectionTimeout: 10000,
-    greetingTimeout: 10000,
-    socketTimeout: 15000,
+    connectionTimeout: config.connectionTimeoutMs,
+    greetingTimeout: config.greetingTimeoutMs,
+    socketTimeout: config.socketTimeoutMs,
     disableFileAccess: true,
     disableUrlAccess: true,
   });
@@ -51,7 +51,7 @@ export function createSmtpEmailDelivery(config) {
         to,
         subject,
         text: otp
-          ? `${subject}\n\nMã xác thực của bạn: ${otp}\nMã có hiệu lực trong ${expiresInMinutes} phút và chỉ dùng một lần. Không chia sẻ mã này với bất kỳ ai.\n\nNếu bạn không yêu cầu đặt lại mật khẩu, hãy bỏ qua email này.`
+          ? `${subject}\n\nMã xác thực của bạn: ${otp}\nMã có hiệu lực trong ${expiresInMinutes} phút và chỉ dùng một lần. Không chia sẻ mã này với bất kỳ ai.\n\nNếu bạn không yêu cầu xác minh, hãy bỏ qua email này.`
           : `${subject}\n\nOpen this link to continue:\n${actionUrl}\n\nIf you did not request this email, you can ignore it.`,
       });
       if (!result.accepted?.length || result.rejected?.length) {

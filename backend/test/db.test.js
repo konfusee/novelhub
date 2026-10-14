@@ -1,3 +1,4 @@
+import { testConfig } from './config.js';
 import mongoose from 'mongoose';
 import request from 'supertest';
 import { describe, expect, it } from 'vitest';
@@ -10,7 +11,7 @@ useTestDatabase();
 
 describe('database connection', () => {
   it('reports ready once connected', async () => {
-    const res = await request(createApp({ corsOrigin: '*' })).get('/api/ready');
+    const res = await request(createApp({ ...testConfig(), corsOrigin: '*' })).get('/api/ready');
     expect(res.status).toBe(200);
     expect(res.body).toEqual({ status: 'ready', database: 'connected' });
   });

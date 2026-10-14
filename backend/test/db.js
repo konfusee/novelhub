@@ -8,7 +8,7 @@ import { connectDatabase, disconnectDatabase } from '../src/db/connection.js';
  */
 export function useTestDatabase() {
   beforeAll(async () => {
-    await connectDatabase(inject('mongoUri'));
+    await connectDatabase(inject('mongoUri'), { serverSelectionTimeoutMS: 10000 });
     for (const name of mongoose.modelNames()) {
       const model = mongoose.model(name);
       await model.createCollection();

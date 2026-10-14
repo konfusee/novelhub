@@ -22,6 +22,7 @@ export function createGoogleProvider(config, fetchImpl = fetch) {
     },
     async exchange({ code, codeVerifier }) {
       const response = await fetchImpl(TOKEN_ENDPOINT, {
+        signal: AbortSignal.timeout(config.timeoutMs),
         method: 'POST',
         headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
         body: new URLSearchParams({
@@ -35,12 +36,12 @@ export function createGoogleProvider(config, fetchImpl = fetch) {
       });
       if (!response.ok) throw new Error('Google token exchange failed');
       const tokens = await response.json();
-      return verifyGoogleIdToken(tokens.id_token, config.clientId, fetchImpl);
+      return verifyGoogleIdToken(tokens.id_token, config.clientId, fetchImpl, config.timeoutMs);
     },
   };
 }
 
-export async function verifyGoogleIdToken(token, audience, fetchImpl = fetch) {
+export async function verifyGoogleIdToken(token, audience, fetchImpl = fetch, timeoutMs) {
   const parts = String(token ?? '').split('.');
   if (parts.length !== 3) throw new Error('Invalid Google identity token');
   const [encodedHeader, encodedPayload, signature] = parts;
@@ -51,11 +52,14 @@ export async function verifyGoogleIdToken(token, audience, fetchImpl = fetch) {
     throw new Error('Invalid Google token issuer');
   }
   if (claims.aud !== audience) throw new Error('Invalid Google token audience');
-  if (!claims.exp || claims.exp * 1000 <= Date.now()) throw new Error('Expired Google identity token');
+  if (!claims.exp || claims.exp * 1000 <= Date.now())
+    throw new Error('Expired Google identity token');
   if (!claims.sub || !claims.email || claims.email_verified !== true) {
     throw new Error('Google email is not verified');
   }
-  const jwksResponse = await fetchImpl(JWKS_ENDPOINT);
+  const jwksResponse = await fetchImpl(JWKS_ENDPOINT, {
+    signal: timeoutMs ? AbortSignal.timeout(timeoutMs) : undefined,
+  });
   if (!jwksResponse.ok) throw new Error('Google signing keys unavailable');
   const { keys } = await jwksResponse.json();
   const jwk = keys.find((key) => key.kid === header.kid && key.alg === 'RS256');
@@ -63,8 +67,17 @@ export async function verifyGoogleIdToken(token, audience, fetchImpl = fetch) {
   const verifier = createVerify('RSA-SHA256');
   verifier.update(`${encodedHeader}.${encodedPayload}`);
   verifier.end();
-  if (!verifier.verify(createPublicKey({ key: jwk, format: 'jwk' }), Buffer.from(signature, 'base64url'))) {
+  if (
+    !verifier.verify(
+      createPublicKey({ key: jwk, format: 'jwk' }),
+      Buffer.from(signature, 'base64url'),
+    )
+  ) {
     throw new Error('Invalid Google token signature');
   }
-  return { sub: claims.sub, email: claims.email.trim().toLowerCase(), name: claims.name || claims.email };
+  return {
+    sub: claims.sub,
+    email: claims.email.trim().toLowerCase(),
+    name: claims.name || claims.email,
+  };
 }

@@ -1,6 +1,14 @@
 import { defineModel, mutableOptions, ObjectId, Schema } from '../shared/schema.js';
 
-export const EMAIL_TOKEN_PURPOSES = ['email-verification', 'password-reset', 'password-reset-otp'];
+export const EMAIL_TOKEN_PURPOSES = [
+  'email-verification',
+  'password-reset',
+  'password-reset-otp',
+  'security-password',
+  'security-enable',
+  'security-disable',
+  'security-login',
+];
 
 const emailTokenSchema = new Schema(
   {
@@ -9,6 +17,9 @@ const emailTokenSchema = new Schema(
     tokenHash: { type: String, required: true },
     purpose: { type: String, enum: EMAIL_TOKEN_PURPOSES, required: true },
     otpHash: String,
+    credentialVersion: Number,
+    authorizationEpoch: Number,
+    rememberMe: Boolean,
     attempts: { type: Number, default: 0 },
     expiresAt: { type: Date, required: true },
     usedAt: Date,

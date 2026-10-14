@@ -1,3 +1,4 @@
+import { testConfig } from './config.js';
 import { Writable } from 'node:stream';
 import express from 'express';
 import pino from 'pino';
@@ -5,7 +6,7 @@ import { pinoHttp } from 'pino-http';
 import request from 'supertest';
 import { describe, expect, it } from 'vitest';
 import { createApp } from '../src/app.js';
-import { logSerializers } from '../src/config/logger.js';
+import { createLogger, logSerializers } from '../src/config/logger.js';
 import { errorHandler } from '../src/middleware/errors.js';
 
 function duplicateKeyError() {
@@ -52,7 +53,12 @@ describe('compact HTTP logging', () => {
       },
     });
     const logger = pino({ level: 'info' }, sink);
-    const app = createApp({ logger, corsOrigin: 'http://localhost:5173', nodeEnv: 'test' });
+    const app = createApp({
+      ...testConfig(),
+      logger,
+      corsOrigin: 'http://localhost:5173',
+      nodeEnv: 'test',
+    });
     await request(app).get('/api/auth/me');
     expect(lines).toHaveLength(0);
     await request(app)
@@ -66,5 +72,35 @@ describe('compact HTTP logging', () => {
     expect(output).not.toContain('private-header');
     expect(output).not.toContain('private-agent');
     expect(output).not.toContain('headers');
+  });
+});
+
+describe('secret redaction', () => {
+  it('redacts root and nested credentials and OTP codes', () => {
+    const lines = [];
+    const sink = new Writable({
+      write(chunk, _enc, done) {
+        lines.push(chunk.toString());
+        done();
+      },
+    });
+    const logger = createLogger('info', { nodeEnv: 'test' }, sink);
+    logger.info(
+      {
+        password: 'private-password',
+        token: 'private-token',
+        otp: 'private-otp',
+        challenge: 'private-challenge',
+        clientSecret: 'private-client-secret',
+        config: {
+          GOOGLE_CLIENT_SECRET: 'private-google',
+          SMTP_PASSWORD: 'private-smtp',
+          otp: 'private-nested-otp',
+        },
+      },
+      'safe event',
+    );
+    expect(lines.join('')).not.toContain('private-');
+    expect(lines.join('')).toContain('[redacted]');
   });
 });

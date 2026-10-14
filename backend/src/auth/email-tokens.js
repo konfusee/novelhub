@@ -1,8 +1,7 @@
 import { createHash, randomBytes } from 'node:crypto';
 import { EmailToken } from '../models/identity/email-token.model.js';
 
-export const digestEmailToken = (token) =>
-  createHash('sha256').update(token).digest('base64url');
+export const digestEmailToken = (token) => createHash('sha256').update(token).digest('base64url');
 
 export async function issueEmailToken({ accountId, purpose, ttlMinutes, session }) {
   const now = new Date();

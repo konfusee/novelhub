@@ -1,9 +1,10 @@
+import { testConfig, testEnv } from './config.js';
 import request from 'supertest';
 import { describe, expect, it } from 'vitest';
 import { createApp } from '../src/app.js';
 import { loadEnv } from '../src/config/env.js';
 
-const app = createApp({ corsOrigin: 'http://localhost:5173' });
+const app = createApp({ ...testConfig(), corsOrigin: 'http://localhost:5173' });
 
 describe('HTTP app', () => {
   it('reports liveness', async () => {
@@ -39,8 +40,8 @@ describe('loadEnv', () => {
     expect(() => loadEnv({})).toThrow(/MONGODB_URI/);
   });
 
-  it('applies defaults', () => {
-    const env = loadEnv({ MONGODB_URI: 'mongodb://x' });
+  it('uses explicitly supplied environment values', () => {
+    const env = loadEnv({ ...testEnv, NODE_ENV: 'development', MONGODB_URI: 'mongodb://x' });
     expect(env.PORT).toBe(4000);
     expect(env.NODE_ENV).toBe('development');
   });

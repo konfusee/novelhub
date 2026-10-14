@@ -48,36 +48,48 @@ export const httpLogOptions = {
     req.method + ' ' + String(req.url).split('?')[0] + ' → ' + res.statusCode,
 };
 
-export function createLogger(
-  level = 'info',
-  { nodeEnv = process.env.NODE_ENV || 'development' } = {},
-) {
-  return pino({
-    level,
-    serializers: logSerializers,
-    ...(nodeEnv === 'development'
-      ? {
-          transport: {
-            target: 'pino-pretty',
-            options: {
-              colorize: Boolean(process.stdout.isTTY),
-              translateTime: 'SYS:HH:MM:ss',
-              singleLine: true,
-              ignore: 'pid,hostname,req,res,reqId',
+export function createLogger(level, { nodeEnv }, destination) {
+  return pino(
+    {
+      level,
+      serializers: logSerializers,
+      ...(nodeEnv === 'development'
+        ? {
+            transport: {
+              target: 'pino-pretty',
+              options: {
+                colorize: Boolean(process.stdout.isTTY),
+                translateTime: 'SYS:HH:MM:ss',
+                singleLine: true,
+                ignore: 'pid,hostname,req,res,reqId',
+              },
             },
-          },
-        }
-      : {}),
-    redact: {
-      paths: [
-        'req.headers.authorization',
-        'req.headers.cookie',
-        'res.headers["set-cookie"]',
-        '*.password',
-        '*.hash',
-        '*.token',
-      ],
-      censor: '[redacted]',
+          }
+        : {}),
+      redact: {
+        paths: [
+          'req.headers.authorization',
+          'req.headers.cookie',
+          'res.headers["set-cookie"]',
+          'password',
+          'token',
+          'otp',
+          'challenge',
+          'clientSecret',
+          'SMTP_PASSWORD',
+          'GOOGLE_CLIENT_SECRET',
+          '*.otp',
+          '*.challenge',
+          '*.clientSecret',
+          '*.SMTP_PASSWORD',
+          '*.GOOGLE_CLIENT_SECRET',
+          '*.password',
+          '*.hash',
+          '*.token',
+        ],
+        censor: '[redacted]',
+      },
     },
-  });
+    destination,
+  );
 }
