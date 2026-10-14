@@ -1,4 +1,4 @@
-import { useEffect, useId, useRef, useState } from 'react';
+import { Fragment, useEffect, useId, useRef, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router';
 import {
   AlertTriangle,
@@ -81,8 +81,8 @@ const readSavedPreferences = () => {
 };
 const isMissing = (value) => !value;
 
-export function ReaderProfilePage({ workspace = 'reader' }) {
-  const Layout = workspaceLayouts[workspace] || ReaderLayout;
+export function ReaderProfilePage({ workspace = 'reader', embedded = false }) {
+  const Layout = embedded ? Fragment : workspaceLayouts[workspace] || ReaderLayout;
   const location = useLocation();
   const navigate = useNavigate();
   const { currentUser } = useAuth();
@@ -119,19 +119,21 @@ export function ReaderProfilePage({ workspace = 'reader' }) {
   };
   return (
     <Layout>
-      <div className={`page-${workspace} pb-12 pt-7`}>
-        <header className="max-w-3xl">
-          <p className="text-[11px] font-semibold uppercase tracking-[.16em] text-brand-strong">
-            {t(isSettings ? 'settings.sharedPreferences' : 'settings.publicIdentity')} ·{' '}
-            {t('settings.userId', { id: 'NV-88291' })}
-          </p>
-          <h1 className="mt-2 text-h2 sm:text-h1">
-            {t(isSettings ? 'settings.title' : 'settings.userProfile')}
-          </h1>
-          <p className="mt-2 max-w-prose text-sm text-ink/70">
-            {isSettings ? t('settings.description') : t('settings.profileDescription')}
-          </p>
-        </header>
+      <div className={embedded ? '' : `page-${workspace} pb-12 pt-7`}>
+        {!embedded && (
+          <header className="max-w-3xl">
+            <p className="text-[11px] font-semibold uppercase tracking-[.16em] text-brand-strong">
+              {t(isSettings ? 'settings.sharedPreferences' : 'settings.publicIdentity')} ·{' '}
+              {t('settings.userId', { id: 'NV-88291' })}
+            </p>
+            <h1 className="mt-2 text-h2 sm:text-h1">
+              {t(isSettings ? 'settings.title' : 'settings.userProfile')}
+            </h1>
+            <p className="mt-2 max-w-prose text-sm text-ink/70">
+              {isSettings ? t('settings.description') : t('settings.profileDescription')}
+            </p>
+          </header>
+        )}
         {isSettings && (
           <div ref={tabsRef} className="mt-6">
             <Tabs

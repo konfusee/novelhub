@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { Fragment, useState } from 'react';
 import {
   AlertTriangle,
   CheckCircle2,
@@ -42,8 +42,8 @@ const activeSessions = [
   { id: 'iphone', icon: Smartphone, title: 'iPhone · Safari', current: false },
 ];
 
-export function AccountPage({ workspace = 'reader' }) {
-  const Layout = layouts[workspace] || ReaderLayout;
+export function AccountPage({ workspace = 'reader', embedded = false }) {
+  const Layout = embedded ? Fragment : layouts[workspace] || ReaderLayout;
   const { currentUser } = useAuth();
   const { t } = useLocale();
   const [email, setEmail] = useState(currentUser?.email || '');
@@ -78,14 +78,16 @@ export function AccountPage({ workspace = 'reader' }) {
 
   return (
     <Layout>
-      <div className={`page-${workspace} pt-6 sm:pt-8`}>
-        <Card as="header" className="p-6 sm:p-8">
-          <p className="nh-eyebrow">{t('account.sharedAccount')}</p>
-          <h1 className="mt-3 text-h2 sm:text-h1">{t('account.title')}</h1>
-          <p className="mt-2 max-w-[65ch] text-sm leading-6 text-muted">
-            {t('account.description')}
-          </p>
-        </Card>
+      <div className={embedded ? '' : `page-${workspace} pt-6 sm:pt-8`}>
+        {!embedded && (
+          <Card as="header" className="p-6 sm:p-8">
+            <p className="nh-eyebrow">{t('account.sharedAccount')}</p>
+            <h1 className="mt-3 text-h2 sm:text-h1">{t('account.title')}</h1>
+            <p className="mt-2 max-w-[65ch] text-sm leading-6 text-muted">
+              {t('account.description')}
+            </p>
+          </Card>
+        )}
 
         <div className="mt-6 grid items-start gap-6 xl:grid-cols-[minmax(0,1fr)_22rem]">
           <div className="min-w-0 space-y-6">
