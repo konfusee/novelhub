@@ -275,7 +275,10 @@
     "googleCancelled": "Bạn đã hủy đăng nhập Google. Bạn có thể thử lại.",
     "googleFailed": "Không thể đăng nhập bằng Google. Vui lòng thử lại.",
     "googleUnavailable": "Đăng nhập Google hiện chưa khả dụng. Vui lòng thử lại sau hoặc đăng nhập bằng email.",
-    "googleAccountUnavailable": "Tài khoản này không thể đăng nhập. Vui lòng liên hệ hỗ trợ."
+    "googleAccountUnavailable": "Tài khoản này không thể đăng nhập. Vui lòng liên hệ hỗ trợ.",
+    "googleRegistered": "Đăng ký bằng Google thành công. Hãy chọn Đăng nhập với Google để tiếp tục.",
+    "emailRegistered": "Tài khoản đã được tạo. Hãy kiểm tra email để xác minh, sau đó đăng nhập.",
+    "emailRegisteredDeliveryFailed": "Tài khoản đã được tạo nhưng email xác minh chưa gửi được. Hãy gửi lại email xác minh trước khi đăng nhập."
   },
   "storyDetail": {
     "bookmark": "Đánh dấu",

@@ -74,6 +74,17 @@ export function JoinPage({ initialMode }) {
     googleError ? t(googleErrorKeys[googleError] || 'auth.googleFailed') : '',
   );
   const [notice, setNotice] = useState('');
+  const registered = new URLSearchParams(location.search).get('registered');
+  const registrationNotice =
+    isLogin && registered
+      ? t(
+          registered === 'google'
+            ? 'auth.googleRegistered'
+            : registered === 'email'
+              ? 'auth.emailRegistered'
+              : 'auth.emailRegisteredDeliveryFailed',
+        )
+      : '';
   const [fieldErrors, setFieldErrors] = useState({});
   const [busy, setBusy] = useState(false);
   const [legalDocument, setLegalDocument] = useState(null);
@@ -228,11 +239,13 @@ export function JoinPage({ initialMode }) {
           captchaAnswer: captcha.answer,
           accountType,
         });
-        setNotice(
-          result.emailDelivered
-            ? 'Tài khoản đã được tạo. Hãy kiểm tra email để xác minh trước khi đăng nhập.'
-            : 'Tài khoản đã được tạo nhưng email xác minh chưa gửi được. Hãy dùng chức năng gửi lại.',
-        );
+        navigate(`/login?registered=${result.emailDelivered ? 'email' : 'email-pending'}`, {
+          replace: true,
+          state: {
+            ...location.state,
+            from: result.authorApplicationRequired ? ROUTES.authorApply : location.state?.from,
+          },
+        });
         setBusy(false);
       }
     } catch (reason) {
@@ -255,6 +268,7 @@ export function JoinPage({ initialMode }) {
     setBusy(true);
     try {
       await loginWithGoogle({
+        mode: isLogin ? 'login' : 'register',
         returnTo: !isLogin && accountType === 'author' ? ROUTES.authorApply : location.state?.from,
       });
     } catch (reason) {
@@ -649,13 +663,13 @@ export function JoinPage({ initialMode }) {
                         {error}
                       </p>
                     )}
-                    {notice && (
+                    {(notice || registrationNotice) && (
                       <p
                         role="status"
                         className="flex items-start gap-2.5 rounded-2xl border border-hairline bg-brand-soft px-4 py-2.5 text-sm leading-5 text-ink"
                       >
                         <Info size={17} className="mt-0.5 shrink-0 text-brand-strong" />
-                        {notice}
+                        {notice || registrationNotice}
                       </p>
                     )}
 

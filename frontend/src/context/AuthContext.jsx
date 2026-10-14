@@ -79,7 +79,7 @@ export function AuthProvider({ children }) {
     });
   const applyForAuthor = async () =>
     apiRequest('/auth/author-application', { method: 'POST', body: {} });
-  const loginWithGoogle = async ({ returnTo } = {}) => {
+  const loginWithGoogle = async ({ returnTo, mode = 'login' } = {}) => {
     const { enabled } = await apiRequest('/auth/google/status');
     if (!enabled)
       throw new ApiError('Google sign-in is unavailable', { code: 'google_unavailable' });
@@ -88,7 +88,9 @@ export function AuthProvider({ children }) {
     } else {
       sessionStorage.removeItem('novelhub.google.returnTo');
     }
-    window.location.assign(API_BASE + '/auth/google/start');
+    window.location.assign(
+      API_BASE + '/auth/google/start' + (mode === 'register' ? '?mode=register' : ''),
+    );
   };
   const value = {
     currentUser,

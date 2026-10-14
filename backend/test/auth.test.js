@@ -6,6 +6,7 @@ import { createApp } from '../src/app.js';
 import { hashPassword, verifyPassword } from '../src/auth/password.js';
 import { digestToken } from '../src/auth/session.js';
 import { Account } from '../src/models/identity/account.model.js';
+import { ExternalIdentity } from '../src/models/identity/external-identity.model.js';
 import { RoleAssignment } from '../src/models/identity/role-assignment.model.js';
 import { Session } from '../src/models/identity/session.model.js';
 import { useTestDatabase } from './db.js';
@@ -586,8 +587,8 @@ describe('Google OAuth account registration and linking', () => {
     });
   }
 
-  async function completeGoogle(agent) {
-    const start = await agent.get('/api/auth/google/start');
+  async function completeGoogle(agent, mode = 'login') {
+    const start = await agent.get('/api/auth/google/start').query({ mode });
     const state = new URL(start.headers.location).searchParams.get('state');
     return agent.get(`/api/auth/google/callback?code=test-code&state=${state}`);
   }
@@ -630,6 +631,67 @@ describe('Google OAuth account registration and linking', () => {
     const second = request.agent(appWithGoogle);
     expect((await completeGoogle(second)).status).toBe(302);
     expect(await Account.countDocuments({ normalizedEmail: 'google-new@example.test' })).toBe(1);
+  });
+
+  it('registers with Google without a session, then allows an explicit Google login', async () => {
+    const agent = request.agent(
+      googleApp({
+        sub: 'register-only-subject',
+        email: 'register-only@example.test',
+        name: 'New Google Reader',
+      }),
+    );
+    const result = await completeGoogle(agent, 'register');
+    expect(result.headers.location).toBe('http://localhost:5173/login?registered=google');
+    const created = await Account.findOne({ normalizedEmail: 'register-only@example.test' });
+    expect(created.status).toBe('active');
+    expect(await Session.countDocuments({ accountId: created._id })).toBe(0);
+    expect((await agent.get('/api/auth/me')).status).toBe(401);
+    expect((await completeGoogle(agent, 'register')).headers.location).toBe(
+      'http://localhost:5173/login?registered=google',
+    );
+    expect(await Session.countDocuments({ accountId: created._id })).toBe(0);
+    expect((await completeGoogle(agent)).headers.location).toBe(
+      'http://localhost:5173/auth/google-complete',
+    );
+    expect((await agent.get('/api/auth/me')).body.user.roles).toEqual(['reader']);
+  });
+
+  it('recreates an account when its Google identity points to a deleted account', async () => {
+    await ExternalIdentity.create({
+      accountId: account._id,
+      provider: 'google',
+      providerSubject: 'orphan-subject',
+    });
+    await Account.deleteOne({ _id: account._id });
+    const agent = request.agent(
+      googleApp({ sub: 'orphan-subject', email: account.email, name: 'Returning Reader' }),
+    );
+    const result = await completeGoogle(agent);
+    expect(result.headers.location).toBe('http://localhost:5173/auth/google-complete');
+    expect((await agent.get('/api/auth/me')).body.user.roles).toEqual(['reader']);
+    const replacement = await Account.findOne({ normalizedEmail: account.email });
+    const link = await ExternalIdentity.findOne({ providerSubject: 'orphan-subject' });
+    expect(link.accountId.equals(replacement._id)).toBe(true);
+    expect(await ExternalIdentity.countDocuments({ providerSubject: 'orphan-subject' })).toBe(1);
+  });
+
+  it('keeps suspended Google accounts blocked', async () => {
+    account.status = 'suspended';
+    await account.save();
+    await ExternalIdentity.create({
+      accountId: account._id,
+      provider: 'google',
+      providerSubject: 'suspended-subject',
+    });
+    const agent = request.agent(
+      googleApp({ sub: 'suspended-subject', email: account.email, name: 'Suspended Reader' }),
+    );
+    expect((await completeGoogle(agent)).headers.location).toBe(
+      'http://localhost:5173/login?googleError=account_unavailable',
+    );
+    expect((await agent.get('/api/auth/me')).status).toBe(401);
+    expect((await Account.findById(account._id)).status).toBe('suspended');
   });
 
   it('links a verified matching email and preserves NovelHub roles', async () => {

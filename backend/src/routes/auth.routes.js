@@ -541,6 +541,11 @@ export function createAuthRouter(config) {
     res
       .cookie('novelhub_oauth_state', state, oauthCookieOptions)
       .cookie('novelhub_oauth_verifier', verifier, oauthCookieOptions)
+      .cookie(
+        'novelhub_oauth_mode',
+        req.query.mode === 'register' ? 'register' : 'login',
+        oauthCookieOptions,
+      )
       .redirect(googleProvider.authorizationUrl({ state, codeChallenge: challenge }));
   });
 
@@ -550,12 +555,16 @@ export function createAuthRouter(config) {
         throw new HttpError(503, 'google_unavailable', 'Google sign-in is not configured');
       const expectedState = readCookie(req.headers.cookie, 'novelhub_oauth_state');
       const verifier = readCookie(req.headers.cookie, 'novelhub_oauth_verifier');
+      const registering = readCookie(req.headers.cookie, 'novelhub_oauth_mode') === 'register';
       if (!req.query.state || req.query.state !== expectedState || !verifier) {
         throw new HttpError(400, 'invalid_oauth_state', 'Google sign-in state is invalid');
       }
       const clear = { ...oauthCookieOptions };
       delete clear.maxAge;
-      res.clearCookie('novelhub_oauth_state', clear).clearCookie('novelhub_oauth_verifier', clear);
+      res
+        .clearCookie('novelhub_oauth_state', clear)
+        .clearCookie('novelhub_oauth_verifier', clear)
+        .clearCookie('novelhub_oauth_mode', clear);
       if (req.query.error) return res.redirect(`${config.frontendUrl}/login?googleError=cancelled`);
       if (typeof req.query.code !== 'string')
         throw new HttpError(400, 'invalid_oauth_state', 'Google authorization code is missing');
@@ -571,7 +580,12 @@ export function createAuthRouter(config) {
         })
           .select('+providerSubject')
           .session(session);
-        if (linked) return Account.findById(linked.accountId).session(session);
+        if (linked) {
+          const linkedAccount = await Account.findById(linked.accountId).session(session);
+          if (linkedAccount) return linkedAccount;
+          // A deleted account must not leave its Google identity permanently unusable.
+          await ExternalIdentity.deleteOne({ _id: linked._id }, { session });
+        }
         let target = await Account.findOne({ normalizedEmail: identity.email }).session(session);
         if (target && !['active', 'pending-verification'].includes(target.status)) {
           throw new HttpError(403, 'account_unavailable', 'This NovelHub account is unavailable');
@@ -611,6 +625,9 @@ export function createAuthRouter(config) {
       });
       if (!account || account.status !== 'active')
         throw new HttpError(403, 'account_unavailable', 'This NovelHub account is unavailable');
+      if (registering) {
+        return res.redirect(`${config.frontendUrl}/login?registered=google`);
+      }
       if (account.twoFactorEnabled) {
         const { challenge } = await security.issue(account, 'security-login', true);
         return res.redirect(
@@ -626,7 +643,10 @@ export function createAuthRouter(config) {
     } catch (error) {
       const clear = { ...oauthCookieOptions };
       delete clear.maxAge;
-      res.clearCookie('novelhub_oauth_state', clear).clearCookie('novelhub_oauth_verifier', clear);
+      res
+        .clearCookie('novelhub_oauth_state', clear)
+        .clearCookie('novelhub_oauth_verifier', clear)
+        .clearCookie('novelhub_oauth_mode', clear);
       const code = error.code === 'account_unavailable' ? 'account_unavailable' : 'failed';
       res.redirect(`${config.frontendUrl}/login?googleError=${code}`);
     }
