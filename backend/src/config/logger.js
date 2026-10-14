@@ -27,12 +27,47 @@ export function serializeError(err) {
   return serialized;
 }
 
-export const logSerializers = { err: serializeError };
+export const logSerializers = {
+  err: serializeError,
+  req: (req) => ({ id: req.id, method: req.method, path: String(req.url || '').split('?')[0] }),
+  res: (res) => ({ statusCode: res.statusCode }),
+};
+export const httpLogOptions = {
+  serializers: logSerializers,
+  quietReqLogger: true,
+  customLogLevel: (req, res, err) => {
+    if (err || res.statusCode >= 500) return 'error';
+    if (['/api/health', '/api/ready'].includes(req.url?.split('?')[0]) && res.statusCode < 400)
+      return 'silent';
+    if (req.url?.split('?')[0] === '/api/auth/me' && res.statusCode === 401) return 'debug';
+    return res.statusCode >= 400 ? 'warn' : 'info';
+  },
+  customSuccessMessage: (req, res) =>
+    req.method + ' ' + String(req.url).split('?')[0] + ' → ' + res.statusCode,
+  customErrorMessage: (req, res) =>
+    req.method + ' ' + String(req.url).split('?')[0] + ' → ' + res.statusCode,
+};
 
-export function createLogger(level = 'info') {
+export function createLogger(
+  level = 'info',
+  { nodeEnv = process.env.NODE_ENV || 'development' } = {},
+) {
   return pino({
     level,
     serializers: logSerializers,
+    ...(nodeEnv === 'development'
+      ? {
+          transport: {
+            target: 'pino-pretty',
+            options: {
+              colorize: Boolean(process.stdout.isTTY),
+              translateTime: 'SYS:HH:MM:ss',
+              singleLine: true,
+              ignore: 'pid,hostname,req,res,reqId',
+            },
+          },
+        }
+      : {}),
     redact: {
       paths: [
         'req.headers.authorization',

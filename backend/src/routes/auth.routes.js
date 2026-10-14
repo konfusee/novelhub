@@ -1,5 +1,6 @@
+import { createCaptchaStore } from '../auth/captcha.js';
 import { Router } from 'express';
-import { createHash, randomBytes } from 'node:crypto';
+import { createHash, randomBytes, randomInt, timingSafeEqual } from 'node:crypto';
 import { z } from 'zod';
 import { verifyPassword } from '../auth/password.js';
 import { hashPassword } from '../auth/password.js';
@@ -28,25 +29,52 @@ import { createGoogleProvider } from '../auth/google-oidc.js';
 
 const credentialsSchema = z
   .object({
-    email: z.string().trim().email().max(254).transform((value) => value.toLowerCase()),
+    email: z
+      .string()
+      .trim()
+      .email()
+      .max(254)
+      .transform((value) => value.toLowerCase()),
     password: z.string().min(1).max(1024),
+    rememberMe: z.boolean().default(false),
   })
   .strict();
 const registrationSchema = z
   .object({
     displayName: z.string().trim().min(2).max(80),
-    email: z.string().trim().email().max(254).transform((value) => value.toLowerCase()),
+    email: z
+      .string()
+      .trim()
+      .email()
+      .max(254)
+      .transform((value) => value.toLowerCase()),
     password: z.string().min(10).max(1024),
+    passwordConfirmation: z.string().min(10).max(1024),
+    captchaToken: z.string().min(32).max(256),
+    captchaAnswer: z.string().trim().length(6),
     acceptedTerms: z.literal(true),
     accountType: z.enum(['reader', 'author']).default('reader'),
   })
   .strict();
 const tokenSchema = z.object({ token: z.string().min(32).max(256) }).strict();
 const emailSchema = z
-  .object({ email: z.string().trim().email().max(254).transform((value) => value.toLowerCase()) })
+  .object({
+    email: z
+      .string()
+      .trim()
+      .email()
+      .max(254)
+      .transform((value) => value.toLowerCase()),
+  })
   .strict();
 const resetPasswordSchema = z
   .object({ token: z.string().min(32).max(256), password: z.string().min(10).max(1024) })
+  .strict();
+const otpSchema = z
+  .object({
+    challenge: z.string().min(32).max(256),
+    otp: z.string().regex(/^\d{6}$/),
+  })
   .strict();
 const attempts = new Map();
 const WINDOW_MS = 15 * 60 * 1000;
@@ -71,6 +99,24 @@ function checkRateLimit(req, _res, next) {
 
 export function createAuthRouter(config) {
   const router = Router();
+  const captchaStore = config.captchaStore ?? createCaptchaStore();
+  const recoveryRequests = new Map();
+  const recoveryIps = new Map();
+  const otpTtlMinutes = Math.min(config.passwordResetTtlMinutes || 10, 10);
+  function recoveryRateLimit(req, _res, next) {
+    const now = Date.now();
+    for (const [key, value] of recoveryIps) {
+      if (value.resetAt <= now) recoveryIps.delete(key);
+    }
+    const current = recoveryIps.get(req.ip) || { count: 0, resetAt: now + WINDOW_MS };
+    current.count += 1;
+    recoveryIps.set(req.ip, current);
+    if (current.count > 30)
+      return next(
+        new HttpError(429, 'too_many_attempts', 'Too many recovery attempts. Try again later.'),
+      );
+    next();
+  }
   const options = cookieOptions(config);
   const authenticate = requireAuth({ cookieName: config.cookieName });
   const emailDelivery =
@@ -78,7 +124,8 @@ export function createAuthRouter(config) {
     (config.nodeEnv === 'production'
       ? unavailableEmailDelivery()
       : createDevelopmentEmailDelivery({ logger: config.logger }));
-  const googleProvider = config.googleProvider ?? (config.google ? createGoogleProvider(config.google) : null);
+  const googleProvider =
+    config.googleProvider ?? (config.google ? createGoogleProvider(config.google) : null);
   const oauthCookieOptions = { ...options, maxAge: 10 * 60 * 1000 };
 
   async function deliverToken({ email, token, purpose }) {
@@ -86,10 +133,26 @@ export function createAuthRouter(config) {
     const actionUrl = `${config.frontendUrl}${path}?token=${encodeURIComponent(token)}`;
     return sendWithRetry(emailDelivery, {
       to: email,
-      subject: purpose === 'email-verification' ? 'Verify your NovelHub email' : 'Reset your NovelHub password',
+      subject:
+        purpose === 'email-verification'
+          ? 'Verify your NovelHub email'
+          : 'Reset your NovelHub password',
       actionUrl,
     });
   }
+
+  router.get('/auth/captcha', (req, res, next) => {
+    const challenge = captchaStore.issue(req.ip);
+    if (!challenge)
+      return next(
+        new HttpError(
+          429,
+          'captcha_rate_limit',
+          'Too many verification requests. Try again in a minute.',
+        ),
+      );
+    res.set('Cache-Control', 'no-store').json(challenge);
+  });
 
   router.post('/auth/register', async (req, res, next) => {
     try {
@@ -97,7 +160,14 @@ export function createAuthRouter(config) {
       if (!parsed.success) {
         return next(new HttpError(400, 'validation_error', 'Registration details are invalid'));
       }
-      const { displayName, email, password } = parsed.data;
+      const { displayName, email, password, passwordConfirmation, captchaToken, captchaAnswer } =
+        parsed.data;
+      if (password !== passwordConfirmation)
+        return next(new HttpError(400, 'password_mismatch', 'Passwords do not match'));
+      if (!captchaStore.consume(captchaToken, captchaAnswer))
+        return next(
+          new HttpError(400, 'invalid_captcha', 'Verification code is invalid or expired'),
+        );
       const passwordHash = await hashPassword(password);
       const result = await withTransaction(async (session) => {
         if (await Account.exists({ normalizedEmail: email }).session(session)) {
@@ -127,7 +197,10 @@ export function createAuthRouter(config) {
         await deliverToken({ email, token: result.token, purpose: 'email-verification' });
       } catch (error) {
         emailDelivered = false;
-        config.logger?.error({ err: error, accountId: result.account._id }, 'verification email failed');
+        config.logger?.error(
+          { err: error, accountId: result.account._id },
+          'verification email failed',
+        );
       }
       res.status(201).json({
         account: { id: result.account._id.toString(), email, status: result.account.status },
@@ -136,7 +209,9 @@ export function createAuthRouter(config) {
       });
     } catch (error) {
       if (error?.code === 11000) {
-        return next(new HttpError(409, 'email_in_use', 'An account with this email already exists'));
+        return next(
+          new HttpError(409, 'email_in_use', 'An account with this email already exists'),
+        );
       }
       next(error);
     }
@@ -159,16 +234,20 @@ export function createAuthRouter(config) {
           { $set: { usedAt } },
           { returnDocument: 'after', session },
         );
-        if (!emailToken) throw new HttpError(400, 'invalid_token', 'Verification link is invalid or expired');
+        if (!emailToken)
+          throw new HttpError(400, 'invalid_token', 'Verification link is invalid or expired');
         const updated = await Account.findOneAndUpdate(
           { _id: emailToken.accountId, status: 'pending-verification', emailVerifiedAt: null },
           { $set: { status: 'active', emailVerifiedAt: usedAt } },
           { returnDocument: 'after', session },
         );
-        if (!updated) throw new HttpError(400, 'invalid_token', 'Verification link is invalid or expired');
+        if (!updated)
+          throw new HttpError(400, 'invalid_token', 'Verification link is invalid or expired');
         return updated;
       });
-      res.json({ account: { id: account._id.toString(), email: account.email, status: account.status } });
+      res.json({
+        account: { id: account._id.toString(), email: account.email, status: account.status },
+      });
     } catch (error) {
       next(error);
     }
@@ -177,8 +256,12 @@ export function createAuthRouter(config) {
   router.post('/auth/resend-verification', async (req, res, next) => {
     try {
       const parsed = emailSchema.safeParse(req.body);
-      if (!parsed.success) return next(new HttpError(400, 'validation_error', 'Valid email is required'));
-      const account = await Account.findOne({ normalizedEmail: parsed.data.email, status: 'pending-verification' });
+      if (!parsed.success)
+        return next(new HttpError(400, 'validation_error', 'Valid email is required'));
+      const account = await Account.findOne({
+        normalizedEmail: parsed.data.email,
+        status: 'pending-verification',
+      });
       if (account) {
         const token = await withTransaction((session) =>
           issueEmailToken({
@@ -196,32 +279,134 @@ export function createAuthRouter(config) {
     }
   });
 
-  router.post('/auth/forgot-password', async (req, res, next) => {
+  router.post('/auth/forgot-password', recoveryRateLimit, async (req, res, next) => {
     try {
       const parsed = emailSchema.safeParse(req.body);
-      if (!parsed.success) return next(new HttpError(400, 'validation_error', 'Valid email is required'));
+      if (!parsed.success)
+        return next(new HttpError(400, 'validation_error', 'Valid email is required'));
+      const now = Date.now();
+      for (const [key, until] of recoveryRequests) {
+        if (until <= now) recoveryRequests.delete(key);
+      }
+      const email = parsed.data.email;
+      if (recoveryRequests.has(email)) {
+        return next(
+          new HttpError(
+            429,
+            'otp_cooldown',
+            'Please wait 60 seconds before requesting another code',
+          ),
+        );
+      }
+      recoveryRequests.set(email, now + 60_000);
+      const challenge = randomBytes(32).toString('base64url');
       const account = await Account.findOne({
-        normalizedEmail: parsed.data.email,
+        normalizedEmail: email,
         status: 'active',
         emailVerifiedAt: { $ne: null },
         password: { $exists: true },
       });
       if (account) {
-        const token = await withTransaction((session) =>
-          issueEmailToken({
-            accountId: account._id,
-            purpose: 'password-reset',
-            ttlMinutes: config.passwordResetTtlMinutes,
-            session,
-          }),
-        );
+        const otp = randomInt(0, 1_000_000).toString().padStart(6, '0');
+        await withTransaction(async (session) => {
+          await EmailToken.updateMany(
+            {
+              accountId: account._id,
+              purpose: { $in: ['password-reset-otp', 'password-reset'] },
+              usedAt: null,
+              revokedAt: null,
+            },
+            { $set: { revokedAt: new Date(now) } },
+            { session },
+          );
+          await EmailToken.create(
+            [
+              {
+                accountId: account._id,
+                purpose: 'password-reset-otp',
+                tokenHash: digestEmailToken(challenge),
+                otpHash: digestEmailToken(challenge + ':' + otp),
+                expiresAt: new Date(now + otpTtlMinutes * 60_000),
+              },
+            ],
+            { session },
+          );
+        });
         try {
-          await deliverToken({ email: account.email, token, purpose: 'password-reset' });
+          await sendWithRetry(emailDelivery, {
+            to: account.email,
+            subject: 'Mã OTP đặt lại mật khẩu NovelHub',
+            otp,
+            expiresInMinutes: otpTtlMinutes,
+          });
         } catch (error) {
-          config.logger?.error({ err: error, accountId: account._id }, 'password reset email failed');
+          config.logger?.error(
+            { err: error, accountId: account._id },
+            'password reset email failed',
+          );
         }
       }
-      res.json({ message: 'If an eligible account exists, password reset instructions have been sent.' });
+      res.json({
+        message: 'If an eligible account exists, a password reset code has been sent.',
+        challenge,
+        expiresInSeconds: otpTtlMinutes * 60,
+        retryAfterSeconds: 60,
+      });
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  router.post('/auth/verify-reset-otp', recoveryRateLimit, async (req, res, next) => {
+    try {
+      const parsed = otpSchema.safeParse(req.body);
+      if (!parsed.success)
+        return next(
+          new HttpError(400, 'validation_error', 'A six-digit code and challenge are required'),
+        );
+      const { challenge, otp } = parsed.data;
+      // Count attempts atomically outside the transaction so failed attempts cannot roll back.
+      const candidate = await EmailToken.findOneAndUpdate(
+        {
+          tokenHash: digestEmailToken(challenge),
+          purpose: 'password-reset-otp',
+          usedAt: null,
+          revokedAt: null,
+          expiresAt: { $gt: new Date() },
+          attempts: { $lt: 5 },
+        },
+        { $inc: { attempts: 1 } },
+        { returnDocument: 'after' },
+      );
+      const supplied = digestEmailToken(challenge + ':' + otp);
+      if (
+        !candidate?.otpHash ||
+        !timingSafeEqual(Buffer.from(candidate.otpHash), Buffer.from(supplied))
+      ) {
+        return next(
+          new HttpError(400, 'invalid_otp', 'Code is invalid, expired or has too many attempts'),
+        );
+      }
+      const token = await withTransaction(async (session) => {
+        const consumed = await EmailToken.findOneAndUpdate(
+          {
+            _id: candidate._id,
+            usedAt: null,
+            revokedAt: null,
+            expiresAt: { $gt: new Date() },
+          },
+          { $set: { usedAt: new Date() } },
+          { returnDocument: 'after', session },
+        );
+        if (!consumed) throw new HttpError(400, 'invalid_otp', 'Code is invalid or expired');
+        return issueEmailToken({
+          accountId: consumed.accountId,
+          purpose: 'password-reset',
+          ttlMinutes: 10,
+          session,
+        });
+      });
+      res.json({ token });
     } catch (error) {
       next(error);
     }
@@ -230,7 +415,10 @@ export function createAuthRouter(config) {
   router.post('/auth/reset-password', async (req, res, next) => {
     try {
       const parsed = resetPasswordSchema.safeParse(req.body);
-      if (!parsed.success) return next(new HttpError(400, 'validation_error', 'Token and a valid password are required'));
+      if (!parsed.success)
+        return next(
+          new HttpError(400, 'validation_error', 'Token and a valid password are required'),
+        );
       const passwordHash = await hashPassword(parsed.data.password);
       await withTransaction(async (session) => {
         const usedAt = new Date();
@@ -245,7 +433,8 @@ export function createAuthRouter(config) {
           { $set: { usedAt } },
           { returnDocument: 'after', session },
         );
-        if (!emailToken) throw new HttpError(400, 'invalid_token', 'Reset link is invalid or expired');
+        if (!emailToken)
+          throw new HttpError(400, 'invalid_token', 'Reset link is invalid or expired');
         const account = await Account.findOneAndUpdate(
           { _id: emailToken.accountId, status: 'active', emailVerifiedAt: { $ne: null } },
           {
@@ -281,6 +470,21 @@ export function createAuthRouter(config) {
     }
   });
 
+  router.get('/auth/author-application', authenticate, async (req, res, next) => {
+    try {
+      const application = await AuthorApplication.findOne({
+        applicantAccountId: req.auth.account._id,
+      }).sort({ submittedAt: -1, _id: -1 });
+      res.json({
+        application: application
+          ? { id: application._id.toString(), status: application.status }
+          : null,
+      });
+    } catch (error) {
+      next(error);
+    }
+  });
+
   router.post('/auth/author-application', authenticate, async (req, res, next) => {
     try {
       const existing = await AuthorApplication.findOne({
@@ -288,20 +492,25 @@ export function createAuthRouter(config) {
         status: 'submitted',
       });
       if (existing) {
-        return res.status(200).json({ application: { id: existing._id.toString(), status: existing.status } });
+        return res
+          .status(200)
+          .json({ application: { id: existing._id.toString(), status: existing.status } });
       }
       const application = await AuthorApplication.create({
         applicantAccountId: req.auth.account._id,
         status: 'submitted',
       });
-      res.status(201).json({ application: { id: application._id.toString(), status: application.status } });
+      res
+        .status(201)
+        .json({ application: { id: application._id.toString(), status: application.status } });
     } catch (error) {
       next(error);
     }
   });
 
   router.get('/auth/google/start', (req, res, next) => {
-    if (!googleProvider) return next(new HttpError(503, 'google_unavailable', 'Google sign-in is not configured'));
+    if (!googleProvider)
+      return next(new HttpError(503, 'google_unavailable', 'Google sign-in is not configured'));
     const state = randomBytes(24).toString('base64url');
     const verifier = randomBytes(32).toString('base64url');
     const challenge = createHash('sha256').update(verifier).digest('base64url');
@@ -313,13 +522,17 @@ export function createAuthRouter(config) {
 
   router.get('/auth/google/callback', async (req, res, next) => {
     try {
-      if (!googleProvider) throw new HttpError(503, 'google_unavailable', 'Google sign-in is not configured');
+      if (!googleProvider)
+        throw new HttpError(503, 'google_unavailable', 'Google sign-in is not configured');
       const expectedState = readCookie(req.headers.cookie, 'novelhub_oauth_state');
       const verifier = readCookie(req.headers.cookie, 'novelhub_oauth_verifier');
       if (!req.query.code || !req.query.state || req.query.state !== expectedState || !verifier) {
         throw new HttpError(400, 'invalid_oauth_state', 'Google sign-in state is invalid');
       }
-      const identity = await googleProvider.exchange({ code: req.query.code, codeVerifier: verifier });
+      const identity = await googleProvider.exchange({
+        code: req.query.code,
+        codeVerifier: verifier,
+      });
       const account = await withTransaction(async (session) => {
         const linked = await ExternalIdentity.findOne({
           provider: 'google',
@@ -335,7 +548,14 @@ export function createAuthRouter(config) {
         }
         if (!target) {
           [target] = await Account.create(
-            [{ displayName: identity.name, email: identity.email, status: 'active', emailVerifiedAt: new Date() }],
+            [
+              {
+                displayName: identity.name,
+                email: identity.email,
+                status: 'active',
+                emailVerifiedAt: new Date(),
+              },
+            ],
             { session },
           );
         } else if (target.status === 'pending-verification') {
@@ -359,7 +579,8 @@ export function createAuthRouter(config) {
         );
         return target;
       });
-      if (!account || account.status !== 'active') throw new HttpError(403, 'account_unavailable', 'This NovelHub account is unavailable');
+      if (!account || account.status !== 'active')
+        throw new HttpError(403, 'account_unavailable', 'This NovelHub account is unavailable');
       const { token } = await issueSession(account, config.sessionTtlDays);
       const clear = { ...oauthCookieOptions };
       delete clear.maxAge;
@@ -392,9 +613,14 @@ export function createAuthRouter(config) {
       if (!valid) {
         return next(new HttpError(401, 'invalid_credentials', 'Email or password is invalid'));
       }
-      const { token } = await issueSession(account, config.sessionTtlDays);
+      const { token } = await issueSession(
+        account,
+        parsed.data.rememberMe ? config.sessionTtlDays : 1,
+      );
+      const loginCookie = { ...options };
+      if (!parsed.data.rememberMe) delete loginCookie.maxAge;
       attempts.delete(req.ip);
-      res.cookie(config.cookieName, token, options).json({ user: await publicUser(account) });
+      res.cookie(config.cookieName, token, loginCookie).json({ user: await publicUser(account) });
     } catch (error) {
       next(error);
     }

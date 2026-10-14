@@ -2,7 +2,7 @@ import cors from 'cors';
 import express from 'express';
 import helmet from 'helmet';
 import { pinoHttp } from 'pino-http';
-import { logSerializers } from './config/logger.js';
+import { httpLogOptions } from './config/logger.js';
 import { errorHandler, notFound } from './middleware/errors.js';
 import { healthRouter } from './routes/health.routes.js';
 import { createAuthRouter } from './routes/auth.routes.js';
@@ -18,6 +18,7 @@ export function createApp({
   emailVerificationTtlMinutes = 60,
   passwordResetTtlMinutes = 30,
   emailDelivery,
+  captchaStore,
   google,
   googleProvider,
 }) {
@@ -28,7 +29,7 @@ export function createApp({
   app.use(express.json({ limit: '1mb' }));
   app.use(csrfProtection({ corsOrigin, cookieName }));
   // pino-http's child logger replaces serializers; pass ours so req.log redacts too.
-  if (logger) app.use(pinoHttp({ logger, serializers: logSerializers }));
+  if (logger) app.use(pinoHttp({ logger, ...httpLogOptions }));
 
   app.use('/api', healthRouter);
   app.use(
@@ -41,6 +42,7 @@ export function createApp({
       emailVerificationTtlMinutes,
       passwordResetTtlMinutes,
       emailDelivery,
+      captchaStore,
       logger,
       google,
       googleProvider,

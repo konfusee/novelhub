@@ -2,18 +2,30 @@ import { createApp } from './app.js';
 import { loadEnv } from './config/env.js';
 import { loadDotenv } from './config/load-dotenv.js';
 import { createLogger } from './config/logger.js';
+import { createSmtpEmailDelivery } from './email/delivery.js';
 import { connectDatabase, disconnectDatabase } from './db/connection.js';
 import './models/index.js';
 
 loadDotenv();
 const env = loadEnv();
-const logger = createLogger(env.LOG_LEVEL);
+const logger = createLogger(env.LOG_LEVEL, { nodeEnv: env.NODE_ENV });
+const emailDelivery = env.SMTP_HOST
+  ? createSmtpEmailDelivery({
+      host: env.SMTP_HOST,
+      port: env.SMTP_PORT,
+      secure: env.SMTP_SECURE,
+      user: env.SMTP_USER,
+      password: env.SMTP_PASSWORD,
+      from: env.SMTP_FROM,
+    })
+  : undefined;
 
 await connectDatabase(env.MONGODB_URI, { autoIndex: env.NODE_ENV !== 'production' });
 logger.info('connected to MongoDB');
 
 const server = createApp({
   logger,
+  emailDelivery,
   corsOrigin: env.CORS_ORIGIN,
   nodeEnv: env.NODE_ENV,
   cookieName: env.AUTH_COOKIE_NAME,

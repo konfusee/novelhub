@@ -10,16 +10,21 @@ session tokens are never persisted or returned.
 
 The API contract is:
 
-- `POST /api/auth/register` creates a pending local Reader account and sends verification;
+- `GET /api/auth/captcha` returns a short-lived CAPTCHA image and opaque token;
+- `POST /api/auth/register` requires `passwordConfirmation`, `captchaToken`, `captchaAnswer` and accepted terms; it creates a pending local Reader account and sends verification;
 - `POST /api/auth/verify-email` consumes a single-use verification token;
 - `POST /api/auth/resend-verification` revokes older verification tokens;
-- `POST /api/auth/login` with `{ "email": "...", "password": "..." }`;
+- `POST /api/auth/login` with `{ "email": "...", "password": "...", "rememberMe": false }`;
+  an unchecked remember option uses a browser-session cookie and a one-day server session;
+  a checked option uses the configured persistent session lifetime;
 - `GET /api/auth/me` to restore the authenticated user after refresh;
 - `POST /api/auth/logout` to revoke the current session;
-- `POST /api/auth/forgot-password` returns the same response for known and unknown emails;
+- `POST /api/auth/forgot-password` with `{ "email": "..." }` sends an OTP and returns a random `challenge`, `expiresInSeconds` and `retryAfterSeconds` for both known and unknown emails;
+- `POST /api/auth/verify-reset-otp` with `{ "challenge": "...", "otp": "012345" }` consumes the OTP and returns a single-use reset `token`;
 - `POST /api/auth/reset-password` consumes a token, changes the hash and revokes sessions;
 - `GET /api/auth/google/start` begins Google Authorization Code + PKCE;
 - `GET /api/auth/google/callback` validates state and Google OIDC identity;
+- `GET /api/auth/author-application` restores the current account application status;
 - `POST /api/auth/author-application` submits an application without granting a role.
 
 All accounts receive Reader access. Active records in `roleAssignments` add
@@ -40,10 +45,44 @@ Edit `backend/.env` and replace `MONGODB_URI` placeholders with credentials
 obtained from the project owner. Keep `CORS_ORIGIN=http://localhost:5173`. The
 default cookie name and seven-day lifetime are suitable for local development.
 
-Development verification and reset links are written to the backend console.
-This fallback is disabled in production. Authentication email delivery uses a
-shared adapter with at most three attempts; a production Gmail/SMTP adapter and
-credentials must be supplied by deployment infrastructure.
+Without SMTP settings, development verification links and recovery OTP codes are written to
+the backend console. With SMTP configured, both flows send real emails through
+Nodemailer with at most three attempts. Production requires SMTP configuration;
+partial configuration fails at startup.
+
+## SMTP email configuration
+
+Set these values in the ignored `backend/.env` (never commit credentials):
+
+```dotenv
+SMTP_HOST=smtp.gmail.com
+SMTP_PORT=587
+SMTP_SECURE=false
+SMTP_USER=your-account@gmail.com
+SMTP_PASSWORD=your-provider-app-password
+SMTP_FROM=your-account@gmail.com
+FRONTEND_URL=http://localhost:5173
+```
+
+Use the SMTP credentials supplied by your provider. For Gmail, use an app
+password when supported by your account, rather than the normal account password.
+Port 587 requires STARTTLS; port 465 uses `SMTP_SECURE=true` for implicit TLS.
+`SMTP_FROM` must be a plain email address permitted by the provider.
+
+Check connectivity and authentication without sending an email:
+
+```powershell
+npm run email:verify --workspace backend
+```
+
+Restart the backend after changing `.env`. Then request password recovery for
+an active, verified local account and check its inbox/spam folder. Enter the six-digit
+OTP on the recovery screen, choose a new password, and sign in. Codes expire after
+at most ten minutes, allow five attempts, and can be resent after sixty seconds.
+Resending invalidates older codes and pending reset tokens. SMTP acceptance does not guarantee inbox
+delivery. Set `FRONTEND_URL` to the public frontend URL in deployment so recipients
+can open the links. The forgot-password response stays generic even on delivery
+failure; check backend logs for `password reset email failed`.
 
 ## Google OAuth configuration
 
@@ -83,9 +122,11 @@ npm run dev:frontend
 
 Open `http://localhost:5173/login`.
 
-Registration is available at `/register`. After submitting, copy the
-development verification URL from the backend console into the browser. Password
-recovery starts at `/forgot-password`; its reset URL is delivered the same way.
+Registration is available at `/register`. After submitting, open the verification
+link from your email (or the backend console when SMTP is not configured in
+development). Password recovery starts at `/forgot-password`; enter the OTP
+from your email or development console, then choose a new password. Refreshing
+the page restarts recovery; verification credentials are kept only in memory.
 
 ## Create a development account
 
@@ -157,3 +198,14 @@ then `requireRole('author' | 'moderator' | 'admin')` where appropriate. Both
 `req.auth.account` and the compatible `req.account` alias contain the trusted
 database account. Admin does not inherit Moderator. Client-side route guards are
 navigation aids only and never replace backend authorization.
+
+## Development logging
+
+`npm run dev:backend` uses quiet nodemon output and pino-pretty. Request logs include
+method, path, status and response time, without HTTP headers or URL query values.
+Successful health checks and expected guest session checks stay quiet at info level.
+Production keeps structured JSON logs; set `LOG_LEVEL=debug` to see session checks.
+
+CAPTCHA challenges are single-use and expire after five minutes. The local image
+CAPTCHA store is scoped to one backend process; restarting it invalidates outstanding
+challenges. It is a basic verification mechanism, not a managed anti-bot service.
