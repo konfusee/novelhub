@@ -57,6 +57,7 @@ describe('SMTP delivery', () => {
       to: 'reader@example.test',
       subject: 'NovelHub OTP',
       otp: '012345',
+      purpose: 'password-reset',
       expiresInMinutes: 10,
     });
     expect(transport.sendMail).toHaveBeenCalledWith(
@@ -66,6 +67,20 @@ describe('SMTP delivery', () => {
     expect(message.text).toContain('10');
     expect(message.text).not.toContain('undefined');
     expect(message.text).not.toContain('/reset-password');
+    expect(message.html).toContain('Đặt lại mật khẩu');
+    expect(message.html).toContain('>012345</span>');
+    expect(message.html).toContain('Sao chép');
+    expect(message.html).not.toMatch(/<script|onclick=|012 345/);
+  });
+  it('rejects unsafe or malformed OTP markup before sending', async () => {
+    await expect(
+      createSmtpEmailDelivery(smtp).send({
+        to: 'reader@example.test',
+        otp: '<script>',
+        expiresInMinutes: 10,
+      }),
+    ).rejects.toThrow('six digits');
+    expect(transport.sendMail).not.toHaveBeenCalled();
   });
   it('uses implicit TLS for a secure transport', () => {
     createSmtpEmailDelivery({ ...smtp, port: 465, secure: true });

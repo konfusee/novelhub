@@ -56,6 +56,7 @@ export function createSecurityService({ emailDelivery, securityConfig }) {
         {
           to: account.email,
           subject: 'Mã xác minh bảo mật NovelHub',
+          purpose,
           otp,
           expiresInMinutes: securityConfig.codeTtlMinutes,
         },

@@ -356,6 +356,7 @@ export function createAuthRouter(config) {
           await deliver({
             to: account.email,
             subject: 'Mã OTP đặt lại mật khẩu NovelHub',
+            purpose: 'password-reset',
             otp,
             expiresInMinutes: otpTtlMinutes,
           });
