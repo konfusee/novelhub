@@ -4,6 +4,7 @@ import { useEffect, useId, useRef, useState } from 'react';
 import { useTheme } from '../../context/ThemeContext';
 import { getAccountHome, useAuth } from '../../context/AuthContext';
 import { useLocale } from '../../context/LocaleContext';
+import { ROUTES } from '../../app/routes';
 import { ButtonLink } from '../ui';
 
 export function PublicHeader() {
@@ -44,6 +45,8 @@ export function PublicHeader() {
     [t('navigation.rankings'), '/rankings'],
   ];
   if (isAuthenticated) links.push([t('navigation.library'), '/reader/library']);
+  if (hasRole('reader') && !hasRole('author'))
+    links.push([t('navigation.becomeAuthor'), ROUTES.authorApply]);
   if (hasRole('author')) links.push([t('navigation.authorStudio'), '/author']);
   if (hasRole('moderator')) links.push([t('navigation.moderator'), '/moderator']);
   if (hasRole('admin')) links.push([t('navigation.admin'), '/admin']);

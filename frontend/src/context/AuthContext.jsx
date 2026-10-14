@@ -35,23 +35,46 @@ export function AuthProvider({ children }) {
   useEffect(() => {
     const controller = new AbortController();
     apiRequest('/auth/me', { signal: controller.signal })
-      .then(({ user }) => setCurrentUser(user))
-      .catch(() => setCurrentUser(null))
-      .finally(() => setAuthLoading(false));
+      .then(({ user }) => {
+        if (!controller.signal.aborted) setCurrentUser(user);
+      })
+      .catch(() => {
+        if (!controller.signal.aborted) setCurrentUser(null);
+      })
+      .finally(() => {
+        if (!controller.signal.aborted) setAuthLoading(false);
+      });
     return () => controller.abort();
   }, []);
-  const login = async (email, password) => {
+  const login = async (email, password, rememberMe = false) => {
     const { user } = await apiRequest('/auth/login', {
       method: 'POST',
-      body: { email, password },
+      body: { email, password, rememberMe },
     });
     setCurrentUser(user);
     return user;
   };
-  const register = ({ name, email, password, accountType = 'reader' }) =>
+  const register = ({
+    name,
+    email,
+    password,
+    passwordConfirmation,
+    captchaToken,
+    captchaAnswer,
+    accountType = 'reader',
+  }) =>
     apiRequest('/auth/register', {
       method: 'POST',
-      body: { displayName: name, email, password, acceptedTerms: true, accountType },
+      body: {
+        displayName: name,
+        email,
+        password,
+        passwordConfirmation,
+        captchaToken,
+        captchaAnswer,
+        acceptedTerms: true,
+        accountType,
+      },
     });
   const applyForAuthor = async () =>
     apiRequest('/auth/author-application', { method: 'POST', body: {} });

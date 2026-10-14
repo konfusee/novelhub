@@ -12,6 +12,7 @@ import {
   Clock3,
   Compass,
   Flame,
+  PenLine,
   Headphones,
   Pause,
   Play,
@@ -34,6 +35,7 @@ import {
   Skeleton,
 } from '../../components/ui';
 import { readerHome } from '../../data/mock/reader';
+import { ROUTES } from '../../app/routes';
 import { useAuth } from '../../context/AuthContext';
 import { useLocale } from '../../context/LocaleContext';
 import { useMockResource } from '../../context/MockDataContext';
@@ -241,7 +243,7 @@ function NowPlaying() {
 }
 
 export function ReaderHomePage() {
-  const { currentUser } = useAuth();
+  const { currentUser, hasRole } = useAuth();
   const { t } = useLocale();
   const continuing = useMockResource('reader:continue', continueItems);
   const recommended = useMockResource('reader:recommendations', recommendationFeed, {
@@ -252,6 +254,24 @@ export function ReaderHomePage() {
   return (
     <ReaderLayout>
       <div className="page-reader py-6">
+        {!hasRole('author') && (
+          <Card className="mb-6 flex flex-col gap-4 border-brand/25 bg-brand-soft p-5 sm:flex-row sm:items-center sm:justify-between">
+            <div className="flex min-w-0 items-start gap-3">
+              <span className="grid size-11 shrink-0 place-items-center rounded-2xl bg-surface text-brand-strong">
+                <PenLine size={22} />
+              </span>
+              <div className="min-w-0">
+                <h2 className="text-base font-semibold">{t('reader.authorInvitationTitle')}</h2>
+                <p className="mt-1 text-sm leading-6 text-muted">
+                  {t('reader.authorInvitationDescription')}
+                </p>
+              </div>
+            </div>
+            <ButtonLink to={ROUTES.authorApply} trailingIcon={ArrowRight} className="shrink-0">
+              {t('navigation.becomeAuthor')}
+            </ButtonLink>
+          </Card>
+        )}
         <div className="nh-grid-12 grid gap-6 nh-layout-2xl-8-4">
           <div className="min-w-0 space-y-8">
             <Card bezel as="section" innerClassName="p-6 sm:p-8">

@@ -1,5 +1,5 @@
 import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
-import { useState } from 'react';
+import { StrictMode, useState } from 'react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { AuthProvider, useAuth } from './AuthContext';
 
@@ -46,6 +46,33 @@ afterEach(() => {
 });
 
 describe('AuthProvider', () => {
+  it('waits for session restoration when StrictMode cancels the first request', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(
+        (_url, { signal }) =>
+          new Promise((resolve, reject) => {
+            signal.addEventListener(
+              'abort',
+              () => reject(new DOMException('Aborted', 'AbortError')),
+              { once: true },
+            );
+            setTimeout(() => resolve(new Response(JSON.stringify({ user }), { status: 200 })), 20);
+          }),
+      ),
+    );
+    render(
+      <StrictMode>
+        <AuthProvider>
+          <Harness />
+        </AuthProvider>
+      </StrictMode>,
+    );
+    expect(screen.getByText('loading')).toBeTruthy();
+    await new Promise((resolve) => setTimeout(resolve, 5));
+    expect(screen.getByText('loading')).toBeTruthy();
+    expect(await screen.findByText(user.email)).toBeTruthy();
+  });
   it('restores an authenticated cookie session on mount', async () => {
     vi.stubGlobal(
       'fetch',
@@ -88,7 +115,7 @@ describe('AuthProvider', () => {
       expect.objectContaining({
         method: 'POST',
         credentials: 'include',
-        body: JSON.stringify({ email: user.email, password: 'secret-password' }),
+        body: JSON.stringify({ email: user.email, password: 'secret-password', rememberMe: false }),
       }),
     );
     fireEvent.click(screen.getByText('logout'));
@@ -101,7 +128,9 @@ describe('AuthProvider', () => {
       vi.fn(async (url) => {
         if (url === '/api/auth/register') {
           return new Response(
-            JSON.stringify({ account: { email: 'new@example.test', status: 'pending-verification' } }),
+            JSON.stringify({
+              account: { email: 'new@example.test', status: 'pending-verification' },
+            }),
             { status: 201 },
           );
         }

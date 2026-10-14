@@ -11,6 +11,7 @@ export const ROUTES = {
   profile: '/reader/profile',
   author: '/author',
   authorApply: '/author/apply',
+  authorAgreement: (type) => `/legal/author/${type}`,
   moderator: '/moderator',
   admin: '/admin',
   forbidden: '/403',

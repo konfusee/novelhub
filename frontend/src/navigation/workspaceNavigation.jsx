@@ -34,6 +34,7 @@ import {
   UsersRound,
   WalletCards,
 } from '../components/icons';
+import { ROUTES } from '../app/routes';
 
 export const workspaceMeta = {
   reader: { labelKey: 'navigation.reader', home: '/reader' },
@@ -52,6 +53,7 @@ export const workspaceNavigation = {
         ['navigation.explore', '/reader/explore', Search],
         ['navigation.library', '/reader/library', Library],
         ['navigation.myList', '/reader/following', BookHeart],
+        ['navigation.becomeAuthor', ROUTES.authorApply, PenLine],
       ],
     },
     {

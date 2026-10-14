@@ -4,6 +4,8 @@ import { ThemeProvider } from './context/ThemeContext';
 import { AuthProvider, getAccountHome, useAuth } from './context/AuthContext';
 import { LocaleProvider } from './context/LocaleContext';
 import { MockDataProvider } from './context/MockDataContext';
+import { authorAgreements } from './data/authorAgreements';
+import { ROUTES } from './app/routes';
 import { RoleRoute } from './app/RouteGuards';
 import { DevPanel } from './components/dev/DevPanel';
 import { SiteFooter } from './components/shared/SiteFooter';
@@ -159,8 +161,8 @@ const LegalPage = lazy(() =>
 const RoleUtilityPage = lazy(() =>
   import('./pages/system/RoleUtilityPage').then((m) => ({ default: m.RoleUtilityPage })),
 );
-const AccountPage = lazy(() =>
-  import('./pages/system/AccountPage').then((m) => ({ default: m.AccountPage })),
+const ProfileAccountPage = lazy(() =>
+  import('./pages/system/ProfileAccountPage').then((m) => ({ default: m.ProfileAccountPage })),
 );
 
 const pages = [
@@ -214,10 +216,15 @@ function ScrollManager() {
   return null;
 }
 function AppRoutes() {
-  const { pathname } = useLocation();
+  const { pathname, search } = useLocation();
   const { isAuthenticated } = useAuth();
-  // The site footer belongs to the guest landing page only; app screens end with their content.
-  const showPublicFooter = !isAuthenticated && (pathname === '/' || pathname === '/discover');
+  // Public discovery and authentication pages share the footer; workspace pages end with their content.
+  const showPublicFooter =
+    ['/login', '/register', '/join', '/author/apply', '/terms', '/privacy'].includes(pathname) ||
+    (['/categories', '/rankings'].includes(pathname) &&
+      !new URLSearchParams(search).has('workspace')) ||
+    authorAgreements.some(({ type }) => pathname === ROUTES.authorAgreement(type)) ||
+    (!isAuthenticated && ['/', '/discover'].includes(pathname));
   return (
     <>
       <ScrollManager />
@@ -240,8 +247,15 @@ function AppRoutes() {
           <Route path="/forgot-password" element={<AuthRecoveryPage mode="forgot" />} />
           <Route path="/reset-password" element={<AuthRecoveryPage mode="reset" />} />
           <Route path="/auth/google-complete" element={<GoogleAuthComplete />} />
-          <Route path="/terms" element={<AdaptiveLegalPage type="terms" />} />
-          <Route path="/privacy" element={<AdaptiveLegalPage type="privacy" />} />
+          {authorAgreements.map(({ type }) => (
+            <Route
+              key={type}
+              path={ROUTES.authorAgreement(type)}
+              element={<LegalPage type={type} />}
+            />
+          ))}
+          <Route path="/terms" element={<LegalPage type="terms" />} />
+          <Route path="/privacy" element={<LegalPage type="privacy" />} />
           <Route path="/reader" element={role('reader', <ReaderHomePage />)} />
           <Route path="/reader/explore" element={role('reader', <ReaderExplorePage />)} />
           <Route path="/library" element={role('reader', <PersonalLibraryPage />)} />
@@ -249,7 +263,10 @@ function AppRoutes() {
           <Route path="/reader/following" element={role('reader', <FollowingPage />)} />
           <Route path="/reader/history" element={role('reader', <ReadingHistoryPage />)} />
           <Route path="/reader/notifications" element={role('reader', <NotificationsPage />)} />
-          <Route path="/reader/profile" element={role('reader', <ReaderProfilePage />)} />
+          <Route
+            path="/reader/profile"
+            element={role('reader', <ProfileAccountPage workspace="reader" />)}
+          />
           <Route
             path="/reader/profile/reading"
             element={<Navigate to="/reader/settings/reading" replace />}
@@ -305,7 +322,7 @@ function AppRoutes() {
           <Route path="/reader/settings/security" element={role('reader', <ReaderProfilePage />)} />
           <Route
             path="/reader/account"
-            element={role('reader', <AccountPage workspace="reader" />)}
+            element={role('reader', <Navigate to="/reader/profile?tab=account" replace />)}
           />
           <Route
             path="/reader/support"
@@ -350,16 +367,7 @@ function AppRoutes() {
           <Route path="/author/earnings" element={role('author', <AuthorEarningsPage />, true)} />
           <Route
             path="/author/profile"
-            element={role(
-              'author',
-              <RoleUtilityPage
-                role="author"
-                eyebrow="Tài khoản tác giả"
-                title="Hồ sơ tác giả"
-                description="Quản lý bút danh công khai, tiểu sử, thông tin xác minh và trang tác giả."
-              />,
-              true,
-            )}
+            element={role('author', <ProfileAccountPage workspace="author" />, true)}
           />
           <Route path="/author/wallet" element={role('author', <AuthorEarningsPage />, true)} />
           <Route
@@ -372,7 +380,7 @@ function AppRoutes() {
           />
           <Route
             path="/author/account"
-            element={role('author', <AccountPage workspace="author" />, true)}
+            element={role('author', <Navigate to="/author/profile?tab=account" replace />, true)}
           />
           <Route
             path="/author/support"
@@ -467,19 +475,11 @@ function AppRoutes() {
           />
           <Route
             path="/moderator/profile"
-            element={role(
-              'moderator',
-              <RoleUtilityPage
-                role="moderator"
-                eyebrow="Hồ sơ dùng chung"
-                title="Hồ sơ"
-                description="Quản lý danh tính hiển thị và thông tin hồ sơ NovelHub dùng chung."
-              />,
-            )}
+            element={role('moderator', <ProfileAccountPage workspace="moderator" />)}
           />
           <Route
             path="/moderator/account"
-            element={role('moderator', <AccountPage workspace="moderator" />)}
+            element={role('moderator', <Navigate to="/moderator/profile?tab=account" replace />)}
           />
           <Route
             path="/moderator/support"
@@ -516,17 +516,12 @@ function AppRoutes() {
           />
           <Route
             path="/admin/profile"
-            element={role(
-              'admin',
-              <RoleUtilityPage
-                role="admin"
-                eyebrow="Hồ sơ dùng chung"
-                title="Hồ sơ"
-                description="Quản lý danh tính hiển thị và thông tin hồ sơ NovelHub dùng chung."
-              />,
-            )}
+            element={role('admin', <ProfileAccountPage workspace="admin" />)}
           />
-          <Route path="/admin/account" element={role('admin', <AccountPage workspace="admin" />)} />
+          <Route
+            path="/admin/account"
+            element={role('admin', <Navigate to="/admin/profile?tab=account" replace />)}
+          />
           <Route
             path="/admin/support"
             element={role(
@@ -621,7 +616,8 @@ function GoogleAuthComplete() {
   const { authLoading, currentUser } = useAuth();
   const navigate = useNavigate();
   useEffect(() => {
-    if (!authLoading) navigate(currentUser ? getAccountHome(currentUser) : '/login', { replace: true });
+    if (!authLoading)
+      navigate(currentUser ? getAccountHome(currentUser) : '/login', { replace: true });
   }, [authLoading, currentUser, navigate]);
   return <RouteFallback />;
 }
@@ -662,16 +658,6 @@ function AdaptivePublicPage({ page }) {
     <Layout>
       <Page embedded />
     </Layout>
-  );
-}
-
-function AdaptiveLegalPage({ type }) {
-  const { isAuthenticated } = useAuth();
-  if (!isAuthenticated) return <LegalPage type={type} />;
-  return (
-    <ReaderLayout>
-      <LegalPage type={type} embedded />
-    </ReaderLayout>
   );
 }
 
