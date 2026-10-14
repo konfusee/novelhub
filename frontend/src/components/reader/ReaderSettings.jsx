@@ -158,6 +158,23 @@ export function ReaderSettings({ settings, update, t }) {
   const id = useId();
   return (
     <div className="space-y-6">
+      <div>
+        <SettingLabel id={`${id}-toolbar`}>{t('reader.toolbarLayout')}</SettingLabel>
+        <Segmented labelledBy={`${id}-toolbar`} columns={2}>
+          {['horizontal', 'vertical'].map((layout) => (
+            <Button
+              key={layout}
+              aria-pressed={(settings.toolbarLayout || 'horizontal') === layout}
+              variant={
+                (settings.toolbarLayout || 'horizontal') === layout ? 'primary' : 'secondary'
+              }
+              onClick={() => update('toolbarLayout', layout)}
+            >
+              {t('reader.toolbar' + layout)}
+            </Button>
+          ))}
+        </Segmented>
+      </div>
       <ChapterModePicker
         value={settings.chapterMode}
         onChange={(value) => update('chapterMode', value)}

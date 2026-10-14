@@ -14,6 +14,8 @@ import {
 } from '../../components/icons';
 import { PublicHeader } from '../../components/public/PublicHeader';
 import { ChapterList, ChapterListSkeleton } from '../../components/public/ChapterList';
+import { Pagination } from '../../components/ui/Pagination';
+import { StoryCommunity } from '../../components/story/StoryCommunity';
 import { StoryCover } from '../../components/story/StoryCover';
 import {
   Badge,
@@ -28,7 +30,7 @@ import {
   SkeletonText,
   Tabs,
 } from '../../components/ui';
-import { chapterPreview, storyDetail } from '../../data/mock/reader';
+import { chapterPreview, storyChapterList, storyDetail } from '../../data/mock/reader';
 import { stories } from '../../data/mock/stories';
 import { useAuth } from '../../context/AuthContext';
 import { useLocale } from '../../context/LocaleContext';
@@ -174,6 +176,7 @@ export function StoryDetailPage({ embedded = false }) {
   const { t } = useLocale();
   const { isAuthenticated } = useAuth();
   const { storyId = 'demo' } = useParams();
+  const [chapterPage, setChapterPage] = useState(1);
   const [tab, setTab] = useState('chapters');
   const [bookmarked, setBookmarked] = useState(false);
   const [following, setFollowing] = useState(false);
@@ -181,7 +184,7 @@ export function StoryDetailPage({ embedded = false }) {
   const [notice, setNotice] = useState('');
   const [synopsisOpen, setSynopsisOpen] = useState(false);
   const story = useMockResource(`story:${storyId}`, storyDetail, { isEmpty: isMissing });
-  const chapterFeed = useMockResource(`story:${storyId}:chapters`, chapterPreview);
+  const chapterFeed = useMockResource(`story:${storyId}:chapters`, storyChapterList);
   const storyLoading = story.status === 'loading';
   const storyReady = story.status === 'ready';
   const chapters = oldestFirst ? chapterFeed.data : [...chapterFeed.data].reverse();
@@ -403,10 +406,19 @@ export function StoryDetailPage({ embedded = false }) {
                 {tab === 'chapters' && (
                   <>
                     <div className="mb-4 flex flex-wrap items-center justify-between gap-2 text-sm text-muted">
-                      <span>{t('storyDetail.displayingChapters', { count: 148 })}</span>
+                      <span>
+                        {t('pagination.chapterRange', {
+                          start: (chapterPage - 1) * 5 + 1,
+                          end: Math.min(chapterPage * 5, chapters.length),
+                          count: chapters.length,
+                        })}
+                      </span>
                       <button
                         type="button"
-                        onClick={() => setOldestFirst((value) => !value)}
+                        onClick={() => {
+                          setOldestFirst((value) => !value);
+                          setChapterPage(1);
+                        }}
                         className="inline-flex min-h-9 items-center gap-1.5 rounded-full px-3 font-semibold text-brand-strong transition-colors duration-200 hover:bg-brand/8 pointer-coarse:min-h-11"
                       >
                         {t(oldestFirst ? 'storyDetail.oldestFirst' : 'storyDetail.newestFirst')}
@@ -457,7 +469,15 @@ export function StoryDetailPage({ embedded = false }) {
                       />
                     ) : (
                       <div className="nh-fade-enter">
-                        <ChapterList chapters={chapters} storyId={storyId} />
+                        <ChapterList
+                          chapters={chapters.slice((chapterPage - 1) * 5, chapterPage * 5)}
+                          storyId={storyId}
+                        />
+                        <Pagination
+                          page={chapterPage}
+                          pageCount={Math.ceil(chapters.length / 5)}
+                          onChange={setChapterPage}
+                        />
                       </div>
                     )}
                   </>
@@ -467,14 +487,7 @@ export function StoryDetailPage({ embedded = false }) {
                     {storyDetail.synopsis}
                   </div>
                 )}
-                {tab === 'reviews' && (
-                  <figure className="rounded-2xl bg-reader p-6">
-                    <blockquote className="text-base italic leading-8 text-ink/80">
-                      {featuredReview}
-                    </blockquote>
-                    <figcaption className="mt-3 text-sm font-semibold">Kaelen_Reader</figcaption>
-                  </figure>
-                )}
+                {tab === 'reviews' && <StoryCommunity key={storyId} storyId={storyId} />}
                 {tab === 'audiobooks' && (
                   <div className="flex flex-col items-start gap-4 rounded-2xl bg-reader p-6 sm:flex-row sm:items-center sm:justify-between">
                     <div>

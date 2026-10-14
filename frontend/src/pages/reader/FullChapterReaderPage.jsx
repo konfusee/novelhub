@@ -133,9 +133,86 @@ function ReaderToolbar({
   openSettings,
   focus,
   toggleFocus,
+  settingsOpen,
   t,
 }) {
   const fontIndex = READER_FONT_SIZES.indexOf(settings.fontSize);
+  if (settings.toolbarLayout === 'vertical')
+    return (
+      <div
+        data-reader-toolbar
+        className="sticky top-[var(--app-header-h)] z-30 border-b border-hairline bg-reader/85 px-4 py-3"
+      >
+        <div className="mx-auto flex max-w-[1100px] items-center gap-3">
+          <ProgressBar value={progress} size="sm" label={t('reader.progressLabel')} />
+          <span className="text-xs font-semibold text-brand-strong">{progress}%</span>
+        </div>
+        <div
+          role="toolbar"
+          aria-label={t('reader.toolbarLabel')}
+          aria-orientation="vertical"
+          className={
+            'fixed top-[calc(var(--app-header-h)+1rem)] right-3 flex max-h-[calc(100dvh-var(--app-header-h)-2rem)] flex-col items-center gap-1 overflow-y-auto rounded-full border border-line bg-surface p-1.5 shadow-soft ' +
+            (settingsOpen ? 'lg:right-[25rem]' : '')
+          }
+        >
+          <ToolButton
+            label={t('reader.fontSize') + ' −'}
+            disabled={fontIndex <= 0}
+            onClick={() => update('fontSize', READER_FONT_SIZES[Math.max(0, fontIndex - 1)])}
+          >
+            A−
+          </ToolButton>
+          <span className="text-xs font-semibold">{settings.fontSize}</span>
+          <ToolButton
+            label={t('reader.fontSize') + ' +'}
+            disabled={fontIndex >= READER_FONT_SIZES.length - 1}
+            onClick={() =>
+              update(
+                'fontSize',
+                READER_FONT_SIZES[Math.min(READER_FONT_SIZES.length - 1, fontIndex + 1)],
+              )
+            }
+          >
+            A+
+          </ToolButton>
+          <span aria-hidden="true" className="my-1 h-px w-6 bg-line" />
+          <ToolButton
+            label={t('reader.left')}
+            active={settings.align === 'left'}
+            onClick={() => update('align', 'left')}
+          >
+            <AlignLeft size={16} />
+          </ToolButton>
+          <ToolButton
+            label={t('reader.justify')}
+            active={settings.align === 'justify'}
+            onClick={() => update('align', 'justify')}
+          >
+            <AlignJustify size={16} />
+          </ToolButton>
+          <ToolButton active={bookmarked} label={t('reader.bookmark')} onClick={toggleBookmark}>
+            <Bookmark size={16} />
+          </ToolButton>
+          <ToolButton label={t('reader.notes')} onClick={openNotes}>
+            <NotebookPen size={16} />
+          </ToolButton>
+          <ToolButton label={t('reader.chapters')} onClick={openChapters}>
+            <List size={17} />
+          </ToolButton>
+          <ToolButton label={t('reader.settings')} onClick={openSettings}>
+            <Settings2 size={16} />
+          </ToolButton>
+          <ToolButton
+            active={focus}
+            label={focus ? t('reader.exitFocus') : t('reader.focus')}
+            onClick={toggleFocus}
+          >
+            <Focus size={16} />
+          </ToolButton>
+        </div>
+      </div>
+    );
   return (
     <div
       data-reader-toolbar
@@ -184,7 +261,9 @@ function ReaderToolbar({
           <Divider className="mx-1 hidden md:block" />
           <div
             title={t('reader.contentWidth')}
-            className="hidden items-center gap-2 text-xs text-ink/70 md:flex"
+            className={
+              settingsOpen ? 'hidden' : 'hidden items-center gap-2 text-xs text-ink/70 md:flex'
+            }
           >
             <span aria-hidden="true">↔</span>
             <ReaderRange
@@ -200,7 +279,7 @@ function ReaderToolbar({
             <span className="w-8 tabular-nums">{settings.width}</span>
           </div>
           <Divider className="mx-1 hidden lg:block" />
-          <div className="hidden items-center gap-0.5 lg:flex">
+          <div className={settingsOpen ? 'hidden' : 'hidden items-center gap-0.5 lg:flex'}>
             <ToolButton
               active={settings.align === 'left'}
               label={t('reader.left')}
@@ -307,6 +386,7 @@ export function FullChapterReaderPage() {
       fontFamily: allowedFonts.includes(stored.fontFamily)
         ? stored.fontFamily
         : DEFAULT_READER_FONT,
+      toolbarLayout: stored.toolbarLayout === 'vertical' ? 'vertical' : 'horizontal',
       chapterMode: CHAPTER_MODES.includes(stored.chapterMode)
         ? stored.chapterMode
         : DEFAULT_CHAPTER_MODE,
@@ -764,7 +844,7 @@ export function FullChapterReaderPage() {
     <ReaderLayout>
       <div
         ref={pageRef}
-        className={`reader-page relative min-h-screen bg-reader pb-16 text-ink ${mode === 'button' ? 'max-sm:pb-32' : ''}`}
+        className={`reader-page relative min-h-screen bg-reader pb-16 text-ink transition-[margin,padding] duration-300 motion-reduce:transition-none ${settingsOpen ? 'lg:mr-96' : ''} ${settings.toolbarLayout === 'vertical' ? 'pr-16 sm:pr-20' : ''} ${mode === 'button' ? 'max-sm:pb-32' : ''}`}
       >
         <p aria-live="polite" className="sr-only">
           Chương {current}: {readerChapterTitle(current)}
@@ -796,6 +876,7 @@ export function FullChapterReaderPage() {
         </header>
         <ReaderToolbar
           settings={settings}
+          settingsOpen={settingsOpen}
           update={update}
           progress={progress}
           bookmarked={bookmarked}
@@ -1048,6 +1129,7 @@ export function FullChapterReaderPage() {
         )}
         <Drawer
           open={settingsOpen}
+          docked
           title={t('reader.settings')}
           onClose={() => setSettingsOpen(false)}
         >
