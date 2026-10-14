@@ -11,7 +11,8 @@ const user = {
 };
 
 function Harness() {
-  const { authLoading, currentUser, login, logout, register } = useAuth();
+  const { authLoading, currentUser, login, loginWithGoogle, logout, register, verifyTwoFactor } =
+    useAuth();
   const [registration, setRegistration] = useState('');
   return (
     <div>
@@ -35,6 +36,15 @@ function Harness() {
       >
         register
       </button>
+      <button
+        type="button"
+        onClick={() => loginWithGoogle().catch((error) => setRegistration(error.code))}
+      >
+        google
+      </button>
+      <button type="button" onClick={() => verifyTwoFactor('a'.repeat(43), '123456')}>
+        verify
+      </button>
       <span>{registration}</span>
     </div>
   );
@@ -46,6 +56,56 @@ afterEach(() => {
 });
 
 describe('AuthProvider', () => {
+  it('does not authenticate until the login OTP is verified', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async (url) => {
+        if (url.endsWith('/auth/login'))
+          return new Response(
+            JSON.stringify({ requiresTwoFactor: true, challenge: 'a'.repeat(43) }),
+            { status: 200 },
+          );
+        if (url.endsWith('/two-factor/verify'))
+          return new Response(JSON.stringify({ user }), { status: 200 });
+        return new Response(JSON.stringify({ user: null }), { status: 200 });
+      }),
+    );
+    render(
+      <AuthProvider>
+        <Harness />
+      </AuthProvider>,
+    );
+    await screen.findByText('guest');
+    fireEvent.click(screen.getByText('login'));
+    await waitFor(() => expect(fetch).toHaveBeenCalledWith('/api/auth/login', expect.anything()));
+    expect(screen.getByText('guest')).toBeTruthy();
+    fireEvent.click(screen.getByText('verify'));
+    expect(await screen.findByText(user.email)).toBeTruthy();
+  });
+  it('keeps the user in the app when Google is not configured', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(
+        async (url) =>
+          new Response(
+            JSON.stringify(url.endsWith('/google/status') ? { enabled: false } : { user: null }),
+            { status: 200 },
+          ),
+      ),
+    );
+    render(
+      <AuthProvider>
+        <Harness />
+      </AuthProvider>,
+    );
+    await screen.findByText('guest');
+    fireEvent.click(screen.getByText('google'));
+    expect(await screen.findByText('google_unavailable')).toBeTruthy();
+    expect(fetch).toHaveBeenCalledWith(
+      '/api/auth/google/status',
+      expect.objectContaining({ credentials: 'include' }),
+    );
+  });
   it('waits for session restoration when StrictMode cancels the first request', async () => {
     vi.stubGlobal(
       'fetch',

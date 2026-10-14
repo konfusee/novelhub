@@ -1,6 +1,6 @@
 /* eslint-disable react-refresh/only-export-components */
 import { createContext, useContext, useEffect, useState } from 'react';
-import { apiRequest } from '../api/client';
+import { API_BASE, ApiError, apiRequest } from '../api/client';
 
 const AuthContext = createContext(null);
 export const ROLE_HOME = {
@@ -47,12 +47,13 @@ export function AuthProvider({ children }) {
     return () => controller.abort();
   }, []);
   const login = async (email, password, rememberMe = false) => {
-    const { user } = await apiRequest('/auth/login', {
+    const result = await apiRequest('/auth/login', {
       method: 'POST',
       body: { email, password, rememberMe },
     });
-    setCurrentUser(user);
-    return user;
+    if (result.requiresTwoFactor) return result;
+    setCurrentUser(result.user);
+    return result.user;
   };
   const register = ({
     name,
@@ -78,7 +79,17 @@ export function AuthProvider({ children }) {
     });
   const applyForAuthor = async () =>
     apiRequest('/auth/author-application', { method: 'POST', body: {} });
-  const loginWithGoogle = () => window.location.assign('/api/auth/google/start');
+  const loginWithGoogle = async ({ returnTo } = {}) => {
+    const { enabled } = await apiRequest('/auth/google/status');
+    if (!enabled)
+      throw new ApiError('Google sign-in is unavailable', { code: 'google_unavailable' });
+    if (typeof returnTo === 'string' && returnTo.startsWith('/') && !returnTo.startsWith('//')) {
+      sessionStorage.setItem('novelhub.google.returnTo', returnTo);
+    } else {
+      sessionStorage.removeItem('novelhub.google.returnTo');
+    }
+    window.location.assign(API_BASE + '/auth/google/start');
+  };
   const value = {
     currentUser,
     authLoading,
@@ -87,6 +98,19 @@ export function AuthProvider({ children }) {
     hasRole: (role) => currentUser?.roles?.includes(role),
     login,
     loginWithGoogle,
+    verifyTwoFactor: async (challenge, otp) => {
+      const { user } = await apiRequest('/auth/two-factor/verify', {
+        method: 'POST',
+        body: { challenge, otp },
+      });
+      setCurrentUser(user);
+      return user;
+    },
+    updateSecurity: async (action, body) => {
+      const { user } = await apiRequest('/auth/security/' + action, { method: 'POST', body });
+      setCurrentUser(user);
+      return user;
+    },
     logout: async () => {
       try {
         await apiRequest('/auth/logout', { method: 'POST' });

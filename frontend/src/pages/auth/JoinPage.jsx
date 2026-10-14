@@ -50,17 +50,29 @@ export function JoinPage({ initialMode }) {
   const { t } = useLocale();
   const location = useLocation();
   const navigate = useNavigate();
-  const { login, loginWithGoogle, register } = useAuth();
+  const { login, loginWithGoogle, register, verifyTwoFactor } = useAuth();
   const queryMode = new URLSearchParams(location.search).get('mode');
   const mode = initialMode || queryMode || 'register';
   const isLogin = mode === 'login';
   const [accountType, setAccountType] = useState('reader');
   const [rememberMe, setRememberMe] = useState(false);
+  const [loginChallenge, setLoginChallenge] = useState(
+    () => new URLSearchParams(location.search).get('googleChallenge') || '',
+  );
+  const [loginOtp, setLoginOtp] = useState('');
   const [captchaVersion, setCaptchaVersion] = useState(0);
   const [captcha, setCaptcha] = useState({ token: '', image: '', answer: '', status: 'loading' });
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmation, setShowConfirmation] = useState(false);
-  const [error, setError] = useState('');
+  const googleError = new URLSearchParams(location.search).get('googleError');
+  const googleErrorKeys = {
+    cancelled: 'auth.googleCancelled',
+    failed: 'auth.googleFailed',
+    account_unavailable: 'auth.googleAccountUnavailable',
+  };
+  const [error, setError] = useState(() =>
+    googleError ? t(googleErrorKeys[googleError] || 'auth.googleFailed') : '',
+  );
   const [notice, setNotice] = useState('');
   const [fieldErrors, setFieldErrors] = useState({});
   const [busy, setBusy] = useState(false);
@@ -123,6 +135,8 @@ export function JoinPage({ initialMode }) {
 
   const switchMode = (nextMode) => {
     resetFeedback();
+    setLoginChallenge('');
+    setLoginOtp('');
     navigate(nextMode === 'login' ? '/login' : '/register', {
       state: location.state,
       replace: true,
@@ -178,11 +192,32 @@ export function JoinPage({ initialMode }) {
     event.preventDefault();
     setError('');
     setNotice('');
-    if (showErrors({ ...credentialErrors(), ...agreementErrors() })) return;
+    if (!loginChallenge && showErrors({ ...credentialErrors(), ...agreementErrors() })) return;
+    if (loginChallenge && !/^[0-9]{6}$/.test(loginOtp)) {
+      setError(t('security.invalidOtp'));
+      return;
+    }
     setBusy(true);
     try {
       if (isLogin) {
-        finishAuth(await login(form.email.trim(), form.password, rememberMe));
+        if (loginChallenge) {
+          const user = await verifyTwoFactor(loginChallenge, loginOtp);
+          const returnTo = sessionStorage.getItem('novelhub.google.returnTo');
+          sessionStorage.removeItem('novelhub.google.returnTo');
+          if (
+            returnTo?.startsWith('/') &&
+            !returnTo.startsWith('//') &&
+            canAccessPath(user, returnTo)
+          )
+            navigate(returnTo, { replace: true });
+          else finishAuth(user);
+        } else {
+          const result = await login(form.email.trim(), form.password, rememberMe);
+          if (result.requiresTwoFactor) {
+            setLoginChallenge(result.challenge);
+            setBusy(false);
+          } else finishAuth(result);
+        }
       } else {
         const result = await register({
           name: form.name.trim(),
@@ -201,7 +236,13 @@ export function JoinPage({ initialMode }) {
         setBusy(false);
       }
     } catch (reason) {
-      setError(reason.code === 'invalid_captcha' ? t('auth.captchaInvalid') : reason.message);
+      setError(
+        reason.code === 'invalid_otp'
+          ? t('security.invalidOtp')
+          : reason.code === 'invalid_captcha'
+            ? t('auth.captchaInvalid')
+            : reason.message,
+      );
       if (!isLogin) reloadCaptcha();
       setBusy(false);
     }
@@ -210,7 +251,18 @@ export function JoinPage({ initialMode }) {
   const continueWithGoogle = async () => {
     setError('');
     setNotice('');
-    loginWithGoogle();
+    if (showErrors(agreementErrors())) return;
+    setBusy(true);
+    try {
+      await loginWithGoogle({
+        returnTo: !isLogin && accountType === 'author' ? ROUTES.authorApply : location.state?.from,
+      });
+    } catch (reason) {
+      setError(
+        t(reason.code === 'google_unavailable' ? 'auth.googleUnavailable' : 'auth.googleFailed'),
+      );
+      setBusy(false);
+    }
   };
 
   const describedBy = (key) => (fieldErrors[key] ? `join-${key}-error` : undefined);
@@ -265,46 +317,105 @@ export function JoinPage({ initialMode }) {
                 onSubmit={submit}
                 className="mt-4 space-y-3 lg:space-y-2.5"
               >
-                {!isLogin && (
+                {loginChallenge ? (
                   <>
-                    <fieldset aria-describedby="join-account-type-hint">
-                      <legend className="mb-1.5 text-sm font-semibold">
-                        {t('auth.accountType')}
-                      </legend>
-                      <div className="grid grid-cols-2 gap-2">
-                        {accountOptions.map((option) => (
-                          <AccountOption
-                            key={option.value}
-                            option={option}
-                            t={t}
-                            selected={accountType === option.value}
-                            onSelect={() => setAccountType(option.value)}
-                          />
-                        ))}
-                      </div>
-                      <p
-                        id="join-account-type-hint"
-                        aria-live="polite"
-                        className="mt-1.5 pl-4 text-xs leading-4 text-muted"
-                      >
-                        {t(selectedAccount.descriptionKey)}
+                    <p role="status" className="text-sm text-muted">
+                      {t('security.loginCodeSent')}
+                    </p>
+                    <label className="block text-sm font-semibold">
+                      {t('security.otp')}
+                      <Input
+                        className="mt-2"
+                        autoFocus
+                        inputMode="numeric"
+                        autoComplete="one-time-code"
+                        pattern="[0-9]{6}"
+                        maxLength={6}
+                        value={loginOtp}
+                        onChange={(e) => setLoginOtp(e.target.value.replace(/[^0-9]/g, ''))}
+                        required
+                      />
+                    </label>
+                    {error && (
+                      <p role="alert" className="text-sm text-rose-strong">
+                        {error}
                       </p>
-                    </fieldset>
-                    <div className="grid gap-3.5 sm:grid-cols-2 sm:gap-3">
-                      <Field id="join-name" label={t('auth.displayName')} error={fieldErrors.name}>
-                        <Input
-                          id="join-name"
-                          data-field="name"
-                          icon={UserRound}
-                          autoComplete="name"
-                          value={form.name}
-                          onChange={(event) => update('name', event.target.value)}
-                          placeholder={t('auth.displayNamePlaceholder')}
-                          aria-invalid={Boolean(fieldErrors.name)}
-                          aria-describedby={describedBy('name')}
-                          className={fieldErrors.name ? 'border-rose!' : undefined}
-                        />
-                      </Field>
+                    )}
+                    <Button type="submit" className="w-full" disabled={busy}>
+                      {t(busy ? 'auth.pleaseWait' : 'security.confirm')}
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      disabled={busy}
+                      onClick={() => {
+                        setLoginChallenge('');
+                        setLoginOtp('');
+                        setError('');
+                        navigate('/login', { replace: true });
+                      }}
+                    >
+                      {t('security.restartLogin')}
+                    </Button>
+                  </>
+                ) : (
+                  <>
+                    {!isLogin && (
+                      <>
+                        <fieldset aria-describedby="join-account-type-hint">
+                          <legend className="mb-1.5 text-sm font-semibold">
+                            {t('auth.accountType')}
+                          </legend>
+                          <div className="grid grid-cols-2 gap-2">
+                            {accountOptions.map((option) => (
+                              <AccountOption
+                                key={option.value}
+                                option={option}
+                                t={t}
+                                selected={accountType === option.value}
+                                onSelect={() => setAccountType(option.value)}
+                              />
+                            ))}
+                          </div>
+                          <p
+                            id="join-account-type-hint"
+                            aria-live="polite"
+                            className="mt-1.5 pl-4 text-xs leading-4 text-muted"
+                          >
+                            {t(selectedAccount.descriptionKey)}
+                          </p>
+                        </fieldset>
+                        <div className="grid gap-3.5 sm:grid-cols-2 sm:gap-3">
+                          <Field
+                            id="join-name"
+                            label={t('auth.displayName')}
+                            error={fieldErrors.name}
+                          >
+                            <Input
+                              id="join-name"
+                              data-field="name"
+                              icon={UserRound}
+                              autoComplete="name"
+                              value={form.name}
+                              onChange={(event) => update('name', event.target.value)}
+                              placeholder={t('auth.displayNamePlaceholder')}
+                              aria-invalid={Boolean(fieldErrors.name)}
+                              aria-describedby={describedBy('name')}
+                              className={fieldErrors.name ? 'border-rose!' : undefined}
+                            />
+                          </Field>
+                          <EmailField
+                            form={form}
+                            update={update}
+                            error={fieldErrors.email}
+                            describedBy={describedBy}
+                            t={t}
+                          />
+                        </div>
+                      </>
+                    )}
+
+                    {isLogin && (
                       <EmailField
                         form={form}
                         update={update}
@@ -312,277 +423,269 @@ export function JoinPage({ initialMode }) {
                         describedBy={describedBy}
                         t={t}
                       />
-                    </div>
-                  </>
-                )}
-
-                {isLogin && (
-                  <EmailField
-                    form={form}
-                    update={update}
-                    error={fieldErrors.email}
-                    describedBy={describedBy}
-                    t={t}
-                  />
-                )}
-
-                <Field
-                  id="join-password"
-                  label={t('auth.password')}
-                  error={fieldErrors.password}
-                  action={
-                    isLogin ? (
-                      <button
-                        type="button"
-                        onClick={() => navigate('/forgot-password')}
-                        className="rounded-full text-xs font-semibold text-brand-strong underline-offset-4 hover:underline"
-                      >
-                        {t('auth.forgotPassword')}
-                      </button>
-                    ) : (
-                      <span id="join-password-hint" className="text-xs text-muted">
-                        {t('auth.passwordMin')}
-                      </span>
-                    )
-                  }
-                >
-                  <Input
-                    id="join-password"
-                    data-field="password"
-                    icon={LockKeyhole}
-                    autoComplete={isLogin ? 'current-password' : 'new-password'}
-                    type={showPassword ? 'text' : 'password'}
-                    value={form.password}
-                    onChange={(event) => update('password', event.target.value)}
-                    placeholder={t('auth.enterPassword')}
-                    aria-invalid={Boolean(fieldErrors.password)}
-                    aria-describedby={
-                      [describedBy('password'), isLogin ? undefined : 'join-password-hint']
-                        .filter(Boolean)
-                        .join(' ') || undefined
-                    }
-                    className={fieldErrors.password ? 'border-rose!' : undefined}
-                    trailing={
-                      <IconButton
-                        type="button"
-                        label={t(showPassword ? 'auth.hidePassword' : 'auth.showPassword')}
-                        aria-pressed={showPassword}
-                        shape="circle"
-                        size="sm"
-                        className="border-transparent bg-transparent text-muted"
-                        onClick={() => setShowPassword((current) => !current)}
-                      >
-                        {showPassword ? <EyeOff size={17} /> : <Eye size={17} />}
-                      </IconButton>
-                    }
-                  />
-                </Field>
-
-                {!isLogin && (
-                  <>
-                    {form.password && (
-                      <div className="space-y-2" aria-live="polite">
-                        <div className="flex gap-1">
-                          {[1, 2, 3, 4].map((level) => (
-                            <span
-                              key={level}
-                              className={
-                                'h-1 flex-1 rounded-full ' +
-                                (level <= strength
-                                  ? strength < 2
-                                    ? 'bg-rose'
-                                    : strength < 4
-                                      ? 'bg-orange'
-                                      : 'bg-brand'
-                                  : 'bg-line')
-                              }
-                            />
-                          ))}
-                        </div>
-                        <p className="text-xs text-muted">
-                          {t('auth.strengthLabel', { strength: t('auth.strength' + strength) })}
-                        </p>
-                        <ul className="grid grid-cols-2 gap-1 text-xs text-muted">
-                          {strengthRules.map((valid, index) => (
-                            <li key={index} className={valid ? 'text-brand-strong' : ''}>
-                              {valid ? '✓ ' : '○ '}
-                              {t('auth.passwordRule' + index)}
-                            </li>
-                          ))}
-                        </ul>
-                      </div>
                     )}
+
                     <Field
-                      id="join-confirmation"
-                      label={t('auth.confirmPassword')}
-                      error={fieldErrors.confirmation}
+                      id="join-password"
+                      label={t('auth.password')}
+                      error={fieldErrors.password}
+                      action={
+                        isLogin ? (
+                          <button
+                            type="button"
+                            onClick={() => navigate('/forgot-password')}
+                            className="rounded-full text-xs font-semibold text-brand-strong underline-offset-4 hover:underline"
+                          >
+                            {t('auth.forgotPassword')}
+                          </button>
+                        ) : (
+                          <span id="join-password-hint" className="text-xs text-muted">
+                            {t('auth.passwordMin')}
+                          </span>
+                        )
+                      }
                     >
                       <Input
-                        id="join-confirmation"
-                        data-field="confirmation"
+                        id="join-password"
+                        data-field="password"
                         icon={LockKeyhole}
-                        type={showConfirmation ? 'text' : 'password'}
-                        autoComplete="new-password"
-                        maxLength={1024}
-                        value={form.confirmation}
-                        onChange={(event) => update('confirmation', event.target.value)}
-                        aria-invalid={Boolean(fieldErrors.confirmation)}
-                        aria-describedby={describedBy('confirmation')}
-                        placeholder={t('auth.enterConfirmation')}
+                        autoComplete={isLogin ? 'current-password' : 'new-password'}
+                        type={showPassword ? 'text' : 'password'}
+                        value={form.password}
+                        onChange={(event) => update('password', event.target.value)}
+                        placeholder={t('auth.enterPassword')}
+                        aria-invalid={Boolean(fieldErrors.password)}
+                        aria-describedby={
+                          [describedBy('password'), isLogin ? undefined : 'join-password-hint']
+                            .filter(Boolean)
+                            .join(' ') || undefined
+                        }
+                        className={fieldErrors.password ? 'border-rose!' : undefined}
                         trailing={
                           <IconButton
                             type="button"
-                            label={t(
-                              showConfirmation ? 'auth.hideConfirmation' : 'auth.showConfirmation',
-                            )}
-                            tone="neutral"
+                            label={t(showPassword ? 'auth.hidePassword' : 'auth.showPassword')}
+                            aria-pressed={showPassword}
                             shape="circle"
-                            className="border-transparent! bg-transparent! text-muted"
-                            onClick={() => setShowConfirmation((value) => !value)}
+                            size="sm"
+                            className="border-transparent bg-transparent text-muted"
+                            onClick={() => setShowPassword((current) => !current)}
                           >
-                            {showConfirmation ? <EyeOff size={17} /> : <Eye size={17} />}
+                            {showPassword ? <EyeOff size={17} /> : <Eye size={17} />}
                           </IconButton>
                         }
                       />
                     </Field>
-                    <div className="rounded-2xl border border-line bg-surface p-3">
-                      <label htmlFor="join-captcha" className="text-sm font-semibold">
-                        {t('auth.captchaLabel')}
-                      </label>
-                      <div className="my-2 flex flex-wrap items-center gap-3">
-                        {captcha.image ? (
-                          <img
-                            src={captcha.image}
-                            alt={t('auth.captchaImage')}
-                            width={220}
-                            height={70}
-                            className="max-w-full rounded-xl"
-                          />
-                        ) : (
-                          <p role="status" className="text-xs text-muted">
-                            {t(
-                              captcha.status === 'error'
-                                ? 'auth.captchaUnavailable'
-                                : 'auth.captchaLoading',
-                            )}
-                          </p>
+
+                    {!isLogin && (
+                      <>
+                        {form.password && (
+                          <div className="space-y-2" aria-live="polite">
+                            <div className="flex gap-1">
+                              {[1, 2, 3, 4].map((level) => (
+                                <span
+                                  key={level}
+                                  className={
+                                    'h-1 flex-1 rounded-full ' +
+                                    (level <= strength
+                                      ? strength < 2
+                                        ? 'bg-rose'
+                                        : strength < 4
+                                          ? 'bg-orange'
+                                          : 'bg-brand'
+                                      : 'bg-line')
+                                  }
+                                />
+                              ))}
+                            </div>
+                            <p className="text-xs text-muted">
+                              {t('auth.strengthLabel', { strength: t('auth.strength' + strength) })}
+                            </p>
+                            <ul className="grid grid-cols-2 gap-1 text-xs text-muted">
+                              {strengthRules.map((valid, index) => (
+                                <li key={index} className={valid ? 'text-brand-strong' : ''}>
+                                  {valid ? '✓ ' : '○ '}
+                                  {t('auth.passwordRule' + index)}
+                                </li>
+                              ))}
+                            </ul>
+                          </div>
                         )}
-                        <IconButton
-                          type="button"
-                          label={t('auth.captchaReload')}
-                          onClick={reloadCaptcha}
-                          disabled={captcha.status === 'loading'}
+                        <Field
+                          id="join-confirmation"
+                          label={t('auth.confirmPassword')}
+                          error={fieldErrors.confirmation}
                         >
-                          <RefreshCw size={18} />
-                        </IconButton>
-                      </div>
-                      <Input
-                        id="join-captcha"
-                        data-field="captcha"
-                        autoComplete="off"
-                        maxLength={6}
-                        value={captcha.answer}
-                        onChange={(event) =>
-                          setCaptcha((current) => ({
-                            ...current,
-                            answer: event.target.value.toUpperCase(),
-                          }))
-                        }
-                        placeholder={t('auth.captchaPlaceholder')}
-                        aria-invalid={Boolean(fieldErrors.captcha)}
-                        aria-describedby="join-captcha-error"
+                          <Input
+                            id="join-confirmation"
+                            data-field="confirmation"
+                            icon={LockKeyhole}
+                            type={showConfirmation ? 'text' : 'password'}
+                            autoComplete="new-password"
+                            maxLength={1024}
+                            value={form.confirmation}
+                            onChange={(event) => update('confirmation', event.target.value)}
+                            aria-invalid={Boolean(fieldErrors.confirmation)}
+                            aria-describedby={describedBy('confirmation')}
+                            placeholder={t('auth.enterConfirmation')}
+                            trailing={
+                              <IconButton
+                                type="button"
+                                label={t(
+                                  showConfirmation
+                                    ? 'auth.hideConfirmation'
+                                    : 'auth.showConfirmation',
+                                )}
+                                tone="neutral"
+                                shape="circle"
+                                className="border-transparent! bg-transparent! text-muted"
+                                onClick={() => setShowConfirmation((value) => !value)}
+                              >
+                                {showConfirmation ? <EyeOff size={17} /> : <Eye size={17} />}
+                              </IconButton>
+                            }
+                          />
+                        </Field>
+                        <div className="rounded-2xl border border-line bg-surface p-3">
+                          <label htmlFor="join-captcha" className="text-sm font-semibold">
+                            {t('auth.captchaLabel')}
+                          </label>
+                          <div className="my-2 flex flex-wrap items-center gap-3">
+                            {captcha.image ? (
+                              <img
+                                src={captcha.image}
+                                alt={t('auth.captchaImage')}
+                                width={220}
+                                height={70}
+                                className="max-w-full rounded-xl"
+                              />
+                            ) : (
+                              <p role="status" className="text-xs text-muted">
+                                {t(
+                                  captcha.status === 'error'
+                                    ? 'auth.captchaUnavailable'
+                                    : 'auth.captchaLoading',
+                                )}
+                              </p>
+                            )}
+                            <IconButton
+                              type="button"
+                              label={t('auth.captchaReload')}
+                              onClick={reloadCaptcha}
+                              disabled={captcha.status === 'loading'}
+                            >
+                              <RefreshCw size={18} />
+                            </IconButton>
+                          </div>
+                          <Input
+                            id="join-captcha"
+                            data-field="captcha"
+                            autoComplete="off"
+                            maxLength={6}
+                            value={captcha.answer}
+                            onChange={(event) =>
+                              setCaptcha((current) => ({
+                                ...current,
+                                answer: event.target.value.toUpperCase(),
+                              }))
+                            }
+                            placeholder={t('auth.captchaPlaceholder')}
+                            aria-invalid={Boolean(fieldErrors.captcha)}
+                            aria-describedby="join-captcha-error"
+                          />
+                          <FieldError id="join-captcha-error" message={fieldErrors.captcha} />
+                        </div>
+                      </>
+                    )}
+                    {isLogin && (
+                      <AgreementCheck
+                        label={t('auth.rememberMe')}
+                        checked={rememberMe}
+                        onChange={setRememberMe}
                       />
-                      <FieldError id="join-captcha-error" message={fieldErrors.captcha} />
+                    )}
+
+                    {!isLogin && accountType === 'author' && (
+                      <AuthorAgreementTrigger
+                        form={form}
+                        error={fieldErrors.author}
+                        describedBy={describedBy('author')}
+                        onOpen={() => setAgreementOpen(true)}
+                      />
+                    )}
+
+                    {!isLogin && (
+                      <div>
+                        <AgreementCheck
+                          field="terms"
+                          checked={form.terms}
+                          invalid={Boolean(fieldErrors.terms)}
+                          describedBy={describedBy('terms')}
+                          onChange={(value) => update('terms', value)}
+                          label={
+                            <span>
+                              {t('auth.termsAcceptBefore')}{' '}
+                              <LegalLink onOpen={() => setLegalDocument('terms')}>
+                                {t('legal.termsTitle')}
+                              </LegalLink>{' '}
+                              {t('auth.termsAnd')}{' '}
+                              <LegalLink onOpen={() => setLegalDocument('privacy')}>
+                                {t('legal.privacyTitle')}
+                              </LegalLink>
+                              .
+                            </span>
+                          }
+                        />
+                        <FieldError id="join-terms-error" message={fieldErrors.terms} />
+                      </div>
+                    )}
+
+                    {error && (
+                      <p
+                        role="alert"
+                        className="flex items-start gap-2.5 rounded-2xl border border-rose/30 bg-rose/10 px-4 py-2.5 text-sm leading-5 text-rose-strong"
+                      >
+                        <AlertTriangle size={17} className="mt-0.5 shrink-0" />
+                        {error}
+                      </p>
+                    )}
+                    {notice && (
+                      <p
+                        role="status"
+                        className="flex items-start gap-2.5 rounded-2xl border border-hairline bg-brand-soft px-4 py-2.5 text-sm leading-5 text-ink"
+                      >
+                        <Info size={17} className="mt-0.5 shrink-0 text-brand-strong" />
+                        {notice}
+                      </p>
+                    )}
+
+                    <div className="grid gap-2.5 pt-1 xl:grid-cols-2">
+                      <Button
+                        type="submit"
+                        size="lg"
+                        disabled={busy}
+                        aria-busy={busy}
+                        trailingIcon={busy ? undefined : ArrowRight}
+                        className="w-full"
+                      >
+                        {busy
+                          ? t('auth.pleaseWait')
+                          : t(isLogin ? 'auth.signIn' : 'auth.createAccount')}
+                      </Button>
+                      <Button
+                        type="button"
+                        variant="secondary"
+                        size="lg"
+                        disabled={busy}
+                        onClick={continueWithGoogle}
+                        className="w-full px-4 text-sm"
+                      >
+                        <GoogleMark />
+                        {t(isLogin ? 'auth.signInWithGoogle' : 'auth.signUpWithGoogle')}
+                      </Button>
                     </div>
                   </>
                 )}
-                {isLogin && (
-                  <AgreementCheck
-                    label={t('auth.rememberMe')}
-                    checked={rememberMe}
-                    onChange={setRememberMe}
-                  />
-                )}
-
-                {!isLogin && accountType === 'author' && (
-                  <AuthorAgreementTrigger
-                    form={form}
-                    error={fieldErrors.author}
-                    describedBy={describedBy('author')}
-                    onOpen={() => setAgreementOpen(true)}
-                  />
-                )}
-
-                {!isLogin && (
-                  <div>
-                    <AgreementCheck
-                      field="terms"
-                      checked={form.terms}
-                      invalid={Boolean(fieldErrors.terms)}
-                      describedBy={describedBy('terms')}
-                      onChange={(value) => update('terms', value)}
-                      label={
-                        <span>
-                          {t('auth.termsAcceptBefore')}{' '}
-                          <LegalLink onOpen={() => setLegalDocument('terms')}>
-                            {t('legal.termsTitle')}
-                          </LegalLink>{' '}
-                          {t('auth.termsAnd')}{' '}
-                          <LegalLink onOpen={() => setLegalDocument('privacy')}>
-                            {t('legal.privacyTitle')}
-                          </LegalLink>
-                          .
-                        </span>
-                      }
-                    />
-                    <FieldError id="join-terms-error" message={fieldErrors.terms} />
-                  </div>
-                )}
-
-                {error && (
-                  <p
-                    role="alert"
-                    className="flex items-start gap-2.5 rounded-2xl border border-rose/30 bg-rose/10 px-4 py-2.5 text-sm leading-5 text-rose-strong"
-                  >
-                    <AlertTriangle size={17} className="mt-0.5 shrink-0" />
-                    {error}
-                  </p>
-                )}
-                {notice && (
-                  <p
-                    role="status"
-                    className="flex items-start gap-2.5 rounded-2xl border border-hairline bg-brand-soft px-4 py-2.5 text-sm leading-5 text-ink"
-                  >
-                    <Info size={17} className="mt-0.5 shrink-0 text-brand-strong" />
-                    {notice}
-                  </p>
-                )}
-
-                <div className="grid gap-2.5 pt-1 xl:grid-cols-2">
-                  <Button
-                    type="submit"
-                    size="lg"
-                    disabled={busy}
-                    aria-busy={busy}
-                    trailingIcon={busy ? undefined : ArrowRight}
-                    className="w-full"
-                  >
-                    {busy
-                      ? t('auth.pleaseWait')
-                      : t(isLogin ? 'auth.signIn' : 'auth.createAccount')}
-                  </Button>
-                  <Button
-                    type="button"
-                    variant="secondary"
-                    size="lg"
-                    disabled={busy}
-                    onClick={continueWithGoogle}
-                    className="w-full px-4 text-sm"
-                  >
-                    <GoogleMark />
-                    {t(isLogin ? 'auth.signInWithGoogle' : 'auth.signUpWithGoogle')}
-                  </Button>
-                </div>
               </form>
 
               {isLogin && (

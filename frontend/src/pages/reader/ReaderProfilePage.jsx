@@ -1,3 +1,4 @@
+import { SecurityPanel } from '../../components/account/SecurityPanel';
 import { Fragment, useEffect, useId, useRef, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router';
 import {
@@ -68,7 +69,6 @@ const defaultPreferences = (user) => ({
   speed: 1,
   skip: 15,
   autoplay: true,
-  twoFactor: false,
 });
 /* Preferences saved by this page; null when nothing was saved yet (resource 'empty'). */
 const readSavedPreferences = () => {
@@ -272,7 +272,6 @@ function PreferencesForm({ initial, isSettings, section }) {
   const [saved, setSaved] = useState(true);
   const [genres, setGenres] = useState(initial.genres);
   const [audioPlaying, setAudioPlaying] = useState(false);
-  const [twoFactor, setTwoFactor] = useState(initial.twoFactor);
   const [notice, setNotice] = useState('');
   const changed = () => setSaved(false);
   const changeFontSize = (value) => {
@@ -291,7 +290,6 @@ function PreferencesForm({ initial, isSettings, section }) {
       speed,
       skip,
       autoplay,
-      twoFactor,
     };
     localStorage.setItem(PREFERENCES_KEY, JSON.stringify(values));
     setBaseline(values);
@@ -309,7 +307,6 @@ function PreferencesForm({ initial, isSettings, section }) {
     setSpeed(baseline.speed);
     setSkip(baseline.skip);
     setAutoplay(baseline.autoplay);
-    setTwoFactor(baseline.twoFactor);
     setSaved(true);
     setNotice(t(isSettings ? 'settings.preferencesDiscarded' : 'settings.profileDiscarded'));
   };
@@ -619,33 +616,7 @@ function PreferencesForm({ initial, isSettings, section }) {
               </ControlRow>
             </Card>
           )}
-          {section === 'security' && (
-            <Card>
-              <PanelTitle
-                icon={ShieldCheck}
-                title={t('settings.security.title')}
-                note={t('settings.security.note')}
-              />
-              <ControlRow label={t('settings.security.twoFactor')}>
-                <Button
-                  onClick={() => {
-                    setTwoFactor((value) => !value);
-                    setNotice(
-                      t(
-                        twoFactor
-                          ? 'settings.security.disabledNotice'
-                          : 'settings.security.enabledNotice',
-                      ),
-                    );
-                  }}
-                  variant={twoFactor ? 'secondary' : 'outline'}
-                  size="sm"
-                >
-                  {t(twoFactor ? 'settings.security.disable' : 'settings.security.configure')}
-                </Button>
-              </ControlRow>
-            </Card>
-          )}
+          {section === 'security' && <SecurityPanel />}
         </div>
         {isSettings && (
           <aside className="min-w-0 space-y-5 xl:sticky xl:top-24">

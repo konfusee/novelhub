@@ -1,7 +1,7 @@
 import { Navigate, Route, Routes, useLocation, useNavigate } from 'react-router';
-import { lazy, Suspense, useEffect } from 'react';
+import { lazy, Suspense, useEffect, useState } from 'react';
 import { ThemeProvider } from './context/ThemeContext';
-import { AuthProvider, getAccountHome, useAuth } from './context/AuthContext';
+import { AuthProvider, canAccessPath, getAccountHome, useAuth } from './context/AuthContext';
 import { LocaleProvider } from './context/LocaleContext';
 import { MockDataProvider } from './context/MockDataContext';
 import { authorAgreements } from './data/authorAgreements';
@@ -613,12 +613,26 @@ function AppRoutes() {
 }
 
 function GoogleAuthComplete() {
+  const [requestedPath] = useState(() => sessionStorage.getItem('novelhub.google.returnTo'));
   const { authLoading, currentUser } = useAuth();
   const navigate = useNavigate();
   useEffect(() => {
-    if (!authLoading)
-      navigate(currentUser ? getAccountHome(currentUser) : '/login', { replace: true });
-  }, [authLoading, currentUser, navigate]);
+    if (!authLoading) {
+      sessionStorage.removeItem('novelhub.google.returnTo');
+      const safePath =
+        requestedPath?.startsWith('/') &&
+        !requestedPath.startsWith('//') &&
+        canAccessPath(currentUser, requestedPath);
+      navigate(
+        currentUser
+          ? safePath
+            ? requestedPath
+            : getAccountHome(currentUser)
+          : '/login?googleError=failed',
+        { replace: true },
+      );
+    }
+  }, [authLoading, currentUser, navigate, requestedPath]);
   return <RouteFallback />;
 }
 

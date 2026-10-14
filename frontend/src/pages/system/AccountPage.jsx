@@ -1,9 +1,9 @@
+import { SecurityPanel } from '../../components/account/SecurityPanel';
 import { Fragment, useState } from 'react';
 import {
   AlertTriangle,
   CheckCircle2,
   Laptop,
-  LockKeyhole,
   LogOut,
   Mail,
   RefreshCw,
@@ -15,7 +15,6 @@ import {
 import { AdminLayout, AuthorLayout, ModeratorLayout, ReaderLayout } from '../../layouts';
 import {
   Avatar,
-  Badge,
   Button,
   Card,
   EmptyState,
@@ -36,7 +35,6 @@ const layouts = {
 };
 
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-const AUTH_SERVER_NOTE = 'Khả dụng khi kết nối máy chủ xác thực.';
 const activeSessions = [
   { id: 'current', icon: Laptop, title: 'Windows · Chrome', current: true },
   { id: 'iphone', icon: Smartphone, title: 'iPhone · Safari', current: false },
@@ -147,46 +145,7 @@ export function AccountPage({ workspace = 'reader', embedded = false }) {
               </div>
             </Card>
 
-            <Card>
-              <SectionHeader
-                title={<IconTitle icon={LockKeyhole}>{t('account.security')}</IconTitle>}
-              />
-              <div className="mt-4 divide-y divide-hairline">
-                <AccountRow
-                  title={t('account.password')}
-                  description={t('account.passwordDescription')}
-                >
-                  <Button
-                    variant="secondary"
-                    size="sm"
-                    disabled
-                    aria-describedby="account-auth-note"
-                  >
-                    {t('account.changePassword')}
-                  </Button>
-                </AccountRow>
-                <AccountRow
-                  title={t('account.twoFactor')}
-                  description={t('account.twoFactorDescription')}
-                  badge={<Badge>Chưa bật</Badge>}
-                >
-                  <Button
-                    variant="secondary"
-                    size="sm"
-                    disabled
-                    aria-describedby="account-auth-note"
-                  >
-                    {t('account.configure')}
-                  </Button>
-                </AccountRow>
-              </div>
-              <p
-                id="account-auth-note"
-                className="mt-4 rounded-2xl bg-elevated px-4 py-3 text-xs text-ink/70"
-              >
-                {AUTH_SERVER_NOTE}
-              </p>
-            </Card>
+            <SecurityPanel />
 
             <Card>
               <SectionHeader title={<IconTitle icon={Laptop}>{t('account.sessions')}</IconTitle>} />
@@ -344,21 +303,6 @@ function IconTitle({ icon: Icon, children }) {
       </span>
       {children}
     </span>
-  );
-}
-
-function AccountRow({ title, description, badge, children }) {
-  return (
-    <div className="flex flex-col justify-between gap-3 py-4 first:pt-0 last:pb-0 sm:flex-row sm:items-center">
-      <div className="min-w-0">
-        <div className="flex flex-wrap items-center gap-2">
-          <strong className="text-sm">{title}</strong>
-          {badge}
-        </div>
-        <p className="mt-1 text-sm text-muted">{description}</p>
-      </div>
-      <div className="shrink-0">{children}</div>
-    </div>
   );
 }
 
