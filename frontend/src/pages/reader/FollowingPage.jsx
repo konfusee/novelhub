@@ -23,20 +23,18 @@ import {
   EmptyState,
   IconButton,
   Input,
-  ProgressBar,
   Select,
   Skeleton,
   Tabs,
 } from '../../components/ui';
-import { followingData } from '../../data/mock/reader';
+import { useBackendDocument } from '../../api/useBackendResource';
 import { useLocale } from '../../context/LocaleContext';
-import { useMockResource } from '../../context/MockDataContext';
 
 const tabs = [
-  ['saved', 'following.savedStories', 18],
-  ['authors', 'following.followedAuthors', 12],
-  ['favorites', 'following.favorites', 9],
-  ['collections', 'following.collections', 4],
+  ['saved', 'following.savedStories'],
+  ['authors', 'following.followedAuthors'],
+  ['favorites', 'following.favorites'],
+  ['collections', 'following.collections'],
 ];
 
 const PAGE_SIZE = 4;
@@ -46,7 +44,7 @@ const initials = (name) =>
     .split(' ')
     .map((part) => part[0])
     .join('');
-const isFollowingEmpty = (value) => !value.savedStories.length && !value.collections.length;
+const emptyFollowing = { savedStories: [], collections: [], authors: [] };
 
 function CollectionCardSkeleton() {
   return (
@@ -75,8 +73,7 @@ export function FollowingPage() {
   const [query, setQuery] = useState('');
   const [sort, setSort] = useState('latest');
   const [page, setPage] = useState(1);
-  const [following, setFollowing] = useState([]);
-  const feed = useMockResource('reader:following', followingData, { isEmpty: isFollowingEmpty });
+  const feed = useBackendDocument('/reader/following', emptyFollowing);
   const loading = feed.status === 'loading';
   const ready = feed.status === 'ready';
   const stories = useMemo(
@@ -97,10 +94,6 @@ export function FollowingPage() {
     setTab(value);
     setPage(1);
   };
-  const toggleFollow = (name) =>
-    setFollowing((current) =>
-      current.includes(name) ? current.filter((item) => item !== name) : [...current, name],
-    );
   return (
     <ReaderLayout>
       <div className="page-reader py-7">
@@ -123,7 +116,7 @@ export function FollowingPage() {
             </nav>
             <h1 className="mt-3 text-h2 sm:text-h1">{t('following.title')}</h1>
             <p className="mt-2 max-w-2xl text-sm leading-6 text-muted">
-              {t('following.description')}
+              {t('readerData.followingDescription')}
             </p>
             <div className="mt-6">
               <Tabs
@@ -131,23 +124,23 @@ export function FollowingPage() {
                 label={t('following.title')}
                 value={tab}
                 onChange={changeTab}
-                items={tabs.map(([value, label, count]) => ({
+                items={tabs.map(([value, label]) => ({
                   value,
-                  label: `${t(label)} (${count})`,
+                  label: `${t(label)} (${!ready ? '—' : value === 'saved' ? feed.data.savedStories.length : value === 'collections' ? feed.data.collections.length : '—'})`,
                 }))}
               />
             </div>
             {(loading || ready) && (
               <section className="mt-8">
                 <div className="flex flex-wrap items-end justify-between gap-3">
-                  <h2 className="text-h3 md:text-h2">{t('following.featuredCollections')}</h2>
+                  <h2 className="text-h3 md:text-h2">{t('readerData.genreCollections')}</h2>
                   <Button
                     variant="ghost"
                     size="sm"
                     onClick={() => changeTab('collections')}
                     className="text-brand-strong"
                   >
-                    {t('following.viewCollections', { count: 4 })}
+                    {t('readerData.viewGroups', { count: feed.data.collections.length })}
                     <ArrowRight size={14} />
                   </Button>
                 </div>
@@ -157,8 +150,8 @@ export function FollowingPage() {
                     aria-label="Đang tải bộ sưu tập"
                     className="nh-grid-12 mt-4 grid gap-4 nh-md-cols-2"
                   >
-                    {followingData.collections.map((item) => (
-                      <CollectionCardSkeleton key={item.title} />
+                    {Array.from({ length: 2 }, (_, index) => (
+                      <CollectionCardSkeleton key={index} />
                     ))}
                   </div>
                 ) : (
@@ -167,20 +160,22 @@ export function FollowingPage() {
                       <Card as="article" key={item.title} className="flex items-center gap-4 p-5">
                         <div className="min-w-0 flex-1">
                           <p className="text-[11px] font-semibold uppercase tracking-[.16em] text-brand-strong">
-                            {item.label}
+                            {t('readerData.fromLibrary')}
                           </p>
                           <h3 className="mt-2 text-h3">{item.title}</h3>
-                          <p className="mt-2 text-sm leading-5 text-muted">{item.description}</p>
+                          <p className="mt-2 text-sm leading-5 text-muted">
+                            {t('readerData.groupDescription')}
+                          </p>
                           <p className="mt-4 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-muted">
                             <span className="inline-flex items-center gap-1.5 whitespace-nowrap">
                               <BookOpen size={14} /> {item.count} truyện
                             </span>
                             <span aria-hidden="true">•</span>
-                            <span className="whitespace-nowrap">{item.updated}</span>
+                            <span className="whitespace-nowrap">{t('readerData.fromLibrary')}</span>
                           </p>
                         </div>
                         <StoryCover
-                          story={item}
+                          story={item.story}
                           className="aspect-[2/3] w-24 shrink-0 -rotate-3 rounded-2xl shadow-soft"
                         />
                       </Card>
@@ -195,7 +190,10 @@ export function FollowingPage() {
                   <Select
                     aria-label={t('following.sortStories')}
                     value={sort}
-                    onChange={(e) => setSort(e.target.value)}
+                    onChange={(e) => {
+                      setSort(e.target.value);
+                      setPage(1);
+                    }}
                     className="shrink-0"
                   >
                     <option value="latest">{t('following.latestUpdated')}</option>
@@ -203,7 +201,10 @@ export function FollowingPage() {
                   </Select>
                   {ready ? (
                     <span className="hidden text-xs text-muted md:block">
-                      {t('following.showingSaved', { shown: stories.length, total: 18 })}
+                      {t('following.showingSaved', {
+                        shown: pageStories.length,
+                        total: feed.data.savedStories.length,
+                      })}
                     </span>
                   ) : (
                     loading && <Skeleton className="hidden h-3 w-40 md:block" />
@@ -246,7 +247,7 @@ export function FollowingPage() {
                     }
                   />
                 </Card>
-              ) : feed.status === 'empty' ? (
+              ) : tab === 'saved' && !feed.data.savedStories.length ? (
                 <Card className="mt-4 p-0">
                   <EmptyState
                     icon={BookOpen}
@@ -264,12 +265,28 @@ export function FollowingPage() {
                   <EmptyState
                     icon={UsersRound}
                     title={t('following.yourAuthors')}
-                    description={t('following.authorUpdates')}
+                    description={t('readerData.noAuthorFollowing')}
                     action={
                       <ButtonLink to="/search" variant="secondary" size="sm">
                         {t('navigation.explore')}
                       </ButtonLink>
                     }
+                  />
+                </Card>
+              ) : tab === 'favorites' ? (
+                <Card className="mt-4 p-0">
+                  <EmptyState
+                    icon={FolderHeart}
+                    title={t('readerData.noFavoritesTitle')}
+                    description={t('readerData.noFavorites')}
+                  />
+                </Card>
+              ) : tab === 'collections' && !feed.data.collections.length ? (
+                <Card className="mt-4 p-0">
+                  <EmptyState
+                    icon={FolderHeart}
+                    title={t('readerData.noGroups')}
+                    description={t('readerData.groupDescription')}
                   />
                 </Card>
               ) : tab === 'collections' ? (
@@ -280,7 +297,7 @@ export function FollowingPage() {
                         <FolderHeart size={18} />
                       </span>
                       <h3 className="mt-3 text-base font-semibold">{item.title}</h3>
-                      <p className="mt-1 text-sm text-muted">{item.description}</p>
+                      <p className="mt-1 text-sm text-muted">{t('readerData.groupDescription')}</p>
                     </Card>
                   ))}
                 </div>
@@ -344,7 +361,7 @@ export function FollowingPage() {
                 </Link>
               </div>
               <p className="mt-2 text-sm leading-5 text-muted">
-                {t('following.suggestedDescription')}
+                {t('readerData.authorSuggestionNote')}
               </p>
               {loading ? (
                 <ul
@@ -352,12 +369,8 @@ export function FollowingPage() {
                   aria-label="Đang tải tác giả gợi ý"
                   className="mt-4 divide-y divide-hairline"
                 >
-                  {followingData.authors.map((author) => (
-                    <li
-                      key={author.name}
-                      aria-hidden="true"
-                      className="flex items-center gap-3 py-3.5"
-                    >
+                  {Array.from({ length: 4 }, (_, index) => (
+                    <li key={index} aria-hidden="true" className="flex items-center gap-3 py-3.5">
                       <Skeleton className="size-10 shrink-0" />
                       <span className="min-w-0 flex-1 space-y-2">
                         <Skeleton className="h-3.5 w-3/4" />
@@ -370,9 +383,8 @@ export function FollowingPage() {
               ) : ready ? (
                 <ul className="nh-fade-enter mt-4 divide-y divide-hairline">
                   {feed.data.authors.map((author) => {
-                    const followed = following.includes(author.name);
                     return (
-                      <li key={author.name} className="flex items-center gap-3 py-3.5">
+                      <li key={author.id} className="flex items-center gap-3 py-3.5">
                         <span
                           aria-hidden="true"
                           className="grid size-10 shrink-0 place-items-center rounded-full bg-brand-soft text-xs font-bold text-brand-strong"
@@ -388,15 +400,14 @@ export function FollowingPage() {
                           </h3>
                           <p className="text-xs text-muted">{author.meta}</p>
                         </div>
-                        <Button
+                        <ButtonLink
+                          to={`/stories/${author.storyId}`}
                           size="sm"
-                          variant={followed ? 'primary' : 'outline'}
-                          aria-pressed={followed}
-                          onClick={() => toggleFollow(author.name)}
+                          variant="outline"
                           className="px-3 text-xs"
                         >
-                          {t(followed ? 'following.following' : 'following.follow')}
-                        </Button>
+                          {t('readerData.viewWork')}
+                        </ButtonLink>
                       </li>
                     );
                   })}
@@ -412,12 +423,10 @@ export function FollowingPage() {
             <Card>
               <div className="flex items-center justify-between gap-3">
                 <h2 className="text-base font-semibold">{t('following.weeklyGoal')}</h2>
-                <strong className="text-sm tabular-nums text-brand-strong">
-                  {t('following.days', { current: 4, total: 5 })}
-                </strong>
+                <strong className="text-sm tabular-nums text-brand-strong">—</strong>
               </div>
-              <ProgressBar value={4} max={5} label={t('following.weeklyGoal')} className="mt-4" />
-              <p className="mt-3 text-xs leading-5 text-muted">{t('following.goalDescription')}</p>
+              <div aria-hidden="true" className="mt-4 h-1.5 rounded-full bg-elevated" />
+              <p className="mt-3 text-xs leading-5 text-muted">{t('readerData.noWeeklyGoal')}</p>
               <ButtonLink to="/reader/history" variant="secondary" className="mt-4 w-full">
                 <Target size={16} />
                 {t('following.viewProgress')}

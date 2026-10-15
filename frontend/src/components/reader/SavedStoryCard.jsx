@@ -1,6 +1,5 @@
-import { useState } from 'react';
 import { Link } from 'react-router';
-import { ArrowRight, Bell, BellOff, Heart } from '../icons';
+import { ArrowRight, BellOff, Heart } from '../icons';
 import { Badge, ButtonLink, Card, IconButton, Skeleton } from '../ui';
 import { StoryCover } from '../story/StoryCover';
 import { useLocale } from '../../context/LocaleContext';
@@ -14,8 +13,7 @@ const genreTones = {
 
 export function SavedStoryCard({ story }) {
   const { t } = useLocale();
-  const [favorite, setFavorite] = useState(story.favorite);
-  const [alerts, setAlerts] = useState(story.alerts);
+
   const href = `/stories/${story.id || 'demo'}`;
   return (
     <Card as="article" className="group flex gap-4 p-4">
@@ -34,13 +32,13 @@ export function SavedStoryCard({ story }) {
           </div>
           <IconButton
             label={t('following.toggleFavorite')}
-            aria-pressed={favorite}
+            disabled
+            title={t('readerData.noFavorites')}
             tone="rose"
             shape="circle"
             size="md"
-            onClick={() => setFavorite(!favorite)}
           >
-            <Heart size={17} className={favorite ? 'fill-current' : ''} />
+            <Heart size={17} />
           </IconButton>
         </div>
         <div className="mt-2">
@@ -48,19 +46,23 @@ export function SavedStoryCard({ story }) {
         </div>
         <p className="mb-4 mt-3 flex items-start gap-2 rounded-2xl bg-brand-soft px-3 py-2 text-xs leading-5 text-brand-strong">
           <span aria-hidden="true" className="mt-2 size-1.5 shrink-0 rounded-full bg-brand" />
-          {story.update}
+          {story.latestChapterTitle || t('readerData.noChapter')}
         </p>
         <div className="mt-auto flex flex-wrap items-center justify-between gap-x-3 gap-y-2 border-t border-hairline pt-3">
           <button
             type="button"
-            aria-pressed={alerts}
-            onClick={() => setAlerts(!alerts)}
+            disabled
+            title={t('readerData.noAlerts')}
             className="flex min-h-9 items-center gap-1.5 rounded-full text-xs text-muted transition-colors hover:text-ink pointer-coarse:min-h-11"
           >
-            {alerts ? <Bell size={16} className="text-brand" /> : <BellOff size={16} />}
-            {t(alerts ? 'following.alertsOn' : 'following.muted')}
+            <BellOff size={16} />
+            {t('readerData.alertsUnavailable')}
           </button>
-          <ButtonLink to={href} size="sm" trailingIcon={ArrowRight}>
+          <ButtonLink
+            to={story.chapterId ? `/read/${story.id}/${story.chapterId}` : href}
+            size="sm"
+            trailingIcon={ArrowRight}
+          >
             {t('following.readNext')}
           </ButtonLink>
         </div>
