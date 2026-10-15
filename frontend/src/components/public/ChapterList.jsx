@@ -3,7 +3,7 @@ import { Badge, ButtonLink, Skeleton } from '../ui';
 import { useAuth } from '../../context/AuthContext';
 import { useLocale } from '../../context/LocaleContext';
 
-export function ChapterList({ chapters, storyId = 'demo' }) {
+export function ChapterList({ chapters, storyId }) {
   const { isAuthenticated } = useAuth();
   const { t } = useLocale();
   return (
@@ -41,14 +41,14 @@ export function ChapterList({ chapters, storyId = 'demo' }) {
             <ButtonLink
               to={
                 isAuthenticated
-                  ? `/read/${storyId}/chapter-${chapter.number}`
+                  ? `/read/${storyId}/${chapter.id ?? `chapter-${chapter.number}`}`
                   : chapter.free
-                    ? `/stories/${storyId}/preview/chapter-${chapter.number}`
+                    ? `/stories/${storyId}/preview/${chapter.id ?? `chapter-${chapter.number}`}`
                     : '/login'
               }
               state={
                 !isAuthenticated && !chapter.free
-                  ? { from: `/read/${storyId}/chapter-${chapter.number}` }
+                  ? { from: `/read/${storyId}/${chapter.id ?? `chapter-${chapter.number}`}` }
                   : undefined
               }
               variant={readable ? 'outline' : 'secondary'}

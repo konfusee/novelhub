@@ -29,32 +29,22 @@ import {
   Skeleton,
   Tabs,
 } from '../../components/ui';
-import { searchResults, trendingSearches } from '../../data/mock/search';
-import { stories } from '../../data/mock/stories';
+import { useBackendResource } from '../../api/useBackendResource';
+import { useDiscoveryData } from '../../api/useDiscoveryData';
 import { useLocale } from '../../context/LocaleContext';
-import { useMockResource } from '../../context/MockDataContext';
 
 const resultTabs = ['all', 'stories', 'audiobooks', 'authors'];
 const PAGE_SIZE = 2;
-const INITIAL_FILTERS = [
-  'Stories',
-  'Audiobooks',
-  'Authors',
-  'Fantasy',
-  'Romance',
-  'Text Story',
-  'Audiobook Edition',
-];
+const INITIAL_FILTERS = ['Stories', 'Audiobooks', 'Authors', 'Text Story', 'Audiobook Edition'];
 const filterGenres = {
-  Fantasy: ['Fantasy'],
-  Romance: ['Romance'],
-  'Mystery & Thriller': ['Mystery'],
-  'Sci-Fi': ['Sci-Fi'],
-  Adventure: ['Adventure'],
+  Fantasy: ['Fantasy', 'Kỳ ảo'],
+  Romance: ['Romance', 'Lãng mạn'],
+  'Mystery & Thriller': ['Mystery', 'Bí ẩn'],
+  'Sci-Fi': ['Sci-Fi', 'Khoa học viễn tưởng'],
+  Adventure: ['Adventure', 'Phiêu lưu'],
 };
-const featuredStory = stories[0];
 
-/* Applies the sidebar filters (content type/format, genre, publication status) to mock results. */
+/* Applies the existing sidebar filters to the API results. */
 function matchesFilters(result, { checked, status }) {
   const formats = new Set();
   if (checked.includes('Stories') || checked.includes('Text Story')) formats.add('Story');
@@ -72,7 +62,7 @@ function matchesFilters(result, { checked, status }) {
 export function SearchResultsPage({ embedded = false }) {
   const { t } = useLocale();
   const [params] = useSearchParams();
-  const [query, setQuery] = useState(() => params.get('q') ?? (params.has('format') ? '' : 'moon'));
+  const [query, setQuery] = useState(() => params.get('q') ?? '');
   const [sort, setSort] = useState('Relevance');
   const [tab, setTab] = useState(() => (params.get('format') === 'audio' ? 'audiobooks' : 'all'));
   const [checked, setChecked] = useState(INITIAL_FILTERS);
@@ -81,17 +71,16 @@ export function SearchResultsPage({ embedded = false }) {
   const [filtersOpen, setFiltersOpen] = useState(false);
   const [page, setPage] = useState(1);
   const appliedCount = applied.checked.length + (applied.status === 'allStatuses' ? 0 : 1);
-  const catalog = useMockResource('search:results', searchResults);
+  const catalog = useBackendResource(
+    `/catalog/stories?pageSize=100&q=${encodeURIComponent(query)}`,
+  );
+  const { tags } = useDiscoveryData();
+  const trendingSearches = tags.map((tag) => tag.label);
+  const featuredStory = catalog.data[0];
   const loading = catalog.status === 'loading';
   const results = useMemo(
-    () =>
-      catalog.data.filter(
-        (result) =>
-          `${result.title} ${result.author} ${result.genres.join(' ')}`
-            .toLowerCase()
-            .includes(query.toLowerCase()) && matchesFilters(result, applied),
-      ),
-    [catalog.data, query, applied],
+    () => catalog.data.filter((result) => matchesFilters(result, applied)),
+    [catalog.data, applied],
   );
   const visibleResults = useMemo(() => {
     const filtered = results.filter((result) =>
@@ -141,6 +130,17 @@ export function SearchResultsPage({ embedded = false }) {
   const filterProps = {
     checked,
     status,
+    counts: {
+      Stories: catalog.data.filter((item) => item.format === 'Story').length,
+      Audiobooks: catalog.data.filter((item) => item.format === 'Audio').length,
+      Authors: new Set(catalog.data.map((item) => item.authorId ?? item.author)).size,
+      ...Object.fromEntries(
+        Object.entries(filterGenres).map(([key, names]) => [
+          key,
+          catalog.data.filter((item) => item.genres.some((genre) => names.includes(genre))).length,
+        ]),
+      ),
+    },
     onToggle: toggle,
     onStatusChange: setStatus,
     onReset: reset,
@@ -400,37 +400,36 @@ export function SearchResultsPage({ embedded = false }) {
               ))}
             </div>
           </Card>
-          <Card className="p-5">
-            <span className="text-[11px] font-semibold uppercase tracking-[.14em] text-orange-strong">
-              {t('search.storyOfMonth')}
-            </span>
-            <div className="mt-4 flex gap-3">
-              <StoryCover
-                story={featuredStory}
-                className="aspect-[2/3] w-16 shrink-0 rounded-xl border border-hairline"
-              />
-              <div className="min-w-0">
-                <h3 className="text-sm font-semibold">{featuredStory.title}</h3>
-                <p className="text-xs text-muted">tác giả {featuredStory.author}</p>
-                <p className="mt-2 flex items-center gap-1 text-xs font-semibold tabular-nums">
-                  <Star size={13} className="fill-orange text-orange" aria-hidden="true" />
-                  {featuredStory.rating}
-                </p>
+          {featuredStory && (
+            <Card className="p-5">
+              <span className="text-[11px] font-semibold uppercase tracking-[.14em] text-orange-strong">
+                {t('search.storyOfMonth')}
+              </span>
+              <div className="mt-4 flex gap-3">
+                <StoryCover
+                  story={featuredStory}
+                  className="aspect-[2/3] w-16 shrink-0 rounded-xl border border-hairline"
+                />
+                <div className="min-w-0">
+                  <h3 className="text-sm font-semibold">{featuredStory.title}</h3>
+                  <p className="text-xs text-muted">tác giả {featuredStory.author}</p>
+                  <p className="mt-2 flex items-center gap-1 text-xs font-semibold tabular-nums">
+                    <Star size={13} className="fill-orange text-orange" aria-hidden="true" />
+                    {featuredStory.rating}
+                  </p>
+                </div>
               </div>
-            </div>
-            <p className="mt-4 text-xs leading-5 text-muted">
-              The wind moved gently through the ancient trees, carrying whispers of forgotten
-              stories.
-            </p>
-            <ButtonLink
-              to={`/stories/${featuredStory.id}`}
-              size="sm"
-              trailingIcon={ArrowRight}
-              className="mt-4 w-full"
-            >
-              {t('search.readFeature')}
-            </ButtonLink>
-          </Card>
+              <p className="mt-4 text-xs leading-5 text-muted">{featuredStory.description}</p>
+              <ButtonLink
+                to={`/stories/${featuredStory.id}`}
+                size="sm"
+                trailingIcon={ArrowRight}
+                className="mt-4 w-full"
+              >
+                {t('search.readFeature')}
+              </ButtonLink>
+            </Card>
+          )}
           <Card className="bg-elevated p-5 text-center">
             <p className="font-medium italic leading-relaxed">
               “Những câu chuyện hay làm ngày mai thêm tử tế.”

@@ -30,11 +30,9 @@ import {
   SkeletonText,
   Tabs,
 } from '../../components/ui';
-import { chapterPreview, storyChapterList, storyDetail } from '../../data/mock/reader';
-import { stories } from '../../data/mock/stories';
+import { useBackendDocument } from '../../api/useBackendResource';
 import { useAuth } from '../../context/AuthContext';
 import { useLocale } from '../../context/LocaleContext';
-import { useMockResource } from '../../context/MockDataContext';
 
 const tabs = [
   ['chapters', 'storyDetail.chapters'],
@@ -43,13 +41,20 @@ const tabs = [
   ['audiobooks', 'storyDetail.relatedAudiobooks'],
 ];
 const genreTones = ['green', 'orange', 'purple'];
-const ratingBreakdown = [82, 12, 4, 1, 1];
-/* Detail mock has no cover; reuse the catalogue entry so StoryCover renders the real artwork. */
-const coverStory = stories.find((story) => story.title === storyDetail.title) ?? storyDetail;
-const featuredReview =
-  '“Văn phong ở chương 2 khiến tôi nổi da gà. Thế giới truyện rất sống động và mạch căng thẳng không hề ngắt quãng.”';
-
-const isMissing = (value) => !value;
+const ratingBreakdown = [0, 0, 0, 0, 0];
+const emptyStory = {
+  title: '',
+  author: '',
+  genres: [],
+  chapters: 0,
+  ratings: 0,
+  rating: '—',
+  reads: 0,
+  followers: 0,
+  authorStats: {},
+  ratingBreakdown: [0, 0, 0, 0, 0],
+};
+const emptyDocument = { story: emptyStory, chapters: [] };
 
 function RetryButton({ onClick }) {
   return (
@@ -175,7 +180,7 @@ function StoryAsideSkeleton() {
 export function StoryDetailPage({ embedded = false }) {
   const { t } = useLocale();
   const { isAuthenticated } = useAuth();
-  const { storyId = 'demo' } = useParams();
+  const { storyId } = useParams();
   const [chapterPage, setChapterPage] = useState(1);
   const [tab, setTab] = useState('chapters');
   const [bookmarked, setBookmarked] = useState(false);
@@ -183,8 +188,30 @@ export function StoryDetailPage({ embedded = false }) {
   const [oldestFirst, setOldestFirst] = useState(true);
   const [notice, setNotice] = useState('');
   const [synopsisOpen, setSynopsisOpen] = useState(false);
-  const story = useMockResource(`story:${storyId}`, storyDetail, { isEmpty: isMissing });
-  const chapterFeed = useMockResource(`story:${storyId}:chapters`, storyChapterList);
+  const document = useBackendDocument(`/catalog/stories/${storyId}`, emptyDocument);
+  const story = document;
+  const storyDetail = document.data.story;
+  const coverStory = storyDetail;
+  const initials = storyDetail.author
+    .split(' ')
+    .map((part) => part[0])
+    .join('')
+    .slice(0, 2);
+  const ratingBreakdown = storyDetail.ratingBreakdown;
+  const featuredReview = storyDetail.featuredReview || 'Chưa có bình luận.';
+  const chapterFeed = {
+    ...document,
+    status:
+      document.status === 'ready' && !document.data.chapters.length ? 'empty' : document.status,
+    data: document.data.chapters.map((chapter) => ({
+      ...chapter,
+      number: chapter.orderKey,
+      free: !chapter.locked,
+      meta: '',
+    })),
+  };
+  const firstChapterId = chapterFeed.data[0]?.id;
+
   const storyLoading = story.status === 'loading';
   const storyReady = story.status === 'ready';
   const chapters = oldestFirst ? chapterFeed.data : [...chapterFeed.data].reverse();
@@ -210,7 +237,7 @@ export function StoryDetailPage({ embedded = false }) {
             to="/categories?genre=K%E1%BB%B3%20%E1%BA%A3o"
             className="inline-flex min-h-8 items-center hover:text-brand-strong"
           >
-            Kỳ ảo
+            {storyDetail.genres[0] || t('navigation.categories')}
           </Link>
           <span aria-hidden="true"> / </span>
           {storyReady ? (
@@ -281,7 +308,7 @@ export function StoryDetailPage({ embedded = false }) {
               <h1 className="text-display text-balance">{storyDetail.title}</h1>
               <div className="mt-4 flex flex-wrap items-center gap-x-3 gap-y-2 text-sm">
                 <span className="grid size-9 place-items-center rounded-full bg-brand/12 text-xs font-semibold text-brand-strong">
-                  ML
+                  {initials}
                 </span>
                 <strong className="font-semibold">{storyDetail.author}</strong>
                 <Badge tone="green">{t('storyDetail.verifiedAuthor')}</Badge>
@@ -343,8 +370,8 @@ export function StoryDetailPage({ embedded = false }) {
                 <ButtonLink
                   to={
                     isAuthenticated
-                      ? `/read/${storyId}/chapter-1`
-                      : `/stories/${storyId}/preview/chapter-1`
+                      ? `/read/${storyId}/${firstChapterId}`
+                      : `/stories/${storyId}/preview/${firstChapterId}`
                   }
                   size="lg"
                   trailingIcon={ArrowRight}
@@ -352,7 +379,11 @@ export function StoryDetailPage({ embedded = false }) {
                   <BookOpen size={18} aria-hidden="true" />
                   {t('storyDetail.readPreview')}
                 </ButtonLink>
-                <ButtonLink to={`/listen/${storyId}/chapter-1`} size="lg" variant="secondary">
+                <ButtonLink
+                  to={`/listen/${storyId}/${firstChapterId}`}
+                  size="lg"
+                  variant="secondary"
+                >
                   <Headphones size={18} aria-hidden="true" />
                   {t('storyDetail.listenPreview')}
                 </ButtonLink>
@@ -431,7 +462,7 @@ export function StoryDetailPage({ embedded = false }) {
                     </div>
                     {chapterFeed.status === 'loading' ? (
                       <div aria-busy="true" aria-label="Đang tải danh sách chương">
-                        <ChapterListSkeleton count={chapterPreview.length} />
+                        <ChapterListSkeleton count={5} />
                       </div>
                     ) : chapterFeed.status === 'error' ? (
                       <EmptyState
@@ -494,7 +525,11 @@ export function StoryDetailPage({ embedded = false }) {
                       <p className="font-semibold">{storyDetail.title}</p>
                       <p className="text-sm text-muted">{t('storyDetail.relatedAudiobooks')}</p>
                     </div>
-                    <ButtonLink to={`/listen/${storyId}/chapter-1`} variant="accent" size="sm">
+                    <ButtonLink
+                      to={`/listen/${storyId}/${firstChapterId}`}
+                      variant="accent"
+                      size="sm"
+                    >
                       <Headphones size={14} aria-hidden="true" />
                       {t('storyDetail.listenPreview')}
                     </ButtonLink>
@@ -503,7 +538,11 @@ export function StoryDetailPage({ embedded = false }) {
               </div>
               {!isAuthenticated && (
                 <div className="flex flex-col items-center justify-between gap-3 border-t border-hairline bg-elevated px-5 py-4 text-sm text-ink/70 sm:flex-row">
-                  <span>{t('storyDetail.signInRemaining', { count: 143 })}</span>
+                  <span>
+                    {t('storyDetail.signInRemaining', {
+                      count: chapterFeed.data.filter((chapter) => !chapter.free).length,
+                    })}
+                  </span>
                   <ButtonLink to="/register" trailingIcon={ArrowRight}>
                     {t('storyDetail.unlockFree')}
                   </ButtonLink>
@@ -518,22 +557,21 @@ export function StoryDetailPage({ embedded = false }) {
                   <Card>
                     <div className="flex items-center gap-3">
                       <span className="grid size-12 shrink-0 place-items-center rounded-full bg-brand/12 font-semibold text-brand-strong">
-                        ML
+                        {initials}
                       </span>
                       <div className="min-w-0">
-                        <h2 className="text-base font-semibold">Giới thiệu Mira Lane</h2>
-                        <p className="text-xs text-muted">Tác giả kỳ ảo &amp; giả tưởng suy đoán</p>
+                        <h2 className="text-base font-semibold">Giới thiệu {storyDetail.author}</h2>
+                        <p className="text-xs text-muted">{storyDetail.genres.join(' · ')}</p>
                       </div>
                     </div>
                     <p className="mt-4 text-sm leading-6 text-muted">
-                      Người kể chuyện kiến tạo những thế giới phủ ánh hoàng hôn và tàn tích cổ xưa.
-                      Chủ nhân Giải thưởng Hội Kỳ ảo NovelHub 2024.
+                      {storyDetail.authorBio || 'Tác giả chưa thêm giới thiệu.'}
                     </p>
                     <dl className="nh-grid-12 mt-4 grid nh-cols-3 border-y border-hairline py-3 text-center">
                       {[
-                        ['4', 'storyDetail.works'],
-                        ['15.2K', 'storyDetail.followers'],
-                        ['3.4M', 'storyDetail.reads'],
+                        [storyDetail.authorStats.works ?? 0, 'storyDetail.works'],
+                        [storyDetail.authorStats.followers ?? 0, 'storyDetail.followers'],
+                        [storyDetail.authorStats.reads ?? 0, 'storyDetail.reads'],
                       ].map(([value, labelKey]) => (
                         <div key={labelKey} className="flex flex-col-reverse">
                           <dt className="text-xs text-muted">{t(labelKey)}</dt>
@@ -563,15 +601,17 @@ export function StoryDetailPage({ embedded = false }) {
                         onClick={() => setTab('reviews')}
                         className="min-h-9 rounded-full px-3 text-xs font-semibold text-brand-strong hover:bg-brand/8 pointer-coarse:min-h-11"
                       >
-                        {t('storyDetail.viewAll', { count: '1.2K' })}
+                        {t('storyDetail.viewAll', { count: storyDetail.ratings })}
                       </button>
                     </div>
                     <div className="mt-5 flex gap-5">
                       <div className="shrink-0 text-center">
-                        <strong className="block text-4xl font-bold tabular-nums">4.8</strong>
+                        <strong className="block text-4xl font-bold tabular-nums">
+                          {storyDetail.rating}
+                        </strong>
                         <span
                           className="mt-1 flex justify-center gap-0.5 text-orange"
-                          aria-label="4.8 / 5"
+                          aria-label={`${storyDetail.rating} / 5`}
                         >
                           {[0, 1, 2, 3, 4].map((index) => (
                             <Star
@@ -583,7 +623,7 @@ export function StoryDetailPage({ embedded = false }) {
                           ))}
                         </span>
                         <small className="mt-1 block text-xs text-muted">
-                          {t('storyDetail.ratings', { count: '12,450' })}
+                          {t('storyDetail.ratings', { count: storyDetail.ratings })}
                         </small>
                       </div>
                       <div className="flex-1 space-y-2">
@@ -612,7 +652,9 @@ export function StoryDetailPage({ embedded = false }) {
                       </div>
                     </div>
                     <figure className="mt-5 border-t border-hairline pt-4">
-                      <figcaption className="text-xs font-semibold">Kaelen_Reader</figcaption>
+                      <figcaption className="text-xs font-semibold">
+                        {storyDetail.featuredReviewer}
+                      </figcaption>
                       <blockquote className="mt-2 text-sm italic leading-6 text-muted">
                         {featuredReview}
                       </blockquote>

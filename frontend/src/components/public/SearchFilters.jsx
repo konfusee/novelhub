@@ -7,19 +7,19 @@ const groups = [
   {
     title: 'search.contentType',
     items: [
-      ['Stories', 'search.stories', '124'],
-      ['Audiobooks', 'search.audiobooks', '42'],
-      ['Authors', 'search.authors', '18'],
+      ['Stories', 'search.stories'],
+      ['Audiobooks', 'search.audiobooks'],
+      ['Authors', 'search.authors'],
     ],
   },
   {
     title: 'search.genres',
     items: [
-      ['Fantasy', 'genres.fantasy', '82'],
-      ['Romance', 'genres.romance', '54'],
-      ['Mystery & Thriller', 'genres.mysterythriller', '29'],
-      ['Sci-Fi', 'genres.scifi', '21'],
-      ['Adventure', 'genres.adventure', '18'],
+      ['Fantasy', 'genres.fantasy'],
+      ['Romance', 'genres.romance'],
+      ['Mystery & Thriller', 'genres.mysterythriller'],
+      ['Sci-Fi', 'genres.scifi'],
+      ['Adventure', 'genres.adventure'],
     ],
   },
   {
@@ -44,6 +44,7 @@ export function SearchFilters({
   onApply,
   onReset,
   showHeading = true,
+  counts = {},
 }) {
   const { t } = useLocale();
   return (
@@ -64,7 +65,7 @@ export function SearchFilters({
         <fieldset key={group.title} className="border-b border-hairline pb-5">
           <legend className={legendClass}>{t(group.title)}</legend>
           <div className="space-y-1">
-            {group.items.map(([value, labelKey, count]) => (
+            {group.items.map(([value, labelKey]) => (
               <label className={optionClass} key={value}>
                 <input
                   type="checkbox"
@@ -73,7 +74,9 @@ export function SearchFilters({
                   className="size-4 shrink-0 accent-[var(--primary)]"
                 />
                 <span className="flex-1">{t(labelKey)}</span>
-                {count && <span className="text-xs tabular-nums text-muted">{count}</span>}
+                {counts[value] != null && (
+                  <span className="text-xs tabular-nums text-muted">{counts[value]}</span>
+                )}
               </label>
             ))}
           </div>

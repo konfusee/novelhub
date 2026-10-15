@@ -15,7 +15,7 @@ import {
 } from '../../components/icons';
 import { Link, useNavigate, useParams } from 'react-router';
 import { useTheme } from '../../context/ThemeContext';
-import { useMockResource } from '../../context/MockDataContext';
+import { useBackendDocument } from '../../api/useBackendResource';
 import {
   Badge,
   Button,
@@ -26,25 +26,38 @@ import {
   Select,
   Skeleton,
 } from '../../components/ui';
-import { chapterPreview, previewParagraphs } from '../../data/mock/reader';
 
 const segment =
   'inline-flex min-h-8 items-center justify-center rounded-full px-2.5 text-xs font-semibold transition-[background-color,color] duration-200 ease-spring hover:bg-surface disabled:opacity-40';
 const chromeLink =
   'grid size-11 shrink-0 place-items-center rounded-full transition-[background-color,color,transform] duration-200 ease-spring hover:bg-elevated active:scale-[0.96]';
-/* Guests may read the free chapters only; any other chapter id falls back to chapter 1. */
-const previewNumberFrom = (chapterId) => {
-  const parsed = Number(chapterId?.match(/\d+/)?.[0]);
-  return chapterPreview.some((item) => item.number === parsed && item.free) ? parsed : 1;
-};
+const emptyStory = { story: { title: '', author: '' }, chapters: [] };
+const emptyChapter = { chapter: { title: '', blocks: [] } };
 const SKELETON_LINES = [4, 4, 4, 1, 4];
 
 export function GuestReaderPreviewPage() {
   const navigate = useNavigate();
-  const { storyId = 'demo', chapterId } = useParams();
-  const number = previewNumberFrom(chapterId);
-  const chapter = chapterPreview.find((item) => item.number === number);
-  const nextChapter = chapterPreview.find((item) => item.number === number + 1);
+  const { storyId, chapterId } = useParams();
+  const metadata = useBackendDocument(`/catalog/stories/${storyId}`, emptyStory);
+  const resource = useBackendDocument(
+    `/catalog/stories/${storyId}/chapters/${chapterId}`,
+    emptyChapter,
+  );
+  const chapterPreview = metadata.data.chapters.map((item) => ({
+    ...item,
+    number: item.orderKey,
+    free: !item.locked,
+  }));
+  const chapterIndex = chapterPreview.findIndex(
+    (item) => item.id === chapterId || `chapter-${item.number}` === chapterId,
+  );
+  const chapter = chapterPreview[chapterIndex] ?? { title: resource.data.chapter.title };
+  const number = chapter.number ?? '';
+  const nextChapter = chapterPreview[chapterIndex + 1];
+  const previousChapter = chapterPreview[chapterIndex - 1];
+  const paragraphs = resource.data.chapter.blocks.map((block) => block.text);
+  const wordCount = paragraphs.join(' ').trim().split(/\s+/).filter(Boolean).length;
+  const { status, retry } = resource;
   const { resolvedTheme, setTheme } = useTheme();
   const [fontSize, setFontSize] = useState(18);
   const [lineHeight, setLineHeight] = useState(2);
@@ -56,11 +69,6 @@ export function GuestReaderPreviewPage() {
   if (shown.number !== number) {
     setShown({ number, direction: number > shown.number ? 'next' : 'prev' });
   }
-  const {
-    status,
-    data: paragraphs,
-    retry,
-  } = useMockResource(`preview:${storyId}:${number}`, previewParagraphs);
   const endRef = useRef(null);
   useEffect(() => {
     const node = endRef.current;
@@ -69,8 +77,10 @@ export function GuestReaderPreviewPage() {
     observer.observe(node);
     return () => observer.disconnect();
   }, []);
-  const previewHref = (target) => `/stories/${storyId}/preview/chapter-${target}`;
-  const readHref = (target) => `/read/${storyId}/chapter-${target}`;
+  const chapterIdFor = (target) =>
+    chapterPreview.find((item) => item.number === target)?.id ?? chapterId;
+  const previewHref = (target) => `/stories/${storyId}/preview/${chapterIdFor(target)}`;
+  const readHref = (target) => `/read/${storyId}/${chapterIdFor(target)}`;
   const openChapter = (value) => {
     const target = chapterPreview.find((item) => item.number === Number(value));
     if (!target || target.number === number) return;
@@ -84,12 +94,12 @@ export function GuestReaderPreviewPage() {
       <header className="sticky top-1 z-30 border-b border-hairline bg-surface/85 backdrop-blur-md">
         <div className="mx-auto flex h-16 max-w-[1360px] items-center gap-2 px-4 sm:gap-3 md:px-8">
           <Link
-            to="/stories/demo"
-            aria-label="Quay lại The Silent Forest"
+            to={`/stories/${storyId}`}
+            aria-label={`Quay lại ${metadata.data.story.title}`}
             className="flex min-h-11 min-w-11 shrink-0 items-center justify-center gap-2 rounded-full py-2 text-sm font-medium text-muted transition-colors duration-200 hover:text-ink lg:justify-start lg:pr-2"
           >
             <ArrowLeft size={18} aria-hidden="true" />
-            <span className="hidden lg:inline">The Silent Forest</span>
+            <span className="hidden lg:inline">{metadata.data.story.title}</span>
           </Link>
           <div className="mx-auto min-w-0 max-w-sm flex-1">
             <Select
@@ -182,15 +192,17 @@ export function GuestReaderPreviewPage() {
           <header className="mb-10 border-b border-hairline pb-8 text-center">
             <Badge tone="green">Đọc thử miễn phí</Badge>
             <p className="mt-5 text-xs font-semibold uppercase tracking-[.2em] text-ink/70">
-              The Silent Forest · Mira Lane
+              {metadata.data.story.title} · {metadata.data.story.author}
             </p>
             <h1 className="mt-3 text-h1 text-balance md:text-4xl">
               Chương {number}: {chapter.title}
             </h1>
             <p className="mt-3 text-sm text-ink/70">
-              Phát hành 12 thg 9, 2026 ·{' '}
-              {chapter.meta.match(/([\d,]+) words/)?.[1].replace(',', '.')} từ · đọc trong{' '}
-              {chapter.meta.match(/(\d+) min/)?.[1]} phút
+              {resource.data.chapter.publishedAt
+                ? `Phát hành ${new Date(resource.data.chapter.publishedAt).toLocaleDateString('vi-VN')} · `
+                : ''}
+              {wordCount.toLocaleString('vi-VN')} từ · đọc trong{' '}
+              {Math.max(1, Math.ceil(wordCount / 200))} phút
             </p>
           </header>
           {status === 'loading' && (
@@ -253,10 +265,14 @@ export function GuestReaderPreviewPage() {
             <span className="mx-auto grid size-14 place-items-center rounded-2xl bg-brand/12 text-brand-strong">
               <Lock size={22} aria-hidden="true" />
             </span>
-            <h2 className="mt-5 text-h3 sm:text-h2">Câu chuyện tiếp tục ở Chương {number + 1}</h2>
+            <h2 className="mt-5 text-h3 sm:text-h2">
+              {nextChapter
+                ? `Câu chuyện tiếp tục ở Chương ${nextChapter.number}`
+                : 'Bạn đã đến chương cuối hiện có'}
+            </h2>
             <p className="mx-auto mt-3 max-w-lg text-sm leading-6 text-ink/70">
-              Tham gia cùng hơn 3.000.000 độc giả NovelHub. Tạo tài khoản miễn phí trong 30 giây để
-              tiếp tục đọc và mở khóa thư viện cá nhân.
+              Tham gia cộng đồng độc giả NovelHub. Tạo tài khoản miễn phí để tiếp tục đọc và mở khóa
+              thư viện cá nhân.
             </p>
             <div className="mt-7 flex flex-col justify-center gap-3 sm:flex-row">
               <ButtonLink to="/register" size="lg" trailingIcon={ArrowRight}>
@@ -294,8 +310,8 @@ export function GuestReaderPreviewPage() {
           label="Chương trước"
           shape="circle"
           size="sm"
-          disabled={number <= 1}
-          onClick={() => openChapter(number - 1)}
+          disabled={!previousChapter}
+          onClick={() => openChapter(previousChapter?.number)}
         >
           <ChevronLeft size={18} />
         </IconButton>
@@ -311,9 +327,11 @@ export function GuestReaderPreviewPage() {
         </IconButton>
         {/* Below 360px the header Select already names the chapter; the label would squeeze the targets. */}
         <div className="shrink-0 text-center max-[359px]:hidden">
-          <span className="block whitespace-nowrap text-xs font-semibold">Chương {number}</span>
+          <span className="block whitespace-nowrap text-xs font-semibold">
+            Chương {number || '…'}
+          </span>
           <span className="hidden whitespace-nowrap text-xs text-brand-strong sm:block">
-            Đã hoàn thành 100%
+            {atEnd ? 'Đã đọc đến cuối chương' : 'Đang đọc'}
           </span>
         </div>
         <Link
@@ -332,15 +350,19 @@ export function GuestReaderPreviewPage() {
             Chương {nextChapter.number}
             <ChevronRight size={13} aria-hidden="true" />
           </Link>
-        ) : (
+        ) : nextChapter ? (
           <Link
             to="/login"
-            state={{ from: readHref(number + 1) }}
-            aria-label={`Chương ${number + 1} (cần đăng nhập)`}
+            state={{ from: readHref(nextChapter.number) }}
+            aria-label={`Chương ${nextChapter.number} (cần đăng nhập)`}
             className="flex min-h-11 shrink-0 items-center gap-1 rounded-full border border-line bg-surface px-3 py-2 text-xs font-semibold transition-[border-color,transform] duration-200 ease-spring hover:border-brand active:scale-[0.98]"
           >
-            Chương {number + 1} <Lock size={12} aria-hidden="true" />
+            Chương {nextChapter.number} <Lock size={12} aria-hidden="true" />
             <ChevronRight size={13} aria-hidden="true" />
+          </Link>
+        ) : (
+          <Link to={`/stories/${storyId}`} className={chromeLink} aria-label="Về truyện">
+            <ArrowLeft size={18} />
           </Link>
         )}
       </nav>
