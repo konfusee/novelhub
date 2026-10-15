@@ -14,7 +14,6 @@ import {
   Flame,
   PenLine,
   Headphones,
-  Pause,
   Play,
   RefreshCw,
   Star,
@@ -29,33 +28,27 @@ import {
   Card,
   EmptyState,
   IconButton,
-  ProgressBar,
   Reveal,
   SectionHeader,
   Skeleton,
 } from '../../components/ui';
-import { readerHome } from '../../data/mock/reader';
+import { useBackendDocument } from '../../api/useBackendResource';
+import { useStoryFollow } from '../../api/useStoryFollow';
 import { ROUTES } from '../../app/routes';
 import { useAuth } from '../../context/AuthContext';
 import { useLocale } from '../../context/LocaleContext';
-import { useMockResource } from '../../context/MockDataContext';
-
-const slugify = (value = '') =>
-  value
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, '-')
-    .replace(/(^-|-$)/g, '');
-
-const genreTones = { Fantasy: 'orange', Romance: 'rose', Adventure: 'green' };
-
-const continueItems = [readerHome.continueReading, readerHome.continueListening];
-const recommendationFeed = {
-  recommendations: readerHome.recommendations,
-  picks: readerHome.fantasyPicks,
+const genreTones = { 'Kỳ ảo': 'orange', 'Lãng mạn': 'rose', 'Phiêu lưu': 'green' };
+const emptyHome = {
+  continuing: [],
+  recommendations: [],
+  picks: [],
+  updates: [],
+  releases: [],
+  activity: [],
+  todayChapters: null,
+  picksGenre: null,
+  picksPageCount: 1,
 };
-const updateFeed = { updates: readerHome.updates, releases: readerHome.releases };
-const isRecommendationsEmpty = (value) => !value.recommendations.length && !value.picks.length;
-const isUpdatesEmpty = (value) => !value.updates.length && !value.releases.length;
 
 function RetryButton({ onClick }) {
   return (
@@ -112,8 +105,9 @@ function CompactRowSkeleton({ cover = 'h-16 w-11 rounded-xl' }) {
 }
 
 function StoryTile({ story }) {
-  const [saved, setSaved] = useState(false);
-  const href = `/stories/${slugify(story.title)}`;
+  const { t } = useLocale();
+  const { saved, busy, error, toggle } = useStoryFollow(story.id, story.saved);
+  const href = `/stories/${story.id}`;
   return (
     <Card as="article" interactive className="group flex flex-col p-3">
       <Link to={href} tabIndex={-1} aria-hidden="true" className="block">
@@ -147,24 +141,33 @@ function StoryTile({ story }) {
           tone="purple"
           shape="circle"
           size="sm"
-          onClick={() => setSaved(!saved)}
+          onClick={toggle}
+          disabled={busy}
         >
           <Bookmark size={15} className={saved ? 'fill-current' : ''} />
         </IconButton>
       </div>
+      {error && (
+        <p role="alert" className="mt-2 text-xs text-rose-strong">
+          {t('readerData.saveError')}
+        </p>
+      )}
     </Card>
   );
 }
 
-function StreakCard() {
+function StreakCard({ activity, ready }) {
+  const { t } = useLocale();
   const days = ['T2', 'T3', 'T4', 'T5', 'T6', 'T7', 'CN'];
   return (
     <Card>
       <div className="flex items-start justify-between gap-3">
         <div>
-          <p className="text-xs text-muted">Chuỗi ngày đọc</p>
+          <p className="text-xs text-muted">{t('readerData.weekActivity')}</p>
           <p className="mt-1 flex items-center gap-2 text-2xl font-bold tracking-tight">
-            <Flame className="fill-orange/20 text-orange" /> 18 ngày
+            <Flame className="fill-orange/20 text-orange" />{' '}
+            {ready ? activity.filter((day) => day.active).length : '—'}{' '}
+            {t('readerData.daysRecorded')}
           </p>
         </div>
         <span className="grid size-10 place-items-center rounded-2xl bg-brand/12 text-brand-strong">
@@ -176,67 +179,53 @@ function StreakCard() {
           <li className="flex flex-col items-center" key={day}>
             <span className="text-xs text-muted">{day}</span>
             <span
-              className={`mt-2 grid size-7 place-items-center rounded-full text-[11px] font-semibold ${index < 5 ? 'bg-brand text-on-brand' : 'bg-elevated text-ink/70'}`}
+              className={`mt-2 grid size-7 place-items-center rounded-full text-[11px] font-semibold ${activity[index]?.active ? 'bg-brand text-on-brand' : 'bg-elevated text-ink/70'}`}
             >
-              {index < 5 ? (
-                <Check size={12} aria-label="Đã đọc" />
+              {activity[index]?.active ? (
+                <Check size={12} aria-label={t('readerData.activityRecorded')} />
               ) : (
-                <span className="tabular-nums">{index + 23}</span>
+                <span className="tabular-nums">{activity[index]?.date.slice(8) ?? '—'}</span>
               )}
             </span>
           </li>
         ))}
       </ol>
       <p className="mt-4 rounded-2xl bg-orange/12 px-3 py-2 text-xs font-medium text-orange-strong">
-        Chuỗi tốt nhất: 24 ngày. Hãy tiếp tục đọc!
+        {t('readerData.activityNote')}
       </p>
     </Card>
   );
 }
 
-const nowPlaying =
-  readerHome.recommendations.find((story) => story.title === 'Midnight Whispers') ||
-  readerHome.recommendations[0];
-
 function NowPlaying() {
-  const [playing, setPlaying] = useState(true);
+  const { t } = useLocale();
   return (
     <Card>
       <div className="flex items-center justify-between">
-        <h3 className="text-base font-semibold">Đang phát</h3>
+        <h3 className="text-base font-semibold">{t('readerData.nowPlaying')}</h3>
         <Headphones size={18} className="text-orange-strong" />
       </div>
       <div className="group mt-4 flex items-center gap-3">
-        <StoryCover story={nowPlaying} className="h-16 w-12 shrink-0 rounded-xl" />
+        <span className="grid h-16 w-12 shrink-0 place-items-center rounded-xl bg-elevated">
+          <Headphones size={22} />
+        </span>
         <div className="min-w-0">
-          <h4
-            className="line-clamp-2 whitespace-normal text-sm font-semibold"
-            title={nowPlaying.title}
-          >
-            <Link
-              to={`/listen/${slugify(nowPlaying.title)}/chapter-1`}
-              className="whitespace-normal transition-colors hover:text-brand"
-            >
-              {nowPlaying.title}
-            </Link>
-          </h4>
-          <p className="truncate text-xs text-muted" title={nowPlaying.author}>
-            {nowPlaying.author}
-          </p>
+          <h4 className="text-sm font-semibold">{t('readerData.noAudio')}</h4>
+          <p className="mt-1 text-xs text-muted">{t('readerData.noAudioHint')}</p>
         </div>
       </div>
-      <ProgressBar value={42} tone="orange" size="sm" label="Tiến độ nghe" className="mt-4" />
+      <div aria-hidden="true" className="mt-4 h-1.5 rounded-full bg-elevated" />
       <div className="mt-2 flex items-center justify-between">
-        <span className="text-xs tabular-nums text-muted">1:24:18</span>
+        <span className="text-xs text-muted">—</span>
         <button
           type="button"
-          onClick={() => setPlaying(!playing)}
-          className="grid size-11 place-items-center rounded-full bg-brand text-on-brand shadow-[0_10px_24px_-14px_var(--primary)] transition-transform duration-200 active:scale-[0.96]"
-          aria-label={playing ? 'Tạm dừng' : 'Phát'}
+          disabled
+          className="grid size-11 place-items-center rounded-full bg-brand text-on-brand disabled:opacity-40"
+          aria-label={t('readerData.noAudio')}
         >
-          {playing ? <Pause size={18} /> : <Play size={18} />}
+          <Play size={18} />
         </button>
-        <span className="text-xs tabular-nums text-muted">3:09:47</span>
+        <span className="text-xs text-muted">—</span>
       </div>
     </Card>
   );
@@ -244,13 +233,31 @@ function NowPlaying() {
 
 export function ReaderHomePage() {
   const { currentUser, hasRole } = useAuth();
-  const { t } = useLocale();
-  const continuing = useMockResource('reader:continue', continueItems);
-  const recommended = useMockResource('reader:recommendations', recommendationFeed, {
-    isEmpty: isRecommendationsEmpty,
-  });
-  const updated = useMockResource('reader:updates', updateFeed, { isEmpty: isUpdatesEmpty });
-  const [picks, setPicks] = useState(readerHome.fantasyPicks);
+  const { t, formatDate } = useLocale();
+  const [picksPage, setPicksPage] = useState(1);
+  const home = useBackendDocument(`/reader/home?picksPage=${picksPage}`, emptyHome);
+  const continuing = {
+    ...home,
+    data: home.data.continuing,
+    status: home.status === 'ready' && !home.data.continuing.length ? 'empty' : home.status,
+  };
+  const recommended = {
+    ...home,
+    data: home.data,
+    status:
+      home.status === 'ready' && !home.data.recommendations.length && !home.data.picks.length
+        ? 'empty'
+        : home.status,
+  };
+  const updated = {
+    ...home,
+    data: home.data,
+    status:
+      home.status === 'ready' && !home.data.updates.length && !home.data.releases.length
+        ? 'empty'
+        : home.status,
+  };
+  const picks = home.data.picks;
   return (
     <ReaderLayout>
       <div className="page-reader py-6">
@@ -293,19 +300,21 @@ export function ReaderHomePage() {
                 <div className="w-full rounded-2xl border border-hairline bg-elevated p-5 md:max-w-sm">
                   <div className="flex items-center justify-between gap-3">
                     <div>
-                      <p className="text-xs text-ink/70">{t('readerHome.goal')}</p>
+                      <p className="text-xs text-ink/70">{t('readerData.todayProgress')}</p>
                       <strong className="mt-1 block text-lg">
-                        {t('readerHome.goalProgress', { current: 35, total: 45 })}
+                        {home.status === 'ready'
+                          ? t('readerData.chapterCount', { count: home.data.todayChapters })
+                          : '—'}
                       </strong>
                     </div>
                     <span className="grid size-12 shrink-0 place-items-center rounded-full border-4 border-brand text-xs font-bold tabular-nums text-brand-strong">
-                      78%
+                      {home.status === 'ready' ? home.data.todayChapters : '—'}
                     </span>
                   </div>
-                  <ProgressBar value={35} max={45} label={t('readerHome.goal')} className="mt-4" />
+                  <div aria-hidden="true" className="mt-4 h-1.5 rounded-full bg-hairline" />
                   <p className="mt-3 flex items-center gap-2 text-xs text-ink/70">
                     <Flame size={14} className="shrink-0 text-orange" />
-                    {t('readerHome.streakRemaining', { count: 12 })}
+                    {t('readerData.noTimeGoal')}
                   </p>
                 </div>
               </div>
@@ -343,8 +352,9 @@ export function ReaderHomePage() {
                 </Card>
               ) : (
                 <div className="nh-fade-enter nh-grid-12 mt-4 grid gap-4 nh-md-cols-2">
-                  <ContinueCard item={continuing.data[0]} />
-                  <ContinueCard item={continuing.data[1]} audio />
+                  {continuing.data.map((item) => (
+                    <ContinueCard key={item.id} item={item} />
+                  ))}
                 </div>
               )}
             </section>
@@ -352,7 +362,7 @@ export function ReaderHomePage() {
             <section>
               <SectionHeader
                 title={t('readerHome.recommended')}
-                description="Được tuyển chọn theo sở thích đọc của bạn"
+                description={t('readerData.recommendationNote')}
                 action={
                   <Link
                     to="/search"
@@ -368,8 +378,8 @@ export function ReaderHomePage() {
                   aria-label="Đang tải đề xuất"
                   className="nh-grid-12 mt-4 grid nh-cols-2 gap-3 nh-sm-cols-4"
                 >
-                  {readerHome.recommendations.map((story) => (
-                    <StoryTileSkeleton key={story.title} />
+                  {Array.from({ length: 4 }, (_, index) => (
+                    <StoryTileSkeleton key={index} />
                   ))}
                 </div>
               ) : recommended.status === 'error' ? (
@@ -391,7 +401,7 @@ export function ReaderHomePage() {
               ) : (
                 <div className="nh-fade-enter nh-grid-12 mt-4 grid nh-cols-2 gap-3 nh-sm-cols-4">
                   {recommended.data.recommendations.map((story) => (
-                    <StoryTile key={story.title} story={story} />
+                    <StoryTile key={story.id} story={story} />
                   ))}
                 </div>
               )}
@@ -400,12 +410,23 @@ export function ReaderHomePage() {
             {(recommended.status === 'ready' || recommended.status === 'loading') && (
               <Reveal as="section">
                 <SectionHeader
-                  title={t('readerHome.becauseFantasy')}
+                  title={
+                    home.data.picksGenre
+                      ? t('readerData.genrePicks', { genre: home.data.picksGenre })
+                      : t('readerData.newPicks')
+                  }
                   action={
                     <Button
                       variant="ghost"
                       size="sm"
-                      onClick={() => setPicks((current) => [...current.slice(1), current[0]])}
+                      disabled={home.status === 'loading'}
+                      onClick={() =>
+                        home.data.picksPageCount > 1
+                          ? setPicksPage((value) =>
+                              value >= home.data.picksPageCount ? 1 : value + 1,
+                            )
+                          : home.retry()
+                      }
                       className="text-brand-strong"
                     >
                       <RefreshCw size={14} />
@@ -419,10 +440,10 @@ export function ReaderHomePage() {
                     aria-label="Đang tải gợi ý kỳ ảo"
                     className="nh-grid-12 mt-4 grid gap-3 nh-sm-cols-3"
                   >
-                    {readerHome.fantasyPicks.map((item) => (
+                    {Array.from({ length: 3 }, (_, index) => (
                       <Card
                         as="div"
-                        key={item.title}
+                        key={index}
                         aria-hidden="true"
                         className="flex items-center gap-3 p-3"
                       >
@@ -437,9 +458,9 @@ export function ReaderHomePage() {
                   >
                     {picks.map((item) => (
                       <Card
-                        key={item.title}
+                        key={item.id}
                         as={Link}
-                        to={`/stories/${slugify(item.title)}`}
+                        to={`/stories/${item.id}`}
                         interactive
                         className="group flex items-center gap-3 p-3"
                       >
@@ -451,7 +472,7 @@ export function ReaderHomePage() {
                           >
                             {item.title}
                           </h3>
-                          <p className="mt-0.5 text-xs text-muted">{item.detail}</p>
+                          <p className="mt-0.5 text-xs text-muted">{item.genre}</p>
                         </div>
                         <ChevronRight
                           size={17}
@@ -475,9 +496,9 @@ export function ReaderHomePage() {
                   aria-label="Đang tải chương mới"
                   className="mt-4 divide-y divide-hairline p-0"
                 >
-                  {readerHome.updates.map((item) => (
+                  {Array.from({ length: 3 }, (_, index) => (
                     <div
-                      key={item.title}
+                      key={index}
                       aria-hidden="true"
                       className="flex items-center gap-3 px-4 py-3"
                     >
@@ -495,7 +516,7 @@ export function ReaderHomePage() {
                     headingAs="h3"
                     icon={BellRing}
                     title="Chưa có chương mới"
-                    description="Theo dõi tác giả và truyện yêu thích để nhận chương mới ngay khi phát hành."
+                    description={t('readerData.followStoriesHint')}
                     action={
                       <ButtonLink to="/reader/following" size="sm" trailingIcon={ArrowRight}>
                         Quản lý theo dõi
@@ -506,7 +527,7 @@ export function ReaderHomePage() {
               ) : (
                 <Card className="nh-fade-enter mt-4 divide-y divide-hairline p-0">
                   {updated.data.updates.map((item) => (
-                    <div className="group flex items-center gap-3 px-4 py-3" key={item.title}>
+                    <div className="group flex items-center gap-3 px-4 py-3" key={item.chapterId}>
                       <StoryCover story={item} className="h-14 w-10 shrink-0 rounded-xl" />
                       <div className="min-w-0 flex-1">
                         <h3
@@ -520,10 +541,12 @@ export function ReaderHomePage() {
                         </p>
                       </div>
                       <span className="hidden shrink-0 text-xs text-muted sm:block">
-                        {item.time}
+                        {item.publishedAt
+                          ? formatDate(item.publishedAt)
+                          : t('readerData.noPublishDate')}
                       </span>
                       <ButtonLink
-                        to={`/stories/${slugify(item.title)}`}
+                        to={`/stories/${item.id}`}
                         variant="outline"
                         size="sm"
                         aria-label={`Đọc ${item.title}`}
@@ -539,7 +562,7 @@ export function ReaderHomePage() {
           </div>
 
           <aside className="nh-grid-12 grid content-start gap-5 nh-sm-cols-2 nh-2xl-cols-1">
-            <StreakCard />
+            <StreakCard activity={home.data.activity} ready={home.status === 'ready'} />
             <NowPlaying />
             <Card>
               <div className="flex items-center justify-between">
@@ -552,8 +575,8 @@ export function ReaderHomePage() {
                   aria-label="Đang tải lịch phát hành"
                   className="mt-4 space-y-3"
                 >
-                  {readerHome.releases.map((item) => (
-                    <li key={item.title} aria-hidden="true" className="flex items-center gap-3">
+                  {Array.from({ length: 3 }, (_, index) => (
+                    <li key={index} aria-hidden="true" className="flex items-center gap-3">
                       <CompactRowSkeleton cover="size-11 rounded-2xl" />
                     </li>
                   ))}
@@ -583,7 +606,7 @@ export function ReaderHomePage() {
                 <p className="mt-4 text-sm text-muted">
                   {updated.status === 'error'
                     ? 'Chưa tải được lịch phát hành.'
-                    : 'Chưa có lịch phát hành sắp tới.'}
+                    : t('readerData.scheduleUnavailable')}
                 </p>
               )}
             </Card>

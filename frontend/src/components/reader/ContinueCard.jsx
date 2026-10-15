@@ -1,19 +1,13 @@
-import { useState } from 'react';
+import { useStoryFollow } from '../../api/useStoryFollow';
 import { BookOpen, Bookmark, Headphones } from '../icons';
 import { ButtonLink, Card, IconButton, ProgressBar, Skeleton } from '../ui';
 import { StoryCover } from '../story/StoryCover';
 import { useLocale } from '../../context/LocaleContext';
 
-const slugify = (value = '') =>
-  value
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, '-')
-    .replace(/(^-|-$)/g, '');
-
 export function ContinueCard({ item, audio = false }) {
   const { t } = useLocale();
-  const [saved, setSaved] = useState(false);
-  const storyId = item.id || slugify(item.title);
+  const { saved, busy, error, toggle } = useStoryFollow(item.id, item.saved);
+  const storyId = item.id;
   const label = t(audio ? 'readerHome.continueListening' : 'readerHome.continueReading');
   return (
     <Card as="article" className="flex flex-col p-4 sm:p-5">
@@ -43,12 +37,13 @@ export function ContinueCard({ item, audio = false }) {
               tone="purple"
               shape="circle"
               size="sm"
-              onClick={() => setSaved(!saved)}
+              onClick={toggle}
+              disabled={busy}
             >
               <Bookmark size={16} className={saved ? 'fill-current' : ''} />
             </IconButton>
           </div>
-          <p className="mt-auto pt-3 text-xs text-muted">{item.chapter}</p>
+          <p className="mt-auto pt-3 text-xs text-muted">{item.detail}</p>
           <div className="mt-2 flex items-center gap-3">
             <ProgressBar
               value={item.progress}
@@ -61,8 +56,17 @@ export function ContinueCard({ item, audio = false }) {
           </div>
         </div>
       </div>
+      {error && (
+        <p role="alert" className="mt-2 text-xs text-rose-strong">
+          {t('readerData.saveError')}
+        </p>
+      )}
       <ButtonLink
-        to={audio ? `/listen/${storyId}/chapter-1` : `/read/${storyId}/chapter-1`}
+        to={
+          item.chapterId
+            ? `${audio ? '/listen' : '/read'}/${storyId}/${item.chapterId}`
+            : `/stories/${storyId}`
+        }
         variant={audio ? 'accent' : 'primary'}
         size="sm"
         className="mt-4 w-full"
