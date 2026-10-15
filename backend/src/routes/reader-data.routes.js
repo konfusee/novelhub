@@ -12,6 +12,7 @@ import {
   Story,
   UnlockEntitlement,
   Wallet,
+  StatisticsEvent,
 } from '../models/index.js';
 import { requireAuth } from '../middleware/auth.js';
 import { HttpError } from '../middleware/errors.js';
@@ -235,6 +236,33 @@ export function createReaderDataRouter(config) {
             throw new HttpError(403, 'chapter_locked', 'Chương chưa được mở khóa.');
         }
         const now = new Date();
+        const day = new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Ho_Chi_Minh' }).format(now);
+        const viewerKey = String(req.account._id);
+        // Account writes are serialized by ownerWrite. Append once per account/chapter/day,
+        // matching the existing statistics unique index without mutating an append-only event.
+        const viewed = await StatisticsEvent.exists({
+          chapterId: chapter._id,
+          day,
+          eventType: 'view',
+          viewerType: 'account',
+          viewerKey,
+        }).session(session);
+        if (!viewed)
+          await StatisticsEvent.create(
+            [
+              {
+                sourceEventKey: `view:account:${viewerKey}:${chapter._id}:${day}`,
+                eventType: 'view',
+                day,
+                viewerType: 'account',
+                viewerKey,
+                storyId: chapter.storyId,
+                chapterId: chapter._id,
+                occurredAt: now,
+              },
+            ],
+            { session },
+          );
         await ReadingProgress.updateOne(
           {
             accountId: req.account._id,

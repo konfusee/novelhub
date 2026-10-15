@@ -10,6 +10,7 @@ import {
   Wallet,
   Chapter,
   ReadingProgress,
+  StatisticsEvent,
 } from '../src/models/index.js';
 import { authenticatedAccount } from './fixtures/accounts.js';
 import { testConfig } from './config.js';
@@ -227,6 +228,15 @@ describe('real reader and staff data', () => {
     const progressPath = `/api/reader/progress/${chapter._id}`;
     const progressInput = { position: 0.65, revisionId: String(chapterRevision._id) };
     expect((await write('put', progressPath, reader.cookie, progressInput)).status).toBe(200);
+    const repeated = await Promise.all(
+      [0, 1, 2].map(() => write('put', progressPath, reader.cookie, progressInput)),
+    );
+    expect(repeated.map((result) => result.status)).toEqual([200, 200, 200]);
+    expect(await StatisticsEvent.countDocuments({ eventType: 'view' })).toBe(1);
+    const analytics = await request(app)
+      .get('/api/author/analytics?days=7')
+      .set('Cookie', author.cookie);
+    expect(analytics.body).toMatchObject({ reads: 1, readers: 1 });
     expect((await request(app).get(progressPath).set('Cookie', reader.cookie)).body.position).toBe(
       0.65,
     );
@@ -254,6 +264,7 @@ describe('real reader and staff data', () => {
     chapter.earlyAccess = { enabled: true, endsAt: new Date(Date.now() + 3600000), coinPrice: 10 };
     await chapter.save();
     expect((await write('put', progressPath, reader.cookie, progressInput)).status).toBe(403);
+    expect(await StatisticsEvent.countDocuments({ eventType: 'view' })).toBe(1);
     const followPath = `/api/reader/follows/${story._id}`;
     expect((await write('put', followPath, reader.cookie, { following: true })).status).toBe(200);
     const library = await request(app).get('/api/reader/library').set('Cookie', reader.cookie);
