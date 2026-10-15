@@ -124,8 +124,8 @@ export function AuthShowcase({ variant, authorShare, authorName, className = '' 
         <p className="nh-eyebrow">
           <EyebrowIcon size={13} /> {eyebrow}
         </p>
-        <p className="flex items-center gap-2.5 text-xs text-ink/70">
-          <span aria-hidden="true" className="flex -space-x-2">
+        <div className="flex items-center gap-2.5 text-xs text-ink/70">
+          <div aria-hidden="true" className="flex -space-x-2">
             {socialCovers.map((id) => (
               <StoryCover
                 key={id}
@@ -134,11 +134,11 @@ export function AuthShowcase({ variant, authorShare, authorName, className = '' 
                 className="size-7 rounded-full ring-2 ring-surface"
               />
             ))}
-          </span>
+          </div>
           <span>
             <strong className="font-bold text-ink">{proofValue}</strong> {proofLabel}
           </span>
-        </p>
+        </div>
       </div>
 
       <div
