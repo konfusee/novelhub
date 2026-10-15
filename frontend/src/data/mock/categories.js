@@ -62,7 +62,7 @@ export const categories = [
     count: '5.2K',
     description: 'Bóng ma, nỗi sợ tâm lý và những đêm tăm tối',
   },
-]
+];
 
 export const popularTags = [
   '#TimeLoop',
@@ -71,4 +71,4 @@ export const popularTags = [
   '#AcademyLife',
   '#RegencyHeirs',
   '#FoundFamily',
-]
+];

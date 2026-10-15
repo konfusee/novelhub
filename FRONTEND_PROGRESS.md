@@ -84,6 +84,7 @@ Final audit
 Status: DONE
 
 Completed:
+
 - P01–P36 registry and preview routes verified
 - Light and dark semantic tokens applied
 - Responsive layouts implemented
@@ -91,6 +92,7 @@ Completed:
 - Production build passed
 
 Remaining:
+
 - Live browser viewport capture unavailable in the current tool environment
 
 ## Next Action

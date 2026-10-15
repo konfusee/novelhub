@@ -5,14 +5,14 @@ export const adminStats = [
   ['Published Stories', '412.8K', '14,200 active'],
   ['Moderation Queue', '39', 'Healthy'],
   ['Platform Uptime', '99.98%', '30d'],
-]
+];
 export const serviceHealth = [
   ['NovelHub Core API', 'Go / Node.js Cluster', '28ms', '99.99%'],
   ['Vector Plagiarism Engine', 'Milvus / Embeddings v3', '140ms', '99.95%'],
   ['Audio Transcoding Mesh', 'FFmpeg Farm (GPU Nodes)', '320ms', '99.90%'],
   ['Edge CDN & Media Storage', 'S3 Multi-Region + Cloudflare', '14ms', '100.0%'],
   ['AI Writing Co-Pilot Gateway', 'LLM Router & Guardrails', '450ms', '99.82%'],
-]
+];
 export const adminAudit = [
   ['14:45:12', 'SuperAdmin (Marcus V.)', 'Updated TTS Neural Voice Engine endpoint', 'Success'],
   ['13:20:04', 'System Worker #04', 'Auto-scaled storage mesh node us-east-2', 'Success'],
@@ -28,7 +28,7 @@ export const adminAudit = [
     'Mitigated IP rate-limit anomaly (142 blocked)',
     'High Severity Alert',
   ],
-]
+];
 
 export const adminUsers = [
   {
@@ -92,4 +92,4 @@ export const adminUsers = [
     coins: '0 Coins',
     tenure: '3 weeks',
   },
-]
+];

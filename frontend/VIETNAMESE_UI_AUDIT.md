@@ -9,15 +9,15 @@
 
 ## Thứ tự thực hiện
 
-| Batch | Khu vực | JSX | File có ứng viên tiếng Anh | Trạng thái |
-|---|---|---:|---:|---|
-| 1 | Hạ tầng ngôn ngữ + Header/Footer/Shell | 20 component dùng chung | 5 | Đang rà soát lần cuối |
-| 2 | Guest + Auth | 7 | 7 | Đang thực hiện |
-| 3 | Reader | 9 | 8 | Đang thực hiện |
-| 4 | Author | 12 | 12 | Chưa hoàn tất |
-| 5 | Moderator | 5 | 5 | Chưa hoàn tất |
-| 6 | Admin | 6 | 6 | Chưa hoàn tất |
-| 7 | System/Preview/Error | 5 | 3 | Chưa hoàn tất |
+| Batch | Khu vực                                |                     JSX | File có ứng viên tiếng Anh | Trạng thái            |
+| ----- | -------------------------------------- | ----------------------: | -------------------------: | --------------------- |
+| 1     | Hạ tầng ngôn ngữ + Header/Footer/Shell | 20 component dùng chung |                          5 | Đang rà soát lần cuối |
+| 2     | Guest + Auth                           |                       7 |                          7 | Đang thực hiện        |
+| 3     | Reader                                 |                       9 |                          8 | Đang thực hiện        |
+| 4     | Author                                 |                      12 |                         12 | Chưa hoàn tất         |
+| 5     | Moderator                              |                       5 |                          5 | Chưa hoàn tất         |
+| 6     | Admin                                  |                       6 |                          6 | Chưa hoàn tất         |
+| 7     | System/Preview/Error                   |                       5 |                          3 | Chưa hoàn tất         |
 
 Số “ứng viên tiếng Anh” chỉ là chỉ báo quét tĩnh. Mỗi file vẫn phải được đọc đầy đủ vì chuỗi có thể nằm trong mảng, object dữ liệu, template string hoặc callback alert.
 

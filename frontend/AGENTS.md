@@ -42,11 +42,11 @@ Existing code is evidence, not automatically the correct standard. Record recurr
 - React Router 7 using `BrowserRouter`, `Routes`, `Route`, `Link`, `NavLink`, and route guards.
 - Tailwind CSS 4 through `@tailwindcss/vite`, plus CSS custom properties and a small amount of global CSS.
 - Context-based state: auth, theme, locale, and mock data.
-- Axios API client.
+- Fetch-based API client in `src/api/client.js` (`apiGet`), proxied to the backend through `/api` in development.
 - NovelHub Folio in `src/components/icons/` is the single owned interface icon set (accepted user request, 2026-10-02). Its original SVG paths also supply the public sprite and brand favicon.
-- ESLint flat configuration; Prettier is installed and exposed through package scripts but has no repository-specific config.
+- ESLint flat configuration; Prettier uses the repository-root `.prettierrc.json` (single quotes, semicolons, trailing commas, 100 columns) and CI runs `npm run format:check` from the root.
 - npm and `package-lock.json` are authoritative for dependencies.
-- Google Poppins is imported by `src/styles.css`; the product is sans-serif only.
+- Google Be Vietnam Pro is imported by `src/styles.css` (full Vietnamese diacritic coverage); the product is sans-serif only.
 
 MUST NOT describe or introduce TypeScript, Redux, CSS Modules, Sass, another router, another icon set, or another UI library as if it already exists.
 
@@ -64,8 +64,8 @@ MUST NOT describe or introduce TypeScript, Redux, CSS Modules, Sass, another rou
 - `src/pages/{guest,auth,reader,author,moderator,admin,system}/`: route-level screens.
 - `src/context/`: cross-application state and persistence.
 - `src/data/mock/`: domain mock datasets; keep these replaceable by API data.
-- `src/services/api.js`: Axios client and authentication header handling.
-- `src/locales/en.json` and `src/locales/vi.json`: translation source of truth.
+- `src/api/client.js`: fetch-based API transport; `src/components/ApiStatus.jsx` renders backend readiness (shown in the dev panel).
+- `src/locales/vi.json`: translation source of truth (the app currently ships Vietnamese only; `npm run i18n:check` validates it).
 - `src/styles.css`: Tailwind theme mapping, semantic tokens, global geometry, decoration, focus, responsive, and reader-focus rules.
 - `src/data/pageRegistry.js` and `/ui-preview`: visual screen inventory and manual preview surface.
 
@@ -81,7 +81,7 @@ Primary reuse locations:
 - Application shell: `src/components/shell/AppShell.jsx`
 - Global workspace header/account behavior: `src/components/shared/RoleNavigation.jsx`
 - Public header: `src/components/public/PublicHeader.jsx`
-- Global footer/back-to-top: `src/components/shared/SiteFooter.jsx`
+- Landing footer/back-to-top: `src/components/shared/SiteFooter.jsx` (rendered by `App.jsx` on public landing, authentication, author application and legal routes)
 - Story cover: `src/components/story/StoryCover.jsx`
 - Public story/content cards: `src/components/public/`
 - Reader library cards and settings: `src/components/reader/`
@@ -112,7 +112,7 @@ Light and dark values are defined in `:root` and `:root.dark`. In dark mode, pag
 
 ### Typography and shape
 
-- Poppins/sans-serif is the only global type direction. MUST NOT introduce serif fonts.
+- Be Vietnam Pro/sans-serif is the only global type direction. MUST NOT introduce serif fonts.
 - Existing primitives commonly use 16–24px (`rounded-2xl`/`rounded-3xl`) radii. Reuse the nearest primitive instead of inventing a page-local shape system.
 - Keep headings compact, content-first, and consistent with adjacent pages.
 - Do not overuse gradients, glassmorphism, shadows, blur, motion, or decorative motifs.
@@ -120,7 +120,7 @@ Light and dark values are defined in `:root` and `:root.dark`. In dark mode, pag
 
 ### Buttons
 
-`Button` currently supports `primary`, `secondary`, and `ghost`; `IconButton` is the icon-only primitive. A region SHOULD have one dominant primary action. Destructive behavior needs an explicit, reviewed destructive treatment before reuse at scale.
+`Button` supports `primary`, `secondary`, `ghost`, `outline`, `accent` (orange), `tertiary` (purple) and `danger` (soft rose), sizes `sm`/`md`/`lg` and an optional `trailingIcon` circle; `ButtonLink` gives router links the same look. `IconButton` is the icon-only primitive (`tone`, `shape`, `size`). A region SHOULD have one dominant primary action. Use `danger` only for confirmed destructive actions. The full primitive contract (tokens, radius rule, type scale, motion) lives in the 2026-10-12 decision below.
 
 ## 8. Shared Application Shell
 
@@ -132,11 +132,11 @@ The shared shell owns:
 - collapsible/responsive sidebar;
 - workspace switcher;
 - content offset and minimum page height;
-- one global footer.
+- no footer: workspace screens end with their content (user decision, 2026-10-12).
 
 Pages MUST NOT render another authenticated Header, Sidebar, or Footer. Workspace changes should replace only navigation, workspace label, tabs, and central content.
 
-The public surface uses `src/components/public/PublicHeader.jsx`; public footer visibility is currently coordinated in `src/App.jsx`. Auth pages that compose their own public shell must be checked for duplicate footer output.
+The public surface uses `src/components/public/PublicHeader.jsx`. `SiteFooter` appears on guest landing (`/`, `/discover`), authentication (`/login`, `/register`, `/join`), author application (`/author/apply`), and public legal pages, coordinated in `src/App.jsx`. Workspace pages do not render it.
 
 ## 9. Header Rules
 
@@ -199,7 +199,7 @@ Do not reset theme on navigation, workspace change, form submission, or locale c
 Locale state is owned by `src/context/LocaleContext.jsx`, persisted as `novelhub.locale`. The shared switcher is `src/components/shared/LanguageSwitcher.jsx`.
 
 - All fixed UI text MUST use `t('namespace.key')`.
-- Translation dictionaries are `src/locales/en.json` and `src/locales/vi.json` and MUST contain the same recursive key set.
+- The dictionary is `src/locales/vi.json`. When an English dictionary is added, both files MUST contain the same recursive key set.
 - Run `npm run i18n:check` after any locale change.
 - Prefer namespaces already established (`common`, `navigation`, `reader`, `auth`, `wallet`, `footer`, `errors`) and add domain namespaces rather than role-specific locale files.
 - Use interpolation for variable UI messages; do not concatenate translated fragments when grammar can change.
@@ -215,7 +215,7 @@ MUST preserve readable width, adjustable font size, line height, paragraph spaci
 
 Text selection controls must remain keyboard/accessibility-aware and must not obscure selected content on small screens. Reader settings SHOULD persist when the existing implementation already persists them. Long-form prose is dynamic content and is not translated by UI i18n.
 
-`src/components/reader/ReaderSettings.jsx` is an older reader-settings implementation. Search usage before changing it and prefer convergence with the full reader toolbar instead of creating a third implementation.
+`src/components/reader/ReaderSettings.jsx` is the reader settings drawer panel used by `FullChapterReaderPage`; its option sets live in `src/components/reader/readerOptions.js` and it exports the token-styled `ReaderRange` slider. Extend it instead of creating another reader-settings implementation.
 
 ## 16. Audio Experience
 
@@ -228,7 +228,7 @@ Do not create another full audio player. A future global/minimized player is a s
 - Forms MUST have visible labels (a placeholder is not a label), appropriate autocomplete/input types, validation, disabled/submitting states, and success/error feedback.
 - Reuse `Input`, `Select`, `Button`, `Modal`, and `Drawer` where suitable.
 - Destructive or irreversible actions MUST request confirmation and clearly name the affected object.
-- Modal content MUST remain within the viewport and support keyboard operation and focus management. The current shared Modal/Drawer do not yet implement a full focus trap; do not claim they do.
+- Modal content MUST remain within the viewport and support keyboard operation and focus management. The shared Modal/Drawer close on Escape, move focus into the panel on open and restore it on close; they do not implement a full focus trap; do not claim they do.
 - Preserve entered data during locale/theme/workspace UI changes where possible.
 - Do not implement only the success path; consider loading, empty, validation error, API error, retry, unavailable, and permission-denied states.
 
@@ -248,7 +248,7 @@ Do not create another full audio player. A future global/minimized player is a s
 - Locale: `src/context/LocaleContext.jsx`.
 - Mutable demo administration state: `src/context/MockDataContext.jsx`.
 - Static domain demos: `src/data/mock/`.
-- API transport: `src/services/api.js`, configured by `VITE_API_URL` from `.env.example`.
+- API transport: `src/api/client.js`, configured by `VITE_API_BASE_URL` (defaults to `/api`).
 
 Keep mock data structured and separate from JSX when it represents backend entities. UI-only option lists MAY remain near the component. Do not add another global state system for local state. Avoid duplicate requests, duplicate derived state, and effects that merely mirror props.
 
@@ -258,7 +258,7 @@ Keep mock data structured and separate from JSX when it represents backend entit
 - Use function components and hooks; hooks must follow React hook rules.
 - Use PascalCase component files and components, camelCase functions/variables, and UPPER_SNAKE_CASE for stable storage keys/constants when appropriate.
 - Keep route pages in `src/pages/<domain>` and reusable UI outside `pages`.
-- Prefer named exports for components, matching current conventions; `App` and the Axios client are existing default-export exceptions.
+- Prefer named exports for components, matching current conventions.
 - Use named exports from `src/components/icons/`; add missing meanings to the shared Folio source and SVG sprite. MUST NOT add another icon dependency for a few icons.
 - Avoid broad formatting or unrelated refactors in a scoped task.
 - Use `rg`/`rg --files` to search before editing.
@@ -383,13 +383,53 @@ Affected: `AppShell`, `RoleNavigation`, account forms, shared `Tabs`, and the au
 
 Status: Accepted through the user's explicit navigation, save-bar and one-line tab requests.
 
+### 2026-10-12 — UI polish foundation (palette, type scale, primitives, shell)
+
+Context: The user asked for an agency-grade polish that keeps their colors and layout. `tokens.css` declared `--text-lg/xl/2xl/3xl`, which silently overrode Tailwind's scale (`text-xl` rendered 31 px, `text-3xl` 49 px but `text-4xl` 36 px), the workspace header overflowed at 1280–1440 px, and caller `className` overrides such as `p-0` on `Card` never applied because Tailwind orders same-property utilities by value.
+
+Decision: Accent tokens use the user's exact hex values (light/dark). Text on filled jade/orange/purple/rose uses `text-on-*` tokens; tinted text uses `text-*-strong`. Tailwind's own text scale is restored and the workspace scale is exposed as `text-h1/h2/h3/body/caption` (`text-display` for public heroes). Motion uses `ease-spring` (also the default transition curve); shadows are tinted (`shadow-whisper/soft/lift/float`, Tailwind `shadow-sm…2xl` remapped). Radius rule: buttons, inputs, selects, tags and tabs are pills; cards `rounded-3xl`; bezel shells 32 px. Primitives add `ButtonLink`, `Reveal`, `ProgressBar`, `EmptyState`, `Card bezel/interactive/as`, `IconButton tone/shape/size`, `Input trailing`, `Tabs item.icon`, and honour caller padding/radius/size overrides. Workspace header hides the duplicate Explore/Wallet links and the workspace chip below 2xl. The public header becomes a floating island. The unused `RoleLayout`, `PublicLayout`, `ReaderImmersiveLayout` and `SharedSidebarCommon` were removed.
+
+Affected: `tokens.css`, `src/styles.css`, `src/components/ui/index.jsx`, `AppShell`, `RoleNavigation`, `PublicHeader`, `SiteFooter`, `StoryCover`, `SectionTitle`, `src/layouts/index.jsx`, `DevPanel`.
+
+Status: Accepted through the user's explicit redesign-polish request.
+
+### 2026-10-12 — UI moved to `main`; page polish and shared cascade fixes
+
+Context: The 36-screen UI lived on branch `HuyNHHE190724`; `main` held only a static shell. The user asked to port it to `main` and polish every page without changing colors or layout.
+
+Decision: The UI now lives in the `main` workspace (`react-router` v8, Tailwind via `@tailwindcss/vite`, root Prettier config, `src/api/client.js` instead of the unused Axios client). Element-level base rules (`main/section` width reset, heading weight/tracking/`text-wrap`, `p/li` wrapping, link/button `nowrap`, `.min-h-screen.bg-page > *`) live in `@layer base` so Tailwind utilities override them. The legacy ≤480 px first-section `h1`/`p` overrides are removed. `Button`, `IconButton` and `Badge` accept a caller display utility (`hidden sm:inline-flex`). `Tabs` keeps the active single-row tab scrolled into view and accepts `className`. Programmatically focused containers (`tabindex="-1"`) get no focus ring. Pages inside `AppShell` render a `div` root; `AppShell` owns the single `<main>` landmark, and public pages switch to `div` when `embedded`.
+
+Affected: every route page, `src/components/public/*`, `src/components/reader/*` (new `readerOptions.js`), `src/styles.css`, `src/components/ui/index.jsx`.
+
+Status: Accepted through the user's explicit port-and-polish request.
+
+### 2026-10-12 — Loading states, overlays, mobile chrome and reader navigation
+
+Context: User review asked for skeleton loading, chapter transitions with a choice of navigation (button, swipe, continuous scroll), one-screen auth pages, a 12-column landing, custom dropdowns, no footer inside the app, SVG trend arrows, uncropped icons and a mobile pass.
+
+Decision: Route pages are lazy-loaded behind `RouteFallback` with a global `TopProgress`. Data regions read mock data through `useMockResource(key, data)` (`MockDataContext`), which returns `loading | ready | empty | error` with DevPanel-controlled latency/simulation, and render `Skeleton`/`SkeletonText`/`SkeletonCard` placeholders shaped like the final layout and `EmptyState` (`tone="rose"` for errors with retry). `Select` is a custom WAI-ARIA listbox; `Trend` renders ↑/↓ change strings with Folio arrows; Folio drawings must stay inside the 2–22 live area (`icons:check`). `Modal`/`Drawer` are portaled to `<body>`, lock scrolling, and `Drawer` is a bottom sheet below 640 px with its own backdrop. Sticky page chrome uses `--app-header-h`. The reader offers `Cuộn liên tục` (default), `Vuốt ngang` and `Nút bấm` chapter navigation with direction-aware chapter transitions. `SiteFooter` renders only on the guest landing.
+
+Affected: `App.jsx`, `MockDataContext`, `ui/index.jsx`, shell/header components, `components/reader/*`, `components/auth/AuthShowcase.jsx`, every route page.
+
+Status: Accepted through the user's explicit review requests.
+
+### 2026-10-13 — Authentication footer and reading panels
+
+Context: The user requested a four-column footer on sign-in/sign-up, readable author agreements, quiet scrollbars, and settings that do not dim the reading canvas.
+
+Decision: Public authentication, author application and legal routes share the footer through App.jsx. Legal reading modals use approximately two-thirds desktop width; author registration presents a document pane beside its checklist. Drawer supports an opt-in docked variant without backdrop or scroll lock for reader settings. Reader toolbar orientation is persisted with reading preferences. All scrollable surfaces use the shared quiet scrollbar rules.
+
+Reason: Keep documents readable and let readers preview setting changes while continuing to read.
+
+Affected: App.jsx, JoinPage, AuthorApplyPage, SiteFooter, ui/index.jsx, ReaderSettings, FullChapterReaderPage, styles.css.
+
+Status: Accepted through the user's explicit requests.
+
 ## 25. Deprecated Patterns
 
 - **DOM-wide translation via `MutationObserver` — DEPRECATED.** Use keyed dictionaries through `useLocale()`.
 - **Role-specific duplicated application shells — DEPRECATED.** Use `AppShell` plus workspace navigation configuration.
-- **Page-owned authenticated footers — DEPRECATED.** The authenticated footer belongs to `AppShell`.
-- **Vite starter/demo CSS in `src/App.css` — UNUSED/DEPRECATED.** Do not copy it into product UI; remove only in a dedicated cleanup.
-- **`RoleLayout`/`PublicLayout` prototype in `src/layouts/index.jsx` — legacy.** Do not use for new authenticated workspace pages; evaluate removal in a dedicated cleanup after searching usages.
+- **Page-local footers — DEPRECATED.** `App.jsx` owns `SiteFooter` on public landing and authentication routes. Workspace pages have no footer.
 
 ## 26. What NOT To Do
 
@@ -441,19 +481,20 @@ Run the commands that apply, then manually verify the affected flows:
 - no footer/header/sidebar regression;
 - no lost route, form, locale, theme, or sidebar state.
 
-There is currently no TypeScript/typecheck or automated test command; do not claim one was run.
+There is currently no TypeScript/typecheck. `npm test` runs the Vitest suite (currently `ApiStatus`); do not claim browser, accessibility or E2E automation that does not exist.
 
 ## 29. Commands
 
-Run from this frontend directory:
+Run from the repository root (npm workspaces):
 
 ```bash
-npm run dev
-npm run lint
-npm run i18n:check
+npm run dev:frontend
+npm run lint -w frontend
+npm test -w frontend
+npm run i18n:check -w frontend
+npm run icons:check -w frontend
 npm run format:check
-npm run build
-npm run preview
+npm run build -w frontend
 ```
 
 Use `npm run format` only when intentionally formatting files; avoid repository-wide formatting in a small change.
@@ -465,23 +506,17 @@ These are observations, not authorization for an unrelated refactor:
 - `src/App.jsx` is a large route registry and contains hard-coded `RoleUtilityPage` copy. Routes and translated route metadata should eventually become declarative and reuse `src/app/routes.js`.
 - Many page-level labels, placeholders, modal/toast messages, table headings, empty states, and validation messages remain hard-coded after the first i18n foundation pass. Complete migration by domain and keep VI/EN key parity.
 - Several literal colors remain in pages and reader settings. Separate fixed media/highlight colors from repeated product colors, then promote repeated product values to semantic tokens.
-- `src/components/ui/index.jsx` is a growing single-file primitive module. It lacks destructive/loading variants, full modal focus management, tab ARIA semantics, field help/error APIs, Tooltip, Toast, EmptyState, Skeleton, Pagination, and responsive Table abstractions.
-- The shared Modal/Drawer do not yet trap focus, restore focus, close on Escape, or provide complete dialog labelling.
-- Public footer ownership is split between `App.jsx` and some standalone public/auth pages; `JoinPage` explicitly renders `SiteFooter`. This should be audited to guarantee exactly one footer per route.
-- `src/layouts/index.jsx` still contains a legacy `RoleLayout`/`PublicLayout` prototype beside the production `AppShell` layouts.
-- `src/App.css`, React/Vite starter assets, and possibly prototype files remain from scaffolding and appear unused.
+- `src/components/ui/index.jsx` is a growing single-file primitive module. It lacks a full modal focus trap, tab ARIA semantics, field help/error APIs, Tooltip, Toast, Pagination, and responsive Table abstractions.
 - Internal navigation sometimes uses `window.location.assign`, causing avoidable full reloads and state loss.
 - Route definitions are largely centralized in `App.jsx`, while `src/app/routes.js` is only partially adopted.
 - Large tables rely on horizontal scrolling with page-local minimum widths; a shared responsive table pattern is not yet available.
-- Reader settings exist both in `ReaderSettings.jsx` and the full chapter reader toolbar; convergence should be evaluated before either is extended.
 - Audio UI exists in a full player and multiple compact cards without shared playback state; a minimized/global player would require a reviewed architecture.
 - Auth and mock contexts surface hard-coded English error messages that still require i18n.
 - Theme resolution reads `matchMedia` during render and does not expose a centralized subscription value; verify behavior before adding system-theme-sensitive components.
 - The main JavaScript bundle currently exceeds Vite's 500 kB warning threshold; route-level code splitting is a future performance priority.
-- There is no automated component/unit/E2E/accessibility test suite, no CI evidence in this frontend directory, and no TypeScript safety.
+- Automated tests cover only `ApiStatus`; there is no component/E2E/accessibility suite for pages and no TypeScript safety. CI (`.github/workflows/ci.yml`) runs format check, lint, tests and build.
 - Responsive and theme checks are primarily manual through `/ui-preview`; status values in `pageRegistry.js` do not prove complete accessibility or responsive verification.
 
 ## 31. Nested Guidelines
 
 Do not create nested `AGENTS.md` files yet. The current code is organized by page role but still shares one shell, one token system, one UI primitive module, and one locale system. Reader-specific rules are captured above. Add a nested guideline only when a domain becomes an independently maintained feature package with genuinely different constraints.
-

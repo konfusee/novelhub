@@ -2,8 +2,8 @@
  * states: default · hover · focus · active · disabled · loading · error · success
  * contrast: pass (46–50)
  */
-import { Mail } from '../icons'
-import { Input } from './index'
+import { Mail } from '../icons';
+import { Input } from './index';
 
 const states = [
   ['Mặc định', {}],
@@ -14,7 +14,7 @@ const states = [
   ['Đang tải', { 'data-state': 'loading', readOnly: true }],
   ['Lỗi', { 'aria-invalid': true }],
   ['Hợp lệ', { 'data-state': 'success', defaultValue: 'reader@novelhub.vn' }],
-]
+];
 
 export function InputPreview() {
   return (
@@ -27,5 +27,5 @@ export function InputPreview() {
         </label>
       ))}
     </section>
-  )
+  );
 }

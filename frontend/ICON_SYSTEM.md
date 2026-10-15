@@ -9,6 +9,9 @@ Original SVG interface drawings for NovelHub. The book spine and folded page inf
 - Brand asset: `public/novelhub-mark.svg`.
 - Favicon: SVG plus PNG-backed ICO at 16, 32 and 48 px; mobile touch icon at 180 px.
 - Grid: 24 × 24 units; default 1.75-unit stroke; round joins/caps; `currentColor`.
+- Live area: every stroke centre line, including curve and arc extremes, stays inside 2–22 on both axes. The `<svg>` clips at its viewBox, so this keeps strokes up to 3 units at least 0.5 unit clear of the edge. `npm run icons:check` measures each drawing and fails outside the live area.
+- Composed drawings (`book + …`, `ring + …`) start their extra strokes with an absolute `M`; a relative `m` after a closed base shape moves from that shape's start point.
+- Sprite: after changing a drawing, update the same `<symbol>` in `public/novelhub-icons.svg`; `icons:check` fails when they differ.
 - Sizes: 16–20 px for compact actions, 24 px for navigation, 32–48 px for categories/states.
 - Related names such as Clock/Clock3 and Ellipsis/MoreHorizontal intentionally share geometry.
 - Product category glyphs now use the set. Google identity and story/media illustrations retain their distinct meanings.

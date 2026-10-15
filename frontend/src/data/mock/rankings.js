@@ -32,7 +32,7 @@ export const podium = [
     color: '#34336f',
     icon: '🌃',
   },
-]
+];
 const titles = [
   "A Dragon's Wish",
   'The Last Kingdom',
@@ -46,12 +46,21 @@ const titles = [
   'Night Watcher of Oakhaven',
   'Harbor Lights and Heartstrings',
   'Tales of the Far Prairie',
-]
+];
 const genres = [
-  'Phiêu lưu', 'Bí ẩn', 'Chính kịch', 'Lịch sử', 'Phiêu lưu', 'Đời thường',
+  'Phiêu lưu',
+  'Bí ẩn',
+  'Chính kịch',
+  'Lịch sử',
+  'Phiêu lưu',
+  'Đời thường',
   'Steampunk',
-  'Bí ẩn', 'Khoa học viễn tưởng', 'Kinh dị', 'Lãng mạn', 'Phiêu lưu',
-]
+  'Bí ẩn',
+  'Khoa học viễn tưởng',
+  'Kinh dị',
+  'Lãng mạn',
+  'Phiêu lưu',
+];
 export const rankings = titles.map((title, index) => ({
   rank: index + 4,
   title,
@@ -73,8 +82,12 @@ export const rankings = titles.map((title, index) => ({
   reads: `${143 - index * 9}K`,
   rating: (4.8 - (index % 7) * 0.1).toFixed(1),
   change: index % 4 === 0 ? 'MỚI' : index % 3 === 0 ? '↑ 4' : index % 3 === 1 ? '↓ 1' : '—',
-}))
+}));
 export const rankingCategories = [
-  'Thịnh hành', 'Đọc nhiều nhất', 'Nghe nhiều nhất', 'Tác giả nổi bật', 'Mới phát hành',
-]
-export const rankingPeriods = ['Hôm nay', 'Tuần này', 'Tháng này', 'Mọi thời điểm']
+  'Thịnh hành',
+  'Đọc nhiều nhất',
+  'Nghe nhiều nhất',
+  'Tác giả nổi bật',
+  'Mới phát hành',
+];
+export const rankingPeriods = ['Hôm nay', 'Tuần này', 'Tháng này', 'Mọi thời điểm'];

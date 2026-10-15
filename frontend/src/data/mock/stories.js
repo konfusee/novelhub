@@ -59,7 +59,7 @@ export const stories = [
     color: '#77a9b3',
     icon: '🌊',
   },
-]
+];
 
 export const featuredStories = [
   {
@@ -83,7 +83,7 @@ export const featuredStories = [
     icon: '🎧',
     tone: 'green',
   },
-]
+];
 
 const variants = [
   ['Crown of Starlight', 'Valerie Adams', 'Fantasy', '#91785f', '✨'],
@@ -92,7 +92,7 @@ const variants = [
   ['Echoes in the Void', 'Sora Yane', 'Sci-Fi', '#394b70', '🚀'],
   ['Synapse Terminal 9', 'Dahlia Chen', 'Sci-Fi', '#4a3a71', '🧠'],
   ['Orbit Beyond Sol', 'D. J. Martinez', 'Sci-Fi', '#45677e', '🪐'],
-]
+];
 export const extendedStories = [
   ...stories,
   ...variants.map(([title, author, genre, color, icon], index) => ({
@@ -105,7 +105,7 @@ export const extendedStories = [
     color,
     icon,
   })),
-]
+];
 
 export const hiddenGems = [
   {
@@ -132,4 +132,4 @@ export const hiddenGems = [
       'A locked cabinet in the royal library holds correspondence of three monarchs who never officially existed in historical records.',
     author: 'Arthur Pendleton',
   },
-]
+];

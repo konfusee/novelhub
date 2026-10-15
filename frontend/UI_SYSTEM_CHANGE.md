@@ -61,3 +61,20 @@ Verification: 39 routes × six widths (320, 375, 414, 768, 1024, 1440) × light/
 - Keep author status tabs on one horizontal row through the shared `Tabs.singleRow` variant. Narrow screens scroll within that row; story rows wrap their action when necessary so the title retains readable width.
 
 Verification: 48 role/width/theme sidebar and account edit/revert/discard/save flows passed at six widths in light/dark themes. All 60 active-header route checks and 12 final single-row/title checks passed. Expanded-sidebar header geometry was also checked at 1280, 1440 and 1920 px. All 110 collapsed-icon hover checks passed, along with keyboard focus/Escape, horizontal containment, navigation cleanup, tablet scroll dismissal and mobile navigation. Mobile/desktop screenshots were reviewed. Lint, locale/icon integrity, production build and whitespace checks passed. Account persistence remains the existing local mock behavior.
+
+## Follow-up — port to `main` and full-page polish (2026-10-12)
+
+- Ported the UI from `HuyNHHE190724` into the `main` workspace; see the AGENTS.md decision log entries of 2026-10-12.
+- Foundation: exact user palette, `text-on-*`/`*-strong` contrast tokens, restored Tailwind type scale plus `text-h1/h2/h3`, tinted shadows, spring motion, new `ButtonLink`, `Reveal`, `ProgressBar`, `EmptyState`, bezel cards, floating public header, generated `StoryCover` fallback, de-crowded workspace header.
+- Pages: hand-made covers/bars/empty states replaced by shared primitives; `window.location.assign`/`window.alert` no-ops replaced by real links, modals or local state; destructive actions confirm and name the object; forms have labels, validation and submitting states; mobile layouts fixed per page.
+
+Verification: lint, Vitest (3/3), i18n (534 keys), icons, Prettier check on `frontend/` and production build passed. A browser sweep of 52 routes × 375/1440 px × light/dark (208 cases) found no horizontal overflow, exactly one `main` and one `h1` per page, no Vite error overlay and no runtime errors. Key pages were reviewed by screenshot. The root `npm run format:check` still reports CRLF files outside `frontend/` on this Windows checkout (`core.autocrlf=true`); CI on Linux checks LF files.
+
+## Follow-up — loading, reader navigation, auth/landing remake and mobile pass (2026-10-12)
+
+- Lazy route chunks with a shell skeleton and top progress bar; per-region skeletons, empty and error/retry states on every data page via `useMockResource`.
+- Reader chapter navigation modes (continuous scroll, swipe, buttons) with direction-aware transitions; custom listbox `Select`; `Trend` SVG arrows; genre-motif generated covers; Folio drawings kept inside the live area.
+- `/login`, `/register` and `/author/apply` fit one screen on desktop; landing rebuilt on one 12-column subgrid with full-bleed hero art; footer only on the guest landing.
+- Mobile: header-height variable for sticky chrome, layered touch-size rule, 16 px inputs, bottom-sheet drawers, portaled overlays with scroll lock, safe-area insets, plus per-page fixes from four mobile audits.
+
+Verification: lint, Vitest (3/3), i18n (536 keys), icons (166 drawings inside 2–22), Prettier check on `frontend/` and production build (route chunks; main chunk 254 kB) passed. A production-build sweep of 48 routes × 375/1440 px × light/dark (192 cases) found no horizontal overflow, exactly one `main` and one `h1`, footer only on the guest landing, no lingering loading state and no runtime errors.

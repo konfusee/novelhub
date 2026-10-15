@@ -1,8 +1,12 @@
 node_modules
 dist
-build
 coverage
+package-lock.json
+# Docs are hand-wrapped prose; keep their formatting stable.
+docs
+plans
+
+build
 backend/uploads
 image
 *.min.js
-package-lock.json

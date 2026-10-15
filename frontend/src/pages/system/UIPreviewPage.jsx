@@ -1,199 +1,247 @@
-import { useMemo, useState } from 'react'
-import { NovelHubMark, ExternalLink, Moon, Search, Sun } from '../../components/icons'
-import { Link } from 'react-router-dom'
-import { pageRegistry, pageRoles, pageStatuses } from '../../data/pageRegistry'
-import { useTheme } from '../../context/ThemeContext'
-import { Badge, Button, Card, Input, PageContainer, Select } from '../../components/ui'
-import { StoryCover } from '../../components/story/StoryCover'
-import { stories } from '../../data/mock/stories'
-import { IconGallery } from '../../components/icons/IconGallery'
-const statusTone = { TODO: 'neutral', IN_PROGRESS: 'orange', DONE: 'green', BLOCKED: 'red' }
+import { useMemo, useState } from 'react';
+import {
+  ArrowRight,
+  NovelHubMark,
+  ExternalLink,
+  FileSearch,
+  Moon,
+  Search,
+  Sun,
+} from '../../components/icons';
+import { Link } from 'react-router';
+import { pageRegistry, pageRoles, pageStatuses } from '../../data/pageRegistry';
+import { useTheme } from '../../context/ThemeContext';
+import {
+  Badge,
+  Button,
+  ButtonLink,
+  Card,
+  EmptyState,
+  Input,
+  PageContainer,
+  ProgressBar,
+  Select,
+} from '../../components/ui';
+import { StoryCover } from '../../components/story/StoryCover';
+import { stories } from '../../data/mock/stories';
+import { IconGallery } from '../../components/icons/IconGallery';
+
+const statusTone = { TODO: 'neutral', IN_PROGRESS: 'orange', DONE: 'green', BLOCKED: 'red' };
 const workflows = [
   ['Đăng ký làm tác giả', '/author/apply'],
   ['Thỏa thuận doanh thu', '/admin/users/user-author'],
   ['403 Không có quyền', '/403'],
   ['404 Không tìm thấy', '/route-not-found'],
-]
-const statusLabels = { TODO: 'Cần làm', IN_PROGRESS: 'Đang thực hiện', DONE: 'Hoàn tất', BLOCKED: 'Bị chặn' }
+];
+const statusLabels = {
+  TODO: 'Cần làm',
+  IN_PROGRESS: 'Đang thực hiện',
+  DONE: 'Hoàn tất',
+  BLOCKED: 'Bị chặn',
+};
+
 export function UIPreviewPage() {
-  const { resolvedTheme, setTheme } = useTheme()
-  const [query, setQuery] = useState('')
-  const [filter, setFilter] = useState('All')
-  const completed = pageRegistry.filter(p => p.status === 'DONE').length
+  const { resolvedTheme, setTheme } = useTheme();
+  const [query, setQuery] = useState('');
+  const [filter, setFilter] = useState('All');
+  const completed = pageRegistry.filter((p) => p.status === 'DONE').length;
   const visible = useMemo(
     () =>
       pageRegistry.filter(
-        p =>
+        (p) =>
           (filter === 'All' || p.role === filter || p.status === filter) &&
           `${p.id} ${p.name} ${p.role}`.toLowerCase().includes(query.toLowerCase()),
       ),
     [filter, query],
-  )
+  );
+  const dark = resolvedTheme === 'dark';
+
   return (
     <div className="min-h-screen bg-page text-ink">
-      <header className="border-b border-line bg-surface">
-        <div className="mx-auto flex max-w-[1360px] flex-wrap items-center justify-between gap-4 px-5 py-5 md:px-8 lg:px-12">
-          <div className="flex items-center gap-3">
-            <span className="grid size-11 place-items-center rounded-2xl bg-brand text-white">
+      <header className="border-b border-hairline bg-surface">
+        <div className="mx-auto flex max-w-[1360px] items-center justify-between gap-4 px-4 py-4 sm:px-5 md:px-8 lg:px-12">
+          <div className="flex min-w-0 items-center gap-3">
+            <span className="grid size-11 shrink-0 place-items-center rounded-2xl bg-brand text-on-brand shadow-[0_10px_24px_-14px_var(--primary)]">
               <NovelHubMark size={24} />
             </span>
-            <div>
+            <div className="min-w-0">
               <p className="font-bold tracking-tight">NovelHub</p>
-              <h1 className="text-sm text-muted">Xem trước giao diện · 36 màn hình</h1>
+              <h1 className="truncate text-sm font-normal text-muted">
+                Xem trước giao diện · {pageRegistry.length} màn hình
+              </h1>
             </div>
           </div>
-          <div className="flex items-center gap-3">
-            <span className="hidden text-sm text-muted sm:inline">
+          <div className="flex shrink-0 items-center gap-3">
+            <span className="hidden text-sm text-muted md:inline">
               Công cụ phát triển / Trình bày
             </span>
-            <Button
-              variant="secondary"
-              onClick={() => setTheme(resolvedTheme === 'dark' ? 'light' : 'dark')}
-            >
-              {resolvedTheme === 'dark' ? <Sun size={17} /> : <Moon size={17} />}{' '}
-              {resolvedTheme === 'dark' ? 'Sáng' : 'Tối'}
+            <Button variant="secondary" size="sm" onClick={() => setTheme(dark ? 'light' : 'dark')}>
+              {dark ? <Sun size={16} /> : <Moon size={16} />}
+              {dark ? 'Sáng' : 'Tối'}
             </Button>
           </div>
         </div>
       </header>
       <PageContainer>
-        <section className="mb-8 grid gap-5 lg:grid-cols-[1fr_auto] lg:items-end">
-          <div>
-            <p className="text-sm font-semibold uppercase tracking-[.16em] text-brand">
-              Tiến độ frontend
-            </p>
-            <h2 className="mt-2 text-3xl font-semibold tracking-tight md:text-4xl">
+        <section className="mb-8 grid gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(0,28rem)] lg:items-end">
+          <div className="min-w-0">
+            <p className="nh-eyebrow">Tiến độ frontend</p>
+            <h2 className="mt-3 text-h2 sm:text-h1">
               {completed} / {pageRegistry.length} màn hình đã hoàn tất
             </h2>
-            <div className="mt-4 h-2 overflow-hidden rounded-full bg-elevated">
-              <div
-                className="h-full rounded-full bg-brand"
-                style={{ width: `${(completed / pageRegistry.length) * 100}%` }}
-              />
-            </div>
+            <ProgressBar
+              value={completed}
+              max={pageRegistry.length}
+              className="mt-5"
+              label="Tiến độ hoàn tất màn hình"
+            />
           </div>
-          <div className="nh-grid-12 grid nh-cols-2 gap-2 nh-sm-cols-3">
-            {pageRoles.map(role => {
-              const pages = pageRegistry.filter(p => p.role === role)
+          <ul className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-3">
+            {pageRoles.map((role) => {
+              const pages = pageRegistry.filter((p) => p.role === role);
               return (
-                <div
-                  className="rounded-2xl border border-line bg-surface p-3 text-center"
+                <li
+                  className="min-w-0 rounded-2xl border border-hairline bg-surface px-3 py-2.5 shadow-whisper"
                   key={role}
                 >
-                  <strong className="block text-sm">
-                    {pages.filter(p => p.status === 'DONE').length}/{pages.length}
+                  <strong className="block text-sm tabular-nums">
+                    {pages.filter((p) => p.status === 'DONE').length}/{pages.length}
                   </strong>
-                  <span className="block max-w-24 truncate text-[10px] text-muted">{role}</span>
-                </div>
-              )
+                  <span className="block truncate text-xs text-muted" title={role}>
+                    {role}
+                  </span>
+                </li>
+              );
             })}
-          </div>
+          </ul>
         </section>
-        <section className="mb-7 flex flex-col gap-3 rounded-3xl border border-line bg-surface p-4 md:flex-row">
+
+        <Card className="mb-7 flex flex-col gap-3 p-3 sm:p-4 md:flex-row">
           <Input
             icon={Search}
+            type="search"
+            aria-label="Tìm màn hình"
             placeholder="Tìm màn hình..."
             value={query}
-            onChange={e => setQuery(e.target.value)}
+            onChange={(e) => setQuery(e.target.value)}
             className="flex-1"
           />
           <Select
             aria-label="Lọc màn hình"
             value={filter}
-            onChange={e => setFilter(e.target.value)}
+            onChange={(e) => setFilter(e.target.value)}
+            className="md:w-56"
           >
             <option value="All">Tất cả</option>
             <optgroup label="Vai trò">
-              {pageRoles.map(role => (
+              {pageRoles.map((role) => (
                 <option key={role}>{role}</option>
               ))}
             </optgroup>
             <optgroup label="Trạng thái">
-              {pageStatuses.map(status => (
-                <option key={status}>{status}</option>
+              {pageStatuses.map((status) => (
+                <option key={status} value={status}>
+                  {statusLabels[status] || status}
+                </option>
               ))}
             </optgroup>
           </Select>
-        </section>
-        <div className="nh-grid-12 grid gap-4 nh-sm-cols-2 nh-lg-cols-3 nh-xl-cols-4">
-          {visible.map(page => {
-            const available = page.status !== 'TODO'
-            return (
-              <Card key={page.id} className="flex min-h-56 flex-col p-5">
-                <div className="flex items-center justify-between">
-                  <span className="text-sm font-bold text-brand">{page.id}</span>
-                  <Badge tone={statusTone[page.status]}>{statusLabels[page.status]}</Badge>
-                </div>
-                <h3 className="mt-5 text-lg font-semibold leading-snug">{page.name}</h3>
-                <p className="mt-2 text-sm text-muted">{page.role}</p>
-                <code className="mt-3 truncate text-xs text-muted">{page.route}</code>
-                <div className="mt-auto flex gap-2 pt-5">
-                  {available ? (
-                    <>
-                      <Link
-                        className="inline-flex min-h-11 flex-1 items-center justify-center rounded-2xl border border-brand bg-brand px-3 py-2.5 text-sm font-semibold text-white"
-                        to={page.route}
-                      >
-                        Mở trang
-                      </Link>
-                      <Link
-                        className="inline-grid size-11 place-items-center rounded-2xl border border-line bg-surface"
-                        to={page.previewRoute}
-                        aria-label={`Xem trước ${page.name}`}
-                      >
-                        <ExternalLink size={17} />
-                      </Link>
-                    </>
-                  ) : (
-                    <>
-                      <Button className="flex-1 px-3" disabled>
-                        Mở trang
+        </Card>
+
+        {visible.length > 0 ? (
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+            {visible.map((page) => {
+              const available = page.status !== 'TODO';
+              return (
+                <Card as="article" key={page.id} className="flex min-h-56 min-w-0 flex-col p-5">
+                  <div className="flex items-center justify-between gap-3">
+                    <span className="text-sm font-bold text-brand-strong tabular-nums">
+                      {page.id}
+                    </span>
+                    <Badge tone={statusTone[page.status]}>{statusLabels[page.status]}</Badge>
+                  </div>
+                  <h3 className="mt-4 text-base font-semibold leading-6">{page.name}</h3>
+                  <p className="mt-1 text-sm text-muted">{page.role}</p>
+                  <code className="mt-3 truncate rounded-full bg-elevated px-3 py-1 text-xs text-ink/70">
+                    {page.route}
+                  </code>
+                  <div className="mt-auto flex gap-2 pt-5">
+                    {available ? (
+                      <>
+                        <ButtonLink to={page.route} size="sm" className="min-h-10 flex-1">
+                          Mở trang
+                        </ButtonLink>
+                        <Link
+                          className="inline-grid size-10 shrink-0 place-items-center rounded-full border border-line bg-surface text-ink transition-[border-color,color,transform] duration-200 hover:border-brand hover:text-brand-strong active:scale-[0.96]"
+                          to={page.previewRoute}
+                          aria-label={`Xem trước ${page.name}`}
+                        >
+                          <ExternalLink size={16} />
+                        </Link>
+                      </>
+                    ) : (
+                      <Button size="sm" className="min-h-10 flex-1" disabled>
+                        Chưa sẵn sàng
                       </Button>
-                      <Button
-                        variant="secondary"
-                        className="px-3"
-                        disabled
-                        aria-label={`Xem trước ${page.name}`}
-                      >
-                        <ExternalLink size={17} />
-                      </Button>
-                    </>
-                  )}
-                </div>
-              </Card>
-            )
-          })}
-        </div>
-        {!visible.length && (
-          <div className="py-20 text-center text-muted">Không có màn hình nào khớp tìm kiếm.</div>
+                    )}
+                  </div>
+                </Card>
+              );
+            })}
+          </div>
+        ) : (
+          <Card className="p-0">
+            <EmptyState
+              icon={FileSearch}
+              title="Không có màn hình nào khớp tìm kiếm."
+              action={
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  onClick={() => {
+                    setQuery('');
+                    setFilter('All');
+                  }}
+                >
+                  Xóa bộ lọc
+                </Button>
+              }
+            />
+          </Card>
         )}
-        <section className="mt-12 border-t border-line pt-8">
-          <h2 className="text-2xl font-semibold">Quy trình bổ sung</h2>
+
+        <section className="mt-12 border-t border-hairline pt-8">
+          <h2 className="text-h3 md:text-h2">Quy trình bổ sung</h2>
           <p className="mt-1 text-sm text-muted">
             Các hành trình hỗ trợ nằm ngoài danh mục đánh số P01–P36.
           </p>
-          <div className="nh-grid-12 mt-5 grid gap-3 nh-sm-cols-2 nh-lg-cols-4">
+          <div className="mt-5 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
             {workflows.map(([label, route]) => (
-              <Link
+              <Card
+                as={Link}
+                interactive
                 key={label}
                 to={route}
-                className="flex items-center justify-between rounded-2xl border border-line bg-surface p-4 text-sm font-semibold hover:border-brand"
+                className="group flex items-center justify-between gap-3 p-4 text-sm font-semibold hover:border-brand/50"
               >
                 {label}
-                <ExternalLink size={16} className="text-brand" />
-              </Link>
+                <span className="grid size-8 shrink-0 place-items-center rounded-full bg-brand/10 text-brand-strong transition-transform duration-[420ms] group-hover:translate-x-0.5">
+                  <ArrowRight size={15} />
+                </span>
+              </Card>
             ))}
           </div>
         </section>
-        <section className="mt-10 border-t border-line pt-8">
-          <h2 className="text-2xl font-semibold">Tài nguyên hình ảnh</h2>
-          <p className="mt-1 text-sm text-muted">
+
+        <section className="mt-10 border-t border-hairline pt-8">
+          <h2 className="text-h3 md:text-h2">Tài nguyên hình ảnh</h2>
+          <p className="mt-1 max-w-[65ch] text-sm text-muted">
             Ảnh gốc tỷ lệ 2:3 không chứa chữ, tiêu đề dựng bằng HTML và có phương án dự phòng.
           </p>
-          <div className="nh-grid-12 mt-5 grid nh-cols-2 gap-4 nh-sm-cols-3 lg:max-w-3xl">
-            {stories.slice(0, 3).map(story => (
-              <article key={story.id} className="group min-w-0">
-                <StoryCover story={story} className="aspect-[2/3] rounded-2xl border border-line" />
+          <div className="mt-5 grid grid-cols-2 gap-4 sm:grid-cols-3 lg:max-w-3xl">
+            {stories.slice(0, 3).map((story) => (
+              <article key={story.id} className="min-w-0">
+                <StoryCover story={story} className="aspect-[2/3] rounded-2xl" />
                 <h3 className="mt-2 truncate text-sm font-semibold">{story.title}</h3>
                 <p className="text-xs text-muted">Ảnh minh họa AI · WebP</p>
               </article>
@@ -203,5 +251,5 @@ export function UIPreviewPage() {
         <IconGallery />
       </PageContainer>
     </div>
-  )
+  );
 }

@@ -35,7 +35,7 @@ const pages = [
   ['P34', 'Vai trò và quyền', 'Quản trị viên', '/admin/roles'],
   ['P35', 'Cấu hình danh mục và nội dung', 'Quản trị viên', '/admin/categories'],
   ['P36', 'Cài đặt nền tảng / Dịch vụ / Kiểm tra', 'Quản trị viên', '/admin/settings'],
-]
+];
 export const pageRegistry = pages.map(([id, name, role, route]) => ({
   id,
   name,
@@ -43,6 +43,12 @@ export const pageRegistry = pages.map(([id, name, role, route]) => ({
   route,
   previewRoute: `/ui-preview/${id.toLowerCase()}`,
   status: 'DONE',
-}))
-export const pageRoles = ['Khách / Công khai', 'Độc giả', 'Tác giả', 'Kiểm duyệt viên', 'Quản trị viên']
-export const pageStatuses = ['TODO', 'IN_PROGRESS', 'DONE', 'BLOCKED']
+}));
+export const pageRoles = [
+  'Khách / Công khai',
+  'Độc giả',
+  'Tác giả',
+  'Kiểm duyệt viên',
+  'Quản trị viên',
+];
+export const pageStatuses = ['TODO', 'IN_PROGRESS', 'DONE', 'BLOCKED'];
