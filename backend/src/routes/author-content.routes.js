@@ -13,6 +13,8 @@ import { HttpError } from '../middleware/errors.js';
 import { withTransaction } from '../db/connection.js';
 import { authorDashboard } from '../modules/author-dashboard.js';
 import { authorStoryWorkspace } from '../modules/author-story-workspace.js';
+import { authorDrafts } from '../modules/author-drafts.js';
+import { authorAnalytics } from '../modules/author-analytics.js';
 
 const objectId = z.string().regex(/^[a-f\d]{24}$/i);
 const storyInput = z
@@ -98,6 +100,30 @@ export function createAuthorContentRouter(config) {
     },
   );
   router.use('/author/stories', requireAuth(config), requireRole('author'));
+  router.get(
+    '/author/analytics',
+    requireAuth(config),
+    requireRole('author'),
+    async (req, res, next) => {
+      try {
+        const input = parse(
+          z
+            .object({
+              days: z.coerce
+                .number()
+                .pipe(z.union([z.literal(7), z.literal(30), z.literal(90)]))
+                .default(30),
+              storyId: objectId.optional(),
+            })
+            .strict(),
+          req.query,
+        );
+        res.json(await authorAnalytics(req.account._id, input));
+      } catch (error) {
+        next(error);
+      }
+    },
+  );
   router.param('storyId', (req, _res, next, id) => {
     if (!objectId.safeParse(id).success)
       return next(new HttpError(400, 'validation_error', 'ID truyện không hợp lệ.'));
@@ -118,6 +144,18 @@ export function createAuthorContentRouter(config) {
       next(error);
     }
   });
+  router.get(
+    '/author/drafts',
+    requireAuth(config),
+    requireRole('author'),
+    async (req, res, next) => {
+      try {
+        res.json(await authorDrafts(req.account._id));
+      } catch (error) {
+        next(error);
+      }
+    },
+  );
   router.post('/author/stories', async (req, res, next) => {
     try {
       const input = parse(storyInput, req.body);
