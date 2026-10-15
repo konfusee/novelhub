@@ -66,8 +66,7 @@ describe('compact HTTP logging', () => {
       .set('Authorization', 'Bearer private-header')
       .set('User-Agent', 'private-agent');
     const output = lines.join('');
-    expect(output).toContain('GET /api/missing');
-    expect(output).toContain('404');
+    expect(output).toContain('GET /api/missing -> 404');
     expect(output).not.toContain('private-query');
     expect(output).not.toContain('private-header');
     expect(output).not.toContain('private-agent');
