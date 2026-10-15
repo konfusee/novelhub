@@ -964,6 +964,22 @@
     "chapterDraft": "Bản nháp chương",
     "noTarget": "Chưa có mục tiêu"
   },
+  "createData": {
+    "chooseGenre": "Chưa chọn thể loại",
+    "required": "Hãy nhập tên truyện, chọn thể loại và hoàn thiện các mục bắt buộc trước khi tạo.",
+    "saveError": "Không lưu được truyện. Nội dung trong form vẫn được giữ lại.",
+    "step": "Bước {{step}} / 4 · Lưu vào tài khoản khi bạn xác nhận",
+    "noTagline": "Tiêu đề phụ chưa được hỗ trợ lưu. Bạn có thể đưa lời giới thiệu vào tóm tắt.",
+    "noCover": "Bản nháp hiện dùng bìa chữ từ tên truyện. Tải ảnh bìa chưa sẵn sàng.",
+    "noTags": "Thẻ tùy chỉnh chưa được hỗ trợ lưu. Hãy chọn thể loại chính ở trên.",
+    "noAgeRating": "Phân loại độ tuổi chưa được lưu trong quy trình tạo bản nháp này.",
+    "language": "Bản thảo hiện được lưu bằng tiếng Việt.",
+    "rightsHint": "Bước này tạo bản nháp riêng tư. Tuyên bố quyền tác giả gắn với phiên bản gửi duyệt sẽ được xác nhận trong quy trình xuất bản.",
+    "createdHint": "Bản nháp đã lưu vào tài khoản. Thêm chương trong trang quản lý; truyện chỉ công khai sau quy trình duyệt và xuất bản.",
+    "previewDraft": "Xem trước bản nháp",
+    "coverOptional": "Bìa chữ có sẵn cho bản nháp",
+    "tip": "Chọn thể loại phù hợp và viết tóm tắt rõ ràng để chuẩn bị cho bước gửi duyệt."
+  },
   "worksData": {
     "studio": "Studio tác giả",
     "editorTitle": "Chọn chương để soạn",

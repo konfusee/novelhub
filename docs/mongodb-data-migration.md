@@ -136,3 +136,9 @@ The configured MongoDB was updated with missing home presentation metadata only.
 
 - Author sidebar management/editor entries now open authenticated owner lists at /author/stories and /author/editor, not demo IDs. Editor selection loads the chosen owner's workspace and links exact persisted chapter IDs; it never silently chooses the first story. Original shared shell unchanged.
 - Owner list no longer silently truncates after 100 works. Local filtering retains actual owner data. Loading/error/empty states reuse existing UI primitives. Two focused selector tests and four manager tests pass, lint/i18n/build pass (938 keys). Browser selected the real Copper Moon chapter through the sidebar. Remaining workflows listed above are still pending.
+
+## Story creation checkpoint — 2026-10-15
+
+- CreateStoryPage now starts with blank fields, reads active MongoDB categories and uses the authenticated account name in its preview. Both create and draft actions call the real owner story API, require a confirmed story ID and link that exact ID. Failure retains entered values; concurrent/repeated creation is guarded. No timer-based success, prefilled sample novel or static AI rewrite remains.
+- Existing four sections/preview/checklist remain. Backend schema supports Vietnamese story metadata and categories; unsupported tagline/tags/age classification/cover-upload controls stay visible but disabled with explicit copy. Draft saving allows incomplete synopsis; final form validation remains a local readiness check, not publication. No fabricated publication or persisted rights declaration is claimed.
+- Three creation component tests pass; lint/build/i18n pass (952 keys). Browser created a real private draft, followed its returned ID, created a chapter, and verified that chapter remains after reload in disposable MongoDB. Proof: create-story[-chapter]-mongodb-ui.png in workspace outputs. Shared DB untouched by these test writes; schema files untouched.
