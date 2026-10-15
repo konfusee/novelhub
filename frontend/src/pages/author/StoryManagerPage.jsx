@@ -22,8 +22,9 @@ import {
   Star,
 } from '../../components/icons';
 import { AuthorLayout } from '../../layouts';
-import { managedChapters } from '../../data/mock/author';
-import { useMockResource } from '../../context/MockDataContext';
+import { useBackendDocument } from '../../api/useBackendResource';
+import { apiRequest } from '../../api/client';
+import { useLocale } from '../../context/LocaleContext';
 import { StoryCover } from '../../components/story/StoryCover';
 import {
   Badge,
@@ -32,39 +33,54 @@ import {
   Card,
   EmptyState,
   Input,
-  ProgressBar,
   Skeleton,
+  Modal,
   Tabs,
 } from '../../components/ui';
 
-const EDITOR_ROUTE = '/author/stories/demo/chapters/chapter-1/edit';
 const PAGE_SIZE = 5;
-const story = { id: 'silent-forest', title: 'The Silent Forest', author: 'Mira Lane' };
+const emptyWorkspace = {
+  story: { id: null, title: '—', description: '', genres: [], canEdit: false, version: 0 },
+  chapters: [],
+  stats: { availableWords: 0, publishedChapters: 0, reads: 0, rating: '—', ratings: 0 },
+};
+const normalStatus = (value) =>
+  ({
+    published: 'Published',
+    scheduled: 'Scheduled',
+    due: 'Scheduled',
+    submitted: 'In Review',
+    draft: 'Draft',
+    approved: 'Approved',
+    unpublished: 'Unpublished',
+    archived: 'Archived',
+    cancelled: 'Cancelled',
+  })[value] ?? value;
 const tabItems = [
-  { value: 'chapters', label: 'Chương · 16' },
+  { value: 'chapters', label: 'Chương' },
   { value: 'details', label: 'Thông tin và tóm tắt truyện' },
-  { value: 'media', label: 'Media và bản âm thanh · 8' },
+  { value: 'media', label: 'Media và bản âm thanh' },
   { value: 'reviews', label: 'Bản gửi và đánh giá' },
   { value: 'analytics', label: 'Phân tích truyện' },
 ];
 const linkedTabs = {
   media: {
     icon: Images,
-    title: '8 tệp media và 6 bản âm thanh',
+    title: 'Thư viện media và bản âm thanh',
     description: 'Ảnh bìa, minh họa và bản thu âm của truyện được quản lý trong Thư viện media.',
     to: '/author/media',
     action: 'Mở thư viện media',
   },
   reviews: {
     icon: Send,
-    title: '1 chương đang chờ xét duyệt',
+    title: 'Bản gửi và kết quả xét duyệt',
     description: 'Theo dõi phản hồi của biên tập viên và lịch sử gửi duyệt cho từng chương.',
     to: '/author/submissions',
     action: 'Xem bản gửi duyệt',
   },
   analytics: {
     icon: BarChart3,
-    title: '1,2M lượt đọc · giữ chân 68%',
+    title: 'Phân tích truyện',
     description: 'Xem lượt đọc, tỷ lệ giữ chân và doanh thu theo từng chương.',
     to: '/author/analytics',
     action: 'Mở phân tích truyện',
@@ -82,38 +98,66 @@ const statusLabels = {
   Scheduled: 'Đã lên lịch',
   'In Review': 'Đang xét duyệt',
   Draft: 'Bản nháp',
+  Approved: 'Đã duyệt',
+  Unpublished: 'Đã gỡ xuất bản',
+  Archived: 'Đã lưu trữ',
+  Cancelled: 'Đã hủy',
 };
 const statusTones = { Published: 'green', Scheduled: 'orange', 'In Review': 'purple' };
-const formatChapterNote = (note) =>
-  note
-    .replace('Scheduled for Nov 2, 2026', 'Đã lên lịch ngày 02/11/2026')
-    .replace('Draft · Autosaved 12m ago', 'Bản nháp · Tự động lưu 12 phút trước')
-    .replace('Published on Oct 24, 2026', 'Xuất bản ngày 24/10/2026')
-    .replace('Published on Oct 17, 2026', 'Xuất bản ngày 17/10/2026')
-    .replace('Published on Oct 10, 2026', 'Xuất bản ngày 10/10/2026')
-    .replace('Published on Jul 18, 2026', 'Xuất bản ngày 18/07/2026')
-    .replace('Published on Jul 11, 2026', 'Xuất bản ngày 11/07/2026');
-const formatChapterMetric = (value) =>
-  value
-    .replace('Est. ', 'Khoảng ')
-    .replace(' min', ' phút')
-    .replace('Target ', 'Mục tiêu ')
-    .replace(' reads', ' lượt đọc');
-const priceLabels = { '25 Coins': '25 xu', Pending: 'Chờ thiết lập', Free: 'Miễn phí' };
-const storyStats = [
-  [FileText, '184.200', 'từ'],
-  [BookOpen, '15', 'chương đã xuất bản'],
-  [Eye, '1,2M', 'lượt đọc'],
-  [Star, '4,8', '(3,4K đánh giá)'],
-];
-
 export function StoryManagerPage() {
-  const { storyId = 'demo' } = useParams();
+  const { storyId } = useParams();
+  const { t } = useLocale();
   const [tab, setTab] = useState('chapters');
   const [filter, setFilter] = useState('All');
   const [query, setQuery] = useState('');
   const [page, setPage] = useState(1);
-  const chaptersResource = useMockResource(`author:chapters:${storyId}`, managedChapters);
+  const workspace = useBackendDocument(`/author/stories/${storyId}/workspace`, emptyWorkspace);
+  const [savedStory, setSavedStory] = useState(null);
+  const story = savedStory?.source === workspace.data ? savedStory.story : workspace.data.story;
+  const chaptersResource = {
+    ...workspace,
+    status:
+      workspace.status === 'ready' && !workspace.data.chapters.length ? 'empty' : workspace.status,
+    data: workspace.data.chapters.map((chapter) => ({
+      ...chapter,
+      status: normalStatus(chapter.status),
+    })),
+  };
+  const storyStats = [
+    [FileText, workspace.data.stats.availableWords, t('managerData.knownWords')],
+    [BookOpen, workspace.data.stats.publishedChapters, t('managerData.publishedChapters')],
+    [Eye, workspace.data.stats.reads, t('managerData.reads')],
+    [
+      Star,
+      workspace.data.stats.rating,
+      t('managerData.ratingCount', { count: workspace.data.stats.ratings }),
+    ],
+  ];
+  const [newOpen, setNewOpen] = useState(false);
+  const [newTitle, setNewTitle] = useState('');
+  const [newBusy, setNewBusy] = useState(false);
+  const [newError, setNewError] = useState('');
+  const [notice, setNotice] = useState('');
+  const createChapter = async (event) => {
+    event.preventDefault();
+    if (newBusy || !newTitle.trim()) return;
+    setNewBusy(true);
+    setNewError('');
+    try {
+      await apiRequest(`/author/stories/${storyId}/chapters`, {
+        method: 'POST',
+        body: { title: newTitle.trim(), paragraphs: [''] },
+      });
+      setNewOpen(false);
+      setNewTitle('');
+      setNotice(t('managerData.created'));
+      workspace.retry();
+    } catch (error) {
+      setNewError(error.message || t('managerData.saveError'));
+    } finally {
+      setNewBusy(false);
+    }
+  };
   const chapters = useMemo(
     () =>
       chaptersResource.data.filter(
@@ -128,6 +172,22 @@ export function StoryManagerPage() {
   const pageRows = chapters.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE);
   const linked = linkedTabs[tab];
 
+  if (workspace.status === 'error' || workspace.status === 'empty')
+    return (
+      <AuthorLayout>
+        <div className="page-author py-7">
+          <Card className="p-0">
+            <EmptyState
+              icon={AlertTriangle}
+              title={t(
+                workspace.status === 'empty' ? 'managerData.notFound' : 'managerData.loadError',
+              )}
+              action={<RetryButton onClick={workspace.retry} />}
+            />
+          </Card>
+        </div>
+      </AuthorLayout>
+    );
   return (
     <AuthorLayout>
       <div className="page-author py-6 lg:py-8">
@@ -160,35 +220,47 @@ export function StoryManagerPage() {
             <div className="min-w-0 flex-1">
               <div className="flex flex-wrap items-center gap-2">
                 <h1 className="text-h2 sm:text-h1">{story.title}</h1>
-                <Badge tone="green">Truyện dài kỳ</Badge>
-                <Badge tone="orange">Kỳ ảo và Bí ẩn</Badge>
+                <Badge tone="green">
+                  {story.status ? (statusLabels[normalStatus(story.status)] ?? story.status) : '—'}
+                </Badge>
+                <Badge tone="orange">{story.genres.join(', ') || '—'}</Badge>
               </div>
-              <p className="mt-2 max-w-[65ch] text-sm leading-6 text-muted">
-                The wind moved gently through the ancient trees, carrying whispers of forgotten
-                stories. Mira Lane&apos;s bestselling slow-burn mystery epic.
-              </p>
+              <p className="mt-2 max-w-[65ch] text-sm leading-6 text-muted">{story.description}</p>
               <ul className="mt-3 flex flex-wrap gap-x-5 gap-y-2 text-sm text-muted">
                 {storyStats.map(([Icon, value, label]) => (
                   <li key={label} className="inline-flex items-center gap-1.5">
                     <Icon size={15} aria-hidden="true" className="text-brand" />
-                    <strong className="text-ink tabular-nums">{value}</strong> {label}
+                    <strong className="text-ink tabular-nums">
+                      {workspace.status === 'ready' ? value : '—'}
+                    </strong>{' '}
+                    {label}
                   </li>
                 ))}
               </ul>
             </div>
             <div className="flex flex-wrap gap-2 lg:max-w-xs lg:justify-end">
-              <ButtonLink to={EDITOR_ROUTE}>
+              <Button
+                disabled={!story.canEdit || workspace.status !== 'ready'}
+                onClick={() => setNewOpen(true)}
+              >
                 <Plus size={16} aria-hidden="true" />
                 Thêm chương mới
-              </ButtonLink>
+              </Button>
               <Button variant="secondary" onClick={() => setTab('details')}>
                 <Edit3 size={16} aria-hidden="true" />
                 Sửa thông tin
               </Button>
-              <ButtonLink to="/stories/demo" variant="secondary">
-                <Eye size={16} aria-hidden="true" />
-                Xem trước như độc giả
-              </ButtonLink>
+              {story.status === 'published' ? (
+                <ButtonLink to={`/stories/${storyId}`} variant="secondary">
+                  <Eye size={16} aria-hidden="true" />
+                  Xem trước như độc giả
+                </ButtonLink>
+              ) : (
+                <Button variant="secondary" disabled title={t('managerData.notPublic')}>
+                  <Eye size={16} aria-hidden="true" />
+                  Xem trước như độc giả
+                </Button>
+              )}
             </div>
           </div>
         </Card>
@@ -199,12 +271,25 @@ export function StoryManagerPage() {
             label="Mục quản lý truyện"
             value={tab}
             onChange={setTab}
-            items={tabItems}
+            items={tabItems.map((item) =>
+              item.value === 'chapters'
+                ? {
+                    ...item,
+                    label: `Chương · ${workspace.status === 'ready' ? workspace.data.chapters.length : '—'}`,
+                  }
+                : item,
+            )}
           />
         </div>
 
         {tab === 'details' ? (
-          <StoryDetails />
+          <StoryDetails
+            key={story.id}
+            story={story}
+            onSaved={(updated) =>
+              setSavedStory({ source: workspace.data, story: { ...story, ...updated } })
+            }
+          />
         ) : linked ? (
           <Card className="mt-5 p-0">
             <EmptyState
@@ -282,10 +367,10 @@ export function StoryManagerPage() {
                   title="Truyện chưa có chương nào"
                   description="Viết chương đầu tiên để bắt đầu đăng truyện."
                   action={
-                    <ButtonLink to={EDITOR_ROUTE} size="sm">
+                    <Button disabled={!story.canEdit} onClick={() => setNewOpen(true)} size="sm">
                       <Plus size={14} aria-hidden="true" />
                       Viết chương đầu tiên
-                    </ButtonLink>
+                    </Button>
                   }
                 />
               ) : pageRows.length ? (
@@ -294,7 +379,7 @@ export function StoryManagerPage() {
                     <ChapterTableHead />
                     <tbody className="divide-y divide-hairline">
                       {pageRows.map((chapter) => (
-                        <ChapterRow key={chapter.number} chapter={chapter} />
+                        <ChapterRow key={chapter.id} chapter={chapter} storyId={storyId} />
                       ))}
                     </tbody>
                   </table>
@@ -360,9 +445,44 @@ export function StoryManagerPage() {
                 )}
               </div>
             </Card>
-            <StoryHealth />
+            <StoryHealth stats={workspace.data.stats} />
           </div>
         )}
+        {notice && (
+          <p role="status" className="mt-4 text-sm text-brand-strong">
+            {notice}
+          </p>
+        )}
+        <Modal
+          open={newOpen}
+          title={t('managerData.newChapter')}
+          onClose={() => {
+            if (!newBusy) setNewOpen(false);
+          }}
+        >
+          <form onSubmit={createChapter}>
+            <label htmlFor="new-chapter-title" className="text-sm font-semibold">
+              {t('managerData.chapterTitle')}
+            </label>
+            <Input
+              id="new-chapter-title"
+              required
+              maxLength={200}
+              disabled={newBusy}
+              value={newTitle}
+              onChange={(event) => setNewTitle(event.target.value)}
+              className="mt-2"
+            />
+            {newError && (
+              <p role="alert" className="mt-3 text-sm text-rose-strong">
+                {newError}
+              </p>
+            )}
+            <Button type="submit" disabled={newBusy || !newTitle.trim()} className="mt-4">
+              {t(newBusy ? 'managerData.creating' : 'managerData.createDraft')}
+            </Button>
+          </form>
+        </Modal>
       </div>
     </AuthorLayout>
   );
@@ -436,7 +556,25 @@ function ChapterRowSkeleton() {
   );
 }
 
-function ChapterRow({ chapter }) {
+function ChapterRow({ chapter, storyId }) {
+  const { t, formatDate, formatNumber } = useLocale();
+  const note =
+    chapter.status === 'Scheduled' && chapter.requestedReleaseAt
+      ? t('managerData.scheduledOn', { date: formatDate(chapter.requestedReleaseAt) })
+      : chapter.publishedAt
+        ? t('managerData.publishedOn', { date: formatDate(chapter.publishedAt) })
+        : chapter.updatedAt
+          ? t('managerData.updatedOn', { date: formatDate(chapter.updatedAt) })
+          : '—';
+  const access = chapter.earlyAccess;
+  const price =
+    chapter.status !== 'Published'
+      ? t('managerData.notReleased')
+      : !access?.enabled || (access.endsAt && new Date(access.endsAt) <= new Date())
+        ? t('managerData.free')
+        : access.coinPrice == null || !access.endsAt
+          ? '—'
+          : t('managerData.coinPrice', { count: access.coinPrice });
   const draft = chapter.status === 'Draft';
   return (
     <tr className="transition-colors duration-200 hover:bg-elevated/60">
@@ -446,7 +584,7 @@ function ChapterRow({ chapter }) {
             <strong className="text-sm">
               Chương {chapter.number}: {chapter.title}
             </strong>
-            <p className="mt-1 text-xs leading-5 text-muted">{formatChapterNote(chapter.note)}</p>
+            <p className="mt-1 text-xs leading-5 text-muted">{note}</p>
             <Badge tone={statusTones[chapter.status] ?? 'neutral'} className="mt-2 sm:hidden">
               {statusLabels[chapter.status] ?? chapter.status}
             </Badge>
@@ -459,18 +597,26 @@ function ChapterRow({ chapter }) {
         </Badge>
       </td>
       <td className="hidden whitespace-nowrap px-3 py-4 text-sm sm:table-cell">
-        <strong className="tabular-nums">{chapter.words} từ</strong>
-        <p className="whitespace-nowrap text-xs text-muted">{formatChapterMetric(chapter.reads)}</p>
+        <strong className="tabular-nums">
+          {chapter.words == null ? '—' : formatNumber(chapter.words)} từ
+        </strong>
+        <p className="whitespace-nowrap text-xs text-muted">
+          {t('managerData.viewCount', { count: formatNumber(chapter.reads) })}
+        </p>
       </td>
       <td className="hidden whitespace-nowrap px-3 py-4 text-sm sm:table-cell">
         <span className="inline-flex items-center gap-1.5">
           <Coins size={14} aria-hidden="true" className="text-orange" />
-          {priceLabels[chapter.price] ?? chapter.price}
+          {price}
         </span>
       </td>
       <td className="px-4 py-4">
         <div className="flex justify-end gap-2">
-          <ButtonLink to={EDITOR_ROUTE} variant={draft ? 'primary' : 'secondary'} size="sm">
+          <ButtonLink
+            to={`/author/stories/${storyId}/chapters/${chapter.id}/edit`}
+            variant={draft ? 'primary' : 'secondary'}
+            size="sm"
+          >
             {draft ? 'Viết tiếp' : chapter.status === 'Scheduled' ? 'Đổi lịch' : 'Chỉnh sửa'}
           </ButtonLink>
           <ButtonLink
@@ -488,36 +634,49 @@ function ChapterRow({ chapter }) {
   );
 }
 
-function StoryDetails() {
+function StoryDetails({ story, onSaved }) {
+  const { t } = useLocale();
+  const [version, setVersion] = useState(story.version);
+  const [saveError, setSaveError] = useState('');
   const [title, setTitle] = useState(story.title);
-  const [synopsis, setSynopsis] = useState(
-    "The wind moved gently through the ancient trees, carrying whispers of forgotten stories. Mira Lane's bestselling slow-burn mystery epic.",
-  );
+  const [synopsis, setSynopsis] = useState(story.description);
   const [status, setStatus] = useState('idle');
   const titleError = !title.trim();
   const synopsisError = synopsis.trim().length < 40;
-  const submit = (event) => {
+  const submit = async (event) => {
     event.preventDefault();
+    if (!story.canEdit || status === 'saving') return;
     if (titleError || synopsisError) {
       setStatus('invalid');
       return;
     }
     setStatus('saving');
-    window.setTimeout(() => setStatus('saved'), 700);
+    setSaveError('');
+    try {
+      const result = await apiRequest(`/author/stories/${story.id}`, {
+        method: 'PUT',
+        body: { title: title.trim(), description: synopsis.trim(), expectedVersion: version },
+      });
+      setVersion(result.story.version);
+      setStatus('saved');
+      onSaved(result.story);
+    } catch (error) {
+      setStatus('error');
+      setSaveError(error.message || t('managerData.saveError'));
+    }
   };
   const showErrors = status === 'invalid';
   return (
     <Card as="form" noValidate onSubmit={submit} className="mt-5 max-w-3xl">
       <h2 className="text-h3">Thông tin và tóm tắt truyện</h2>
-      <p className="mt-1 text-sm text-muted">
-        Thông tin này hiển thị trên trang truyện cho độc giả.
-      </p>
+      <p className="mt-1 text-sm text-muted">{t('managerData.draftInfo')}</p>
       <label htmlFor="story-title" className="mt-6 block text-sm font-semibold">
         Tên truyện
       </label>
       <Input
         id="story-title"
         value={title}
+        disabled={!story.canEdit || status === 'saving'}
         maxLength={100}
         onChange={(event) => {
           setTitle(event.target.value);
@@ -539,6 +698,7 @@ function StoryDetails() {
       <textarea
         id="story-synopsis"
         value={synopsis}
+        disabled={!story.canEdit || status === 'saving'}
         maxLength={2000}
         onChange={(event) => {
           setSynopsis(event.target.value);
@@ -554,11 +714,16 @@ function StoryDetails() {
       >
         Tóm tắt cần ít nhất 40 ký tự.
       </p>
+      {saveError && (
+        <p role="alert" className="mt-3 text-sm text-rose-strong">
+          {saveError}
+        </p>
+      )}
       <div className="mt-6 flex flex-wrap items-center justify-end gap-3">
         <p role="status" className="mr-auto text-xs text-brand-strong">
           {status === 'saved' ? 'Đã lưu thông tin truyện.' : ''}
         </p>
-        <Button type="submit" disabled={status === 'saving'}>
+        <Button type="submit" disabled={status === 'saving' || !story.canEdit}>
           <Save size={16} aria-hidden="true" />
           {status === 'saving' ? 'Đang lưu...' : 'Lưu thông tin'}
         </Button>
@@ -567,7 +732,8 @@ function StoryDetails() {
   );
 }
 
-function StoryHealth() {
+function StoryHealth({ stats }) {
+  const { t } = useLocale();
   return (
     <aside className="min-w-0 space-y-6 xl:sticky xl:top-24" aria-label="Sức khỏe truyện">
       <Card>
@@ -575,24 +741,17 @@ function StoryHealth() {
           <BarChart3 size={20} aria-hidden="true" className="text-brand" />
           Sức khỏe truyện và cột mốc
         </h2>
-        <Metric label="Mức độ cập nhật đều đặn hằng tuần" value={100} />
-        <Metric label="Tỷ lệ giữ chân độc giả" value={68} />
+        <Metric label="Mức độ cập nhật đều đặn hằng tuần" />
+        <Metric label="Tỷ lệ giữ chân độc giả" />
         <div className="mt-5 rounded-2xl border border-hairline bg-elevated p-4">
           <div className="flex flex-wrap items-center justify-between gap-2">
             <span className="flex items-center gap-2 text-sm">
               <Headphones size={16} aria-hidden="true" className="text-orange-strong" />
               Thuyết minh âm thanh
             </span>
-            <Badge tone="orange">6/15 chương</Badge>
+            <Badge tone="orange">—</Badge>
           </div>
-          <ProgressBar
-            value={6}
-            max={15}
-            tone="orange"
-            size="sm"
-            label="Số chương đã có bản âm thanh"
-            className="mt-3"
-          />
+          <div aria-hidden="true" className="mt-3 h-1.5 rounded-full bg-elevated" />
           <ButtonLink
             to="/author/media"
             variant="ghost"
@@ -605,10 +764,12 @@ function StoryHealth() {
         <h3 className="mt-5 text-sm font-semibold">Cột mốc xuất bản</h3>
         <ul className="mt-3 space-y-3">
           {[
-            ['Vượt mốc 100.000 từ', true],
-            ['Đạt tổng 1.000.000 lượt đọc', true],
-            ['Thu âm đủ 15 chương', false],
-            ['Mở khóa phiên bản bìa cứng cao cấp', false],
+            [
+              t('managerData.actualPublished', { count: stats.publishedChapters }),
+              stats.publishedChapters > 0,
+            ],
+            [t('managerData.viewCount', { count: stats.reads }), stats.reads > 0],
+            [t('managerData.audioUnknown'), false],
           ].map(([label, done]) => (
             <li key={label} className="flex items-start gap-2 text-sm">
               <CheckCircle2
@@ -631,25 +792,22 @@ function StoryHealth() {
       <Card>
         <p className="flex items-center gap-2 text-sm font-semibold text-orange-strong">
           <Sparkles size={16} aria-hidden="true" />
-          Lời khuyên của biên tập viên cho Hồi II
+          {t('managerData.adviceTitle')}
         </p>
-        <p className="mt-2 text-sm leading-6 text-muted">
-          Tỷ lệ giữ chân độc giả tăng 74% quanh Chương 14. Hãy duy trì nhịp kể gọn ở Chương 16 để
-          giữ đà mở khóa thuê bao.
-        </p>
+        <p className="mt-2 text-sm leading-6 text-muted">{t('managerData.adviceUnknown')}</p>
       </Card>
     </aside>
   );
 }
 
-function Metric({ label, value }) {
+function Metric({ label }) {
   return (
     <div className="mt-5">
       <div className="flex justify-between gap-3 text-sm">
         <span>{label}</span>
-        <strong className="text-brand-strong tabular-nums">{value}%</strong>
+        <strong className="text-brand-strong tabular-nums">—</strong>
       </div>
-      <ProgressBar value={value} size="sm" label={label} className="mt-2" />
+      <div aria-hidden="true" className="mt-2 h-1.5 rounded-full bg-elevated" />
     </div>
   );
 }
