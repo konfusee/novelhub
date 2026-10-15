@@ -298,7 +298,7 @@ export function StoryManagerPage() {
               description={linked.description}
               action={
                 <ButtonLink
-                  to={linked.to}
+                  to={tab === 'reviews' ? `${linked.to}?storyId=${storyId}` : linked.to}
                   variant="secondary"
                   size="sm"
                   trailingIcon={ChevronRight}

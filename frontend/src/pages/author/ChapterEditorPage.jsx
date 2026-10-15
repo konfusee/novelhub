@@ -505,7 +505,7 @@ function ChapterEditor({ chapter }) {
         title="Gửi chương"
         onClose={() => submit !== 'sending' && setSubmit('idle')}
       >
-        <p className="text-sm leading-6 text-muted">{t('editorData.noSubmission')}</p>
+        <p className="text-sm leading-6 text-muted">{t('submissionData.editorHint')}</p>
         <div className="mt-6 flex flex-col-reverse gap-2 sm:flex-row sm:flex-wrap sm:justify-end">
           <Button
             variant="secondary"
@@ -515,9 +515,16 @@ function ChapterEditor({ chapter }) {
           >
             Tiếp tục chỉnh sửa
           </Button>
-          <Button disabled className="w-full sm:w-auto">
+          <Button
+            disabled={saveBusy}
+            className="w-full sm:w-auto"
+            onClick={async () => {
+              if (!saved && !(await saveChapter())) return;
+              navigate(`/author/submissions?storyId=${chapter.storyId}&chapterId=${chapter.id}`);
+            }}
+          >
             <Check size={16} aria-hidden="true" />
-            {submit === 'sending' ? 'Đang gửi...' : 'Gửi xét duyệt'}
+            {t('submissionData.editorContinue')}
           </Button>
         </div>
       </Modal>

@@ -1099,5 +1099,111 @@
     "back": "Về quản lý truyện",
     "noSubmission": "Chưa nối quy trình gửi duyệt ở trình soạn thảo. Bạn có thể lưu bản nháp; không có yêu cầu duyệt nào được tạo ở đây.",
     "noNotes": "Chưa hỗ trợ lưu ghi chú riêng cho chương."
+  },
+  "submissionData": {
+    "studio": "Studio tác giả",
+    "title": "Kiểm tra và gửi duyệt",
+    "refresh": "Làm mới lịch sử",
+    "chooseStory": "Chọn truyện của bạn",
+    "chooseHint": "Chọn truyện và bản nháp cụ thể để kiểm tra điều kiện gửi duyệt.",
+    "noStories": "Bạn chưa có truyện. Hãy tạo bản nháp trong Studio tác giả.",
+    "chooseTarget": "Nội dung gửi duyệt",
+    "storyTarget": "Thông tin truyện",
+    "chapterTarget": "Nội dung chương",
+    "loadError": "Không tải được dữ liệu gửi duyệt",
+    "notFound": "Kiểm tra quyền sở hữu và bản nháp hiện tại, sau đó tải lại.",
+    "retry": "Thử lại",
+    "history": "Lịch sử gửi duyệt của bạn",
+    "noHistory": "Chưa có lần gửi duyệt",
+    "noHistoryHint": "Lịch sử và phản hồi sẽ xuất hiện sau khi bạn gửi bản nháp.",
+    "previous": "Trang trước",
+    "next": "Trang sau",
+    "revision": "Phiên bản",
+    "words": "Số từ nội dung",
+    "sent": "Đã lưu gói gửi duyệt",
+    "pendingHint": "Khi gửi thành công, gói được lưu và chờ xử lý bằng chứng. Chưa có bộ xử lý AI hoạt động trong luồng này; gói chưa sẵn sàng để kiểm duyệt viên quyết định.",
+    "checklist": "Danh sách kiểm tra từ máy chủ",
+    "pass": "Đạt",
+    "fail": "Chưa đạt",
+    "rights": "Khai báo quyền nội dung",
+    "basis": "Cơ sở quyền nội dung",
+    "original": "Tác phẩm gốc của tôi",
+    "licensed": "Được cấp quyền sử dụng",
+    "assertion": "Tôi xác nhận có quyền gửi và xuất bản nội dung này theo cơ sở đã chọn.",
+    "licenceNote": "Ghi chú nguồn hoặc giấy phép (không bắt buộc)",
+    "rightsHint": "Khai báo này được lưu cùng phiên bản truyện gửi duyệt và không thể sửa sau khi gửi.",
+    "parentRights": "Chương sử dụng khai báo quyền đã đóng băng của phiên bản truyện được duyệt. Hãy gửi duyệt thông tin truyện trước nếu điều kiện này chưa đạt.",
+    "notes": "Ghi chú cho kiểm duyệt viên",
+    "notesUnavailable": "Luồng hiện tại chưa lưu ghi chú biên tập riêng. Ô này tạm khóa để tránh mất thông tin bạn nhập.",
+    "freezeHint": "Gửi duyệt sẽ đóng băng đúng phiên bản này và khóa chỉnh sửa nội dung đã gửi trong khi chờ xử lý. Bản đang công khai vẫn giữ nguyên. Gửi duyệt không tự xuất bản.",
+    "back": "Quay lại bản thảo",
+    "send": "Gửi xét duyệt",
+    "sending": "Đang gửi…",
+    "sendError": "Chưa xác nhận được gói gửi. Hãy thử lại để kiểm tra cùng phiên bản.",
+    "confirm": "Xác nhận đóng băng và gửi duyệt",
+    "cancel": "Hủy",
+    "pipeline": "Quy trình xuất bản",
+    "processing": "Bằng chứng",
+    "open": "Mở nội dung",
+    "editorContinue": "Lưu và kiểm tra gửi duyệt",
+    "editorHint": "Bản nháp cần được lưu trước khi kiểm tra điều kiện gửi duyệt. Bạn sẽ chọn và xác nhận gói gửi ở bước tiếp theo.",
+    "checks": {
+      "editable": {
+        "title": "Phiên bản có thể gửi",
+        "hint": "Bản nháp phải thuộc bạn, còn chỉnh sửa được và truyện không bị đóng băng."
+      },
+      "content": {
+        "title": "Nội dung và định dạng",
+        "hint": "Thông tin truyện hoặc chương phải hợp lệ, có nội dung. Hiện hỗ trợ đoạn văn thuần; các khối hoặc ký pháp định dạng chưa hỗ trợ cần được xử lý trước khi gửi."
+      },
+      "categories": {
+        "title": "Thể loại đang hoạt động",
+        "hint": "Truyện cần ít nhất một thể loại hợp lệ đang hoạt động, không trùng lặp."
+      },
+      "media": {
+        "title": "Gói không chứa media chưa hỗ trợ",
+        "hint": "Luồng hiện tại chưa đóng băng ảnh bìa hoặc ảnh minh họa. Gói có media cần được xử lý ở phần thư viện media trước khi gửi."
+      },
+      "parent": {
+        "title": "Điều kiện truyện cha",
+        "hint": "Chương cần phiên bản truyện đã duyệt và khai báo quyền bất biến. Gói thông tin truyện không yêu cầu bước này."
+      }
+    },
+    "pipelineSteps": {
+      "freeze": {
+        "title": "Kiểm tra và đóng băng",
+        "hint": "Server xác thực phiên bản, lưu khai báo quyền và dấu kiểm tra toàn vẹn trong một giao dịch."
+      },
+      "evidence": {
+        "title": "Chờ xử lý bằng chứng",
+        "hint": "Lưu lô bằng chứng ở trạng thái chờ. Chưa tự tạo kết quả AI hay kết luận tương đồng."
+      },
+      "review": {
+        "title": "Kiểm duyệt theo phiên bản",
+        "hint": "Cần đủ bằng chứng hợp lệ trước khi kiểm duyệt viên quyết định về đúng gói gửi."
+      },
+      "release": {
+        "title": "Tác giả phát hành",
+        "hint": "Được duyệt chưa đồng nghĩa với công khai. Chỉ phiên bản đã phát hành mới hiển thị cho độc giả."
+      }
+    },
+    "status": {
+      "validated": "Đã kiểm tra, chờ xử lý",
+      "pending-review": "Chờ kiểm duyệt",
+      "decision-pending": "Chờ quyết định",
+      "approved": "Đã duyệt",
+      "rejected": "Bị từ chối",
+      "revision-requested": "Cần chỉnh sửa",
+      "cancelled": "Đã hủy"
+    },
+    "evidenceStatus": {
+      "pending": "Đang chờ xử lý",
+      "embedding-complete": "Đã tạo embedding",
+      "discovery-complete": "Đã hoàn tất so sánh",
+      "llm-complete": "Đã hoàn tất phân tích AI",
+      "available-for-human-review": "Sẵn sàng cho kiểm duyệt viên",
+      "failed": "Xử lý thất bại"
+    },
+    "checkAgain": "Kiểm tra lại bản nháp"
   }
 }

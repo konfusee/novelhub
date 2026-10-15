@@ -1,6 +1,6 @@
 import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { afterEach, expect, it, vi } from 'vitest';
-import { MemoryRouter, Route, Routes } from 'react-router';
+import { MemoryRouter, Route, Routes, useLocation } from 'react-router';
 import { LocaleProvider } from '../../context/LocaleContext';
 import { ChapterEditorPage } from './ChapterEditorPage';
 const mocks = vi.hoisted(() => ({ apiRequest: vi.fn() }));
@@ -21,11 +21,15 @@ const chapter = {
     { id: 'thirteen', number: 13, title: 'Chương sau' },
   ],
 };
+function SubmissionDestination() {
+  return <p>submission-destination{useLocation().search}</p>;
+}
 const view = () =>
   render(
     <MemoryRouter initialEntries={['/author/stories/owned/chapters/seven/edit']}>
       <LocaleProvider>
         <Routes>
+          <Route path="/author/submissions" element={<SubmissionDestination />} />
           <Route
             path="/author/stories/:storyId/chapters/:chapterId/edit"
             element={<ChapterEditorPage />}
@@ -37,6 +41,22 @@ const view = () =>
 afterEach(() => {
   cleanup();
   vi.resetAllMocks();
+});
+it('saves dirty paragraphs before opening the exact chapter submission package', async () => {
+  mocks.apiRequest.mockImplementation(async (_path, options) =>
+    options?.method === 'PUT' ? { chapter: { version: 10 } } : { chapter },
+  );
+  view();
+  fireEvent.change(await screen.findByRole('textbox', { name: 'Nội dung chương' }), {
+    target: { value: 'Bản cần lưu trước khi gửi' },
+  });
+  fireEvent.click(screen.getByRole('button', { name: 'Gửi chương', exact: true }));
+  fireEvent.click(await screen.findByRole('button', { name: 'Lưu và kiểm tra gửi duyệt' }));
+  await screen.findByText('submission-destination?storyId=owned&chapterId=seven');
+  expect(mocks.apiRequest).toHaveBeenCalledWith('/author/stories/owned/chapters/seven', {
+    method: 'PUT',
+    body: { title: 'Chương thật', paragraphs: ['Bản cần lưu trước khi gửi'], expectedVersion: 9 },
+  });
 });
 it('loads actual paragraphs and uses the next stored chapter ID, then saves successive versions', async () => {
   let version = 9;
