@@ -1,13 +1,6 @@
 import { Router } from 'express';
 import { z } from 'zod';
-import {
-  Account,
-  Category,
-  ContentRevision,
-  RoleAssignment,
-  Story,
-  Chapter,
-} from '../models/index.js';
+import { Category, ContentRevision, Story, Chapter } from '../models/index.js';
 import { requireAuth, requireRole } from '../middleware/auth.js';
 import { HttpError } from '../middleware/errors.js';
 import { withTransaction } from '../db/connection.js';
@@ -16,6 +9,7 @@ import { authorStoryWorkspace } from '../modules/author-story-workspace.js';
 import { authorDrafts } from '../modules/author-drafts.js';
 import { authorAnalytics } from '../modules/author-analytics.js';
 import { authorEarnings } from '../modules/author-earnings.js';
+import { lockAuthor, ownStory, editable } from '../modules/author-ownership.js';
 
 const objectId = z.string().regex(/^[a-f\d]{24}$/i);
 const storyInput = z
@@ -41,39 +35,6 @@ function parse(schema, value) {
   return parsed.data;
 }
 
-// Serialize with role/status changes and concurrent owner edits inside the same transaction.
-async function lockAuthor(account, session) {
-  const locked = await Account.findOneAndUpdate(
-    {
-      _id: account._id,
-      status: 'active',
-      authorizationEpoch: account.authorizationEpoch,
-      credentialVersion: account.credentialVersion,
-    },
-    { $inc: { version: 1 } },
-    { returnDocument: 'after', session },
-  );
-  const role = await RoleAssignment.exists({
-    accountId: account._id,
-    role: 'author',
-    status: 'active',
-  }).session(session);
-  if (!locked || !role) throw new HttpError(403, 'forbidden', 'Quyền tác giả không còn hiệu lực.');
-}
-async function ownStory(account, id, session) {
-  const story = await Story.findOne({ _id: id, authorAccountId: account._id }).session(
-    session ?? null,
-  );
-  if (!story) throw new HttpError(404, 'not_found', 'Không tìm thấy truyện.');
-  return story;
-}
-function editable(story) {
-  if (
-    story.authoringFrozen ||
-    ['submitted', 'under-review', 'archived'].includes(story.publicationStatus)
-  )
-    throw new HttpError(409, 'content_frozen', 'Truyện đang bị khóa chỉnh sửa.');
-}
 function view(story) {
   return {
     id: String(story._id),
