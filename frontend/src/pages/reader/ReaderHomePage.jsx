@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { Link } from 'react-router';
+import { useState } from 'react'
+import { Link } from 'react-router'
 import {
   AlertTriangle,
   ArrowRight,
@@ -18,10 +18,10 @@ import {
   Play,
   RefreshCw,
   Star,
-} from '../../components/icons';
-import { ReaderLayout } from '../../layouts';
-import { ContinueCard, ContinueCardSkeleton } from '../../components/reader/ContinueCard';
-import { StoryCover } from '../../components/story/StoryCover';
+} from '../../components/icons'
+import { ReaderLayout } from '../../layouts'
+import { ContinueCard, ContinueCardSkeleton } from '../../components/reader/ContinueCard'
+import { StoryCover } from '../../components/story/StoryCover'
 import {
   Badge,
   Button,
@@ -33,29 +33,29 @@ import {
   Reveal,
   SectionHeader,
   Skeleton,
-} from '../../components/ui';
-import { readerHome } from '../../data/mock/reader';
-import { ROUTES } from '../../app/routes';
-import { useAuth } from '../../context/AuthContext';
-import { useLocale } from '../../context/LocaleContext';
-import { useMockResource } from '../../context/MockDataContext';
+} from '../../components/ui'
+import { readerHome } from '../../data/mock/reader'
+import { ROUTES } from '../../app/routes'
+import { useAuth } from '../../context/AuthContext'
+import { useLocale } from '../../context/LocaleContext'
+import { useMockResource } from '../../context/MockDataContext'
 
 const slugify = (value = '') =>
   value
     .toLowerCase()
     .replace(/[^a-z0-9]+/g, '-')
-    .replace(/(^-|-$)/g, '');
+    .replace(/(^-|-$)/g, '')
 
-const genreTones = { Fantasy: 'orange', Romance: 'rose', Adventure: 'green' };
+const genreTones = { Fantasy: 'orange', Romance: 'rose', Adventure: 'green' }
 
-const continueItems = [readerHome.continueReading, readerHome.continueListening];
+const continueItems = [readerHome.continueReading, readerHome.continueListening]
 const recommendationFeed = {
   recommendations: readerHome.recommendations,
   picks: readerHome.fantasyPicks,
-};
-const updateFeed = { updates: readerHome.updates, releases: readerHome.releases };
-const isRecommendationsEmpty = (value) => !value.recommendations.length && !value.picks.length;
-const isUpdatesEmpty = (value) => !value.updates.length && !value.releases.length;
+}
+const updateFeed = { updates: readerHome.updates, releases: readerHome.releases }
+const isRecommendationsEmpty = value => !value.recommendations.length && !value.picks.length
+const isUpdatesEmpty = value => !value.updates.length && !value.releases.length
 
 function RetryButton({ onClick }) {
   return (
@@ -63,7 +63,7 @@ function RetryButton({ onClick }) {
       <RefreshCw size={14} aria-hidden="true" />
       Thử lại
     </Button>
-  );
+  )
 }
 
 function ErrorCard({ title, onRetry, className = 'mt-4' }) {
@@ -78,7 +78,7 @@ function ErrorCard({ title, onRetry, className = 'mt-4' }) {
         action={<RetryButton onClick={onRetry} />}
       />
     </Card>
-  );
+  )
 }
 
 function StoryTileSkeleton() {
@@ -96,7 +96,7 @@ function StoryTileSkeleton() {
         <Skeleton className="size-9" />
       </div>
     </Card>
-  );
+  )
 }
 
 function CompactRowSkeleton({ cover = 'h-16 w-11 rounded-xl' }) {
@@ -108,12 +108,12 @@ function CompactRowSkeleton({ cover = 'h-16 w-11 rounded-xl' }) {
         <Skeleton className="h-2.5 w-1/2" />
       </span>
     </>
-  );
+  )
 }
 
 function StoryTile({ story }) {
-  const [saved, setSaved] = useState(false);
-  const href = `/stories/${slugify(story.title)}`;
+  const [saved, setSaved] = useState(false)
+  const href = `/stories/${slugify(story.title)}`
   return (
     <Card as="article" interactive className="group flex flex-col p-3">
       <Link to={href} tabIndex={-1} aria-hidden="true" className="block">
@@ -153,11 +153,11 @@ function StoryTile({ story }) {
         </IconButton>
       </div>
     </Card>
-  );
+  )
 }
 
 function StreakCard() {
-  const days = ['T2', 'T3', 'T4', 'T5', 'T6', 'T7', 'CN'];
+  const days = ['T2', 'T3', 'T4', 'T5', 'T6', 'T7', 'CN']
   return (
     <Card>
       <div className="flex items-start justify-between gap-3">
@@ -191,15 +191,15 @@ function StreakCard() {
         Chuỗi tốt nhất: 24 ngày. Hãy tiếp tục đọc!
       </p>
     </Card>
-  );
+  )
 }
 
 const nowPlaying =
-  readerHome.recommendations.find((story) => story.title === 'Midnight Whispers') ||
-  readerHome.recommendations[0];
+  readerHome.recommendations.find(story => story.title === 'Midnight Whispers') ||
+  readerHome.recommendations[0]
 
 function NowPlaying() {
-  const [playing, setPlaying] = useState(true);
+  const [playing, setPlaying] = useState(true)
   return (
     <Card>
       <div className="flex items-center justify-between">
@@ -239,18 +239,18 @@ function NowPlaying() {
         <span className="text-xs tabular-nums text-muted">3:09:47</span>
       </div>
     </Card>
-  );
+  )
 }
 
 export function ReaderHomePage() {
-  const { currentUser, hasRole } = useAuth();
-  const { t } = useLocale();
-  const continuing = useMockResource('reader:continue', continueItems);
+  const { currentUser, hasRole } = useAuth()
+  const { t } = useLocale()
+  const continuing = useMockResource('reader:continue', continueItems)
   const recommended = useMockResource('reader:recommendations', recommendationFeed, {
     isEmpty: isRecommendationsEmpty,
-  });
-  const updated = useMockResource('reader:updates', updateFeed, { isEmpty: isUpdatesEmpty });
-  const [picks, setPicks] = useState(readerHome.fantasyPicks);
+  })
+  const updated = useMockResource('reader:updates', updateFeed, { isEmpty: isUpdatesEmpty })
+  const [picks, setPicks] = useState(readerHome.fantasyPicks)
   return (
     <ReaderLayout>
       <div className="page-reader py-6">
@@ -368,7 +368,7 @@ export function ReaderHomePage() {
                   aria-label="Đang tải đề xuất"
                   className="nh-grid-12 mt-4 grid nh-cols-2 gap-3 nh-sm-cols-4"
                 >
-                  {readerHome.recommendations.map((story) => (
+                  {readerHome.recommendations.map(story => (
                     <StoryTileSkeleton key={story.title} />
                   ))}
                 </div>
@@ -390,7 +390,7 @@ export function ReaderHomePage() {
                 </Card>
               ) : (
                 <div className="nh-fade-enter nh-grid-12 mt-4 grid nh-cols-2 gap-3 nh-sm-cols-4">
-                  {recommended.data.recommendations.map((story) => (
+                  {recommended.data.recommendations.map(story => (
                     <StoryTile key={story.title} story={story} />
                   ))}
                 </div>
@@ -405,7 +405,7 @@ export function ReaderHomePage() {
                     <Button
                       variant="ghost"
                       size="sm"
-                      onClick={() => setPicks((current) => [...current.slice(1), current[0]])}
+                      onClick={() => setPicks(current => [...current.slice(1), current[0]])}
                       className="text-brand-strong"
                     >
                       <RefreshCw size={14} />
@@ -419,7 +419,7 @@ export function ReaderHomePage() {
                     aria-label="Đang tải gợi ý kỳ ảo"
                     className="nh-grid-12 mt-4 grid gap-3 nh-sm-cols-3"
                   >
-                    {readerHome.fantasyPicks.map((item) => (
+                    {readerHome.fantasyPicks.map(item => (
                       <Card
                         as="div"
                         key={item.title}
@@ -435,7 +435,7 @@ export function ReaderHomePage() {
                     aria-live="polite"
                     className="nh-fade-enter nh-grid-12 mt-4 grid gap-3 nh-sm-cols-3"
                   >
-                    {picks.map((item) => (
+                    {picks.map(item => (
                       <Card
                         key={item.title}
                         as={Link}
@@ -475,7 +475,7 @@ export function ReaderHomePage() {
                   aria-label="Đang tải chương mới"
                   className="mt-4 divide-y divide-hairline p-0"
                 >
-                  {readerHome.updates.map((item) => (
+                  {readerHome.updates.map(item => (
                     <div
                       key={item.title}
                       aria-hidden="true"
@@ -505,7 +505,7 @@ export function ReaderHomePage() {
                 </Card>
               ) : (
                 <Card className="nh-fade-enter mt-4 divide-y divide-hairline p-0">
-                  {updated.data.updates.map((item) => (
+                  {updated.data.updates.map(item => (
                     <div className="group flex items-center gap-3 px-4 py-3" key={item.title}>
                       <StoryCover story={item} className="h-14 w-10 shrink-0 rounded-xl" />
                       <div className="min-w-0 flex-1">
@@ -552,7 +552,7 @@ export function ReaderHomePage() {
                   aria-label="Đang tải lịch phát hành"
                   className="mt-4 space-y-3"
                 >
-                  {readerHome.releases.map((item) => (
+                  {readerHome.releases.map(item => (
                     <li key={item.title} aria-hidden="true" className="flex items-center gap-3">
                       <CompactRowSkeleton cover="size-11 rounded-2xl" />
                     </li>
@@ -560,7 +560,7 @@ export function ReaderHomePage() {
                 </ul>
               ) : updated.status === 'ready' && updated.data.releases.length ? (
                 <ul className="nh-fade-enter mt-4 space-y-3">
-                  {updated.data.releases.map((item) => (
+                  {updated.data.releases.map(item => (
                     <li className="flex items-center gap-3" key={item.title}>
                       <span className="grid size-11 shrink-0 place-items-center rounded-2xl bg-brand-soft text-center text-[11px] font-bold leading-tight text-brand-strong">
                         {item.date}
@@ -598,5 +598,5 @@ export function ReaderHomePage() {
         </div>
       </div>
     </ReaderLayout>
-  );
+  )
 }

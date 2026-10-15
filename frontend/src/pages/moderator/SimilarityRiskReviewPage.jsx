@@ -1,5 +1,5 @@
-import { useRef, useState } from 'react';
-import { useParams } from 'react-router';
+import { useRef, useState } from 'react'
+import { useParams } from 'react-router'
 import {
   AlertTriangle,
   ArrowRight,
@@ -14,9 +14,9 @@ import {
   ShieldCheck,
   Sparkles,
   X,
-} from '../../components/icons';
-import { ModeratorLayout } from '../../layouts';
-import { useMockResource } from '../../context/MockDataContext';
+} from '../../components/icons'
+import { ModeratorLayout } from '../../layouts'
+import { useMockResource } from '../../context/MockDataContext'
 import {
   Badge,
   Button,
@@ -28,23 +28,23 @@ import {
   ProgressBar,
   Skeleton,
   Tabs,
-} from '../../components/ui';
+} from '../../components/ui'
 
-const FLAG_ID = 'SIM-3012';
-const SUBMISSION_ID = 'MS-88402';
+const FLAG_ID = 'SIM-3012'
+const SUBMISSION_ID = 'MS-88402'
 const metrics = [
   ['Trùng lặp ngữ nghĩa', '68,4%', 68.4, 'Cosine vector', 'Rủi ro trung bình', 'orange'],
   ['Trùng văn bản nguyên câu', '14,2%', 14.2, 'Chuỗi cụm từ chính xác', 'Vượt ngưỡng', 'red'],
   ['Nhịp cấu trúc chương', '78,0%', 78, 'Nhịp điểm cảnh', 'Mô-típ cao', 'purple'],
   ['Độ tin cậy mô hình', 'Cao', 91, '1,4M tiêu đề đã lập chỉ mục', 'Chỉ mục đã xác minh', 'green'],
-];
+]
 const metricText = {
   orange: 'text-orange-strong',
   red: 'text-rose-strong',
   purple: 'text-purple-strong',
   green: 'text-brand-strong',
-};
-const metricBar = { orange: 'orange', red: 'rose', purple: 'purple', green: 'brand' };
+}
+const metricBar = { orange: 'orange', red: 'rose', purple: 'purple', green: 'brand' }
 const passages = [
   {
     match: '92% trùng · 64 từ',
@@ -67,7 +67,7 @@ const passages = [
     reference:
       'No human crown could command the forest king; his covenant was sworn to winter, root and stone.',
   },
-];
+]
 const actions = {
   dismiss: { label: 'Bác bỏ cảnh báo', icon: X, variant: 'secondary' },
   attach: { label: `Đính kèm vào bản xét duyệt #${SUBMISSION_ID}`, icon: Link2, variant: 'ghost' },
@@ -82,14 +82,14 @@ const actions = {
     icon: ClipboardCheck,
     variant: 'primary',
   },
-};
+}
 const fieldClass =
-  'w-full rounded-2xl border border-line p-3 text-base leading-6 text-ink outline-none transition-colors placeholder:text-muted focus:border-brand sm:text-sm';
+  'w-full rounded-2xl border border-line p-3 text-base leading-6 text-ink outline-none transition-colors placeholder:text-muted focus:border-brand sm:text-sm'
 
 const highlight = (text, query) => {
-  const needle = query.trim();
-  if (!needle) return text;
-  const parts = text.split(new RegExp(`(${needle.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})`, 'gi'));
+  const needle = query.trim()
+  if (!needle) return text
+  const parts = text.split(new RegExp(`(${needle.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})`, 'gi'))
   return parts.map((part, index) =>
     index % 2 ? (
       <span key={index} className="rounded-sm bg-purple/25 px-0.5 font-semibold">
@@ -98,60 +98,60 @@ const highlight = (text, query) => {
     ) : (
       part
     ),
-  );
-};
+  )
+}
 
 export function SimilarityRiskReviewPage() {
-  const { reviewId = FLAG_ID } = useParams();
+  const { reviewId = FLAG_ID } = useParams()
   const evidence = useMockResource(
     `similarity:${reviewId}`,
     { metrics, passages },
     {
-      isEmpty: (value) => !value.passages.length,
+      isEmpty: value => !value.passages.length,
     },
-  );
-  const ready = evidence.status === 'ready';
-  const loading = evidence.status === 'loading';
-  const [passage, setPassage] = useState(0);
-  const [query, setQuery] = useState('');
-  const [sync, setSync] = useState(true);
+  )
+  const ready = evidence.status === 'ready'
+  const loading = evidence.status === 'loading'
+  const [passage, setPassage] = useState(0)
+  const [query, setQuery] = useState('')
+  const [sync, setSync] = useState(true)
   const [findings, setFindings] = useState(
     'Có các mô-típ dân gian kỳ ảo phổ biến, nhưng câu mở đầu Chương 2 cho thấy sự phái sinh cấu trúc trực tiếp. Cần yêu cầu làm rõ.',
-  );
-  const [softHold, setSoftHold] = useState(true);
-  const [notify, setNotify] = useState(true);
-  const [action, setAction] = useState(null);
-  const [actionNote, setActionNote] = useState('');
-  const [recorded, setRecorded] = useState(null);
-  const submittedPanelRef = useRef(null);
-  const referencePanelRef = useRef(null);
-  const syncing = useRef(false);
-  const selected = evidence.data.passages[passage] ?? evidence.data.passages[0];
-  const needle = query.trim().toLowerCase();
+  )
+  const [softHold, setSoftHold] = useState(true)
+  const [notify, setNotify] = useState(true)
+  const [action, setAction] = useState(null)
+  const [actionNote, setActionNote] = useState('')
+  const [recorded, setRecorded] = useState(null)
+  const submittedPanelRef = useRef(null)
+  const referencePanelRef = useRef(null)
+  const syncing = useRef(false)
+  const selected = evidence.data.passages[passage] ?? evidence.data.passages[0]
+  const needle = query.trim().toLowerCase()
   const matches =
     ready && needle
-      ? evidence.data.passages.filter((item) =>
+      ? evidence.data.passages.filter(item =>
           `${item.target} ${item.reference}`.toLowerCase().includes(needle),
         ).length
-      : null;
-  const pending = action ? actions[action] : null;
+      : null
+  const pending = action ? actions[action] : null
 
-  const onPanelScroll = (index) => {
+  const onPanelScroll = index => {
     if (!sync || syncing.current) {
-      syncing.current = false;
-      return;
+      syncing.current = false
+      return
     }
-    const panels = [submittedPanelRef.current, referencePanelRef.current];
-    const source = panels[index];
-    const target = panels[1 - index];
-    if (!source || !target) return;
-    const range = source.scrollHeight - source.clientHeight;
+    const panels = [submittedPanelRef.current, referencePanelRef.current]
+    const source = panels[index]
+    const target = panels[1 - index]
+    if (!source || !target) return
+    const range = source.scrollHeight - source.clientHeight
     const next =
-      range > 0 ? (source.scrollTop / range) * (target.scrollHeight - target.clientHeight) : 0;
-    if (Math.abs(target.scrollTop - next) < 1) return;
-    syncing.current = true;
-    target.scrollTop = next;
-  };
+      range > 0 ? (source.scrollTop / range) * (target.scrollHeight - target.clientHeight) : 0
+    if (Math.abs(target.scrollTop - next) < 1) return
+    syncing.current = true
+    target.scrollTop = next
+  }
   const exportReport = () => {
     const blob = new Blob(
       [
@@ -175,18 +175,18 @@ export function SimilarityRiskReviewPage() {
         ),
       ],
       { type: 'application/json' },
-    );
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = `${FLAG_ID.toLowerCase()}-kiem-tra.json`;
-    link.click();
-    URL.revokeObjectURL(url);
-  };
-  const openAction = (key) => {
-    setActionNote(findings);
-    setAction(key);
-  };
+    )
+    const url = URL.createObjectURL(blob)
+    const link = document.createElement('a')
+    link.href = url
+    link.download = `${FLAG_ID.toLowerCase()}-kiem-tra.json`
+    link.click()
+    URL.revokeObjectURL(url)
+  }
+  const openAction = key => {
+    setActionNote(findings)
+    setAction(key)
+  }
 
   return (
     <ModeratorLayout>
@@ -209,7 +209,7 @@ export function SimilarityRiskReviewPage() {
               type="search"
               enterKeyHint="search"
               value={query}
-              onChange={(event) => setQuery(event.target.value)}
+              onChange={event => setQuery(event.target.value)}
               placeholder="Tìm trong văn bản bị cảnh báo..."
               aria-label="Tìm trong văn bản bị cảnh báo"
               className="w-full sm:w-64"
@@ -319,7 +319,7 @@ export function SimilarityRiskReviewPage() {
                     aria-hidden="true"
                     className="flex h-12 items-center gap-1 overflow-hidden rounded-full border border-hairline bg-elevated p-1"
                   >
-                    {[0, 1, 2].map((index) => (
+                    {[0, 1, 2].map(index => (
                       <Skeleton key={index} className="h-10 w-56 shrink-0" />
                     ))}
                   </span>
@@ -345,7 +345,7 @@ export function SimilarityRiskReviewPage() {
                 type="button"
                 role="switch"
                 aria-checked={sync}
-                onClick={() => setSync((value) => !value)}
+                onClick={() => setSync(value => !value)}
                 className="hidden shrink-0 items-center gap-2.5 rounded-full py-1 text-sm font-medium lg:ml-auto lg:flex"
               >
                 <span
@@ -483,7 +483,7 @@ export function SimilarityRiskReviewPage() {
                   <textarea
                     id="similarity-findings"
                     value={findings}
-                    onChange={(event) => setFindings(event.target.value)}
+                    onChange={event => setFindings(event.target.value)}
                     className={`${fieldClass} mt-2 min-h-36 bg-elevated`}
                   />
                   <div className="mt-4 flex flex-col gap-3 sm:flex-row sm:gap-6">
@@ -506,11 +506,11 @@ export function SimilarityRiskReviewPage() {
                 </p>
               )}
               <div className="mt-5 flex flex-col gap-2 border-t border-hairline pt-4 sm:flex-row sm:flex-wrap">
-                {['dismiss', 'attach'].map((key) => (
+                {['dismiss', 'attach'].map(key => (
                   <ActionButton key={key} id={key} onClick={openAction} />
                 ))}
                 <div className="flex flex-col gap-2 sm:ml-auto sm:flex-row sm:flex-wrap">
-                  {['escalate', 'clarify'].map((key) => (
+                  {['escalate', 'clarify'].map(key => (
                     <ActionButton key={key} id={key} onClick={openAction} />
                   ))}
                 </div>
@@ -544,7 +544,7 @@ export function SimilarityRiskReviewPage() {
               <textarea
                 id="similarity-action-note"
                 value={actionNote}
-                onChange={(event) => setActionNote(event.target.value)}
+                onChange={event => setActionNote(event.target.value)}
                 className={`${fieldClass} mt-2 min-h-24 bg-surface`}
               />
               <div className="mt-5 flex flex-wrap justify-end gap-2">
@@ -555,8 +555,8 @@ export function SimilarityRiskReviewPage() {
                   variant={pending.destructive ? 'danger' : 'primary'}
                   disabled={!actionNote.trim()}
                   onClick={() => {
-                    setRecorded(action);
-                    setAction(null);
+                    setRecorded(action)
+                    setAction(null)
                   }}
                 >
                   <ShieldCheck size={15} />
@@ -568,7 +568,7 @@ export function SimilarityRiskReviewPage() {
         </Modal>
       </div>
     </ModeratorLayout>
-  );
+  )
 }
 
 const shortActionLabels = {
@@ -576,20 +576,20 @@ const shortActionLabels = {
   attach: `Đính kèm #${SUBMISSION_ID}`,
   escalate: 'Chuyển bộ phận pháp lý',
   clarify: 'Yêu cầu tác giả giải trình',
-};
+}
 
 function ActionButton({ id, onClick }) {
-  const { icon: Icon, variant } = actions[id];
+  const { icon: Icon, variant } = actions[id]
   return (
     <Button variant={variant} onClick={() => onClick(id)}>
       <Icon size={15} />
       {shortActionLabels[id]}
     </Button>
-  );
+  )
 }
 
 function ComparisonPanel({ label, title, meta, tone, text, query, scrollRef, onScroll }) {
-  const flagged = tone === 'orange';
+  const flagged = tone === 'orange'
   return (
     <Card as="article" className="flex min-w-0 flex-col overflow-hidden p-0">
       <header className="border-b border-hairline bg-elevated p-5">
@@ -635,7 +635,7 @@ function ComparisonPanel({ label, title, meta, tone, text, query, scrollRef, onS
         </p>
       </div>
     </Card>
-  );
+  )
 }
 
 function Diagnostic({ title, children }) {
@@ -644,7 +644,7 @@ function Diagnostic({ title, children }) {
       <strong className="text-sm font-semibold">{title}</strong>
       <p className="mt-1.5 text-sm leading-6 text-ink/75">{children}</p>
     </div>
-  );
+  )
 }
 
 function Toggle({ checked, onChange, label }) {
@@ -666,7 +666,7 @@ function Toggle({ checked, onChange, label }) {
       </span>
       {label}
     </button>
-  );
+  )
 }
 
 /* Metric tile: label + badge row, 36px value, note, small progress track. */
@@ -685,7 +685,7 @@ function MetricSkeleton() {
       </span>
       <Skeleton className="mt-4 h-1.5 w-full" />
     </div>
-  );
+  )
 }
 
 /* Same header band and scroll body (lead-in, highlighted excerpt box, lead-out) as ComparisonPanel. */
@@ -714,12 +714,12 @@ function ComparisonPanelSkeleton({ titleLines }) {
         <SkeletonLines lines={2} extra={2} pitch="h-7" />
       </div>
     </Card>
-  );
+  )
 }
 
 /* `extra` lines render only below `sm`, where the narrow column wraps the text further. */
 function SkeletonLines({ lines, extra = 0, pitch, className = '' }) {
-  const total = lines + extra;
+  const total = lines + extra
   return (
     <div className={className}>
       {Array.from({ length: total }, (_, line) => (
@@ -731,5 +731,5 @@ function SkeletonLines({ lines, extra = 0, pitch, className = '' }) {
         </span>
       ))}
     </div>
-  );
+  )
 }

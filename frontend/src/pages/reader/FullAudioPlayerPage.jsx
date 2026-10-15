@@ -1,5 +1,5 @@
-import { useEffect, useRef, useState } from 'react';
-import { useNavigate, useParams } from 'react-router';
+import { useEffect, useRef, useState } from 'react'
+import { useNavigate, useParams } from 'react-router'
 import {
   AlertTriangle,
   BookMarked,
@@ -18,132 +18,131 @@ import {
   SkipBack,
   SkipForward,
   Volume2,
-} from '../../components/icons';
-import { ReaderLayout } from '../../layouts';
-import { Badge, Button, Card, EmptyState, IconButton, Skeleton } from '../../components/ui';
-import { useMockResource } from '../../context/MockDataContext';
-import { ReaderRange } from '../../components/reader/ReaderSettings';
-import { StoryCover } from '../../components/story/StoryCover';
-import { ROUTES } from '../../app/routes';
-import { audioPlayerData as audio } from '../../data/mock/reader';
+} from '../../components/icons'
+import { ReaderLayout } from '../../layouts'
+import { Badge, Button, Card, EmptyState, IconButton, Skeleton } from '../../components/ui'
+import { useMockResource } from '../../context/MockDataContext'
+import { ReaderRange } from '../../components/reader/ReaderSettings'
+import { StoryCover } from '../../components/story/StoryCover'
+import { ROUTES } from '../../app/routes'
+import { audioPlayerData as audio } from '../../data/mock/reader'
 
-const SKIP_SECONDS = 15;
-const SPEEDS = [1, 1.25, 1.5, 2];
+const SKIP_SECONDS = 15
+const SPEEDS = [1, 1.25, 1.5, 2]
 const TIMERS = [
   ['Tắt', 0],
   ['15 phút', 15],
   ['30 phút', 30],
   ['45 phút', 45],
   ['Hết chương', 'chapter'],
-];
-const toSeconds = (time) => time.split(':').reduce((total, part) => total * 60 + Number(part), 0);
-const formatTime = (seconds) => {
-  const whole = Math.max(0, Math.round(seconds));
-  return `${Math.floor(whole / 60)}:${String(whole % 60).padStart(2, '0')}`;
-};
-const queueSeconds = audio.queue.reduce((total, [, time]) => total + toSeconds(time), 0);
-const queueTotal = `${Math.floor(queueSeconds / 3600)} giờ ${Math.round((queueSeconds % 3600) / 60)} phút`;
-const chapterFrom = (chapterId) => {
-  const parsed = Number(chapterId?.match(/\d+/)?.[0]);
+]
+const toSeconds = time => time.split(':').reduce((total, part) => total * 60 + Number(part), 0)
+const formatTime = seconds => {
+  const whole = Math.max(0, Math.round(seconds))
+  return `${Math.floor(whole / 60)}:${String(whole % 60).padStart(2, '0')}`
+}
+const queueSeconds = audio.queue.reduce((total, [, time]) => total + toSeconds(time), 0)
+const queueTotal = `${Math.floor(queueSeconds / 3600)} giờ ${Math.round((queueSeconds % 3600) / 60)} phút`
+const chapterFrom = chapterId => {
+  const parsed = Number(chapterId?.match(/\d+/)?.[0])
   return Number.isInteger(parsed) && parsed >= 1 && parsed <= audio.queue.length
     ? parsed
-    : audio.chapter;
-};
+    : audio.chapter
+}
 /* The demo resumes the featured chapter at 14:32, as the original mock did. */
-const resumeAt = (chapter) => (chapter === audio.chapter ? 872 : 0);
+const resumeAt = chapter => (chapter === audio.chapter ? 872 : 0)
 
 export function FullAudioPlayerPage() {
-  const navigate = useNavigate();
-  const { storyId = 'demo', chapterId } = useParams();
-  const chapter = chapterFrom(chapterId);
-  const [title, duration] = [audio.queue[chapter - 1][0], toSeconds(audio.queue[chapter - 1][1])];
+  const navigate = useNavigate()
+  const { storyId = 'demo', chapterId } = useParams()
+  const chapter = chapterFrom(chapterId)
+  const [title, duration] = [audio.queue[chapter - 1][0], toSeconds(audio.queue[chapter - 1][1])]
   /* Track metadata (title, duration, stream) loads per chapter; playback waits for it. */
   const { status: trackStatus, retry: retryTrack } = useMockResource(
     `audio:${storyId}:${chapter}`,
     audio.queue[chapter - 1],
-    { isEmpty: (item) => !item },
-  );
-  const trackReady = trackStatus === 'ready';
-  const [playing, setPlaying] = useState(true);
-  const [track, setTrack] = useState(() => ({ chapter, seconds: resumeAt(chapter) }));
-  const [speed, setSpeed] = useState(1.25);
-  const [timer, setTimer] = useState(30);
-  const [volume, setVolume] = useState(78);
-  const [muted, setMuted] = useState(false);
-  const [shuffle, setShuffle] = useState(false);
-  const [repeat, setRepeat] = useState(false);
-  const [saved, setSaved] = useState(false);
-  const [toast, setToast] = useState('');
-  const position = track.chapter === chapter ? Math.min(track.seconds, duration) : 0;
-  const latest = useRef({ position, duration, chapter, repeat, shuffle, timer, trackReady });
+    { isEmpty: item => !item },
+  )
+  const trackReady = trackStatus === 'ready'
+  const [playing, setPlaying] = useState(true)
+  const [track, setTrack] = useState(() => ({ chapter, seconds: resumeAt(chapter) }))
+  const [speed, setSpeed] = useState(1.25)
+  const [timer, setTimer] = useState(30)
+  const [volume, setVolume] = useState(78)
+  const [muted, setMuted] = useState(false)
+  const [shuffle, setShuffle] = useState(false)
+  const [repeat, setRepeat] = useState(false)
+  const [saved, setSaved] = useState(false)
+  const [toast, setToast] = useState('')
+  const position = track.chapter === chapter ? Math.min(track.seconds, duration) : 0
+  const latest = useRef({ position, duration, chapter, repeat, shuffle, timer, trackReady })
 
-  const seek = (seconds) =>
-    setTrack({ chapter, seconds: Math.min(duration, Math.max(0, seconds)) });
-  const goToChapter = (number) => {
-    setTrack({ chapter: number, seconds: 0 });
-    navigate(ROUTES.listen(storyId, `chapter-${number}`), { replace: true });
-  };
+  const seek = seconds => setTrack({ chapter, seconds: Math.min(duration, Math.max(0, seconds)) })
+  const goToChapter = number => {
+    setTrack({ chapter: number, seconds: 0 })
+    navigate(ROUTES.listen(storyId, `chapter-${number}`), { replace: true })
+  }
 
   useEffect(() => {
-    latest.current = { position, duration, chapter, repeat, shuffle, timer, trackReady };
-  });
+    latest.current = { position, duration, chapter, repeat, shuffle, timer, trackReady }
+  })
   /* Simulated playback clock: advances at the chosen speed and handles chapter end. */
   useEffect(() => {
-    if (!playing) return undefined;
+    if (!playing) return undefined
     const tick = setInterval(() => {
-      const now = latest.current;
-      if (!now.trackReady) return;
-      const next = now.position + speed;
+      const now = latest.current
+      if (!now.trackReady) return
+      const next = now.position + speed
       if (next < now.duration) {
-        setTrack({ chapter: now.chapter, seconds: next });
+        setTrack({ chapter: now.chapter, seconds: next })
       } else if (now.repeat) {
-        setTrack({ chapter: now.chapter, seconds: 0 });
+        setTrack({ chapter: now.chapter, seconds: 0 })
       } else if (now.timer === 'chapter' || (!now.shuffle && now.chapter >= audio.queue.length)) {
-        setTrack({ chapter: now.chapter, seconds: now.duration });
-        setPlaying(false);
+        setTrack({ chapter: now.chapter, seconds: now.duration })
+        setPlaying(false)
       } else {
         const following = now.shuffle
           ? ((now.chapter + Math.floor(Math.random() * (audio.queue.length - 1))) %
               audio.queue.length) +
             1
-          : now.chapter + 1;
-        setTrack({ chapter: following, seconds: 0 });
-        navigate(ROUTES.listen(storyId, `chapter-${following}`), { replace: true });
+          : now.chapter + 1
+        setTrack({ chapter: following, seconds: 0 })
+        navigate(ROUTES.listen(storyId, `chapter-${following}`), { replace: true })
       }
-    }, 1000);
-    return () => clearInterval(tick);
-  }, [playing, speed, navigate, storyId]);
+    }, 1000)
+    return () => clearInterval(tick)
+  }, [playing, speed, navigate, storyId])
   /* Sleep timer pauses playback after the chosen number of minutes. */
   useEffect(() => {
-    if (!playing || typeof timer !== 'number' || timer === 0) return undefined;
-    const sleep = setTimeout(() => setPlaying(false), timer * 60 * 1000);
-    return () => clearTimeout(sleep);
-  }, [playing, timer]);
+    if (!playing || typeof timer !== 'number' || timer === 0) return undefined
+    const sleep = setTimeout(() => setPlaying(false), timer * 60 * 1000)
+    return () => clearTimeout(sleep)
+  }, [playing, timer])
   useEffect(() => {
-    if (!toast) return undefined;
-    const hide = setTimeout(() => setToast(''), 2200);
-    return () => clearTimeout(hide);
-  }, [toast]);
+    if (!toast) return undefined
+    const hide = setTimeout(() => setToast(''), 2200)
+    return () => clearTimeout(hide)
+  }, [toast])
 
   const toggleSaved = () => {
-    setSaved((value) => !value);
-    setToast(saved ? 'Đã bỏ khỏi thư viện' : 'Đã thêm vào thư viện');
-  };
+    setSaved(value => !value)
+    setToast(saved ? 'Đã bỏ khỏi thư viện' : 'Đã thêm vào thư viện')
+  }
   const share = async () => {
     try {
-      if (navigator.share) await navigator.share({ title: audio.title, url: location.href });
+      if (navigator.share) await navigator.share({ title: audio.title, url: location.href })
       else {
-        await navigator.clipboard?.writeText(location.href);
-        setToast('Đã sao chép liên kết truyện âm thanh');
+        await navigator.clipboard?.writeText(location.href)
+        setToast('Đã sao chép liên kết truyện âm thanh')
       }
     } catch {
       /* The share sheet was dismissed. */
     }
-  };
+  }
   const togglePlay = () => {
-    if (!playing && position >= duration) seek(0);
-    setPlaying((value) => !value);
-  };
+    if (!playing && position >= duration) seek(0)
+    setPlaying(value => !value)
+  }
 
   return (
     <ReaderLayout>
@@ -313,7 +312,7 @@ export function FullAudioPlayerPage() {
                 <TransportButton
                   label="Phát ngẫu nhiên"
                   pressed={shuffle}
-                  onClick={() => setShuffle((value) => !value)}
+                  onClick={() => setShuffle(value => !value)}
                   className="max-sm:hidden"
                 >
                   <Shuffle size={19} />
@@ -358,7 +357,7 @@ export function FullAudioPlayerPage() {
                 <TransportButton
                   label="Lặp lại chương"
                   pressed={repeat}
-                  onClick={() => setRepeat((value) => !value)}
+                  onClick={() => setRepeat(value => !value)}
                   className="max-sm:hidden"
                 >
                   <Repeat2 size={19} />
@@ -369,7 +368,7 @@ export function FullAudioPlayerPage() {
                   size="sm"
                   variant={shuffle ? 'outline' : 'ghost'}
                   aria-pressed={shuffle}
-                  onClick={() => setShuffle((value) => !value)}
+                  onClick={() => setShuffle(value => !value)}
                 >
                   <Shuffle size={15} />
                   Ngẫu nhiên
@@ -378,7 +377,7 @@ export function FullAudioPlayerPage() {
                   size="sm"
                   variant={repeat ? 'outline' : 'ghost'}
                   aria-pressed={repeat}
-                  onClick={() => setRepeat((value) => !value)}
+                  onClick={() => setRepeat(value => !value)}
                 >
                   <Repeat2 size={15} />
                   Lặp lại
@@ -387,7 +386,7 @@ export function FullAudioPlayerPage() {
               <div className="mt-8 space-y-3 border-t border-hairline pt-6">
                 <ControlPills
                   label="Tốc độ"
-                  options={SPEEDS.map((value) => [`${value}x`, value])}
+                  options={SPEEDS.map(value => [`${value}x`, value])}
                   value={speed}
                   onChange={setSpeed}
                 />
@@ -397,7 +396,7 @@ export function FullAudioPlayerPage() {
                     small
                     label={muted ? 'Bật tiếng' : 'Tắt tiếng'}
                     pressed={muted}
-                    onClick={() => setMuted((value) => !value)}
+                    onClick={() => setMuted(value => !value)}
                   >
                     <Volume2 size={17} />
                   </TransportButton>
@@ -407,9 +406,9 @@ export function FullAudioPlayerPage() {
                     max={100}
                     value={muted ? 0 : volume}
                     valueText={`${muted ? 0 : volume}%`}
-                    onChange={(value) => {
-                      setVolume(value);
-                      setMuted(value === 0);
+                    onChange={value => {
+                      setVolume(value)
+                      setMuted(value === 0)
                     }}
                   />
                   <span className="w-10 shrink-0 text-right text-xs font-semibold tabular-nums">
@@ -434,9 +433,9 @@ export function FullAudioPlayerPage() {
               </div>
               <ol className="-mx-1 mt-5 max-h-[540px] space-y-1 overflow-y-auto overscroll-contain px-1">
                 {audio.queue.map(([itemTitle, time], index) => {
-                  const number = index + 1;
-                  const active = number === chapter;
-                  const done = number < chapter;
+                  const number = index + 1
+                  const active = number === chapter
+                  const done = number < chapter
                   return (
                     <li key={itemTitle}>
                       <button
@@ -479,7 +478,7 @@ export function FullAudioPlayerPage() {
                         <span className="shrink-0 text-xs tabular-nums text-muted">{time}</span>
                       </button>
                     </li>
-                  );
+                  )
                 })}
               </ol>
             </Card>
@@ -494,7 +493,7 @@ export function FullAudioPlayerPage() {
                     >
                       {name
                         .split(' ')
-                        .map((part) => part[0])
+                        .map(part => part[0])
                         .join('')}
                     </span>
                     <div className="min-w-0">
@@ -536,7 +535,7 @@ export function FullAudioPlayerPage() {
         )}
       </div>
     </ReaderLayout>
-  );
+  )
 }
 
 function TransportButton({ label, pressed, small = false, className = '', children, ...props }) {
@@ -551,7 +550,7 @@ function TransportButton({ label, pressed, small = false, className = '', childr
     >
       {children}
     </button>
-  );
+  )
 }
 
 function ControlPills({ label, options, value, onChange }) {
@@ -583,5 +582,5 @@ function ControlPills({ label, options, value, onChange }) {
         ))}
       </div>
     </div>
-  );
+  )
 }

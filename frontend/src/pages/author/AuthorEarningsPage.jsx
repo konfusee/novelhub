@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useMemo, useState } from 'react'
 import {
   AlertTriangle,
   ArrowRight,
@@ -9,10 +9,10 @@ import {
   RefreshCw,
   Save,
   UsersRound,
-} from '../../components/icons';
-import { AuthorLayout } from '../../layouts';
-import { ROUTES } from '../../app/routes';
-import { useMockResource } from '../../context/MockDataContext';
+} from '../../components/icons'
+import { AuthorLayout } from '../../layouts'
+import { ROUTES } from '../../app/routes'
+import { useMockResource } from '../../context/MockDataContext'
 import {
   Badge,
   Button,
@@ -23,8 +23,8 @@ import {
   Select,
   Skeleton,
   Tabs,
-} from '../../components/ui';
-import { useLocale } from '../../context/LocaleContext';
+} from '../../components/ui'
+import { useLocale } from '../../context/LocaleContext'
 
 const earningsData = {
   periods: {
@@ -55,36 +55,35 @@ const earningsData = {
     ['The Silent Forest', 'Chương 15', 25, 143, 2502],
     ['Echoes of Eldoria', 'Chương 3', 20, 96, 1344],
   ],
-};
-const isEarningsEmpty = (value) => value.sales.length === 0;
-const days = ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'];
+}
+const isEarningsEmpty = value => value.sales.length === 0
+const days = ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun']
 /* Fixed, varied bar heights (%) for the revenue chart skeleton, one per weekday. */
-const revenueSkeletonBars = [48, 66, 54, 78, 62, 88, 72];
+const revenueSkeletonBars = [48, 66, 54, 78, 62, 88, 72]
 
-const toPrice = (value) => Math.max(0, Number(value) || 0);
+const toPrice = value => Math.max(0, Number(value) || 0)
 
 export function AuthorEarningsPage() {
-  const { t, formatNumber } = useLocale();
-  const [period, setPeriod] = useState('month');
-  const [story, setStory] = useState('silent-forest');
-  const [chapterPrice, setChapterPrice] = useState(25);
-  const [subscriptionPrice, setSubscriptionPrice] = useState(199);
-  const [savedPrices, setSavedPrices] = useState({ chapterPrice: 25, subscriptionPrice: 199 });
+  const { t, formatNumber } = useLocale()
+  const [period, setPeriod] = useState('month')
+  const [story, setStory] = useState('silent-forest')
+  const [chapterPrice, setChapterPrice] = useState(25)
+  const [subscriptionPrice, setSubscriptionPrice] = useState(199)
+  const [savedPrices, setSavedPrices] = useState({ chapterPrice: 25, subscriptionPrice: 199 })
   const earnings = useMockResource(`author:earnings:${period}`, earningsData, {
     isEmpty: isEarningsEmpty,
-  });
-  const loading = earnings.status === 'loading';
-  const hasData = loading || earnings.status === 'ready';
-  const data = earnings.data.periods[period];
-  const sales = earnings.data.sales;
+  })
+  const loading = earnings.status === 'loading'
+  const hasData = loading || earnings.status === 'ready'
+  const data = earnings.data.periods[period]
+  const sales = earnings.data.sales
   const changed =
-    chapterPrice !== savedPrices.chapterPrice ||
-    subscriptionPrice !== savedPrices.subscriptionPrice;
+    chapterPrice !== savedPrices.chapterPrice || subscriptionPrice !== savedPrices.subscriptionPrice
   const projectedPayout = useMemo(
     () => data.payout * (period === 'day' ? 30 : period === 'week' ? 4.3 : 1),
     [data, period],
-  );
-  const peak = Math.max(...data.bars);
+  )
+  const peak = Math.max(...data.bars)
   const metrics = [
     { icon: BookOpen, label: t('authorFinance.chapterBuyers'), value: formatNumber(data.buyers) },
     {
@@ -104,7 +103,7 @@ export function AuthorEarningsPage() {
       label: t('authorFinance.netRevenue'),
       value: `$${data.payout.toFixed(2)}`,
     },
-  ];
+  ]
 
   return (
     <AuthorLayout>
@@ -137,13 +136,13 @@ export function AuthorEarningsPage() {
             aria-label="Đang tải chỉ số doanh thu"
             className="mt-6 grid grid-cols-2 gap-3 xl:grid-cols-4"
           >
-            {metrics.map((metric) => (
+            {metrics.map(metric => (
               <MetricSkeleton key={`metric-skeleton-${metric.label}`} label={metric.label} />
             ))}
           </section>
         ) : earnings.status === 'ready' ? (
           <section className="nh-fade-enter mt-6 grid grid-cols-2 gap-3 xl:grid-cols-4">
-            {metrics.map((metric) => (
+            {metrics.map(metric => (
               <Metric key={metric.label} {...metric} />
             ))}
           </section>
@@ -246,7 +245,7 @@ export function AuthorEarningsPage() {
                           aria-label="Đang tải doanh số theo chương"
                           className="divide-y divide-hairline"
                         >
-                          {[0, 1, 2].map((item) => (
+                          {[0, 1, 2].map(item => (
                             <SalesRowSkeleton key={`sales-skeleton-${item}`} />
                           ))}
                         </tbody>
@@ -316,7 +315,7 @@ export function AuthorEarningsPage() {
                 id="pricing-story"
                 className="mt-2 w-full"
                 value={story}
-                onChange={(event) => setStory(event.target.value)}
+                onChange={event => setStory(event.target.value)}
               >
                 <option value="silent-forest">The Silent Forest</option>
                 <option value="echoes">Echoes of Eldoria</option>
@@ -333,7 +332,7 @@ export function AuthorEarningsPage() {
                 max="500"
                 value={chapterPrice}
                 aria-describedby="pricing-chapter-hint"
-                onChange={(event) => setChapterPrice(toPrice(event.target.value))}
+                onChange={event => setChapterPrice(toPrice(event.target.value))}
               />
               <p id="pricing-chapter-hint" className="mt-2 text-xs text-muted">
                 {t('authorFinance.priceHint')}
@@ -349,15 +348,15 @@ export function AuthorEarningsPage() {
                 min="0"
                 max="5000"
                 value={subscriptionPrice}
-                onChange={(event) => setSubscriptionPrice(toPrice(event.target.value))}
+                onChange={event => setSubscriptionPrice(toPrice(event.target.value))}
               />
               {changed && (
                 <div className="mt-5 flex flex-wrap justify-end gap-2 border-t border-hairline pt-5">
                   <Button
                     variant="secondary"
                     onClick={() => {
-                      setChapterPrice(savedPrices.chapterPrice);
-                      setSubscriptionPrice(savedPrices.subscriptionPrice);
+                      setChapterPrice(savedPrices.chapterPrice)
+                      setSubscriptionPrice(savedPrices.subscriptionPrice)
                     }}
                   >
                     {t('common.discard')}
@@ -373,14 +372,14 @@ export function AuthorEarningsPage() {
         </div>
       </div>
     </AuthorLayout>
-  );
+  )
 }
 
 const iconTones = {
   brand: 'bg-brand/12 text-brand-strong',
   orange: 'bg-orange/16 text-orange-strong',
   purple: 'bg-purple/12 text-purple-strong',
-};
+}
 
 function Metric({ icon: Icon, label, value, tone = 'brand' }) {
   return (
@@ -393,7 +392,7 @@ function Metric({ icon: Icon, label, value, tone = 'brand' }) {
       </div>
       <strong className="mt-3 block text-h3 tabular-nums sm:mt-4 sm:text-h2">{value}</strong>
     </Card>
-  );
+  )
 }
 
 function RevenueGridLines() {
@@ -402,11 +401,11 @@ function RevenueGridLines() {
       aria-hidden="true"
       className="pointer-events-none absolute inset-x-0 top-0 flex h-52 flex-col justify-between"
     >
-      {[0, 1, 2, 3].map((line) => (
+      {[0, 1, 2, 3].map(line => (
         <span key={line} className="border-t border-dashed border-hairline" />
       ))}
     </div>
-  );
+  )
 }
 
 function RetryButton({ onClick }) {
@@ -415,7 +414,7 @@ function RetryButton({ onClick }) {
       <RefreshCw size={14} aria-hidden="true" />
       Thử lại
     </Button>
-  );
+  )
 }
 
 /*
@@ -430,7 +429,7 @@ function GhostText({ className = '', ghost, children }) {
         {children}
       </div>
     </div>
-  );
+  )
 }
 
 /* Mirrors Metric: wrapped label + icon tile, then the h3/h2 value line box. */
@@ -452,7 +451,7 @@ function MetricSkeleton({ label }) {
         <Skeleton className="h-5 w-24 rounded-lg sm:h-6" />
       </div>
     </Card>
-  );
+  )
 }
 
 /* Same 7-column grid, h-52 bar wells and 16px weekday labels as the ready chart. */
@@ -475,7 +474,7 @@ function RevenueChartSkeleton() {
         ))}
       </div>
     </div>
-  );
+  )
 }
 
 /* Sales row: single text-sm line in every cell (row = 52px), same five columns. */
@@ -508,5 +507,5 @@ function SalesRowSkeleton() {
         </div>
       </td>
     </tr>
-  );
+  )
 }

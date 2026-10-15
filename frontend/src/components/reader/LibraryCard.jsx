@@ -1,63 +1,63 @@
-import { useEffect, useRef, useState } from 'react';
-import { Link } from 'react-router';
-import { BookOpen, CheckCircle2, Download, Headphones, MoreVertical, Play, Trash2 } from '../icons';
-import { Badge, ButtonLink, Card, ProgressBar, Skeleton } from '../ui';
-import { StoryCover } from '../story/StoryCover';
-import { useLocale } from '../../context/LocaleContext';
+import { useEffect, useRef, useState } from 'react'
+import { Link } from 'react-router'
+import { BookOpen, CheckCircle2, Download, Headphones, MoreVertical, Play, Trash2 } from '../icons'
+import { Badge, ButtonLink, Card, ProgressBar, Skeleton } from '../ui'
+import { StoryCover } from '../story/StoryCover'
+import { useLocale } from '../../context/LocaleContext'
 
 const menuItemClass =
-  'flex w-full items-center gap-2 rounded-xl px-3 py-2.5 text-left transition-colors hover:bg-elevated pointer-coarse:min-h-11';
+  'flex w-full items-center gap-2 rounded-xl px-3 py-2.5 text-left transition-colors hover:bg-elevated pointer-coarse:min-h-11'
 /* Menu footprint used to keep it on-screen (w-52 + margin; three items at touch height). */
-const MENU_WIDTH = 216;
-const MENU_HEIGHT = 150;
+const MENU_WIDTH = 216
+const MENU_HEIGHT = 150
 
 export function LibraryCard({ item, view = 'grid', onRemove }) {
-  const [menuOpen, setMenuOpen] = useState(false);
-  const [placement, setPlacement] = useState('right-0 bottom-full mb-1');
-  const [notice, setNotice] = useState('');
-  const menuRef = useRef(null);
-  const triggerRef = useRef(null);
-  const { t } = useLocale();
-  const audio = item.type === 'audio';
-  const href = audio ? `/listen/${item.id}/chapter-1` : `/read/${item.id}/chapter-1`;
-  const typeLabel = t(audio ? 'library.audiobook' : 'library.textStory');
+  const [menuOpen, setMenuOpen] = useState(false)
+  const [placement, setPlacement] = useState('right-0 bottom-full mb-1')
+  const [notice, setNotice] = useState('')
+  const menuRef = useRef(null)
+  const triggerRef = useRef(null)
+  const { t } = useLocale()
+  const audio = item.type === 'audio'
+  const href = audio ? `/listen/${item.id}/chapter-1` : `/read/${item.id}/chapter-1`
+  const typeLabel = t(audio ? 'library.audiobook' : 'library.textStory')
 
   useEffect(() => {
-    if (!menuOpen) return undefined;
-    const close = (event) => {
+    if (!menuOpen) return undefined
+    const close = event => {
       if (
         event.type === 'keydown' ? event.key === 'Escape' : !menuRef.current?.contains(event.target)
       )
-        setMenuOpen(false);
-    };
-    document.addEventListener('pointerdown', close);
-    document.addEventListener('keydown', close);
+        setMenuOpen(false)
+    }
+    document.addEventListener('pointerdown', close)
+    document.addEventListener('keydown', close)
     return () => {
-      document.removeEventListener('pointerdown', close);
-      document.removeEventListener('keydown', close);
-    };
-  }, [menuOpen]);
+      document.removeEventListener('pointerdown', close)
+      document.removeEventListener('keydown', close)
+    }
+  }, [menuOpen])
 
-  const choose = (message) => {
-    setNotice(message);
-    setMenuOpen(false);
-  };
+  const choose = message => {
+    setNotice(message)
+    setMenuOpen(false)
+  }
 
   /* Open toward the side and direction with room: never past the viewport edge or under the header. */
   const toggleMenu = () => {
     if (!menuOpen && triggerRef.current) {
-      const rect = triggerRef.current.getBoundingClientRect();
+      const rect = triggerRef.current.getBoundingClientRect()
       const headerBottom =
-        document.querySelector('[data-app-header]')?.getBoundingClientRect().bottom ?? 0;
-      const fitsAbove = rect.top - MENU_HEIGHT >= headerBottom + 8;
-      const fitsBelow = rect.bottom + MENU_HEIGHT <= window.innerHeight - 8;
-      const below = view === 'list' ? fitsBelow || !fitsAbove : !fitsAbove && fitsBelow;
+        document.querySelector('[data-app-header]')?.getBoundingClientRect().bottom ?? 0
+      const fitsAbove = rect.top - MENU_HEIGHT >= headerBottom + 8
+      const fitsBelow = rect.bottom + MENU_HEIGHT <= window.innerHeight - 8
+      const below = view === 'list' ? fitsBelow || !fitsAbove : !fitsAbove && fitsBelow
       setPlacement(
         `${rect.right < MENU_WIDTH ? 'left-0' : 'right-0'} ${below ? 'top-full mt-1' : 'bottom-full mb-1'}`,
-      );
+      )
     }
-    setMenuOpen(!menuOpen);
-  };
+    setMenuOpen(!menuOpen)
+  }
 
   const menu = (
     <div ref={menuRef} className="relative">
@@ -104,13 +104,13 @@ export function LibraryCard({ item, view = 'grid', onRemove }) {
         </div>
       )}
     </div>
-  );
+  )
 
   const status = notice && (
     <p role="status" className="mt-2 text-xs font-medium text-brand-strong">
       {notice}
     </p>
-  );
+  )
 
   if (view === 'list')
     return (
@@ -159,7 +159,7 @@ export function LibraryCard({ item, view = 'grid', onRemove }) {
         </ButtonLink>
         {menu}
       </Card>
-    );
+    )
 
   return (
     <Card as="article" className="group flex flex-col p-3">
@@ -220,7 +220,7 @@ export function LibraryCard({ item, view = 'grid', onRemove }) {
       </div>
       {status}
     </Card>
-  );
+  )
 }
 
 /* Placeholder for both LibraryCard views, matching cover sizes and row heights. */
@@ -250,7 +250,7 @@ export function LibraryCardSkeleton({ view = 'grid' }) {
         <Skeleton className="h-9 w-10 shrink-0 sm:w-28" />
         <Skeleton className="size-9 shrink-0 pointer-coarse:size-11" />
       </Card>
-    );
+    )
   return (
     <Card as="div" aria-hidden="true" className="flex flex-col p-3">
       <Skeleton className="aspect-[2/3] w-full rounded-2xl" />
@@ -273,5 +273,5 @@ export function LibraryCardSkeleton({ view = 'grid' }) {
         <Skeleton className="size-9 shrink-0 pointer-coarse:size-11" />
       </div>
     </Card>
-  );
+  )
 }

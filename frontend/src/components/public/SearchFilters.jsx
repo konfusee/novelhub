@@ -1,7 +1,7 @@
-import { Button } from '../ui';
-import { useLocale } from '../../context/LocaleContext';
+import { Button } from '../ui'
+import { useLocale } from '../../context/LocaleContext'
 
-const SEARCH_STATUSES = ['allStatuses', 'ongoing', 'completedOnly'];
+const SEARCH_STATUSES = ['allStatuses', 'ongoing', 'completedOnly']
 
 const groups = [
   {
@@ -30,11 +30,11 @@ const groups = [
       ['Illustrated Chapters', 'search.illustratedChapters', ''],
     ],
   },
-];
+]
 
-const legendClass = 'mb-3 text-[11px] font-semibold uppercase tracking-[.14em] text-muted';
+const legendClass = 'mb-3 text-[11px] font-semibold uppercase tracking-[.14em] text-muted'
 const optionClass =
-  'flex min-h-8 cursor-pointer items-center gap-2.5 rounded-xl text-sm transition-colors duration-200 hover:text-brand-strong pointer-coarse:min-h-11';
+  'flex min-h-8 cursor-pointer items-center gap-2.5 rounded-xl text-sm transition-colors duration-200 hover:text-brand-strong pointer-coarse:min-h-11'
 
 export function SearchFilters({
   checked,
@@ -45,7 +45,7 @@ export function SearchFilters({
   onReset,
   showHeading = true,
 }) {
-  const { t } = useLocale();
+  const { t } = useLocale()
   return (
     <div className="space-y-5">
       {showHeading && (
@@ -60,7 +60,7 @@ export function SearchFilters({
           </button>
         </div>
       )}
-      {groups.map((group) => (
+      {groups.map(group => (
         <fieldset key={group.title} className="border-b border-hairline pb-5">
           <legend className={legendClass}>{t(group.title)}</legend>
           <div className="space-y-1">
@@ -82,7 +82,7 @@ export function SearchFilters({
       <fieldset>
         <legend className={legendClass}>{t('search.publicationStatus')}</legend>
         <div className="space-y-1">
-          {SEARCH_STATUSES.map((key) => (
+          {SEARCH_STATUSES.map(key => (
             <label className={optionClass} key={key}>
               <input
                 name="status"
@@ -105,5 +105,5 @@ export function SearchFilters({
         </Button>
       </div>
     </div>
-  );
+  )
 }

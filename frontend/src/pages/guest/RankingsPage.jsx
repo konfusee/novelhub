@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { Link } from 'react-router';
+import { useState } from 'react'
+import { Link } from 'react-router'
 import {
   AlertTriangle,
   ArrowRight,
@@ -9,10 +9,10 @@ import {
   ShieldCheck,
   Star,
   Trophy,
-} from '../../components/icons';
-import { PublicHeader } from '../../components/public/PublicHeader';
-import { PodiumCard, PodiumCardSkeleton } from '../../components/public/PodiumCard';
-import { RankingRow, RankingRowSkeleton } from '../../components/public/RankingRow';
+} from '../../components/icons'
+import { PublicHeader } from '../../components/public/PublicHeader'
+import { PodiumCard, PodiumCardSkeleton } from '../../components/public/PodiumCard'
+import { RankingRow, RankingRowSkeleton } from '../../components/public/RankingRow'
 import {
   Badge,
   Button,
@@ -22,36 +22,36 @@ import {
   ProgressBar,
   Reveal,
   Tabs,
-} from '../../components/ui';
-import { useMockResource } from '../../context/MockDataContext';
-import { podium, rankingCategories, rankingPeriods, rankings } from '../../data/mock/rankings';
-import { extendedStories } from '../../data/mock/stories';
+} from '../../components/ui'
+import { useMockResource } from '../../context/MockDataContext'
+import { podium, rankingCategories, rankingPeriods, rankings } from '../../data/mock/rankings'
+import { extendedStories } from '../../data/mock/stories'
 
 /* Rankings mock rows carry no cover data; reuse the catalogue entry with the same title. */
-const withCatalogue = (item) => {
-  const match = extendedStories.find((story) => story.title === item.title);
-  return match ? { ...item, id: match.id, color: match.color } : item;
-};
-const board = { podium: podium.map(withCatalogue), rows: rankings.map(withCatalogue) };
-const isBoardEmpty = (value) => !value.podium.length && !value.rows.length;
+const withCatalogue = item => {
+  const match = extendedStories.find(story => story.title === item.title)
+  return match ? { ...item, id: match.id, color: match.color } : item
+}
+const board = { podium: podium.map(withCatalogue), rows: rankings.map(withCatalogue) }
+const isBoardEmpty = value => !value.podium.length && !value.rows.length
 
 const formula = [
   [45, 'thời gian đọc đã xác minh', 'brand'],
   [30, 'tỷ lệ lưu trong thư viện', 'orange'],
   [25, 'đánh giá cộng đồng thực', 'purple'],
-];
+]
 
 export function RankingsPage({ embedded = false }) {
-  const [category, setCategory] = useState('Thịnh hành');
-  const [period, setPeriod] = useState('Tuần này');
-  const [following, setFollowing] = useState(false);
-  const [notice, setNotice] = useState('');
+  const [category, setCategory] = useState('Thịnh hành')
+  const [period, setPeriod] = useState('Tuần này')
+  const [following, setFollowing] = useState(false)
+  const [notice, setNotice] = useState('')
   const ranking = useMockResource(`rankings:${category}:${period}`, board, {
     isEmpty: isBoardEmpty,
-  });
-  const loading = ranking.status === 'loading';
-  const { podium: podiumStories, rows: rankingRows } = ranking.data;
-  const Root = embedded ? 'div' : 'main';
+  })
+  const loading = ranking.status === 'loading'
+  const { podium: podiumStories, rows: rankingRows } = ranking.data
+  const Root = embedded ? 'div' : 'main'
   return (
     <div className="min-h-screen bg-page text-ink">
       {!embedded && <PublicHeader />}
@@ -78,7 +78,7 @@ export function RankingsPage({ embedded = false }) {
                 singleRow
                 value={category}
                 onChange={setCategory}
-                items={rankingCategories.map((item) => ({ value: item, label: item }))}
+                items={rankingCategories.map(item => ({ value: item, label: item }))}
               />
             </div>
             <div
@@ -86,7 +86,7 @@ export function RankingsPage({ embedded = false }) {
               aria-label="Khoảng thời gian"
               className="nh-tab-rail flex max-w-full gap-1 overflow-x-auto rounded-full border border-hairline bg-elevated p-1"
             >
-              {rankingPeriods.map((item) => (
+              {rankingPeriods.map(item => (
                 <button
                   type="button"
                   aria-pressed={period === item}
@@ -115,7 +115,7 @@ export function RankingsPage({ embedded = false }) {
                 aria-label="Đang tải nhóm dẫn đầu"
                 className="nh-grid-12 grid gap-4 nh-lg-cols-3 lg:items-end"
               >
-                {[2, 1, 3].map((rank) => (
+                {[2, 1, 3].map(rank => (
                   <div key={rank} className={rank === 1 ? 'order-first lg:order-none' : ''}>
                     <PodiumCardSkeleton champion={rank === 1} />
                   </div>
@@ -179,14 +179,14 @@ export function RankingsPage({ embedded = false }) {
                   aria-label="Đang tải danh sách xếp hạng"
                   className="divide-y divide-hairline overflow-hidden p-0"
                 >
-                  {rankings.map((item) => (
+                  {rankings.map(item => (
                     <RankingRowSkeleton key={item.rank} />
                   ))}
                 </Card>
               ) : (
                 <Reveal>
                   <Card className="divide-y divide-hairline overflow-hidden p-0">
-                    {rankingRows.map((item) => (
+                    {rankingRows.map(item => (
                       <RankingRow item={item} key={item.rank} />
                     ))}
                   </Card>
@@ -319,5 +319,5 @@ export function RankingsPage({ embedded = false }) {
         </div>
       </Root>
     </div>
-  );
+  )
 }

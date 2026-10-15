@@ -1,11 +1,11 @@
-import { useState } from 'react';
-import { Link } from 'react-router';
-import { ArrowRight, Bookmark, Clock, Eye, Headphones, BookOpen, Star } from '../icons';
-import { Badge, ButtonLink, Card, IconButton, Skeleton } from '../ui';
-import { StoryCover } from '../story/StoryCover';
-import { useLocale } from '../../context/LocaleContext';
-const formatLabels = { Audio: 'Truyện âm thanh', Story: 'Truyện chữ' };
-const statusLabels = { Completed: 'Đã hoàn tất', Ongoing: 'Đang phát hành' };
+import { useState } from 'react'
+import { Link } from 'react-router'
+import { ArrowRight, Bookmark, Clock, Eye, Headphones, BookOpen, Star } from '../icons'
+import { Badge, ButtonLink, Card, IconButton, Skeleton } from '../ui'
+import { StoryCover } from '../story/StoryCover'
+import { useLocale } from '../../context/LocaleContext'
+const formatLabels = { Audio: 'Truyện âm thanh', Story: 'Truyện chữ' }
+const statusLabels = { Completed: 'Đã hoàn tất', Ongoing: 'Đang phát hành' }
 const genreLabels = {
   Romance: 'Lãng mạn',
   Fantasy: 'Kỳ ảo',
@@ -15,11 +15,11 @@ const genreLabels = {
   Drama: 'Chính kịch',
   'Slice of Life': 'Đời thường',
   Mystery: 'Bí ẩn',
-};
+}
 export function SearchResultItem({ result }) {
-  const { t } = useLocale();
-  const [bookmarked, setBookmarked] = useState(false);
-  const audio = result.format === 'Audio';
+  const { t } = useLocale()
+  const [bookmarked, setBookmarked] = useState(false)
+  const audio = result.format === 'Audio'
   return (
     <Card as="article" data-search-result={result.id} className="flex gap-4 p-4 sm:gap-6 sm:p-5">
       <Link
@@ -61,7 +61,7 @@ export function SearchResultItem({ result }) {
             tone="purple"
             size="sm"
             aria-pressed={bookmarked}
-            onClick={() => setBookmarked((value) => !value)}
+            onClick={() => setBookmarked(value => !value)}
           >
             <Bookmark size={16} className={bookmarked ? 'fill-current' : ''} />
           </IconButton>
@@ -88,7 +88,7 @@ export function SearchResultItem({ result }) {
           </Badge>
         </div>
         <div className="mt-3 hidden flex-wrap gap-1.5 sm:flex">
-          {result.genres.map((genre) => (
+          {result.genres.map(genre => (
             <Badge key={genre}>{genreLabels[genre] ?? genre}</Badge>
           ))}
         </div>
@@ -111,7 +111,7 @@ export function SearchResultItem({ result }) {
         </div>
       </div>
     </Card>
-  );
+  )
 }
 
 /* Mirrors SearchResultItem rows (cover width, title/meta/genre/description/footer heights). */
@@ -153,5 +153,5 @@ export function SearchResultItemSkeleton() {
         </div>
       </div>
     </Card>
-  );
+  )
 }

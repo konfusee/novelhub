@@ -1,6 +1,6 @@
-import { useId } from 'react';
-import { AlignJustify, AlignLeft, Check, ChevronDown, SkipForward, Smartphone } from '../icons';
-import { Badge, Button, Select } from '../ui';
+import { useId } from 'react'
+import { AlignJustify, AlignLeft, Check, ChevronDown, SkipForward, Smartphone } from '../icons'
+import { Badge, Button, Select } from '../ui'
 import {
   DEFAULT_CHAPTER_MODE,
   READER_CHAPTER_MODES,
@@ -9,17 +9,17 @@ import {
   READER_LINE_HEIGHTS,
   READER_PARAGRAPH_GAPS,
   READER_WIDTH,
-} from './readerOptions';
+} from './readerOptions'
 
-const chapterModeIcons = { continuous: ChevronDown, swipe: Smartphone, button: SkipForward };
+const chapterModeIcons = { continuous: ChevronDown, swipe: Smartphone, button: SkipForward }
 
-const rangeFills = { brand: 'bg-brand', orange: 'bg-orange', purple: 'bg-purple', rose: 'bg-rose' };
+const rangeFills = { brand: 'bg-brand', orange: 'bg-orange', purple: 'bg-purple', rose: 'bg-rose' }
 const rangeRings = {
   brand: 'group-has-[:focus-visible]:ring-brand/30',
   orange: 'group-has-[:focus-visible]:ring-orange/35',
   purple: 'group-has-[:focus-visible]:ring-purple/30',
   rose: 'group-has-[:focus-visible]:ring-rose/30',
-};
+}
 
 /*
  * Token-styled slider shared by the reading canvas, the audio player and reading preferences.
@@ -38,8 +38,8 @@ export function ReaderRange({
   className = '',
   ...props
 }) {
-  const ratio = max > min ? Math.min(1, Math.max(0, (value - min) / (max - min))) : 0;
-  const fill = rangeFills[tone] || rangeFills.brand;
+  const ratio = max > min ? Math.min(1, Math.max(0, (value - min) / (max - min))) : 0
+  const fill = rangeFills[tone] || rangeFills.brand
   return (
     <span
       className={`group relative flex h-7 min-w-0 items-center ${/(^|\s)w-/.test(className) ? '' : 'w-full'} ${className}`}
@@ -66,12 +66,12 @@ export function ReaderRange({
         max={max}
         step={step}
         value={value}
-        onChange={(event) => onChange(Number(event.target.value))}
+        onChange={event => onChange(Number(event.target.value))}
         className="absolute inset-0 m-0 h-full w-full cursor-pointer opacity-0"
         {...props}
       />
     </span>
-  );
+  )
 }
 
 function SettingLabel({ id, children, value }) {
@@ -84,7 +84,7 @@ function SettingLabel({ id, children, value }) {
         <span className="text-caption font-semibold tabular-nums text-brand-strong">{value}</span>
       )}
     </div>
-  );
+  )
 }
 
 function Segmented({ labelledBy, columns, children }) {
@@ -96,20 +96,20 @@ function Segmented({ labelledBy, columns, children }) {
     >
       {children}
     </div>
-  );
+  )
 }
 
 /* Radio cards for how the reader moves between chapters (native radios: arrow keys work). */
 function ChapterModePicker({ value, onChange }) {
-  const id = useId();
-  const current = value || DEFAULT_CHAPTER_MODE;
+  const id = useId()
+  const current = value || DEFAULT_CHAPTER_MODE
   return (
     <div>
       <SettingLabel id={`${id}-label`}>Cách chuyển chương</SettingLabel>
       <div role="radiogroup" aria-labelledby={`${id}-label`} className="space-y-2">
-        {READER_CHAPTER_MODES.map((mode) => {
-          const Icon = chapterModeIcons[mode.value];
-          const checked = current === mode.value;
+        {READER_CHAPTER_MODES.map(mode => {
+          const Icon = chapterModeIcons[mode.value]
+          const checked = current === mode.value
           return (
             <label
               key={mode.value}
@@ -146,22 +146,22 @@ function ChapterModePicker({ value, onChange }) {
                 {checked && <Check size={12} />}
               </span>
             </label>
-          );
+          )
         })}
       </div>
     </div>
-  );
+  )
 }
 
 /* Reading-canvas preferences rendered inside the full chapter reader's settings drawer. */
 export function ReaderSettings({ settings, update, t }) {
-  const id = useId();
+  const id = useId()
   return (
     <div className="space-y-6">
       <div>
         <SettingLabel id={`${id}-toolbar`}>{t('reader.toolbarLayout')}</SettingLabel>
         <Segmented labelledBy={`${id}-toolbar`} columns={2}>
-          {['horizontal', 'vertical'].map((layout) => (
+          {['horizontal', 'vertical'].map(layout => (
             <Button
               key={layout}
               aria-pressed={(settings.toolbarLayout || 'horizontal') === layout}
@@ -177,7 +177,7 @@ export function ReaderSettings({ settings, update, t }) {
       </div>
       <ChapterModePicker
         value={settings.chapterMode}
-        onChange={(value) => update('chapterMode', value)}
+        onChange={value => update('chapterMode', value)}
       />
       <div>
         <SettingLabel id={`${id}-size`} value={`${settings.fontSize}px`}>
@@ -190,7 +190,7 @@ export function ReaderSettings({ settings, update, t }) {
           step={2}
           value={settings.fontSize}
           valueText={`${settings.fontSize}px`}
-          onChange={(value) => update('fontSize', value)}
+          onChange={value => update('fontSize', value)}
         />
       </div>
       {/* Below sm the column already fills the screen, so the width control has no effect. */}
@@ -205,13 +205,13 @@ export function ReaderSettings({ settings, update, t }) {
           step={READER_WIDTH.step}
           value={settings.width}
           valueText={`${settings.width}px`}
-          onChange={(value) => update('width', value)}
+          onChange={value => update('width', value)}
         />
       </div>
       <div>
         <SettingLabel id={`${id}-line`}>{t('reader.lineHeight')}</SettingLabel>
         <Segmented labelledBy={`${id}-line`} columns={4}>
-          {READER_LINE_HEIGHTS.map((value) => (
+          {READER_LINE_HEIGHTS.map(value => (
             <Button
               key={value}
               size="sm"
@@ -270,7 +270,7 @@ export function ReaderSettings({ settings, update, t }) {
         <Select
           id={`${id}-font`}
           value={settings.fontFamily}
-          onChange={(event) => update('fontFamily', event.target.value)}
+          onChange={event => update('fontFamily', event.target.value)}
           className="w-full"
         >
           {READER_FONTS.map(([label, value]) => (
@@ -281,5 +281,5 @@ export function ReaderSettings({ settings, update, t }) {
         </Select>
       </div>
     </div>
-  );
+  )
 }

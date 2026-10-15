@@ -1,11 +1,11 @@
-import { useRef, useState } from 'react';
-import { useLocation } from 'react-router';
-import { Button, ButtonLink, EmptyState } from '../ui';
-import { Star, MessageCircle } from '../icons';
-import { Pagination } from '../ui/Pagination';
-import { useAuth } from '../../context/AuthContext';
-import { useLocale } from '../../context/LocaleContext';
-import { useMockData } from '../../context/MockDataContext';
+import { useRef, useState } from 'react'
+import { useLocation } from 'react-router'
+import { Button, ButtonLink, EmptyState } from '../ui'
+import { Star, MessageCircle } from '../icons'
+import { Pagination } from '../ui/Pagination'
+import { useAuth } from '../../context/AuthContext'
+import { useLocale } from '../../context/LocaleContext'
+import { useMockData } from '../../context/MockDataContext'
 const sampleReview = {
   id: 'sample-review',
   kind: 'review',
@@ -13,33 +13,33 @@ const sampleReview = {
   author: 'Kaelen_Reader',
   rating: 5,
   body: 'Văn phong ở chương 2 khiến tôi nổi da gà. Thế giới truyện rất sống động và mạch căng thẳng không hề ngắt quãng.',
-};
+}
 export function StoryCommunity({ storyId }) {
-  const { currentUser, isAuthenticated } = useAuth();
-  const { t, formatDate } = useLocale();
-  const { pathname } = useLocation();
-  const { data, saveCommunityPost } = useMockData();
-  const [kind, setKind] = useState('review');
-  const [body, setBody] = useState('');
-  const [rating, setRating] = useState(0);
-  const [replyTo, setReplyTo] = useState(null);
-  const [page, setPage] = useState(1);
-  const [error, setError] = useState('');
-  const [notice, setNotice] = useState('');
-  const field = useRef(null);
-  const all = [...(data.community?.[storyId] || []), sampleReview];
-  const posts = all.filter((post) => post.kind === kind && !post.parentId);
-  const pageCount = Math.max(1, Math.ceil(posts.length / 5));
-  const visible = posts.slice((Math.min(page, pageCount) - 1) * 5, Math.min(page, pageCount) * 5);
-  const key = (name, vars) => t('community.' + name, vars);
-  const submit = (event) => {
-    event.preventDefault();
-    setError('');
-    setNotice('');
-    if (!isAuthenticated) return;
+  const { currentUser, isAuthenticated } = useAuth()
+  const { t, formatDate } = useLocale()
+  const { pathname } = useLocation()
+  const { data, saveCommunityPost } = useMockData()
+  const [kind, setKind] = useState('review')
+  const [body, setBody] = useState('')
+  const [rating, setRating] = useState(0)
+  const [replyTo, setReplyTo] = useState(null)
+  const [page, setPage] = useState(1)
+  const [error, setError] = useState('')
+  const [notice, setNotice] = useState('')
+  const field = useRef(null)
+  const all = [...(data.community?.[storyId] || []), sampleReview]
+  const posts = all.filter(post => post.kind === kind && !post.parentId)
+  const pageCount = Math.max(1, Math.ceil(posts.length / 5))
+  const visible = posts.slice((Math.min(page, pageCount) - 1) * 5, Math.min(page, pageCount) * 5)
+  const key = (name, vars) => t('community.' + name, vars)
+  const submit = event => {
+    event.preventDefault()
+    setError('')
+    setNotice('')
+    if (!isAuthenticated) return
     if (body.trim().length < 3 || (kind === 'review' && !rating)) {
-      setError(key('invalid'));
-      return;
+      setError(key('invalid'))
+      return
     }
     try {
       saveCommunityPost(storyId, {
@@ -51,17 +51,17 @@ export function StoryCommunity({ storyId }) {
         rating: kind === 'review' ? rating : null,
         parentId: replyTo?.id || null,
         createdAt: new Date().toISOString(),
-      });
-      setBody('');
-      setRating(0);
-      if (replyTo) setKind(replyTo.kind);
-      setReplyTo(null);
-      setPage(1);
-      setNotice(key('saved'));
+      })
+      setBody('')
+      setRating(0)
+      if (replyTo) setKind(replyTo.kind)
+      setReplyTo(null)
+      setPage(1)
+      setNotice(key('saved'))
     } catch {
-      setError(key('storageError'));
+      setError(key('storageError'))
     }
-  };
+  }
   const entry = (post, isReply = false) => (
     <article
       key={post.id}
@@ -95,33 +95,32 @@ export function StoryCommunity({ storyId }) {
           variant="ghost"
           size="sm"
           onClick={() => {
-            setKind('discussion');
-            setReplyTo(post);
-            setNotice('');
-            field.current?.focus();
+            setKind('discussion')
+            setReplyTo(post)
+            setNotice('')
+            field.current?.focus()
           }}
         >
           {key('reply')}
         </Button>
       )}
-      {!isReply &&
-        all.filter((reply) => reply.parentId === post.id).map((reply) => entry(reply, true))}
+      {!isReply && all.filter(reply => reply.parentId === post.id).map(reply => entry(reply, true))}
     </article>
-  );
+  )
   return (
     <section className="space-y-5">
       <div className="flex flex-wrap gap-2" role="group" aria-label={key('typeLabel')}>
-        {['review', 'discussion'].map((value) => (
+        {['review', 'discussion'].map(value => (
           <Button
             key={value}
             variant={kind === value ? 'primary' : 'secondary'}
             aria-pressed={kind === value}
             onClick={() => {
-              setKind(value);
-              setReplyTo(null);
-              setPage(1);
-              setError('');
-              setNotice('');
+              setKind(value)
+              setReplyTo(null)
+              setPage(1)
+              setError('')
+              setNotice('')
             }}
           >
             {key(value)}
@@ -142,7 +141,7 @@ export function StoryCommunity({ storyId }) {
             <fieldset className="mt-3">
               <legend className="text-sm font-semibold">{key('ratingLabel')}</legend>
               <div className="mt-2 flex gap-2">
-                {[1, 2, 3, 4, 5].map((value) => (
+                {[1, 2, 3, 4, 5].map(value => (
                   <label
                     key={value}
                     className="cursor-pointer rounded-sm focus-within:ring-2 focus-within:ring-brand"
@@ -175,7 +174,7 @@ export function StoryCommunity({ storyId }) {
             id="community-body"
             ref={field}
             value={body}
-            onChange={(event) => setBody(event.target.value)}
+            onChange={event => setBody(event.target.value)}
             required
             minLength={3}
             maxLength={2000}
@@ -207,7 +206,7 @@ export function StoryCommunity({ storyId }) {
       )}
       <div className="space-y-4">
         {visible.length ? (
-          visible.map((post) => entry(post))
+          visible.map(post => entry(post))
         ) : (
           <EmptyState
             icon={MessageCircle}
@@ -219,5 +218,5 @@ export function StoryCommunity({ storyId }) {
       </div>
       <Pagination page={Math.min(page, pageCount)} pageCount={pageCount} onChange={setPage} />
     </section>
-  );
+  )
 }

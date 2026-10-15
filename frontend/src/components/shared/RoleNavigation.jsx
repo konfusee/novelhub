@@ -12,40 +12,40 @@ import {
   ShieldCheck,
   Sun,
   UserRound,
-} from '../icons';
-import { Link, useLocation, useNavigate } from 'react-router';
-import { useState } from 'react';
-import { ROLE_HOME, useAuth } from '../../context/AuthContext';
-import { useTheme } from '../../context/ThemeContext';
-import { Avatar, IconButton, Input } from '../ui';
-import { useLocale } from '../../context/LocaleContext';
+} from '../icons'
+import { Link, useLocation, useNavigate } from 'react-router'
+import { useState } from 'react'
+import { ROLE_HOME, useAuth } from '../../context/AuthContext'
+import { useTheme } from '../../context/ThemeContext'
+import { Avatar, IconButton, Input } from '../ui'
+import { useLocale } from '../../context/LocaleContext'
 
 const roleMeta = {
   reader: ['navigation.reader', BookOpen],
   author: ['navigation.authorStudio', UserRound],
   moderator: ['navigation.moderator', ShieldCheck],
   admin: ['navigation.admin', Crown],
-};
+}
 
 const workspaceAccent = {
   reader: 'bg-brand/10 text-brand-strong ring-brand/20',
   author: 'bg-orange/16 text-orange-strong ring-orange/28',
   moderator: 'bg-purple/12 text-purple-strong ring-purple/22',
   admin: 'bg-rose/14 text-rose-strong ring-rose/25',
-};
+}
 
 const workspaceActive = {
   reader: 'bg-brand text-on-brand',
   author: 'bg-orange text-on-orange',
   moderator: 'bg-purple text-on-purple',
   admin: 'bg-rose text-on-rose',
-};
+}
 
 export function WorkspaceSwitcher({ currentRole, compact = false }) {
-  const { t } = useLocale();
-  const { roles } = useAuth();
-  const available = roles.filter((role) => roleMeta[role]);
-  const workspaces = available.length ? available : [currentRole];
+  const { t } = useLocale()
+  const { roles } = useAuth()
+  const available = roles.filter(role => roleMeta[role])
+  const workspaces = available.length ? available : [currentRole]
 
   return (
     <details className="group relative mb-4">
@@ -63,8 +63,8 @@ export function WorkspaceSwitcher({ currentRole, compact = false }) {
       <div
         className={`${compact ? 'absolute left-full top-0 z-50 ml-3 w-56' : 'mt-2'} grid gap-1 rounded-2xl border border-line bg-surface p-1.5 shadow-float`}
       >
-        {workspaces.map((role) => {
-          const [labelKey, Icon] = roleMeta[role];
+        {workspaces.map(role => {
+          const [labelKey, Icon] = roleMeta[role]
           return (
             <Link
               key={role}
@@ -74,18 +74,18 @@ export function WorkspaceSwitcher({ currentRole, compact = false }) {
             >
               <Icon size={15} /> {t(labelKey)}
             </Link>
-          );
+          )
         })}
       </div>
     </details>
-  );
+  )
 }
 
 export function RoleHeaderLinks({ includeWallet = false, currentRole = 'reader' }) {
-  const { t } = useLocale();
-  const { pathname } = useLocation();
-  const suffix = `?workspace=${currentRole}`;
-  const walletPath = currentRole === 'author' ? '/author/earnings' : '/reader/wallet';
+  const { t } = useLocale()
+  const { pathname } = useLocation()
+  const suffix = `?workspace=${currentRole}`
+  const walletPath = currentRole === 'author' ? '/author/earnings' : '/reader/wallet'
   // Third value: visibility. Explore duplicates the header search field and Wallet duplicates the
   // coin pill, so both appear only once the header has room (2xl).
   const items = [
@@ -94,20 +94,20 @@ export function RoleHeaderLinks({ includeWallet = false, currentRole = 'reader' 
     ['navigation.rankings', `/rankings${suffix}`, ['/rankings'], 'flex'],
     ['navigation.explore', `/search${suffix}`, ['/search', '/reader/explore'], 'hidden 2xl:flex'],
     ['navigation.library', '/reader/library', ['/reader/library', '/library'], 'flex'],
-  ];
+  ]
   if (includeWallet)
     items.push([
       'navigation.wallet',
       walletPath,
       currentRole === 'author' ? ['/author/earnings', '/author/wallet'] : ['/reader/wallet'],
       'hidden 2xl:flex',
-    ]);
+    ])
   return (
     <nav className="hidden shrink-0 items-center gap-1 text-xs font-medium text-muted xl:flex">
       {items.map(([label, path, matches, visibility]) => {
         const active = matches.some(
-          (match) => pathname === match || (match !== '/' && pathname.startsWith(`${match}/`)),
-        );
+          match => pathname === match || (match !== '/' && pathname.startsWith(`${match}/`)),
+        )
         return (
           <Link
             key={label}
@@ -117,15 +117,15 @@ export function RoleHeaderLinks({ includeWallet = false, currentRole = 'reader' 
           >
             {t(label)}
           </Link>
-        );
+        )
       })}
     </nav>
-  );
+  )
 }
 
 export function WorkspaceHeaderAccount({ currentRole = 'reader' }) {
-  const { t } = useLocale();
-  const { currentUser, logout } = useAuth();
+  const { t } = useLocale()
+  const { currentUser, logout } = useAuth()
   return (
     <div className="flex shrink-0 items-center gap-2">
       <Link
@@ -142,12 +142,12 @@ export function WorkspaceHeaderAccount({ currentRole = 'reader' }) {
         <LogOut size={16} />
       </IconButton>
     </div>
-  );
+  )
 }
 
-const commonPaths = (role) => ({
+const commonPaths = role => ({
   profile: role === 'reader' ? '/reader/profile' : `/${role}/profile`,
-});
+})
 
 export function SharedWorkspaceHeader({
   currentRole,
@@ -156,10 +156,10 @@ export function SharedWorkspaceHeader({
   offsetClass = '',
   children,
 }) {
-  const { t } = useLocale();
-  const { resolvedTheme, setTheme } = useTheme();
-  const navigate = useNavigate();
-  const walletPath = currentRole === 'author' ? '/author/wallet' : '/reader/wallet';
+  const { t } = useLocale()
+  const { resolvedTheme, setTheme } = useTheme()
+  const navigate = useNavigate()
+  const walletPath = currentRole === 'author' ? '/author/wallet' : '/reader/wallet'
   return (
     <header
       data-app-header
@@ -220,21 +220,21 @@ export function SharedWorkspaceHeader({
         <HeaderSearch currentRole={currentRole} placeholder={t('common.searchStories')} />
       </div>
     </header>
-  );
+  )
 }
 
 /* Header search: a real search landmark that opens results inside the current workspace. */
 function HeaderSearch({ currentRole, placeholder, className }) {
-  const navigate = useNavigate();
-  const [query, setQuery] = useState('');
+  const navigate = useNavigate()
+  const [query, setQuery] = useState('')
   return (
     <form
       role="search"
       className={className}
-      onSubmit={(event) => {
-        event.preventDefault();
-        const q = query.trim();
-        navigate(`/search?${new URLSearchParams({ ...(q && { q }), workspace: currentRole })}`);
+      onSubmit={event => {
+        event.preventDefault()
+        const q = query.trim()
+        navigate(`/search?${new URLSearchParams({ ...(q && { q }), workspace: currentRole })}`)
       }}
     >
       <Input
@@ -244,9 +244,9 @@ function HeaderSearch({ currentRole, placeholder, className }) {
         aria-label={placeholder}
         placeholder={placeholder}
         value={query}
-        onChange={(event) => setQuery(event.target.value)}
+        onChange={event => setQuery(event.target.value)}
         className="w-full"
       />
     </form>
-  );
+  )
 }

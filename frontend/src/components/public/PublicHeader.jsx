@@ -1,61 +1,61 @@
-import { NovelHubMark, LogOut, Menu, Moon, Search, Sun, X } from '../icons';
-import { Link, NavLink, useLocation, useNavigate } from 'react-router';
-import { useEffect, useId, useRef, useState } from 'react';
-import { useTheme } from '../../context/ThemeContext';
-import { getAccountHome, useAuth } from '../../context/AuthContext';
-import { useLocale } from '../../context/LocaleContext';
-import { ROUTES } from '../../app/routes';
-import { ButtonLink, IconButton, Input } from '../ui';
+import { NovelHubMark, LogOut, Menu, Moon, Search, Sun, X } from '../icons'
+import { Link, NavLink, useLocation, useNavigate } from 'react-router'
+import { useEffect, useId, useRef, useState } from 'react'
+import { useTheme } from '../../context/ThemeContext'
+import { getAccountHome, useAuth } from '../../context/AuthContext'
+import { useLocale } from '../../context/LocaleContext'
+import { ROUTES } from '../../app/routes'
+import { ButtonLink, IconButton, Input } from '../ui'
 
 export function PublicHeader() {
-  const { resolvedTheme, setTheme } = useTheme();
-  const { currentUser, isAuthenticated, hasRole, logout } = useAuth();
-  const { t } = useLocale();
-  const [open, setOpen] = useState(false);
-  const [query, setQuery] = useState('');
-  const navigate = useNavigate();
-  const headerRef = useRef(null);
-  const { pathname } = useLocation();
+  const { resolvedTheme, setTheme } = useTheme()
+  const { currentUser, isAuthenticated, hasRole, logout } = useAuth()
+  const { t } = useLocale()
+  const [open, setOpen] = useState(false)
+  const [query, setQuery] = useState('')
+  const navigate = useNavigate()
+  const headerRef = useRef(null)
+  const { pathname } = useLocation()
   // The auth page has its own login/register switch; repeating it in the header is noise.
-  const onAuthRoute = ['/join', '/login', '/register'].includes(pathname);
-  const menuId = useId();
+  const onAuthRoute = ['/join', '/login', '/register'].includes(pathname)
+  const menuId = useId()
   // Close the mobile menu when the route changes (render-phase sync, no effect needed).
-  const [menuPath, setMenuPath] = useState(pathname);
+  const [menuPath, setMenuPath] = useState(pathname)
   if (menuPath !== pathname) {
-    setMenuPath(pathname);
-    setOpen(false);
+    setMenuPath(pathname)
+    setOpen(false)
   }
   useEffect(() => {
-    if (!open) return undefined;
-    const onKeyDown = (event) => {
+    if (!open) return undefined
+    const onKeyDown = event => {
       if (event.key === 'Escape') {
-        setOpen(false);
+        setOpen(false)
       }
-    };
+    }
     // A tap anywhere outside the header island and its menu closes the menu.
-    const onPointerDown = (event) => {
+    const onPointerDown = event => {
       if (!headerRef.current?.contains(event.target)) {
-        setOpen(false);
+        setOpen(false)
       }
-    };
-    document.addEventListener('keydown', onKeyDown);
-    document.addEventListener('pointerdown', onPointerDown);
+    }
+    document.addEventListener('keydown', onKeyDown)
+    document.addEventListener('pointerdown', onPointerDown)
     return () => {
-      document.removeEventListener('keydown', onKeyDown);
-      document.removeEventListener('pointerdown', onPointerDown);
-    };
-  }, [open]);
+      document.removeEventListener('keydown', onKeyDown)
+      document.removeEventListener('pointerdown', onPointerDown)
+    }
+  }, [open])
   const links = [
     [t('navigation.discover'), '/'],
     [t('navigation.categories'), '/categories'],
     [t('navigation.rankings'), '/rankings'],
-  ];
-  if (isAuthenticated) links.push([t('navigation.library'), '/reader/library']);
+  ]
+  if (isAuthenticated) links.push([t('navigation.library'), '/reader/library'])
   if (hasRole('reader') && !hasRole('author'))
-    links.push([t('navigation.becomeAuthor'), ROUTES.authorApply]);
-  if (hasRole('author')) links.push([t('navigation.authorStudio'), '/author']);
-  if (hasRole('moderator')) links.push([t('navigation.moderator'), '/moderator']);
-  if (hasRole('admin')) links.push([t('navigation.admin'), '/admin']);
+    links.push([t('navigation.becomeAuthor'), ROUTES.authorApply])
+  if (hasRole('author')) links.push([t('navigation.authorStudio'), '/author'])
+  if (hasRole('moderator')) links.push([t('navigation.moderator'), '/moderator'])
+  if (hasRole('admin')) links.push([t('navigation.admin'), '/admin'])
   return (
     <header ref={headerRef} className="sticky top-0 z-40 px-3 pt-3 sm:px-4 md:px-6 lg:px-10">
       <div className="mx-auto flex h-16 max-w-[1360px] items-center gap-2 rounded-full border border-hairline bg-surface/80 pl-3 pr-2 shadow-soft backdrop-blur-xl sm:gap-3 sm:pl-4">
@@ -98,10 +98,10 @@ export function PublicHeader() {
               role="search"
               aria-label={t('common.search')}
               className="flex min-w-0 items-center gap-1"
-              onSubmit={(event) => {
-                event.preventDefault();
-                const q = query.trim();
-                navigate(q ? ROUTES.search + '?' + new URLSearchParams({ q }) : ROUTES.search);
+              onSubmit={event => {
+                event.preventDefault()
+                const q = query.trim()
+                navigate(q ? ROUTES.search + '?' + new URLSearchParams({ q }) : ROUTES.search)
               }}
             >
               {pathname === ROUTES.search && (
@@ -111,7 +111,7 @@ export function PublicHeader() {
                   aria-label={t('common.searchStoriesAuthorsTags')}
                   placeholder={t('common.searchStories')}
                   value={query}
-                  onChange={(event) => setQuery(event.target.value)}
+                  onChange={event => setQuery(event.target.value)}
                   className="min-h-9 w-20 px-2 sm:w-32 sm:px-3 xl:w-44"
                 />
               )}
@@ -166,7 +166,7 @@ export function PublicHeader() {
             aria-controls={menuId}
             className="grid size-10 shrink-0 place-items-center rounded-full text-ink transition-colors hover:bg-elevated lg:hidden"
             onClick={() => {
-              setOpen(!open);
+              setOpen(!open)
             }}
           >
             {open ? <X size={20} /> : <Menu size={20} />}
@@ -213,5 +213,5 @@ export function PublicHeader() {
         </nav>
       )}
     </header>
-  );
+  )
 }

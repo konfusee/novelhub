@@ -1,24 +1,20 @@
-import { useState } from 'react';
+import { useState } from 'react'
+import { useSearchParams } from 'react-router'
 import {
   AlertTriangle,
-  ArrowRight,
   ArrowUp,
   BarChart3,
   BookOpen,
   Check,
-  Coins,
   Download,
-  Lightbulb,
   Plus,
   RefreshCw,
-  Search,
   Sparkles,
-  Trophy,
   UsersRound,
-} from '../../components/icons';
-import { AuthorLayout } from '../../layouts';
-import { ROUTES } from '../../app/routes';
-import { useMockResource } from '../../context/MockDataContext';
+} from '../../components/icons'
+import { AuthorLayout } from '../../layouts'
+import { useBackendDocument } from '../../api/useBackendResource'
+import { useLocale } from '../../context/LocaleContext'
 import {
   Badge,
   Button,
@@ -28,148 +24,257 @@ import {
   ProgressBar,
   Select,
   Skeleton,
-} from '../../components/ui';
-
-const analyticsData = {
-  daily: [
-    32, 39, 44, 78, 63, 48, 46, 52, 49, 62, 58, 85, 69, 55, 50, 53, 48, 65, 88, 72, 61, 58, 62, 67,
-    93, 80, 68, 64, 73, 82,
-  ],
-  retention: [100, 92, 89, 87.5, 86, 85.4, 85, 84.8, 84.2, 84, 83.7, 83.5, 83.1, 82.9, 82.6],
-  channels: [
-    ['Bảng xếp hạng nổi bật', '#1 truyện kỳ ảo dài kỳ tuần', '42%', '524.370', '+24,1%', Trophy],
-    ['Duyệt theo thể loại', 'Phân loại Kỳ ảo và Phiêu lưu', '28%', '349.580', '+11,5%', BarChart3],
-    [
-      'Thông báo tác giả đang theo dõi',
-      'Thông báo đẩy tới người đăng ký',
-      '20%',
-      '249.700',
-      '+5,4%',
-      UsersRound,
-    ],
-    ['Tìm kiếm trực tiếp', 'Truy vấn từ khóa và tác giả', '10%', '124.850', '+3,2%', Search],
-  ],
-  devices: [
-    ['Ứng dụng di động (eReader)', 74, 'brand'],
-    ['Web máy tính / Máy tính bảng', 26, 'orange'],
-    ['Giao diện ban đêm / Tối', 58, 'purple'],
-    ['Người sở hữu gói Premium', 68.4, 'brand'],
-  ],
-};
-const isAnalyticsEmpty = (value) => value.daily.length === 0;
-const releasePeaks = [3, 11, 18, 24];
-const BASELINE = 68;
+} from '../../components/ui'
+const emptyAnalytics = {
+  daily: [],
+  labels: [],
+  stories: [],
+  chapters: [],
+  reads: 0,
+  readers: 0,
+}
 const rangeLabels = {
   'Last 7 Days': '7 ngày gần nhất',
   'Last 30 Days': '30 ngày gần nhất',
   'Last 90 Days': '90 ngày gần nhất',
-};
-const formatPercent = (value) => `${String(value).replace('.', ',')}%`;
+}
+const formatPercent = value => `${String(value).replace('.', ',')}%`
 /* Index of the daily bar under the pointer, clamped to the plot. */
 const dayAt = (event, count) => {
-  const rect = event.currentTarget.getBoundingClientRect();
-  const index = Math.floor(((event.clientX - rect.left) / rect.width) * count);
-  return Math.min(count - 1, Math.max(0, index));
-};
+  const rect = event.currentTarget.getBoundingClientRect()
+  const index = Math.floor(((event.clientX - rect.left) / rect.width) * count)
+  return Math.min(count - 1, Math.max(0, index))
+}
 /* Fixed, varied bar heights (%) for chart-shaped skeletons; same bar counts as the real charts. */
 const dailySkeletonBars = [
   42, 68, 55, 80, 36, 72, 60, 48, 64, 52, 76, 44, 58, 70, 40, 62, 50, 84, 46, 66, 56, 74, 38, 60,
   78, 52, 68, 44, 72, 58,
-];
-const retentionSkeletonBars = [94, 82, 86, 74, 78, 70, 76, 66, 72, 64, 70, 62, 68, 60, 66];
-const dailyAxisLabels = ['Ngày 1', 'Ngày 7', 'Ngày 14', 'Ngày 21', 'Ngày 30'];
+]
+const retentionSkeletonBars = [94, 82, 86, 74, 78, 70, 76, 66, 72, 64, 70, 62, 68, 60, 66]
+const dailyAxisLabels = ['Ngày 1', 'Ngày 7', 'Ngày 14', 'Ngày 21', 'Ngày 30']
 /* 4 channel skeleton rows; on phones some names wrap to 2 lines (72px vs 52px text column). */
-const channelSkeletonNameWraps = [true, false, true, false];
-
+const channelSkeletonNameWraps = [true, false, true, false]
 export function AuthorAnalyticsPage() {
-  const [story, setStory] = useState('The Silent Forest');
-  const [range, setRange] = useState('Last 30 Days');
-  const [exported, setExported] = useState(false);
-  const [chapter, setChapter] = useState(analyticsData.retention.length - 1);
+  const { t } = useLocale()
+  const [searchParams, setSearchParams] = useSearchParams()
+  const story = searchParams.get('storyId') ?? ''
+  const chapter = story ? (searchParams.get('chapterId') ?? '') : ''
+  const changeFilter = (nextStory, nextChapter = '') => {
+    setSearchParams(current => {
+      const next = new URLSearchParams(current)
+      for (const [key, value] of [
+        ['storyId', nextStory],
+        ['chapterId', nextChapter],
+      ])
+        if (value) next.set(key, value)
+        else next.delete(key)
+      return next
+    })
+    setExported(false)
+    setDay(null)
+  }
+  const [range, setRange] = useState('Last 30 Days')
+  const [exported, setExported] = useState(false)
   // Per-day readout for touch: the bars are too thin to target, so the plot maps the pointer x to a day.
-  const [day, setDay] = useState(null);
-  const analytics = useMockResource(`author:analytics:${story}:${range}`, analyticsData, {
-    isEmpty: isAnalyticsEmpty,
-  });
-  const loading = analytics.status === 'loading';
-  const { daily, retention, channels, devices } = analytics.data;
-  const multiplier = range === 'Last 7 Days' ? 0.42 : range === 'Last 90 Days' ? 2.35 : 1;
-  const storyLabel = story === 'All Stories' ? 'tất cả truyện' : story;
-  const reads = Math.round(1248500 * multiplier);
-  const readers = Math.round(84200 * multiplier);
-  const royalties = (1420.5 * multiplier).toLocaleString('en-US', {
-    maximumFractionDigits: 2,
-  });
+  const [day, setDay] = useState(null)
+  const days = {
+    'Last 7 Days': 7,
+    'Last 30 Days': 30,
+    'Last 90 Days': 90,
+  }[range]
+  const analytics = useBackendDocument(
+    `/author/analytics?days=${days}${story ? `&storyId=${encodeURIComponent(story)}` : ''}${chapter ? `&chapterId=${encodeURIComponent(chapter)}` : ''}`,
+    emptyAnalytics,
+  )
+  const loading = analytics.status === 'loading'
+  const { daily, labels, reads, readers } = analytics.data
+  const returning = analytics.data.returningReaders
+  const returnRate = analytics.data.returnRate
+  const hasReturningData =
+    Number.isSafeInteger(returning) &&
+    returning >= 0 &&
+    Number.isSafeInteger(readers) &&
+    readers > 0 &&
+    returning <= readers &&
+    Number.isFinite(returnRate) &&
+    returnRate >= 0 &&
+    returnRate <= 100
+  const returnRateLabel = hasReturningData
+    ? formatPercent(Math.round(returnRate * 10) / 10)
+    : t('analyticsData.unknown')
+  const completion = analytics.data.completionProgress
+  const hasCompletion =
+    Number.isSafeInteger(completion?.total) &&
+    completion.total > 0 &&
+    Number.isSafeInteger(completion.completed) &&
+    completion.completed >= 0 &&
+    completion.completed <= completion.total &&
+    Number.isFinite(completion.rate) &&
+    completion.rate >= 0 &&
+    completion.rate <= 100
+  const completionLabel = hasCompletion
+    ? formatPercent(Math.round(completion.rate * 10) / 10)
+    : t('analyticsData.unknown')
+  const channels = []
+  const audience = analytics.data.audience
+  const hasAudience =
+    Number.isSafeInteger(audience?.accounts) &&
+    audience.accounts >= 0 &&
+    Number.isSafeInteger(audience.guestDevices) &&
+    audience.guestDevices >= 0 &&
+    audience.accounts + audience.guestDevices === readers
+  const audienceRows =
+    hasAudience && readers > 0
+      ? [
+          [t('analyticsData.accountIdentities'), audience.accounts, 'brand'],
+          [t('analyticsData.guestIdentities'), audience.guestDevices, 'orange'],
+        ]
+      : []
+  const cohorts = [1, 7].map(day => {
+    const item = Array.isArray(analytics.data.cohortRetention)
+      ? analytics.data.cohortRetention.find(row => row?.day === day)
+      : null
+    const valid =
+      Number.isSafeInteger(item?.eligible) &&
+      item.eligible >= 0 &&
+      Number.isSafeInteger(item.returned) &&
+      item.returned >= 0 &&
+      item.returned <= item.eligible &&
+      (item.eligible > 0
+        ? Number.isFinite(item.rate) && item.rate >= 0 && item.rate <= 100
+        : item.rate === null && item.returned === 0)
+    return {
+      day,
+      valid,
+      eligible: item?.eligible,
+      returned: item?.returned,
+      label:
+        valid && item.eligible > 0
+          ? formatPercent(Math.round(item.rate * 10) / 10)
+          : t('analyticsData.unknown'),
+    }
+  })
+  const storyLabel =
+    analytics.data.stories.find(item => item.id === story)?.title ?? t('analyticsData.allStories')
+  const selectedChapter = analytics.data.chapters?.find(item => item.id === chapter)
+  const chapterLabel = selectedChapter
+    ? t('analyticsData.chapterTitle', {
+        number: selectedChapter.number,
+        title: selectedChapter.title,
+      })
+    : t('analyticsData.allChapters')
   const kpis = [
     {
       icon: BookOpen,
-      label: 'Tổng lượt đọc truyện',
+      label: t('analyticsData.views'),
       value: reads.toLocaleString('vi-VN'),
-      delta: '+18,4%',
-      trend: true,
+      delta: t('analyticsData.recorded'),
     },
     {
       icon: UsersRound,
-      label: 'Độc giả tương tác duy nhất',
+      label: t('analyticsData.readers'),
       value: readers.toLocaleString('vi-VN'),
-      delta: '+6,2%',
-      trend: true,
+      delta: t('analyticsData.readerHint'),
       tone: 'orange',
     },
     {
       icon: Sparkles,
-      label: 'Tỷ lệ hoàn thành chương trung bình',
-      value: '82,6%',
-      delta: 'Top 5%',
+      label: t('analyticsData.completion'),
+      value: hasCompletion ? completionLabel : '—',
+      delta: hasCompletion
+        ? t('analyticsData.completedProgress', {
+            completed: completion.completed,
+            total: completion.total,
+          })
+        : t('analyticsData.noProgress'),
       tone: 'purple',
     },
-    {
-      icon: Coins,
-      label: 'Nhuận bút xu và tiền tip',
-      value: `$${royalties}`,
-      delta: '98.400 xu',
-      tone: 'orange',
-    },
-  ];
-  const chapterValue = retention[chapter];
-  const chapterDelta = (chapterValue - BASELINE).toFixed(1).replace('.', ',');
-  const dailyPeak = Math.max(...daily);
-
+  ]
+  const dailyPeak = Math.max(0, ...daily)
   const resetRange = () => {
-    setStory('The Silent Forest');
-    setRange('Last 30 Days');
-    setExported(false);
-  };
-
+    changeFilter('')
+    setRange('Last 30 Days')
+    setExported(false)
+  }
   const exportReport = () => {
     const rows = [
-      ['Chỉ số', 'Giá trị'],
-      ['Truyện', storyLabel],
-      ['Khoảng thời gian', rangeLabels[range]],
-      ['Tổng lượt đọc truyện', reads],
-      ['Độc giả tương tác duy nhất', readers],
-      ['Nhuận bút xu và tiền tip (USD)', royalties],
-      [],
-      ['Nguồn kênh', 'Tỷ trọng', 'Lượt đọc chuyển đổi', 'Tăng trưởng'],
-      ...channels.map(([name, , share, channelReads, growth]) => [
-        name,
-        share,
-        channelReads,
-        growth,
+      [t('analyticsData.story'), storyLabel],
+      [t('analyticsData.chapter'), chapterLabel],
+      [t('analyticsData.range'), rangeLabels[range]],
+      [t('analyticsData.views'), reads],
+      [t('analyticsData.readers'), readers],
+      [
+        t('analyticsData.returningReaders'),
+        Number.isSafeInteger(returning) ? returning : t('analyticsData.unknown'),
+      ],
+      [t('analyticsData.returnRate'), returnRateLabel],
+      [t('analyticsData.completion'), completionLabel],
+      [
+        t('analyticsData.trackedProgress'),
+        hasCompletion ? completion.total : t('analyticsData.unknown'),
+      ],
+      [
+        t('analyticsData.finishedProgress'),
+        hasCompletion ? completion.completed : t('analyticsData.unknown'),
+      ],
+      [t('analyticsData.completionScope')],
+      [
+        t('analyticsData.accountIdentities'),
+        hasAudience ? audience.accounts : t('analyticsData.unknown'),
+      ],
+      [
+        t('analyticsData.guestIdentities'),
+        hasAudience ? audience.guestDevices : t('analyticsData.unknown'),
+      ],
+      [t('analyticsData.audienceHint')],
+      [t('analyticsData.cohortHint')],
+      ...cohorts.flatMap(cohort => [
+        [
+          t('analyticsData.cohortDay', {
+            day: cohort.day,
+          }),
+          cohort.label,
+        ],
+        [
+          t('analyticsData.cohortEligible', {
+            day: cohort.day,
+          }),
+          cohort.valid ? cohort.eligible : t('analyticsData.unknown'),
+        ],
+        [
+          t('analyticsData.cohortReturned', {
+            day: cohort.day,
+          }),
+          cohort.valid ? cohort.returned : t('analyticsData.unknown'),
+        ],
       ]),
-    ];
+      [],
+      [t('analyticsData.date'), t('analyticsData.views')],
+      ...labels.map((label, index) => [label, daily[index]]),
+    ]
     const csv = rows
-      .map((row) => row.map((cell) => `"${String(cell).replaceAll('"', '""')}"`).join(','))
-      .join('\n');
-    const url = URL.createObjectURL(new Blob([`\uFEFF${csv}`], { type: 'text/csv' }));
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = 'novelhub-phan-tich-tac-gia.csv';
-    link.click();
-    URL.revokeObjectURL(url);
-    setExported(true);
-  };
-
+      .map(row =>
+        row
+          .map(cell => {
+            const text = String(cell)
+            const literal = /^[=+\-@\t\r]/u.test(text) ? `'${text}` : text
+            return `"${literal.replaceAll('"', '""')}"`
+          })
+          .join(','),
+      )
+      .join('\n')
+    const url = URL.createObjectURL(
+      new Blob([`\uFEFF${csv}`], {
+        type: 'text/csv',
+      }),
+    )
+    const link = document.createElement('a')
+    link.href = url
+    link.download = 'novelhub-phan-tich-tac-gia.csv'
+    link.click()
+    URL.revokeObjectURL(url)
+    setExported(true)
+  }
   return (
     <AuthorLayout>
       <div className="page-author py-7">
@@ -182,21 +287,41 @@ export function AuthorAnalyticsPage() {
             <Select
               aria-label="Chọn truyện"
               value={story}
-              onChange={(event) => {
-                setStory(event.target.value);
-                setExported(false);
+              onChange={event => {
+                changeFilter(event.target.value)
               }}
             >
-              <option>The Silent Forest</option>
-              <option>Echoes of Eldoria</option>
-              <option value="All Stories">Tất cả truyện</option>
+              <option value="">{t('analyticsData.allStories')}</option>
+              {analytics.data.stories.map(item => (
+                <option key={item.id} value={item.id}>
+                  {item.title}
+                </option>
+              ))}
+            </Select>
+            <Select
+              aria-label={t('analyticsData.chooseChapter')}
+              value={chapter}
+              disabled={!story || loading}
+              onChange={event => changeFilter(story, event.target.value)}
+            >
+              <option value="">
+                {t(story ? 'analyticsData.allChapters' : 'analyticsData.storyFirst')}
+              </option>
+              {(analytics.data.chapters ?? []).map(item => (
+                <option key={item.id} value={item.id}>
+                  {t('analyticsData.chapterTitle', {
+                    number: item.number,
+                    title: item.title,
+                  })}
+                </option>
+              ))}
             </Select>
             <Select
               aria-label="Khoảng thời gian"
               value={range}
-              onChange={(event) => {
-                setRange(event.target.value);
-                setExported(false);
+              onChange={event => {
+                setRange(event.target.value)
+                setExported(false)
               }}
             >
               {Object.entries(rangeLabels).map(([value, label]) => (
@@ -253,7 +378,7 @@ export function AuthorAnalyticsPage() {
                 aria-label="Đang tải chỉ số chính"
                 className="mt-6 grid grid-cols-2 gap-3 xl:grid-cols-4"
               >
-                {kpis.map((kpi) => (
+                {kpis.map(kpi => (
                   <KpiSkeleton key={`kpi-skeleton-${kpi.label}`} label={kpi.label} />
                 ))}
               </section>
@@ -262,25 +387,26 @@ export function AuthorAnalyticsPage() {
                 aria-label="Chỉ số chính"
                 className="nh-fade-enter mt-6 grid grid-cols-2 gap-3 xl:grid-cols-4"
               >
-                {kpis.map((kpi) => (
+                {kpis.map(kpi => (
                   <Kpi key={kpi.label} {...kpi} />
                 ))}
               </section>
             )}
 
+            {!loading && (
+              <p className="mt-3 text-xs leading-5 text-muted">
+                {t('analyticsData.completionScope')}
+              </p>
+            )}
             <div className="nh-grid-12 mt-6 grid items-start gap-5 nh-layout-xl-8-4">
               <Card className="min-w-0">
                 <div className="flex flex-wrap items-start justify-between gap-3">
                   <div className="min-w-0 max-w-[60ch]">
                     <h2 className="text-h3">Tăng trưởng độc giả và lượt đọc hằng ngày</h2>
-                    <p className="mt-1 text-sm text-muted">
-                      Phiên đọc hoạt động trong khoảng thời gian đã chọn. Các đỉnh thể hiện đợt phát
-                      hành truyện dài kỳ cuối tuần.
-                    </p>
+                    <p className="mt-1 text-sm text-muted">{t('analyticsData.dailyHint')}</p>
                   </div>
                   <ul className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-ink/80">
                     <Legend className="bg-brand">Lượt đọc hằng ngày</Legend>
-                    <Legend className="bg-orange">Đỉnh phát hành</Legend>
                   </ul>
                 </div>
                 {loading ? (
@@ -289,7 +415,10 @@ export function AuthorAnalyticsPage() {
                   <div className="nh-fade-enter">
                     <div
                       role="img"
-                      aria-label={`Biểu đồ lượt đọc 30 ngày, cao nhất ${dailyPeak} nghìn lượt vào ngày ${daily.indexOf(dailyPeak) + 1}`}
+                      aria-label={t('analyticsData.chart', {
+                        days: daily.length,
+                        peak: dailyPeak,
+                      })}
                       className="relative mt-8 h-56"
                     >
                       <ChartGridLines />
@@ -298,41 +427,41 @@ export function AuthorAnalyticsPage() {
                           aria-hidden="true"
                           className="pointer-events-none absolute left-0 top-0 z-10 rounded-full bg-surface px-2.5 py-1 text-xs font-semibold text-ink shadow-whisper tabular-nums"
                         >
-                          Ngày {day + 1}: {daily[day]}K lượt đọc
+                          {labels[day]}: {daily[day]} lượt đọc
                         </p>
                       )}
                       <div
                         className="relative flex h-full items-end gap-[3px] border-b border-line sm:gap-1.5"
-                        onPointerDown={(event) => setDay(dayAt(event, daily.length))}
-                        onPointerMove={(event) => setDay(dayAt(event, daily.length))}
-                        onPointerLeave={(event) => event.pointerType === 'mouse' && setDay(null)}
+                        onPointerDown={event => setDay(dayAt(event, daily.length))}
+                        onPointerMove={event => setDay(dayAt(event, daily.length))}
+                        onPointerLeave={event => event.pointerType === 'mouse' && setDay(null)}
                       >
                         {daily.map((height, index) => (
                           <div
                             key={index}
-                            title={`Ngày ${index + 1}: ${height}K lượt đọc`}
-                            className={`min-w-0 flex-1 rounded-t-[4px] transition-opacity duration-200 ${daily[day] !== undefined && day !== index ? 'opacity-50' : ''} ${releasePeaks.includes(index) ? 'bg-orange' : 'bg-brand/75'}`}
-                            style={{ height: `${height}%` }}
+                            title={`${labels[index]}: ${height} lượt đọc`}
+                            className={`min-w-0 flex-1 rounded-t-[4px] transition-opacity duration-200 ${daily[day] !== undefined && day !== index ? 'opacity-50' : ''} bg-brand/75`}
+                            style={{
+                              height: `${dailyPeak ? (height / dailyPeak) * 100 : 0}%`,
+                            }}
                           />
                         ))}
                       </div>
                     </div>
                     <div className="mt-3 flex justify-between text-xs text-ink/70 tabular-nums">
-                      {dailyAxisLabels.map((label) => (
-                        <span key={label}>{label}</span>
-                      ))}
+                      {[labels[0], labels[Math.floor(labels.length / 2)], labels.at(-1)]
+                        .filter(Boolean)
+                        .map(label => (
+                          <span key={label}>{label}</span>
+                        ))}
                     </div>
                     <div className="mt-6 flex items-start gap-3 border-t border-hairline pt-4">
                       <span className="grid size-9 shrink-0 place-items-center rounded-xl bg-brand/12 text-brand-strong">
                         <ArrowUp size={16} aria-hidden="true" />
                       </span>
                       <p className="text-sm">
-                        <strong className="text-brand-strong">
-                          Mức tăng độc giả cuối tuần trung bình: +46,2% tương tác
-                        </strong>
-                        <span className="block text-muted">
-                          Tính trên 4 đợt phát hành được lên lịch vào thứ Bảy
-                        </span>
+                        <strong className="text-brand-strong">{t('analyticsData.recorded')}</strong>
+                        <span className="block text-muted">{t('analyticsData.dailyHint')}</span>
                       </p>
                     </div>
                   </div>
@@ -346,153 +475,67 @@ export function AuthorAnalyticsPage() {
                   <FormatSkeleton />
                 ) : (
                   <div className="nh-fade-enter">
-                    <div
-                      role="img"
-                      aria-label="Văn bản 65%, sách nói 35%"
-                      className="mx-auto mt-7 grid size-44 place-items-center rounded-full"
-                      style={{
-                        background:
-                          'conic-gradient(var(--primary) 0 65%, var(--accent-orange) 65% 100%)',
-                      }}
-                    >
-                      <div className="grid size-[7.5rem] place-items-center rounded-full bg-surface text-center">
-                        <div>
-                          <span className="text-xs font-semibold uppercase tracking-[.12em] text-muted">
-                            Chủ đạo
-                          </span>
-                          <strong className="block text-h2 tabular-nums">65%</strong>
-                          <span className="text-xs">Văn bản</span>
-                        </div>
-                      </div>
+                    <div className="mx-auto mt-7 grid size-44 place-items-center rounded-full border-[18px] border-hairline">
+                      <strong className="text-h2">—</strong>
                     </div>
-                    <div className="mt-6 space-y-3">
-                      <FormatRow
-                        tone="brand"
-                        label="Đọc văn bản"
-                        value="811.525 lượt đọc"
-                        percent={65}
-                      />
-                      <FormatRow
-                        tone="orange"
-                        label="Sách nói"
-                        value="436.975 lượt phát"
-                        percent={35}
-                      />
-                    </div>
+                    <p className="mt-6 rounded-2xl bg-elevated p-4 text-sm text-muted">
+                      {t('analyticsData.noFormats')}
+                    </p>
                   </div>
                 )}
               </Card>
             </div>
 
             <Card className="mt-6">
-              <div className="flex flex-col justify-between gap-3 lg:flex-row lg:items-start">
-                <div className="min-w-0 max-w-[65ch]">
-                  <h2 className="text-h3 md:text-h2">
-                    Tỷ lệ giữ chân theo chương và đường cong rời bỏ
-                  </h2>
-                  <p className="mt-1 text-sm text-muted">
-                    Theo dõi mức rời bỏ từ Chương 1 đến 15 của <em>{storyLabel}</em>. Chỉ số vượt
-                    trung bình nền tảng 14,2%.
-                  </p>
-                </div>
-                <ul className="flex shrink-0 flex-wrap gap-x-4 gap-y-1 text-xs text-ink/80">
-                  <Legend className="bg-brand">Giữ chân thực tế của truyện</Legend>
-                  <li className="flex items-center gap-2">
-                    <span
-                      className="w-4 border-t-2 border-dashed border-orange"
-                      aria-hidden="true"
-                    />
-                    Mốc cơ sở nền tảng ({BASELINE}%)
-                  </li>
-                </ul>
-              </div>
+              <h2 className="text-h3 md:text-h2">{t('analyticsData.returningReaders')}</h2>
+              <p className="mt-2 text-sm text-muted">{t('analyticsData.returningHint')}</p>
               {loading ? (
                 <RetentionSkeleton />
               ) : (
-                <div className="nh-fade-enter">
-                  <div className="relative mt-6 h-48">
-                    <span
-                      aria-hidden="true"
-                      className="pointer-events-none absolute inset-x-0 z-10 border-t-2 border-dashed border-orange"
-                      style={{ bottom: `${BASELINE}%` }}
-                    >
-                      <span className="absolute -top-3 right-0 hidden rounded-full bg-orange px-2 py-0.5 text-[11px] font-semibold text-on-orange sm:block">
-                        {BASELINE}%
-                      </span>
-                    </span>
-                    <div
-                      role="group"
-                      aria-label="Tỷ lệ giữ chân theo chương"
-                      className="relative flex h-full items-end border-b border-line"
-                    >
-                      {retention.map((value, index) => {
-                        const active = index === chapter;
-                        return (
-                          <button
-                            key={index}
-                            type="button"
-                            aria-pressed={active}
-                            aria-label={`Chương ${index + 1}: ${formatPercent(value)}`}
-                            onClick={() => setChapter(index)}
-                            className="group flex h-full min-w-0 flex-1 items-end"
-                          >
-                            <span
-                              className={`mx-0.5 min-w-0 flex-1 rounded-t-md transition-[background-color,transform] duration-200 group-hover:bg-brand sm:mx-1 ${active ? 'bg-brand' : 'bg-brand/45'}`}
-                              style={{ height: `${value}%` }}
-                            />
-                          </button>
-                        );
-                      })}
-                    </div>
-                  </div>
-                  <div
-                    aria-hidden="true"
-                    className="mt-2 flex text-center text-[11px] text-ink/70 tabular-nums"
-                  >
-                    {retention.map((_, index) => (
-                      <span
-                        key={index}
-                        className={`min-w-0 flex-1 ${index === chapter ? 'font-semibold text-brand-strong' : ''}`}
-                      >
-                        {index + 1}
-                      </span>
-                    ))}
-                  </div>
-                  <div className="mt-5 grid gap-3 md:grid-cols-[minmax(0,16rem)_minmax(0,1fr)]">
-                    <div
-                      className="rounded-2xl border border-brand/30 bg-brand-soft p-4"
-                      aria-live="polite"
-                    >
-                      <p className="text-xs text-ink/70">Chương {chapter + 1}</p>
-                      <p className="mt-1 text-h2 tabular-nums">{formatPercent(chapterValue)}</p>
-                      <p className="mt-1 text-xs font-medium text-brand-strong">
-                        +{chapterDelta} điểm so với mốc cơ sở
-                      </p>
-                    </div>
-                    <div className="flex flex-wrap items-center gap-3 rounded-2xl bg-elevated p-4">
-                      <span className="grid size-10 shrink-0 place-items-center rounded-2xl bg-brand/12 text-brand-strong">
-                        <Lightbulb size={18} aria-hidden="true" />
-                      </span>
-                      <div className="min-w-48 flex-1">
-                        <strong className="text-sm">
-                          Nhận định: Mức rời bỏ không đáng kể sau Chương 2
-                        </strong>
-                        <p className="text-xs text-ink/70">
-                          92% độc giả hoàn thành phần mở đầu tiếp tục đọc đến chương mới nhất.
-                        </p>
-                      </div>
-                      <ButtonLink
-                        to={ROUTES.authorStory('demo')}
-                        variant="secondary"
-                        size="sm"
-                        trailingIcon={ArrowRight}
-                        className="shrink-0 sm:ml-auto"
-                      >
-                        Xem chi tiết chương
-                      </ButtonLink>
-                    </div>
+                <div className="relative mt-6 grid h-48 place-items-center">
+                  <ChartGridLines />
+                  <div className="relative rounded-2xl bg-elevated p-4 text-center" role="status">
+                    <p className="text-h2 font-semibold text-ink">{returnRateLabel}</p>
+                    <p className="mt-2 text-sm text-muted">
+                      {hasReturningData
+                        ? t('analyticsData.returningCount', {
+                            count: returning,
+                            total: readers,
+                          })
+                        : t('analyticsData.noReturning')}
+                    </p>
                   </div>
                 </div>
+              )}
+              {!loading && (
+                <section className="mt-5 border-t border-hairline pt-5">
+                  <h3 className="text-h3">{t('analyticsData.cohortTitle')}</h3>
+                  <p className="mt-2 text-sm leading-6 text-muted">
+                    {t('analyticsData.cohortHint')}
+                  </p>
+                  <dl className="mt-4 grid gap-3 sm:grid-cols-2">
+                    {cohorts.map(cohort => (
+                      <div key={cohort.day} className="rounded-2xl bg-elevated p-4">
+                        <dt className="text-sm font-semibold">
+                          {t('analyticsData.cohortDay', {
+                            day: cohort.day,
+                          })}
+                        </dt>
+                        <dd className="mt-2">
+                          <strong className="text-h3 tabular-nums">{cohort.label}</strong>
+                          <p className="mt-2 text-xs leading-5 text-muted">
+                            {cohort.valid && cohort.eligible > 0
+                              ? t('analyticsData.cohortCount', {
+                                  returned: cohort.returned,
+                                  eligible: cohort.eligible,
+                                })
+                              : t('analyticsData.cohortNotMature')}
+                          </p>
+                        </dd>
+                      </div>
+                    ))}
+                  </dl>
+                </section>
               )}
             </Card>
 
@@ -537,6 +580,13 @@ export function AuthorAnalyticsPage() {
                       </tbody>
                     ) : (
                       <tbody className="nh-fade-enter divide-y divide-hairline">
+                        {!channels.length && (
+                          <tr>
+                            <td colSpan={4} className="px-6 py-6 text-sm text-muted">
+                              {t('analyticsData.noChannels')}
+                            </td>
+                          </tr>
+                        )}
                         {channels.map(([name, note, share, channelReads, growth, Icon]) => (
                           <tr key={name}>
                             <th scope="row" className="px-6 py-4 text-left font-normal">
@@ -567,23 +617,21 @@ export function AuthorAnalyticsPage() {
               <Card className="min-w-0">
                 <div className="flex flex-wrap items-start justify-between gap-3">
                   <div className="min-w-0">
-                    <h2 className="text-h3">Hồ sơ độc giả và thiết bị</h2>
-                    <p className="mt-1 text-sm text-muted">
-                      Thiết bị, giao diện và hành vi đăng ký
-                    </p>
+                    <h2 className="text-h3">{t('analyticsData.audienceTitle')}</h2>
+                    <p className="mt-1 text-sm text-muted">{t('analyticsData.audienceHint')}</p>
                   </div>
                   <Badge tone="green">
                     <Check size={12} aria-hidden="true" />
-                    Đã xác minh
+                    {t(hasAudience ? 'analyticsData.recorded' : 'analyticsData.unknown')}
                   </Badge>
                 </div>
                 {loading ? (
                   <div
                     aria-busy="true"
-                    aria-label="Đang tải hồ sơ thiết bị"
+                    aria-label={t('analyticsData.audienceLoading')}
                     className="mt-5 space-y-5"
                   >
-                    {[0, 1, 2, 3].map((item) => (
+                    {[0, 1, 2, 3].map(item => (
                       <div key={`device-skeleton-${item}`} aria-hidden="true">
                         <div className="flex h-5 items-center justify-between gap-3">
                           <Skeleton className="h-3.5 w-44 max-w-[70%]" />
@@ -595,14 +643,20 @@ export function AuthorAnalyticsPage() {
                   </div>
                 ) : (
                   <div className="nh-fade-enter mt-5 space-y-5">
-                    {devices.map(([label, value, tone]) => (
+                    {!audienceRows.length && (
+                      <p className="text-sm text-muted">{t('analyticsData.noAudience')}</p>
+                    )}
+                    {audienceRows.map(([label, count, tone]) => (
                       <div key={label}>
                         <div className="flex justify-between gap-3 text-sm">
                           <span>{label}</span>
-                          <strong className="tabular-nums">{formatPercent(value)}</strong>
+                          <strong className="tabular-nums">
+                            {count.toLocaleString('vi-VN')} (
+                            {formatPercent(Math.round((count / readers) * 1000) / 10)})
+                          </strong>
                         </div>
                         <ProgressBar
-                          value={value}
+                          value={(count / readers) * 100}
                           tone={tone}
                           size="sm"
                           label={label}
@@ -614,11 +668,10 @@ export function AuthorAnalyticsPage() {
                 )}
                 <figure className="mt-6 rounded-2xl bg-elevated p-4">
                   <blockquote className="text-sm italic leading-6">
-                    “Khả năng xây dựng thế giới dài kỳ của {storyLabel} luôn nằm trong nhóm 1% cao
-                    nhất NovelHub về mức giữ chân độc giả đọc liên tục nhiều chương.”
+                    {t('analyticsData.noAdvice')}
                   </blockquote>
                   <figcaption className="mt-2 text-xs text-ink/70">
-                    Hội đồng Biên tập NovelHub
+                    {t('managerData.adviceTitle')}
                   </figcaption>
                 </figure>
               </Card>
@@ -627,15 +680,13 @@ export function AuthorAnalyticsPage() {
         )}
       </div>
     </AuthorLayout>
-  );
+  )
 }
-
 const iconTones = {
   brand: 'bg-brand/12 text-brand-strong',
   orange: 'bg-orange/16 text-orange-strong',
   purple: 'bg-purple/12 text-purple-strong',
-};
-
+}
 function Kpi({ icon: Icon, label, value, delta, trend = false, tone = 'brand' }) {
   return (
     <Card className="p-4 sm:p-5">
@@ -646,53 +697,37 @@ function Kpi({ icon: Icon, label, value, delta, trend = false, tone = 'brand' })
         </span>
       </div>
       <strong className="mt-3 block text-h3 tabular-nums sm:mt-4 sm:text-h2">{value}</strong>
-      <Badge tone={tone === 'brand' ? 'green' : tone} className="mt-3 flex w-fit">
+      <Badge tone={tone === 'brand' ? 'green' : tone} className="mt-3 flex w-fit max-w-full">
         {trend && <ArrowUp size={12} aria-hidden="true" />}
-        {delta}
+        <span className="min-w-0 whitespace-normal">{delta}</span>
       </Badge>
     </Card>
-  );
+  )
 }
-
 function Legend({ className, children }) {
   return (
     <li className="flex items-center gap-2">
       <span className={`size-2.5 rounded-[3px] ${className}`} aria-hidden="true" />
       {children}
     </li>
-  );
+  )
 }
-
-function FormatRow({ tone, label, value, percent }) {
-  return (
-    <div className="rounded-2xl bg-elevated p-3.5">
-      <div className="flex items-center gap-2 text-sm">
-        <strong>{label}</strong>
-        <strong className="ml-auto tabular-nums">{percent}%</strong>
-      </div>
-      <ProgressBar value={percent} tone={tone} size="sm" label={label} className="mt-2" />
-      <p className="mt-1.5 text-right text-xs text-ink/70 tabular-nums">{value}</p>
-    </div>
-  );
-}
-
 function ChartGridLines() {
   return (
     <div aria-hidden="true" className="absolute inset-0 flex flex-col justify-between">
-      {[0, 1, 2, 3].map((line) => (
+      {[0, 1, 2, 3].map(line => (
         <span key={line} className="border-t border-dashed border-hairline" />
       ))}
     </div>
-  );
+  )
 }
-
 function RetryButton({ onClick }) {
   return (
     <Button variant="secondary" size="sm" onClick={onClick}>
       <RefreshCw size={14} aria-hidden="true" />
       Thử lại
     </Button>
-  );
+  )
 }
 
 /*
@@ -707,7 +742,7 @@ function GhostText({ className = '', ghost, children }) {
         {children}
       </div>
     </div>
-  );
+  )
 }
 
 /* Mirrors Kpi: wrapped label + icon tile, h3/h2 value line box, inline badge line box. */
@@ -730,7 +765,7 @@ function KpiSkeleton({ label }) {
       </div>
       <Skeleton className="mt-3 h-6 w-20" />
     </Card>
-  );
+  )
 }
 
 /* Same h-56 plot, 30 bars, axis row and insight row as the ready daily chart. */
@@ -744,7 +779,9 @@ function DailyChartSkeleton() {
             <div
               key={`daily-skeleton-${index}`}
               className="min-w-0 flex-1"
-              style={{ height: `${height}%` }}
+              style={{
+                height: `${height}%`,
+              }}
             >
               <Skeleton className="h-full w-full rounded-none rounded-t-[4px]" />
             </div>
@@ -752,7 +789,7 @@ function DailyChartSkeleton() {
         </div>
       </div>
       <div className="mt-3 flex h-4 items-center justify-between" aria-hidden="true">
-        {dailyAxisLabels.map((label) => (
+        {dailyAxisLabels.map(label => (
           <Skeleton key={`axis-skeleton-${label}`} className="h-2.5 w-10" />
         ))}
       </div>
@@ -774,7 +811,7 @@ function DailyChartSkeleton() {
         </div>
       </div>
     </div>
-  );
+  )
 }
 
 /* Donut (size-44 ring with the same 7.5rem hole) plus two FormatRow-shaped tiles. */
@@ -786,7 +823,7 @@ function FormatSkeleton() {
         <span className="relative col-start-1 row-start-1 size-[7.5rem] rounded-full bg-surface" />
       </div>
       <div className="mt-6 space-y-3" aria-hidden="true">
-        {[0, 1].map((item) => (
+        {[0, 1].map(item => (
           <div key={`format-skeleton-${item}`} className="rounded-2xl bg-elevated p-3.5">
             <div className="flex h-5 items-center gap-2">
               <Skeleton className="h-3.5 w-24" />
@@ -800,7 +837,7 @@ function FormatSkeleton() {
         ))}
       </div>
     </div>
-  );
+  )
 }
 
 /* Same h-48 plot with 15 bars, 11px chapter axis row and the two detail tiles. */
@@ -813,7 +850,9 @@ function RetentionSkeleton() {
             <div
               key={`retention-skeleton-${index}`}
               className="mx-0.5 min-w-0 flex-1 sm:mx-1"
-              style={{ height: `${height}%` }}
+              style={{
+                height: `${height}%`,
+              }}
             >
               <Skeleton className="h-full w-full rounded-none rounded-t-md" />
             </div>
@@ -867,7 +906,7 @@ function RetentionSkeleton() {
         </div>
       </div>
     </div>
-  );
+  )
 }
 
 /*
@@ -882,7 +921,7 @@ function InlineTextLine({ width = 'w-4/5', className = '' }) {
         <Skeleton className={`h-3.5 max-w-sm ${width}`} />
       </span>
     </div>
-  );
+  )
 }
 
 /* Channel row: 36px icon + name/note lines that wrap on phones, share, reads and a badge. */
@@ -926,5 +965,5 @@ function ChannelRowSkeleton({ nameWraps }) {
         </div>
       </td>
     </tr>
-  );
+  )
 }

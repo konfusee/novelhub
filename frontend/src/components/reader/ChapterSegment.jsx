@@ -1,32 +1,32 @@
-import { useCallback, useEffect, useState } from 'react';
-import { AlertTriangle, BookOpen } from '../icons';
-import { Button, EmptyState, ProgressBar, Skeleton } from '../ui';
-import { useMockResource } from '../../context/MockDataContext';
-import { READER_CHAPTER_TOTAL, readerChapter, readerChapterTitle } from './readerChapters';
+import { useCallback, useEffect, useState } from 'react'
+import { AlertTriangle, BookOpen } from '../icons'
+import { Button, EmptyState, ProgressBar, Skeleton } from '../ui'
+import { useMockResource } from '../../context/MockDataContext'
+import { READER_CHAPTER_TOTAL, readerChapter, readerChapterTitle } from './readerChapters'
 
 /* Prose column of one chapter; the skeleton and error states reuse it so nothing shifts. */
 const ARTICLE_CLASS =
-  'mx-4 text-pretty sm:mx-6 sm:rounded-3xl sm:border sm:border-hairline sm:bg-surface sm:px-10 sm:py-12 sm:shadow-whisper lg:px-14';
+  'mx-4 text-pretty sm:mx-6 sm:rounded-3xl sm:border sm:border-hairline sm:bg-surface sm:px-10 sm:py-12 sm:shadow-whisper lg:px-14'
 /* Typical paragraph lengths (characters) and the average glyph width of Be Vietnam Pro (em). */
-const SKELETON_PARAGRAPHS = [300, 380, 310, 290, 300];
-const GLYPH_EM = 0.55;
-const hasNoProse = (chapter) => !chapter?.paragraphs?.length;
+const SKELETON_PARAGRAPHS = [300, 380, 310, 290, 300]
+const GLYPH_EM = 0.55
+const hasNoProse = chapter => !chapter?.paragraphs?.length
 
 /*
  * Chapter-shaped placeholder: same column, font metrics, line box and paragraph rhythm. Line
  * counts follow the measured column width, so the swap to real prose barely moves anything.
  */
 export function ChapterSkeleton({ number, settings }) {
-  const [columnWidth, setColumnWidth] = useState(0);
-  const measure = useCallback((node) => {
-    if (!node) return;
-    const style = getComputedStyle(node);
+  const [columnWidth, setColumnWidth] = useState(0)
+  const measure = useCallback(node => {
+    if (!node) return
+    const style = getComputedStyle(node)
     setColumnWidth(
       node.clientWidth - parseFloat(style.paddingLeft) - parseFloat(style.paddingRight),
-    );
-  }, []);
-  const lineBox = `${settings.fontSize * settings.lineHeight}px`;
-  const charsPerLine = columnWidth ? columnWidth / (settings.fontSize * GLYPH_EM) : 64;
+    )
+  }, [])
+  const lineBox = `${settings.fontSize * settings.lineHeight}px`
+  const charsPerLine = columnWidth ? columnWidth / (settings.fontSize * GLYPH_EM) : 64
   return (
     <div
       ref={measure}
@@ -38,7 +38,7 @@ export function ChapterSkeleton({ number, settings }) {
         Đang tải chương {number}…
       </span>
       {SKELETON_PARAGRAPHS.map((chars, paragraph) => {
-        const lines = Math.max(1, Math.round(chars / charsPerLine));
+        const lines = Math.max(1, Math.round(chars / charsPerLine))
         return (
           <span
             key={paragraph}
@@ -57,15 +57,15 @@ export function ChapterSkeleton({ number, settings }) {
               </span>
             ))}
           </span>
-        );
+        )
       })}
     </div>
-  );
+  )
 }
 
 /* Chapter heading inside the continuous stream: number, title and position in the story. */
 function ChapterDivider({ number, headingId }) {
-  const storyProgress = Math.round((number / READER_CHAPTER_TOTAL) * 100);
+  const storyProgress = Math.round((number / READER_CHAPTER_TOTAL) * 100)
   return (
     <header className="mx-4 mb-6 pt-14 sm:mx-6 sm:mb-8 sm:pt-20">
       <p className="flex items-center gap-3 text-xs font-semibold uppercase tracking-[.16em] text-brand-strong">
@@ -83,7 +83,7 @@ function ChapterDivider({ number, headingId }) {
         </span>
       </div>
     </header>
-  );
+  )
 }
 
 function ChapterFigure() {
@@ -104,7 +104,7 @@ function ChapterFigure() {
         The sun filtering through the silvered elder canopy at dawn.
       </figcaption>
     </figure>
-  );
+  )
 }
 
 /*
@@ -124,16 +124,16 @@ export function ChapterSegment({
   onStatus,
   onSelect,
 }) {
-  const chapterKey = `${storyId}-${number}`;
-  const headingId = `chapter-heading-${number}`;
+  const chapterKey = `${storyId}-${number}`
+  const headingId = `chapter-heading-${number}`
   const { status, data, retry } = useMockResource(
     `chapter:${storyId}:${number}`,
     readerChapter(number),
     { isEmpty: hasNoProse },
-  );
+  )
   useEffect(() => {
-    onStatus?.(number, status);
-  }, [number, status, onStatus]);
+    onStatus?.(number, status)
+  }, [number, status, onStatus])
 
   if (placeholderHeight !== undefined) {
     return (
@@ -143,10 +143,10 @@ export function ChapterSegment({
         aria-hidden="true"
         style={{ height: placeholderHeight }}
       />
-    );
+    )
   }
 
-  const title = readerChapterTitle(number);
+  const title = readerChapterTitle(number)
   return (
     <section
       data-chapter-segment={number}
@@ -218,5 +218,5 @@ export function ChapterSegment({
         </article>
       )}
     </section>
-  );
+  )
 }

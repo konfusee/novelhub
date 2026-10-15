@@ -1,15 +1,15 @@
-import { Lock } from '../icons';
-import { Badge, ButtonLink, Skeleton } from '../ui';
-import { useAuth } from '../../context/AuthContext';
-import { useLocale } from '../../context/LocaleContext';
+import { Lock } from '../icons'
+import { Badge, ButtonLink, Skeleton } from '../ui'
+import { useAuth } from '../../context/AuthContext'
+import { useLocale } from '../../context/LocaleContext'
 
 export function ChapterList({ chapters, storyId = 'demo' }) {
-  const { isAuthenticated } = useAuth();
-  const { t } = useLocale();
+  const { isAuthenticated } = useAuth()
+  const { t } = useLocale()
   return (
     <ol className="space-y-3">
-      {chapters.map((chapter) => {
-        const readable = chapter.free || isAuthenticated;
+      {chapters.map(chapter => {
+        const readable = chapter.free || isAuthenticated
         return (
           <li
             className={`flex items-center justify-between gap-3 rounded-2xl border p-4 transition-[border-color,background-color] duration-200 ease-spring sm:px-5 ${readable ? 'border-hairline bg-surface hover:border-brand/40' : 'border-hairline bg-elevated'}`}
@@ -63,10 +63,10 @@ export function ChapterList({ chapters, storyId = 'demo' }) {
                   : t('auth.signIn')}
             </ButtonLink>
           </li>
-        );
+        )
       })}
     </ol>
-  );
+  )
 }
 
 /* Chapter rows at ChapterList's padding and line heights (label + badge, title, meta, button). */
@@ -95,5 +95,5 @@ export function ChapterListSkeleton({ count = 5 }) {
         </li>
       ))}
     </ol>
-  );
+  )
 }

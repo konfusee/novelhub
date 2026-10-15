@@ -1,17 +1,18 @@
-import { z } from 'zod';
+import { z } from 'zod'
+import path from 'node:path'
 
 const envSchema = z.object({
   NODE_ENV: z.enum(['development', 'test', 'production']),
   PORT: z.coerce.number().int().min(1).max(65535),
   MONGODB_URI: z.string().min(1, 'MONGODB_URI is required'),
   CORS_ORIGIN: z.string().refine(
-    (value) =>
-      value.split(',').every((origin) => {
+    value =>
+      value.split(',').every(origin => {
         try {
-          const u = new URL(origin.trim());
-          return ['http:', 'https:'].includes(u.protocol) && u.origin === origin.trim();
+          const u = new URL(origin.trim())
+          return ['http:', 'https:'].includes(u.protocol) && u.origin === origin.trim()
         } catch {
-          return false;
+          return false
         }
       }),
     'CORS_ORIGIN must contain HTTP(S) origins',
@@ -32,6 +33,15 @@ const envSchema = z.object({
   CAPTCHA_TTL_MINUTES: z.coerce.number().int().positive().max(1440),
   CAPTCHA_MAX_ENTRIES: z.coerce.number().int().positive().max(1000000),
   CAPTCHA_MAX_REQUESTS: z.coerce.number().int().positive().max(1000000),
+  MEDIA_STORAGE_DIR: z
+    .string()
+    .trim()
+    .min(1)
+    .refine(
+      value => path.isAbsolute(value) && !/[\p{Cc}]/u.test(value),
+      'MEDIA_STORAGE_DIR must be an absolute directory path',
+    )
+    .optional(),
   HTTP_JSON_LIMIT_KB: z.coerce.number().int().positive().max(1000000),
   DB_SERVER_SELECTION_TIMEOUT_MS: z.coerce.number().int().min(1).max(120000),
   SMTP_CONNECTION_TIMEOUT_MS: z.coerce.number().int().min(1).max(120000),
@@ -44,7 +54,7 @@ const envSchema = z.object({
   SMTP_SECURE: z
     .enum(['true', 'false'])
 
-    .transform((value) => value === 'true'),
+    .transform(value => value === 'true'),
   SMTP_USER: z.string().min(1).optional(),
   SMTP_PASSWORD: z.string().min(1).optional(),
   SMTP_FROM: z.string().email().optional(),
@@ -54,14 +64,14 @@ const envSchema = z.object({
   GOOGLE_CLIENT_ID: z.string().min(1).optional(),
   GOOGLE_CLIENT_SECRET: z.string().min(1).optional(),
   GOOGLE_REDIRECT_URI: z.string().url().optional(),
-});
+})
 
 /**
  * Parses and validates process environment once. Throws with every invalid key listed
  * so a misconfigured server fails fast at startup instead of at first use.
  */
 export function loadEnv(source = process.env) {
-  const normalized = { ...source };
+  const normalized = { ...source }
   for (const key of [
     'GOOGLE_CLIENT_ID',
     'GOOGLE_CLIENT_SECRET',
@@ -75,32 +85,31 @@ export function loadEnv(source = process.env) {
     'SMTP_USER',
     'SMTP_PASSWORD',
     'SMTP_FROM',
+    'MEDIA_STORAGE_DIR',
   ]) {
-    if (normalized[key] === '') delete normalized[key];
+    if (normalized[key] === '') delete normalized[key]
   }
-  const result = envSchema.safeParse(normalized);
+  const result = envSchema.safeParse(normalized)
   if (!result.success) {
-    const issues = result.error.issues.map((i) => `${i.path.join('.')}: ${i.message}`).join('; ');
-    throw new Error(`Invalid environment configuration: ${issues}`);
+    const issues = result.error.issues.map(i => `${i.path.join('.')}: ${i.message}`).join('; ')
+    throw new Error(`Invalid environment configuration: ${issues}`)
   }
-  const env = result.data;
-  const smtpEnabled = ['SMTP_HOST', 'SMTP_USER', 'SMTP_PASSWORD', 'SMTP_FROM'].some(
-    (key) => env[key],
-  );
+  const env = result.data
+  const smtpEnabled = ['SMTP_HOST', 'SMTP_USER', 'SMTP_PASSWORD', 'SMTP_FROM'].some(key => env[key])
   if (smtpEnabled || env.NODE_ENV === 'production') {
     const missing = ['SMTP_HOST', 'SMTP_USER', 'SMTP_PASSWORD', 'SMTP_FROM'].filter(
-      (key) => !env[key],
-    );
+      key => !env[key],
+    )
     if (missing.length)
-      throw new Error(`Invalid environment configuration: missing ${missing.join(', ')}`);
+      throw new Error(`Invalid environment configuration: missing ${missing.join(', ')}`)
   }
-  const googleKeys = ['GOOGLE_CLIENT_ID', 'GOOGLE_CLIENT_SECRET', 'GOOGLE_REDIRECT_URI'];
-  if (googleKeys.some((key) => env[key])) {
-    const missing = googleKeys.filter((key) => !env[key]);
+  const googleKeys = ['GOOGLE_CLIENT_ID', 'GOOGLE_CLIENT_SECRET', 'GOOGLE_REDIRECT_URI']
+  if (googleKeys.some(key => env[key])) {
+    const missing = googleKeys.filter(key => !env[key])
     if (missing.length)
-      throw new Error('Invalid environment configuration: missing ' + missing.join(', '));
+      throw new Error('Invalid environment configuration: missing ' + missing.join(', '))
   }
-  return Object.freeze(env);
+  return Object.freeze(env)
 }
 
 export function toAppConfig(env) {
@@ -113,6 +122,7 @@ export function toAppConfig(env) {
     emailVerificationTtlMinutes: env.EMAIL_VERIFICATION_TTL_MINUTES,
     passwordResetTtlMinutes: env.PASSWORD_RESET_TTL_MINUTES,
     httpJsonLimitKb: env.HTTP_JSON_LIMIT_KB,
+    mediaStorageDir: env.MEDIA_STORAGE_DIR,
     securityConfig: {
       emailSendAttempts: env.EMAIL_SEND_ATTEMPTS,
       windowMs: env.AUTH_RATE_LIMIT_WINDOW_MINUTES * 60000,
@@ -134,5 +144,5 @@ export function toAppConfig(env) {
           timeoutMs: env.GOOGLE_HTTP_TIMEOUT_MS,
         }
       : undefined,
-  };
+  }
 }

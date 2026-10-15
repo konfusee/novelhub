@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { useParams } from 'react-router';
+import { useState } from 'react'
+import { useParams } from 'react-router'
 import {
   AlertTriangle,
   ArrowLeft,
@@ -14,32 +14,32 @@ import {
   Scale,
   ShieldAlert,
   Sparkles,
-} from '../../components/icons';
-import { ModeratorLayout } from '../../layouts';
-import { StoryCover } from '../../components/story/StoryCover';
-import { useMockResource } from '../../context/MockDataContext';
-import { Badge, Button, ButtonLink, Card, EmptyState, Modal, Skeleton } from '../../components/ui';
+} from '../../components/icons'
+import { ModeratorLayout } from '../../layouts'
+import { StoryCover } from '../../components/story/StoryCover'
+import { useMockResource } from '../../context/MockDataContext'
+import { Badge, Button, ButtonLink, Card, EmptyState, Modal, Skeleton } from '../../components/ui'
 
 const SUBMISSION = {
   id: 'MS-88402',
   story: { id: 'silent-forest', title: 'The Silent Forest: Volume II', author: 'Elena Vance' },
-};
+}
 const chapters = [
   ['Chương 13: Silver Passage', 'Sạch'],
   ['Chương 14: Echoes', 'Sạch'],
   ['Chương 15: The Threshold', 'Sạch'],
   ['Chương 16: Heart of Ironwood', '1 cảnh báo'],
   ['Chương 17: Afterlight', 'Đang chờ'],
-];
-const FLAGGED_CHAPTER = 3;
-const chapterStatusTone = { Sạch: 'green', '1 cảnh báo': 'orange', 'Đang chờ': 'neutral' };
+]
+const FLAGGED_CHAPTER = 3
+const chapterStatusTone = { Sạch: 'green', '1 cảnh báo': 'orange', 'Đang chờ': 'neutral' }
 const policyChecks = [
   'Đã xác minh quyền tác giả gốc',
   'Ảnh bìa đáp ứng chuẩn 1600×2400',
   'Phân loại PG-13 phù hợp mức bạo lực trong truyện',
   'Không có nội dung quảng cáo hoặc liên kết ngoài bị cấm',
   'Định dạng chương và phông Poppins không chân đạt chuẩn',
-];
+]
 const decisions = {
   approve: {
     label: 'Phê duyệt và xuất bản',
@@ -72,7 +72,7 @@ const decisions = {
     needsReason: true,
     destructive: true,
   },
-};
+}
 const prose = [
   'The canopy of the ancient Ironwood did not sway with the wind. It stood rigid, carved of petrified amber and obsidian vines that drank what little starlight escaped the northern haze. Kaelen tightened his wrist bindings, feeling the steady hum of the meridian sigil pulsing beneath his glove.',
   '“Three leagues north,” Sorsha murmured, not lifting her gaze from the cracked slate compass. Her breathing was measured, though the silver embroidery along her mantle had frayed during their descent through the weeping gorge. “If the crest holds, the inner ward will open before dawn. If it fails, we will be standing directly in their line of sight.”',
@@ -80,34 +80,34 @@ const prose = [
   'They crossed the frostline in silence. Beneath their soles, the crystalline foliage fractured with a tone like chiming porcelain. With every dozen paces, the ambient temperature dipped further, frosting the bronze edges of their scabbards until small sparks jumped between their cloaks.',
   '“Listen,” Sorsha halted, her gloved fingers resting on the pommel of her side-blade. “The ridge is vacant. The wardens shouldn’t have abandoned the southern overlook unless something broke the gate wards from inside.”',
   'A tremor shuddered through the peat. It was not the organic shudder of shifting earth, but the metallic crunch of iron roots shearing against subterranean rock.',
-];
+]
 const fieldClass =
-  'w-full rounded-2xl border border-line p-3 text-base leading-6 text-ink outline-none transition-colors placeholder:text-muted focus:border-brand sm:text-sm';
-const chapterNumber = (title) => title.split(':')[0].replace('Chương ', '');
-const submissionDetail = { story: SUBMISSION.story, chapters, prose };
+  'w-full rounded-2xl border border-line p-3 text-base leading-6 text-ink outline-none transition-colors placeholder:text-muted focus:border-brand sm:text-sm'
+const chapterNumber = title => title.split(':')[0].replace('Chương ', '')
+const submissionDetail = { story: SUBMISSION.story, chapters, prose }
 
 export function ContentReviewDetailPage() {
-  const { submissionId = SUBMISSION.id } = useParams();
+  const { submissionId = SUBMISSION.id } = useParams()
   const review = useMockResource(`submission:${submissionId}`, submissionDetail, {
-    isEmpty: (value) => !value.chapters.length,
-  });
-  const detail = review.data;
-  const [activeChapter, setActiveChapter] = useState(FLAGGED_CHAPTER);
-  const [reviewed, setReviewed] = useState(false);
-  const [checks, setChecks] = useState(policyChecks.map(() => true));
+    isEmpty: value => !value.chapters.length,
+  })
+  const detail = review.data
+  const [activeChapter, setActiveChapter] = useState(FLAGGED_CHAPTER)
+  const [reviewed, setReviewed] = useState(false)
+  const [checks, setChecks] = useState(policyChecks.map(() => true))
   const [notes, setNotes] = useState(
     'Đã xác minh văn phong. Các cảnh hành động ở Chương 16 tuân thủ hướng dẫn kỳ ảo PG-13. Không có máu me trực diện. Thẻ chính xác và phù hợp để độc giả khám phá.',
-  );
-  const [decision, setDecision] = useState(null);
-  const [reason, setReason] = useState('');
-  const [completed, setCompleted] = useState(null);
-  const passed = checks.filter(Boolean).length;
-  const [chapterTitle] = detail.chapters[activeChapter] ?? [''];
-  const pending = decision ? decisions[decision] : null;
-  const openDecision = (key) => {
-    setReason(notes);
-    setDecision(key);
-  };
+  )
+  const [decision, setDecision] = useState(null)
+  const [reason, setReason] = useState('')
+  const [completed, setCompleted] = useState(null)
+  const passed = checks.filter(Boolean).length
+  const [chapterTitle] = detail.chapters[activeChapter] ?? ['']
+  const pending = decision ? decisions[decision] : null
+  const openDecision = key => {
+    setReason(notes)
+    setDecision(key)
+  }
   return (
     <ModeratorLayout>
       <div className="page-moderator py-6">
@@ -224,7 +224,7 @@ export function ContentReviewDetailPage() {
                 <h2 className="text-sm font-semibold">Các chương gửi duyệt</h2>
                 <ul className="mt-3 space-y-1">
                   {detail.chapters.map(([title, status], index) => {
-                    const active = activeChapter === index;
+                    const active = activeChapter === index
                     return (
                       <li key={title}>
                         <button
@@ -247,7 +247,7 @@ export function ContentReviewDetailPage() {
                           </span>
                         </button>
                       </li>
-                    );
+                    )
                   })}
                 </ul>
               </Card>
@@ -293,7 +293,7 @@ export function ContentReviewDetailPage() {
                     <FlaggedText
                       key={paragraph}
                       reviewed={reviewed}
-                      onReview={() => setReviewed((value) => !value)}
+                      onReview={() => setReviewed(value => !value)}
                     >
                       {paragraph}
                     </FlaggedText>
@@ -311,7 +311,7 @@ export function ContentReviewDetailPage() {
                 </span>
                 <div className="flex gap-2">
                   <Button
-                    onClick={() => setActiveChapter((value) => Math.max(0, value - 1))}
+                    onClick={() => setActiveChapter(value => Math.max(0, value - 1))}
                     disabled={activeChapter === 0}
                     variant="secondary"
                     size="sm"
@@ -321,7 +321,7 @@ export function ContentReviewDetailPage() {
                   </Button>
                   <Button
                     onClick={() =>
-                      setActiveChapter((value) => Math.min(detail.chapters.length - 1, value + 1))
+                      setActiveChapter(value => Math.min(detail.chapters.length - 1, value + 1))
                     }
                     disabled={activeChapter === detail.chapters.length - 1}
                     variant="secondary"
@@ -380,7 +380,7 @@ export function ContentReviewDetailPage() {
                         role="checkbox"
                         aria-checked={checks[index]}
                         onClick={() =>
-                          setChecks((current) =>
+                          setChecks(current =>
                             current.map((value, itemIndex) =>
                               itemIndex === index ? !value : value,
                             ),
@@ -408,7 +408,7 @@ export function ContentReviewDetailPage() {
                   id="review-notes"
                   value={notes}
                   maxLength={500}
-                  onChange={(event) => setNotes(event.target.value)}
+                  onChange={event => setNotes(event.target.value)}
                   className={`${fieldClass} mt-3 min-h-28 bg-elevated`}
                 />
                 <p className="mt-1.5 text-right text-xs text-muted tabular-nums">
@@ -477,7 +477,7 @@ export function ContentReviewDetailPage() {
               <textarea
                 id="decision-reason"
                 value={reason}
-                onChange={(event) => setReason(event.target.value)}
+                onChange={event => setReason(event.target.value)}
                 className={`${fieldClass} mt-2 min-h-24 bg-surface`}
                 placeholder="Lý do đưa ra quyết định..."
               />
@@ -491,8 +491,8 @@ export function ContentReviewDetailPage() {
                   variant={pending.destructive ? 'danger' : 'primary'}
                   disabled={pending.needsReason && !reason.trim()}
                   onClick={() => {
-                    setCompleted(decision);
-                    setDecision(null);
+                    setCompleted(decision)
+                    setDecision(null)
                   }}
                 >
                   {pending.destructive ? 'Xác nhận từ chối' : 'Xác nhận quyết định'}
@@ -503,11 +503,11 @@ export function ContentReviewDetailPage() {
         </Modal>
       </div>
     </ModeratorLayout>
-  );
+  )
 }
 
 function DecisionButton({ id, short = false, onClick, className = '' }) {
-  const { label, short: shortLabel, icon: Icon, variant } = decisions[id];
+  const { label, short: shortLabel, icon: Icon, variant } = decisions[id]
   return (
     <Button
       variant={variant}
@@ -517,7 +517,7 @@ function DecisionButton({ id, short = false, onClick, className = '' }) {
       <Icon size={15} />
       {short ? shortLabel : label}
     </Button>
-  );
+  )
 }
 
 function FlaggedText({ children, reviewed, onReview }) {
@@ -543,14 +543,14 @@ function FlaggedText({ children, reviewed, onReview }) {
         </Button>
       </div>
     </div>
-  );
+  )
 }
 
 const signalTone = {
   green: 'text-brand-strong',
   orange: 'text-orange-strong',
   purple: 'text-purple-strong',
-};
+}
 
 function Signal({ label, value, note, tone = 'green' }) {
   return (
@@ -559,7 +559,7 @@ function Signal({ label, value, note, tone = 'green' }) {
       <strong className={`mt-1.5 block text-lg tabular-nums ${signalTone[tone]}`}>{value}</strong>
       <span className="block text-xs leading-4 text-ink/70">{note}</span>
     </div>
-  );
+  )
 }
 
 /* [lines from sm, extra lines below sm] per paragraph. */
@@ -569,7 +569,7 @@ const skeletonParagraphs = [
   [5, 3],
   [6, 2],
   [4, 3],
-];
+]
 
 /* Three-column review layout with the same cards, reader article, H1 slot and decision stack. */
 function ReviewSkeleton() {
@@ -620,7 +620,7 @@ function ReviewSkeleton() {
             <Skeleton className="h-3.5 w-28" />
           </span>
           <div className="mt-3 space-y-2">
-            {['w-28', 'w-32', 'w-16', 'w-40'].map((width) => (
+            {['w-28', 'w-32', 'w-16', 'w-40'].map(width => (
               <div key={width} className="space-y-1.5 py-0.5">
                 <Skeleton className="h-2.5 w-24" />
                 <Skeleton className={`h-3 ${width}`} />
@@ -649,7 +649,7 @@ function ReviewSkeleton() {
               <Skeleton className="h-3.5 w-64 max-w-full" />
             </span>
             <div className="mt-2">
-              {['w-full', 'w-1/2'].map((width) => (
+              {['w-full', 'w-1/2'].map(width => (
                 <span key={width} className="flex h-6 items-center">
                   <Skeleton className={`h-3 ${width}`} />
                 </span>
@@ -740,12 +740,12 @@ function ReviewSkeleton() {
         </Card>
       </div>
     </div>
-  );
+  )
 }
 
 /* Reader line pitch (32px, 36px from sm); `extra` lines show only below sm where text wraps more. */
 function SkeletonLines({ lines, extra = 0, className = '' }) {
-  const total = lines + extra;
+  const total = lines + extra
   return (
     <div className={className}>
       {Array.from({ length: total }, (_, line) => (
@@ -757,5 +757,5 @@ function SkeletonLines({ lines, extra = 0, className = '' }) {
         </span>
       ))}
     </div>
-  );
+  )
 }

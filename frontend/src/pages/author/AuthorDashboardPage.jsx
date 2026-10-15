@@ -1,10 +1,8 @@
-import { useState } from 'react';
+import { useState } from 'react'
 import {
   AlertTriangle,
   ArrowRight,
-  Bot,
   BookOpen,
-  Coins,
   Edit3,
   Eye,
   Flame,
@@ -14,15 +12,15 @@ import {
   Plus,
   RefreshCw,
   Send,
-  Sparkles,
   Star,
   Target,
   UsersRound,
-} from '../../components/icons';
-import { AuthorLayout } from '../../layouts';
-import { authorStats, authorStories } from '../../data/mock/author';
-import { useMockResource } from '../../context/MockDataContext';
-import { StoryCover } from '../../components/story/StoryCover';
+} from '../../components/icons'
+import { AuthorLayout } from '../../layouts'
+import { useBackendDocument } from '../../api/useBackendResource'
+import { apiRequest } from '../../api/client'
+import { useLocale } from '../../context/LocaleContext'
+import { StoryCover } from '../../components/story/StoryCover'
 import {
   Badge,
   Button,
@@ -31,70 +29,116 @@ import {
   EmptyState,
   Input,
   Modal,
-  ProgressBar,
   Reveal,
   Skeleton,
   Tabs,
-  Trend,
-} from '../../components/ui';
-
-const EDITOR_ROUTE = '/author/stories/demo/chapters/chapter-1/edit';
+} from '../../components/ui'
+const emptyDashboard = {
+  stats: {
+    views: 0,
+    audioPlays: null,
+    followers: 0,
+  },
+  stories: [],
+  drafts: [],
+  feedback: [],
+  draftWords: 0,
+  draftCount: 0,
+  feedbackTotal: 0,
+}
 const statMeta = [
-  { icon: BookOpen, tone: 'brand', progress: 75 },
-  { icon: Headphones, tone: 'orange', progress: 66 },
-  { icon: UsersRound, tone: 'brand', progress: 75 },
-  { icon: Coins, tone: 'purple', progress: 80 },
-];
+  {
+    icon: BookOpen,
+    tone: 'brand',
+  },
+  {
+    icon: Headphones,
+    tone: 'orange',
+  },
+  {
+    icon: UsersRound,
+    tone: 'brand',
+  },
+]
 const iconTone = {
   brand: 'bg-brand/12 text-brand-strong',
   orange: 'bg-orange/16 text-orange-strong',
   purple: 'bg-purple/12 text-purple-strong',
-};
-const statusLabels = { Published: 'Đã xuất bản', 'In Review': 'Đang xét duyệt', Draft: 'Bản nháp' };
-const statusTones = { Published: 'green', 'In Review': 'orange', Draft: 'neutral' };
-const statusFilter = { Published: 'published', 'In Review': 'review', Draft: 'draft' };
-const metricLabels = { Unpublished: 'Chưa xuất bản' };
-const storyActions = {
-  Published: { label: 'Thêm chương', icon: Plus, to: EDITOR_ROUTE },
-  'In Review': { label: 'Xem bản gửi duyệt', icon: Eye, to: '/author/submissions' },
-  Draft: { label: 'Gửi xét duyệt', icon: Send, to: '/author/submissions' },
-};
-const feedback = [
-  ['Liam Vance', 'Màn hé lộ về linh hồn hộ vệ khiến tôi thật sự bất ngờ!'],
-  ['Elena Rivera', 'Người kể sách nói đã thể hiện rất hay đoạn chiến ca.'],
-];
-/* Chapter currently being written for the first two stories (paired by index). */
-const drafts = [
-  { chapter: 'Chương 16: Heart of the Ironwood', written: 2840, target: 3500 },
-  { chapter: 'Chương 3: The Crystal Archivist', written: 1420, target: 4000 },
-];
-
+}
+const statusLabels = {
+  published: 'Đã xuất bản',
+  'under-review': 'Đang xét duyệt',
+  submitted: 'Đã gửi duyệt',
+  approved: 'Đã duyệt',
+  draft: 'Bản nháp',
+  unpublished: 'Đã gỡ xuất bản',
+  archived: 'Đã lưu trữ',
+}
+const statusTones = {
+  published: 'green',
+  'under-review': 'orange',
+  submitted: 'orange',
+  draft: 'neutral',
+}
+const statusFilter = {
+  published: 'published',
+  'under-review': 'review',
+  submitted: 'review',
+  draft: 'draft',
+}
 export function AuthorDashboardPage() {
-  const stats = useMockResource('author:stats', authorStats);
-  const storiesResource = useMockResource('author:stories', authorStories);
-  const feedbackResource = useMockResource('author:feedback', feedback);
-  const [filter, setFilter] = useState('all');
-  const [reply, setReply] = useState('');
-  const [replySent, setReplySent] = useState(false);
-  const [goal, setGoal] = useState(15000);
-  const [goalDraft, setGoalDraft] = useState('15000');
-  const [goalOpen, setGoalOpen] = useState(false);
-  const stories = storiesResource.data;
-  const shown = stories.filter(
-    (story) => filter === 'all' || statusFilter[story.status] === filter,
-  );
-  const drafting = stories.slice(0, 2);
-  const weekWords = 18450;
-  const goalNumber = Number(goalDraft);
-  const goalInvalid = !Number.isInteger(goalNumber) || goalNumber < 1000 || goalNumber > 100000;
-
-  const sendReply = (event) => {
-    event.preventDefault();
-    if (!reply.trim()) return;
-    setReply('');
-    setReplySent(true);
-  };
-
+  const { t, formatNumber } = useLocale()
+  const dashboard = useBackendDocument('/author/dashboard', emptyDashboard)
+  const stats = {
+    ...dashboard,
+    data: [
+      [t('authorData.views'), formatNumber(dashboard.data.stats.views)],
+      [t('authorData.audioPlays'), '—'],
+      [t('authorData.followers'), formatNumber(dashboard.data.stats.followers)],
+    ],
+  }
+  const storiesResource = {
+    ...dashboard,
+    data: dashboard.data.stories,
+  }
+  const feedbackResource = {
+    ...dashboard,
+    data: dashboard.data.feedback,
+  }
+  const [filter, setFilter] = useState('all')
+  const [reply, setReply] = useState('')
+  const [replyTarget, setReplyTarget] = useState(null)
+  const [replySent, setReplySent] = useState(false)
+  const [replyBusy, setReplyBusy] = useState(false)
+  const [replyError, setReplyError] = useState(false)
+  const [goalOpen, setGoalOpen] = useState(false)
+  const stories = storiesResource.data
+  const shown = stories.filter(story => filter === 'all' || statusFilter[story.status] === filter)
+  const drafting = dashboard.data.drafts
+  const sendReply = async event => {
+    event.preventDefault()
+    const target = feedbackResource.data.find(item => item.id === replyTarget)
+    if (!target || replyBusy || reply.trim().length < 3) return
+    setReplyBusy(true)
+    setReplyError(false)
+    setReplySent(false)
+    try {
+      await apiRequest(`/community/stories/${target.storyId}/comments`, {
+        method: 'POST',
+        body: {
+          body: reply.trim(),
+          parentId: target.id,
+        },
+      })
+      setReply('')
+      setReplySent(true)
+      dashboard.retry()
+    } catch {
+      setReplyError(true)
+    } finally {
+      setReplyBusy(false)
+    }
+  }
   return (
     <AuthorLayout>
       <div className="page-author py-6 lg:py-8">
@@ -108,7 +152,7 @@ export function AuthorDashboardPage() {
           <div className="flex flex-wrap gap-2">
             <ButtonLink to="/author/import" variant="secondary">
               <Import size={16} aria-hidden="true" />
-              Nhập PDF
+              {t('navigation.importPdf')}
             </ButtonLink>
             <ButtonLink to="/author/stories/new">
               <Plus size={16} aria-hidden="true" />
@@ -156,8 +200,8 @@ export function AuthorDashboardPage() {
             aria-label="Chỉ số tổng quan"
             className="nh-grid-12 nh-fade-enter mt-6 grid nh-cols-2 gap-3 sm:gap-4 nh-xl-cols-4"
           >
-            {stats.data.map(([label, value, delta], index) => {
-              const { icon: Icon, tone, progress } = statMeta[index];
+            {stats.data.map(([label, value], index) => {
+              const { icon: Icon, tone } = statMeta[index]
               return (
                 <Card key={label} className="flex flex-col p-4 sm:p-5">
                   <div className="flex items-start justify-between gap-3">
@@ -170,17 +214,13 @@ export function AuthorDashboardPage() {
                   </div>
                   <p className="mt-3 flex flex-wrap items-baseline gap-x-2 text-2xl font-bold tracking-tight tabular-nums">
                     {value}
-                    <Trend value={delta} variant="inline" />
+                    <span className="text-xs font-normal text-muted">
+                      {t('authorData.noComparison')}
+                    </span>
                   </p>
-                  <ProgressBar
-                    value={progress}
-                    tone={tone}
-                    size="sm"
-                    label={`${label}: đạt ${progress}% mục tiêu tháng`}
-                    className="mt-4"
-                  />
+                  <div aria-hidden="true" className="mt-4 h-1.5 rounded-full bg-elevated" />
                 </Card>
-              );
+              )
             })}
           </section>
         )}
@@ -192,7 +232,11 @@ export function AuthorDashboardPage() {
                 Tiếp tục sáng tác
               </h2>
               {storiesResource.status === 'ready' ? (
-                <Badge>{drafting.length} tác phẩm đang viết</Badge>
+                <Badge>
+                  {t('authorData.draftCount', {
+                    count: dashboard.data.draftCount,
+                  })}
+                </Badge>
               ) : storiesResource.status === 'loading' ? (
                 <Skeleton className="h-6 w-36" />
               ) : null}
@@ -223,7 +267,13 @@ export function AuthorDashboardPage() {
           ) : drafting.length ? (
             <div className="nh-grid-12 nh-fade-enter mt-4 grid gap-4 nh-md-cols-2">
               {drafting.map((story, index) => (
-                <DraftCard key={story.title} story={story} {...drafts[index]} primary={!index} />
+                <DraftCard
+                  key={story.chapterId}
+                  story={story}
+                  chapter={story.chapter}
+                  written={story.written}
+                  primary={!index}
+                />
               ))}
             </div>
           ) : (
@@ -231,7 +281,7 @@ export function AuthorDashboardPage() {
               <EmptyState
                 icon={Edit3}
                 title="Chưa có bản nháp nào đang viết"
-                description="Tạo truyện mới hoặc nhập bản thảo PDF để tiếp tục sáng tác tại đây."
+                description={t('documentImport.dashboardEmpty')}
                 action={
                   <ButtonLink to="/author/stories/new" size="sm">
                     <Plus size={14} aria-hidden="true" />
@@ -260,10 +310,22 @@ export function AuthorDashboardPage() {
                     value={filter}
                     onChange={setFilter}
                     items={[
-                      { value: 'all', label: 'Tất cả' },
-                      { value: 'published', label: 'Đã xuất bản' },
-                      { value: 'review', label: 'Đang xét duyệt' },
-                      { value: 'draft', label: 'Bản nháp' },
+                      {
+                        value: 'all',
+                        label: 'Tất cả',
+                      },
+                      {
+                        value: 'published',
+                        label: 'Đã xuất bản',
+                      },
+                      {
+                        value: 'review',
+                        label: 'Đang xét duyệt',
+                      },
+                      {
+                        value: 'draft',
+                        label: 'Bản nháp',
+                      },
                     ]}
                   />
                 </div>
@@ -280,11 +342,15 @@ export function AuthorDashboardPage() {
                 />
               ) : shown.length ? (
                 <ul className="nh-fade-enter mt-4 divide-y divide-hairline">
-                  {shown.map((story) => {
-                    const action = storyActions[story.status];
-                    const ActionIcon = action.icon;
+                  {shown.map(story => {
+                    const action = {
+                      icon: Edit3,
+                      label: t('authorData.manageStory'),
+                      to: `/author/stories/${story.id}`,
+                    }
+                    const ActionIcon = action.icon
                     return (
-                      <li key={story.title} className="flex items-center gap-4 py-4">
+                      <li key={story.id} className="flex items-center gap-4 py-4">
                         <StoryCover
                           story={story}
                           className="aspect-[2/3] w-12 shrink-0 rounded-xl"
@@ -303,7 +369,7 @@ export function AuthorDashboardPage() {
                             <span aria-hidden="true">·</span>
                             <span className="inline-flex items-center gap-1">
                               <Star size={13} aria-hidden="true" className="text-orange" />
-                              {metricLabels[story.rating] ?? story.rating}
+                              {story.rating}
                             </span>
                             <span aria-hidden="true">·</span>
                             <span>
@@ -332,7 +398,7 @@ export function AuthorDashboardPage() {
                           {action.label}
                         </ButtonLink>
                       </li>
-                    );
+                    )
                   })}
                 </ul>
               ) : (
@@ -365,38 +431,27 @@ export function AuthorDashboardPage() {
             <Reveal>
               <Card className="grid grid-cols-[minmax(0,1fr)] gap-5 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-center">
                 <div className="min-w-0">
-                  <p className="nh-eyebrow">Tiến độ sáng tác tuần</p>
+                  <p className="nh-eyebrow">{t('authorData.draftContent')}</p>
                   <h2 className="mt-3 text-h3">
-                    Đã viết {weekWords.toLocaleString('vi-VN')} từ trong tuần này
+                    {t('authorData.words', {
+                      count:
+                        dashboard.status === 'ready'
+                          ? formatNumber(dashboard.data.draftWords)
+                          : '—',
+                    })}
                   </h2>
-                  <p className="mt-1 text-sm text-muted">
-                    {weekWords >= goal
-                      ? `Bạn đã vượt mục tiêu ${goal.toLocaleString('vi-VN')} từ của tuần ${Math.round(((weekWords - goal) / goal) * 100)}%.`
-                      : `Còn ${(goal - weekWords).toLocaleString('vi-VN')} từ để đạt mục tiêu ${goal.toLocaleString('vi-VN')} từ của tuần.`}
-                  </p>
-                  <ProgressBar
-                    value={Math.min(weekWords, goal)}
-                    max={goal}
-                    label="Tiến độ mục tiêu viết trong tuần"
-                    className="mt-4"
-                  />
+                  <p className="mt-1 text-sm text-muted">{t('authorData.noWeeklyTracking')}</p>
+                  <div aria-hidden="true" className="mt-4 h-1.5 rounded-full bg-elevated" />
                 </div>
                 <div className="flex flex-wrap items-center gap-4 sm:flex-col sm:items-end">
                   <div className="flex items-center gap-3 rounded-2xl bg-orange/12 px-4 py-3">
                     <Flame size={22} aria-hidden="true" className="text-orange-strong" />
                     <div>
-                      <strong className="block text-xl leading-6 text-ink">6 ngày</strong>
-                      <span className="text-xs text-ink/70">Chuỗi sáng tác hằng ngày</span>
+                      <strong className="block text-xl leading-6 text-ink">—</strong>
+                      <span className="text-xs text-ink/70">{t('authorData.noStreak')}</span>
                     </div>
                   </div>
-                  <Button
-                    variant="secondary"
-                    size="sm"
-                    onClick={() => {
-                      setGoalDraft(String(goal));
-                      setGoalOpen(true);
-                    }}
-                  >
+                  <Button variant="secondary" size="sm" onClick={() => setGoalOpen(true)}>
                     <Target size={14} aria-hidden="true" />
                     Cài đặt mục tiêu
                   </Button>
@@ -405,53 +460,37 @@ export function AuthorDashboardPage() {
             </Reveal>
           </div>
 
-          <aside className="min-w-0 space-y-6" aria-label="Trợ lý và phản hồi">
-            <Card className="border-purple/40">
-              <div className="flex flex-wrap items-center justify-between gap-2">
-                <h2 className="flex items-center gap-2 text-h3">
-                  <span className="grid size-9 place-items-center rounded-xl bg-purple/12 text-purple-strong">
-                    <Bot size={18} />
-                  </span>
-                  Trợ lý sáng tác AI
-                </h2>
-                <Badge tone="purple">Đang hoạt động 4.5</Badge>
-              </div>
-              <p className="mt-3 text-caption text-muted">
-                Đang phân tích: <strong className="text-ink">The Silent Forest (Chương 16)</strong>
-              </p>
-              <div className="mt-4 space-y-3">
-                <Insight title="Cảnh báo nhịp độ chương">
-                  Chuyển cảnh 3 còn đột ngột. Hãy cân nhắc tăng thêm không khí hồi hộp.
-                </Insight>
-                <Insight title="Kiểm tra tính nhất quán thế giới truyện">
-                  Mặt dây chuyền Ironwood được nhắc đến lần gần nhất ở Chương 4.
-                </Insight>
-              </div>
-              <ButtonLink to="/author/ai" variant="tertiary" className="mt-5 w-full">
-                <Sparkles size={16} aria-hidden="true" />
-                Kiểm tra toàn bộ bản thảo
-              </ButtonLink>
-            </Card>
-
+          <aside className="min-w-0 space-y-6" aria-label="Phản hồi độc giả">
             <Card>
               <div className="flex items-center justify-between gap-2">
                 <h2 className="text-h3">Phản hồi của độc giả</h2>
-                {feedbackResource.status === 'ready' && <Badge tone="rose">9+ mới</Badge>}
+                {feedbackResource.status === 'ready' && (
+                  <Badge tone="rose">
+                    {t('authorData.feedbackCount', {
+                      count: dashboard.data.feedbackTotal,
+                    })}
+                  </Badge>
+                )}
               </div>
               {feedbackResource.status === 'loading' ? (
                 <ul aria-busy="true" aria-label="Đang tải phản hồi" className="mt-4 space-y-3">
-                  {feedback.map(([name]) => (
-                    <li key={name} className="rounded-2xl bg-elevated p-4">
-                      <div className="flex h-5 items-center justify-between gap-2">
-                        <Skeleton className="h-3.5 w-24" />
-                        <Skeleton className="size-3.5" />
-                      </div>
-                      <span className="mt-1.5 block space-y-3 py-1.5">
-                        <Skeleton className="h-3 w-full" />
-                        <Skeleton className="h-3 w-3/5" />
-                      </span>
-                    </li>
-                  ))}
+                  {Array.from(
+                    {
+                      length: 2,
+                    },
+                    (_, index) => (
+                      <li key={index} className="rounded-2xl bg-elevated p-4">
+                        <div className="flex h-5 items-center justify-between gap-2">
+                          <Skeleton className="h-3.5 w-24" />
+                          <Skeleton className="size-3.5" />
+                        </div>
+                        <span className="mt-1.5 block space-y-3 py-1.5">
+                          <Skeleton className="h-3 w-full" />
+                          <Skeleton className="h-3 w-3/5" />
+                        </span>
+                      </li>
+                    ),
+                  )}
                 </ul>
               ) : feedbackResource.status === 'error' ? (
                 <EmptyState
@@ -465,13 +504,25 @@ export function AuthorDashboardPage() {
                 />
               ) : feedbackResource.data.length ? (
                 <ul className="nh-fade-enter mt-4 space-y-3">
-                  {feedbackResource.data.map(([name, text]) => (
-                    <li key={name} className="rounded-2xl bg-elevated p-4">
+                  {feedbackResource.data.map(item => (
+                    <li key={item.id} className="rounded-2xl bg-elevated p-4">
                       <div className="flex items-center gap-2">
-                        <strong className="text-sm">{name}</strong>
+                        <strong className="text-sm">{item.author}</strong>
                         <MessageCircle size={14} aria-hidden="true" className="ml-auto text-rose" />
                       </div>
-                      <p className="mt-1.5 text-sm italic leading-6 text-ink/70">“{text}”</p>
+                      <p className="mt-1.5 text-sm italic leading-6 text-ink/70">“{item.body}”</p>
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        disabled={replyBusy || !item.canReply}
+                        onClick={() => {
+                          setReplyTarget(item.id)
+                          setReplySent(false)
+                          setReplyError(false)
+                        }}
+                      >
+                        {t('community.reply')}
+                      </Button>
                     </li>
                   ))}
                 </ul>
@@ -496,16 +547,18 @@ export function AuthorDashboardPage() {
                 <Input
                   id="reader-reply"
                   value={reply}
-                  onChange={(event) => {
-                    setReply(event.target.value);
-                    setReplySent(false);
+                  maxLength={2000}
+                  disabled={replyBusy || !replyTarget}
+                  onChange={event => {
+                    setReply(event.target.value)
+                    setReplySent(false)
                   }}
                   placeholder="Gửi phản hồi tới độc giả..."
                   className="mt-2"
                   trailing={
                     <button
                       type="submit"
-                      disabled={!reply.trim()}
+                      disabled={replyBusy || !replyTarget || reply.trim().length < 3}
                       aria-label="Gửi phản hồi"
                       className="grid size-8 shrink-0 place-items-center rounded-full bg-brand text-on-brand transition-[opacity,transform] duration-200 active:scale-[0.96] disabled:opacity-40"
                     >
@@ -514,8 +567,13 @@ export function AuthorDashboardPage() {
                   }
                 />
                 <p role="status" className="mt-2 min-h-5 text-xs text-brand-strong">
-                  {replySent ? 'Đã gửi phản hồi tới độc giả.' : ''}
+                  {replySent ? t('authorData.replySaved') : t('authorData.selectReply')}
                 </p>
+                {replyError && (
+                  <p role="alert" className="mt-2 text-xs text-rose-strong">
+                    {t('community.saveError')}
+                  </p>
+                )}
               </form>
             </Card>
 
@@ -524,74 +582,35 @@ export function AuthorDashboardPage() {
                 <Flame size={20} />
               </span>
               <div className="min-w-0">
-                <strong className="text-sm">Hạng Hội NovelHub: Cấp 4</strong>
-                <p className="text-caption text-muted">
-                  Top 5% bảng xếp hạng tác giả · còn 850 XP để lên Cấp 5
-                </p>
+                <strong className="text-sm">{t('authorData.guild')}</strong>
+                <p className="text-caption text-muted">{t('authorData.noGuild')}</p>
               </div>
             </Card>
           </aside>
         </div>
 
-        <Modal open={goalOpen} title="Mục tiêu viết mỗi tuần" onClose={() => setGoalOpen(false)}>
-          <form
-            noValidate
-            onSubmit={(event) => {
-              event.preventDefault();
-              if (goalInvalid) return;
-              setGoal(goalNumber);
-              setGoalOpen(false);
-            }}
-          >
-            <label htmlFor="weekly-goal" className="text-sm font-semibold">
-              Số từ mục tiêu
-            </label>
-            <Input
-              id="weekly-goal"
-              type="number"
-              inputMode="numeric"
-              min={1000}
-              max={100000}
-              step={500}
-              value={goalDraft}
-              onChange={(event) => setGoalDraft(event.target.value)}
-              aria-invalid={goalInvalid}
-              aria-describedby="weekly-goal-hint"
-              className="mt-2"
-            />
-            <p
-              id="weekly-goal-hint"
-              className={`mt-2 text-xs ${goalInvalid ? 'text-rose-strong' : 'text-muted'}`}
-            >
-              {goalInvalid
-                ? 'Nhập một số nguyên từ 1.000 đến 100.000 từ.'
-                : 'Mục tiêu được dùng để tính tiến độ sáng tác hằng tuần.'}
-            </p>
-            <div className="mt-6 flex flex-wrap justify-end gap-2">
-              <Button type="button" variant="secondary" onClick={() => setGoalOpen(false)}>
-                Hủy
-              </Button>
-              <Button type="submit" disabled={goalInvalid}>
-                Lưu mục tiêu
-              </Button>
-            </div>
-          </form>
+        <Modal
+          open={goalOpen}
+          title={t('authorData.writingGoal')}
+          onClose={() => setGoalOpen(false)}
+        >
+          <p className="text-sm leading-6 text-muted">{t('authorData.noGoal')}</p>
+          <Button variant="secondary" className="mt-5" onClick={() => setGoalOpen(false)}>
+            {t('common.close')}
+          </Button>
         </Modal>
       </div>
     </AuthorLayout>
-  );
+  )
 }
-
-function DraftCard({ story, chapter, written, target, primary = false }) {
-  const progress = Math.round((written / target) * 100);
+function DraftCard({ story, chapter, written, primary = false }) {
+  const { t } = useLocale()
   return (
     <Card as="article" className="flex flex-col p-5">
       <div className="flex gap-4">
         <StoryCover story={story} className="aspect-[2/3] w-16 shrink-0 rounded-2xl" />
         <div className="min-w-0">
-          <Badge tone={primary ? 'green' : 'orange'}>
-            {primary ? 'Dự án chính' : 'Truyện dài phụ'}
-          </Badge>
+          <Badge tone={primary ? 'green' : 'orange'}>{t('authorData.chapterDraft')}</Badge>
           <h3 className="mt-2 text-h3">{story.title}</h3>
           <p className="text-caption text-muted">{chapter}</p>
         </div>
@@ -599,38 +618,35 @@ function DraftCard({ story, chapter, written, target, primary = false }) {
       <div className="mt-4 flex flex-1 flex-wrap items-end gap-4 border-t border-hairline pt-4">
         <div className="min-w-[10rem] flex-1">
           <div className="flex justify-between gap-2 text-xs">
-            <strong>Đã viết {progress}%</strong>
-            <span className="text-muted tabular-nums">
-              {written.toLocaleString('vi-VN')} / {target.toLocaleString('vi-VN')} từ
-            </span>
+            <strong>
+              {t('authorData.words', {
+                count: written.toLocaleString('vi-VN'),
+              })}
+            </strong>
+            <span className="text-muted tabular-nums">{t('authorData.noTarget')}</span>
           </div>
-          <ProgressBar
-            value={written}
-            max={target}
-            tone={primary ? 'brand' : 'orange'}
-            size="sm"
-            label={`Tiến độ ${chapter}`}
-            className="mt-2"
-          />
+          <div aria-hidden="true" className="mt-2 h-1.5 rounded-full bg-elevated" />
         </div>
-        <ButtonLink to={EDITOR_ROUTE} size="sm" variant={primary ? 'primary' : 'secondary'}>
+        <ButtonLink
+          to={`/author/stories/${story.id}/chapters/${story.chapterId}/edit`}
+          size="sm"
+          variant={primary ? 'primary' : 'secondary'}
+        >
           <Edit3 size={14} aria-hidden="true" />
           {primary ? 'Viết tiếp' : 'Mở bản nháp'}
         </ButtonLink>
       </div>
     </Card>
-  );
+  )
 }
-
 function RetryButton({ onClick }) {
   return (
     <Button variant="secondary" size="sm" onClick={onClick}>
       <RefreshCw size={14} aria-hidden="true" />
       Thử lại
     </Button>
-  );
+  )
 }
-
 function StatSkeleton() {
   return (
     <Card as="div" aria-hidden="true" className="flex flex-col p-4 sm:p-5">
@@ -643,9 +659,8 @@ function StatSkeleton() {
       <Skeleton className="mt-4 h-7 w-28 rounded-lg" />
       <Skeleton className="mt-4 h-1.5 w-full" />
     </Card>
-  );
+  )
 }
-
 function DraftCardSkeleton() {
   return (
     <Card as="div" aria-hidden="true" className="flex flex-col p-5">
@@ -669,13 +684,12 @@ function DraftCardSkeleton() {
         <Skeleton className="h-9 w-28" />
       </div>
     </Card>
-  );
+  )
 }
-
 function StoryListSkeleton() {
   return (
     <ul className="mt-4 divide-y divide-hairline" aria-busy="true" aria-label="Đang tải truyện">
-      {[0, 1, 2].map((item) => (
+      {[0, 1, 2].map(item => (
         <li key={item} className="flex items-center gap-4 py-4">
           <Skeleton className="aspect-[2/3] w-12 shrink-0 rounded-xl" />
           <div className="min-w-0 flex-1">
@@ -691,7 +705,7 @@ function StoryListSkeleton() {
         </li>
       ))}
     </ul>
-  );
+  )
 }
 
 /* A skeleton bar centred in a box sized like the real text line, so heights match exactly. */
@@ -700,14 +714,5 @@ function SkeletonLine({ box = 'h-5', className }) {
     <span className={`flex items-center ${box}`}>
       <Skeleton className={className} />
     </span>
-  );
-}
-
-function Insight({ title, children }) {
-  return (
-    <div className="rounded-2xl bg-purple/10 p-4 ring-1 ring-inset ring-purple/20">
-      <strong className="text-sm">{title}</strong>
-      <p className="mt-1.5 text-xs leading-5 text-ink/70">{children}</p>
-    </div>
-  );
+  )
 }
