@@ -8,6 +8,7 @@ import {
   Follow,
   Notification,
   ReadingProgress,
+  Rating,
   Story,
   UnlockEntitlement,
   Wallet,
@@ -407,35 +408,98 @@ export function createReaderDataRouter(config) {
       next(error);
     }
   });
+
+  const publicStory = async (storyId, session) => {
+    const story = await Story.findOne({
+      _id: storyId,
+      publicationStatus: 'published',
+      publishedRevisionId: { $ne: null },
+    })
+      .session(session ?? null)
+      .lean();
+    const revision =
+      story &&
+      (await ContentRevision.findOne({
+        _id: story.publishedRevisionId,
+        storyId: story._id,
+        authorAccountId: story.authorAccountId,
+        contentType: 'story',
+        status: { $in: ['approved', 'immutable'] },
+        'content.title': { $type: 'string', $ne: '' },
+      })
+        .session(session ?? null)
+        .lean());
+    if (!revision) throw new HttpError(404, 'not_found', 'Không tìm thấy truyện.');
+  };
+  const parentFor = async (storyId, parentId, session) => {
+    if (!parentId) return;
+    const parent = await Comment.findOne({
+      _id: parentId,
+      targetType: 'story',
+      targetId: storyId,
+      parentCommentId: null,
+      status: 'visible',
+    }).session(session ?? null);
+    if (!parent) throw new HttpError(404, 'not_found', 'Không tìm thấy bình luận gốc.');
+  };
+  const communityPage = z
+    .object({
+      page: z.coerce.number().int().min(1).max(100000).default(1),
+      parentId: id.optional(),
+    })
+    .strict();
+  const authorName = (account) =>
+    account?.status === 'active' ? account.displayName : 'Tài khoản đã ngừng hoạt động';
   router.get('/community/stories/:id/comments', async (req, res, next) => {
     try {
-      if (
-        !(await Story.exists({
-          _id: req.params.id,
-          publicationStatus: 'published',
-          publishedRevisionId: { $ne: null },
-        }))
-      )
-        throw new HttpError(404, 'not_found', 'Không tìm thấy truyện.');
-      const items = await Comment.find({
+      const { page, parentId } = validate(communityPage, req.query);
+      await publicStory(req.params.id);
+      await parentFor(req.params.id, parentId);
+      const filter = {
         targetType: 'story',
         targetId: req.params.id,
         status: 'visible',
-      })
-        .sort({ createdAt: -1, _id: -1 })
-        .limit(50)
-        .populate('authorAccountId', 'displayName status')
-        .select('body authorAccountId createdAt')
-        .lean();
+        parentCommentId: parentId ?? null,
+      };
+      const pageSize = parentId ? 20 : 5;
+      const [total, rows] = await Promise.all([
+        Comment.countDocuments(filter),
+        Comment.find(filter)
+          .sort({ createdAt: -1, _id: -1 })
+          .skip((page - 1) * pageSize)
+          .limit(pageSize)
+          .populate('authorAccountId', 'displayName status')
+          .lean(),
+      ]);
+      const counts =
+        parentId || !rows.length
+          ? []
+          : await Comment.aggregate([
+              {
+                $match: {
+                  targetType: 'story',
+                  targetId: rows[0].targetId,
+                  status: 'visible',
+                  parentCommentId: { $in: rows.map((row) => row._id) },
+                },
+              },
+              { $group: { _id: '$parentCommentId', count: { $sum: 1 } } },
+            ]);
       res.json({
-        items: items.map((item) => ({
-          id: String(item._id),
-          title:
-            item.authorAccountId?.status === 'active'
-              ? item.authorAccountId.displayName
-              : 'Tài khoản đã ngừng hoạt động',
-          description: item.body,
-          updatedAt: item.createdAt,
+        total,
+        page,
+        pageSize,
+        items: rows.map((row) => ({
+          id: String(row._id),
+          author: authorName(row.authorAccountId),
+          body: row.body,
+          createdAt: row.createdAt,
+          parentId: row.parentCommentId ? String(row.parentCommentId) : null,
+          replyCount: counts.find((count) => count._id.equals(row._id))?.count ?? 0,
+          // Existing read-only consumers use these aliases.
+          title: authorName(row.authorAccountId),
+          description: row.body,
+          updatedAt: row.createdAt,
         })),
       });
     } catch (error) {
@@ -445,31 +509,78 @@ export function createReaderDataRouter(config) {
   router.post('/community/stories/:id/comments', requireAuth(config), async (req, res, next) => {
     try {
       const input = validate(
-        z.object({ body: z.string().trim().min(3).max(2000) }).strict(),
+        z.object({ body: z.string().trim().min(3).max(2000), parentId: id.optional() }).strict(),
         req.body,
       );
+      let comment;
       await ownerWrite(req, async (session) => {
-        if (
-          !(await Story.exists({
-            _id: req.params.id,
-            publicationStatus: 'published',
-            publishedRevisionId: { $ne: null },
-          }).session(session))
-        )
-          throw new HttpError(404, 'not_found', 'Không tìm thấy truyện.');
-        await Comment.create(
+        await publicStory(req.params.id, session);
+        await parentFor(req.params.id, input.parentId, session);
+        [comment] = await Comment.create(
           [
             {
               authorAccountId: req.account._id,
               targetType: 'story',
               targetId: req.params.id,
               body: input.body,
+              ...(input.parentId ? { parentCommentId: input.parentId } : {}),
             },
           ],
           { session },
         );
       });
-      res.status(201).json({ ok: true });
+      res.status(201).json({ ok: true, id: String(comment._id) });
+    } catch (error) {
+      next(error);
+    }
+  });
+  router.get('/community/stories/:id/ratings', async (req, res, next) => {
+    try {
+      const { page } = validate(
+        z.object({ page: z.coerce.number().int().min(1).max(100000).default(1) }).strict(),
+        req.query,
+      );
+      await publicStory(req.params.id);
+      const filter = { storyId: req.params.id, status: 'active' };
+      const [total, rows] = await Promise.all([
+        Rating.countDocuments(filter),
+        Rating.find(filter)
+          .sort({ updatedAt: -1, _id: -1 })
+          .skip((page - 1) * 5)
+          .limit(5)
+          .populate('accountId', 'displayName status')
+          .lean(),
+      ]);
+      res.json({
+        total,
+        page,
+        pageSize: 5,
+        items: rows.map((row) => ({
+          id: String(row._id),
+          author: authorName(row.accountId),
+          rating: row.value,
+          createdAt: row.updatedAt,
+        })),
+      });
+    } catch (error) {
+      next(error);
+    }
+  });
+  router.put('/community/stories/:id/rating', requireAuth(config), async (req, res, next) => {
+    try {
+      const input = validate(
+        z.object({ value: z.number().int().min(1).max(5) }).strict(),
+        req.body,
+      );
+      await ownerWrite(req, async (session) => {
+        await publicStory(req.params.id, session);
+        await Rating.findOneAndUpdate(
+          { accountId: req.account._id, storyId: req.params.id },
+          { $set: { value: input.value, status: 'active', removedAt: null } },
+          { upsert: true, session, runValidators: true },
+        );
+      });
+      res.json({ ok: true, value: input.value });
     } catch (error) {
       next(error);
     }
