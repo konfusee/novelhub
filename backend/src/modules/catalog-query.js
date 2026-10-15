@@ -59,6 +59,8 @@ export async function queryPublishedStories({
   page = 1,
   pageSize = 24,
   sort = 'newest',
+  viewSince,
+  publishedSince,
 } = {}) {
   const stages = [
     ...snapshotStages(ids),
@@ -94,6 +96,7 @@ export async function queryPublishedStories({
       },
     },
   ];
+  if (publishedSince) stages.push({ $match: { publishedAt: { $gte: publishedSince } } });
   if (category) stages.push({ $match: { categoryKeys: category } });
   if (q) {
     const literal = q.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
@@ -111,7 +114,12 @@ export async function queryPublishedStories({
   const metrics = [
     groupLookup(Chapter, { status: 'published' }, { $sum: 1 }, 'chapters'),
     groupLookup(Rating, { status: 'active' }, { $avg: '$value' }, 'ratings'),
-    groupLookup(StatisticsEvent, { eventType: 'view' }, { $sum: 1 }, 'views'),
+    groupLookup(
+      StatisticsEvent,
+      { eventType: 'view', ...(viewSince ? { occurredAt: { $gte: viewSince } } : {}) },
+      { $sum: 1 },
+      'views',
+    ),
     {
       $set: {
         average: { $ifNull: [{ $first: '$ratings.value' }, null] },

@@ -62,6 +62,57 @@ async function categoryItems() {
 
 export function createCatalogRouter(config) {
   const router = Router();
+  router.get('/catalog/rankings', async (req, res) => {
+    const parsed = z
+      .object({
+        category: z.enum(['trending', 'reads', 'audio', 'rating', 'newest']).default('trending'),
+        period: z.enum(['day', 'week', 'month', 'all']).default('week'),
+        page: z.coerce.number().int().min(1).max(100000).default(1),
+      })
+      .strict()
+      .safeParse(req.query);
+    if (!parsed.success) throw new HttpError(400, 'validation_error', 'Invalid ranking filters');
+    const input = parsed.data;
+    const now = new Date();
+    // Calendar boundaries in Vietnam (UTC+7); week starts on Monday.
+    const local = new Date(now.getTime() + 7 * 3600000);
+    local.setUTCHours(0, 0, 0, 0);
+    if (input.period === 'week')
+      local.setUTCDate(local.getUTCDate() - ((local.getUTCDay() + 6) % 7));
+    if (input.period === 'month') local.setUTCDate(1);
+    const since = input.period === 'all' ? undefined : new Date(local.getTime() - 7 * 3600000);
+    if (input.category === 'audio')
+      return res.json({
+        items: [],
+        podium: [],
+        total: 0,
+        page: input.page,
+        updatedAt: now,
+        unavailable: 'audio',
+      });
+    const options = {
+      sort:
+        input.category === 'newest' ? 'newest' : input.category === 'rating' ? 'rating' : 'reads',
+      viewSince: since,
+      publishedSince: input.category === 'newest' ? since : undefined,
+      pageSize: 15,
+    };
+    const result = await queryPublishedStories({ ...options, page: input.page });
+    const leaders =
+      input.page === 1
+        ? result.items.slice(0, 3)
+        : (await queryPublishedStories({ ...options, pageSize: 3 })).items;
+    const ranked = (item, index) => ({ ...item, rank: index + 1, change: null });
+    res.json({
+      ...result,
+      items: result.items
+        .map((item, index) => ranked(item, (input.page - 1) * 15 + index))
+        .filter((item) => item.rank > 3),
+      podium: leaders.map(ranked),
+      updatedAt: now,
+    });
+  });
+
   router.param('storyId', async (req, _res, next, id) => {
     try {
       if (/^[a-f\d]{24}$/i.test(id)) return next();
