@@ -19,6 +19,8 @@ import { ROLE_HOME, useAuth } from '../../context/AuthContext';
 import { useTheme } from '../../context/ThemeContext';
 import { Avatar, IconButton, Input } from '../ui';
 import { useLocale } from '../../context/LocaleContext';
+import { useBackendDocument } from '../../api/useBackendResource';
+const emptyBalance = { readerCoins: null, authorEarnings: null };
 
 const roleMeta = {
   reader: ['navigation.reader', BookOpen],
@@ -160,6 +162,8 @@ export function SharedWorkspaceHeader({
   const { resolvedTheme, setTheme } = useTheme();
   const navigate = useNavigate();
   const walletPath = currentRole === 'author' ? '/author/wallet' : '/reader/wallet';
+  const balance = useBackendDocument('/reader/balance', emptyBalance);
+  const coins = currentRole === 'author' ? balance.data.authorEarnings : balance.data.readerCoins;
   return (
     <header
       data-app-header
@@ -192,7 +196,8 @@ export function SharedWorkspaceHeader({
           to={walletPath}
           className="hidden h-11 shrink-0 items-center gap-2 rounded-full border border-line bg-surface pl-3 pr-1.5 text-xs font-semibold text-ink transition-colors hover:border-brand md:flex"
         >
-          <Coins size={16} className="text-orange" /> {t('wallet.coins', { count: 450 })}
+          <Coins size={16} className="text-orange" />{' '}
+          {coins == null ? '— xu' : t('wallet.coins', { count: coins })}
           <span className="grid size-7 place-items-center rounded-full bg-brand/10 text-brand-strong">
             <Plus size={14} />
           </span>
