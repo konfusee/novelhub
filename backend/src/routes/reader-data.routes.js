@@ -17,6 +17,7 @@ import { requireAuth } from '../middleware/auth.js';
 import { HttpError } from '../middleware/errors.js';
 import { withTransaction } from '../db/connection.js';
 import { readerLibrary, readerHistory } from '../modules/reader-collections.js';
+import { readerHome, readerFollowing } from '../modules/reader-home.js';
 
 const id = z.string().regex(/^[a-f\d]{24}$/i);
 const profileInput = z
@@ -125,6 +126,24 @@ export function createReaderDataRouter(config) {
         readerCoins: balance('reader-coins'),
         authorEarnings: balance('author-earnings'),
       });
+    } catch (error) {
+      next(error);
+    }
+  });
+  router.get('/reader/home', async (req, res, next) => {
+    try {
+      const { picksPage } = validate(
+        z.object({ picksPage: z.coerce.number().int().min(1).max(100000).default(1) }).strict(),
+        req.query,
+      );
+      res.json(await readerHome(req.account._id, picksPage));
+    } catch (error) {
+      next(error);
+    }
+  });
+  router.get('/reader/following', async (req, res, next) => {
+    try {
+      res.json(await readerFollowing(req.account._id));
     } catch (error) {
       next(error);
     }

@@ -12,31 +12,36 @@ async function cardsFor(ids) {
   }
   return cards;
 }
-async function publishedChapters(storyIds) {
+export async function publishedChapters(storyIds) {
   const chapters = await Chapter.find({
     storyId: { $in: storyIds },
     status: 'published',
     publishedRevisionId: { $ne: null },
   })
     .sort({ orderKey: 1 })
-    .select('storyId orderKey publishedRevisionId')
+    .select('storyId orderKey publishedRevisionId publishedAt')
     .lean();
   const revisions = await ContentRevision.find({
     _id: { $in: chapters.map((item) => item.publishedRevisionId) },
     contentType: 'chapter',
     status: { $in: ['approved', 'immutable'] },
   })
-    .select('storyId chapterId')
+    .select('storyId chapterId content.title')
     .lean();
   const byId = new Map(revisions.map((item) => [String(item._id), item]));
-  return chapters.filter((item) => {
-    const revision = byId.get(String(item.publishedRevisionId));
-    return (
-      revision &&
-      String(revision.chapterId) === String(item._id) &&
-      String(revision.storyId) === String(item.storyId)
-    );
-  });
+  return chapters
+    .filter((item) => {
+      const revision = byId.get(String(item.publishedRevisionId));
+      return (
+        revision &&
+        String(revision.chapterId) === String(item._id) &&
+        String(revision.storyId) === String(item.storyId)
+      );
+    })
+    .map((item) => ({
+      ...item,
+      publishedTitle: byId.get(String(item.publishedRevisionId)).content?.title ?? '',
+    }));
 }
 
 export async function readerLibrary(accountId) {
@@ -78,6 +83,7 @@ export async function readerLibrary(accountId) {
         available.find((item) => String(item._id) === String(latest?.chapterId)) ?? available[0];
       return {
         ...card,
+        savedAt: follows.find((item) => String(item.storyId) === card.id)?.createdAt ?? null,
         progress: position,
         status: position === 100 ? 'completed' : 'reading',
         type: 'story',
@@ -113,7 +119,13 @@ export async function readerHistory(accountId) {
   const items = records.flatMap((record) => {
     const card = byStory.get(String(record.storyId));
     const chapter = byChapter.get(String(record.chapterId));
-    if (!card || !chapter || String(chapter.storyId) !== card.id) return [];
+    if (
+      !card ||
+      !chapter ||
+      String(chapter.storyId) !== card.id ||
+      String(chapter.publishedRevisionId) !== String(record.revisionId)
+    )
+      return [];
     return [
       {
         ...card,
