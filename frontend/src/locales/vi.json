@@ -939,5 +939,29 @@
     "viewGroups": "Xem {{count}} nhóm thể loại",
     "followStoriesHint": "Lưu truyện để xem các chương đã xuất bản trong danh sách cập nhật.",
     "scheduleUnavailable": "Chưa có lịch phát hành công khai."
+  },
+  "authorData": {
+    "views": "Tổng lượt đọc được ghi nhận",
+    "audioPlays": "Lượt nghe sách nói",
+    "followers": "Độc giả theo dõi truyện",
+    "earnings": "Số dư nhuận bút (xu)",
+    "noComparison": "Chưa có so sánh kỳ trước",
+    "draftCount": "{{count}} bản nháp chương",
+    "manageStory": "Quản lý truyện",
+    "draftContent": "Nội dung bản nháp hiện tại",
+    "words": "{{count}} từ trong bản nháp",
+    "noWeeklyTracking": "Tổng số từ hiện tại của các bản nháp chương hợp lệ; chưa có dữ liệu để tính số từ viết mới trong tuần.",
+    "noStreak": "Chưa có dữ liệu chuỗi sáng tác",
+    "noAi": "Chưa có kết quả AI",
+    "noAiAnalysis": "Chưa có bản phân tích được xử lý cho bản thảo.",
+    "feedbackCount": "{{count}} bình luận",
+    "replySaved": "Đã lưu trả lời vào bình luận đã chọn.",
+    "selectReply": "Chọn nút Trả lời ở bình luận để xác định nơi gửi phản hồi.",
+    "guild": "Hạng Hội NovelHub",
+    "noGuild": "Chưa có dữ liệu xếp hạng và điểm kinh nghiệm.",
+    "writingGoal": "Mục tiêu sáng tác",
+    "noGoal": "Chưa hỗ trợ lưu mục tiêu sáng tác. Số liệu này sẽ xuất hiện khi có dữ liệu từ hệ thống.",
+    "chapterDraft": "Bản nháp chương",
+    "noTarget": "Chưa có mục tiêu"
   }
 }
