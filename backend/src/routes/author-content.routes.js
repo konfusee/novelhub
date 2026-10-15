@@ -15,6 +15,7 @@ import { authorDashboard } from '../modules/author-dashboard.js';
 import { authorStoryWorkspace } from '../modules/author-story-workspace.js';
 import { authorDrafts } from '../modules/author-drafts.js';
 import { authorAnalytics } from '../modules/author-analytics.js';
+import { authorEarnings } from '../modules/author-earnings.js';
 
 const objectId = z.string().regex(/^[a-f\d]{24}$/i);
 const storyInput = z
@@ -100,6 +101,22 @@ export function createAuthorContentRouter(config) {
     },
   );
   router.use('/author/stories', requireAuth(config), requireRole('author'));
+  router.get(
+    '/author/earnings',
+    requireAuth(config),
+    requireRole('author'),
+    async (req, res, next) => {
+      try {
+        const { period } = parse(
+          z.object({ period: z.enum(['day', 'week', 'month']).default('month') }).strict(),
+          req.query,
+        );
+        res.json(await authorEarnings(req.account._id, period));
+      } catch (error) {
+        next(error);
+      }
+    },
+  );
   router.get(
     '/author/analytics',
     requireAuth(config),
