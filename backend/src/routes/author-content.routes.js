@@ -11,6 +11,7 @@ import {
 import { requireAuth, requireRole } from '../middleware/auth.js';
 import { HttpError } from '../middleware/errors.js';
 import { withTransaction } from '../db/connection.js';
+import { authorDashboard } from '../modules/author-dashboard.js';
 
 const objectId = z.string().regex(/^[a-f\d]{24}$/i);
 const storyInput = z
@@ -83,6 +84,18 @@ function view(story) {
 
 export function createAuthorContentRouter(config) {
   const router = Router();
+  router.get(
+    '/author/dashboard',
+    requireAuth(config),
+    requireRole('author'),
+    async (req, res, next) => {
+      try {
+        res.json(await authorDashboard(req.account._id));
+      } catch (error) {
+        next(error);
+      }
+    },
+  );
   router.use('/author/stories', requireAuth(config), requireRole('author'));
   router.param('storyId', (req, _res, next, id) => {
     if (!objectId.safeParse(id).success)
