@@ -1,3 +1,4 @@
+import { useLocale } from '../../context/LocaleContext';
 import { useState } from 'react';
 import { Link } from 'react-router';
 import {
@@ -23,34 +24,45 @@ import {
   Reveal,
   Tabs,
 } from '../../components/ui';
-import { useMockResource } from '../../context/MockDataContext';
-import { podium, rankingCategories, rankingPeriods, rankings } from '../../data/mock/rankings';
-import { extendedStories } from '../../data/mock/stories';
+import { useBackendDocument } from '../../api/useBackendResource';
 
-/* Rankings mock rows carry no cover data; reuse the catalogue entry with the same title. */
-const withCatalogue = (item) => {
-  const match = extendedStories.find((story) => story.title === item.title);
-  return match ? { ...item, id: match.id, color: match.color } : item;
-};
-const board = { podium: podium.map(withCatalogue), rows: rankings.map(withCatalogue) };
-const isBoardEmpty = (value) => !value.podium.length && !value.rows.length;
-
-const formula = [
-  [45, 'thời gian đọc đã xác minh', 'brand'],
-  [30, 'tỷ lệ lưu trong thư viện', 'orange'],
-  [25, 'đánh giá cộng đồng thực', 'purple'],
+const rankingCategories = [
+  'Thịnh hành',
+  'Đọc nhiều nhất',
+  'Nghe nhiều nhất',
+  'Đánh giá cao',
+  'Mới phát hành',
 ];
+const rankingPeriods = ['Hôm nay', 'Tuần này', 'Tháng này', 'Mọi thời điểm'];
+const categoryKeys = ['trending', 'reads', 'audio', 'rating', 'newest'];
+const periodKeys = ['day', 'week', 'month', 'all'];
+const emptyBoard = { podium: [], items: [], total: 0 };
 
 export function RankingsPage({ embedded = false }) {
+  const { t } = useLocale();
   const [category, setCategory] = useState('Thịnh hành');
   const [period, setPeriod] = useState('Tuần này');
-  const [following, setFollowing] = useState(false);
-  const [notice, setNotice] = useState('');
-  const ranking = useMockResource(`rankings:${category}:${period}`, board, {
-    isEmpty: isBoardEmpty,
-  });
+  const [page, setPage] = useState(1);
+  const resource = useBackendDocument(
+    `/catalog/rankings?category=${categoryKeys[rankingCategories.indexOf(category)]}&period=${periodKeys[rankingPeriods.indexOf(period)]}&page=${page}`,
+    emptyBoard,
+  );
+  const ranking = {
+    ...resource,
+    status: resource.status === 'ready' && !resource.data.total ? 'empty' : resource.status,
+  };
   const loading = ranking.status === 'loading';
-  const { podium: podiumStories, rows: rankingRows } = ranking.data;
+  const { podium: podiumStories, items: rankingRows, total } = ranking.data;
+  const leader = podiumStories[0];
+  const formula = [
+    [
+      category === 'Đánh giá cao' ? 0 : category === 'Mới phát hành' ? 0 : 100,
+      t('rankings.viewMetric'),
+      'brand',
+    ],
+    [category === 'Đánh giá cao' ? 100 : 0, t('rankings.ratingMetric'), 'orange'],
+    [category === 'Mới phát hành' ? 100 : 0, t('rankings.releaseMetric'), 'purple'],
+  ];
   const Root = embedded ? 'div' : 'main';
   return (
     <div className="min-h-screen bg-page text-ink">
@@ -62,13 +74,16 @@ export function RankingsPage({ embedded = false }) {
               <p className="nh-eyebrow">Những câu chuyện độc giả yêu thích</p>
               <h1 className="mt-4 text-h1 md:text-4xl">Bảng xếp hạng biên tập</h1>
               <p className="mt-3 max-w-[60ch] text-base leading-7 text-muted">
-                Tiểu thuyết mạng nguyên tác và truyện âm thanh nổi bật được cập nhật theo thời gian
-                thực.
+                {t('rankings.intro')}
               </p>
             </div>
             <Badge tone="green">
               <span className="size-1.5 rounded-full bg-brand" aria-hidden="true" />
-              Dữ liệu trực tiếp · Cập nhật 12 phút trước
+              {loading
+                ? t('rankings.updating')
+                : ranking.status === 'error'
+                  ? t('rankings.loadFailed')
+                  : t('rankings.latest')}
             </Badge>
           </div>
           <div className="mt-8 flex flex-col gap-3 border-b border-hairline pb-5 xl:flex-row xl:items-center xl:justify-between">
@@ -77,8 +92,14 @@ export function RankingsPage({ embedded = false }) {
                 label="Danh mục xếp hạng"
                 singleRow
                 value={category}
-                onChange={setCategory}
-                items={rankingCategories.map((item) => ({ value: item, label: item }))}
+                onChange={(value) => {
+                  setCategory(value);
+                  setPage(1);
+                }}
+                items={rankingCategories.map((item) => ({
+                  value: item,
+                  label: item === 'Đánh giá cao' ? t('rankings.ratingTab') : item,
+                }))}
               />
             </div>
             <div
@@ -90,7 +111,10 @@ export function RankingsPage({ embedded = false }) {
                 <button
                   type="button"
                   aria-pressed={period === item}
-                  onClick={() => setPeriod(item)}
+                  onClick={() => {
+                    setPeriod(item);
+                    setPage(1);
+                  }}
                   className={`min-h-9 flex-1 shrink-0 whitespace-nowrap rounded-full px-4 text-sm font-medium transition-[background-color,color,box-shadow] duration-200 ease-spring pointer-coarse:min-h-11 ${period === item ? 'bg-orange text-on-orange shadow-[0_6px_16px_-10px_var(--accent-orange)]' : 'text-ink/70 hover:bg-surface/80 hover:text-ink'}`}
                   key={item}
                 >
@@ -158,7 +182,7 @@ export function RankingsPage({ embedded = false }) {
                 <EmptyState
                   icon={Trophy}
                   title="Chưa có dữ liệu xếp hạng cho bộ lọc này"
-                  description="Bảng xếp hạng cần thêm lượt đọc đã xác minh. Hãy chọn khoảng thời gian khác hoặc khám phá truyện mới."
+                  description={t('rankings.empty')}
                   action={
                     <ButtonLink to="/search" size="sm" trailingIcon={ArrowRight}>
                       Khám phá truyện
@@ -170,8 +194,12 @@ export function RankingsPage({ embedded = false }) {
           ) : (
             <section>
               <div className="mb-5 flex flex-wrap items-end justify-between gap-2">
-                <h2 className="text-h3 md:text-h2">Hạng #04 — #15</h2>
-                <span className="text-sm text-muted">Hiển thị 12 ứng viên</span>
+                <h2 className="text-h3 md:text-h2">
+                  {total <= 3
+                    ? t('rankings.listTitle')
+                    : `${page === 1 ? 'Hạng #04' : `Hạng #${(page - 1) * 15 + 1}`} — #${Math.min(page * 15, total)}`}
+                </h2>
+                <span className="text-sm text-muted">Hiển thị {rankingRows.length} ứng viên</span>
               </div>
               {loading ? (
                 <Card
@@ -179,8 +207,8 @@ export function RankingsPage({ embedded = false }) {
                   aria-label="Đang tải danh sách xếp hạng"
                   className="divide-y divide-hairline overflow-hidden p-0"
                 >
-                  {rankings.map((item) => (
-                    <RankingRowSkeleton key={item.rank} />
+                  {Array.from({ length: 12 }, (_, index) => (
+                    <RankingRowSkeleton key={index} />
                   ))}
                 </Card>
               ) : (
@@ -193,22 +221,24 @@ export function RankingsPage({ embedded = false }) {
                 </Reveal>
               )}
               <div className="mt-5 flex flex-wrap items-center justify-between gap-3 text-sm text-muted">
-                <span>Hiển thị 15 / 250 mục xếp hạng</span>
+                <span>
+                  Hiển thị đến {Math.min(page * 15, total)} / {total} mục xếp hạng
+                </span>
                 <Button
                   type="button"
-                  onClick={() => setNotice('Đã tải 15 mục xếp hạng tiếp theo (mô phỏng).')}
+                  onClick={() => setPage((value) => value + 1)}
                   variant="secondary"
                   size="sm"
                   trailingIcon={ArrowRight}
-                  disabled={loading}
+                  disabled={loading || page * 15 >= total}
                 >
                   15 truyện tiếp theo
                 </Button>
               </div>
-              {notice && (
-                <p role="status" className="mt-3 text-right text-sm text-brand-strong">
-                  {notice}
-                </p>
+              {page > 1 && (
+                <Button variant="secondary" onClick={() => setPage((value) => value - 1)}>
+                  {t('rankings.previous')}
+                </Button>
               )}
             </section>
           )}
@@ -217,12 +247,9 @@ export function RankingsPage({ embedded = false }) {
               <Card className="p-6">
                 <h3 className="flex items-center gap-2 text-base font-semibold">
                   <ShieldCheck size={19} className="text-brand" aria-hidden="true" />
-                  Công thức xếp hạng công bằng
+                  {t('rankings.criteria')}
                 </h3>
-                <p className="mt-3 text-sm leading-6 text-muted">
-                  NovelHub kết hợp thời gian đọc, tỷ lệ hoàn thành chương và đánh giá độc giả đã xác
-                  minh.
-                </p>
+                <p className="mt-3 text-sm leading-6 text-muted">{t('rankings.criteriaHelp')}</p>
                 <ul className="mt-4 space-y-3 border-t border-hairline pt-4 text-xs text-muted">
                   {formula.map(([value, label, tone]) => (
                     <li key={label}>
@@ -248,40 +275,39 @@ export function RankingsPage({ embedded = false }) {
                   <p className="text-[11px] font-semibold uppercase tracking-[.14em] text-orange-strong">
                     Tác giả nổi bật
                   </p>
-                  <Badge>Tuần 38</Badge>
+                  <Badge>{period}</Badge>
                 </div>
                 <div className="mt-4 flex items-center gap-3">
                   <span className="grid size-12 place-items-center rounded-full bg-orange/16 text-sm font-semibold text-orange-strong ring-1 ring-orange/40">
-                    ML
+                    {leader?.author?.slice(0, 2).toUpperCase() || '—'}
                   </span>
                   <div>
-                    <h3 className="text-base font-semibold">Mira Lane</h3>
-                    <p className="text-xs text-muted">Kỳ ảo & giả tưởng suy đoán</p>
+                    <h3 className="text-base font-semibold">
+                      {leader?.author || t('rankings.noAuthor')}
+                    </h3>
+                    <p className="text-xs text-muted">{leader?.genre || '—'}</p>
                   </div>
                 </div>
                 <p className="mt-4 text-sm leading-6 text-muted">
-                  Author of #1 hit The Silent Forest. Former mythologist exploring human resilience
-                  and untamed wilderness.
+                  {leader ? `Tác giả của truyện dẫn đầu: ${leader.title}.` : t('rankings.noLeader')}
                 </p>
                 <div className="nh-grid-12 mt-4 grid nh-cols-2 gap-3 border-y border-hairline py-3 text-center text-sm">
                   <span>
-                    <strong className="block font-semibold tabular-nums">48.2K</strong>
-                    <small className="text-xs text-muted">Người theo dõi</small>
+                    <strong className="block font-semibold tabular-nums">
+                      {leader?.reads ?? '—'}
+                    </strong>
+                    <small className="text-xs text-muted">{t('rankings.leaderReads')}</small>
                   </span>
                   <span>
-                    <strong className="block font-semibold">6 tiểu thuyết ngắn</strong>
-                    <small className="text-xs text-muted">Đã xuất bản</small>
+                    <strong className="block font-semibold">{leader?.chapters ?? '—'}</strong>
+                    <small className="text-xs text-muted">{t('rankings.publishedChapters')}</small>
                   </span>
                 </div>
-                <Button
-                  type="button"
-                  aria-pressed={following}
-                  variant={following ? 'secondary' : 'primary'}
-                  onClick={() => setFollowing(!following)}
-                  className="mt-4 w-full"
-                >
-                  {following ? 'Đang theo dõi' : 'Theo dõi tác giả'}
-                </Button>
+                {leader && (
+                  <ButtonLink to={`/stories/${leader.id}`} className="mt-4 w-full">
+                    {t('rankings.viewLeader')}
+                  </ButtonLink>
+                )}
               </Card>
             </Reveal>
             <Reveal delay={160}>
@@ -293,9 +319,7 @@ export function RankingsPage({ embedded = false }) {
                   <BookOpenCheck size={18} aria-hidden="true" />
                   Tìm kiếm những tiếng nói mới?
                 </h3>
-                <p className="mt-2 text-sm leading-6 text-ink/70">
-                  Khám phá tiểu thuyết tiềm năng được đội ngũ cộng đồng tuyển chọn mỗi thứ Sáu.
-                </p>
+                <p className="mt-2 text-sm leading-6 text-ink/70">{t('rankings.discover')}</p>
                 <Link
                   to="/search"
                   className="group mt-1 inline-flex min-h-11 items-center gap-1.5 text-sm font-semibold text-brand-strong"
@@ -311,9 +335,7 @@ export function RankingsPage({ embedded = false }) {
             </Reveal>
             <Card className="flex gap-3 p-4">
               <Info size={18} className="mt-0.5 shrink-0 text-muted" aria-hidden="true" />
-              <p className="text-xs leading-5 text-muted">
-                Bảng xếp hạng làm mới mỗi giờ. Hoạt động đáng ngờ sẽ tự động bị loại bỏ.
-              </p>
+              <p className="text-xs leading-5 text-muted">{t('rankings.refreshHelp')}</p>
             </Card>
           </aside>
         </div>

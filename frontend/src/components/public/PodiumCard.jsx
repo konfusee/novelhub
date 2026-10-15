@@ -1,7 +1,9 @@
+import { useLocale } from '../../context/LocaleContext';
 import { ArrowRight, Crown, Star } from '../icons';
 import { Badge, ButtonLink, Card, Skeleton, Trend } from '../ui';
 import { StoryCover } from '../story/StoryCover';
 export function PodiumCard({ story }) {
+  const { t } = useLocale();
   const champion = story.rank === 1;
   return (
     <Card
@@ -18,7 +20,11 @@ export function PodiumCard({ story }) {
             `Hạng #0${story.rank}`
           )}
         </Badge>
-        <Trend value={story.change} />
+        {story.change == null ? (
+          <Badge aria-label={t('rankings.noHistory')}>—</Badge>
+        ) : (
+          <Trend value={story.change} />
+        )}
       </div>
       <StoryCover
         story={story}
@@ -30,11 +36,7 @@ export function PodiumCard({ story }) {
       </Badge>
       <h3 className={`mt-2 ${champion ? 'text-h3' : 'text-lg font-semibold'}`}>{story.title}</h3>
       <p className="text-sm text-muted">tác giả {story.author}</p>
-      {champion && (
-        <p className="mt-3 text-sm leading-6 text-muted">
-          The wind moved gently through the ancient trees, carrying whispers of forgotten stories.
-        </p>
-      )}
+      {champion && <p className="mt-3 text-sm leading-6 text-muted">{story.description}</p>}
       <div className="mb-4 mt-4 flex items-center justify-between border-t border-hairline pt-3 text-xs">
         <span className="flex items-center gap-1 font-semibold tabular-nums">
           <Star size={13} className="fill-orange text-orange" aria-hidden="true" />
