@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useMemo, useRef, useState } from 'react';
 import {
   AlertTriangle,
   BookOpen,
@@ -17,8 +17,9 @@ import {
   WandSparkles,
 } from '../../components/icons';
 import { AuthorLayout } from '../../layouts';
-import { authorDrafts } from '../../data/mock/author';
-import { useMockResource } from '../../context/MockDataContext';
+import { useBackendDocument } from '../../api/useBackendResource';
+import { apiRequest } from '../../api/client';
+import { useLocale } from '../../context/LocaleContext';
 import {
   Badge,
   Button,
@@ -28,14 +29,14 @@ import {
   IconButton,
   Input,
   Modal,
-  ProgressBar,
   Reveal,
   Select,
   Skeleton,
   Tabs,
 } from '../../components/ui';
 
-const EDITOR_ROUTE = '/author/stories/demo/chapters/chapter-1/edit';
+const editorRoute = (draft) => `/author/stories/${draft.storyId}/chapters/${draft.id}/edit`;
+const emptyDrafts = { items: [], stories: [], history: [] };
 const WORDS_PER_MINUTE = 250;
 const filterLabels = [
   ['All Drafts', 'Tất cả bản nháp'],
@@ -48,52 +49,41 @@ const matchesFilter = (draft, filter) =>
   (filter === 'Story Chapters' && draft.type.includes('Chapter')) ||
   (filter === 'Standalone Concepts' && draft.type === 'Standalone Concept') ||
   (filter === 'Ready for Review' && draft.meta === 'Ready for Review');
-const snapshots = [
-  ['Hôm nay, 14:32', 'Chương 16: Ironwood Tree', 'Đã thêm 480 từ'],
-  ['Hôm qua, 21:15', 'Echoes – Astrolabe', 'Đã đồng bộ kiểm tra ngữ pháp'],
-  ['24/10, 09:40', 'Ý tưởng khoa học viễn tưởng #2', 'Đã lưu tiền đề ban đầu'],
-  ['18/10, 17:02', 'Whispers Alternate', 'Đã tạo nhánh'],
-];
 const draftTypeLabels = {
   'Story Chapter': 'Chương truyện',
   'Chapter Draft': 'Bản nháp chương',
   'Standalone Concept': 'Ý tưởng độc lập',
   'Special Edition': 'Phiên bản đặc biệt',
 };
-const draftMetaLabels = {
-  'Cloud Synced': 'Đã đồng bộ đám mây',
-  'Synced to Cloud': 'Đã đồng bộ đám mây',
-  'Tag: Worldbuilding': 'Thẻ: Xây dựng thế giới',
-  'Ready for Review': 'Sẵn sàng xét duyệt',
-};
-const editedLabels = {
-  Yesterday: 'Hôm qua',
-  '12 mins ago': '12 phút trước',
-  '3 days ago': '3 ngày trước',
-  'Oct 18': '18/10',
-};
 const wordCount = (draft) => Number(String(draft.words).replace(/[^\d]/g, '')) || 0;
 const formatNumber = (value) => value.toLocaleString('vi-VN');
 const readMinutes = (words) =>
-  Math.max(1, Math.round((words / WORDS_PER_MINUTE) * 10) / 10).toLocaleString('vi-VN');
+  (words ? Math.max(0.1, Math.round((words / WORDS_PER_MINUTE) * 10) / 10) : 0).toLocaleString(
+    'vi-VN',
+  );
 
 export function DraftsPage() {
   const [filter, setFilter] = useState('All Drafts');
   const [query, setQuery] = useState('');
   const [sort, setSort] = useState('Last Edited');
   const [view, setView] = useState('grid');
-  const [drafts, setDrafts] = useState(() =>
-    authorDrafts.map((draft, order) => ({ ...draft, order })),
-  );
+  const { t } = useLocale();
+  const resource = useBackendDocument('/author/drafts', emptyDrafts);
+  const [storyId, setStoryId] = useState('');
+  const [busy, setBusy] = useState(false);
+  const busyRef = useRef(false);
+  const [requestError, setRequestError] = useState('');
   const [newOpen, setNewOpen] = useState(false);
   const [newTitle, setNewTitle] = useState('Bản thảo chưa đặt tên');
   const [newTouched, setNewTouched] = useState(false);
   const [previewing, setPreviewing] = useState(null);
-  const [deleting, setDeleting] = useState(null);
-  const [restored, setRestored] = useState('');
-  const draftsResource = useMockResource('author:drafts', drafts);
+  const draftsResource = {
+    ...resource,
+    data: resource.data.items,
+    status: resource.status === 'ready' && !resource.data.items.length ? 'empty' : resource.status,
+  };
   const source = draftsResource.data;
-  const ready = draftsResource.status === 'ready';
+  const ready = resource.status === 'ready';
 
   const shown = useMemo(
     () =>
@@ -115,50 +105,71 @@ export function DraftsPage() {
   const tabItems = filterLabels.map(([value, label]) => ({
     value,
     label: ready
-      ? `${label} (${source.filter((draft) => matchesFilter(draft, value)).length})`
+      ? `${label} (${['Standalone Concepts', 'Ready for Review'].includes(value) ? '—' : source.filter((draft) => matchesFilter(draft, value)).length})`
       : label,
   }));
   const newTitleError = newTouched && !newTitle.trim();
 
   const openNew = () => {
+    setRequestError('');
     setNewTitle('Bản thảo chưa đặt tên');
     setNewTouched(false);
     setNewOpen(true);
   };
-  const addDraft = (event) => {
+  const addDraft = async (event) => {
     event.preventDefault();
     setNewTouched(true);
-    if (!newTitle.trim()) return;
-    setDrafts((current) => [
-      {
-        ...authorDrafts[2],
-        id: Date.now(),
-        order: Math.min(...current.map((draft) => draft.order), 0) - 1,
-        title: newTitle.trim(),
-        excerpt: 'Bản thảo mới chưa có nội dung.',
-        edited: 'Vừa xong',
-        meta: 'Cloud Synced',
-        words: '0',
-        progress: 0,
-      },
-      ...current,
-    ]);
-    setFilter('All Drafts');
-    setQuery('');
-    setNewOpen(false);
+    if (
+      busyRef.current ||
+      !newTitle.trim() ||
+      !resource.data.stories.some((story) => story.id === storyId)
+    )
+      return;
+    busyRef.current = true;
+    setBusy(true);
+    setRequestError('');
+    try {
+      const result = await apiRequest(`/author/stories/${storyId}/chapters`, {
+        method: 'POST',
+        body: { title: newTitle.trim(), paragraphs: [''] },
+      });
+      if (!result.chapter?.id) throw new Error(t('draftsData.error'));
+      setNewOpen(false);
+      setFilter('All Drafts');
+      setQuery('');
+      resource.retry();
+    } catch (error) {
+      setRequestError(error.message || t('draftsData.error'));
+    } finally {
+      busyRef.current = false;
+      setBusy(false);
+    }
   };
-  const duplicate = (draft) =>
-    setDrafts((current) => {
-      const index = current.findIndex((item) => item.id === draft.id);
-      const copy = {
-        ...draft,
-        id: Date.now(),
-        order: draft.order + 0.5,
-        title: `${draft.title} (bản sao)`,
-        edited: 'Vừa xong',
-      };
-      return [...current.slice(0, index + 1), copy, ...current.slice(index + 1)];
-    });
+  const duplicate = async (draft) => {
+    if (busyRef.current) return;
+    busyRef.current = true;
+    setBusy(true);
+    setRequestError('');
+    try {
+      const { chapter } = await apiRequest(`/author/stories/${draft.storyId}/chapters/${draft.id}`);
+      if (!chapter.canEdit || chapter.version !== draft.version)
+        throw new Error(t('draftsData.stale'));
+      const result = await apiRequest(`/author/stories/${draft.storyId}/chapters`, {
+        method: 'POST',
+        body: {
+          title: `${chapter.title.slice(0, 180)} (${t('draftsData.copy')})`,
+          paragraphs: chapter.paragraphs.length ? chapter.paragraphs : [''],
+        },
+      });
+      if (!result.chapter?.id) throw new Error(t('draftsData.error'));
+      resource.retry();
+    } catch (error) {
+      setRequestError(error.message || t('draftsData.error'));
+    } finally {
+      busyRef.current = false;
+      setBusy(false);
+    }
+  };
 
   return (
     <AuthorLayout>
@@ -167,10 +178,7 @@ export function DraftsPage() {
           <div className="min-w-0">
             <p className="nh-eyebrow">Kho bản thảo · Phiên soạn thảo trực tiếp</p>
             <h1 className="mt-3 text-h2 sm:text-h1">Bản nháp và bản thảo đang viết</h1>
-            <p className="mt-2 max-w-2xl text-sm text-muted">
-              Quản lý chương chưa hoàn thiện, ý tưởng chưa gán truyện và lịch sử đồng bộ ngoại
-              tuyến.
-            </p>
+            <p className="mt-2 max-w-2xl text-sm text-muted">{t('draftsData.hint')}</p>
           </div>
           <div className="flex flex-wrap gap-2">
             <ButtonLink to="/author/import" variant="secondary">
@@ -184,6 +192,11 @@ export function DraftsPage() {
           </div>
         </header>
 
+        {requestError && (
+          <p role="alert" className="mt-4 text-sm text-rose-strong">
+            {requestError}
+          </p>
+        )}
         <Card className="mt-6 p-4">
           <div className="flex flex-col gap-3 2xl:flex-row 2xl:items-center">
             <div className="min-w-0 max-w-full">
@@ -243,6 +256,9 @@ export function DraftsPage() {
           </div>
         </Card>
 
+        {['Standalone Concepts', 'Ready for Review'].includes(filter) && (
+          <p className="mt-4 text-sm text-muted">{t('draftsData.unsupportedFilters')}</p>
+        )}
         {draftsResource.status === 'loading' ? (
           <section
             aria-busy="true"
@@ -289,7 +305,7 @@ export function DraftsPage() {
                 featured={index === 0 && view === 'grid'}
                 onPreview={() => setPreviewing(draft)}
                 onDuplicate={() => duplicate(draft)}
-                onDelete={() => setDeleting(draft)}
+                busy={busy}
               />
             ))}
           </section>
@@ -327,72 +343,81 @@ export function DraftsPage() {
               <div className="min-w-0">
                 <h2 className="flex items-center gap-2 text-h3">
                   <History size={20} className="shrink-0 text-brand" />
-                  Tự động lưu và lịch sử phiên bản đám mây
+                  {t('draftsData.history')}
                 </h2>
                 <p className="mt-1 max-w-[65ch] text-sm text-muted">
-                  Khôi phục nội dung bị mất, so sánh các bản lưu theo thời gian và phục hồi nhánh
-                  bản thảo trong 30 ngày gần nhất.
+                  {t('draftsData.historyHint')}
                 </p>
               </div>
               <div className="w-full shrink-0 md:w-56">
                 <p className="flex justify-between text-xs text-muted">
                   <span>Bộ nhớ đám mây</span>
-                  <span className="tabular-nums">14,2 MB / 500 MB</span>
+                  <span className="tabular-nums">—</span>
                 </p>
-                <ProgressBar
-                  value={14.2}
-                  max={500}
-                  size="sm"
-                  label="Dung lượng bộ nhớ đám mây đã dùng"
-                  className="mt-2"
-                />
+                <div aria-hidden="true" className="mt-2 h-1.5 rounded-full bg-elevated" />
               </div>
             </div>
             <ul className="nh-grid-12 mt-5 grid gap-3 nh-sm-cols-2 nh-xl-cols-4">
-              {snapshots.map(([date, title, note]) => {
-                const done = restored === title;
-                return (
-                  <li
-                    key={title}
-                    className="flex flex-col rounded-2xl border border-hairline bg-elevated p-4"
+              {resource.data.history.map((item) => (
+                <li
+                  key={item.id}
+                  className="flex flex-col rounded-2xl border border-hairline bg-elevated p-4"
+                >
+                  <span className="text-xs text-ink/70">
+                    {new Date(item.createdAt).toLocaleString('vi-VN')}
+                  </span>
+                  <strong className="mt-1.5 text-sm">{item.title}</strong>
+                  <p className="mt-1 text-xs text-muted">
+                    {t('draftsData.version', { number: item.number })}
+                  </p>
+                  <ButtonLink
+                    to={editorRoute({ id: item.chapterId, storyId: item.storyId })}
+                    variant="ghost"
+                    size="sm"
+                    className="mt-4 self-start"
                   >
-                    <span className="text-xs text-ink/70">{date}</span>
-                    <strong className="mt-1.5 text-sm">{title}</strong>
-                    <p className="mt-1 text-xs text-ink/70">{note}</p>
-                    <Button
-                      variant={done ? 'outline' : 'ghost'}
-                      size="sm"
-                      onClick={() => setRestored(title)}
-                      disabled={done}
-                      className="mt-4 self-start px-3"
-                    >
-                      {done ? (
-                        <CheckCircle2 size={14} aria-hidden="true" />
-                      ) : (
-                        <History size={14} aria-hidden="true" />
-                      )}
-                      {done ? 'Đã khôi phục bản lưu' : 'Khôi phục bản lưu'}
-                    </Button>
-                  </li>
-                );
-              })}
+                    {t('draftsData.current')}
+                  </ButtonLink>
+                </li>
+              ))}
             </ul>
-            <p role="status" className="sr-only">
-              {restored ? `Đã khôi phục bản lưu ${restored}.` : ''}
-            </p>
+            {!resource.data.history.length && (
+              <p className="mt-4 text-sm text-muted">{t('draftsData.noHistory')}</p>
+            )}
           </Card>
         </Reveal>
 
-        <Modal open={newOpen} title="Tạo bản nháp mới" onClose={() => setNewOpen(false)}>
+        <Modal open={newOpen} title="Tạo bản nháp mới" onClose={() => !busy && setNewOpen(false)}>
           <form noValidate onSubmit={addDraft}>
-            <p className="text-sm text-muted">
-              Bắt đầu một bản thảo chưa gán. Bạn có thể gắn bản thảo vào truyện sau.
-            </p>
+            {requestError && <p className="text-sm text-rose-strong">{requestError}</p>}
+            <p className="text-sm text-muted">{t('draftsData.chooseStory')}</p>
+            <label htmlFor="draft-story" className="mt-4 block text-sm font-semibold">
+              {t('draftsData.story')}
+            </label>
+            <Select
+              id="draft-story"
+              value={storyId}
+              disabled={busy}
+              onChange={(event) => setStoryId(event.target.value)}
+            >
+              <option value="">{t('draftsData.chooseStory')}</option>
+              {resource.data.stories.map((story) => (
+                <option key={story.id} value={story.id}>
+                  {story.title}
+                </option>
+              ))}
+            </Select>
+            {!resource.data.stories.length && (
+              <ButtonLink to="/author/stories/new" className="mt-3">
+                {t('navigation.newStory')}
+              </ButtonLink>
+            )}
             <label htmlFor="new-draft-title" className="mt-5 block text-sm font-semibold">
               Tên bản nháp
             </label>
             <Input
               id="new-draft-title"
+              disabled={busy}
               value={newTitle}
               onChange={(event) => setNewTitle(event.target.value)}
               onBlur={() => setNewTouched(true)}
@@ -410,7 +435,7 @@ export function DraftsPage() {
               <Button type="button" variant="secondary" onClick={() => setNewOpen(false)}>
                 Hủy
               </Button>
-              <Button type="submit">
+              <Button type="submit" disabled={busy || !storyId}>
                 <FilePlus2 size={16} aria-hidden="true" />
                 Tạo bản nháp
               </Button>
@@ -435,7 +460,7 @@ export function DraftsPage() {
                 <Button variant="secondary" onClick={() => setPreviewing(null)}>
                   Đóng
                 </Button>
-                <ButtonLink to={EDITOR_ROUTE}>
+                <ButtonLink to={editorRoute(previewing)}>
                   <WandSparkles size={16} aria-hidden="true" />
                   Tiếp tục chỉnh sửa
                 </ButtonLink>
@@ -443,40 +468,15 @@ export function DraftsPage() {
             </article>
           )}
         </Modal>
-
-        <Modal open={Boolean(deleting)} title="Xóa bản nháp?" onClose={() => setDeleting(null)}>
-          {deleting && (
-            <>
-              <p className="text-sm leading-6 text-muted">
-                Bản nháp <strong className="text-ink">“{deleting.title}”</strong> sẽ bị xóa khỏi
-                danh sách. Thao tác này không thể hoàn tác.
-              </p>
-              <div className="mt-6 flex flex-wrap justify-end gap-2">
-                <Button variant="secondary" onClick={() => setDeleting(null)}>
-                  Giữ lại
-                </Button>
-                <Button
-                  variant="danger"
-                  onClick={() => {
-                    setDrafts((current) => current.filter((item) => item.id !== deleting.id));
-                    setDeleting(null);
-                  }}
-                >
-                  <Trash2 size={16} aria-hidden="true" />
-                  Xóa bản nháp
-                </Button>
-              </div>
-            </>
-          )}
-        </Modal>
       </div>
     </AuthorLayout>
   );
 }
 
-function DraftCard({ draft, featured, onPreview, onDuplicate, onDelete }) {
+function DraftCard({ draft, featured, onPreview, onDuplicate, busy }) {
+  const { t } = useLocale();
   const words = wordCount(draft);
-  const synced = draft.meta.includes('Cloud');
+  const synced = draft.meta === 'Stored';
   const ready = draft.meta === 'Ready for Review';
   return (
     <Card as="article" className={`flex flex-col ${featured ? 'md:min-h-96' : ''}`}>
@@ -485,7 +485,7 @@ function DraftCard({ draft, featured, onPreview, onDuplicate, onDelete }) {
         {synced && (
           <Badge>
             <Cloud size={12} aria-hidden="true" />
-            Đã đồng bộ đám mây
+            {t('draftsData.stored')}
           </Badge>
         )}
         {ready && (
@@ -495,7 +495,7 @@ function DraftCard({ draft, featured, onPreview, onDuplicate, onDelete }) {
           </Badge>
         )}
         <span className="ml-auto text-xs text-muted">
-          Sửa lần cuối: {editedLabels[draft.edited] ?? draft.edited}
+          Sửa lần cuối: {new Date(draft.updatedAt).toLocaleString('vi-VN')}
         </span>
       </div>
       <p className="mt-5 flex items-center gap-2 text-xs font-semibold text-brand-strong">
@@ -504,9 +504,7 @@ function DraftCard({ draft, featured, onPreview, onDuplicate, onDelete }) {
       </p>
       <h2 className={`mt-2 ${featured ? 'text-h2' : 'text-h3'}`}>{draft.title}</h2>
       <p className="mt-3 line-clamp-3 max-w-[65ch] text-sm leading-6 text-muted">{draft.excerpt}</p>
-      {!synced && !ready && (
-        <p className="mt-2 text-xs text-muted">{draftMetaLabels[draft.meta] ?? draft.meta}</p>
-      )}
+      {!synced && !ready && <p className="mt-2 text-xs text-muted">{draft.meta}</p>}
       <dl className="mt-5 grid grid-cols-3 gap-3 rounded-2xl border border-hairline bg-elevated p-4">
         <div>
           <dt className="text-xs text-ink/70">Số từ</dt>
@@ -518,23 +516,27 @@ function DraftCard({ draft, featured, onPreview, onDuplicate, onDelete }) {
         </div>
         <div>
           <dt className="text-xs text-ink/70">Mục tiêu</dt>
-          <dd className="text-sm font-semibold text-brand-strong tabular-nums">
-            {draft.progress}%
-          </dd>
+          <dd className="text-sm font-semibold text-brand-strong tabular-nums">—</dd>
         </div>
-        <ProgressBar
-          value={draft.progress}
-          size="sm"
-          label={`Tiến độ mục tiêu của ${draft.title}`}
-          className="col-span-3"
-        />
+        <div aria-hidden="true" className="col-span-3 h-1.5 rounded-full bg-elevated" />
       </dl>
       <div className="mt-auto flex flex-wrap items-center gap-2 pt-5">
         <div className="flex w-full flex-wrap items-center gap-2 border-t border-hairline pt-5">
-          <IconButton label={`Nhân bản ${draft.title}`} size="sm" onClick={onDuplicate}>
+          <IconButton
+            label={`Nhân bản ${draft.title}`}
+            size="sm"
+            disabled={busy}
+            onClick={onDuplicate}
+          >
             <Copy size={16} />
           </IconButton>
-          <IconButton label={`Xóa ${draft.title}`} size="sm" tone="rose" onClick={onDelete}>
+          <IconButton
+            label={`Xóa ${draft.title}`}
+            size="sm"
+            tone="rose"
+            disabled
+            title={t('draftsData.noDelete')}
+          >
             <Trash2 size={16} />
           </IconButton>
           <div className="ml-auto flex flex-wrap gap-2">
@@ -542,7 +544,7 @@ function DraftCard({ draft, featured, onPreview, onDuplicate, onDelete }) {
               <Eye size={14} aria-hidden="true" />
               Xem trước
             </Button>
-            <ButtonLink to={EDITOR_ROUTE} size="sm">
+            <ButtonLink to={editorRoute(draft)} size="sm">
               <WandSparkles size={14} aria-hidden="true" />
               Tiếp tục chỉnh sửa
             </ButtonLink>
