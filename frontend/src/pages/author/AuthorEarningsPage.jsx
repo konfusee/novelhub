@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useState } from 'react';
 import {
   AlertTriangle,
   ArrowRight,
@@ -7,12 +7,10 @@ import {
   CalendarDays,
   Coins,
   RefreshCw,
-  Save,
   UsersRound,
 } from '../../components/icons';
 import { AuthorLayout } from '../../layouts';
-import { ROUTES } from '../../app/routes';
-import { useMockResource } from '../../context/MockDataContext';
+import { useBackendDocument } from '../../api/useBackendResource';
 import {
   Badge,
   Button,
@@ -26,83 +24,33 @@ import {
 } from '../../components/ui';
 import { useLocale } from '../../context/LocaleContext';
 
-const earningsData = {
-  periods: {
-    day: {
-      buyers: 38,
-      subscriptions: 7,
-      coins: 1380,
-      payout: 9.66,
-      bars: [18, 28, 22, 45, 32, 58, 72],
-    },
-    week: {
-      buyers: 246,
-      subscriptions: 42,
-      coins: 9620,
-      payout: 67.34,
-      bars: [42, 56, 48, 72, 63, 84, 76],
-    },
-    month: {
-      buyers: 984,
-      subscriptions: 168,
-      coins: 41750,
-      payout: 292.25,
-      bars: [54, 61, 58, 76, 69, 88, 82],
-    },
-  },
-  sales: [
-    ['The Silent Forest', 'Chương 16', 25, 184, 3220],
-    ['The Silent Forest', 'Chương 15', 25, 143, 2502],
-    ['Echoes of Eldoria', 'Chương 3', 20, 96, 1344],
-  ],
-};
-const isEarningsEmpty = (value) => value.sales.length === 0;
-const days = ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'];
+const emptyEarnings = { balance: '0', allocationCredits: 0, bars: [], labels: [], stories: [] };
 /* Fixed, varied bar heights (%) for the revenue chart skeleton, one per weekday. */
 const revenueSkeletonBars = [48, 66, 54, 78, 62, 88, 72];
-
-const toPrice = (value) => Math.max(0, Number(value) || 0);
 
 export function AuthorEarningsPage() {
   const { t, formatNumber } = useLocale();
   const [period, setPeriod] = useState('month');
-  const [story, setStory] = useState('silent-forest');
-  const [chapterPrice, setChapterPrice] = useState(25);
-  const [subscriptionPrice, setSubscriptionPrice] = useState(199);
-  const [savedPrices, setSavedPrices] = useState({ chapterPrice: 25, subscriptionPrice: 199 });
-  const earnings = useMockResource(`author:earnings:${period}`, earningsData, {
-    isEmpty: isEarningsEmpty,
-  });
+  const [story, setStory] = useState('');
+  const earnings = useBackendDocument(`/author/earnings?period=${period}`, emptyEarnings);
   const loading = earnings.status === 'loading';
   const hasData = loading || earnings.status === 'ready';
-  const data = earnings.data.periods[period];
-  const sales = earnings.data.sales;
-  const changed =
-    chapterPrice !== savedPrices.chapterPrice ||
-    subscriptionPrice !== savedPrices.subscriptionPrice;
-  const projectedPayout = useMemo(
-    () => data.payout * (period === 'day' ? 30 : period === 'week' ? 4.3 : 1),
-    [data, period],
-  );
-  const peak = Math.max(...data.bars);
+  const data = earnings.data;
+  const sales = [];
+  const peak = Math.max(0, ...data.bars);
   const metrics = [
-    { icon: BookOpen, label: t('authorFinance.chapterBuyers'), value: formatNumber(data.buyers) },
-    {
-      icon: UsersRound,
-      label: t('authorFinance.newSubscribers'),
-      value: formatNumber(data.subscriptions),
-      tone: 'purple',
-    },
+    { icon: BookOpen, label: t('authorFinance.chapterBuyers'), value: '—' },
+    { icon: UsersRound, label: t('authorFinance.newSubscribers'), value: '—', tone: 'purple' },
     {
       icon: Coins,
-      label: t('authorFinance.coinsEarned'),
-      value: formatNumber(data.coins),
+      label: t('earningsData.allocationCredits'),
+      value: formatNumber(data.allocationCredits),
       tone: 'orange',
     },
     {
       icon: BadgeDollarSign,
-      label: t('authorFinance.netRevenue'),
-      value: `$${data.payout.toFixed(2)}`,
+      label: t('earningsData.balance'),
+      value: `${data.balance} ${t('wallet.coinUnit')}`,
     },
   ];
 
@@ -114,7 +62,7 @@ export function AuthorEarningsPage() {
             <p className="nh-eyebrow">{t('authorFinance.eyebrow')}</p>
             <h1 className="mt-3 text-h2 sm:text-h1">{t('authorFinance.title')}</h1>
             <p className="mt-2 max-w-[65ch] text-sm leading-6 text-muted">
-              {t('authorFinance.description')}
+              {t('earningsData.description')}
             </p>
           </div>
           <div className="shrink-0">
@@ -168,7 +116,7 @@ export function AuthorEarningsPage() {
                   title="Chưa có doanh thu"
                   description="Doanh thu từ chương trả phí và lượt đăng ký sẽ xuất hiện khi độc giả mua chương đầu tiên. Hãy đặt giá chương trong phần thiết lập giá."
                   action={
-                    <ButtonLink to={ROUTES.authorStory('demo')} size="sm" trailingIcon={ArrowRight}>
+                    <ButtonLink to="/author/stories" size="sm" trailingIcon={ArrowRight}>
                       Quản lý chương trả phí
                     </ButtonLink>
                   }
@@ -179,12 +127,10 @@ export function AuthorEarningsPage() {
                 <Card>
                   <div className="flex flex-wrap items-start justify-between gap-3">
                     <div className="min-w-0">
-                      <h2 className="text-h3">{t('authorFinance.revenueTrend')}</h2>
-                      <p className="mt-1 text-sm text-muted">
-                        {t('authorFinance.revenueTrendDescription')}
-                      </p>
+                      <h2 className="text-h3">{t('earningsData.trend')}</h2>
+                      <p className="mt-1 text-sm text-muted">{t('earningsData.grossHint')}</p>
                     </div>
-                    <Badge tone="green">{t('authorFinance.creatorShare')}</Badge>
+                    <Badge tone="green">{t('earningsData.recorded')}</Badge>
                   </div>
                   {loading ? (
                     <RevenueChartSkeleton />
@@ -192,21 +138,33 @@ export function AuthorEarningsPage() {
                     <div className="nh-fade-enter relative mt-8">
                       <RevenueGridLines />
                       <ol
-                        aria-label={t('authorFinance.revenueTrend')}
-                        className="relative grid grid-cols-7 gap-2 sm:gap-4"
+                        aria-label={t('earningsData.trend')}
+                        className="relative grid gap-1 sm:gap-2"
+                        style={{
+                          gridTemplateColumns: `repeat(${Math.max(1, data.bars.length)},minmax(0,1fr))`,
+                        }}
                       >
                         {data.bars.map((height, index) => (
-                          <li key={days[index]} className="flex min-w-0 flex-col items-center">
+                          <li
+                            key={data.labels[index]}
+                            className="flex min-w-0 flex-col items-center"
+                          >
                             <div className="flex h-52 w-full items-end border-b border-line">
                               <div
                                 className={`mx-auto w-full max-w-14 rounded-t-xl transition-[transform,background-color] duration-[420ms] ${height === peak ? 'bg-orange' : 'bg-orange/55'}`}
-                                style={{ height: `${height}%` }}
+                                style={{ height: `${peak ? (height / peak) * 100 : 0}%` }}
                               />
                             </div>
                             <span className="mt-2 text-xs text-ink/70">
-                              {t(`authorFinance.days.${days[index]}`)}
+                              {[0, Math.floor(data.bars.length / 2), data.bars.length - 1].includes(
+                                index,
+                              )
+                                ? data.labels[index].slice(5)
+                                : ''}
                             </span>
-                            <span className="sr-only">: {height}%</span>
+                            <span className="sr-only">
+                              {data.labels[index]}: {height} {t('wallet.coinUnit')}
+                            </span>
                           </li>
                         ))}
                       </ol>
@@ -217,7 +175,7 @@ export function AuthorEarningsPage() {
                 <Card className="overflow-hidden p-0">
                   <div className="p-6 pb-4">
                     <h2 className="text-h3">{t('authorFinance.salesByChapter')}</h2>
-                    <p className="mt-1 text-sm text-muted">{t('authorFinance.salesDescription')}</p>
+                    <p className="mt-1 text-sm text-muted">{t('earningsData.noSales')}</p>
                   </div>
                   <div className="overflow-x-auto">
                     <table className="w-full min-w-[560px] text-left text-sm">
@@ -252,6 +210,13 @@ export function AuthorEarningsPage() {
                         </tbody>
                       ) : (
                         <tbody className="nh-fade-enter divide-y divide-hairline">
+                          {!sales.length && (
+                            <tr>
+                              <td colSpan={5} className="px-6 py-6 text-sm text-muted">
+                                {t('earningsData.noSales')}
+                              </td>
+                            </tr>
+                          )}
                           {sales.map(([title, chapter, price, buyers, coins]) => (
                             <tr key={`${title}-${chapter}`}>
                               <th scope="row" className="px-6 py-4 text-left font-semibold">
@@ -294,21 +259,15 @@ export function AuthorEarningsPage() {
                     <Skeleton className="h-8 w-36 rounded-lg" />
                   </span>
                 ) : (
-                  <strong className="nh-fade-enter mt-1 block text-h1 tabular-nums">
-                    ${projectedPayout.toFixed(2)}
-                  </strong>
+                  <strong className="nh-fade-enter mt-1 block text-h1 tabular-nums">—</strong>
                 )}
-                <p className="mt-2 text-xs leading-5 text-ink/70">
-                  {t('authorFinance.payoutDate')}
-                </p>
+                <p className="mt-2 text-xs leading-5 text-ink/70">{t('earningsData.noPayout')}</p>
               </Card>
             )}
 
             <Card>
               <h2 className="text-h3">{t('authorFinance.pricingTitle')}</h2>
-              <p className="mt-1 text-sm leading-6 text-muted">
-                {t('authorFinance.pricingDescription')}
-              </p>
+              <p className="mt-1 text-sm leading-6 text-muted">{t('earningsData.noPricing')}</p>
               <label htmlFor="pricing-story" className="mt-5 block text-sm font-semibold">
                 {t('authorFinance.story')}
               </label>
@@ -318,9 +277,23 @@ export function AuthorEarningsPage() {
                 value={story}
                 onChange={(event) => setStory(event.target.value)}
               >
-                <option value="silent-forest">The Silent Forest</option>
-                <option value="echoes">Echoes of Eldoria</option>
+                <option value="">{t('analyticsData.allStories')}</option>
+                {data.stories.map((item) => (
+                  <option key={item.id} value={item.id}>
+                    {item.title}
+                  </option>
+                ))}
               </Select>
+              {story && (
+                <ButtonLink
+                  to={`/author/stories/${story}`}
+                  variant="ghost"
+                  size="sm"
+                  className="mt-2"
+                >
+                  {t('navigation.storyManager')}
+                </ButtonLink>
+              )}
               <label htmlFor="pricing-chapter" className="mt-4 block text-sm font-semibold">
                 {t('authorFinance.chapterPrice')}
               </label>
@@ -331,12 +304,13 @@ export function AuthorEarningsPage() {
                 inputMode="numeric"
                 min="0"
                 max="500"
-                value={chapterPrice}
+                value=""
+                disabled
+                placeholder="—"
                 aria-describedby="pricing-chapter-hint"
-                onChange={(event) => setChapterPrice(toPrice(event.target.value))}
               />
               <p id="pricing-chapter-hint" className="mt-2 text-xs text-muted">
-                {t('authorFinance.priceHint')}
+                {t('earningsData.noPricing')}
               </p>
               <label htmlFor="pricing-subscription" className="mt-4 block text-sm font-semibold">
                 {t('authorFinance.subscriptionPrice')}
@@ -348,26 +322,10 @@ export function AuthorEarningsPage() {
                 inputMode="numeric"
                 min="0"
                 max="5000"
-                value={subscriptionPrice}
-                onChange={(event) => setSubscriptionPrice(toPrice(event.target.value))}
+                value=""
+                disabled
+                placeholder="—"
               />
-              {changed && (
-                <div className="mt-5 flex flex-wrap justify-end gap-2 border-t border-hairline pt-5">
-                  <Button
-                    variant="secondary"
-                    onClick={() => {
-                      setChapterPrice(savedPrices.chapterPrice);
-                      setSubscriptionPrice(savedPrices.subscriptionPrice);
-                    }}
-                  >
-                    {t('common.discard')}
-                  </Button>
-                  <Button onClick={() => setSavedPrices({ chapterPrice, subscriptionPrice })}>
-                    <Save size={16} aria-hidden="true" />
-                    {t('common.saveChanges')}
-                  </Button>
-                </div>
-              )}
             </Card>
           </aside>
         </div>

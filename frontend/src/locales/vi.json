@@ -964,6 +964,17 @@
     "chapterDraft": "Bản nháp chương",
     "noTarget": "Chưa có mục tiêu"
   },
+  "earningsData": {
+    "description": "Theo dõi xu doanh thu được phân bổ theo kỳ và số dư ví tác giả. Các số liệu chưa có báo cáo được hiển thị riêng.",
+    "allocationCredits": "Xu doanh thu ghi có",
+    "balance": "Số dư ví tác giả",
+    "trend": "Xu doanh thu được phân bổ theo ngày",
+    "grossHint": "Xu được phân bổ trong kỳ, chưa phải khoản thanh toán sau hoàn trả, điều chỉnh và đối soát.",
+    "recorded": "Dữ liệu đã ghi nhận",
+    "noSales": "Chưa có báo cáo doanh số chi tiết theo chương trong màn hình này.",
+    "noPayout": "Chưa có khoản thanh toán được đối soát để hiển thị. Số dư ví không phải cam kết thanh toán cuối tháng.",
+    "noPricing": "Thiết lập giá chung và gói đăng ký chưa sẵn sàng. Giá truy cập sớm hiện có được hiển thị theo từng chương trong trang quản lý truyện."
+  },
   "analyticsData": {
     "allStories": "Tất cả truyện",
     "views": "Lượt đọc đã ghi nhận",
