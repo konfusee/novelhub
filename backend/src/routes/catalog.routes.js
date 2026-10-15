@@ -1,6 +1,18 @@
 import { Router } from 'express';
 import { z } from 'zod';
-import { Category, ContentRevision, Chapter, UnlockEntitlement } from '../models/index.js';
+import {
+  Account,
+  Category,
+  Comment,
+  ContentRevision,
+  Chapter,
+  Follow,
+  Rating,
+  StatisticsEvent,
+  Story,
+  UnlockEntitlement,
+} from '../models/index.js';
+import mongoose from 'mongoose';
 import { readCookie, resolveSession } from '../auth/session.js';
 import { HttpError } from '../middleware/errors.js';
 import { queryPublishedStories, publishedCategoryCounts } from '../modules/catalog-query.js';
@@ -30,7 +42,7 @@ async function categoryItems() {
     Category.find({ status: 'active' }).sort({ sortKey: 1, name: 1 }).lean(),
     publishedCategoryCounts(),
     catalogPresentation()
-      .find({ _id: { $ne: 'curation' } })
+      .find({ _id: { $type: 'objectId' } })
       .toArray(),
   ]);
   const metadata = new Map(presentation.map((item) => [String(item._id), item]));
@@ -46,15 +58,36 @@ async function categoryItems() {
 
 export function createCatalogRouter(config) {
   const router = Router();
-  router.param('storyId', (_req, _res, next, id) => {
-    if (!/^[a-f\d]{24}$/i.test(id))
-      return next(new HttpError(400, 'validation_error', 'ID truyện không hợp lệ.'));
-    next();
+  router.param('storyId', async (req, _res, next, id) => {
+    try {
+      if (/^[a-f\d]{24}$/i.test(id)) return next();
+      if (!/^[a-z0-9-]{1,150}$/.test(id))
+        throw new HttpError(400, 'validation_error', 'ID truyện không hợp lệ.');
+      const alias = await catalogPresentation().findOne({ _id: `alias:${id}` });
+      if (!alias?.storyId) throw new HttpError(404, 'not_found', 'Không tìm thấy truyện.');
+      req.params.storyId = String(alias.storyId);
+      next();
+    } catch (error) {
+      next(error);
+    }
   });
-  router.param('chapterId', (_req, _res, next, id) => {
-    if (!/^[a-f\d]{24}$/i.test(id))
-      return next(new HttpError(400, 'validation_error', 'ID chương không hợp lệ.'));
-    next();
+  router.param('chapterId', async (req, _res, next, id) => {
+    try {
+      if (/^[a-f\d]{24}$/i.test(id)) return next();
+      if (!/^chapter-[1-9]\d{0,5}$/.test(id))
+        throw new HttpError(400, 'validation_error', 'ID chương không hợp lệ.');
+      const chapter = await Chapter.findOne({
+        storyId: req.params.storyId,
+        orderKey: Number(id.slice(8)),
+      })
+        .select('_id')
+        .lean();
+      if (!chapter) throw new HttpError(404, 'not_found', 'Không tìm thấy chương.');
+      req.params.chapterId = String(chapter._id);
+      next();
+    } catch (error) {
+      next(error);
+    }
   });
   router.get('/catalog/categories', async (_req, res, next) => {
     try {
@@ -130,8 +163,57 @@ export function createCatalogRouter(config) {
         .select('chapterId content.title')
         .lean();
       const titles = new Map(revisions.map((revision) => [String(revision._id), revision]));
+      const [followers, ratings, author, works, latestComment] = await Promise.all([
+        Follow.countDocuments({ storyId: req.params.storyId, status: 'active' }),
+        Rating.aggregate([
+          {
+            $match: { storyId: new mongoose.Types.ObjectId(req.params.storyId), status: 'active' },
+          },
+          { $group: { _id: '$value', count: { $sum: 1 } } },
+        ]),
+        Account.findById(story.authorId).select('profile.bio').lean(),
+        Story.find({ authorAccountId: story.authorId, publicationStatus: 'published' })
+          .select('_id')
+          .lean(),
+        Comment.findOne({ targetType: 'story', targetId: req.params.storyId, status: 'visible' })
+          .sort({ createdAt: -1 })
+          .select('body authorAccountId')
+          .populate('authorAccountId', 'displayName status')
+          .lean(),
+      ]);
+      const ratingCount = ratings.reduce((count, item) => count + item.count, 0);
+      const [authorFollowers, authorReads] = await Promise.all([
+        Follow.countDocuments({
+          storyId: { $in: works.map((item) => item._id) },
+          status: 'active',
+        }),
+        StatisticsEvent.countDocuments({
+          storyId: { $in: works.map((item) => item._id) },
+          eventType: 'view',
+        }),
+      ]);
       res.json({
-        story,
+        story: {
+          ...story,
+          synopsis: story.description,
+          language: 'Tiếng Việt',
+          followers,
+          ratings: ratingCount,
+          authorBio: author?.profile?.bio ?? '',
+          authorStats: { works: works.length, followers: authorFollowers, reads: authorReads },
+          ratingBreakdown: [5, 4, 3, 2, 1].map((value) =>
+            ratingCount
+              ? Math.round(
+                  (100 * (ratings.find((item) => item._id === value)?.count ?? 0)) / ratingCount,
+                )
+              : 0,
+          ),
+          featuredReview: latestComment?.body ?? '',
+          featuredReviewer:
+            latestComment?.authorAccountId?.status === 'active'
+              ? latestComment.authorAccountId.displayName
+              : '',
+        },
         chapters: chapters.flatMap((chapter) => {
           const revision = titles.get(String(chapter.publishedRevisionId));
           if (!revision || String(revision.chapterId) !== String(chapter._id)) return [];
@@ -195,6 +277,7 @@ export function createCatalogRouter(config) {
         chapter: {
           id: String(chapter._id),
           title: revision.content.title ?? '',
+          publishedAt: chapter.publishedAt ?? null,
           blocks: (revision.content.blocks ?? [])
             .filter((block) => block.type === 'paragraph' && typeof block.text === 'string')
             .map((block) => ({ type: 'paragraph', text: block.text })),

@@ -65,6 +65,31 @@ export async function seedReferenceData({ password, readerEmail = 'reader@seed.n
     throw new Error('A development seed password of at least 10 characters is required');
   const passwordHash = await hashPassword(password);
   return withTransaction(async (session) => {
+    const references = [
+      ...extendedStories,
+      ...hiddenGems,
+      ...searchResults,
+      ...readerHome.recommendations,
+      ...authorStories,
+      ...submissionQueue,
+    ];
+    const aliases = new Map([['demo', 'The Silent Forest']]);
+    for (const item of references) {
+      if (item.id) aliases.set(item.id, item.title);
+      aliases.set(
+        item.title
+          .toLowerCase()
+          .replace(/[^a-z0-9]+/g, '-')
+          .replace(/(^-|-$)/g, ''),
+        item.title,
+      );
+    }
+    for (const [alias, title] of aliases)
+      await catalogPresentation().updateOne(
+        { _id: `alias:${alias}` },
+        { $setOnInsert: { storyId: seedId(`story:${keyFor(title)}`) } },
+        { upsert: true, session },
+      );
     // This marker is written last in the same transaction as the whole import.
     // A completed import is immutable; later user edits are never overwritten.
     if (await AuditEvent.exists({ _id: seedId('import-audit') }).session(session)) return {};
