@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { Link } from 'react-router';
 import {
   AlertTriangle,
@@ -19,8 +19,9 @@ import {
   Star,
 } from '../../components/icons';
 import * as icons from '../../components/icons';
-import { categories } from '../../data/mock/categories';
-import { featuredStories, stories } from '../../data/mock/stories';
+import { useBackendDocument } from '../../api/useBackendResource';
+import { apiRequest } from '../../api/client';
+import { useAuth } from '../../context/AuthContext';
 import { PublicHeader } from '../../components/public/PublicHeader';
 import { StoryCard, StoryCardSkeleton } from '../../components/public/StoryCard';
 import { StoryCover } from '../../components/story/StoryCover';
@@ -36,7 +37,17 @@ import {
   Skeleton,
 } from '../../components/ui';
 import { useLocale } from '../../context/LocaleContext';
-import { useMockResource } from '../../context/MockDataContext';
+const emptyHome = {
+  stories: [],
+  trending: [],
+  categories: [],
+  featured: [],
+  stats: {},
+  preview: null,
+};
+const emptyHistory = { items: [] };
+const emptyStory = { title: '', author: '', genres: [] };
+const emptyFollow = { following: false };
 
 const stagger = (index) => Math.min(index, 5) * 80;
 
@@ -80,26 +91,31 @@ function BandState({ resource, errorTitle, emptyTitle, emptyDescription, emptyAc
 const band = 'col-span-12 grid grid-cols-subgrid';
 
 /* Hero slides: each artwork fills the whole art panel; object position keeps the subject in frame. */
-const heroSlides = [
-  { story: stories[2], focus: '[&_img]:object-[50%_58%]' },
-  { story: stories[1], focus: '[&_img]:object-[50%_42%]' },
-  { story: stories[0], focus: '[&_img]:object-[55%_62%]' },
-];
-
 /* Stat cells: 2 × 2 until the wide layout, then one row of four; hairline column separators. */
 const statEdges = ['', 'border-l', '@4xl:border-l', 'border-l'];
 
-function Hero() {
+function Hero({ stories, summary }) {
+  const heroSlides = stories
+    .slice(0, 3)
+    .reverse()
+    .map((story, index) => ({
+      story,
+      focus: ['[&_img]:object-[50%_58%]', '[&_img]:object-[50%_42%]', '[&_img]:object-[55%_62%]'][
+        index
+      ],
+    }));
   const { t } = useLocale();
   const [slide, setSlide] = useState(0);
-  const featured = heroSlides[slide].story;
+  const featured = heroSlides[slide % Math.max(1, heroSlides.length)]?.story ?? emptyStory;
   const changeSlide = (direction) =>
-    setSlide((current) => (current + direction + heroSlides.length) % heroSlides.length);
+    setSlide(
+      (current) => (current + direction + heroSlides.length) % Math.max(1, heroSlides.length),
+    );
   const stats = [
-    ['3M+', t('home.readers')],
-    ['100K+', t('home.stories')],
-    ['15K+', t('home.authors')],
-    ['4.8', t('home.userRating'), true],
+    [summary.readers ?? '—', t('home.readers')],
+    [summary.stories ?? '—', t('home.stories')],
+    [summary.authors ?? '—', t('home.authors')],
+    [summary.rating ?? '—', t('home.userRating'), true],
   ];
   return (
     <section
@@ -165,7 +181,7 @@ function Hero() {
                 </p>
               ) : (
                 <Link
-                  to={`/stories/${featured.id}`}
+                  to={featured.id ? `/stories/${featured.id}` : '/search'}
                   className="group block w-fit max-w-full whitespace-normal rounded-2xl text-white"
                 >
                   <span className="block text-[11px] font-semibold uppercase tracking-[.14em] text-white/80">
@@ -261,9 +277,8 @@ const tileFrame =
 
 const categoryLink = (name) => `/categories?genre=${encodeURIComponent(name)}`;
 
-function Categories() {
+function Categories({ resource, stories }) {
   const { t } = useLocale();
-  const resource = useMockResource('home:categories', categories);
   const storiesLabel = t('home.stories').toLocaleLowerCase('vi');
   const title = (
     <div className="col-span-12">
@@ -299,8 +314,8 @@ function Categories() {
               </span>
             </div>
           </div>
-          {categories.slice(1).map((category) => (
-            <div key={category.name} aria-hidden="true" className="col-span-6 @2xl:col-span-3">
+          {Array.from({ length: 8 }, (_, index) => (
+            <div key={index} aria-hidden="true" className="col-span-6 @2xl:col-span-3">
               <div className={`${tileFrame} flex-col gap-5 p-5`}>
                 <Skeleton className="size-11 rounded-2xl" />
                 <span className="mt-auto block">
@@ -415,11 +430,48 @@ function Categories() {
   );
 }
 
-function ContinueCard({ audio = false }) {
+function ContinueCard({ audio = false, story }) {
+  if (!story)
+    return (
+      <Card className="flex h-full gap-5 p-4 sm:p-5">
+        <EmptyState
+          icon={audio ? Headphones : BookOpen}
+          title={audio ? 'Chưa có tiến độ nghe' : 'Chưa có tiến độ đọc'}
+          description="Đọc hoặc nghe một chương để tiếp tục từ đây."
+          action={
+            <ButtonLink to="/reader/library" size="sm">
+              Mở thư viện
+            </ButtonLink>
+          }
+        />
+      </Card>
+    );
+  return <ContinueCardContent audio={audio} story={story} />;
+}
+
+function ContinueCardContent({ audio, story }) {
   const { t } = useLocale();
-  const [bookmarked, setBookmarked] = useState(false);
-  const story = audio ? stories[1] : stories[0];
-  const progress = audio ? 32 : 68;
+  const follow = useBackendDocument(`/reader/follows/${story.id}`, emptyFollow);
+  const bookmarked = follow.data.following;
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState('');
+  const toggle = async () => {
+    if (saving || follow.status !== 'ready') return;
+    setSaving(true);
+    try {
+      await apiRequest(`/reader/follows/${story.id}`, {
+        method: 'PUT',
+        body: { following: !bookmarked },
+      });
+      follow.retry();
+      setError('');
+    } catch (error) {
+      setError(error.message);
+    } finally {
+      setSaving(false);
+    }
+  };
+  const progress = story?.progress ?? 0;
   return (
     <Card className="flex h-full gap-5 p-4 sm:p-5">
       <StoryCover
@@ -434,9 +486,7 @@ function ContinueCard({ audio = false }) {
           <span className="tabular-nums">{progress}%</span>
         </div>
         <h3 className="mt-1.5 truncate text-base font-semibold">{story.title}</h3>
-        <p className="mt-0.5 truncate text-xs text-muted">
-          {audio ? 'Chương 5 · The Letter' : 'Chương 12 · A New Beginning'}
-        </p>
+        <p className="mt-0.5 truncate text-xs text-muted">{story.detail}</p>
         <ProgressBar
           value={progress}
           tone={audio ? 'orange' : 'brand'}
@@ -446,7 +496,11 @@ function ContinueCard({ audio = false }) {
         />
         <div className="mt-auto flex gap-2">
           <ButtonLink
-            to={audio ? '/listen/demo/chapter-1' : '/stories/demo'}
+            to={
+              audio
+                ? `/listen/${story.id}/${story.chapterId}`
+                : `/read/${story.id}/${story.chapterId}`
+            }
             size="sm"
             variant={audio ? 'accent' : 'primary'}
             className="flex-1"
@@ -463,11 +517,17 @@ function ContinueCard({ audio = false }) {
             tone="purple"
             size="sm"
             aria-pressed={bookmarked}
-            onClick={() => setBookmarked((value) => !value)}
+            onClick={toggle}
+            disabled={saving || follow.status !== 'ready'}
           >
             <Bookmark size={15} className={bookmarked ? 'fill-current' : ''} />
           </IconButton>
         </div>
+        {error && (
+          <p role="alert" className="mt-2 text-xs text-rose-strong">
+            {error}
+          </p>
+        )}
       </div>
     </Card>
   );
@@ -476,7 +536,7 @@ function ContinueCard({ audio = false }) {
 const segment =
   'inline-flex min-h-10 items-center justify-center rounded-full px-3 text-xs font-semibold transition-[background-color,color] duration-200 ease-spring pointer-coarse:min-h-11';
 
-function ReaderPreview() {
+function ReaderPreview({ preview }) {
   const { t } = useLocale();
   const [fontSize, setFontSize] = useState(16);
   const [spacing, setSpacing] = useState(1.8);
@@ -487,18 +547,18 @@ function ReaderPreview() {
         className="mt-5 flex-1 rounded-2xl border border-hairline bg-reader p-5 text-ink sm:p-7"
         style={{ fontSize, lineHeight: spacing }}
       >
-        <h3 className="text-[1.15em] font-semibold leading-snug">The Silent Forest</h3>
-        <p className="text-xs text-muted">Chương 1 · The Whispering Trees</p>
+        <h3 className="text-[1.15em] font-semibold leading-snug">
+          {preview?.story.title || 'Chưa có bản đọc thử'}
+        </h3>
+        <p className="text-xs text-muted">
+          {preview
+            ? `Chương ${preview.number} · ${preview.title}`
+            : 'Nội dung sẽ hiển thị khi có chương công khai.'}
+        </p>
         <div className="mt-4 max-w-[62ch] space-y-[0.9em]">
-          <p>
-            The wind moved gently through the ancient trees, carrying whispers of forgotten stories.
-            In that quiet moment, everything felt possible. She closed her eyes and listened — not
-            just to the forest, but to her own heartbeat.
-          </p>
-          <p>
-            Somewhere beyond the moss and the mist, a path glowed faintly green, as if the forest
-            itself had decided to show her the way home.
-          </p>
+          {(preview?.paragraphs ?? []).map((paragraph, index) => (
+            <p key={index}>{paragraph}</p>
+          ))}
         </div>
       </div>
       <div className="mt-5 grid gap-3 border-t border-hairline pt-5 text-xs sm:grid-cols-2 sm:gap-6">
@@ -553,39 +613,24 @@ function ReaderPreview() {
   );
 }
 
-const AUDIO_LENGTH = 624;
-const formatTime = (seconds) =>
-  `${String(Math.floor(seconds / 60)).padStart(2, '0')}:${String(seconds % 60).padStart(2, '0')}`;
-
 function AudioPreview() {
   const { t } = useLocale();
-  const [playing, setPlaying] = useState(false);
-  const [liked, setLiked] = useState(false);
-  const [position, setPosition] = useState(138);
-  const seek = (delta) =>
-    setPosition((value) => Math.min(AUDIO_LENGTH, Math.max(0, value + delta)));
-  useEffect(() => {
-    if (!playing) return undefined;
-    const timer = setInterval(() => {
-      setPosition((value) => {
-        if (value + 1 < AUDIO_LENGTH) return value + 1;
-        setPlaying(false);
-        return AUDIO_LENGTH;
-      });
-    }, 1000);
-    return () => clearInterval(timer);
-  }, [playing]);
+  const playing = false;
+  const liked = false;
+  const position = 0;
+  const AUDIO_LENGTH = 1;
+  const formatTime = () => '—';
   return (
     <Card className="flex h-full flex-col p-6 sm:p-8">
       <h2 className="text-h3">{t('home.audioPreview')}</h2>
       <div className="mt-5 flex items-center gap-4">
         <StoryCover
-          story={stories[1]}
+          story={emptyStory}
           className="aspect-[2/3] w-14 shrink-0 rounded-xl border border-hairline"
         />
         <div className="min-w-0 flex-1">
-          <h3 className="truncate text-sm font-semibold">{stories[1].title}</h3>
-          <p className="truncate text-xs text-muted">{stories[1].author}</p>
+          <h3 className="truncate text-sm font-semibold">Chưa có bản nghe công khai</h3>
+          <p className="truncate text-xs text-muted">Chưa có file âm thanh để phát</p>
         </div>
         <IconButton
           label={t('home.favorite')}
@@ -593,7 +638,7 @@ function AudioPreview() {
           shape="circle"
           size="sm"
           aria-pressed={liked}
-          onClick={() => setLiked(!liked)}
+          disabled
         >
           <Heart size={18} className={liked ? 'fill-current' : ''} />
         </IconButton>
@@ -608,7 +653,7 @@ function AudioPreview() {
           <button
             type="button"
             aria-label="Lùi 15 giây"
-            onClick={() => seek(-15)}
+            disabled
             className="inline-flex min-h-11 items-center gap-1 rounded-full px-3 text-xs font-semibold text-muted transition-[background-color,color,transform] duration-200 ease-spring hover:bg-elevated hover:text-ink active:scale-[0.96]"
           >
             <RotateCcw size={16} aria-hidden="true" />
@@ -616,7 +661,7 @@ function AudioPreview() {
           </button>
           <button
             type="button"
-            onClick={() => setPlaying(!playing)}
+            disabled
             className="grid size-14 place-items-center rounded-full bg-brand text-on-brand shadow-[0_10px_24px_-14px_var(--primary)] transition-transform duration-200 ease-spring active:scale-[0.96]"
             aria-label={t(playing ? 'home.pause' : 'home.play')}
           >
@@ -625,7 +670,7 @@ function AudioPreview() {
           <button
             type="button"
             aria-label="Tiến 15 giây"
-            onClick={() => seek(15)}
+            disabled
             className="inline-flex min-h-11 items-center gap-1 rounded-full px-3 text-xs font-semibold text-muted transition-[background-color,color,transform] duration-200 ease-spring hover:bg-elevated hover:text-ink active:scale-[0.96]"
           >
             15
@@ -644,9 +689,8 @@ const featureTones = {
 };
 
 /* Featured bento: the editor's pick takes 6 columns with its picks, the other two take 3 each. */
-function Featured() {
+function Featured({ resource, stories }) {
   const { t } = useLocale();
-  const resource = useMockResource('home:featured', featuredStories);
   return (
     <section className={band}>
       <div className="col-span-12">
@@ -658,9 +702,9 @@ function Featured() {
           aria-label="Đang tải tuyển chọn nổi bật"
           className={`${band} gap-y-4 lg:gap-y-6`}
         >
-          {featuredStories.map((item, index) => (
+          {Array.from({ length: 3 }, (_, index) => (
             <div
-              key={item.title}
+              key={index}
               aria-hidden="true"
               className={
                 index === 0
@@ -825,9 +869,8 @@ function JoinCta() {
   );
 }
 
-function Trending() {
+function Trending({ resource }) {
   const { t } = useLocale();
-  const resource = useMockResource('home:trending', stories);
   return (
     <section className={band}>
       <div className="col-span-12">
@@ -835,8 +878,8 @@ function Trending() {
       </div>
       {resource.status === 'loading' ? (
         <div aria-busy="true" aria-label="Đang tải truyện thịnh hành" className={`${band} gap-y-8`}>
-          {stories.map((story) => (
-            <div key={story.id} className="col-span-6 @2xl:col-span-4 @5xl:col-span-2">
+          {Array.from({ length: 6 }, (_, index) => (
+            <div key={index} className="col-span-6 @2xl:col-span-4 @5xl:col-span-2">
               <StoryCardSkeleton />
             </div>
           ))}
@@ -871,17 +914,24 @@ function Trending() {
 }
 
 export function GuestHomePage({ embedded = false }) {
+  const home = useBackendDocument('/catalog/home', emptyHome);
+  const { isAuthenticated } = useAuth();
+  const resource = (data) => ({
+    ...home,
+    data,
+    status: home.status === 'ready' && !data.length ? 'empty' : home.status,
+  });
   const Root = embedded ? 'div' : 'main';
   return (
     <div className="@container min-h-screen bg-page text-ink">
       {!embedded && <PublicHeader />}
       <Root className="page-public grid grid-cols-12 gap-x-4 gap-y-14 pb-20 pt-4 sm:pt-6 md:gap-y-16 lg:gap-x-6 lg:gap-y-20">
-        <Hero />
-        <Trending />
-        <Categories />
+        <Hero stories={home.data.stories} summary={home.data.stats} />
+        <Trending resource={resource(home.data.trending)} />
+        <Categories resource={resource(home.data.categories)} stories={home.data.stories} />
         <div className={`${band} gap-y-4 lg:gap-y-6`}>
           <Reveal className="col-span-12 @4xl:col-span-7 @4xl:row-span-2">
-            <ReaderPreview />
+            <ReaderPreview preview={home.data.preview} />
           </Reveal>
           <Reveal delay={80} className="col-span-12 @2xl:col-span-6 @4xl:col-span-5">
             <AudioPreview />
@@ -898,17 +948,52 @@ export function GuestHomePage({ embedded = false }) {
             </Card>
           </Reveal>
         </div>
-        <div className={`${band} gap-y-4 lg:gap-y-6`}>
-          <Reveal className="col-span-12 @2xl:col-span-6">
-            <ContinueCard />
-          </Reveal>
-          <Reveal delay={80} className="col-span-12 @2xl:col-span-6">
-            <ContinueCard audio />
-          </Reveal>
-        </div>
-        <Featured />
+        {isAuthenticated ? (
+          <ContinueReading />
+        ) : (
+          <div className={`${band} gap-y-4 lg:gap-y-6`}>
+            <Reveal className="col-span-12 @2xl:col-span-6">
+              <ContinueCard />
+            </Reveal>
+            <Reveal delay={80} className="col-span-12 @2xl:col-span-6">
+              <ContinueCard audio />
+            </Reveal>
+          </div>
+        )}
+        <Featured resource={resource(home.data.featured)} stories={home.data.stories} />
         {!embedded && <JoinCta />}
       </Root>
+    </div>
+  );
+}
+
+function ContinueReading() {
+  const history = useBackendDocument('/reader/history', emptyHistory);
+  if (history.status === 'loading')
+    return (
+      <div className={`${band} gap-y-4 lg:gap-y-6`}>
+        {[0, 1].map((index) => (
+          <Card key={index} className="col-span-12 @2xl:col-span-6 p-5" aria-busy="true">
+            <Skeleton className="h-5 w-2/3" />
+            <Skeleton className="mt-4 h-20 w-full" />
+          </Card>
+        ))}
+      </div>
+    );
+  if (history.status === 'error')
+    return (
+      <div className={band}>
+        <BandState resource={history} errorTitle="Không tải được tiến độ đọc" />
+      </div>
+    );
+  return (
+    <div className={`${band} gap-y-4 lg:gap-y-6`}>
+      <Reveal className="col-span-12 @2xl:col-span-6">
+        <ContinueCard story={history.data.items.find((item) => item.type === 'story')} />
+      </Reveal>
+      <Reveal delay={80} className="col-span-12 @2xl:col-span-6">
+        <ContinueCard audio story={history.data.items.find((item) => item.type === 'audio')} />
+      </Reveal>
     </div>
   );
 }
