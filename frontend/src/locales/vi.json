@@ -843,7 +843,18 @@
     "storageError": "Không lưu được nội dung. Vui lòng kiểm tra dung lượng lưu trữ của trình duyệt.",
     "signInHint": "Đăng nhập để đánh giá truyện và tham gia thảo luận.",
     "emptyTitle": "Chưa có thảo luận",
-    "emptyDescription": "Hãy chia sẻ cảm nhận hoặc mở đầu một cuộc trò chuyện."
+    "emptyDescription": "Hãy chia sẻ cảm nhận hoặc mở đầu một cuộc trò chuyện.",
+    "loading": "Đang tải nội dung cộng đồng…",
+    "retry": "Thử lại",
+    "loadError": "Không tải được nội dung cộng đồng.",
+    "saveError": "Chưa lưu được nội dung. Vui lòng thử lại; nội dung bạn nhập vẫn được giữ nguyên.",
+    "saving": "Đang gửi…",
+    "serverNotice": "Bình luận và trả lời được lưu vào tài khoản của bạn.",
+    "ratingNotice": "Mỗi tài khoản có một điểm đánh giá cho truyện. Gửi lại để cập nhật điểm; chia sẻ cảm nhận bằng chữ ở tab Thảo luận.",
+    "ratingOnly": "Đã đánh giá truyện.",
+    "summaryRetry": "Nội dung đã lưu. Chưa tải lại được thống kê truyện; hãy tải lại trang để cập nhật.",
+    "emptyRatingTitle": "Chưa có đánh giá",
+    "emptyRatingDescription": "Chọn số sao để chia sẻ đánh giá đầu tiên cho truyện này."
   },
   "security": {
     "setPassword": "Tạo mật khẩu",

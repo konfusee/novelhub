@@ -31,6 +31,7 @@ import {
   Tabs,
 } from '../../components/ui';
 import { useBackendDocument } from '../../api/useBackendResource';
+import { apiRequest } from '../../api/client';
 import { useAuth } from '../../context/AuthContext';
 import { useLocale } from '../../context/LocaleContext';
 
@@ -190,7 +191,17 @@ export function StoryDetailPage({ embedded = false }) {
   const [synopsisOpen, setSynopsisOpen] = useState(false);
   const document = useBackendDocument(`/catalog/stories/${storyId}`, emptyDocument);
   const story = document;
-  const storyDetail = document.data.story;
+  const [communitySummary, setCommunitySummary] = useState(null);
+  const storyDetail =
+    communitySummary?.source === document.data ? communitySummary.story : document.data.story;
+  const refreshCommunitySummary = async () => {
+    try {
+      const response = await apiRequest(`/catalog/stories/${document.data.story.id}`);
+      setCommunitySummary({ source: document.data, story: response.story });
+    } catch {
+      setNotice(t('community.summaryRetry'));
+    }
+  };
   const coverStory = storyDetail;
   const initials = storyDetail.author
     .split(' ')
@@ -518,7 +529,13 @@ export function StoryDetailPage({ embedded = false }) {
                     {storyDetail.synopsis}
                   </div>
                 )}
-                {tab === 'reviews' && <StoryCommunity key={storyId} storyId={storyId} />}
+                {tab === 'reviews' && (
+                  <StoryCommunity
+                    key={storyId}
+                    storyId={storyDetail.id}
+                    onSaved={refreshCommunitySummary}
+                  />
+                )}
                 {tab === 'audiobooks' && (
                   <div className="flex flex-col items-start gap-4 rounded-2xl bg-reader p-6 sm:flex-row sm:items-center sm:justify-between">
                     <div>

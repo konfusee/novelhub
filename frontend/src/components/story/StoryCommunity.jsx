@@ -5,20 +5,39 @@ import { Star, MessageCircle } from '../icons';
 import { Pagination } from '../ui/Pagination';
 import { useAuth } from '../../context/AuthContext';
 import { useLocale } from '../../context/LocaleContext';
-import { useMockData } from '../../context/MockDataContext';
-const sampleReview = {
-  id: 'sample-review',
-  kind: 'review',
-  accountId: 'sample-reader',
-  author: 'Kaelen_Reader',
-  rating: 5,
-  body: 'Văn phong ở chương 2 khiến tôi nổi da gà. Thế giới truyện rất sống động và mạch căng thẳng không hề ngắt quãng.',
-};
-export function StoryCommunity({ storyId }) {
-  const { currentUser, isAuthenticated } = useAuth();
+import { apiRequest } from '../../api/client';
+import { useBackendDocument } from '../../api/useBackendResource';
+const emptyFeed = { items: [], total: 0, pageSize: 5 };
+function CommunityReplies({ storyId, parentId, renderEntry }) {
+  const { t } = useLocale();
+  const [page, setPage] = useState(1);
+  const feed = useBackendDocument(
+    `/community/stories/${storyId}/comments?parentId=${parentId}&page=${page}`,
+    emptyFeed,
+  );
+  return (
+    <div className="space-y-3">
+      {feed.status === 'loading' ? (
+        <p role="status">{t('community.loading')}</p>
+      ) : feed.status === 'error' ? (
+        <Button variant="secondary" onClick={feed.retry}>
+          {t('community.retry')}
+        </Button>
+      ) : (
+        feed.data.items.map((post) => renderEntry(post, true))
+      )}
+      <Pagination
+        page={page}
+        pageCount={Math.max(1, Math.ceil(feed.data.total / 20))}
+        onChange={setPage}
+      />
+    </div>
+  );
+}
+export function StoryCommunity({ storyId, onSaved }) {
+  const { isAuthenticated } = useAuth();
   const { t, formatDate } = useLocale();
   const { pathname } = useLocation();
-  const { data, saveCommunityPost } = useMockData();
   const [kind, setKind] = useState('review');
   const [body, setBody] = useState('');
   const [rating, setRating] = useState(0);
@@ -27,39 +46,48 @@ export function StoryCommunity({ storyId }) {
   const [error, setError] = useState('');
   const [notice, setNotice] = useState('');
   const field = useRef(null);
-  const all = [...(data.community?.[storyId] || []), sampleReview];
-  const posts = all.filter((post) => post.kind === kind && !post.parentId);
-  const pageCount = Math.max(1, Math.ceil(posts.length / 5));
-  const visible = posts.slice((Math.min(page, pageCount) - 1) * 5, Math.min(page, pageCount) * 5);
+  const [busy, setBusy] = useState(false);
+  const [revision, setRevision] = useState(0);
+  const feed = useBackendDocument(
+    `/community/stories/${storyId}/${kind === 'review' ? 'ratings' : 'comments'}?page=${page}`,
+    emptyFeed,
+  );
+  const pageCount = Math.max(1, Math.ceil(feed.data.total / feed.data.pageSize));
+  const visible = feed.data.items;
   const key = (name, vars) => t('community.' + name, vars);
-  const submit = (event) => {
+  const submit = async (event) => {
     event.preventDefault();
     setError('');
     setNotice('');
-    if (!isAuthenticated) return;
-    if (body.trim().length < 3 || (kind === 'review' && !rating)) {
+    if (!isAuthenticated || busy) return;
+    if ((kind === 'discussion' && body.trim().length < 3) || (kind === 'review' && !rating)) {
       setError(key('invalid'));
       return;
     }
+    setBusy(true);
     try {
-      saveCommunityPost(storyId, {
-        id: crypto.randomUUID(),
-        accountId: currentUser.id,
-        author: currentUser.name,
-        kind,
-        body: body.trim(),
-        rating: kind === 'review' ? rating : null,
-        parentId: replyTo?.id || null,
-        createdAt: new Date().toISOString(),
-      });
-      setBody('');
+      await apiRequest(
+        `/community/stories/${storyId}/${kind === 'review' ? 'rating' : 'comments'}`,
+        {
+          method: kind === 'review' ? 'PUT' : 'POST',
+          body:
+            kind === 'review'
+              ? { value: rating }
+              : { body: body.trim(), ...(replyTo ? { parentId: replyTo.id } : {}) },
+        },
+      );
+      if (kind === 'discussion') setBody('');
       setRating(0);
-      if (replyTo) setKind(replyTo.kind);
+      if (!replyTo) setPage(1);
       setReplyTo(null);
-      setPage(1);
+      setRevision((value) => value + 1);
+      feed.retry();
       setNotice(key('saved'));
+      onSaved?.();
     } catch {
-      setError(key('storageError'));
+      setError(key('saveError'));
+    } finally {
+      setBusy(false);
     }
   };
   const entry = (post, isReply = false) => (
@@ -89,10 +117,13 @@ export function StoryCommunity({ storyId }) {
           ))}
         </p>
       )}
-      <p className="whitespace-pre-wrap break-words text-sm leading-7 text-ink/80">{post.body}</p>
-      {isAuthenticated && !isReply && (
+      <p className="whitespace-pre-wrap break-words text-sm leading-7 text-ink/80">
+        {post.body || key('ratingOnly')}
+      </p>
+      {isAuthenticated && !isReply && kind === 'discussion' && (
         <Button
           variant="ghost"
+          disabled={busy}
           size="sm"
           onClick={() => {
             setKind('discussion');
@@ -104,8 +135,14 @@ export function StoryCommunity({ storyId }) {
           {key('reply')}
         </Button>
       )}
-      {!isReply &&
-        all.filter((reply) => reply.parentId === post.id).map((reply) => entry(reply, true))}
+      {!isReply && post.replyCount > 0 && (
+        <CommunityReplies
+          key={`${post.id}:${revision}`}
+          storyId={storyId}
+          parentId={post.id}
+          renderEntry={entry}
+        />
+      )}
     </article>
   );
   return (
@@ -114,6 +151,7 @@ export function StoryCommunity({ storyId }) {
         {['review', 'discussion'].map((value) => (
           <Button
             key={value}
+            disabled={busy}
             variant={kind === value ? 'primary' : 'secondary'}
             aria-pressed={kind === value}
             onClick={() => {
@@ -151,6 +189,7 @@ export function StoryCommunity({ storyId }) {
                       className="sr-only"
                       type="radio"
                       name="rating"
+                      disabled={busy}
                       value={value}
                       checked={rating === value}
                       onChange={() => setRating(value)}
@@ -168,28 +207,35 @@ export function StoryCommunity({ storyId }) {
               </div>
             </fieldset>
           )}
-          <label className="mt-4 block text-sm font-semibold" htmlFor="community-body">
-            {key('bodyLabel')}
-          </label>
-          <textarea
-            id="community-body"
-            ref={field}
-            value={body}
-            onChange={(event) => setBody(event.target.value)}
-            required
-            minLength={3}
-            maxLength={2000}
-            rows={4}
-            className="mt-2 w-full resize-y rounded-2xl border border-line bg-surface p-3 text-sm leading-6 text-ink"
-          />
-          <p className="mt-2 text-xs leading-5 text-muted">{key('demoNotice')}</p>
+          {kind === 'discussion' && (
+            <>
+              <label className="mt-4 block text-sm font-semibold" htmlFor="community-body">
+                {key('bodyLabel')}
+              </label>
+              <textarea
+                id="community-body"
+                ref={field}
+                disabled={busy}
+                value={body}
+                onChange={(event) => setBody(event.target.value)}
+                required
+                minLength={3}
+                maxLength={2000}
+                rows={4}
+                className="mt-2 w-full resize-y rounded-2xl border border-line bg-surface p-3 text-sm leading-6 text-ink"
+              />
+            </>
+          )}
+          <p className="mt-2 text-xs leading-5 text-muted">
+            {key(kind === 'review' ? 'ratingNotice' : 'serverNotice')}
+          </p>
           {error && (
             <p role="alert" className="mt-2 text-sm text-rose-strong">
               {error}
             </p>
           )}
-          <Button type="submit" className="mt-4">
-            {key(kind === 'review' ? 'submitReview' : 'submitDiscussion')}
+          <Button type="submit" disabled={busy} className="mt-4">
+            {key(busy ? 'saving' : kind === 'review' ? 'submitReview' : 'submitDiscussion')}
           </Button>
         </form>
       ) : (
@@ -206,14 +252,23 @@ export function StoryCommunity({ storyId }) {
         </p>
       )}
       <div className="space-y-4">
-        {visible.length ? (
+        {feed.status === 'loading' ? (
+          <p role="status">{key('loading')}</p>
+        ) : feed.status === 'error' ? (
+          <div role="alert">
+            <p>{key('loadError')}</p>
+            <Button variant="secondary" onClick={feed.retry}>
+              {key('retry')}
+            </Button>
+          </div>
+        ) : visible.length ? (
           visible.map((post) => entry(post))
         ) : (
           <EmptyState
             icon={MessageCircle}
             headingAs="h3"
-            title={key('emptyTitle')}
-            description={key('emptyDescription')}
+            title={key(kind === 'review' ? 'emptyRatingTitle' : 'emptyTitle')}
+            description={key(kind === 'review' ? 'emptyRatingDescription' : 'emptyDescription')}
           />
         )}
       </div>
