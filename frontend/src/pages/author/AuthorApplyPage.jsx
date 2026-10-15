@@ -7,20 +7,21 @@ import { useLocale } from '../../context/LocaleContext';
 import { ArrowRight, Check, Feather, ShieldCheck } from '../../components/icons';
 import { AuthShowcase } from '../../components/auth/AuthShowcase';
 import { PublicHeader } from '../../components/public/PublicHeader';
-import { Button, ButtonLink, Card, Modal, ProgressBar } from '../../components/ui';
+import { Button, ButtonLink, Card, Modal } from '../../components/ui';
 import { useAuth } from '../../context/AuthContext';
-import { useMockData } from '../../context/MockDataContext';
 
 export function AuthorApplyPage() {
   const { t } = useLocale();
   const labels = authorAgreements.map(({ title }) => t('legal.author.agree', { title: t(title) }));
   const [legalDocument, setLegalDocument] = useState(null);
   const [applicationState, setApplicationState] = useState('loading');
+  const [decisionReason, setDecisionReason] = useState('');
+  const [refresh, setRefresh] = useState(0);
+  const [checking, setChecking] = useState(false);
+  const [checkedAt, setCheckedAt] = useState('');
   const [checks, setChecks] = useState(() => labels.map(() => false));
   const { applyForAuthor, currentUser } = useAuth();
   const [submission, setSubmission] = useState({ status: 'idle', message: '' });
-  const { data } = useMockData();
-  const agreement = data.agreements['user-author'] || { authorShare: 80, platformShare: 20 };
   const confirmed = checks.filter(Boolean).length;
   const ready = confirmed === labels.length;
   const alreadyAuthor = currentUser?.roles?.includes('author');
@@ -29,13 +30,24 @@ export function AuthorApplyPage() {
     const controller = new AbortController();
     apiRequest('/auth/author-application', { signal: controller.signal })
       .then(({ application }) => {
+        if (controller.signal.aborted) return;
         setApplicationState(application?.status || 'none');
+        setDecisionReason(application?.decisionReason || '');
+        setSubmission({ status: 'idle', message: '' });
+        setCheckedAt(new Date().toLocaleTimeString('vi-VN'));
       })
       .catch((error) => {
-        if (error.name !== 'AbortError') setApplicationState('unavailable');
+        if (error.name === 'AbortError' || controller.signal.aborted) return;
+        if (error.status === 401) setApplicationState('expired');
+        else if (refresh > 0)
+          setSubmission({ status: 'error', message: t('authorAccess.statusFailed') });
+        else setApplicationState('unavailable');
+      })
+      .finally(() => {
+        if (!controller.signal.aborted) setChecking(false);
       });
     return () => controller.abort();
-  }, []);
+  }, [refresh, t]);
 
   const finish = async (event) => {
     event.preventDefault();
@@ -101,6 +113,13 @@ export function AuthorApplyPage() {
                     Mở Studio tác giả
                   </ButtonLink>
                 </div>
+              ) : applicationState === 'expired' ? (
+                <div className="mt-6" role="status">
+                  <p>{t('authorAccess.signInAgain')}</p>
+                  <ButtonLink to={ROUTES.login} className="mt-4">
+                    {t('auth.logIn')}
+                  </ButtonLink>
+                </div>
               ) : applicationState === 'submitted' || applicationState === 'approved' ? (
                 <div
                   role="status"
@@ -120,9 +139,32 @@ export function AuthorApplyPage() {
                         : 'legal.author.applicationPendingBody',
                     )}
                   </p>
+                  <Button
+                    variant="secondary"
+                    className="mt-4 mr-2"
+                    disabled={checking}
+                    aria-busy={checking}
+                    onClick={() => {
+                      setChecking(true);
+                      setSubmission({ status: 'idle', message: '' });
+                      setRefresh((value) => value + 1);
+                    }}
+                  >
+                    {t(checking ? 'authorAccess.checking' : 'authorAccess.refresh')}
+                  </Button>
                   <ButtonLink to={ROUTES.library} variant="secondary" className="mt-4">
                     {t('navigation.library')}
                   </ButtonLink>
+                  {refresh > 0 && !checking && submission.status !== 'error' && (
+                    <p role="status" className="mt-3 text-sm text-muted">
+                      {t('authorAccess.statusChecked', { time: checkedAt })}
+                    </p>
+                  )}
+                  {submission.status === 'error' && (
+                    <p role="alert" className="mt-3 text-sm text-rose-strong">
+                      {submission.message}
+                    </p>
+                  )}
                 </div>
               ) : (
                 <form
@@ -135,12 +177,28 @@ export function AuthorApplyPage() {
                       className="mb-4 rounded-2xl bg-rose/10 p-3 text-sm text-rose-strong"
                     >
                       {t('legal.author.applicationRejected')}
+                      {decisionReason && (
+                        <span className="mt-2 block whitespace-pre-wrap">{decisionReason}</span>
+                      )}
                     </p>
                   )}
                   {applicationState === 'unavailable' && (
-                    <p role="alert" className="mb-4 text-sm text-rose-strong">
-                      {t('legal.author.applicationLoadError')}
-                    </p>
+                    <div className="mb-4">
+                      <p role="alert" className="text-sm text-rose-strong">
+                        {t('legal.author.applicationLoadError')}
+                      </p>
+                      <Button
+                        type="button"
+                        variant="secondary"
+                        className="mt-3"
+                        onClick={() => {
+                          setApplicationState('loading');
+                          setRefresh((value) => value + 1);
+                        }}
+                      >
+                        {t('authorAccess.refresh')}
+                      </Button>
+                    </div>
                   )}
                   {applicationState === 'loading' && (
                     <p role="status" className="mb-4 text-sm text-muted">
@@ -154,26 +212,7 @@ export function AuthorApplyPage() {
                   </p>
 
                   <div className="mt-4 rounded-3xl border border-hairline bg-elevated px-4 py-3 lg:[@media(max-height:820px)]:mt-3 lg:[@media(max-height:820px)]:py-2">
-                    <div className="flex items-baseline justify-between gap-4 text-xs font-medium text-ink/70">
-                      <span>
-                        Tác giả nhận{' '}
-                        <strong className="ml-1 text-2xl font-bold tracking-[-0.03em] text-brand-strong tabular-nums">
-                          {agreement.authorShare}%
-                        </strong>
-                      </span>
-                      <span>
-                        NovelHub nhận{' '}
-                        <strong className="ml-1 text-2xl font-bold tracking-[-0.03em] text-ink tabular-nums">
-                          {agreement.platformShare}%
-                        </strong>
-                      </span>
-                    </div>
-                    <ProgressBar
-                      value={agreement.authorShare}
-                      size="md"
-                      className="mt-2.5"
-                      label={`Tác giả nhận ${agreement.authorShare}%, NovelHub nhận ${agreement.platformShare}%`}
-                    />
+                    <p className="text-sm text-muted">{t('authorAccess.revenuePolicy')}</p>
                   </div>
 
                   <fieldset className="mt-4 lg:[@media(max-height:820px)]:mt-3">
@@ -263,7 +302,6 @@ export function AuthorApplyPage() {
 
           <AuthShowcase
             variant="author"
-            authorShare={agreement.authorShare}
             authorName={currentUser?.name}
             className="col-span-12 lg:order-first lg:col-span-6 xl:col-span-7"
           />

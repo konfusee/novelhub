@@ -102,7 +102,7 @@ const variants = {
  * Presentational visual panel for the auth surfaces (/login, /register, /author/apply).
  * variant: 'login' | 'register' | 'author'. authorShare/authorName feed the author variant.
  */
-export function AuthShowcase({ variant, authorShare = 80, authorName, className = '' }) {
+export function AuthShowcase({ variant, authorShare, authorName, className = '' }) {
   const { t } = useLocale();
   const config = variants[variant] || variants.register;
   const [EyebrowIcon, eyebrow] = config.eyebrow(t);
@@ -252,14 +252,16 @@ function RoleCards({ t }) {
   );
 }
 
-function AuthorCards({ authorShare }) {
+function AuthorCards({ authorShare, t }) {
   return (
     <>
       <FloatingCard
         icon={BadgeDollarSign}
         tone="bg-orange text-on-orange"
-        title={`${authorShare}% doanh thu`}
-        text="Phần của tác giả từ chương trả phí"
+        title={authorShare == null ? t('authorAccess.revenueTitle') : `${authorShare}% doanh thu`}
+        text={
+          authorShare == null ? t('authorAccess.revenueHint') : 'Phần của tác giả từ chương trả phí'
+        }
         className="left-0 top-0"
       />
       <FloatingCard
