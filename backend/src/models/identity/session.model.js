@@ -10,6 +10,12 @@ const schema = new Schema(
     authorizationEpoch: { type: Number, required: true, min: 0 },
     status: { type: String, enum: SESSION_STATUSES, default: 'active', required: true },
     issuedAt: { type: Date, required: true, default: Date.now },
+    lastSeenAt: { type: Date, default: Date.now },
+    client: {
+      browser: { type: String, maxlength: 32 },
+      os: { type: String, maxlength: 32 },
+      deviceType: { type: String, enum: ['desktop', 'mobile', 'tablet', 'unknown'] },
+    },
     expiresAt: { type: Date, required: true },
     revokedAt: Date,
     providerSessionReference: { type: String, select: false },

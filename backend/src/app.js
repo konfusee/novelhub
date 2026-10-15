@@ -8,6 +8,7 @@ import { healthRouter } from './routes/health.routes.js';
 import { createAuthRouter } from './routes/auth.routes.js';
 import { csrfProtection } from './middleware/csrf.js';
 import { createAdminAuthorRouter } from './routes/admin-author.routes.js';
+import { createSessionRouter } from './routes/session.routes.js';
 
 // Runtime configuration is validated by loadEnv and mapped by toAppConfig.
 export function createApp(config) {
@@ -22,6 +23,7 @@ export function createApp(config) {
   app.use('/api', healthRouter);
   app.use('/api', createAuthRouter(config));
   app.use('/api', createAdminAuthorRouter(config));
+  app.use('/api', createSessionRouter(config));
   app.use(notFound);
   app.use(errorHandler);
   return app;

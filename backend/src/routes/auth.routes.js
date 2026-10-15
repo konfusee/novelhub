@@ -620,7 +620,9 @@ export function createAuthRouter(config) {
           config.frontendUrl + '/login?googleChallenge=' + encodeURIComponent(challenge),
         );
       }
-      const { token } = await issueSession(account, config.sessionTtlDays);
+      const { token } = await issueSession(account, config.sessionTtlDays, {
+        userAgent: req.get('user-agent'),
+      });
       res
         .clearCookie('novelhub_oauth_state', clear)
         .clearCookie('novelhub_oauth_verifier', clear)
@@ -666,6 +668,7 @@ export function createAuthRouter(config) {
       const { token } = await issueSession(
         account,
         parsed.data.rememberMe ? config.sessionTtlDays : 1,
+        { userAgent: req.get('user-agent') },
       );
       const loginCookie = { ...options };
       if (!parsed.data.rememberMe) delete loginCookie.maxAge;
