@@ -118,8 +118,10 @@ export function installSecurityRoutes(
   router,
   { service, authenticate, rateLimit, cookieName, options, sessionTtlDays },
 ) {
-  async function respond(res, account, rememberMe = true) {
-    const { token } = await issueSession(account, rememberMe ? sessionTtlDays : 1);
+  async function respond(req, res, account, rememberMe = true) {
+    const { token } = await issueSession(account, rememberMe ? sessionTtlDays : 1, {
+      userAgent: req.get('user-agent'),
+    });
     const cookie = { ...options };
     if (!rememberMe) delete cookie.maxAge;
     return res.cookie(cookieName, token, cookie).json({ user: await publicUser(account) });
@@ -187,7 +189,7 @@ export function installSecurityRoutes(
         );
         return account;
       });
-      await respond(res, account);
+      await respond(req, res, account);
     } catch (error) {
       next(
         error instanceof z.ZodError
@@ -217,7 +219,7 @@ export function installSecurityRoutes(
         );
         return account;
       });
-      await respond(res, account);
+      await respond(req, res, account);
     } catch (error) {
       next(
         error instanceof z.ZodError
@@ -235,7 +237,7 @@ export function installSecurityRoutes(
         if (!account.twoFactorEnabled) throw invalid();
         return account;
       });
-      await respond(res, account, candidate.rememberMe);
+      await respond(req, res, account, candidate.rememberMe);
     } catch (error) {
       next(error instanceof z.ZodError ? invalid() : error);
     }

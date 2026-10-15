@@ -26,7 +26,45 @@ export function readCookie(header, name) {
   return null;
 }
 
-export async function issueSession(account, sessionTtlDays) {
+// User-Agent labels are advisory, not verified device identity. Never store raw UA/IP.
+export function sessionClient(userAgent = '') {
+  const ua = String(userAgent).slice(0, 1024);
+  const browser = /Edg(?:e|A|iOS)?\//.test(ua)
+    ? 'Edge'
+    : /(?:OPR|Opera)\//.test(ua)
+      ? 'Opera'
+      : /(?:Firefox|FxiOS)\//.test(ua)
+        ? 'Firefox'
+        : /(?:Chrome|CriOS)\//.test(ua)
+          ? 'Chrome'
+          : /Safari\//.test(ua)
+            ? 'Safari'
+            : '';
+  const os = /iPhone/.test(ua)
+    ? 'iPhone'
+    : /iPad/.test(ua)
+      ? 'iPad'
+      : /Android/.test(ua)
+        ? 'Android'
+        : /Windows/.test(ua)
+          ? 'Windows'
+          : /Macintosh|Mac OS X/.test(ua)
+            ? 'macOS'
+            : /Linux/.test(ua)
+              ? 'Linux'
+              : '';
+  const deviceType =
+    /iPad|Tablet/.test(ua) || (/Android/.test(ua) && !/Mobile/.test(ua))
+      ? 'tablet'
+      : /iPhone|Mobile/.test(ua)
+        ? 'mobile'
+        : os
+          ? 'desktop'
+          : 'unknown';
+  return { browser, os, deviceType };
+}
+
+export async function issueSession(account, sessionTtlDays, { userAgent } = {}) {
   const token = randomBytes(32).toString('base64url');
   const expiresAt = new Date(Date.now() + sessionTtlDays * 24 * 60 * 60 * 1000);
   await Session.create({
@@ -35,6 +73,7 @@ export async function issueSession(account, sessionTtlDays) {
     credentialVersion: account.credentialVersion,
     authorizationEpoch: account.authorizationEpoch,
     expiresAt,
+    client: sessionClient(userAgent),
   });
   return { token, expiresAt };
 }
@@ -59,6 +98,18 @@ export async function resolveSession(token) {
       { $set: { status: 'revoked', revokedAt: new Date() } },
     );
     return null;
+  }
+  // Coarse activity timestamp avoids a write on every resource/API request.
+  const cutoff = new Date(Date.now() - 5 * 60 * 1000);
+  if (!session.lastSeenAt || session.lastSeenAt < cutoff) {
+    await Session.updateOne(
+      {
+        _id: session._id,
+        status: 'active',
+        $or: [{ lastSeenAt: { $lt: cutoff } }, { lastSeenAt: { $exists: false } }],
+      },
+      { $set: { lastSeenAt: new Date() } },
+    );
   }
   return { session, account };
 }
