@@ -1,6 +1,14 @@
 # Kế hoạch triển khai phần 2 Author và Admin liên quan
 
-Ngày lập: 15/10/2026. Trạng thái: kế hoạch triển khai đề xuất, chưa bắt đầu code tính năng.
+Ngày lập: 15/10/2026. Trạng thái: đang triển khai; P1 đã hoàn thiện phạm vi hồ sơ Author trên môi trường kiểm tra.
+
+## Tiến độ ngày 15/10/2026
+
+- Nền test và hợp đồng Author: `8e7b41f`. Test fixtures tách biệt database nhóm; phần category/policy của P0 tiếp tục trong P2/P5.
+- Đã triển khai và kiểm tra P1: gửi/xem đơn, Admin danh sách/duyệt/từ chối, lý do, gửi lại, grant Author, epoch, audit và notification record: `383a79a`.
+- Excel đã đánh dấu hoàn thiện AUT-01, A-UC-06, A-UC-07; A-UC-02 và A-UC-04 mới hoàn thiện một phần. Xem `docs/author-access-validation.md`.
+- Theo yêu cầu bổ sung: sửa log Windows, email chỉ đọc, dọn placeholder và thay phiên đăng nhập mock bằng API thật. Chi tiết session: `docs/account-sessions.md`.
+- Chặng tiếp theo là P2: story/chapter/draft. Các chặng P2–P8 chưa được coi là hoàn thiện từ các thay đổi P1.
 
 ## Mục tiêu và phạm vi
 
