@@ -37,3 +37,11 @@ Requested 2026-10-15: replace frontend business fixtures with authenticated API 
 6. Remove fixture imports, simulation provider, fake mutations and demo navigation; verify all routes and a clean database.
 
 Completion requires no production dependency on `src/data/mock`, no fabricated business counters or fake successful mutations, and passing DB-backed access/isolation tests. Test fixtures belong only in tests.
+
+## Full reader checkpoint
+
+FullChapterReaderPage and ChapterSegment now read published story/chapter records through the catalogue API. The old readerChapters helper that rotated one mock body across 148 generated chapters was removed. Continuous scroll, swipe, buttons, the chapter drawer, focus mode and reader settings retain their existing components and layout. Navigation uses persisted chapter IDs and handles gaps in orderKey; unknown chapters never fall back to the first chapter.
+
+Reader progress uses the existing ReadingProgress schema, scoped to the authenticated account and exact published revision. Position is a fraction from 0 to 1. Writes reject forged owners, mismatched revisions, unpublished chapters and locked chapters without entitlement. Resume restores only matching revisions; a failed progress read cannot overwrite saved progress. The end-of-story follow button now writes to the existing Follow API. Device typography settings, existing local bookmarks and annotations remain unchanged; the latter two still need a supported persistence contract before the overall migration is complete.
+
+Browser validation used an isolated disposable MongoDB replica set and existing login flow, without changing shared accounts: real chapter navigation, continuous/button settings, mobile layout without horizontal overflow, dark/light controls, and a persisted 63% position read back through the API and restored on reload. Frontend tests additionally cover gaps in chapter numbering, unknown chapters and saving the returned revision ID. Shared database schemas remain untouched.

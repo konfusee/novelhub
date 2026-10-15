@@ -1,8 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { AlertTriangle, BookOpen } from '../icons';
 import { Button, EmptyState, ProgressBar, Skeleton } from '../ui';
-import { useMockResource } from '../../context/MockDataContext';
-import { READER_CHAPTER_TOTAL, readerChapter, readerChapterTitle } from './readerChapters';
+import { useBackendDocument } from '../../api/useBackendResource';
 
 /* Prose column of one chapter; the skeleton and error states reuse it so nothing shifts. */
 const ARTICLE_CLASS =
@@ -10,7 +9,7 @@ const ARTICLE_CLASS =
 /* Typical paragraph lengths (characters) and the average glyph width of Be Vietnam Pro (em). */
 const SKELETON_PARAGRAPHS = [300, 380, 310, 290, 300];
 const GLYPH_EM = 0.55;
-const hasNoProse = (chapter) => !chapter?.paragraphs?.length;
+const emptyChapter = { chapter: { title: '', blocks: [] } };
 
 /*
  * Chapter-shaped placeholder: same column, font metrics, line box and paragraph rhythm. Line
@@ -64,17 +63,17 @@ export function ChapterSkeleton({ number, settings }) {
 }
 
 /* Chapter heading inside the continuous stream: number, title and position in the story. */
-function ChapterDivider({ number, headingId }) {
-  const storyProgress = Math.round((number / READER_CHAPTER_TOTAL) * 100);
+function ChapterDivider({ number, headingId, total, title, position }) {
+  const storyProgress = Math.round((position / total) * 100);
   return (
     <header className="mx-4 mb-6 pt-14 sm:mx-6 sm:mb-8 sm:pt-20">
       <p className="flex items-center gap-3 text-xs font-semibold uppercase tracking-[.16em] text-brand-strong">
         <span aria-hidden="true" className="h-px flex-1 bg-hairline" />
-        Chương {number} / {READER_CHAPTER_TOTAL}
+        Chương {number} / {total}
         <span aria-hidden="true" className="h-px flex-1 bg-hairline" />
       </p>
       <h2 id={headingId} className="mt-3 text-balance text-center text-h3 sm:text-h2">
-        Chương {number}: {readerChapterTitle(number)}
+        Chương {number}: {title}
       </h2>
       <div className="mx-auto mt-3 flex max-w-56 items-center gap-2">
         <ProgressBar value={storyProgress} size="sm" label={`Đã đi qua ${storyProgress}% truyện`} />
@@ -101,20 +100,21 @@ function ChapterFigure() {
         </span>
       </div>
       <figcaption className="px-4 py-3 text-center text-caption text-muted">
-        The sun filtering through the silvered elder canopy at dawn.
+        Không gian đọc NovelHub
       </figcaption>
     </figure>
   );
 }
 
 /*
- * One chapter of the reading canvas: loads `chapter:<story>:<n>` through useMockResource and
+ * One chapter of the reading canvas: loads its persisted published revision from the API and
  * renders skeleton / error / empty / prose. `placeholderHeight` unloads the prose of a far
  * chapter in the continuous stream while keeping its height, so the scroll position never jumps.
  */
 export function ChapterSegment({
   storyId,
   number,
+  chapters,
   settings,
   showFigure = false,
   divider = false,
@@ -126,14 +126,20 @@ export function ChapterSegment({
 }) {
   const chapterKey = `${storyId}-${number}`;
   const headingId = `chapter-heading-${number}`;
-  const { status, data, retry } = useMockResource(
-    `chapter:${storyId}:${number}`,
-    readerChapter(number),
-    { isEmpty: hasNoProse },
+  const chapter = chapters[number - 1];
+  const resource = useBackendDocument(
+    `/catalog/stories/${storyId}/chapters/${chapter.id}`,
+    emptyChapter,
   );
+  const data = {
+    title: resource.data.chapter.title,
+    paragraphs: resource.data.chapter.blocks.map((block) => block.text),
+  };
+  const status = resource.status === 'ready' && !data.paragraphs.length ? 'empty' : resource.status;
+  const retry = resource.retry;
   useEffect(() => {
-    onStatus?.(number, status);
-  }, [number, status, onStatus]);
+    onStatus?.(number, status, resource.data.chapter.revisionId);
+  }, [number, status, onStatus, resource.data.chapter.revisionId]);
 
   if (placeholderHeight !== undefined) {
     return (
@@ -146,7 +152,7 @@ export function ChapterSegment({
     );
   }
 
-  const title = readerChapterTitle(number);
+  const title = chapter.title;
   return (
     <section
       data-chapter-segment={number}
@@ -154,7 +160,15 @@ export function ChapterSegment({
       aria-label={divider ? undefined : `Chương ${number}: ${title}`}
       className="scroll-mt-40"
     >
-      {divider && <ChapterDivider number={number} headingId={headingId} />}
+      {divider && (
+        <ChapterDivider
+          number={chapter.orderKey}
+          position={number}
+          total={chapters.length}
+          title={title}
+          headingId={headingId}
+        />
+      )}
       {showFigure && <ChapterFigure />}
       {status === 'loading' && <ChapterSkeleton number={number} settings={settings} />}
       {status === 'error' && (
@@ -164,7 +178,7 @@ export function ChapterSegment({
             icon={AlertTriangle}
             headingAs="h3"
             title={`Không tải được chương ${number}`}
-            description="Kết nối đang chập chờn. Nội dung chương vẫn an toàn, hãy thử tải lại."
+            description={resource.error?.message || 'Kết nối đang chập chờn. Hãy thử tải lại.'}
             action={
               <Button variant="secondary" onClick={retry}>
                 Thử lại

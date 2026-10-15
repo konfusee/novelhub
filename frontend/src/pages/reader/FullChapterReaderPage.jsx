@@ -39,11 +39,8 @@ import {
 import { ReaderRange, ReaderSettings } from '../../components/reader/ReaderSettings';
 import { ChapterSegment } from '../../components/reader/ChapterSegment';
 import { useChapterSwipe } from '../../components/reader/useChapterSwipe';
-import {
-  READER_CHAPTER_TOTAL,
-  readerChapterNumberFrom,
-  readerChapterTitle,
-} from '../../components/reader/readerChapters';
+import { useBackendDocument } from '../../api/useBackendResource';
+import { apiRequest } from '../../api/client';
 import {
   DEFAULT_CHAPTER_MODE,
   DEFAULT_READER_FONT,
@@ -55,12 +52,13 @@ import {
 } from '../../components/reader/readerOptions';
 import { ROUTES } from '../../app/routes';
 import { useLocale } from '../../context/LocaleContext';
-import { fullChapter } from '../../data/mock/reader';
+const emptyCatalog = { story: {}, chapters: [] };
+const emptyFollow = { following: false };
 
 const SETTINGS_KEY = 'novelhub.reader.settings.v2';
 const BOOKMARK_KEY = 'novelhub.reader.bookmarks.v1';
 const ANNOTATIONS_KEY = 'novelhub.reader.annotations.v1';
-const POSITION_KEY = 'novelhub.reader.position.v1';
+const emptyProgress = { position: 0, revisionId: null };
 const SWIPE_HINT_KEY = 'novelhub.reader.swipe-hint.v1';
 const CHAPTER_MODES = READER_CHAPTER_MODES.map((mode) => mode.value);
 /* Continuous scroll: the chapter crossing this viewport line is "current"; ±1 stay rendered. */
@@ -333,7 +331,7 @@ function ReaderToolbar({
   );
 }
 
-function StoryEndCard({ following, onFollow }) {
+function StoryEndCard({ following, onFollow, story, total, followDisabled }) {
   return (
     <Card className="mx-4 mt-12 text-center sm:mx-6">
       <span className="mx-auto grid size-14 place-items-center rounded-2xl bg-brand/12 text-brand-strong">
@@ -341,14 +339,15 @@ function StoryEndCard({ following, onFollow }) {
       </span>
       <h2 className="mt-4 text-h3">Bạn đã đọc đến chương mới nhất</h2>
       <p className="mx-auto mt-2 max-w-md text-sm leading-6 text-muted">
-        {fullChapter.story} hiện có {READER_CHAPTER_TOTAL} chương. Theo dõi truyện để nhận thông báo
-        ngay khi {fullChapter.author} đăng chương mới.
+        {story.title} hiện có {total} chương. Theo dõi truyện để nhận thông báo ngay khi{' '}
+        {story.author} đăng chương mới.
       </p>
       <div className="mt-6 flex flex-col justify-center gap-3 sm:flex-row">
         <Button
           variant={following ? 'secondary' : 'primary'}
           aria-pressed={following}
           onClick={onFollow}
+          disabled={followDisabled}
         >
           {following ? <Check size={16} aria-hidden="true" /> : <BellRing size={16} />}
           {following ? 'Đang theo dõi' : 'Theo dõi truyện'}
@@ -362,10 +361,61 @@ function StoryEndCard({ following, onFollow }) {
 }
 
 export function FullChapterReaderPage() {
+  const { storyId, chapterId } = useParams();
+  const catalog = useBackendDocument(`/catalog/stories/${storyId}`, emptyCatalog);
+  if (catalog.status !== 'ready')
+    return (
+      <ReaderLayout>
+        <div className="page-reader py-10">
+          <EmptyState
+            title={
+              catalog.status === 'loading'
+                ? 'Đang tải truyện…'
+                : catalog.status === 'error'
+                  ? 'Không tải được truyện'
+                  : 'Không tìm thấy truyện'
+            }
+            action={
+              catalog.status === 'error' ? (
+                <Button onClick={catalog.retry}>Thử lại</Button>
+              ) : undefined
+            }
+          />
+        </div>
+      </ReaderLayout>
+    );
+  const index = catalog.data.chapters.findIndex(
+    (item) => item.id === chapterId || `chapter-${item.orderKey}` === chapterId,
+  );
+  if (index < 0)
+    return (
+      <ReaderLayout>
+        <div className="page-reader py-10">
+          <EmptyState
+            title="Không tìm thấy chương"
+            description="Chọn một chương đã xuất bản trong danh sách truyện."
+            action={<ButtonLink to={ROUTES.story(storyId)}>Về truyện</ButtonLink>}
+          />
+        </div>
+      </ReaderLayout>
+    );
+  return (
+    <LoadedChapterReader
+      key={catalog.data.story.id}
+      catalog={catalog.data}
+      chapterNumber={index + 1}
+    />
+  );
+}
+
+function LoadedChapterReader({ catalog, chapterNumber }) {
   const { t } = useLocale();
   const navigate = useNavigate();
-  const { storyId = 'demo', chapterId } = useParams();
-  const chapterNumber = readerChapterNumberFrom(chapterId);
+  const storyId = catalog.story.id;
+  const chapterTotal = catalog.chapters.length;
+  const chapterFor = (number) => catalog.chapters[number - 1];
+  const readerChapterTitle = (number) => chapterFor(number)?.title ?? '';
+  const displayedNumber = (number) => chapterFor(number)?.orderKey ?? number;
   const pageRef = useRef(null);
   const swipeRef = useRef(null);
   const streamRef = useRef(null);
@@ -411,6 +461,9 @@ export function FullChapterReaderPage() {
   const headerNumber = continuous ? view.first : current;
   const urlNumber = view.url;
   const [statuses, setStatuses] = useState({});
+  const [revisionIds, setRevisionIds] = useState({});
+  const [resumeChapterId] = useState(() => chapterFor(chapterNumber).id);
+  const resume = useBackendDocument(`/reader/progress/${resumeChapterId}`, emptyProgress);
   const [progress, setProgress] = useState(0);
   const [bookmarks, setBookmarks] = useState(() => readStored(BOOKMARK_KEY, []));
   const [annotations, setAnnotations] = useState(() => readStored(ANNOTATIONS_KEY, []));
@@ -424,7 +477,9 @@ export function FullChapterReaderPage() {
   const [focus, setFocus] = useState(false);
   const [toast, setToast] = useState('');
   const [chapterQuery, setChapterQuery] = useState('');
-  const [following, setFollowing] = useState(false);
+  const follow = useBackendDocument(`/reader/follows/${storyId}`, emptyFollow);
+  const following = follow.data.following;
+  const [followSaving, setFollowSaving] = useState(false);
   const [hintSeen, setHintSeen] = useState(() => localStorage.getItem(SWIPE_HINT_KEY) === '1');
   const [coarsePointer] = useState(() => window.matchMedia('(pointer: coarse)').matches);
   const [touchCapable] = useState(() => coarsePointer || navigator.maxTouchPoints > 0);
@@ -432,7 +487,7 @@ export function FullChapterReaderPage() {
   const drawerOpen = settingsOpen || notesOpen || chaptersOpen;
   const panelOpen = drawerOpen || noteOpen;
   const showHint = mode === 'swipe' && !hintSeen;
-  const chapterHref = (number) => ROUTES.read(storyId, `chapter-${number}`);
+  const chapterHref = (number) => ROUTES.read(storyId, chapterFor(number)?.id);
 
   /* Latest render values for listeners that live across renders. */
   const latest = useRef({ mode, current, storyId, noteOpen });
@@ -462,44 +517,59 @@ export function FullChapterReaderPage() {
     setHintSeen(true);
   }, []);
   const goToChapter = (number) => {
-    if (number < 1 || number > READER_CHAPTER_TOTAL || number === current) return;
+    if (number < 1 || number > chapterTotal || number === current) return;
     setSelection(null);
     if (mode === 'swipe') dismissHint();
     navigate(chapterHref(number));
   };
 
   /* Segments report their load state: gates the continuous stream and the resume position. */
-  const handleStatus = useCallback((number, status) => {
-    setStatuses((previous) =>
-      previous[number] === status ? previous : { ...previous, [number]: status },
-    );
-    const restore = restoreRef.current;
-    if (!restore.pending || number !== restore.number || status === 'loading') return;
-    restore.pending = false;
-    if (status !== 'ready') return;
-    requestAnimationFrame(() => {
-      const saved = readStored(POSITION_KEY, null);
-      const segment = document.querySelector(`[data-chapter-segment="${number}"]`);
-      if (saved?.chapter === `${latest.current.storyId}-${number}` && segment) {
-        const top =
-          saved.offset === undefined
-            ? saved.y
-            : segment.getBoundingClientRect().top + scrollY + saved.offset;
-        scrollTo({ top, behavior: 'instant' });
-      }
-      measureRef.current();
-    });
-  }, []);
+  const handleStatus = useCallback(
+    (number, status, revisionId) => {
+      if (revisionId)
+        setRevisionIds((previous) =>
+          previous[number] === revisionId ? previous : { ...previous, [number]: revisionId },
+        );
+      setStatuses((previous) =>
+        previous[number] === status ? previous : { ...previous, [number]: status },
+      );
+      const restore = restoreRef.current;
+      if (
+        !restore.pending ||
+        number !== restore.number ||
+        status === 'loading' ||
+        resume.status !== 'ready'
+      )
+        return;
+      restore.pending = false;
+      if (status !== 'ready') return;
+      requestAnimationFrame(() => {
+        const segment = document.querySelector(`[data-chapter-segment="${number}"]`);
+        if (resume.data.revisionId === revisionId && segment && resume.data.position > 0) {
+          scrollTo({
+            top:
+              segment.getBoundingClientRect().top +
+              scrollY +
+              segment.offsetHeight * resume.data.position -
+              innerHeight * READING_LINE,
+            behavior: 'instant',
+          });
+        }
+        measureRef.current();
+      });
+    },
+    [resume.status, resume.data],
+  );
 
   /* Reading progress of the current chapter + resume position, sampled once per frame. */
   useEffect(() => {
     let frame = 0;
     const measure = () => {
       frame = 0;
-      const { mode: activeMode, current: number, storyId: story } = latest.current;
+      const { current: number } = latest.current;
       const segment = document.querySelector(`[data-chapter-segment="${number}"]`);
       let ratio;
-      if (activeMode === 'continuous' && segment) {
+      if (segment) {
         const rect = segment.getBoundingClientRect();
         ratio = rect.height > 0 ? (innerHeight * READING_LINE - rect.top) / rect.height : 0;
       } else {
@@ -507,15 +577,6 @@ export function FullChapterReaderPage() {
         ratio = height > 0 ? scrollY / height : 0;
       }
       setProgress(Math.round(Math.min(1, Math.max(0, ratio)) * 100));
-      if (!restoreRef.current.pending && segment) {
-        localStorage.setItem(
-          POSITION_KEY,
-          JSON.stringify({
-            chapter: `${story}-${number}`,
-            offset: Math.round(-segment.getBoundingClientRect().top),
-          }),
-        );
-      }
     };
     const schedule = () => {
       if (!frame) frame = requestAnimationFrame(measure);
@@ -532,6 +593,18 @@ export function FullChapterReaderPage() {
     measureRef.current();
   }, [current, mode, statuses]);
 
+  useEffect(() => {
+    if (statuses[current] !== 'ready' || !revisionIds[current] || restoreRef.current.pending)
+      return undefined;
+    const timer = setTimeout(() => {
+      apiRequest(`/reader/progress/${catalog.chapters[current - 1].id}`, {
+        method: 'PUT',
+        body: { position: progress / 100, revisionId: revisionIds[current] },
+      }).catch((error) => setToast(`Chưa lưu được tiến độ: ${error.message}`));
+    }, 1000);
+    return () => clearTimeout(timer);
+  }, [current, progress, statuses, revisionIds, catalog.chapters]);
+
   /* Explicit chapter changes start at the top of the new chapter. */
   useEffect(() => {
     if (!view.jump) return;
@@ -540,11 +613,11 @@ export function FullChapterReaderPage() {
   /* Continuous scroll keeps the address bar on the chapter in view, without a remount or scroll. */
   useEffect(() => {
     if (current === urlNumber) return;
-    navigate(ROUTES.read(storyId, `chapter-${current}`), {
+    navigate(ROUTES.read(storyId, catalog.chapters[current - 1]?.id), {
       replace: true,
       preventScrollReset: true,
     });
-  }, [current, urlNumber, navigate, storyId]);
+  }, [current, urlNumber, navigate, storyId, catalog.chapters]);
 
   /* Continuous scroll: the chapter crossing the reading line is current; far ones unload. */
   useEffect(() => {
@@ -577,7 +650,7 @@ export function FullChapterReaderPage() {
   const lastReady = statuses[view.last] === 'ready';
   useEffect(() => {
     const node = sentinelRef.current;
-    if (!continuous || !node || !lastReady || view.last >= READER_CHAPTER_TOTAL) return undefined;
+    if (!continuous || !node || !lastReady || view.last >= chapterTotal) return undefined;
     const last = view.last;
     const observer = new IntersectionObserver(
       ([entry]) => {
@@ -590,7 +663,7 @@ export function FullChapterReaderPage() {
     );
     observer.observe(node);
     return () => observer.disconnect();
-  }, [continuous, lastReady, view.last]);
+  }, [continuous, lastReady, view.last, chapterTotal]);
   const loadPrevious = () => {
     setSelection(null);
     setView((previous) =>
@@ -608,7 +681,7 @@ export function FullChapterReaderPage() {
   useChapterSwipe(swipeRef, {
     enabled: mode === 'swipe',
     canPrev: current > 1,
-    canNext: current < READER_CHAPTER_TOTAL,
+    canNext: current < chapterTotal,
     onCommit: (direction) => goToChapter(direction === 'next' ? current + 1 : current - 1),
     resetKey: current,
   });
@@ -650,15 +723,26 @@ export function FullChapterReaderPage() {
         return;
       }
       const target = event.key === 'ArrowRight' ? current + 1 : current - 1;
-      if (target < 1 || target > READER_CHAPTER_TOTAL) return;
+      if (target < 1 || target > chapterTotal) return;
       event.preventDefault();
       setSelection(null);
       if (mode === 'swipe') dismissHint();
-      navigate(ROUTES.read(storyId, `chapter-${target}`));
+      navigate(ROUTES.read(storyId, catalog.chapters[target - 1]?.id));
     };
     document.addEventListener('keydown', onKeyDown);
     return () => document.removeEventListener('keydown', onKeyDown);
-  }, [panelOpen, selection, focus, mode, current, navigate, storyId, dismissHint]);
+  }, [
+    panelOpen,
+    selection,
+    focus,
+    mode,
+    current,
+    navigate,
+    storyId,
+    dismissHint,
+    chapterTotal,
+    catalog.chapters,
+  ]);
   useEffect(() => {
     const list = chapterListRef.current;
     const active = list?.querySelector('[aria-current="page"]');
@@ -678,7 +762,7 @@ export function FullChapterReaderPage() {
   };
   const annotationsFor = (key) =>
     annotations.filter((item) =>
-      item.chapter ? item.chapter === key : key === `${storyId}-${fullChapter.number}`,
+      item.chapter ? item.chapter === key : key === `${storyId}-${chapterNumber}`,
     );
   const chapterAnnotations = annotationsFor(chapterKey);
   const toggleBookmark = () => {
@@ -769,7 +853,7 @@ export function FullChapterReaderPage() {
   const shareSelection = async () => {
     try {
       if (selection && navigator.share)
-        await navigator.share({ title: fullChapter.story, text: selection.text });
+        await navigator.share({ title: catalog.story.title, text: selection.text });
       else if (selection) await navigator.clipboard?.writeText(selection.text);
       setToast(t('reader.share'));
     } catch {
@@ -813,17 +897,32 @@ export function FullChapterReaderPage() {
   };
   const chapters = useMemo(
     () =>
-      Array.from({ length: READER_CHAPTER_TOTAL }, (_, i) => i + 1).filter((number) =>
-        `${number}`.includes(chapterQuery.replace(/\D/g, '')),
+      Array.from({ length: chapterTotal }, (_, i) => i + 1).filter((number) =>
+        `${catalog.chapters[number - 1].orderKey} ${catalog.chapters[number - 1].title}`
+          .toLowerCase()
+          .includes(chapterQuery.toLowerCase()),
       ),
-    [chapterQuery],
+    [chapterQuery, chapterTotal, catalog.chapters],
   );
-  const toggleFollow = () => {
-    setFollowing((value) => !value);
-    setToast(following ? 'Đã bỏ theo dõi truyện' : 'Đã theo dõi, bạn sẽ nhận thông báo chương mới');
+  const toggleFollow = async () => {
+    if (followSaving || follow.status !== 'ready') return;
+    setFollowSaving(true);
+    try {
+      await apiRequest(`/reader/follows/${storyId}`, {
+        method: 'PUT',
+        body: { following: !following },
+      });
+      follow.retry();
+      setToast(following ? 'Đã bỏ theo dõi truyện' : 'Đã theo dõi truyện');
+    } catch (error) {
+      setToast(error.message);
+    } finally {
+      setFollowSaving(false);
+    }
   };
   const segmentProps = {
     storyId,
+    chapters: catalog.chapters,
     settings,
     renderParagraph,
     onStatus: handleStatus,
@@ -833,7 +932,7 @@ export function FullChapterReaderPage() {
   const streamEnter = (number) =>
     number === view.anchor ? view.direction : number < view.anchor ? 'prev' : 'next';
   const headerEnter = continuous ? streamEnter(headerNumber) : view.direction;
-  const atStoryEnd = current === READER_CHAPTER_TOTAL && statuses[current] === 'ready';
+  const atStoryEnd = current === chapterTotal && statuses[current] === 'ready';
   const toastPosition = drawerOpen
     ? 'top-[calc(var(--app-header-h)+1rem)]'
     : mode === 'button'
@@ -847,7 +946,7 @@ export function FullChapterReaderPage() {
         className={`reader-page relative min-h-screen bg-reader pb-16 text-ink transition-[margin,padding] duration-300 motion-reduce:transition-none ${settingsOpen ? 'lg:mr-96' : ''} ${settings.toolbarLayout === 'vertical' ? 'pr-16 sm:pr-20' : ''} ${mode === 'button' ? 'max-sm:pb-32' : ''}`}
       >
         <p aria-live="polite" className="sr-only">
-          Chương {current}: {readerChapterTitle(current)}
+          Chương {displayedNumber(current)}: {readerChapterTitle(current)}
         </p>
         <header className="px-4 pb-5 pt-6 sm:px-6 sm:pt-8">
           <div className="mx-auto max-w-[1100px] px-1">
@@ -863,13 +962,13 @@ export function FullChapterReaderPage() {
               className={headerEnter ? `nh-chapter-enter-${headerEnter}` : undefined}
             >
               <p className="mt-4 text-xs font-semibold uppercase tracking-[.16em] text-brand-strong">
-                {fullChapter.story} · Chương {headerNumber} / {READER_CHAPTER_TOTAL}
+                {catalog.story.title} · Chương {displayedNumber(headerNumber)} / {chapterTotal}
               </p>
               <h1 className="mt-2 text-h2 sm:text-h1">
-                Chương {headerNumber}: {readerChapterTitle(headerNumber)}
+                Chương {displayedNumber(headerNumber)}: {readerChapterTitle(headerNumber)}
               </h1>
               <p className="mt-2 text-caption text-ink/70">
-                {fullChapter.author} · {fullChapter.readTime}
+                {catalog.story.author} · {'Đọc theo nhịp của bạn'}
               </p>
             </div>
           </div>
@@ -892,13 +991,21 @@ export function FullChapterReaderPage() {
           className="reading-container mx-auto mt-6 sm:mt-10"
           style={{ maxWidth: settings.width }}
         >
+          {resume.status === 'error' && (
+            <p role="alert" className="mx-4 mb-6 text-sm text-rose-strong">
+              Chưa tải được tiến độ đã lưu.{' '}
+              <Button variant="secondary" size="sm" onClick={resume.retry}>
+                Thử lại
+              </Button>
+            </p>
+          )}
           {continuous ? (
             <div ref={streamRef}>
               {view.first > 1 && (
                 <div className="mx-4 mb-6 flex justify-center sm:mx-6 sm:mb-8">
                   <Button variant="secondary" onClick={loadPrevious}>
                     <ChevronUp size={16} aria-hidden="true" />
-                    Đọc chương trước · Chương {view.first - 1}
+                    Đọc chương trước · Chương {displayedNumber(view.first - 1)}
                   </Button>
                 </div>
               )}
@@ -915,11 +1022,17 @@ export function FullChapterReaderPage() {
                   }
                 />
               ))}
-              {view.last < READER_CHAPTER_TOTAL ? (
+              {view.last < chapterTotal ? (
                 <div ref={sentinelRef} aria-hidden="true" className="h-px" />
               ) : (
                 statuses[view.last] === 'ready' && (
-                  <StoryEndCard following={following} onFollow={toggleFollow} />
+                  <StoryEndCard
+                    following={following}
+                    onFollow={toggleFollow}
+                    story={catalog.story}
+                    total={chapterTotal}
+                    followDisabled={followSaving || follow.status !== 'ready'}
+                  />
                 )
               )}
             </div>
@@ -952,7 +1065,7 @@ export function FullChapterReaderPage() {
                 ) : (
                   <span aria-hidden="true" />
                 )}
-                {current < READER_CHAPTER_TOTAL && (
+                {current < chapterTotal && (
                   <ButtonLink
                     size="lg"
                     className="min-h-[3.125rem] py-1.5"
@@ -964,7 +1077,15 @@ export function FullChapterReaderPage() {
                   </ButtonLink>
                 )}
               </nav>
-              {atStoryEnd && <StoryEndCard following={following} onFollow={toggleFollow} />}
+              {atStoryEnd && (
+                <StoryEndCard
+                  following={following}
+                  onFollow={toggleFollow}
+                  story={catalog.story}
+                  total={chapterTotal}
+                  followDisabled={followSaving || follow.status !== 'ready'}
+                />
+              )}
             </>
           )}
         </div>
@@ -985,11 +1106,11 @@ export function FullChapterReaderPage() {
               <button
                 type="button"
                 onClick={() => setChaptersOpen(true)}
-                aria-label={`Chương ${current} / ${READER_CHAPTER_TOTAL}, đã đọc ${progress}%. Mở danh sách chương`}
+                aria-label={`Chương ${current} / ${chapterTotal}, đã đọc ${progress}%. Mở danh sách chương`}
                 className="min-h-11 min-w-0 flex-1 rounded-full px-3 text-center transition-colors hover:bg-ink/5"
               >
                 <span className="block text-xs font-semibold tabular-nums">
-                  Chương {current} / {READER_CHAPTER_TOTAL}
+                  Chương {displayedNumber(current)} / {chapterTotal}
                 </span>
                 <span
                   aria-hidden="true"
@@ -1005,7 +1126,7 @@ export function FullChapterReaderPage() {
                 label={t('reader.next')}
                 shape="circle"
                 tone="brand"
-                disabled={current >= READER_CHAPTER_TOTAL}
+                disabled={current >= chapterTotal}
                 onClick={() => goToChapter(current + 1)}
               >
                 <ChevronRight size={20} />
@@ -1229,7 +1350,7 @@ export function FullChapterReaderPage() {
                     >
                       <span className="min-w-0 truncate">
                         <span className="tabular-nums">
-                          Chương {String(number).padStart(2, '0')}
+                          Chương {String(displayedNumber(number)).padStart(2, '0')}
                         </span>
                         <span className={active ? undefined : 'text-muted'}>
                           {' '}

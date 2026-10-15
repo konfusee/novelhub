@@ -26,7 +26,12 @@ export function useBackendResource(path, initialData = emptyItems, select = item
       })
       .catch((error) => {
         if (!controller.signal.aborted)
-          setState({ path, data: initialData, status: error.status === 404 ? 'empty' : 'error' });
+          setState({
+            path,
+            data: initialData,
+            status: error.status === 404 ? 'empty' : 'error',
+            error,
+          });
       });
     return () => controller.abort();
   }, [path, attempt, initialData, select]);
