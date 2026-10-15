@@ -1,0 +1,35 @@
+# MongoDB data migration
+
+## Current checkpoint
+
+Broad frontend rewrites were restored at the user's explicit request on 2026-10-15. Preserve the original UI/UX. CategoriesPage now uses `/api/catalog/discovery`, retaining its existing markup, classes, cards, shelves, filter and selection interactions. Other frontend screens still use their original mock sources; the whole migration is **not complete**. Existing pre-migration PublicHeader edits and the user's deleted AuthorApplyPage test were left untouched.
+
+The user clarified that old mock records should be reference input for MongoDB, using the existing backend schemas. No backend model/schema files were changed. Category descriptions, icon/tone choices and editorial curation are persisted separately in `catalogPresentation`; this cannot change domain ownership, publication or balances.
+
+The importer was run against the configured `novelhub` database and independently verified: 9 categories, 29 stories, 38 chapters, 67 content revisions, 6 publication submissions, 5 notifications and 2 wallets; 22 stories are published. Existing accounts and documents were preserved. The old display-only figures such as `14.2K` remain reference metadata; public category counts are calculated from actual published story revisions. Do not create thousands of fake records merely to reproduce those labels.
+
+`npm run db:seed-reference -w backend` imports once atomically. Stable IDs and an append-only audit marker make reruns insert-only/idempotent. It is restricted to development/test. Missing optional DEV_SEED_PASSWORD uses an undisclosed random password for new reference accounts; existing users' credentials are untouched. `node backend/scripts/verify-reference-data.js` independently checks the configured database without printing connection credentials.
+
+Source samples using USD, bonus coins or tips are not copied into incompatible financial transactions: packages follow the existing 1 VND = 1 coin model, and reference opening balances are explicitly labeled ledger adjustments. Bank transactions, processing outputs and real media/audio files are not fabricated. Importing content is not a claim that all frontend features have been integrated.
+
+Requested 2026-10-15: replace frontend business fixtures with authenticated API reads and durable MongoDB writes. UI constants (labels, icons, supported formats) remain code; business records and metrics must come from the database. Do not seed production with the old demo records.
+
+## Contract
+
+- Reuse the existing cookie API client and Mongoose models. No second database or browser business-data store.
+- Public discovery reads only published revisions. Draft metadata must never replace a published snapshot.
+- Empty collections render empty states. Network/server failures render retryable errors. Neither case falls back to fixtures.
+- Owner routes scope every query to the authenticated account; staff routes require the relevant server-side role.
+- Money, moderation decisions and publishing require their domain transitions; a successful browser timer is never evidence of completion.
+- Migrate and verify domain by domain. This document does not claim that unmigrated screens are complete.
+
+## Work packages
+
+1. Public categories, catalogue, search and story/chapter reading.
+2. Author stories, revisions and chapter drafts; category administration.
+3. Library, follows, history, notifications, profile/preferences and community.
+4. Wallet/ledger, revenue and payouts.
+5. Moderation, staff dashboards, configuration and audit.
+6. Remove fixture imports, simulation provider, fake mutations and demo navigation; verify all routes and a clean database.
+
+Completion requires no production dependency on `src/data/mock`, no fabricated business counters or fake successful mutations, and passing DB-backed access/isolation tests. Test fixtures belong only in tests.

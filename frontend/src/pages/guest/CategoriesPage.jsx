@@ -22,9 +22,7 @@ import {
   Skeleton,
   Tabs,
 } from '../../components/ui';
-import { useMockResource } from '../../context/MockDataContext';
-import { categories, popularTags } from '../../data/mock/categories';
-import { extendedStories, hiddenGems } from '../../data/mock/stories';
+import { useDiscoveryData } from '../../api/useDiscoveryData';
 
 const filters = [
   ['All', 'Tất cả'],
@@ -34,7 +32,7 @@ const filters = [
   ['Completed', 'Đã hoàn thành'],
 ];
 
-/* Mock ordering derived from the catalogue counts until the API exposes category stats. */
+/* Counts come from published MongoDB records; ordering stays local to preserve the filters. */
 const storyCount = (category) => parseFloat(category.count) || 0;
 const orderings = {
   Popular: (list) => [...list].sort((a, b) => storyCount(b) - storyCount(a)),
@@ -43,19 +41,13 @@ const orderings = {
     list.filter((item) => storyCount(item) >= 10).sort((a, b) => storyCount(b) - storyCount(a)),
 };
 
-const gemTones = { Adventure: 'orange', Mystery: 'purple' };
-const stagger = (index) => Math.min(index, 5) * 80;
-
-/* Genre shelves and editor picks load as one curated-collections payload. */
-const collections = {
-  fantasy: extendedStories.filter((story) => story.genre === 'Fantasy').slice(0, 4),
-  romance: extendedStories
-    .filter((story) => story.genre === 'Romance' || story.genre === 'Drama')
-    .slice(0, 4),
-  scifi: extendedStories.filter((story) => story.genre === 'Sci-Fi').slice(0, 4),
-  gems: hiddenGems,
+const gemTones = {
+  Adventure: 'orange',
+  Mystery: 'purple',
+  'Phiêu lưu': 'orange',
+  'Bí ẩn': 'purple',
 };
-const isCollectionsEmpty = (value) => Object.values(value).every((list) => !list.length);
+const stagger = (index) => Math.min(index, 5) * 80;
 
 function RetryButton({ onClick }) {
   return (
@@ -104,10 +96,8 @@ export function CategoriesPage({ embedded = false }) {
   const [query, setQuery] = useState('');
   const [filter, setFilter] = useState('All');
   const [selectedGenre, setSelectedGenre] = useState(() => params.get('genre') ?? '');
-  const catalog = useMockResource('catalog:categories', categories);
-  const curated = useMockResource('catalog:collections', collections, {
-    isEmpty: isCollectionsEmpty,
-  });
+  const { catalog, curated, tags } = useDiscoveryData();
+  const popularTags = tags.map((tag) => tag.label);
   const visibleCategories = useMemo(() => {
     const matches = catalog.data.filter((category) =>
       `${category.name} ${category.description}`.toLowerCase().includes(query.toLowerCase()),
@@ -181,8 +171,8 @@ export function CategoriesPage({ embedded = false }) {
               aria-label="Đang tải thể loại"
               className="nh-grid-12 grid gap-4 nh-sm-cols-2 nh-lg-cols-3"
             >
-              {categories.map((category) => (
-                <CategoryCardSkeleton key={category.name} />
+              {Array.from({ length: 9 }, (_, index) => (
+                <CategoryCardSkeleton key={index} />
               ))}
             </div>
           ) : catalog.status === 'error' ? (
@@ -249,7 +239,7 @@ export function CategoriesPage({ embedded = false }) {
                   aria-label="Đang tải thẻ phổ biến"
                   className="nh-grid-12 mt-6 grid nh-cols-2 gap-3 nh-sm-cols-3 nh-lg-cols-6"
                 >
-                  {popularTags.map((tag) => (
+                  {Array.from({ length: 6 }, (_, tag) => (
                     <span
                       key={tag}
                       aria-hidden="true"
@@ -266,7 +256,7 @@ export function CategoriesPage({ embedded = false }) {
                 </div>
               ) : (
                 <div className="nh-fade-enter nh-grid-12 mt-6 grid nh-cols-2 gap-3 nh-sm-cols-3 nh-lg-cols-6">
-                  {popularTags.map((tag, index) => (
+                  {popularTags.map((tag) => (
                     <Link
                       to={`/search?q=${encodeURIComponent(tag.replace('#', ''))}`}
                       className="group rounded-2xl border border-hairline bg-elevated px-2 py-4 text-center transition-[transform,border-color] duration-200 ease-spring hover:-translate-y-0.5 hover:border-brand/60 sm:px-3 lg:px-2 xl:px-3"
@@ -282,7 +272,7 @@ export function CategoriesPage({ embedded = false }) {
                         ))}
                       </strong>
                       <span className="mt-1 block text-xs tabular-nums text-ink/70">
-                        {420 + index * 175} truyện
+                        {tags.find((item) => item.label === tag)?.count ?? 0} truyện
                       </span>
                     </Link>
                   ))}
@@ -320,19 +310,19 @@ export function CategoriesPage({ embedded = false }) {
               title="Kỳ ảo — Thế giới sử thi & phép thuật"
               stories={fantasy}
               loading={collectionsLoading}
-              placeholders={collections.fantasy.length}
+              placeholders={4}
             />
             <StoryShelf
               title="Lãng mạn — Hành trình cảm xúc"
               stories={romance}
               loading={collectionsLoading}
-              placeholders={collections.romance.length}
+              placeholders={4}
             />
             <StoryShelf
               title="Khoa học viễn tưởng & Cyberpunk — Chân trời tương lai"
               stories={scifi}
               loading={collectionsLoading}
-              placeholders={collections.scifi.length}
+              placeholders={4}
             />
           </>
         )}
@@ -352,8 +342,8 @@ export function CategoriesPage({ embedded = false }) {
                 aria-label="Đang tải viên ngọc ẩn"
                 className="nh-grid-12 mt-6 grid gap-4 nh-md-cols-3"
               >
-                {hiddenGems.map((item) => (
-                  <GemCardSkeleton key={item.title} />
+                {Array.from({ length: 3 }, (_, index) => (
+                  <GemCardSkeleton key={index} />
                 ))}
               </div>
             ) : (
@@ -362,7 +352,7 @@ export function CategoriesPage({ embedded = false }) {
                   <Reveal key={item.title} delay={stagger(index)}>
                     <Card
                       as={Link}
-                      to="/stories/demo"
+                      to={`/stories/${item.id}`}
                       interactive
                       className="group flex h-full flex-col whitespace-normal"
                     >
