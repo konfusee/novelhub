@@ -10,10 +10,12 @@ import {
   ReadingProgress,
   Story,
   UnlockEntitlement,
+  Wallet,
 } from '../models/index.js';
 import { requireAuth } from '../middleware/auth.js';
 import { HttpError } from '../middleware/errors.js';
 import { withTransaction } from '../db/connection.js';
+import { readerLibrary, readerHistory } from '../modules/reader-collections.js';
 
 const id = z.string().regex(/^[a-f\d]{24}$/i);
 const profileInput = z
@@ -58,6 +60,53 @@ export function createReaderDataRouter(config) {
     next();
   });
   router.get('/reader/profile', (req, res) => res.json({ profile: profile(req.account) }));
+  router.get('/reader/balance', async (req, res, next) => {
+    try {
+      const wallets = await Wallet.find({
+        ownerType: 'account',
+        ownerId: req.account._id,
+        purpose: { $in: ['reader-coins', 'author-earnings'] },
+      })
+        .select('purpose availableBalance')
+        .lean();
+      const balance = (purpose) =>
+        Number(wallets.find((item) => item.purpose === purpose)?.availableBalance ?? 0);
+      res.json({
+        readerCoins: balance('reader-coins'),
+        authorEarnings: balance('author-earnings'),
+      });
+    } catch (error) {
+      next(error);
+    }
+  });
+  router.get('/reader/library', async (req, res, next) => {
+    try {
+      res.json(await readerLibrary(req.account._id));
+    } catch (error) {
+      next(error);
+    }
+  });
+  router.get('/reader/history', async (req, res, next) => {
+    try {
+      res.json(await readerHistory(req.account._id));
+    } catch (error) {
+      next(error);
+    }
+  });
+  router.delete('/reader/history', async (req, res, next) => {
+    try {
+      await ownerWrite(req, (session) =>
+        ReadingProgress.updateMany(
+          { accountId: req.account._id },
+          { $unset: { lastReadAt: 1 } },
+          { session },
+        ),
+      );
+      res.json({ ok: true });
+    } catch (error) {
+      next(error);
+    }
+  });
   router.get('/reader/progress/:id', async (req, res, next) => {
     try {
       const progress = await ReadingProgress.findOne({

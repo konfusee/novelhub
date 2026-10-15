@@ -89,6 +89,13 @@ describe('real reader and staff data', () => {
     });
     const own = await request(app).get('/api/workspace/reader/balance').set('Cookie', user.cookie);
     expect(own.body.items[0].description).toBe('123 xu');
+    expect((await request(app).get('/api/reader/balance').set('Cookie', user.cookie)).body).toEqual(
+      { readerCoins: 123, authorEarnings: 0 },
+    );
+    expect(
+      (await request(app).get('/api/reader/balance').set('Cookie', other.cookie)).body,
+    ).toEqual({ readerCoins: 0, authorEarnings: 0 });
+    expect((await request(app).get('/api/reader/balance')).status).toBe(401);
     expect(
       (await request(app).get('/api/workspace/reader/balance').set('Cookie', other.cookie)).body
         .items[0].description,
@@ -189,6 +196,34 @@ describe('real reader and staff data', () => {
     expect((await write('put', progressPath, reader.cookie, progressInput)).status).toBe(403);
     const followPath = `/api/reader/follows/${story._id}`;
     expect((await write('put', followPath, reader.cookie, { following: true })).status).toBe(200);
+    const library = await request(app).get('/api/reader/library').set('Cookie', reader.cookie);
+    expect(library.status).toBe(200);
+    expect(library.body.items[0]).toMatchObject({
+      title: 'Published story',
+      chapterId: String(chapter._id),
+      progress: 65,
+    });
+    expect(
+      (await request(app).get('/api/reader/library').set('Cookie', other.cookie)).body.items,
+    ).toEqual([]);
+    expect((await request(app).get('/api/reader/library')).status).toBe(401);
+    const historyPath = '/api/reader/history';
+    expect(
+      (await request(app).get(historyPath).set('Cookie', reader.cookie)).body.items[0],
+    ).toMatchObject({ chapterId: String(chapter._id), progress: 65, title: 'Published story' });
+    expect((await write('delete', historyPath, other.cookie, {})).status).toBe(200);
+    expect(
+      (await request(app).get(historyPath).set('Cookie', reader.cookie)).body.items,
+    ).toHaveLength(1);
+    expect((await write('delete', historyPath, reader.cookie, {})).status).toBe(200);
+    expect((await request(app).get(historyPath).set('Cookie', reader.cookie)).body.items).toEqual(
+      [],
+    );
+    expect((await ReadingProgress.findOne({ accountId: reader.account._id })).position).toBe(0.65);
+    expect(
+      (await request(app).get('/api/reader/library').set('Cookie', reader.cookie)).body.items[0]
+        .progress,
+    ).toBe(65);
     expect(
       (await request(app).get('/api/workspace/reader/library').set('Cookie', reader.cookie)).body
         .items[0].title,
