@@ -9,6 +9,11 @@ import { createAuthRouter } from './routes/auth.routes.js';
 import { csrfProtection } from './middleware/csrf.js';
 import { createAdminAuthorRouter } from './routes/admin-author.routes.js';
 import { createSessionRouter } from './routes/session.routes.js';
+import { createCatalogRouter } from './routes/catalog.routes.js';
+import { createAuthorContentRouter } from './routes/author-content.routes.js';
+import { createAdminCategoryRouter } from './routes/admin-category.routes.js';
+import { createWorkspaceDataRouter } from './routes/workspace-data.routes.js';
+import { createReaderDataRouter } from './routes/reader-data.routes.js';
 
 // Runtime configuration is validated by loadEnv and mapped by toAppConfig.
 export function createApp(config) {
@@ -24,6 +29,11 @@ export function createApp(config) {
   app.use('/api', createAuthRouter(config));
   app.use('/api', createAdminAuthorRouter(config));
   app.use('/api', createSessionRouter(config));
+  app.use('/api', createCatalogRouter(config));
+  app.use('/api', createAuthorContentRouter(config));
+  app.use('/api', createAdminCategoryRouter(config));
+  app.use('/api', createWorkspaceDataRouter(config));
+  app.use('/api', createReaderDataRouter(config));
   app.use(notFound);
   app.use(errorHandler);
   return app;
