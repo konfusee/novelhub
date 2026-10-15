@@ -112,7 +112,6 @@ export function createAuthorContentRouter(config) {
     try {
       const stories = await Story.find({ authorAccountId: req.account._id })
         .sort({ updatedAt: -1 })
-        .limit(100)
         .lean();
       res.json({ items: stories.map(view) });
     } catch (error) {

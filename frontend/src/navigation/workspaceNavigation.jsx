@@ -72,7 +72,7 @@ export const workspaceNavigation = {
       labelKey: 'navigation.main',
       items: [
         ['navigation.dashboard', '/author', LayoutDashboard, true],
-        ['navigation.storyManager', '/author/stories/demo', BookOpen],
+        ['navigation.storyManager', '/author/stories', BookOpen],
         ['navigation.drafts', '/author/drafts', FileClock],
         ['navigation.newStory', '/author/stories/new', CirclePlus],
       ],
@@ -80,7 +80,7 @@ export const workspaceNavigation = {
     {
       labelKey: 'navigation.create',
       items: [
-        ['navigation.chapterEditor', '/author/stories/demo/chapters/chapter-1/edit', PenLine],
+        ['navigation.chapterEditor', '/author/editor', PenLine],
         ['navigation.importPdf', '/author/import', FileText],
         ['navigation.mediaLibrary', '/author/media', Images],
         ['navigation.aiAssistant', '/author/ai', Bot],

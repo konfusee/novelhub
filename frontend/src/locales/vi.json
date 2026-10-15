@@ -964,6 +964,32 @@
     "chapterDraft": "Bản nháp chương",
     "noTarget": "Chưa có mục tiêu"
   },
+  "worksData": {
+    "studio": "Studio tác giả",
+    "editorTitle": "Chọn chương để soạn",
+    "editorHint": "Chọn truyện của bạn rồi mở đúng chương cần viết hoặc xem lại.",
+    "hint": "Danh sách truyện thuộc tài khoản đang đăng nhập.",
+    "search": "Tìm truyện của tôi",
+    "error": "Không tải được danh sách",
+    "chooseChapter": "Chọn chương",
+    "manage": "Quản lý truyện",
+    "noMatches": "Không tìm thấy truyện phù hợp",
+    "empty": "Bạn chưa có truyện nào",
+    "chapter": "Chương {{number}}: {{title}}",
+    "edit": "Soạn chương",
+    "read": "Xem nội dung",
+    "noChapters": "Truyện chưa có chương",
+    "createChapter": "Đến quản lý để thêm chương",
+    "status": {
+      "draft": "Bản nháp",
+      "submitted": "Đã gửi duyệt",
+      "under-review": "Đang xét duyệt",
+      "approved": "Đã duyệt",
+      "published": "Đã xuất bản",
+      "unpublished": "Đã gỡ xuất bản",
+      "archived": "Đã lưu trữ"
+    }
+  },
   "managerData": {
     "notPublic": "Truyện chưa có bản công khai để độc giả xem.",
     "knownWords": "từ có dữ liệu",

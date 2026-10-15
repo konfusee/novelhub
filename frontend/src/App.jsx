@@ -76,6 +76,9 @@ const AuthorDashboardPage = lazy(() =>
 const CreateStoryPage = lazy(() =>
   import('./pages/author/CreateStoryPage').then((m) => ({ default: m.CreateStoryPage })),
 );
+const AuthorWorksPage = lazy(() =>
+  import('./pages/author/AuthorWorksPage').then((m) => ({ default: m.AuthorWorksPage })),
+);
 const StoryManagerPage = lazy(() =>
   import('./pages/author/StoryManagerPage').then((m) => ({ default: m.StoryManagerPage })),
 );
@@ -347,6 +350,8 @@ function AppRoutes() {
           <Route path="/author/apply" element={role('reader', <AuthorApplyPage />)} />
           <Route path="/author" element={role('author', <AuthorDashboardPage />, true)} />
           <Route path="/author/stories/new" element={role('author', <CreateStoryPage />, true)} />
+          <Route path="/author/stories" element={role('author', <AuthorWorksPage />, true)} />
+          <Route path="/author/editor" element={role('author', <AuthorWorksPage editor />, true)} />
           <Route
             path="/author/stories/:storyId"
             element={role('author', <StoryManagerPage />, true)}
