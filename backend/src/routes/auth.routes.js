@@ -27,6 +27,7 @@ import {
   unavailableEmailDelivery,
 } from '../email/delivery.js';
 import { createGoogleProvider } from '../auth/google-oidc.js';
+import { applicationView, submitApplication } from '../modules/author-access/service.js';
 
 const credentialsSchema = z
   .object({
@@ -497,9 +498,7 @@ export function createAuthRouter(config) {
         applicantAccountId: req.auth.account._id,
       }).sort({ submittedAt: -1, _id: -1 });
       res.json({
-        application: application
-          ? { id: application._id.toString(), status: application.status }
-          : null,
+        application: applicationView(application),
       });
     } catch (error) {
       next(error);
@@ -508,22 +507,8 @@ export function createAuthRouter(config) {
 
   router.post('/auth/author-application', authenticate, async (req, res, next) => {
     try {
-      const existing = await AuthorApplication.findOne({
-        applicantAccountId: req.auth.account._id,
-        status: 'submitted',
-      });
-      if (existing) {
-        return res
-          .status(200)
-          .json({ application: { id: existing._id.toString(), status: existing.status } });
-      }
-      const application = await AuthorApplication.create({
-        applicantAccountId: req.auth.account._id,
-        status: 'submitted',
-      });
-      res
-        .status(201)
-        .json({ application: { id: application._id.toString(), status: application.status } });
+      const { application, created } = await submitApplication(req.account);
+      res.status(created ? 201 : 200).json({ application });
     } catch (error) {
       next(error);
     }
