@@ -7,7 +7,6 @@ import {
   LogOut,
   Mail,
   RefreshCw,
-  Save,
   ShieldCheck,
   Smartphone,
   UserRound,
@@ -34,7 +33,6 @@ const layouts = {
   admin: AdminLayout,
 };
 
-const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const activeSessions = [
   { id: 'current', icon: Laptop, title: 'Windows · Chrome', current: true },
   { id: 'iphone', icon: Smartphone, title: 'iPhone · Safari', current: false },
@@ -44,9 +42,6 @@ export function AccountPage({ workspace = 'reader', embedded = false }) {
   const Layout = embedded ? Fragment : layouts[workspace] || ReaderLayout;
   const { currentUser } = useAuth();
   const { t } = useLocale();
-  const [email, setEmail] = useState(currentUser?.email || '');
-  const [savedEmail, setSavedEmail] = useState(email);
-  const [justSaved, setJustSaved] = useState(false);
   const sessionFeed = useMockResource('account:sessions', activeSessions);
   const [signedOutOthers, setSignedOutOthers] = useState(false);
   const sessions = signedOutOthers
@@ -54,19 +49,7 @@ export function AccountPage({ workspace = 'reader', embedded = false }) {
     : sessionFeed.data;
   const [confirmSignOut, setConfirmSignOut] = useState(false);
   const [signedOutCount, setSignedOutCount] = useState(0);
-  const changed = email !== savedEmail;
-  const emailError =
-    changed && !EMAIL_PATTERN.test(email.trim())
-      ? 'Email chưa đúng định dạng, ví dụ ten@email.com.'
-      : '';
   const otherSessions = sessions.filter((session) => !session.current);
-
-  const save = () => {
-    if (emailError) return;
-    setSavedEmail(email.trim());
-    setEmail(email.trim());
-    setJustSaved(true);
-  };
 
   const signOutOthers = () => {
     setSignedOutCount(otherSessions.length);
@@ -115,33 +98,9 @@ export function AccountPage({ workspace = 'reader', embedded = false }) {
                   type="email"
                   inputMode="email"
                   autoComplete="email"
-                  value={email}
-                  aria-invalid={Boolean(emailError)}
-                  aria-describedby={emailError ? 'account-email-error' : undefined}
-                  className={emailError ? 'border-rose!' : undefined}
-                  onChange={(event) => {
-                    setEmail(event.target.value);
-                    setJustSaved(false);
-                  }}
+                  value={currentUser?.email || ''}
+                  readOnly
                 />
-                {emailError && (
-                  <p
-                    id="account-email-error"
-                    className="mt-1.5 flex items-start gap-1.5 pl-4 text-xs font-medium text-rose-strong"
-                  >
-                    <AlertTriangle size={13} className="mt-px shrink-0" />
-                    {emailError}
-                  </p>
-                )}
-                {justSaved && (
-                  <p
-                    role="status"
-                    className="mt-3 flex items-center gap-2 text-sm font-medium text-brand-strong"
-                  >
-                    <CheckCircle2 size={16} className="shrink-0" />
-                    {t('account.saved')}
-                  </p>
-                )}
               </div>
             </Card>
 
@@ -250,23 +209,6 @@ export function AccountPage({ workspace = 'reader', embedded = false }) {
             </p>
           </Card>
         </div>
-
-        {changed && (
-          <section
-            aria-label={t('account.unsaved')}
-            className="nh-dialog-enter mt-8 flex flex-col items-stretch justify-between gap-3 rounded-3xl border border-brand/30 bg-brand-soft p-4 shadow-soft sm:flex-row sm:items-center sm:pl-6"
-          >
-            <p className="text-sm font-medium text-ink">{t('account.unsaved')}</p>
-            <div className="flex flex-wrap gap-2 sm:ml-auto">
-              <Button variant="ghost" onClick={() => setEmail(savedEmail)}>
-                {t('common.discard')}
-              </Button>
-              <Button onClick={save} disabled={Boolean(emailError)}>
-                <Save size={15} /> {t('common.saveChanges')}
-              </Button>
-            </div>
-          </section>
-        )}
       </div>
 
       <Modal
