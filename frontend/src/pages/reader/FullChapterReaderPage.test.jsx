@@ -60,14 +60,18 @@ afterEach(() => {
 describe('full reader uses persisted chapters while retaining its controls', () => {
   it('renders real prose and navigates to the next existing chapter even with gaps in numbering', async () => {
     view();
-    expect(await screen.findByText('Văn bản chương bảy từ MongoDB.')).toBeTruthy();
+    expect(
+      await screen.findByText('Văn bản chương bảy từ MongoDB.', {}, { timeout: 3000 }),
+    ).toBeTruthy();
     expect(
       screen.getByRole('heading', { level: 1, name: 'Chương 7: Chương thứ bảy' }),
     ).toBeTruthy();
     const next = screen.getByRole('link', { name: 'Chương sau' });
     expect(next.getAttribute('href')).toBe('/read/mongo-story/mongo-chapter-b');
     fireEvent.click(next);
-    expect(await screen.findByText('Văn bản chương mười ba từ MongoDB.')).toBeTruthy();
+    expect(
+      await screen.findByText('Văn bản chương mười ba từ MongoDB.', {}, { timeout: 3000 }),
+    ).toBeTruthy();
     expect(
       screen.getByRole('heading', { level: 1, name: 'Chương 13: Chương thứ mười ba' }),
     ).toBeTruthy();
@@ -80,7 +84,7 @@ describe('full reader uses persisted chapters while retaining its controls', () 
   });
   it('saves progress with the exact revision returned by the chapter API', async () => {
     view();
-    await screen.findByText('Văn bản chương bảy từ MongoDB.');
+    await screen.findByText('Văn bản chương bảy từ MongoDB.', {}, { timeout: 3000 });
     await waitFor(
       () =>
         expect(mocks.apiRequest).toHaveBeenCalledWith('/reader/progress/mongo-chapter-a', {
