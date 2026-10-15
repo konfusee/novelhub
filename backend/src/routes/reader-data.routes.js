@@ -51,6 +51,55 @@ const profile = (account) => ({
   bio: account.profile?.bio ?? '',
   fontSize: account.preferences?.fontSize ?? 'medium',
 });
+function notificationView(item) {
+  const text = (value, max = 4000) => (typeof value === 'string' ? value.slice(0, max) : '');
+  const decided = item.eventType === 'author-application.decided';
+  const candidate = item.eventType.replace(/^reference\./, '').split('.')[0];
+  const type = decided
+    ? 'author'
+    : ['story', 'author', 'comment', 'system'].includes(candidate)
+      ? candidate
+      : 'system';
+  const labels = {
+    story: 'Cập nhật truyện',
+    author: 'Tác giả',
+    comment: 'Bình luận & phản hồi',
+    system: 'Hệ thống',
+  };
+  const href = decided
+    ? '/author/apply'
+    : /^[a-f\d]{24}$/i.test(item.payload?.storyId ?? '')
+      ? `/stories/${item.payload.storyId}`
+      : type === 'system'
+        ? '/reader/wallet'
+        : '/reader/library';
+  const title = decided
+    ? item.payload?.status === 'approved'
+      ? 'Đơn đăng ký tác giả đã được duyệt'
+      : 'Đã có kết quả xét duyệt đăng ký tác giả'
+    : text(item.payload?.title, 300) || 'Thông báo mới';
+  const description = text(item.payload?.body) || text(item.payload?.reason);
+  return {
+    id: String(item._id),
+    title,
+    description,
+    body: description,
+    status: text(item.payload?.status, 40),
+    read: Boolean(item.readAt),
+    unread: !item.readAt,
+    createdAt: item.createdAt,
+    type,
+    label: `${text(item.payload?.label, 80) || labels[type]}${item.eventType.startsWith('reference.') ? ' · Tham khảo' : ''}`,
+    href,
+    action: decided
+      ? 'Xem kết quả'
+      : href.startsWith('/stories/')
+        ? 'Xem truyện'
+        : type === 'system'
+          ? 'Xem ví'
+          : 'Xem thư viện',
+  };
+}
 export function createReaderDataRouter(config) {
   const router = Router();
   router.use('/reader', requireAuth(config));
@@ -204,6 +253,19 @@ export function createReaderDataRouter(config) {
       next(error);
     }
   });
+  router.get('/reader/notifications/unread-count', async (req, res, next) => {
+    try {
+      res.json({
+        count: await Notification.countDocuments({
+          recipientAccountId: req.account._id,
+          deliveryState: { $ne: 'deleted' },
+          readAt: null,
+        }),
+      });
+    } catch (error) {
+      next(error);
+    }
+  });
   router.get('/reader/notifications', async (req, res, next) => {
     try {
       const parsed = validate(
@@ -219,15 +281,13 @@ export function createReaderDataRouter(config) {
         .limit(51)
         .lean();
       res.json({
-        items: items.slice(0, 50).map((item) => ({
-          id: String(item._id),
-          title: item.eventType,
-          description: typeof item.payload?.reason === 'string' ? item.payload.reason : '',
-          status: item.payload?.status ?? '',
-          read: Boolean(item.readAt),
-          createdAt: item.createdAt,
-        })),
+        items: items.slice(0, 50).map(notificationView),
         hasMore: items.length > 50,
+        unreadCount: await Notification.countDocuments({
+          recipientAccountId: req.account._id,
+          deliveryState: { $ne: 'deleted' },
+          readAt: null,
+        }),
       });
     } catch (error) {
       next(error);
@@ -284,6 +344,22 @@ export function createReaderDataRouter(config) {
           throw new HttpError(404, 'not_found', 'Không tìm thấy thông báo.');
       });
       res.status(204).end();
+    } catch (error) {
+      next(error);
+    }
+  });
+  router.post('/reader/notifications/:id/restore', async (req, res, next) => {
+    try {
+      await ownerWrite(req, async (session) => {
+        const result = await Notification.updateOne(
+          { _id: req.params.id, recipientAccountId: req.account._id, deliveryState: 'deleted' },
+          { $set: { deliveryState: 'available' }, $inc: { version: 1 } },
+          { session },
+        );
+        if (!result.matchedCount)
+          throw new HttpError(404, 'not_found', 'Không tìm thấy thông báo đã xóa.');
+      });
+      res.json({ ok: true });
     } catch (error) {
       next(error);
     }

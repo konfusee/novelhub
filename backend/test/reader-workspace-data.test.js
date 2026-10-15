@@ -60,6 +60,16 @@ describe('real reader and staff data', () => {
     const list = await request(app).get('/api/reader/notifications').set('Cookie', user.cookie);
     expect(list.body.items).toHaveLength(1);
     expect(list.body.items[0].description).toBe('Lý do thật');
+    expect(list.body.items[0]).toMatchObject({
+      type: 'author',
+      href: '/author/apply',
+      unread: true,
+    });
+    expect(list.body.unreadCount).toBe(1);
+    expect(
+      (await request(app).get('/api/reader/notifications/unread-count').set('Cookie', user.cookie))
+        .body.count,
+    ).toBe(1);
     expect(JSON.stringify(list.body)).not.toContain('not-serialized');
     expect(
       (await write('put', `/api/reader/notifications/${theirs._id}`, user.cookie, { read: true }))
@@ -71,12 +81,62 @@ describe('real reader and staff data', () => {
     expect((await Notification.findById(mine._id)).readAt).toBeTruthy();
     expect((await Notification.findById(theirs._id)).readAt).toBeFalsy();
     expect(
+      (await request(app).get('/api/reader/notifications/unread-count').set('Cookie', user.cookie))
+        .body.count,
+    ).toBe(0);
+    expect(
       (await write('delete', `/api/reader/notifications/${mine._id}`, user.cookie)).status,
     ).toBe(204);
     expect(
       (await request(app).get('/api/reader/notifications').set('Cookie', user.cookie)).body.items,
     ).toEqual([]);
     expect((await Notification.findById(mine._id)).deliveryState).toBe('deleted');
+    expect(
+      (await write('post', `/api/reader/notifications/${mine._id}/restore`, other.cookie, {}))
+        .status,
+    ).toBe(404);
+    expect(
+      (await write('post', `/api/reader/notifications/${mine._id}/restore`, user.cookie, {}))
+        .status,
+    ).toBe(200);
+    const restored = await request(app).get('/api/reader/notifications').set('Cookie', user.cookie);
+    expect(restored.body.items[0].read).toBe(true);
+    expect(restored.body.unreadCount).toBe(0);
+  });
+  it('paginates actual notifications and never serializes arbitrary payload links', async () => {
+    const user = await authenticatedAccount();
+    const other = await authenticatedAccount();
+    await Notification.insertMany(
+      Array.from({ length: 51 }, (_, index) => ({
+        recipientAccountId: user.account._id,
+        eventType: 'reference.story',
+        sourceEventKey: `page-${index}`,
+        payload: {
+          title: `Thông báo ${index}`,
+          body: 'Nội dung',
+          href: 'https://untrusted.example',
+          storyId: 'javascript:invalid',
+        },
+      })),
+    );
+    await Notification.create({
+      recipientAccountId: other.account._id,
+      eventType: 'private',
+      sourceEventKey: 'other',
+    });
+    const first = await request(app)
+      .get('/api/reader/notifications?page=1')
+      .set('Cookie', user.cookie);
+    const second = await request(app)
+      .get('/api/reader/notifications?page=2')
+      .set('Cookie', user.cookie);
+    expect(first.body.items).toHaveLength(50);
+    expect(first.body.hasMore).toBe(true);
+    expect(first.body.unreadCount).toBe(51);
+    expect(second.body.items).toHaveLength(1);
+    expect(second.body.hasMore).toBe(false);
+    expect(first.body.items.some((item) => item.id === second.body.items[0].id)).toBe(false);
+    expect(first.body.items.every((item) => item.href === '/reader/library')).toBe(true);
   });
   it('takes wallet balances from MongoDB and isolates accounts and staff routes', async () => {
     const user = await authenticatedAccount();
