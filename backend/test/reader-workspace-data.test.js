@@ -8,6 +8,8 @@ import {
   Category,
   ContentRevision,
   Wallet,
+  Chapter,
+  ReadingProgress,
 } from '../src/models/index.js';
 import { authenticatedAccount } from './fixtures/accounts.js';
 import { testConfig } from './config.js';
@@ -137,6 +139,54 @@ describe('real reader and staff data', () => {
     });
     story.publishedRevisionId = revision._id;
     await story.save();
+    const chapter = await Chapter.create({
+      storyId: story._id,
+      title: 'Chương thật',
+      orderKey: 7,
+      status: 'published',
+    });
+    const chapterRevision = await ContentRevision.create({
+      storyId: story._id,
+      chapterId: chapter._id,
+      contentType: 'chapter',
+      authorAccountId: author.account._id,
+      revisionNumber: 1,
+      formatVersion: 'chapter-v1',
+      status: 'approved',
+      content: { title: 'Chương thật', blocks: [{ type: 'paragraph', text: 'Nội dung thật' }] },
+    });
+    chapter.publishedRevisionId = chapterRevision._id;
+    await chapter.save();
+    const progressPath = `/api/reader/progress/${chapter._id}`;
+    const progressInput = { position: 0.65, revisionId: String(chapterRevision._id) };
+    expect((await write('put', progressPath, reader.cookie, progressInput)).status).toBe(200);
+    expect((await request(app).get(progressPath).set('Cookie', reader.cookie)).body.position).toBe(
+      0.65,
+    );
+    expect((await request(app).get(progressPath).set('Cookie', other.cookie)).body.position).toBe(
+      0,
+    );
+    expect((await request(app).get(progressPath)).status).toBe(401);
+    expect(
+      (
+        await write('put', progressPath, reader.cookie, {
+          ...progressInput,
+          accountId: String(other.account._id),
+        })
+      ).status,
+    ).toBe(400);
+    expect(
+      (
+        await write('put', progressPath, reader.cookie, {
+          ...progressInput,
+          revisionId: String(revision._id),
+        })
+      ).status,
+    ).toBe(404);
+    expect(await ReadingProgress.countDocuments()).toBe(1);
+    chapter.earlyAccess = { enabled: true, endsAt: new Date(Date.now() + 3600000), coinPrice: 10 };
+    await chapter.save();
+    expect((await write('put', progressPath, reader.cookie, progressInput)).status).toBe(403);
     const followPath = `/api/reader/follows/${story._id}`;
     expect((await write('put', followPath, reader.cookie, { following: true })).status).toBe(200);
     expect(

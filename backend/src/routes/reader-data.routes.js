@@ -1,6 +1,16 @@
 import { Router } from 'express';
 import { z } from 'zod';
-import { Account, Comment, Follow, Notification, Story } from '../models/index.js';
+import {
+  Account,
+  Chapter,
+  ContentRevision,
+  Comment,
+  Follow,
+  Notification,
+  ReadingProgress,
+  Story,
+  UnlockEntitlement,
+} from '../models/index.js';
 import { requireAuth } from '../middleware/auth.js';
 import { HttpError } from '../middleware/errors.js';
 import { withTransaction } from '../db/connection.js';
@@ -48,6 +58,88 @@ export function createReaderDataRouter(config) {
     next();
   });
   router.get('/reader/profile', (req, res) => res.json({ profile: profile(req.account) }));
+  router.get('/reader/progress/:id', async (req, res, next) => {
+    try {
+      const progress = await ReadingProgress.findOne({
+        accountId: req.account._id,
+        chapterId: req.params.id,
+        mode: 'text',
+      })
+        .select('position revisionId')
+        .lean();
+      res.json({ position: progress?.position ?? 0, revisionId: progress?.revisionId ?? null });
+    } catch (error) {
+      next(error);
+    }
+  });
+  router.put('/reader/progress/:id', async (req, res, next) => {
+    try {
+      const input = validate(
+        z.object({ position: z.number().min(0).max(1), revisionId: id }).strict(),
+        req.body,
+      );
+      await ownerWrite(req, async (session) => {
+        const chapter = await Chapter.findOne({
+          _id: req.params.id,
+          status: 'published',
+          publishedRevisionId: input.revisionId,
+        })
+          .session(session)
+          .lean();
+        if (
+          !chapter ||
+          !(await Story.exists({
+            _id: chapter.storyId,
+            publicationStatus: 'published',
+            publishedRevisionId: { $ne: null },
+          }).session(session)) ||
+          !(await ContentRevision.exists({
+            _id: input.revisionId,
+            storyId: chapter.storyId,
+            chapterId: chapter._id,
+            contentType: 'chapter',
+            status: { $in: ['approved', 'immutable'] },
+          }).session(session))
+        )
+          throw new HttpError(404, 'not_found', 'Không tìm thấy chương đã xuất bản.');
+        if (
+          chapter.earlyAccess?.enabled &&
+          (!chapter.earlyAccess.endsAt || chapter.earlyAccess.endsAt > new Date())
+        ) {
+          const entitlement = await UnlockEntitlement.exists({
+            accountId: req.account._id,
+            chapterId: chapter._id,
+            publishedRevisionId: chapter.publishedRevisionId,
+            status: 'active',
+            expiresAt: { $gt: new Date() },
+          }).session(session);
+          if (!chapter.earlyAccess.endsAt || !entitlement)
+            throw new HttpError(403, 'chapter_locked', 'Chương chưa được mở khóa.');
+        }
+        const now = new Date();
+        await ReadingProgress.updateOne(
+          {
+            accountId: req.account._id,
+            chapterId: chapter._id,
+            storyId: chapter.storyId,
+            mode: 'text',
+          },
+          {
+            $set: {
+              position: input.position,
+              revisionId: chapter.publishedRevisionId,
+              lastReadAt: now,
+              completedAt: input.position >= 1 ? now : null,
+            },
+          },
+          { session, upsert: true, runValidators: true },
+        );
+      });
+      res.json({ ok: true });
+    } catch (error) {
+      next(error);
+    }
+  });
   router.put('/reader/profile', async (req, res, next) => {
     try {
       const input = validate(profileInput, req.body);

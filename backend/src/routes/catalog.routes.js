@@ -278,6 +278,7 @@ export function createCatalogRouter(config) {
           id: String(chapter._id),
           title: revision.content.title ?? '',
           publishedAt: chapter.publishedAt ?? null,
+          revisionId: String(revision._id),
           blocks: (revision.content.blocks ?? [])
             .filter((block) => block.type === 'paragraph' && typeof block.text === 'string')
             .map((block) => ({ type: 'paragraph', text: block.text })),
