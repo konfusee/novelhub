@@ -23,6 +23,13 @@ describe('MongoDB catalogue and author drafts', () => {
       total: 0,
     });
     expect((await request(app).get('/api/catalog/categories')).body.items).toEqual([]);
+    expect((await request(app).get('/api/catalog/home')).body).toMatchObject({
+      stories: [],
+      categories: [],
+      featured: [],
+      preview: null,
+      stats: { readers: 0, authors: 0, stories: 0, rating: null },
+    });
   });
   it('persists an owner story and chapter, rejects readers and cross-account access', async () => {
     const author = await authenticatedAccount('author');
@@ -147,9 +154,16 @@ describe('MongoDB catalogue and author drafts', () => {
     const locked = await request(app).get(path);
     expect(locked.status).toBe(403);
     expect(JSON.stringify(locked.body)).not.toContain('Paid text');
+    const home = await request(app).get('/api/catalog/home');
+    expect(home.body.preview).toBeNull();
+    expect(JSON.stringify(home.body)).not.toContain('SECRET');
+    expect(JSON.stringify(home.body)).not.toContain('Paid text');
     chapter.earlyAccess.endsAt = new Date(0);
     await chapter.save();
     expect((await request(app).get(path)).body.chapter.blocks[0].text).toBe('Paid text');
+    expect((await request(app).get('/api/catalog/home')).body.preview.paragraphs).toEqual([
+      'Paid text',
+    ]);
   });
   it('allows only Admin to create real categories and records an audit event', async () => {
     const admin = await authenticatedAccount('admin');

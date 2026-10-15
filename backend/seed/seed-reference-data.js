@@ -23,7 +23,12 @@ import {
   Story,
 } from '../src/models/index.js';
 import { categories } from './reference/categories.js';
-import { extendedStories, hiddenGems } from './reference/stories.js';
+import {
+  extendedStories,
+  hiddenGems,
+  featuredStories,
+  stories as homeStories,
+} from './reference/stories.js';
 import { searchResults } from './reference/search.js';
 import { authorStories, managedChapters } from './reference/author.js';
 import {
@@ -90,6 +95,16 @@ export async function seedReferenceData({ password, readerEmail = 'reader@seed.n
         { $setOnInsert: { storyId: seedId(`story:${keyFor(title)}`) } },
         { upsert: true, session },
       );
+    await catalogPresentation().updateOne(
+      { _id: 'home-layout' },
+      {
+        $setOnInsert: {
+          featured: featuredStories,
+          storyIds: homeStories.map((item) => seedId(`story:${keyFor(item.title)}`)),
+        },
+      },
+      { upsert: true, session },
+    );
     // This marker is written last in the same transaction as the whole import.
     // A completed import is immutable; later user edits are never overwritten.
     if (await AuditEvent.exists({ _id: seedId('import-audit') }).session(session)) return {};

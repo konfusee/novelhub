@@ -188,3 +188,26 @@ export async function publishedCategoryCounts() {
   ]);
   return new Map(rows.map((row) => [row._id, row.count]));
 }
+
+export async function publishedCatalogueStats() {
+  const [row] = await Story.aggregate([
+    ...snapshotStages(),
+    {
+      $group: {
+        _id: null,
+        storyIds: { $addToSet: '$_id' },
+        authorIds: { $addToSet: '$authorAccountId' },
+      },
+    },
+  ]);
+  const [rating] = await Rating.aggregate([
+    { $match: { storyId: { $in: row?.storyIds ?? [] }, status: 'active' } },
+    { $group: { _id: null, average: { $avg: '$value' } } },
+  ]);
+  return {
+    readers: await Account.countDocuments({ status: 'active' }),
+    stories: row?.storyIds.length ?? 0,
+    authors: row?.authorIds.filter(Boolean).length ?? 0,
+    rating: rating?.average == null ? null : Number(rating.average.toFixed(1)),
+  };
+}

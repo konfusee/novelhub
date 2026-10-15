@@ -15,7 +15,11 @@ import {
 import mongoose from 'mongoose';
 import { readCookie, resolveSession } from '../auth/session.js';
 import { HttpError } from '../middleware/errors.js';
-import { queryPublishedStories, publishedCategoryCounts } from '../modules/catalog-query.js';
+import {
+  queryPublishedStories,
+  publishedCategoryCounts,
+  publishedCatalogueStats,
+} from '../modules/catalog-query.js';
 import { catalogPresentation } from '../modules/catalog-presentation.js';
 
 const filters = z
@@ -92,6 +96,72 @@ export function createCatalogRouter(config) {
   router.get('/catalog/categories', async (_req, res, next) => {
     try {
       res.json({ items: await categoryItems() });
+    } catch (error) {
+      next(error);
+    }
+  });
+  router.get('/catalog/home', async (_req, res, next) => {
+    try {
+      const presentation = await catalogPresentation().findOne({ _id: 'home-layout' });
+      const [categories, stats, result, trending] = await Promise.all([
+        categoryItems(),
+        publishedCatalogueStats(),
+        queryPublishedStories({
+          pageSize: 6,
+          ...(presentation?.storyIds?.length
+            ? { ids: presentation.storyIds.map(String) }
+            : { sort: 'reads' }),
+        }),
+        queryPublishedStories({ pageSize: 6, sort: 'reads' }),
+      ]);
+      const order = new Map((presentation?.storyIds ?? []).map((id, index) => [String(id), index]));
+      const stories = result.items.sort((a, b) => (order.get(a.id) ?? 0) - (order.get(b.id) ?? 0));
+      let preview = null;
+      for (const story of stories) {
+        const chapters = await Chapter.find({
+          storyId: story.id,
+          status: 'published',
+          publishedRevisionId: { $ne: null },
+          $or: [
+            { 'earlyAccess.enabled': { $ne: true } },
+            { 'earlyAccess.endsAt': { $lte: new Date() } },
+          ],
+        })
+          .sort({ orderKey: 1 })
+          .select('publishedRevisionId orderKey')
+          .lean();
+        for (const chapter of chapters) {
+          const revision = await ContentRevision.findOne({
+            _id: chapter.publishedRevisionId,
+            chapterId: chapter._id,
+            storyId: story.id,
+            contentType: 'chapter',
+            status: { $in: ['approved', 'immutable'] },
+          })
+            .select('content')
+            .lean();
+          if (!revision) continue;
+          preview = {
+            story,
+            chapterId: String(chapter._id),
+            number: chapter.orderKey,
+            title: revision.content?.title ?? '',
+            paragraphs: (revision.content?.blocks ?? [])
+              .filter((block) => block.type === 'paragraph' && typeof block.text === 'string')
+              .slice(0, 2)
+              .map((block) => block.text),
+          };
+          break;
+        }
+        if (preview) break;
+      }
+      const featured = (presentation?.featured ?? []).map((item) => ({
+        label: typeof item.label === 'string' ? item.label : '',
+        title: typeof item.title === 'string' ? item.title : '',
+        description: typeof item.description === 'string' ? item.description : '',
+        tone: ['green', 'purple', 'orange', 'rose'].includes(item.tone) ? item.tone : 'green',
+      }));
+      res.json({ stories, trending: trending.items, categories, featured, stats, preview });
     } catch (error) {
       next(error);
     }

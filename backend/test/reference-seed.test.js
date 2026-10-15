@@ -17,6 +17,16 @@ describe('reference data import into existing schemas', () => {
     const forest = await Story.findOne({ title: 'The Silent Forest' });
     expect(forest.publishedRevisionId).toBeTruthy();
     const app = createApp(testConfig());
+    const home = await request(app).get('/api/catalog/home');
+    expect(home.status).toBe(200);
+    expect(home.body.stories).toHaveLength(6);
+    expect(home.body.stories[0].title).toBe('The Silent Forest');
+    expect(home.body.categories).toHaveLength(9);
+    expect(home.body.featured).toHaveLength(3);
+    expect(home.body.featured[0].tone).toBe('rose');
+    expect(home.body.stats.stories).toBe(22);
+    expect(home.body.stats.authors).toBeGreaterThan(0);
+    expect(home.body.preview.paragraphs.length).toBeGreaterThan(0);
     const reader = await Account.findOne({ email: 'reader@seed.novelhub.local' });
     const { token } = await issueSession(reader, 1);
     const cookie = `novelhub_session=${token}`;
