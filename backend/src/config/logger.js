@@ -43,9 +43,9 @@ export const httpLogOptions = {
     return res.statusCode >= 400 ? 'warn' : 'info';
   },
   customSuccessMessage: (req, res) =>
-    req.method + ' ' + String(req.url).split('?')[0] + ' → ' + res.statusCode,
+    req.method + ' ' + String(req.url).split('?')[0] + ' -> ' + res.statusCode,
   customErrorMessage: (req, res) =>
-    req.method + ' ' + String(req.url).split('?')[0] + ' → ' + res.statusCode,
+    req.method + ' ' + String(req.url).split('?')[0] + ' -> ' + res.statusCode,
 };
 
 export function createLogger(level, { nodeEnv }, destination) {
