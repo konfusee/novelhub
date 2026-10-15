@@ -1,0 +1,96 @@
+import {
+  Category,
+  Chapter,
+  ContentRevision,
+  Rating,
+  StatisticsEvent,
+  Story,
+} from '../models/index.js';
+import { HttpError } from '../middleware/errors.js';
+
+export async function authorStoryWorkspace(account, storyId) {
+  const story = await Story.findOne({ _id: storyId, authorAccountId: account._id }).lean();
+  if (!story) throw new HttpError(404, 'not_found', 'Không tìm thấy truyện.');
+  const [categories, chapters, views, ratings] = await Promise.all([
+    Category.find({ _id: { $in: story.categoryIds } })
+      .select('name')
+      .lean(),
+    Chapter.find({ storyId: story._id }).sort({ orderKey: -1, _id: -1 }).lean(),
+    StatisticsEvent.aggregate([
+      { $match: { storyId: story._id, eventType: 'view' } },
+      { $group: { _id: '$chapterId', count: { $sum: 1 } } },
+    ]),
+    Rating.aggregate([
+      { $match: { storyId: story._id, status: 'active' } },
+      { $group: { _id: null, average: { $avg: '$value' }, count: { $sum: 1 } } },
+    ]),
+  ]);
+  const revisionIds = chapters
+    .map(
+      (chapter) =>
+        chapter.draftRevisionId ?? chapter.currentRevisionId ?? chapter.publishedRevisionId,
+    )
+    .filter(Boolean);
+  const revisions = await ContentRevision.find({
+    _id: { $in: revisionIds },
+    storyId: story._id,
+    authorAccountId: account._id,
+    contentType: 'chapter',
+  })
+    .select('chapterId content')
+    .lean();
+  const rows = chapters.map((chapter) => {
+    const revisionId =
+      chapter.draftRevisionId ?? chapter.currentRevisionId ?? chapter.publishedRevisionId;
+    const revision = revisions.find(
+      (item) => item._id.equals(revisionId) && item.chapterId?.equals(chapter._id),
+    );
+    const words = revision
+      ? (revision.content?.blocks ?? [])
+          .filter((block) => block.type === 'paragraph' && typeof block.text === 'string')
+          .reduce((sum, block) => sum + (block.text.match(/\S+/gu)?.length ?? 0), 0)
+      : null;
+    return {
+      id: String(chapter._id),
+      title: chapter.title,
+      number: chapter.orderKey,
+      status: chapter.status,
+      words,
+      reads: views.find((item) => item._id?.equals(chapter._id))?.count ?? 0,
+      updatedAt: chapter.updatedAt,
+      publishedAt: chapter.publishedAt ?? null,
+      requestedReleaseAt: chapter.requestedReleaseAt ?? null,
+      earlyAccess: chapter.earlyAccess
+        ? {
+            enabled: chapter.earlyAccess.enabled,
+            coinPrice: chapter.earlyAccess.coinPrice ?? null,
+            endsAt: chapter.earlyAccess.endsAt ?? null,
+          }
+        : null,
+    };
+  });
+  return {
+    story: {
+      id: String(story._id),
+      title: story.title,
+      description: story.description ?? '',
+      genres: categories.map((item) => item.name),
+      categoryIds: story.categoryIds.map(String),
+      author: account.displayName,
+      status: story.publicationStatus,
+      version: story.version,
+      canEdit:
+        !story.authoringFrozen &&
+        !['submitted', 'under-review', 'archived'].includes(story.publicationStatus),
+    },
+    chapters: rows,
+    stats: {
+      availableWords: rows.reduce((sum, chapter) => sum + (chapter.words ?? 0), 0),
+      publishedChapters: rows.filter((chapter) => chapter.status === 'published').length,
+      reads: views.reduce((sum, item) => sum + item.count, 0),
+      rating: ratings[0]?.average?.toFixed(1) ?? '—',
+      ratings: ratings[0]?.count ?? 0,
+    },
+    health: { retention: null, cadence: null, audioChapters: null, editorialAdvice: null },
+  };
+}

@@ -12,6 +12,7 @@ import { requireAuth, requireRole } from '../middleware/auth.js';
 import { HttpError } from '../middleware/errors.js';
 import { withTransaction } from '../db/connection.js';
 import { authorDashboard } from '../modules/author-dashboard.js';
+import { authorStoryWorkspace } from '../modules/author-story-workspace.js';
 
 const objectId = z.string().regex(/^[a-f\d]{24}$/i);
 const storyInput = z
@@ -155,6 +156,62 @@ export function createAuthorContentRouter(config) {
       next(error);
     }
   });
+  router.get('/author/stories/:storyId/workspace', async (req, res, next) => {
+    try {
+      res.json(await authorStoryWorkspace(req.account, req.params.storyId));
+    } catch (error) {
+      next(error);
+    }
+  });
+  router.put('/author/stories/:storyId', async (req, res, next) => {
+    try {
+      const input = parse(
+        storyInput.omit({ categoryIds: true }).extend({ expectedVersion: z.number().int().min(0) }),
+        req.body,
+      );
+      const story = await withTransaction(async (session) => {
+        await lockAuthor(req.account, session);
+        const current = await ownStory(req.account, req.params.storyId, session);
+        editable(current);
+        if (current.version !== input.expectedVersion)
+          throw new HttpError(
+            409,
+            'stale_content',
+            'Truyện đã thay đổi. Hãy tải lại trước khi lưu.',
+          );
+        const last = await ContentRevision.findOne({ storyId: current._id, contentType: 'story' })
+          .sort({ revisionNumber: -1 })
+          .session(session);
+        const [revision] = await ContentRevision.create(
+          [
+            {
+              contentType: 'story',
+              storyId: current._id,
+              authorAccountId: req.account._id,
+              revisionNumber: (last?.revisionNumber ?? 0) + 1,
+              parentRevisionId: last?._id,
+              formatVersion: 'story-v1',
+              content: {
+                title: input.title,
+                description: input.description,
+                categoryIds: current.categoryIds.map(String),
+              },
+            },
+          ],
+          { session },
+        );
+        current.title = input.title;
+        current.description = input.description;
+        current.draftRevisionId = revision._id;
+        current.currentRevisionId = revision._id;
+        await current.save({ session });
+        return current;
+      });
+      res.json({ story: view(story) });
+    } catch (error) {
+      next(error);
+    }
+  });
   router.get('/author/stories/:storyId', async (req, res, next) => {
     try {
       res.json({ story: view(await ownStory(req.account, req.params.storyId)) });
@@ -226,20 +283,41 @@ export function createAuthorContentRouter(config) {
   });
   router.get('/author/stories/:storyId/chapters/:chapterId', async (req, res, next) => {
     try {
-      await ownStory(req.account, req.params.storyId);
+      const story = await ownStory(req.account, req.params.storyId);
       const chapter = await Chapter.findOne({
         _id: req.params.chapterId,
         storyId: req.params.storyId,
       }).lean();
       if (!chapter) throw new HttpError(404, 'not_found', 'Không tìm thấy chương.');
       const revision = await ContentRevision.findOne({
-        _id: chapter.draftRevisionId,
+        _id: chapter.draftRevisionId ?? chapter.currentRevisionId ?? chapter.publishedRevisionId,
         chapterId: chapter._id,
+        storyId: story._id,
+        contentType: 'chapter',
         authorAccountId: req.account._id,
       }).lean();
+      if (!revision)
+        throw new HttpError(409, 'missing_revision', 'Không tải được bản nội dung của chương.');
+      const outline = await Chapter.find({ storyId: story._id })
+        .sort({ orderKey: 1 })
+        .select('title orderKey')
+        .lean();
+      const canCreate =
+        !story.authoringFrozen &&
+        !['submitted', 'under-review', 'archived'].includes(story.publicationStatus);
       res.json({
         chapter: {
           id: String(chapter._id),
+          storyId: String(story._id),
+          storyTitle: story.title,
+          number: chapter.orderKey,
+          canCreate,
+          canEdit: canCreate && chapter.status === 'draft',
+          outline: outline.map((item) => ({
+            id: String(item._id),
+            number: item.orderKey,
+            title: item.title,
+          })),
           title: chapter.title,
           version: chapter.version,
           status: chapter.status,
