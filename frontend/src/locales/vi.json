@@ -1204,6 +1204,10 @@
       "available-for-human-review": "Sẵn sàng cho kiểm duyệt viên",
       "failed": "Xử lý thất bại"
     },
-    "checkAgain": "Kiểm tra lại bản nháp"
+    "checkAgain": "Kiểm tra lại bản nháp",
+    "revise": "Tạo bản sửa từ phản hồi",
+    "reviseHint": "Tạo bản nháp chỉnh sửa mới từ gói đã xét. Nội dung, quyền và lịch sử của gói cũ được giữ nguyên. Bạn cần chỉnh sửa, kiểm tra và xác nhận gửi lại ở vòng tiếp theo.",
+    "createRevision": "Tạo bản nháp chỉnh sửa",
+    "reviseError": "Chưa tạo được bản sửa. Hãy làm mới lịch sử và thử lại."
   }
 }

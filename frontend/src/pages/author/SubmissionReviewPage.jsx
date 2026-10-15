@@ -1,5 +1,5 @@
 import { useRef, useState } from 'react';
-import { useSearchParams } from 'react-router';
+import { useNavigate, useSearchParams } from 'react-router';
 import { AlertTriangle, Check, Clock3, FileCheck2, RefreshCw, Send } from '../../components/icons';
 import { AuthorLayout } from '../../layouts';
 import { useBackendDocument } from '../../api/useBackendResource';
@@ -459,6 +459,34 @@ function SubmissionPackage({ storyId, chapterId, onSubmitted }) {
 
 function SubmissionEntry({ item, choose }) {
   const { t, formatDate } = useLocale();
+  const navigate = useNavigate();
+  const [confirm, setConfirm] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const busyRef = useRef(false);
+  const [error, setError] = useState('');
+  const revise = async () => {
+    if (busyRef.current) return;
+    busyRef.current = true;
+    setBusy(true);
+    setError('');
+    try {
+      const { revision } = await apiRequest(`/author/submissions/${item.id}/revise`, {
+        method: 'POST',
+        body: { expectedVersion: item.version },
+      });
+      if (!revision?.id || !revision.storyId) throw new Error(t('submissionData.reviseError'));
+      navigate(
+        revision.chapterId
+          ? `/author/stories/${revision.storyId}/chapters/${revision.chapterId}/edit`
+          : `/author/stories/${revision.storyId}`,
+      );
+    } catch (failure) {
+      setError(failure.message || t('submissionData.reviseError'));
+    } finally {
+      busyRef.current = false;
+      setBusy(false);
+    }
+  };
   const statusKey = `submissionData.status.${item.status}`;
   const known = [
     'validated',
@@ -517,6 +545,32 @@ function SubmissionEntry({ item, choose }) {
       >
         {t('submissionData.open')}
       </Button>
+      {['rejected', 'revision-requested'].includes(item.status) && (
+        <Button size="sm" className="mt-3 sm:ml-2" onClick={() => setConfirm(true)}>
+          {t('submissionData.revise')}
+        </Button>
+      )}
+      <Modal
+        open={confirm}
+        title={t('submissionData.revise')}
+        onClose={() => !busy && setConfirm(false)}
+      >
+        <p className="text-sm leading-6 text-muted">{t('submissionData.reviseHint')}</p>
+        <p className="mt-3 font-semibold">{item.title}</p>
+        {error && (
+          <p role="alert" className="mt-3 text-sm text-rose-strong">
+            {error}
+          </p>
+        )}
+        <div className="mt-6 flex flex-wrap justify-end gap-2">
+          <Button variant="secondary" disabled={busy} onClick={() => setConfirm(false)}>
+            {t('submissionData.cancel')}
+          </Button>
+          <Button disabled={busy} onClick={revise}>
+            {t(busy ? 'submissionData.sending' : 'submissionData.createRevision')}
+          </Button>
+        </div>
+      </Modal>
     </article>
   );
 }

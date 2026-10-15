@@ -360,6 +360,7 @@ export async function submissionList(account, { page = 1 } = {}) {
         title: revision?.content?.title ?? '',
         revisionNumber: revision?.revisionNumber ?? null,
         status: item.status,
+        version: item.version,
         submittedAt: item.submittedAt,
         decisionSummary: item.decisionSummary ?? '',
         processing: batch ? { status: batch.status, failedStage: batch.failedStage ?? null } : null,
@@ -375,4 +376,126 @@ export async function submissionList(account, { page = 1 } = {}) {
       };
     }),
   };
+}
+
+/** A review result starts a new editable revision; the reviewed package stays immutable. */
+export async function reviseSubmission(account, submissionId, expectedVersion) {
+  return withTransaction(async (session) => {
+    await lockAuthor(account, session);
+    const submission = await PublicationSubmission.findOne({
+      _id: submissionId,
+      authorAccountId: account._id,
+    }).session(session);
+    if (!submission) throw new HttpError(404, 'not_found', 'Không tìm thấy gói gửi.');
+    if (submission.version !== expectedVersion)
+      throw new HttpError(409, 'stale_submission', 'Kết quả xét duyệt đã thay đổi. Hãy tải lại.');
+    if (!['rejected', 'revision-requested'].includes(submission.status))
+      throw new HttpError(409, 'revision_not_allowed', 'Gói chưa có kết quả yêu cầu chỉnh sửa.');
+    const story = await ownStory(account, submission.storyId, session);
+    if (story.publicationStatus === 'archived')
+      throw new HttpError(409, 'content_frozen', 'Truyện đã được lưu trữ.');
+    const target = submission.chapterId
+      ? await Chapter.findOne({ _id: submission.chapterId, storyId: story._id }).session(session)
+      : story;
+    if (!target) throw new HttpError(404, 'not_found', 'Không tìm thấy nội dung.');
+    if (submission.chapterId && story.authoringFrozen)
+      throw new HttpError(409, 'content_frozen', 'Truyện đang có gói thông tin chờ xử lý.');
+    if (['archived', 'cancelled', 'published', 'scheduled', 'due'].includes(target.status))
+      throw new HttpError(409, 'content_frozen', 'Nội dung không còn ở vòng chỉnh sửa này.');
+    const currentId = target.draftRevisionId ?? target.currentRevisionId;
+    const current = await ContentRevision.findOne({
+      _id: currentId,
+      storyId: story._id,
+      authorAccountId: account._id,
+      contentType: submission.chapterId ? 'chapter' : 'story',
+      chapterId: submission.chapterId ?? null,
+    }).session(session);
+    if (!current)
+      throw new HttpError(409, 'missing_revision', 'Không tìm thấy phiên bản hiện tại.');
+    if (
+      current.parentRevisionId?.equals(submission.revisionId) &&
+      current.status === 'editable' &&
+      !current.immutableAt
+    )
+      return {
+        id: String(current._id),
+        storyId: String(story._id),
+        chapterId: submission.chapterId ? String(target._id) : null,
+        replayed: true,
+      };
+    if (!current._id.equals(submission.revisionId) || !current.immutableAt)
+      throw new HttpError(409, 'stale_content', 'Nội dung đã chuyển sang phiên bản khác.');
+    const last = await ContentRevision.findOne({
+      storyId: story._id,
+      contentType: current.contentType,
+      chapterId: submission.chapterId ?? null,
+    })
+      .sort({ revisionNumber: -1 })
+      .session(session);
+    const [revision] = await ContentRevision.create(
+      [
+        {
+          contentType: current.contentType,
+          storyId: story._id,
+          ...(submission.chapterId ? { chapterId: target._id } : {}),
+          authorAccountId: account._id,
+          parentRevisionId: current._id,
+          revisionNumber: (last?.revisionNumber ?? 0) + 1,
+          content: structuredClone(current.content),
+          formatVersion: current.formatVersion,
+          mediaIds: current.mediaIds,
+          ...(current.altText ? { altText: current.altText } : {}),
+        },
+      ],
+      { session },
+    );
+    target.draftRevisionId = revision._id;
+    target.currentRevisionId = revision._id;
+    if (submission.chapterId) target.status = 'draft';
+    else {
+      story.authoringFrozen = false;
+      if (!['published', 'unpublished'].includes(story.publicationStatus))
+        story.publicationStatus = story.publishedRevisionId ? 'unpublished' : 'draft';
+    }
+    await target.save({ session });
+    const now = new Date();
+    await AuditEvent.create(
+      [
+        {
+          actorType: 'account',
+          actorId: account._id,
+          action: 'content.revision-created',
+          targetType: 'ContentRevision',
+          targetId: revision._id,
+          result: 'accepted',
+          occurredAt: now,
+          targetVersion: revision.version,
+          dataDigest: digest({ parentRevisionId: String(current._id), content: revision.content }),
+        },
+      ],
+      { session },
+    );
+    await ModerationHistory.create(
+      [
+        {
+          aggregateType: current.contentType,
+          aggregateId: target._id,
+          action: 'revision-created',
+          outcome: 'draft',
+          submissionId: submission._id,
+          revisionId: revision._id,
+          actorAccountId: account._id,
+          actorAuthorizationEpoch: account.authorizationEpoch,
+          occurredAt: now,
+        },
+      ],
+      { session },
+    );
+    return {
+      id: String(revision._id),
+      storyId: String(story._id),
+      chapterId: submission.chapterId ? String(target._id) : null,
+      replayed: false,
+    };
+  });
 }

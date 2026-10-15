@@ -50,6 +50,75 @@ async function fixture() {
   return { author, other, reader, category, storyId, body, prepare };
 }
 describe('exact owner submission packages', () => {
+  it('creates a new editable revision after feedback, preserves history and resubmits as a new package', async () => {
+    const f = await fixture();
+    const sent = await write('/api/author/submissions', f.author.cookie, f.body);
+    const submission = await PublicationSubmission.findById(sent.body.submission.id);
+    const path = `/api/author/submissions/${submission._id}/revise`;
+    expect(
+      (await write(path, f.author.cookie, { expectedVersion: submission.version })).status,
+    ).toBe(409);
+    submission.status = 'revision-requested';
+    submission.decisionSummary = 'Cần làm rõ phần tóm tắt.';
+    await submission.save();
+    const input = { expectedVersion: submission.version };
+    expect((await write(path, f.other.cookie, input)).status).toBe(404);
+    expect((await write(path, f.reader.cookie, input)).status).toBe(403);
+    expect(
+      (await write(path, f.author.cookie, { expectedVersion: input.expectedVersion - 1 })).status,
+    ).toBe(409);
+    const results = await Promise.all([
+      write(path, f.author.cookie, input),
+      write(path, f.author.cookie, input),
+    ]);
+    expect(results.map((result) => result.status).sort()).toEqual([200, 201]);
+    expect(results[0].body.revision.id).toBe(results[1].body.revision.id);
+    const old = await ContentRevision.findById(f.body.revisionId);
+    const story = await Story.findById(f.storyId);
+    const fresh = await ContentRevision.findById(story.draftRevisionId);
+    expect(fresh.status).toBe('editable');
+    expect(fresh.content).toEqual(old.content);
+    expect(String(fresh.parentRevisionId)).toBe(String(old._id));
+    expect(fresh.rightsDeclarationId).toBeUndefined();
+    expect(fresh.immutableAt).toBeUndefined();
+    expect(old.immutableAt).toBeTruthy();
+    expect(old.packageDigest).toBeTruthy();
+    expect(story.authoringFrozen).toBe(false);
+    expect(story.publicationStatus).toBe('draft');
+    expect(await ModerationHistory.countDocuments({ action: 'revision-created' })).toBe(1);
+    expect((await PublicationSubmission.findById(submission._id)).decisionSummary).toBe(
+      'Cần làm rõ phần tóm tắt.',
+    );
+    const prepared = (await f.prepare()).body;
+    const next = await write('/api/author/submissions', f.author.cookie, {
+      ...f.body,
+      revisionId: prepared.target.revisionId,
+      expectedVersion: prepared.target.version,
+    });
+    expect(next.status).toBe(201);
+    expect(next.body.submission.id).not.toBe(String(submission._id));
+    expect(await RightsDeclaration.countDocuments()).toBe(2);
+    expect(await EvidenceBatch.countDocuments()).toBe(2);
+    expect((await write(path, f.author.cookie, input)).status).toBe(409);
+  });
+  it('rolls back a new revision and unlock if its audit write fails', async () => {
+    const f = await fixture();
+    const sent = await write('/api/author/submissions', f.author.cookie, f.body);
+    const submission = await PublicationSubmission.findById(sent.body.submission.id);
+    submission.status = 'rejected';
+    await submission.save();
+    vi.spyOn(AuditEvent, 'create').mockRejectedValueOnce(new Error('audit unavailable'));
+    expect(
+      (
+        await write(`/api/author/submissions/${submission._id}/revise`, f.author.cookie, {
+          expectedVersion: submission.version,
+        })
+      ).status,
+    ).toBe(500);
+    expect(await ContentRevision.countDocuments()).toBe(1);
+    expect((await Story.findById(f.storyId)).authoringFrozen).toBe(true);
+    expect(await ModerationHistory.countDocuments({ action: 'revision-created' })).toBe(0);
+  });
   it('blocks inactive genres and unhandled media without freezing or creating evidence', async () => {
     const f = await fixture();
     f.category.status = 'retired';

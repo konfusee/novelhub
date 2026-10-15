@@ -2,7 +2,12 @@ import { Router } from 'express';
 import { z } from 'zod';
 import { requireAuth, requireRole } from '../middleware/auth.js';
 import { HttpError } from '../middleware/errors.js';
-import { prepareSubmission, submitContent, submissionList } from '../modules/author-submissions.js';
+import {
+  prepareSubmission,
+  submitContent,
+  submissionList,
+  reviseSubmission,
+} from '../modules/author-submissions.js';
 const id = z.string().regex(/^[a-f\d]{24}$/i);
 const target = z.object({ storyId: id, chapterId: id.optional() }).strict();
 const input = z
@@ -57,6 +62,19 @@ export function createAuthorSubmissionsRouter(config) {
     try {
       const submission = await submitContent(req.account, parse(input, req.body));
       res.status(submission.replayed ? 200 : 201).json({ submission });
+    } catch (error) {
+      next(error);
+    }
+  });
+  router.post('/author/submissions/:submissionId/revise', async (req, res, next) => {
+    try {
+      const submissionId = parse(id, req.params.submissionId);
+      const { expectedVersion } = parse(
+        z.object({ expectedVersion: z.number().int().min(0) }).strict(),
+        req.body,
+      );
+      const revision = await reviseSubmission(req.account, submissionId, expectedVersion);
+      res.status(revision.replayed ? 200 : 201).json({ revision });
     } catch (error) {
       next(error);
     }

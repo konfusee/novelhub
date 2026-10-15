@@ -1,6 +1,6 @@
 import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { afterEach, expect, it, vi } from 'vitest';
-import { MemoryRouter } from 'react-router';
+import { MemoryRouter, useLocation } from 'react-router';
 import { LocaleProvider } from '../../context/LocaleContext';
 import { SubmissionReviewPage } from './SubmissionReviewPage';
 const mocks = vi.hoisted(() => ({ apiRequest: vi.fn() }));
@@ -17,6 +17,9 @@ const prepared = {
   words: 8,
   requiresRights: true,
 };
+function Destination() {
+  return <p>location{useLocation().pathname}</p>;
+}
 function fixture({ ready = true, failure = false } = {}) {
   let sent = false;
   mocks.apiRequest.mockImplementation(async (path, options) => {
@@ -47,12 +50,49 @@ const view = (query = '?storyId=owned') =>
     <MemoryRouter initialEntries={[`/author/submissions${query}`]}>
       <LocaleProvider>
         <SubmissionReviewPage />
+        <Destination />
       </LocaleProvider>
     </MemoryRouter>,
   );
 afterEach(() => {
   cleanup();
   vi.resetAllMocks();
+});
+it('creates a fresh draft from persisted feedback and navigates to the exact owner work', async () => {
+  mocks.apiRequest.mockImplementation(async (path, options) => {
+    if (options?.method === 'POST')
+      return { revision: { id: 'revision8', storyId: 'owned', chapterId: 'chapter7' } };
+    if (path.includes('/prepare?')) return prepared;
+    if (path.includes('/workspace')) return { chapters: [] };
+    return {
+      stories: [],
+      page: 1,
+      pageCount: 1,
+      items: [
+        {
+          id: 'submission7',
+          storyId: 'owned',
+          chapterId: 'chapter7',
+          title: 'Cần sửa bản thảo',
+          status: 'revision-requested',
+          version: 4,
+          revisionNumber: 7,
+          submittedAt: '2026-10-16',
+          history: [],
+          decisionSummary: 'Làm rõ bối cảnh.',
+        },
+      ],
+    };
+  });
+  view('');
+  await screen.findByText('Làm rõ bối cảnh.');
+  fireEvent.click(screen.getByRole('button', { name: 'Tạo bản sửa từ phản hồi' }));
+  fireEvent.click(await screen.findByRole('button', { name: 'Tạo bản nháp chỉnh sửa' }));
+  await screen.findByText('location/author/stories/owned/chapters/chapter7/edit');
+  expect(mocks.apiRequest).toHaveBeenCalledWith('/author/submissions/submission7/revise', {
+    method: 'POST',
+    body: { expectedVersion: 4 },
+  });
 });
 it('submits the exact server revision and explicit rights, then waits for real processing', async () => {
   fixture();
