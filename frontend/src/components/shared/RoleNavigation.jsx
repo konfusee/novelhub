@@ -14,13 +14,14 @@ import {
   UserRound,
 } from '../icons';
 import { Link, useLocation, useNavigate } from 'react-router';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { ROLE_HOME, useAuth } from '../../context/AuthContext';
 import { useTheme } from '../../context/ThemeContext';
 import { Avatar, IconButton, Input } from '../ui';
 import { useLocale } from '../../context/LocaleContext';
 import { useBackendDocument } from '../../api/useBackendResource';
 const emptyBalance = { readerCoins: null, authorEarnings: null };
+const emptyUnread = { count: 0 };
 
 const roleMeta = {
   reader: ['navigation.reader', BookOpen],
@@ -163,6 +164,12 @@ export function SharedWorkspaceHeader({
   const navigate = useNavigate();
   const walletPath = currentRole === 'author' ? '/author/wallet' : '/reader/wallet';
   const balance = useBackendDocument('/reader/balance', emptyBalance);
+  const unread = useBackendDocument('/reader/notifications/unread-count', emptyUnread);
+  const refreshUnread = unread.retry;
+  useEffect(() => {
+    window.addEventListener('novelhub:notifications-updated', refreshUnread);
+    return () => window.removeEventListener('novelhub:notifications-updated', refreshUnread);
+  }, [refreshUnread]);
   const coins = currentRole === 'author' ? balance.data.authorEarnings : balance.data.readerCoins;
   return (
     <header
@@ -217,7 +224,9 @@ export function SharedWorkspaceHeader({
           onClick={() => navigate('/reader/notifications')}
         >
           <Bell size={18} />
-          <span className="absolute right-2.5 top-2.5 size-2 rounded-full bg-rose ring-2 ring-surface" />
+          {unread.status === 'ready' && unread.data.count > 0 && (
+            <span className="absolute right-2.5 top-2.5 size-2 rounded-full bg-rose ring-2 ring-surface" />
+          )}
         </IconButton>
         <WorkspaceHeaderAccount currentRole={currentRole} />
       </div>
