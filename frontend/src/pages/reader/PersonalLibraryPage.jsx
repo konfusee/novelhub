@@ -25,8 +25,9 @@ import {
   Skeleton,
   Tabs,
 } from '../../components/ui';
-import { useMockResource } from '../../context/MockDataContext';
-import { libraryItems } from '../../data/mock/reader';
+import { useBackendDocument } from '../../api/useBackendResource';
+import { apiRequest } from '../../api/client';
+const emptyLibrary = { items: [], activeThisWeek: 0 };
 
 const tabs = [
   ['all', 'Tất cả'],
@@ -42,13 +43,20 @@ const views = [
 ];
 
 export function PersonalLibraryPage() {
-  const library = useMockResource('reader:library', libraryItems);
+  const resource = useBackendDocument('/reader/library', emptyLibrary);
+  const library = { ...resource, data: resource.data.items };
   const loading = library.status === 'loading';
-  const [removed, setRemoved] = useState([]);
-  const items = useMemo(
-    () => library.data.filter((item) => !removed.includes(item.id)),
-    [library.data, removed],
-  );
+  const items = library.data;
+  const [error, setError] = useState('');
+  const remove = async (id) => {
+    try {
+      await apiRequest(`/reader/follows/${id}`, { method: 'PUT', body: { following: false } });
+      resource.retry();
+      setError('');
+    } catch (error) {
+      setError(error.message);
+    }
+  };
   const [tab, setTab] = useState('all');
   const [query, setQuery] = useState('');
   const [type, setType] = useState('all');
@@ -91,6 +99,11 @@ export function PersonalLibraryPage() {
   return (
     <ReaderLayout>
       <div className="page-reader py-6">
+        {error && (
+          <p role="alert" className="mb-4 text-sm text-rose-strong">
+            {error}
+          </p>
+        )}
         <Card
           bezel
           innerClassName="flex flex-col justify-between gap-5 p-5 sm:p-6 lg:flex-row lg:items-center"
@@ -116,7 +129,9 @@ export function PersonalLibraryPage() {
                 <span aria-hidden="true" className="hidden sm:inline">
                   •
                 </span>
-                <span className="font-medium text-orange-strong">6 tác phẩm đang đọc tuần này</span>
+                <span className="font-medium text-orange-strong">
+                  {resource.data.activeThisWeek} tác phẩm đang đọc tuần này
+                </span>
               </p>
             )}
           </div>
@@ -126,9 +141,9 @@ export function PersonalLibraryPage() {
                 <Cloud size={16} className="text-brand" />
                 Bộ nhớ ngoại tuyến
               </span>
-              <strong className="tabular-nums">2.4 GB / 10 GB</strong>
+              <strong className="tabular-nums">Chưa bật lưu ngoại tuyến</strong>
             </div>
-            <ProgressBar value={2.4} max={10} label="Bộ nhớ ngoại tuyến" className="mt-2" />
+            <ProgressBar value={0} max={1} label="Bộ nhớ ngoại tuyến" className="mt-2" />
             {loading ? (
               <span className="mt-2 flex h-4 items-center">
                 <Skeleton className="h-2.5 w-52" />
@@ -211,8 +226,8 @@ export function PersonalLibraryPage() {
             aria-label="Đang tải thư viện"
             className={`mt-6 ${view === 'grid' ? 'nh-grid-12 grid nh-cols-2 gap-3 nh-md-cols-3 nh-xl-cols-4' : 'space-y-3'}`}
           >
-            {libraryItems.map((item) => (
-              <LibraryCardSkeleton key={item.id} view={view} />
+            {Array.from({ length: 6 }, (_, index) => (
+              <LibraryCardSkeleton key={index} view={view} />
             ))}
           </section>
         ) : library.status === 'error' ? (
@@ -249,12 +264,7 @@ export function PersonalLibraryPage() {
             className={`nh-fade-enter mt-6 ${view === 'grid' ? 'nh-grid-12 grid nh-cols-2 gap-3 nh-md-cols-3 nh-xl-cols-4' : 'space-y-3'}`}
           >
             {filtered.map((item) => (
-              <LibraryCard
-                key={item.id}
-                item={item}
-                view={view}
-                onRemove={(id) => setRemoved((current) => [...current, id])}
-              />
+              <LibraryCard key={item.id} item={item} view={view} onRemove={remove} />
             ))}
           </section>
         ) : (
@@ -280,7 +290,7 @@ export function PersonalLibraryPage() {
             <div className="min-w-0">
               <h2 className="text-base font-semibold sm:text-h3">Mục tiêu đọc hằng tuần</h2>
               <p className="text-sm text-muted">
-                Bạn đã đọc 4,5 giờ trong mục tiêu 5 giờ tuần này. Hãy tiếp tục!
+                {resource.data.activeThisWeek} tác phẩm có hoạt động đọc trong 7 ngày qua.
               </p>
             </div>
           </div>
@@ -288,7 +298,13 @@ export function PersonalLibraryPage() {
             <ButtonLink to="/reader/history" variant="secondary">
               Xem thống kê
             </ButtonLink>
-            <ButtonLink to="/read/silent-forest/chapter-1">
+            <ButtonLink
+              to={
+                items[0]?.chapterId
+                  ? `/read/${items[0].id}/${items[0].chapterId}`
+                  : '/reader/explore'
+              }
+            >
               <BookOpen size={16} />
               Tiếp tục đọc
             </ButtonLink>

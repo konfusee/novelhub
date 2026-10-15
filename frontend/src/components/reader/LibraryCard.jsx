@@ -19,7 +19,11 @@ export function LibraryCard({ item, view = 'grid', onRemove }) {
   const triggerRef = useRef(null);
   const { t } = useLocale();
   const audio = item.type === 'audio';
-  const href = audio ? `/listen/${item.id}/chapter-1` : `/read/${item.id}/chapter-1`;
+  const href = item.chapterId
+    ? audio
+      ? `/listen/${item.id}/${item.chapterId}`
+      : `/read/${item.id}/${item.chapterId}`
+    : `/stories/${item.id}`;
   const typeLabel = t(audio ? 'library.audiobook' : 'library.textStory');
 
   useEffect(() => {
@@ -79,7 +83,7 @@ export function LibraryCard({ item, view = 'grid', onRemove }) {
         >
           <button
             role="menuitem"
-            onClick={() => choose(t('library.availableOffline'))}
+            onClick={() => choose('Tác phẩm chưa có bản tải ngoại tuyến.')}
             className={menuItemClass}
           >
             <Download size={15} />
@@ -87,7 +91,7 @@ export function LibraryCard({ item, view = 'grid', onRemove }) {
           </button>
           <button
             role="menuitem"
-            onClick={() => choose(t('library.markedFinished'))}
+            onClick={() => choose('Tiến độ hoàn tất được cập nhật khi bạn đọc các chương.')}
             className={menuItemClass}
           >
             <CheckCircle2 size={15} />

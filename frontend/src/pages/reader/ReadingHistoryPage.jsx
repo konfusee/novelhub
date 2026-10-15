@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useState } from 'react';
 import {
   AlertTriangle,
   BookOpen,
@@ -26,42 +26,28 @@ import {
   Skeleton,
   Tabs,
 } from '../../components/ui';
-import { libraryItems } from '../../data/mock/reader';
+import { apiRequest } from '../../api/client';
+import { useBackendDocument, useBackendResource } from '../../api/useBackendResource';
 import { useLocale } from '../../context/LocaleContext';
-import { useMockResource } from '../../context/MockDataContext';
 
 const metrics = [
-  ['history.storiesProgress', '6', 'history.activeStories', BookOpen],
-  ['history.chaptersMonth', '84', 'history.vsLastMonth', BookOpen],
-  ['history.audioHours', '26.5', 'history.hours', Headphones],
-  ['history.streak', '18', 'history.consecutiveDays', Flame],
+  ['history.storiesProgress', 0, 'history.activeStories', BookOpen],
+  ['history.chaptersMonth', 0, 'history.completedTab', BookOpen],
+  ['history.audioHours', '—', 'history.hours', Headphones],
+  ['history.streak', '—', 'history.consecutiveDays', Flame],
 ];
-const weekly = {
-  week: [32, 48, 24, 51, 41, 49, 46],
-  last: [25, 37, 19, 40, 32, 38, 36],
-};
+const weekly = { week: [0, 0, 0, 0, 0, 0, 0], last: [0, 0, 0, 0, 0, 0, 0] };
 const weekdays = ['T2', 'T3', 'T4', 'T5', 'T6', 'T7', 'CN'];
 const genres = [
-  ['Kỳ ảo và thần thoại', 45, 'bg-brand'],
-  ['Lãng mạn và chính kịch', 25, 'bg-orange'],
-  ['Bí ẩn và giật gân', 18, 'bg-purple'],
-  ['Khoa học viễn tưởng và Cyberpunk', 12, 'bg-rose'],
+  ['placeholder-1', 0, 'bg-brand'],
+  ['placeholder-2', 0, 'bg-orange'],
+  ['placeholder-3', 0, 'bg-purple'],
+  ['placeholder-4', 0, 'bg-rose'],
 ];
-const devices = [
-  ['Trình đọc MacBook Pro', 'Đang hoạt động', Laptop],
-  ['iPhone 15 Pro', 'Đồng bộ 2 giờ trước', Smartphone],
-  ['Kindle PaperWhite', 'Hôm qua', BookOpen],
-];
-const historyItems = [
-  { ...libraryItems[0], when: 'Đọc 20 phút trước', duration: '35 phút đọc' },
-  { ...libraryItems[1], when: 'Phiên nghe · 2 giờ trước', duration: '20 phút nghe' },
-  { ...libraryItems[2], when: 'Đọc hôm qua lúc 21:15', duration: '42 phút đọc' },
-  { ...libraryItems[4], when: 'Đọc hôm qua lúc 14:30', duration: '28 phút đọc' },
-  { ...libraryItems[3], when: 'Hoàn tất thứ Năm', duration: 'Phiên 1 giờ 15 phút' },
-];
-
-const readingStats = { metrics, weekly, genres };
-const isStatsEmpty = (value) => !value.metrics.length;
+const emptyHistory = {
+  items: [],
+  stats: { activeStories: 0, monthCompleted: 0, weekly, genres: [], monthlyTarget: null },
+};
 /* Sessions shown under each history tab; the loading list uses it too so row counts match. */
 const sessionsForTab = (items, tab) =>
   tab === 'listening'
@@ -140,26 +126,77 @@ export function ReadingHistoryPage() {
   const { t } = useLocale();
   const [tab, setTab] = useState('reading');
   const [period, setPeriod] = useState('week');
-  const [cleared, setCleared] = useState(false);
+  const [error, setError] = useState('');
+  const [clearing, setClearing] = useState(false);
   const [confirmClear, setConfirmClear] = useState(false);
-  const stats = useMockResource('reader:history:stats', readingStats, { isEmpty: isStatsEmpty });
-  const sessions = useMockResource('reader:history:sessions', historyItems);
+  const resource = useBackendDocument('/reader/history', emptyHistory);
+  const deviceFeed = useBackendResource('/auth/sessions');
+  const devices = deviceFeed.data.map((item) => [
+    [item.client?.os, item.client?.browser].filter(Boolean).join(' · ') || 'Thiết bị chưa xác định',
+    item.current ? 'Phiên hiện tại' : new Date(item.lastSeenAt).toLocaleDateString('vi-VN'),
+    item.client?.deviceType === 'mobile' ? Smartphone : Laptop,
+    item.id,
+  ]);
+  const stats = {
+    ...resource,
+    data: {
+      ...resource.data.stats,
+      metrics: metrics.map(([title, , detail, Icon], index) => [
+        title,
+        [
+          resource.data.stats.activeStories,
+          resource.data.stats.monthCompleted,
+          resource.data.stats.audioHours ?? '—',
+          resource.data.stats.streak ?? '—',
+        ][index],
+        detail,
+        Icon,
+      ]),
+      genres: resource.data.stats.genres.map((item, index) => [
+        item.name,
+        item.percent,
+        genres[index % genres.length][2],
+      ]),
+    },
+  };
+  const sessions = {
+    ...resource,
+    data: resource.data.items.map((item) => ({
+      ...item,
+      when: new Date(item.when).toLocaleString('vi-VN'),
+    })),
+  };
   const sessionsReady = sessions.status === 'ready';
-  const items = useMemo(
-    () => (cleared || !sessionsReady ? [] : sessions.data),
-    [cleared, sessions.data, sessionsReady],
-  );
-  const visible = useMemo(() => sessionsForTab(items, tab), [items, tab]);
-  const maxMinutes = Math.max(...weekly.week, ...weekly.last);
+  const items = sessionsReady ? sessions.data : [];
+  const clearHistory = async () => {
+    setClearing(true);
+    try {
+      await apiRequest('/reader/history', { method: 'DELETE' });
+      resource.retry();
+      setConfirmClear(false);
+      setError('');
+    } catch (error) {
+      setError(error.message);
+    } finally {
+      setClearing(false);
+    }
+  };
+  const visible = sessionsForTab(items, tab);
+  const maxMinutes = Math.max(1, ...stats.data.weekly.week, ...stats.data.weekly.last);
   const statsLoading = stats.status === 'loading';
   const statsReady = stats.status === 'ready';
   return (
     <ReaderLayout>
       <div className="page-reader py-7">
+        {error && (
+          <p role="alert" className="mb-4 text-sm text-rose-strong">
+            {error}
+          </p>
+        )}
         <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-end">
           <div className="min-w-0">
             <p className="text-xs font-semibold uppercase tracking-[.14em] text-brand-strong">
-              {t('history.eyebrow')}
+              Bản ghi thư viện cá nhân
             </p>
             <h1 className="mt-2 text-h2 sm:text-h1">{t('history.title')}</h1>
           </div>
@@ -213,7 +250,7 @@ export function ReadingHistoryPage() {
                 <p className="mt-3 flex flex-wrap items-baseline gap-x-1.5 text-2xl font-bold tabular-nums tracking-tight">
                   {value}
                   <span className="text-xs font-normal tracking-normal text-muted">
-                    {t(detail)}
+                    {detail === 'history.completedTab' ? 'chương đã hoàn tất' : t(detail)}
                   </span>
                 </p>
               </Card>
@@ -250,15 +287,23 @@ export function ReadingHistoryPage() {
             value={tab}
             onChange={setTab}
             items={[
-              { value: 'reading', label: t('history.readingTab', { count: 34 }), icon: BookOpen },
+              {
+                value: 'reading',
+                label: t('history.readingTab', { count: sessionsForTab(items, 'reading').length }),
+                icon: BookOpen,
+              },
               {
                 value: 'listening',
-                label: t('history.listeningTab', { count: 12 }),
+                label: t('history.listeningTab', {
+                  count: sessionsForTab(items, 'listening').length,
+                }),
                 icon: Headphones,
               },
               {
                 value: 'completed',
-                label: t('history.completedTab', { count: 19 }),
+                label: t('history.completedTab', {
+                  count: sessionsForTab(items, 'completed').length,
+                }),
                 icon: History,
               },
             ]}
@@ -270,7 +315,11 @@ export function ReadingHistoryPage() {
               <div className="flex flex-wrap items-start justify-between gap-3">
                 <div className="min-w-0">
                   <h2 className="text-h3">{t('history.weeklyMinutes')}</h2>
-                  <p className="mt-1 text-xs text-muted">{t('history.weeklyTarget')}</p>
+                  <p className="mt-1 text-xs text-muted">
+                    {resource.data.stats.timeTrackingAvailable
+                      ? t('history.weeklyTarget')
+                      : 'Chưa ghi nhận thời lượng đọc theo ngày.'}
+                  </p>
                 </div>
                 <Tabs
                   label={t('history.weeklyMinutes')}
@@ -325,20 +374,18 @@ export function ReadingHistoryPage() {
             </Card>
             <section>
               <div className="mb-3 flex items-center gap-3">
-                <h2 className="text-base font-semibold">{t('history.recentSessions')}</h2>
+                <h2 className="text-base font-semibold">Các chương gần đây</h2>
                 <span className="h-px flex-1 bg-line" />
                 {sessionsReady ? (
-                  <span className="text-xs text-muted">
-                    {t('history.sessions', { count: visible.length })}
-                  </span>
+                  <span className="text-xs text-muted">{visible.length} bản ghi</span>
                 ) : (
                   sessions.status === 'loading' && <Skeleton className="h-3 w-16" />
                 )}
               </div>
               {sessions.status === 'loading' ? (
                 <ul aria-busy="true" aria-label="Đang tải phiên đọc gần đây" className="space-y-3">
-                  {sessionsForTab(historyItems, tab).map((item) => (
-                    <SessionSkeleton key={`${item.id}-${item.when}`} />
+                  {Array.from({ length: 3 }, (_, index) => (
+                    <SessionSkeleton key={index} />
                   ))}
                 </ul>
               ) : sessions.status === 'error' ? (
@@ -358,10 +405,10 @@ export function ReadingHistoryPage() {
                     const audio = item.type === 'audio';
                     const done = item.progress === 100;
                     const href = audio
-                      ? `/listen/${item.id}/chapter-1`
-                      : `/read/${item.id}/chapter-1`;
+                      ? `/listen/${item.id}/${item.chapterId}`
+                      : `/read/${item.id}/${item.chapterId}`;
                     return (
-                      <li key={`${item.id}-${item.when}`}>
+                      <li key={item.historyId}>
                         <Card className="group flex gap-4 p-4">
                           <StoryCover story={item} className="h-24 w-16 shrink-0 rounded-xl" />
                           <div className="min-w-0 flex-1">
@@ -431,7 +478,7 @@ export function ReadingHistoryPage() {
           <aside className="space-y-5">
             <Card>
               <h2 className="text-h3">{t('history.genreAffinity')}</h2>
-              <p className="mt-1 text-xs text-muted">{t('history.genreDescription')}</p>
+              <p className="mt-1 text-xs text-muted">Dựa trên các chương trong lịch sử</p>
               {statsLoading ? (
                 <div aria-busy="true" aria-label="Đang tải thể loại yêu thích">
                   <Skeleton className="mt-5 h-2 w-full" />
@@ -475,13 +522,22 @@ export function ReadingHistoryPage() {
             </Card>
             <Card>
               <div className="flex items-center justify-between gap-3">
-                <h2 className="text-base font-semibold">{t('history.monthlyTarget')}</h2>
+                <h2 className="text-base font-semibold">Mục tiêu đọc hằng tháng</h2>
                 <span className="shrink-0 text-xs font-semibold tabular-nums text-brand-strong">
-                  84 / 100 ch
+                  {stats.data.monthCompleted} / {stats.data.monthlyTarget ?? '—'} ch
                 </span>
               </div>
-              <ProgressBar value={84} label={t('history.monthlyTarget')} className="mt-4" />
-              <p className="mt-3 text-xs leading-5 text-muted">{t('history.targetDescription')}</p>
+              <ProgressBar
+                value={stats.data.monthlyTarget ? stats.data.monthCompleted : 0}
+                max={stats.data.monthlyTarget ?? 1}
+                label="Mục tiêu đọc hằng tháng"
+                className="mt-4"
+              />
+              <p className="mt-3 text-xs leading-5 text-muted">
+                {stats.data.monthlyTarget
+                  ? t('history.targetDescription')
+                  : 'Chưa đặt mục tiêu đọc hằng tháng.'}
+              </p>
             </Card>
             <Card className="bg-elevated">
               <p className="text-lg font-medium leading-7 text-ink">
@@ -493,12 +549,12 @@ export function ReadingHistoryPage() {
               <div className="flex items-center justify-between gap-3">
                 <h2 className="text-base font-semibold">{t('history.activeSync')}</h2>
                 <Badge tone="green" className="shrink-0 whitespace-nowrap">
-                  {t('history.connected')}
+                  {deviceFeed.status === 'ready' ? t('history.connected') : 'Chưa kết nối'}
                 </Badge>
               </div>
               <ul className="mt-4 space-y-3 text-xs">
-                {devices.map(([name, status, Icon]) => (
-                  <li key={name} className="flex items-center gap-2.5">
+                {devices.map(([name, status, Icon, id]) => (
+                  <li key={id} className="flex items-center gap-2.5">
                     <Icon size={15} className="shrink-0 text-muted" />
                     <span className="line-clamp-2 min-w-0 flex-1" title={name}>
                       {name}
@@ -523,13 +579,7 @@ export function ReadingHistoryPage() {
             <Button variant="secondary" onClick={() => setConfirmClear(false)}>
               Hủy
             </Button>
-            <Button
-              variant="danger"
-              onClick={() => {
-                setCleared(true);
-                setConfirmClear(false);
-              }}
-            >
+            <Button variant="danger" onClick={clearHistory} disabled={clearing}>
               <Trash2 size={15} />
               {t('history.clear')}
             </Button>
