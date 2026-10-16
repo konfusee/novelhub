@@ -4,6 +4,7 @@ Ngày lập: 15/10/2026. Trạng thái: đang triển khai; P1 đã hoàn thiệ
 
 ## Cập nhật ngày 16/10/2026
 
+- P2 bổ sung lưu trữ/khôi phục chương nháp riêng tư có xác nhận, version truyện/chương, audit và rollback (`21e2edb`). Giữ ID, thứ tự và nội dung; xem `docs/author-chapter-lifecycle.md`. Đã kiểm tra 30 test backend, 13 test UI và browser. Còn xóa chương, nội dung đã phát hành và AST/media; không đánh dấu toàn bộ quản lý chương hoàn thiện.
 - P2 đã nối MongoDB cho danh sách truyện, tạo truyện/chương, metadata và thể loại versioned, editor và kho nháp. Đổi thể loại giữ snapshot công khai (`c268cba`); editor chặn ghi đè mất định dạng (`7b63155`); lưu trữ/khôi phục nháp riêng tư có audit (`6990fa2`). Đã thêm sắp xếp chương của truyện nháp riêng tư, kiểm tra version, audit và rollback trong transaction. Xem `docs/author-chapter-order.md`. Còn canonical rich-text AST và vòng đời nội dung đã phát hành; không coi toàn bộ P2 đã nghiệm thu.
 - P3 đã lưu khai báo original/licensed theo gói thông tin truyện, xác nhận và ghi chú nguồn bất biến. Chương dùng khai báo của phiên bản truyện đã duyệt. Nhập PDF/DOC/DOCX/TXT/MD đã nối MongoDB, có kiểm tra/sửa/tách/gộp và lưu chương nháp trong transaction. Còn nhận diện cấu trúc ngoài mẫu Chương/Chapter liên tiếp, rich-text và upload ảnh. Xem `docs/author-document-import.md`.
 - P4 đã có kiểm tra điều kiện, đóng băng exact revision, digest, audit, lịch sử/phản hồi theo chủ sở hữu và tạo bản sửa mới từ kết quả rejected/revision-requested. Gửi lại tạo gói mới; gói cũ không bị sửa. Commit: `4fb096e`, `041f6b3`, `2bb5f62`.

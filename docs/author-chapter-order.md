@@ -24,4 +24,4 @@ Kiểm thử MongoDB replica set tạm bao phủ đổi chỗ trên unique index
 
 Browser đã đổi vị trí bằng bàn phím, lưu rồi reload thấy đúng thứ tự từ MongoDB. Kiểm tra light/dark, 390/768/1024 px; hộp thoại nằm trong viewport và không tràn ngang. Bằng chứng được chụp sau khi tải lại. Dữ liệu thử chỉ nằm trong database tạm.
 
-Phạm vi còn lại của quản lý chương: lưu trữ/xóa/khôi phục chương và thứ tự của nội dung đã phát hành cần nghiệp vụ riêng. UC-AUT-03 vẫn ở mức Một phần.
+Lưu trữ/khôi phục chương nháp riêng tư đã được bổ sung trong `21e2edb`, xem `author-chapter-lifecycle.md`. Không sắp xếp khi còn chương archived; khôi phục các chương trước. Phạm vi còn lại gồm xóa chương và thứ tự của nội dung đã phát hành. UC-AUT-03 vẫn ở mức Một phần.
