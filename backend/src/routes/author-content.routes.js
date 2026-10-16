@@ -18,6 +18,7 @@ import {
 } from '../modules/author-payouts.js';
 import { lockAuthor, ownStory, editable } from '../modules/author-ownership.js';
 import { assertTextEditorRevision, chapterParagraphText } from '../modules/chapter-document.js';
+import { readRichChapter, richChapterDocument } from '../modules/rich-chapter-document.js';
 import { changeDraftLifecycle } from '../modules/author-story-lifecycle.js';
 import { reorderDraftChapters } from '../modules/author-chapter-order.js';
 import { changeChapterDraftLifecycle } from '../modules/author-chapter-lifecycle.js';
@@ -426,6 +427,10 @@ export function createAuthorContentRouter(config) {
   });
   router.get('/author/stories/:storyId/chapters/:chapterId', async (req, res, next) => {
     try {
+      const { format } = parse(
+        z.object({ format: z.enum(['plain', 'rich']).default('plain') }).strict(),
+        req.query,
+      );
       const story = await ownStory(req.account, req.params.storyId);
       const chapter = await Chapter.findOne({
         _id: req.params.chapterId,
@@ -441,7 +446,8 @@ export function createAuthorContentRouter(config) {
       }).lean();
       if (!revision)
         throw new HttpError(409, 'missing_revision', 'Không tải được bản nội dung của chương.');
-      assertTextEditorRevision(revision);
+      const document = format === 'rich' ? readRichChapter(revision) : null;
+      if (!document) assertTextEditorRevision(revision);
       const outline = await Chapter.find({ storyId: story._id, status: { $ne: 'archived' } })
         .sort({ orderKey: 1 })
         .select('title orderKey')
@@ -469,9 +475,13 @@ export function createAuthorContentRouter(config) {
           title: chapter.title,
           version: chapter.version,
           status: chapter.status,
-          paragraphs: (revision?.content?.blocks ?? [])
-            .filter((block) => block.type === 'paragraph')
-            .map((block) => block.text),
+          ...(document
+            ? { document, formatVersion: 'blocks-v2' }
+            : {
+                paragraphs: (revision?.content?.blocks ?? [])
+                  .filter((block) => block.type === 'paragraph')
+                  .map((block) => block.text),
+              }),
         },
       });
     } catch (error) {
@@ -481,7 +491,12 @@ export function createAuthorContentRouter(config) {
   router.put('/author/stories/:storyId/chapters/:chapterId', async (req, res, next) => {
     try {
       const input = parse(
-        chapterInput.extend({ expectedVersion: z.number().int().min(0) }),
+        z.union([
+          chapterInput.extend({ expectedVersion: z.number().int().min(0) }),
+          z
+            .object({ document: richChapterDocument, expectedVersion: z.number().int().min(0) })
+            .strict(),
+        ]),
         req.body,
       );
       const result = await withTransaction(async (session) => {
@@ -508,7 +523,8 @@ export function createAuthorContentRouter(config) {
         }).session(session);
         if (!source)
           throw new HttpError(409, 'missing_revision', 'Không tìm thấy bản nháp hiện tại.');
-        assertTextEditorRevision(source);
+        if (input.document) readRichChapter(source);
+        else assertTextEditorRevision(source);
         if (source.status !== 'editable' || source.immutableAt)
           throw new HttpError(409, 'content_frozen', 'Phiên bản hiện tại đã bị khóa chỉnh sửa.');
         const last = await ContentRevision.findOne({ chapterId: chapter._id })
@@ -523,8 +539,8 @@ export function createAuthorContentRouter(config) {
               authorAccountId: req.account._id,
               revisionNumber: (last?.revisionNumber ?? 0) + 1,
               parentRevisionId: last?._id,
-              formatVersion: 'blocks-v1',
-              content: {
+              formatVersion: input.document ? 'blocks-v2' : 'blocks-v1',
+              content: input.document ?? {
                 title: input.title,
                 blocks: input.paragraphs.map((text) => ({ type: 'paragraph', text })),
               },
@@ -532,7 +548,7 @@ export function createAuthorContentRouter(config) {
           ],
           { session },
         );
-        chapter.title = input.title;
+        chapter.title = input.document?.title ?? input.title;
         chapter.draftRevisionId = revision._id;
         chapter.currentRevisionId = revision._id;
         await chapter.save({ session });

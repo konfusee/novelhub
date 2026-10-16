@@ -8,6 +8,7 @@ import {
   Story,
   Wallet,
 } from '../models/index.js';
+import { chapterTextProjection } from './rich-chapter-document.js';
 
 export async function authorDashboard(accountId) {
   const stories = await Story.find({ authorAccountId: accountId })
@@ -70,7 +71,7 @@ export async function authorDashboard(accountId) {
     contentType: 'chapter',
     status: 'editable',
   })
-    .select('storyId chapterId content')
+    .select('storyId chapterId content formatVersion')
     .lean();
   const validDrafts = draftChapters.flatMap((chapter) => {
     const revision = revisions.find(
@@ -81,9 +82,10 @@ export async function authorDashboard(accountId) {
     );
     if (!revision) return [];
     const story = stories.find((item) => item._id.equals(chapter.storyId));
-    const written = (revision.content?.blocks ?? [])
-      .filter((block) => block.type === 'paragraph' && typeof block.text === 'string')
-      .reduce((sum, block) => sum + (block.text.match(/\S+/gu)?.length ?? 0), 0);
+    const written = chapterTextProjection(revision).reduce(
+      (sum, text) => sum + (text.match(/\S+/gu)?.length ?? 0),
+      0,
+    );
     return [
       {
         id: String(story._id),

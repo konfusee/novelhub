@@ -10,6 +10,7 @@ import { HttpError } from '../middleware/errors.js';
 import { draftLifecycle } from './author-story-lifecycle.js';
 import { canReorderDraftChapters } from './author-chapter-order.js';
 import { chapterDraftLifecycle } from './author-chapter-lifecycle.js';
+import { chapterTextProjection } from './rich-chapter-document.js';
 
 export async function authorStoryWorkspace(account, storyId) {
   const story = await Story.findOne({ _id: storyId, authorAccountId: account._id }).lean();
@@ -41,7 +42,9 @@ export async function authorStoryWorkspace(account, storyId) {
     authorAccountId: account._id,
     contentType: 'chapter',
   })
-    .select('chapterId storyId authorAccountId contentType content status immutableAt')
+    .select(
+      'chapterId storyId authorAccountId contentType content formatVersion status immutableAt',
+    )
     .lean();
   const rows = chapters.map((chapter) => {
     const revisionId =
@@ -50,9 +53,10 @@ export async function authorStoryWorkspace(account, storyId) {
       (item) => item._id.equals(revisionId) && item.chapterId?.equals(chapter._id),
     );
     const words = revision
-      ? (revision.content?.blocks ?? [])
-          .filter((block) => block.type === 'paragraph' && typeof block.text === 'string')
-          .reduce((sum, block) => sum + (block.text.match(/\S+/gu)?.length ?? 0), 0)
+      ? chapterTextProjection(revision).reduce(
+          (sum, text) => sum + (text.match(/\S+/gu)?.length ?? 0),
+          0,
+        )
       : null;
     return {
       ...chapterDraftLifecycle(chapter, revision, story, lifecycle),
