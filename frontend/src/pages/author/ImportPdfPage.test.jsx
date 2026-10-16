@@ -7,12 +7,12 @@ const mocks = vi.hoisted(() => ({ apiRequest: vi.fn() }));
 vi.mock('../../api/client', () => ({ apiRequest: mocks.apiRequest }));
 vi.mock('../../layouts', () => ({ AuthorLayout: ({ children }) => <main>{children}</main> }));
 const text = 'Đoạn đầu tiên.\n\nĐoạn tiếp theo.';
-function view({ saveError = false } = {}) {
+function view({ saveError = false, previewText = text } = {}) {
   mocks.apiRequest.mockImplementation(async (path) => {
     if (path === '/author/imports/targets')
       return { items: [{ id: 'real-story', title: 'Truyện từ MongoDB', version: 3 }] };
     if (path.startsWith('/author/imports/preview'))
-      return { text, format: 'md', receipt: 'signed-receipt' };
+      return { text: previewText, format: 'md', receipt: 'signed-receipt' };
     if (saveError) throw new Error('Không lưu được MongoDB');
     return { storyId: 'real-story', chapterIds: ['chapter-one', 'chapter-two'] };
   });
@@ -37,6 +37,40 @@ async function destination() {
 afterEach(() => {
   cleanup();
   vi.resetAllMocks();
+});
+it('suggests chapters from current edits only after an explicit action and keeps the preamble', async () => {
+  const source =
+    'Lời tựa của tác giả.\n\nChương 1: Mở đầu\nNội dung thứ nhất.\n\nChương 2: Tiếp theo\nNội dung thứ hai.';
+  const { container } = view({ previewText: source });
+  await choose(container);
+  expect(screen.getAllByRole('textbox', { name: /Tiêu đề chương/ })).toHaveLength(1);
+  const edited = source + '\nĐoạn tác giả vừa sửa.';
+  fireEvent.change(screen.getByRole('textbox', { name: 'ban-thao' }), {
+    target: { value: edited },
+  });
+  fireEvent.click(screen.getByRole('button', { name: 'Gợi ý tách theo tiêu đề' }));
+  expect(
+    screen.getAllByRole('textbox', { name: /Tiêu đề chương/ }).map((input) => input.value),
+  ).toEqual(['Phần mở đầu', 'Chương 1: Mở đầu', 'Chương 2: Tiếp theo']);
+  await destination();
+  fireEvent.click(screen.getByRole('button', { name: 'Nhập thành bản nháp' }));
+  await screen.findByText(/Đã lưu .* chương nháp/);
+  const body = mocks.apiRequest.mock.calls.find(([path]) => path === '/author/imports')[1].body;
+  expect(body.chapters).toHaveLength(3);
+  expect(
+    body.chapters
+      .flatMap((chapter) => chapter.paragraphs)
+      .join('')
+      .replace(/\s/g, ''),
+  ).toBe(edited.replace(/\s/g, ''));
+});
+it('keeps the reviewed text intact when chapter headings are ambiguous', async () => {
+  const { container } = view();
+  await choose(container);
+  fireEvent.click(screen.getByRole('button', { name: 'Gợi ý tách theo tiêu đề' }));
+  expect((await screen.findByRole('alert')).textContent).toContain('Nội dung được giữ nguyên');
+  expect(screen.getByRole('textbox', { name: 'ban-thao' }).value).toBe(text);
+  expect(screen.getAllByRole('textbox', { name: /Tiêu đề chương/ })).toHaveLength(1);
 });
 it('uploads the actual file, reviews real text and waits for persistence before reporting success', async () => {
   const { container } = view();
