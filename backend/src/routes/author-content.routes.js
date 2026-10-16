@@ -12,6 +12,7 @@ import { authorEarnings } from '../modules/author-earnings.js';
 import { lockAuthor, ownStory, editable } from '../modules/author-ownership.js';
 import { assertTextEditorRevision, chapterParagraphText } from '../modules/chapter-document.js';
 import { changeDraftLifecycle } from '../modules/author-story-lifecycle.js';
+import { reorderDraftChapters } from '../modules/author-chapter-order.js';
 
 const objectId = z.string().regex(/^[a-f\d]{24}$/i);
 const storyInput = z
@@ -64,6 +65,29 @@ export function createAuthorContentRouter(config) {
     },
   );
   router.use('/author/stories', requireAuth(config), requireRole('author'));
+  router.post('/author/stories/:storyId/chapters/reorder', async (req, res, next) => {
+    try {
+      const input = parse(
+        z
+          .object({
+            expectedVersion: z.number().int().min(0),
+            chapters: z
+              .array(z.object({ id: objectId, expectedVersion: z.number().int().min(0) }).strict())
+              .min(2)
+              .max(1000),
+          })
+          .strict()
+          .refine(
+            (value) =>
+              new Set(value.chapters.map((chapter) => chapter.id)).size === value.chapters.length,
+          ),
+        req.body,
+      );
+      res.json(await reorderDraftChapters(req.account, parse(objectId, req.params.storyId), input));
+    } catch (error) {
+      next(error);
+    }
+  });
   router.get(
     '/author/earnings',
     requireAuth(config),

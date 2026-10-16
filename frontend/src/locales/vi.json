@@ -1100,6 +1100,20 @@
     "lifecycleBusy": "Đang cập nhật…",
     "lifecycleError": "Chưa cập nhật được trạng thái. Hãy tải lại và kiểm tra phiên bản truyện."
   },
+  "chapterOrder": {
+    "unavailable": "Chỉ sắp xếp truyện nháp riêng tư có ít nhất hai chương, không bị khóa, chưa phát hành và không có gói đang chờ duyệt. Tối đa 1.000 chương.",
+    "title": "Sắp xếp chương",
+    "hint": "Dùng nút lên/xuống để đổi thứ tự toàn bộ chương của truyện nháp riêng tư. Chỉ áp dụng sau khi lưu; nội dung chương được giữ nguyên.",
+    "list": "Thứ tự chương dự kiến",
+    "up": "Đưa chương {{number}} lên: {{title}}",
+    "down": "Đưa chương {{number}} xuống: {{title}}",
+    "cancel": "Hủy",
+    "save": "Lưu thứ tự",
+    "saving": "Đang lưu thứ tự…",
+    "saved": "Đã lưu thứ tự chương vào tài khoản.",
+    "error": "Chưa lưu được thứ tự chương. Danh sách bạn sắp xếp vẫn được giữ nguyên.",
+    "reload": "Bỏ thay đổi và tải lại"
+  },
   "chapterText": {
     "longGrapheme": "Một cụm ký tự kết hợp vượt giới hạn của đoạn văn. Hãy kiểm tra đoạn vừa dán; nội dung đang soạn vẫn được giữ nguyên.",
     "invalidUnicode": "Nội dung có ký tự Unicode không hợp lệ. Hãy kiểm tra đoạn vừa dán; bản đang soạn vẫn được giữ nguyên.",

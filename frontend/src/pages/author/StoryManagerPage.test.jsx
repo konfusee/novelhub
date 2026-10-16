@@ -44,6 +44,30 @@ afterEach(() => {
   cleanup();
   vi.resetAllMocks();
 });
+it('enables chapter ordering only when the backend confirms the private draft is eligible', async () => {
+  mocks.apiRequest.mockResolvedValue(workspace);
+  view();
+  expect(
+    (await screen.findByRole('button', { name: 'Sắp xếp chương', exact: true })).disabled,
+  ).toBe(true);
+  cleanup();
+  mocks.apiRequest.mockResolvedValue({
+    ...workspace,
+    story: { ...workspace.story, status: 'draft', canReorder: true },
+    chapters: [
+      ...workspace.chapters,
+      { ...workspace.chapters[0], id: 'second', title: 'Chương thứ hai', number: 8 },
+    ],
+  });
+  view();
+  const button = await screen.findByRole('button', { name: 'Sắp xếp chương', exact: true });
+  await waitFor(() => expect(button.disabled).toBe(false));
+  fireEvent.click(button);
+  expect(await screen.findByRole('dialog', { name: 'Sắp xếp chương' })).toBeTruthy();
+  expect(screen.getByRole('list', { name: 'Thứ tự chương dự kiến' }).textContent).toContain(
+    'Chương thứ hai',
+  );
+});
 it('confirms archive and restore using persisted versions without deleting the work', async () => {
   let archived = false;
   let version = 7;

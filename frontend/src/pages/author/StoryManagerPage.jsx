@@ -27,6 +27,7 @@ import { useBackendDocument, useBackendResource } from '../../api/useBackendReso
 import { apiRequest } from '../../api/client';
 import { useLocale } from '../../context/LocaleContext';
 import { StoryCover } from '../../components/story/StoryCover';
+import { ChapterOrderDialog } from './ChapterOrderDialog';
 import {
   Badge,
   Button,
@@ -139,6 +140,7 @@ export function StoryManagerPage() {
   const [newBusy, setNewBusy] = useState(false);
   const [newError, setNewError] = useState('');
   const [notice, setNotice] = useState('');
+  const [orderOpen, setOrderOpen] = useState(false);
   const createChapter = async (event) => {
     event.preventDefault();
     if (newBusy || !newTitle.trim()) return;
@@ -318,6 +320,13 @@ export function StoryManagerPage() {
               className="min-w-0 overflow-hidden p-0"
             >
               <div className="flex flex-col gap-3 border-b border-hairline p-4 2xl:flex-row 2xl:items-center">
+                <Button
+                  variant="secondary"
+                  disabled={workspace.status !== 'ready' || !story.canReorder}
+                  onClick={() => setOrderOpen(true)}
+                >
+                  {t('chapterOrder.title')}
+                </Button>
                 <Input
                   icon={Search}
                   type="search"
@@ -344,6 +353,11 @@ export function StoryManagerPage() {
                   />
                 </div>
               </div>
+              {workspace.status === 'ready' && !story.canReorder && (
+                <p className="border-b border-hairline px-4 py-3 text-xs text-muted">
+                  {t('chapterOrder.unavailable')}
+                </p>
+              )}
               {chaptersResource.status === 'loading' ? (
                 <div aria-busy="true" aria-label="Đang tải chương" className="overflow-x-auto">
                   <table aria-hidden="true" className="w-full text-left sm:min-w-[680px]">
@@ -454,6 +468,22 @@ export function StoryManagerPage() {
           <p role="status" className="mt-4 text-sm text-brand-strong">
             {notice}
           </p>
+        )}
+        {orderOpen && (
+          <ChapterOrderDialog
+            story={story}
+            chapters={workspace.data.chapters}
+            onClose={() => setOrderOpen(false)}
+            onReload={() => {
+              setOrderOpen(false);
+              workspace.retry();
+            }}
+            onSaved={() => {
+              setOrderOpen(false);
+              setNotice(t('chapterOrder.saved'));
+              workspace.retry();
+            }}
+          />
         )}
         <Modal
           open={newOpen}
