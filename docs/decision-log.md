@@ -112,6 +112,14 @@ policy; deferred technical selections and team process gates are not approval.
     Scanned/image PDFs are rejected with a message; no OCR is in V1.
     Object storage remains for actual story assets and narration. This
     confirmed constraint is not runtime implementation evidence.
+13. **Text-document import includes Word, TXT and Markdown.** The owner's
+    16/10/2026 request extends PDF import to `.doc`, `.docx`, `.txt` and `.md`.
+    Convert supported text into an editable draft for Author review. Source
+    disposal and rights requirements in decision 12 also apply. Markdown is
+    parsed into plain text, never rendered as HTML. Keep the existing backend
+    schema; non-PDF provenance uses the existing audit record rather than
+    pretending its source is a text-layer PDF. See `author-document-import.md`
+    for implemented limits and validation evidence.
 
 13. **Chapter embeds are image-only for the current scope.** Chapter content
    is text plus image blocks; audio/video embeds are excluded. The stale source

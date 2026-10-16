@@ -31,6 +31,6 @@ Mọi API yêu cầu Author đang hoạt động và chỉ đọc/ghi nội dung
 
 ## Giới hạn còn lại
 
-Chưa hoàn thiện canonical rich-text AST, gói media, PDF import, worker embedding/comparison/LLM, quyết định kiểm duyệt, phát hành theo thứ tự, lịch phát hành và early access. Không có bước tự duyệt hoặc tự phát hành để thay các phần còn thiếu.
+Chưa hoàn thiện canonical rich-text AST, gói media, worker embedding/comparison/LLM, quyết định kiểm duyệt, phát hành theo thứ tự, lịch phát hành và early access. Nhập tài liệu thành chương nháp đã có trong `author-document-import.md`, còn tách chương tự động và rich-text. Không có bước tự duyệt hoặc tự phát hành để thay các phần còn thiếu.
 
 Kiểm thử bao gồm quyền sở hữu, stale version, gửi đồng thời, rollback, quyền bất biến, snapshot công khai, tạo bản sửa và gửi vòng mới. Lượt kiểm tra trình duyệt trước khi pause đã gửi thật trên MongoDB tạm và thấy gói/lịch sử pending; không ghi dữ liệu thử vào MongoDB đang dùng.
