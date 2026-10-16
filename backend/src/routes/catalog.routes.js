@@ -21,7 +21,9 @@ import {
   publishedCatalogueStats,
 } from '../modules/catalog-query.js';
 import { catalogPresentation } from '../modules/catalog-presentation.js';
-import { richChapterDocument, chapterTextProjection } from '../modules/rich-chapter-document.js';
+import { readRichChapter, chapterTextProjection } from '../modules/rich-chapter-document.js';
+import { submittedImage } from '../modules/author-submitted-package.js';
+import { PublicationSubmission } from '../models/index.js';
 
 const filters = z
   .object({
@@ -59,6 +61,38 @@ async function categoryItems() {
     icon: metadata.get(String(category._id))?.icon ?? 'BookOpen',
     tone: metadata.get(String(category._id))?.tone ?? 'neutral',
   }));
+}
+
+async function visibleChapter(config, params, cookie) {
+  const story = (await publishedCards({ ids: [params.storyId] }))[0];
+  const chapter =
+    story &&
+    (await Chapter.findOne({
+      _id: params.chapterId,
+      storyId: params.storyId,
+      status: 'published',
+      publishedRevisionId: { $ne: null },
+    }).lean());
+  if (!chapter) throw new HttpError(404, 'not_found', 'Không tìm thấy chương đã xuất bản.');
+  if (chapter.earlyAccess?.enabled) {
+    if (!chapter.earlyAccess.endsAt)
+      throw new HttpError(403, 'chapter_locked', 'Chương chưa mở để đọc.');
+    if (chapter.earlyAccess.endsAt > new Date()) {
+      const auth = await resolveSession(readCookie(cookie, config.cookieName));
+      const entitlement =
+        auth &&
+        (await UnlockEntitlement.exists({
+          accountId: auth.account._id,
+          chapterId: chapter._id,
+          publishedRevisionId: chapter.publishedRevisionId,
+          status: 'active',
+          expiresAt: { $gt: new Date() },
+        }));
+      if (!entitlement)
+        throw new HttpError(403, 'chapter_locked', 'Chương đang trong thời gian đọc sớm.');
+    }
+  }
+  return chapter;
 }
 
 export function createCatalogRouter(config) {
@@ -190,7 +224,7 @@ export function createCatalogRouter(config) {
             contentType: 'chapter',
             status: { $in: ['approved', 'immutable'] },
           })
-            .select('content formatVersion')
+            .select('content formatVersion mediaIds')
             .lean();
           if (!revision) continue;
           preview = {
@@ -355,33 +389,7 @@ export function createCatalogRouter(config) {
   });
   router.get('/catalog/stories/:storyId/chapters/:chapterId', async (req, res, next) => {
     try {
-      const story = (await publishedCards({ ids: [req.params.storyId] }))[0];
-      const chapter =
-        story &&
-        (await Chapter.findOne({
-          _id: req.params.chapterId,
-          storyId: req.params.storyId,
-          status: 'published',
-          publishedRevisionId: { $ne: null },
-        }).lean());
-      if (!chapter) throw new HttpError(404, 'not_found', 'Không tìm thấy chương đã xuất bản.');
-      if (chapter.earlyAccess?.enabled && chapter.earlyAccess.endsAt > new Date()) {
-        const auth = await resolveSession(readCookie(req.headers.cookie, config.cookieName));
-        const entitlement =
-          auth &&
-          (await UnlockEntitlement.exists({
-            accountId: auth.account._id,
-            chapterId: chapter._id,
-            publishedRevisionId: chapter.publishedRevisionId,
-            status: 'active',
-            expiresAt: { $gt: new Date() },
-          }));
-        if (!entitlement)
-          throw new HttpError(403, 'chapter_locked', 'Chương đang trong thời gian đọc sớm.');
-      }
-      // Fail closed for an invalid early-access policy rather than exposing paid content.
-      if (chapter.earlyAccess?.enabled && !chapter.earlyAccess.endsAt)
-        throw new HttpError(403, 'chapter_locked', 'Chương chưa mở để đọc.');
+      const chapter = await visibleChapter(config, req.params, req.headers.cookie);
       const revision = await ContentRevision.findOne({
         _id: chapter.publishedRevisionId,
         storyId: chapter.storyId,
@@ -389,30 +397,76 @@ export function createCatalogRouter(config) {
         contentType: 'chapter',
         status: { $in: ['approved', 'immutable'] },
       })
-        .select('content formatVersion')
+        .select('content formatVersion mediaIds')
         .lean();
       if (!revision) throw new HttpError(404, 'not_found', 'Chương chưa sẵn sàng.');
-      const rich =
-        revision.formatVersion === 'blocks-v2'
-          ? richChapterDocument.safeParse(revision.content)
-          : null;
-      if (rich && !rich.success) throw new HttpError(404, 'not_found', 'Chương chưa sẵn sàng.');
+      let document;
+      try {
+        document = readRichChapter(revision);
+      } catch (error) {
+        if (!(error instanceof HttpError)) throw error;
+        throw new HttpError(404, 'not_found', 'Chương chưa sẵn sàng.');
+      }
+      res.set('Cache-Control', 'private, no-store');
       res.json({
         chapter: {
           id: String(chapter._id),
           title: revision.content.title ?? '',
           publishedAt: chapter.publishedAt ?? null,
           revisionId: String(revision._id),
-          blocks: rich
-            ? rich.data.blocks
-            : (revision.content.blocks ?? [])
-                .filter((block) => block.type === 'paragraph' && typeof block.text === 'string')
-                .map((block) => ({ type: 'paragraph', text: block.text })),
+          blocks:
+            revision.formatVersion === 'blocks-v1'
+              ? revision.content.blocks
+                  .filter((block) => block.type === 'paragraph' && typeof block.text === 'string')
+                  .map((block) => ({ type: 'paragraph', text: block.text }))
+              : document.blocks,
         },
       });
     } catch (error) {
       next(error);
     }
   });
+  router.get(
+    '/catalog/stories/:storyId/chapters/:chapterId/revisions/:revisionId/media/:mediaId',
+    async (req, res, next) => {
+      try {
+        const chapter = await visibleChapter(config, req.params, req.headers.cookie);
+        if (String(chapter.publishedRevisionId) !== req.params.revisionId)
+          throw new HttpError(404, 'not_found', 'Ảnh không thuộc phiên bản công khai hiện tại.');
+        const submission = await PublicationSubmission.findOne({
+          storyId: chapter.storyId,
+          chapterId: chapter._id,
+          revisionId: chapter.publishedRevisionId,
+          status: 'approved',
+        }).lean();
+        const revision =
+          submission &&
+          (await ContentRevision.exists({
+            _id: chapter.publishedRevisionId,
+            chapterId: chapter._id,
+            storyId: chapter.storyId,
+            authorAccountId: submission.authorAccountId,
+            contentType: 'chapter',
+            status: { $in: ['approved', 'immutable'] },
+            immutableAt: { $ne: null },
+          }));
+        if (!revision) throw new HttpError(404, 'not_found', 'Ảnh chưa sẵn sàng.');
+        const bytes = await submittedImage(
+          config,
+          { _id: submission.authorAccountId },
+          submission._id,
+          req.params.mediaId,
+          { requireApproved: true },
+        );
+        res
+          .set('Cache-Control', 'private, no-store')
+          .set('X-Content-Type-Options', 'nosniff')
+          .type('image/webp')
+          .send(bytes);
+      } catch (error) {
+        next(error);
+      }
+    },
+  );
   return router;
 }

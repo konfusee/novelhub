@@ -28,6 +28,7 @@ const prepared = {
     'order',
     'free',
     'format',
+    'media',
     'editable',
   ].map((code) => ({ code, ok: true })),
 };
@@ -69,7 +70,7 @@ it('confirms the exact approved chapter and parent version and requires a real p
     },
   });
 });
-it.each(['order', 'parent', 'free', 'format'])(
+it.each(['order', 'parent', 'free', 'format', 'media'])(
   'cannot override the failed %s condition',
   async (code) => {
     mocks.apiRequest.mockResolvedValue({

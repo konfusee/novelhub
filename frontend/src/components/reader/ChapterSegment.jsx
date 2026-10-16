@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { AlertTriangle, BookOpen } from '../icons';
 import { Button, EmptyState, ProgressBar, Skeleton } from '../ui';
 import { useBackendDocument } from '../../api/useBackendResource';
+import { PublishedChapterImage } from '../story/PrivateChapterImage';
 
 /* Prose column of one chapter; the skeleton and error states reuse it so nothing shifts. */
 const ARTICLE_CLASS =
@@ -216,6 +217,18 @@ export function ChapterSegment({
         >
           {data.paragraphs.map((paragraph, index) => {
             const block = resource.data.chapter.blocks[index];
+            if (block.type === 'image')
+              return (
+                <PublishedChapterImage
+                  key={index}
+                  block={block}
+                  target={{
+                    storyId,
+                    chapterId: chapter.id,
+                    revisionId: resource.data.chapter.revisionId,
+                  }}
+                />
+              );
             if (block.type === 'scene-break')
               return <hr key={index} className="my-8 border-line" />;
             const Block =

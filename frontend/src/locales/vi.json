@@ -1275,7 +1275,7 @@
   },
   "chapterRelease": {
     "title": "Phát hành chương",
-    "hint": "Công khai đúng gói chương đã được duyệt để độc giả đọc miễn phí. Các chương trước phải đã từng phát hành. Chương có ảnh hoặc đọc sớm cần luồng phát hành tương ứng.",
+    "hint": "Công khai đúng nội dung và ảnh trong gói chương đã được duyệt để độc giả đọc miễn phí. Các chương trước phải đã từng phát hành. Chương đọc sớm cần luồng phát hành riêng.",
     "success": "Đã phát hành chương. Độc giả có thể đọc phiên bản đã duyệt.",
     "checks": {
       "approval": "Gói chương và quyền đã được duyệt hợp lệ",
@@ -1284,7 +1284,8 @@
       "parent": "Truyện cha đã công khai với gói và quyền hợp lệ",
       "order": "Các chương đứng trước đã từng phát hành",
       "free": "Chương miễn phí, không thuộc đọc sớm",
-      "format": "Nội dung văn bản được trình đọc hỗ trợ",
+      "format": "Định dạng nội dung được trình đọc hỗ trợ",
+      "media": "Ảnh còn đầy đủ và khớp bản đã duyệt",
       "editable": "Truyện không bị khóa và có phiên bản mới được duyệt"
     }
   },
@@ -1539,7 +1540,7 @@
   },
   "chapterImages": {
     "title": "Chọn ảnh cho chương",
-    "hint": "Chọn ảnh của bạn thuộc truyện này hoặc chưa gán truyện. Ảnh được thêm cuối chương và chỉ lưu trong bản nháp, tối đa 20 ảnh. Chưa hỗ trợ gửi duyệt chương có ảnh.",
+    "hint": "Chọn ảnh của bạn thuộc truyện này hoặc chưa gán truyện, tối đa 20 ảnh. Ảnh được thêm cuối bản nháp; khi gửi duyệt, bạn cần khai báo quyền sử dụng ảnh. Độc giả chỉ thấy ảnh sau khi gói được duyệt và phát hành.",
     "library": "Mở thư viện để tải ảnh (tab mới)",
     "loading": "Đang tải ảnh của bạn…",
     "pick": "Chọn ảnh {{name}}",

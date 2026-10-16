@@ -293,6 +293,7 @@ export function createAuthorContentRouter(config) {
             req.account,
             parse(objectId, req.params.storyId),
             parse(objectId, req.params.chapterId),
+            config,
           ),
         );
     } catch (error) {
@@ -317,6 +318,7 @@ export function createAuthorContentRouter(config) {
         parse(objectId, req.params.storyId),
         parse(objectId, req.params.chapterId),
         input,
+        config,
       );
       res.status(chapter.replayed ? 200 : 201).json({ chapter });
     } catch (error) {

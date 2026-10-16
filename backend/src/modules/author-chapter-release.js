@@ -11,6 +11,7 @@ import { HttpError } from '../middleware/errors.js';
 import { lockAuthor, ownStory } from './author-ownership.js';
 import { loadSubmittedPackage } from './author-submitted-package.js';
 import { digest } from './submission-digests.js';
+import { inspectChapterImages, pinChapterImages } from './author-chapter-media.js';
 
 async function packageFor(account, story, chapterId, revisionId, session) {
   const submission = revisionId
@@ -38,7 +39,7 @@ const approved = (snapshot) =>
     snapshot.rights.status === 'asserted',
   );
 
-async function releaseState(account, storyId, chapterId, session) {
+async function releaseState(account, storyId, chapterId, session, config) {
   const story = await ownStory(account, storyId, session);
   const chapter = await Chapter.findOne({ _id: chapterId, storyId: story._id }).session(
     session ?? null,
@@ -48,6 +49,24 @@ async function releaseState(account, storyId, chapterId, session) {
   const snapshot = await packageFor(account, story, chapter._id, revisionId, session);
   const parent = await packageFor(account, story, null, story.publishedRevisionId, session);
   const submission = snapshot?.submission;
+  let imagesValid = true;
+  if (snapshot?.revision.formatVersion === 'blocks-v3') {
+    try {
+      const images = await inspectChapterImages(
+        config,
+        account,
+        story._id,
+        snapshot.document,
+        session,
+      );
+      imagesValid =
+        images.mediaDigest === snapshot.revision.mediaDigest &&
+        digest(images.validation.mediaManifest) === digest(snapshot.manifest);
+    } catch (error) {
+      if (!(error instanceof HttpError)) throw error;
+      imagesValid = false;
+    }
+  }
   const batch = submission?.currentEvidenceBatchId
     ? await EvidenceBatch.findOne({
         _id: submission.currentEvidenceBatchId,
@@ -79,8 +98,12 @@ async function releaseState(account, storyId, chapterId, session) {
     { code: 'free', ok: !chapter.earlyAccess?.enabled },
     {
       code: 'format',
-      ok: Boolean(snapshot && ['blocks-v1', 'blocks-v2'].includes(snapshot.revision.formatVersion)),
+      ok: Boolean(
+        snapshot &&
+        ['blocks-v1', 'blocks-v2', 'blocks-v3'].includes(snapshot.revision.formatVersion),
+      ),
     },
+    { code: 'media', ok: imagesValid },
     {
       code: 'editable',
       ok:
@@ -92,8 +115,14 @@ async function releaseState(account, storyId, chapterId, session) {
   return { story, chapter, snapshot, parent, checks };
 }
 
-export async function prepareChapterRelease(account, storyId, chapterId) {
-  const { story, chapter, snapshot, checks } = await releaseState(account, storyId, chapterId);
+export async function prepareChapterRelease(account, storyId, chapterId, config) {
+  const { story, chapter, snapshot, checks } = await releaseState(
+    account,
+    storyId,
+    chapterId,
+    undefined,
+    config,
+  );
   return {
     target: {
       storyId: String(story._id),
@@ -109,7 +138,7 @@ export async function prepareChapterRelease(account, storyId, chapterId) {
   };
 }
 
-export async function publishChapter(account, storyId, chapterId, input) {
+export async function publishChapter(account, storyId, chapterId, input, config) {
   return withTransaction(async (session) => {
     await lockAuthor(account, session);
     const { story, chapter, snapshot, parent, checks } = await releaseState(
@@ -117,6 +146,7 @@ export async function publishChapter(account, storyId, chapterId, input) {
       storyId,
       chapterId,
       session,
+      config,
     );
     if (
       !snapshot ||
@@ -180,6 +210,14 @@ export async function publishChapter(account, storyId, chapterId, input) {
       }
     }
     const now = new Date();
+    if (snapshot.revision.formatVersion === 'blocks-v3') {
+      const images = await pinChapterImages(config, account, story._id, snapshot.document, session);
+      if (
+        images.mediaDigest !== snapshot.revision.mediaDigest ||
+        digest(images.validation.mediaManifest) !== digest(snapshot.manifest)
+      )
+        throw new HttpError(409, 'media_changed', 'Ảnh không khớp gói chương đã duyệt.');
+    }
     const from = chapter.status;
     const previousPublishedRevisionId = chapter.publishedRevisionId
       ? String(chapter.publishedRevisionId)
