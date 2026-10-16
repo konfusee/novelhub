@@ -327,3 +327,52 @@ it('shows the saved immutable image rights after reload instead of editable defa
     'Được cấp quyền sử dụng',
   );
 });
+it.each([false, true])(
+  'uses server eligibility for revising an approved unpublished chapter: %s',
+  async (canRevise) => {
+    mocks.apiRequest.mockImplementation(async (_path, options) =>
+      options?.method === 'POST'
+        ? {
+            revision: {
+              id: 'fresh',
+              storyId: 'owned',
+              chapterId: 'chapter7',
+              formatVersion: 'blocks-v3',
+            },
+          }
+        : {
+            stories: [],
+            page: 1,
+            pageCount: 1,
+            total: 1,
+            items: [
+              {
+                id: 'approved-source',
+                storyId: 'owned',
+                chapterId: 'chapter7',
+                title: 'Chương đã gỡ',
+                status: 'approved',
+                canRevise,
+                version: 8,
+                history: [],
+              },
+            ],
+          },
+    );
+    view('');
+    await screen.findByText('Chương đã gỡ');
+    const action = screen.queryByRole('button', { name: 'Tạo bản sửa chương đã gỡ', exact: true });
+    expect(Boolean(action)).toBe(canRevise);
+    if (canRevise) {
+      fireEvent.click(action);
+      fireEvent.click(
+        await screen.findByRole('button', { name: 'Tạo bản nháp chỉnh sửa', exact: true }),
+      );
+      await screen.findByText('location/author/stories/owned/chapters/chapter7/edit?mode=rich');
+      expect(mocks.apiRequest).toHaveBeenCalledWith('/author/submissions/approved-source/revise', {
+        method: 'POST',
+        body: { expectedVersion: 8 },
+      });
+    }
+  },
+);

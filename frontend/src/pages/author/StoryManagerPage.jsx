@@ -1,5 +1,5 @@
 import { useMemo, useRef, useState } from 'react';
-import { Link, useParams, useSearchParams } from 'react-router';
+import { Link, useNavigate, useParams, useSearchParams } from 'react-router';
 import {
   AlertTriangle,
   Archive,
@@ -110,6 +110,7 @@ const statusLabels = {
 };
 const statusTones = { Published: 'green', Scheduled: 'orange', 'In Review': 'purple' };
 export function StoryManagerPage() {
+  const navigate = useNavigate();
   const { storyId } = useParams();
   const { t } = useLocale();
   const [search, setSearch] = useSearchParams();
@@ -542,7 +543,14 @@ export function StoryManagerPage() {
               setChapterAction(null);
               workspace.retry();
             }}
-            onSaved={() => {
+            onSaved={(result) => {
+              if (chapterAction.action === 'reviseUnpublished') {
+                const revision = result.revision;
+                navigate(
+                  `/author/stories/${revision.storyId}/chapters/${revision.chapterId}/edit${['blocks-v2', 'blocks-v3'].includes(revision.formatVersion) ? '?mode=rich' : ''}`,
+                );
+                return;
+              }
               setChapterAction(null);
               setNotice(t(`chapterLifecycle.${chapterAction.action}Saved`));
               workspace.retry();
@@ -765,6 +773,11 @@ function ChapterRow({ chapter, storyId, onLifecycle, onRelease }) {
           {chapter.canUnpublish && (
             <Button variant="danger" size="sm" onClick={() => onLifecycle('unpublish')}>
               {t('chapterLifecycle.unpublish')}
+            </Button>
+          )}
+          {chapter.reviseSource && (
+            <Button size="sm" onClick={() => onLifecycle('reviseUnpublished')}>
+              {t('chapterLifecycle.reviseUnpublished')}
             </Button>
           )}
           <ButtonLink

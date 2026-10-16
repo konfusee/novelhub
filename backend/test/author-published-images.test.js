@@ -405,3 +405,56 @@ it('allows guests only chapter one and requires a valid session for later free t
   expect((await request(app).get('/api/catalog/home')).body.preview).toBeNull();
   expect((await get(reader.cookie, f.publicUrl)).status).toBe(200);
 });
+it('creates a private illustrated correction after unpublishing and requires a new image declaration before resubmission', async () => {
+  const f = await fixture();
+  expect((await write(f.cookie, f.endpoint, f.body)).status).toBe(201);
+  const workspace = (await get(f.cookie, `/api/author/stories/${f.storyId}/workspace`)).body;
+  const chapter = workspace.chapters[0];
+  expect(
+    (
+      await write(f.cookie, `/api/author/stories/${f.storyId}/chapters/${f.chapterId}/lifecycle`, {
+        action: 'unpublish',
+        expectedVersion: chapter.version,
+        expectedStoryVersion: workspace.story.version,
+      })
+    ).status,
+  ).toBe(200);
+  const source = (await get(f.cookie, `/api/author/stories/${f.storyId}/workspace`)).body
+    .chapters[0].reviseSource;
+  const revised = await write(f.cookie, `/api/author/submissions/${source.id}/revise`, {
+    expectedVersion: source.version,
+  });
+  expect(revised.status).toBe(201);
+  expect(revised.body.revision.formatVersion).toBe('blocks-v3');
+  const fresh = await ContentRevision.findById(revised.body.revision.id);
+  const old = await ContentRevision.findById(f.target.revisionId);
+  expect(fresh.content).toEqual(old.content);
+  expect(fresh.validation.mediaManifest).toEqual(old.validation.mediaManifest);
+  expect(fresh.mediaDigest).toBe(old.mediaDigest);
+  expect(fresh.packageDigest).toBeUndefined();
+  expect(fresh.rightsDeclarationId).toBeUndefined();
+  const prep = (
+    await get(
+      f.cookie,
+      `/api/author/submissions/prepare?storyId=${f.storyId}&chapterId=${f.chapterId}`,
+    )
+  ).body;
+  expect(prep.requiresRights).toBe(true);
+  const body = {
+    storyId: f.storyId,
+    chapterId: f.chapterId,
+    revisionId: String(fresh._id),
+    expectedVersion: prep.target.version,
+  };
+  expect((await write(f.cookie, '/api/author/submissions', body)).status).toBe(409);
+  expect(
+    (
+      await write(f.cookie, '/api/author/submissions', {
+        ...body,
+        imageManifestDigest: prep.imageRights.mediaDigest,
+        rights: { basis: 'original', asserted: true, sourceLicenceNote: '' },
+      })
+    ).status,
+  ).toBe(201);
+  expect((await request(app).get(f.imageUrl)).status).toBe(404);
+});

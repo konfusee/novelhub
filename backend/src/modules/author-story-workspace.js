@@ -12,6 +12,7 @@ import { draftLifecycle } from './author-story-lifecycle.js';
 import { canReorderDraftChapters } from './author-chapter-order.js';
 import { chapterCanUnpublish, chapterDraftLifecycle } from './author-chapter-lifecycle.js';
 import { chapterTextProjection } from './rich-chapter-document.js';
+import { canReviseUnpublished } from './author-submissions.js';
 
 export async function authorStoryWorkspace(account, storyId) {
   const story = await Story.findOne({ _id: storyId, authorAccountId: account._id }).lean();
@@ -69,7 +70,7 @@ export async function authorStoryWorkspace(account, storyId) {
     authorAccountId: account._id,
     status: 'approved',
   })
-    .select('chapterId revisionId')
+    .select('chapterId revisionId storyId status version')
     .lean();
   const rows = chapters.map((chapter) => {
     const revisionId =
@@ -83,9 +84,16 @@ export async function authorStoryWorkspace(account, storyId) {
           0,
         )
       : null;
+    const source = approvedChapters.find(
+      (item) => item.chapterId.equals(chapter._id) && item.revisionId.equals(revisionId),
+    );
     return {
       ...chapterDraftLifecycle(chapter, revision, story, lifecycle),
       canUnpublish: chapterCanUnpublish(chapter, story),
+      reviseSource:
+        source && canReviseUnpublished(source, chapter, revision, story)
+          ? { id: String(source._id), version: source.version }
+          : null,
       id: String(chapter._id),
       version: chapter.version,
       title: chapter.title,

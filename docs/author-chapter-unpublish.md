@@ -14,4 +14,14 @@ The manager uses a server `canUnpublish` hint and the existing confirmation dial
 
 Validation: 39 related backend tests and 21 frontend tests passed, covering retained snapshots/release dates, paid rights/access windows, auth/ownership, frozen parents, stale/concurrent writes, forged status/republish requests, audit rollback, confirmation and row refresh. Browser verification uses isolated MongoDB and fixture human approvals, with desktop/laptop/tablet/mobile and light/dark checks. Production/shared records are not auto-approved or unpublished by verification.
 
-The broader use case remains partial. Fixing/resubmitting unpublished content and its subsequent review/publication still need a dedicated workflow; the Author cannot directly flip it back to published. Scheduling and early-access configuration are separate work. No backend schema/model changes were made.
+## Correcting unpublished chapters
+
+The manager now offers “Tạo bản sửa chương” for the exact owned, approved, immutable package bound to an unpublished chapter. The server supplies the source submission ID/version; the confirmation uses the existing `/author/submissions/:submissionId/revise` endpoint. The submission history exposes the same action only when server eligibility allows it, with wording that distinguishes an unpublished correction from a rejection response.
+
+The endpoint rechecks current authority, source version, parent state and chapter binding, then verifies the old package before copying it. It creates one editable child revision and preserves the immutable old revision, publication binding, first release date and original publication date. The new revision has no approval, rights declaration or package signature. Rich text and illustration manifests remain intact; an illustrated correction requires a new image rights declaration at resubmission. The original approved submission is historical and is not rewritten as a new decision.
+
+Correction validation: 84 related backend tests and 38 frontend tests passed across the focused runs, covering private text/image corrections, exact source and history eligibility, concurrent replay, preservation of immutable content, fresh rights at resubmission, corrupt/stale/foreign sources, audit rollback and navigation into the correct editor. Lint, translation/icon checks and production build passed.
+
+Concurrent identical requests return the same fresh revision. Creating the revision also writes the parent story version so a concurrent freeze cannot commit unnoticed. Audit failure rolls back the revision and chapter/parent updates. A source that is still published, stale, corrupt, frozen or owned by another Author cannot create this correction. The UI validates the returned chapter/story before navigating and opens blocks-v2/v3 in the rich editor. A correction or resubmission never makes the chapter public: a new review and explicit publication are still required.
+
+The broader use case remains partial. Moderation/evidence integration, scheduling, early-access configuration and the complete already-published editing lifecycle remain separate work. No backend schema/model changes were made.

@@ -15,19 +15,31 @@ export function ChapterLifecycleDialog({ story, chapter, action, onClose, onSave
     setBusy(true);
     setError('');
     try {
+      const revise = action === 'reviseUnpublished';
       const result = await apiRequest(
-        `/author/stories/${story.id}/chapters/${chapter.id}/lifecycle`,
+        revise
+          ? `/author/submissions/${chapter.reviseSource.id}/revise`
+          : `/author/stories/${story.id}/chapters/${chapter.id}/lifecycle`,
         {
           method: 'POST',
-          body: { action, expectedVersion: chapter.version, expectedStoryVersion: story.version },
+          body: revise
+            ? { expectedVersion: chapter.reviseSource.version }
+            : { action, expectedVersion: chapter.version, expectedStoryVersion: story.version },
         },
       );
+      if (
+        revise &&
+        (!result?.revision?.id ||
+          result.revision.chapterId !== chapter.id ||
+          result.revision.storyId !== story.id)
+      )
+        throw new Error(t('chapterLifecycle.error'));
       if (
         action === 'unpublish' &&
         (result?.chapter?.id !== chapter.id || result.chapter.status !== 'unpublished')
       )
         throw new Error(t('chapterLifecycle.error'));
-      onSaved();
+      onSaved(result);
     } catch (failure) {
       setError(failure.message || t('chapterLifecycle.error'));
       setConflict(failure.status === 409);

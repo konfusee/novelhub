@@ -509,6 +509,9 @@ function SubmissionPackage({ storyId, chapterId, onSubmitted }) {
 
 function SubmissionEntry({ item, choose }) {
   const { t, formatDate } = useLocale();
+  const reviseLabel = t(
+    item.status === 'approved' ? 'submissionData.reviseUnpublished' : 'submissionData.revise',
+  );
   const navigate = useNavigate();
   const [confirm, setConfirm] = useState(false);
   const [busy, setBusy] = useState(false);
@@ -595,9 +598,9 @@ function SubmissionEntry({ item, choose }) {
       >
         {t('submissionData.open')}
       </Button>
-      {['rejected', 'revision-requested'].includes(item.status) && (
+      {(item.canRevise ?? ['rejected', 'revision-requested'].includes(item.status)) && (
         <Button size="sm" className="mt-3 sm:ml-2" onClick={() => setConfirm(true)}>
-          {t('submissionData.revise')}
+          {reviseLabel}
         </Button>
       )}
       <ButtonLink
@@ -608,11 +611,7 @@ function SubmissionEntry({ item, choose }) {
       >
         {t('submissionPackage.title')}
       </ButtonLink>
-      <Modal
-        open={confirm}
-        title={t('submissionData.revise')}
-        onClose={() => !busy && setConfirm(false)}
-      >
+      <Modal open={confirm} title={reviseLabel} onClose={() => !busy && setConfirm(false)}>
         <p className="text-sm leading-6 text-muted">{t('submissionData.reviseHint')}</p>
         <p className="mt-3 font-semibold">{item.title}</p>
         {error && (
