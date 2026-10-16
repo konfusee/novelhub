@@ -182,7 +182,7 @@ function SubmissionPackage({ storyId, chapterId, onSubmitted }) {
   const query = new URLSearchParams({ storyId, ...(chapterId ? { chapterId } : {}) });
   const resource = useBackendDocument(`/author/submissions/prepare?${query}`, emptyPackage);
   const [basis, setBasis] = useState('original');
-  const [asserted, setAsserted] = useState(false);
+  const [assertedRevision, setAssertedRevision] = useState(null);
   const [note, setNote] = useState('');
   const [confirm, setConfirm] = useState(false);
   const [busy, setBusy] = useState(false);
@@ -190,10 +190,19 @@ function SubmissionPackage({ storyId, chapterId, onSubmitted }) {
   const [error, setError] = useState('');
   const [sent, setSent] = useState(null);
   const data = resource.data;
+  const asserted = data.frozenRights?.asserted ?? assertedRevision === data.target?.revisionId;
+  const shownBasis = data.frozenRights?.basis ?? basis;
+  const shownNote = data.frozenRights?.sourceLicenceNote ?? note;
+  const imageRights = data.imageRights;
+  const licenceRequired = Boolean(imageRights && shownBasis === 'licensed');
   const passed = data.checks.filter((check) => check.ok).length;
   const percent = data.checks.length ? Math.round((passed / data.checks.length) * 100) : 0;
   const ready =
-    resource.status === 'ready' && data.ready && (!data.requiresRights || asserted) && !sent;
+    resource.status === 'ready' &&
+    data.ready &&
+    (!data.requiresRights || asserted) &&
+    (!licenceRequired || Boolean(note.trim())) &&
+    !sent;
   const richTarget = ['blocks-v2', 'blocks-v3'].includes(data.target?.formatVersion);
   const chapterMedia = Boolean(chapterId && data.target?.formatVersion === 'blocks-v3');
   const back = chapterId
@@ -223,6 +232,7 @@ function SubmissionPackage({ storyId, chapterId, onSubmitted }) {
           revisionId: data.target.revisionId,
           expectedVersion: data.target.version,
           ...(data.requiresRights ? { rights: { basis, asserted, sourceLicenceNote: note } } : {}),
+          ...(imageRights ? { imageManifestDigest: imageRights.mediaDigest } : {}),
         },
       });
       if (!result?.submission?.id) throw new Error(t('submissionData.sendError'));
@@ -364,12 +374,17 @@ function SubmissionPackage({ storyId, chapterId, onSubmitted }) {
                 }
                 className="mt-4 space-y-4"
               >
+                {imageRights && (
+                  <p className="text-sm leading-6 text-muted">
+                    {t('submissionData.imageRightsHint', { count: imageRights.count })}
+                  </p>
+                )}
                 <label className="block text-sm font-semibold" htmlFor="rights-basis">
                   {t('submissionData.basis')}
                 </label>
                 <Select
                   id="rights-basis"
-                  value={basis}
+                  value={shownBasis}
                   onChange={(event) => setBasis(event.target.value)}
                 >
                   <option value="original">{t('submissionData.original')}</option>
@@ -379,18 +394,25 @@ function SubmissionPackage({ storyId, chapterId, onSubmitted }) {
                   <input
                     type="checkbox"
                     checked={asserted}
-                    onChange={(event) => setAsserted(event.target.checked)}
+                    onChange={(event) =>
+                      setAssertedRevision(event.target.checked ? data.target.revisionId : null)
+                    }
                     className="mt-1 size-4 shrink-0 accent-brand"
                   />
-                  {t('submissionData.assertion')}
+                  {t(imageRights ? 'submissionData.imageAssertion' : 'submissionData.assertion')}
                 </label>
                 <label htmlFor="rights-note" className="block text-sm font-semibold">
-                  {t('submissionData.licenceNote')}
+                  {t(
+                    licenceRequired
+                      ? 'submissionData.requiredLicenceNote'
+                      : 'submissionData.licenceNote',
+                  )}
                 </label>
                 <textarea
                   id="rights-note"
-                  value={note}
+                  value={shownNote}
                   maxLength={2000}
+                  required={licenceRequired}
                   onChange={(event) => setNote(event.target.value)}
                   className="min-h-28 w-full resize-y rounded-2xl border border-line bg-elevated p-4 text-sm"
                 />
@@ -505,7 +527,7 @@ function SubmissionEntry({ item, choose }) {
       if (!revision?.id || !revision.storyId) throw new Error(t('submissionData.reviseError'));
       navigate(
         revision.chapterId
-          ? `/author/stories/${revision.storyId}/chapters/${revision.chapterId}/edit`
+          ? `/author/stories/${revision.storyId}/chapters/${revision.chapterId}/edit${['blocks-v2', 'blocks-v3'].includes(revision.formatVersion) ? '?mode=rich' : ''}`
           : `/author/stories/${revision.storyId}`,
       );
     } catch (failure) {

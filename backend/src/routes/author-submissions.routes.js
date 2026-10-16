@@ -16,6 +16,10 @@ const input = z
     chapterId: id.optional(),
     revisionId: id,
     expectedVersion: z.number().int().min(0),
+    imageManifestDigest: z
+      .string()
+      .regex(/^[a-f\d]{64}$/)
+      .optional(),
     rights: z
       .object({
         basis: z.enum(['original', 'licensed']),
@@ -26,7 +30,11 @@ const input = z
       .optional(),
   })
   .strict()
-  .refine((value) => (value.chapterId ? !value.rights : Boolean(value.rights)));
+  .refine((value) =>
+    value.chapterId
+      ? Boolean(value.rights) === Boolean(value.imageManifestDigest)
+      : Boolean(value.rights) && !value.imageManifestDigest,
+  );
 function parse(schema, value) {
   const result = schema.safeParse(value);
   if (!result.success)
@@ -53,14 +61,14 @@ export function createAuthorSubmissionsRouter(config) {
   });
   router.get('/author/submissions/prepare', async (req, res, next) => {
     try {
-      res.json(await prepareSubmission(req.account, parse(target, req.query)));
+      res.json(await prepareSubmission(req.account, parse(target, req.query), config));
     } catch (error) {
       next(error);
     }
   });
   router.post('/author/submissions', async (req, res, next) => {
     try {
-      const submission = await submitContent(req.account, parse(input, req.body));
+      const submission = await submitContent(req.account, parse(input, req.body), config);
       res.status(submission.replayed ? 200 : 201).json({ submission });
     } catch (error) {
       next(error);

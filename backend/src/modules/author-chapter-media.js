@@ -6,6 +6,14 @@ import { HttpError } from '../middleware/errors.js';
 
 // Runs within the chapter save transaction, after the owner account lock.
 export async function pinChapterImages(config, account, storyId, document, session) {
+  return chapterImageSnapshot(config, account, storyId, document, session, true);
+}
+
+export async function inspectChapterImages(config, account, storyId, document, session) {
+  return chapterImageSnapshot(config, account, storyId, document, session, false);
+}
+
+async function chapterImageSnapshot(config, account, storyId, document, session, pin) {
   const ids = chapterMediaIds(document);
   if (!ids.length) return { mediaIds: [] };
   const assets = await MediaAsset.find({
@@ -14,7 +22,7 @@ export async function pinChapterImages(config, account, storyId, document, sessi
     status: 'available',
     accessClass: 'private',
     storageProvider: 'local',
-  }).session(session);
+  }).session(session ?? null);
   if (assets.length !== ids.length)
     throw new HttpError(
       409,
@@ -46,6 +54,7 @@ export async function pinChapterImages(config, account, storyId, document, sessi
       contentType: asset.contentType,
       storageProvider: asset.storageProvider,
     });
+    if (!pin) continue;
     const result = await MediaAsset.updateOne(
       { _id: asset._id, version: asset.version },
       { $inc: { version: 1 } },
