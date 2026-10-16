@@ -28,6 +28,7 @@ import { apiRequest } from '../../api/client';
 import { useLocale } from '../../context/LocaleContext';
 import { StoryCover } from '../../components/story/StoryCover';
 import { ChapterOrderDialog } from './ChapterOrderDialog';
+import { ChapterLifecycleDialog } from './ChapterLifecycleDialog';
 import {
   Badge,
   Button,
@@ -141,6 +142,7 @@ export function StoryManagerPage() {
   const [newError, setNewError] = useState('');
   const [notice, setNotice] = useState('');
   const [orderOpen, setOrderOpen] = useState(false);
+  const [chapterAction, setChapterAction] = useState(null);
   const createChapter = async (event) => {
     event.preventDefault();
     if (newBusy || !newTitle.trim()) return;
@@ -349,7 +351,10 @@ export function StoryManagerPage() {
                       setFilter(value);
                       setPage(1);
                     }}
-                    items={filters}
+                    items={[
+                      ...filters,
+                      { value: 'Archived', label: t('chapterLifecycle.archivedFilter') },
+                    ]}
                   />
                 </div>
               </div>
@@ -395,7 +400,12 @@ export function StoryManagerPage() {
                     <ChapterTableHead />
                     <tbody className="divide-y divide-hairline">
                       {pageRows.map((chapter) => (
-                        <ChapterRow key={chapter.id} chapter={chapter} storyId={storyId} />
+                        <ChapterRow
+                          key={chapter.id}
+                          chapter={chapter}
+                          storyId={storyId}
+                          onLifecycle={(action) => setChapterAction({ story, chapter, action })}
+                        />
                       ))}
                     </tbody>
                   </table>
@@ -468,6 +478,21 @@ export function StoryManagerPage() {
           <p role="status" className="mt-4 text-sm text-brand-strong">
             {notice}
           </p>
+        )}
+        {chapterAction && (
+          <ChapterLifecycleDialog
+            {...chapterAction}
+            onClose={() => setChapterAction(null)}
+            onReload={() => {
+              setChapterAction(null);
+              workspace.retry();
+            }}
+            onSaved={() => {
+              setChapterAction(null);
+              setNotice(t(`chapterLifecycle.${chapterAction.action}Saved`));
+              workspace.retry();
+            }}
+          />
         )}
         {orderOpen && (
           <ChapterOrderDialog
@@ -588,7 +613,7 @@ function ChapterRowSkeleton() {
   );
 }
 
-function ChapterRow({ chapter, storyId }) {
+function ChapterRow({ chapter, storyId, onLifecycle }) {
   const { t, formatDate, formatNumber } = useLocale();
   const note =
     chapter.status === 'Scheduled' && chapter.requestedReleaseAt
@@ -643,14 +668,35 @@ function ChapterRow({ chapter, storyId }) {
         </span>
       </td>
       <td className="px-4 py-4">
-        <div className="flex justify-end gap-2">
+        <div className="flex flex-wrap justify-end gap-2">
           <ButtonLink
             to={`/author/stories/${storyId}/chapters/${chapter.id}/edit`}
             variant={draft ? 'primary' : 'secondary'}
             size="sm"
           >
-            {draft ? 'Viết tiếp' : chapter.status === 'Scheduled' ? 'Đổi lịch' : 'Chỉnh sửa'}
+            {chapter.status === 'Archived'
+              ? t('chapterLifecycle.view')
+              : draft
+                ? 'Viết tiếp'
+                : chapter.status === 'Scheduled'
+                  ? 'Đổi lịch'
+                  : 'Chỉnh sửa'}
           </ButtonLink>
+          {(chapter.canArchive || chapter.canRestore) && (
+            <Button
+              variant="secondary"
+              size="sm"
+              aria-label={t(
+                chapter.canRestore
+                  ? 'chapterLifecycle.restoreNamed'
+                  : 'chapterLifecycle.archiveNamed',
+                { title: chapter.title },
+              )}
+              onClick={() => onLifecycle(chapter.canRestore ? 'restore' : 'archive')}
+            >
+              {t(chapter.canRestore ? 'chapterLifecycle.restore' : 'chapterLifecycle.archive')}
+            </Button>
+          )}
           <ButtonLink
             to="/author/analytics"
             variant="secondary"

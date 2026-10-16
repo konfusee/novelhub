@@ -44,6 +44,49 @@ afterEach(() => {
   cleanup();
   vi.resetAllMocks();
 });
+it('uses server lifecycle flags and refreshes the chapter row after archive and restore', async () => {
+  let archived = false;
+  let version = 3;
+  let storyVersion = 7;
+  mocks.apiRequest.mockImplementation(async (_path, options) => {
+    if (options?.method === 'POST') {
+      archived = options.body.action === 'archive';
+      version++;
+      storyVersion++;
+      return {};
+    }
+    return {
+      ...workspace,
+      story: { ...workspace.story, status: 'draft', version: storyVersion },
+      chapters: [
+        {
+          ...workspace.chapters[0],
+          version,
+          status: archived ? 'archived' : 'draft',
+          canArchive: !archived,
+          canRestore: archived,
+        },
+      ],
+    };
+  });
+  view();
+  fireEvent.click(await screen.findByRole('button', { name: 'Lưu trữ chương: Chương bảy thật' }));
+  expect(mocks.apiRequest.mock.calls.some(([, o]) => o?.method === 'POST')).toBe(false);
+  fireEvent.click(screen.getByRole('button', { name: 'Xác nhận', exact: true }));
+  const restore = await screen.findByRole('button', { name: 'Khôi phục chương: Chương bảy thật' });
+  expect(mocks.apiRequest).toHaveBeenCalledWith('/author/stories/owned/chapters/seven/lifecycle', {
+    method: 'POST',
+    body: { action: 'archive', expectedVersion: 3, expectedStoryVersion: 7 },
+  });
+  expect(screen.getByRole('link', { name: 'Xem nội dung' })).toBeTruthy();
+  fireEvent.click(restore);
+  fireEvent.click(screen.getByRole('button', { name: 'Xác nhận', exact: true }));
+  await screen.findByRole('button', { name: 'Lưu trữ chương: Chương bảy thật' });
+  expect(mocks.apiRequest).toHaveBeenCalledWith('/author/stories/owned/chapters/seven/lifecycle', {
+    method: 'POST',
+    body: { action: 'restore', expectedVersion: 4, expectedStoryVersion: 8 },
+  });
+});
 it('enables chapter ordering only when the backend confirms the private draft is eligible', async () => {
   mocks.apiRequest.mockResolvedValue(workspace);
   view();

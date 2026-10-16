@@ -13,6 +13,7 @@ import { lockAuthor, ownStory, editable } from '../modules/author-ownership.js';
 import { assertTextEditorRevision, chapterParagraphText } from '../modules/chapter-document.js';
 import { changeDraftLifecycle } from '../modules/author-story-lifecycle.js';
 import { reorderDraftChapters } from '../modules/author-chapter-order.js';
+import { changeChapterDraftLifecycle } from '../modules/author-chapter-lifecycle.js';
 
 const objectId = z.string().regex(/^[a-f\d]{24}$/i);
 const storyInput = z
@@ -65,6 +66,30 @@ export function createAuthorContentRouter(config) {
     },
   );
   router.use('/author/stories', requireAuth(config), requireRole('author'));
+  router.post('/author/stories/:storyId/chapters/:chapterId/lifecycle', async (req, res, next) => {
+    try {
+      const input = parse(
+        z
+          .object({
+            action: z.enum(['archive', 'restore']),
+            expectedVersion: z.number().int().min(0),
+            expectedStoryVersion: z.number().int().min(0),
+          })
+          .strict(),
+        req.body,
+      );
+      res.json(
+        await changeChapterDraftLifecycle(
+          req.account,
+          parse(objectId, req.params.storyId),
+          parse(objectId, req.params.chapterId),
+          input,
+        ),
+      );
+    } catch (error) {
+      next(error);
+    }
+  });
   router.post('/author/stories/:storyId/chapters/reorder', async (req, res, next) => {
     try {
       const input = parse(
@@ -370,7 +395,7 @@ export function createAuthorContentRouter(config) {
       if (!revision)
         throw new HttpError(409, 'missing_revision', 'Không tải được bản nội dung của chương.');
       assertTextEditorRevision(revision);
-      const outline = await Chapter.find({ storyId: story._id })
+      const outline = await Chapter.find({ storyId: story._id, status: { $ne: 'archived' } })
         .sort({ orderKey: 1 })
         .select('title orderKey')
         .lean();

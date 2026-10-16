@@ -1252,6 +1252,23 @@
     "createRevision": "Tạo bản nháp chỉnh sửa",
     "reviseError": "Chưa tạo được bản sửa. Hãy làm mới lịch sử và thử lại."
   },
+  "chapterLifecycle": {
+    "archivedFilter": "Đã lưu trữ",
+    "archive": "Lưu trữ chương nháp",
+    "restore": "Khôi phục chương nháp",
+    "archiveNamed": "Lưu trữ chương: {{title}}",
+    "restoreNamed": "Khôi phục chương: {{title}}",
+    "archiveHint": "Chương được giữ nguyên nội dung và số thứ tự, chuyển sang chỉ đọc và ẩn khỏi kho nháp. Bạn có thể khôi phục trong trang quản lý truyện. Chương chưa được xuất bản.",
+    "restoreHint": "Chương sẽ trở lại bản nháp có thể chỉnh sửa với nội dung và số thứ tự cũ. Thao tác này không gửi duyệt hoặc xuất bản chương.",
+    "cancel": "Hủy",
+    "confirm": "Xác nhận",
+    "saving": "Đang lưu…",
+    "error": "Không lưu được trạng thái chương. Hãy thử lại.",
+    "reload": "Tải lại trạng thái",
+    "archiveSaved": "Đã lưu trữ chương nháp.",
+    "restoreSaved": "Đã khôi phục chương nháp.",
+    "view": "Xem nội dung"
+  },
   "documentImport": {
     "title": "Nhập bản thảo từ tài liệu",
     "description": "Nhập PDF, Word, TXT hoặc Markdown, kiểm tra nội dung rồi lưu thành các chương nháp.",
