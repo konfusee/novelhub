@@ -60,18 +60,19 @@ const utilityTabs = [
   { value: 'checklist', label: 'Danh sách kiểm tra' },
 ];
 
-/* [icon, label, edit] — edit(selectedText) returns [before, inner, after] markers. */
+// Only expose edits that round-trip through the current plain paragraph API.
+// Rich formatting stays visible but unavailable until the canonical editor exists.
 const tools = [
-  [Bold, 'In đậm', (text) => ['**', text || 'chữ đậm', '**']],
-  [Italic, 'In nghiêng', (text) => ['_', text || 'chữ nghiêng', '_']],
-  [Underline, 'Gạch chân', (text) => ['<u>', text || 'gạch chân', '</u>']],
-  [Heading2, 'Tiêu đề 2', (text) => ['\n## ', text || 'Tiêu đề', '\n']],
-  [Heading3, 'Tiêu đề 3', (text) => ['\n### ', text || 'Tiêu đề nhỏ', '\n']],
-  [Quote, 'Trích dẫn', (text) => ['\n> ', text || 'Trích dẫn', '\n']],
-  [AlignLeft, 'Đường phân cách cảnh', () => [`\n\n${SCENE_BREAK}\n\n`, '', '']],
-  [MessageSquare, 'Hội thoại', (text) => ['“', text || 'Lời thoại', '”']],
-  [AtSign, 'Đề cập', (text) => ['@', text || 'nhân vật', '']],
-  [Image, 'Hình ảnh', (text) => ['\n![', text || 'Mô tả hình ảnh', '](duong-dan-anh)\n']],
+  [Bold, 'bold', null],
+  [Italic, 'italic', null],
+  [Underline, 'underline', null],
+  [Heading2, 'heading2', null],
+  [Heading3, 'heading3', null],
+  [Quote, 'quote', null],
+  [AlignLeft, 'sceneBreak', () => [`\n\n${SCENE_BREAK}\n\n`, '', '']],
+  [MessageSquare, 'dialogue', (text) => ['“', text, '”']],
+  [AtSign, 'mention', (text) => ['@', text, '']],
+  [Image, 'image', null],
 ];
 
 const countWords = (text) => text.trim().split(/\s+/).filter(Boolean).length;
@@ -231,6 +232,7 @@ function ChapterEditor({ chapter }) {
     setSaved(false);
   };
   const applyTool = (edit) => {
+    if (!edit || busyRef.current || !chapter.canEdit) return;
     const field = bodyRef.current;
     if (!field) return;
     const { selectionStart: start, selectionEnd: end } = field;
@@ -377,16 +379,21 @@ function ChapterEditor({ chapter }) {
             className="sticky top-[var(--app-header-h)] z-20 flex items-center gap-2 border-b border-hairline bg-surface/90 px-3 py-2 backdrop-blur"
           >
             <div className="nh-tab-rail flex min-w-0 flex-1 gap-0.5 overflow-x-auto pr-6 [mask-image:linear-gradient(to_right,black_calc(100%-2rem),transparent)] lg:pr-0 lg:[mask-image:none]">
-              {tools.map(([Icon, label, edit]) => (
+              {tools.map(([Icon, key, edit]) => (
                 <button
-                  key={label}
+                  key={key}
                   type="button"
-                  aria-label={label}
-                  title={label}
+                  aria-label={t(`editorTools.${key}`)}
+                  aria-describedby={!edit ? 'editor-format-support' : undefined}
+                  title={
+                    edit
+                      ? t(`editorTools.${key}`)
+                      : t('editorTools.unavailable', { tool: t(`editorTools.${key}`) })
+                  }
                   onMouseDown={(event) => event.preventDefault()}
                   onClick={() => applyTool(edit)}
-                  disabled={saveBusy || !chapter.canEdit}
-                  className="grid size-9 shrink-0 place-items-center rounded-full text-ink/75 transition-[background-color,color,transform] duration-200 hover:bg-elevated hover:text-brand-strong active:scale-[0.96] pointer-coarse:size-11"
+                  disabled={!edit || saveBusy || !chapter.canEdit}
+                  className="grid size-9 shrink-0 place-items-center rounded-full text-ink/75 transition-[background-color,color,transform] duration-200 hover:bg-elevated hover:text-brand-strong active:scale-[0.96] disabled:cursor-not-allowed disabled:opacity-40 pointer-coarse:size-11"
                 >
                   <Icon size={16} />
                 </button>
@@ -406,6 +413,12 @@ function ChapterEditor({ chapter }) {
               Lưu
             </Button>
           </div>
+          <p
+            id="editor-format-support"
+            className="border-b border-hairline px-5 py-3 text-xs leading-5 text-muted"
+          >
+            {t('editorTools.plainTextHint')}
+          </p>
           {saveError && (
             <p role="alert" className="px-5 pt-4 text-sm text-rose-strong">
               {saveError}
