@@ -1,10 +1,10 @@
-import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { afterEach, expect, it, vi } from 'vitest';
 import { MemoryRouter, Route, Routes, useLocation } from 'react-router';
 import { LocaleProvider } from '../../../src/context/LocaleContext';
 import { ChapterEditorPage } from '../../../src/pages/author/ChapterEditorPage';
 const mocks = vi.hoisted(() => ({ apiRequest: vi.fn() }));
-vi.mock('../../../src/api/client', () => ({ apiRequest: mocks.apiRequest }));
+vi.mock('../../../src/api/client', () => ({ apiRequest: mocks.apiRequest, API_BASE: '/api' }));
 vi.mock('../../../src/layouts', () => ({
   AuthorLayout: ({ children }) => <main>{children}</main>,
 }));
@@ -58,7 +58,7 @@ it('loads structured editing explicitly, keeps marks when saving and previews th
   const editor = await screen.findByRole('textbox', { name: 'Nội dung chương có định dạng' });
   expect(editor.querySelector('strong').textContent).toBe('Nội dung đậm');
   expect(screen.getByRole('button', { name: 'In đậm', exact: true }).disabled).toBe(false);
-  expect(screen.getByRole('button', { name: 'Hình ảnh', exact: true }).disabled).toBe(true);
+  expect(screen.getByRole('button', { name: 'Hình ảnh', exact: true }).disabled).toBe(false);
   editor.querySelector('strong').textContent = 'Nội dung đậm vừa sửa';
   fireEvent.input(editor);
   fireEvent.click(screen.getByRole('button', { name: 'Lưu', exact: true }));
@@ -297,4 +297,61 @@ it('opens published chapters read-only and never fabricates a missing chapter', 
     expect(screen.queryByRole('textbox', { name: 'Nội dung chương' })).toBeNull(),
   );
   expect(await screen.findByRole('link', { name: 'Về trang quản lý truyện' })).toBeTruthy();
+});
+it('selects owned library images, requires alt text, saves references and previews the same draft image', async () => {
+  const document = {
+    title: chapter.title,
+    blocks: [{ type: 'paragraph', inlines: [{ text: 'Chữ đậm', marks: ['bold'] }] }],
+  };
+  const asset = {
+    id: '6ad218e46c26c31ff0ed423c',
+    name: 'Minh họa.webp',
+    url: '/author/media/image/content',
+    storyId: chapter.storyId,
+  };
+  mocks.apiRequest.mockImplementation(async (path, options) => {
+    if (path === '/author/media')
+      return {
+        items: [asset, { ...asset, id: 'foreign', storyId: 'other', name: 'Truyện khác.webp' }],
+        nextCursor: null,
+      };
+    if (options?.method === 'PUT') return { chapter: { version: 10 } };
+    return { chapter: { ...chapter, document } };
+  });
+  view('?mode=rich');
+  fireEvent.click(await screen.findByRole('button', { name: 'Hình ảnh', exact: true }));
+  const picker = screen.getByRole('dialog', { name: 'Chọn ảnh cho chương' });
+  fireEvent.click(await within(picker).findByRole('button', { name: 'Chọn ảnh Minh họa.webp' }));
+  expect(within(picker).queryByRole('button', { name: 'Chọn ảnh Truyện khác.webp' })).toBeNull();
+  fireEvent.click(within(picker).getByRole('button', { name: 'Thêm ảnh cuối chương' }));
+  expect(within(picker).getByRole('alert').textContent).toContain('Nhập mô tả ảnh');
+  fireEvent.change(
+    within(picker).getByRole('textbox', { name: 'Mô tả ảnh cho người đọc (bắt buộc)' }),
+    { target: { value: 'Khu rừng xanh' } },
+  );
+  fireEvent.change(within(picker).getByRole('textbox', { name: 'Chú thích ảnh (tùy chọn)' }), {
+    target: { value: 'Minh họa chương' },
+  });
+  fireEvent.click(within(picker).getByRole('button', { name: 'Thêm ảnh cuối chương' }));
+  expect(screen.queryByRole('dialog')).toBeNull();
+  const editor = screen.getByRole('textbox', { name: 'Nội dung chương có định dạng' });
+  expect(editor.querySelector('strong').textContent).toBe('Chữ đậm');
+  expect(editor.querySelector('img').getAttribute('src')).toBe(
+    `/api/author/media/${asset.id}/content`,
+  );
+  fireEvent.click(screen.getByRole('button', { name: 'Lưu', exact: true }));
+  await waitFor(() =>
+    expect(
+      mocks.apiRequest.mock.calls.some(
+        ([, options]) =>
+          options?.method === 'PUT' && options.body.document.blocks[1]?.mediaId === asset.id,
+      ),
+    ).toBe(true),
+  );
+  fireEvent.click(screen.getByRole('button', { name: 'Xem trước', exact: true }));
+  const preview = screen.getByRole('article', { name: 'Nội dung chương xem trước' });
+  expect(
+    within(preview).getByRole('img', { name: 'Khu rừng xanh' }).getAttribute('crossorigin'),
+  ).toBe('use-credentials');
+  expect(within(preview).getByText('Minh họa chương')).toBeTruthy();
 });

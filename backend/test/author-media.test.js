@@ -5,7 +5,15 @@ import os from 'node:os';
 import path from 'node:path';
 import sharp from 'sharp';
 import { createApp } from '../src/app.js';
-import { AuditEvent, MediaAsset, Story, Category } from '../src/models/index.js';
+import {
+  AuditEvent,
+  MediaAsset,
+  Story,
+  Category,
+  Chapter,
+  ContentRevision,
+  PublicationSubmission,
+} from '../src/models/index.js';
 import { authenticatedAccount } from './fixtures/accounts.js';
 import { testConfig } from './config.js';
 import { useTestDatabase } from './db.js';
@@ -269,4 +277,162 @@ it('preserves whole Unicode characters in long image names and reads the stored 
   expect(response.status).toBe(201);
   expect(response.body.asset.name).toBe(`${'a'.repeat(99)}🌿.webp`);
   expect((await get(author.cookie, `/api${response.body.asset.url}`)).status).toBe(200);
+});
+const chapterWrite = (cookie, url, body, method = 'post') =>
+  request(app)[method](url).set('Cookie', cookie).set('Origin', origin).send(body);
+const illustrated = (id) => ({
+  title: 'Chương có ảnh',
+  blocks: [
+    { type: 'paragraph', inlines: [{ text: 'Nội dung có định dạng', marks: ['bold'] }] },
+    { type: 'image', mediaId: id, alt: 'Đường qua khu rừng', caption: 'Minh họa riêng' },
+  ],
+});
+it('pins owned images to immutable revision history, round-trips drafts and blocks media submission', async () => {
+  const author = await authenticatedAccount('author');
+  const story = await makeStory(author);
+  const asset = (await upload(author.cookie, { storyId: String(story._id) })).body.asset;
+  const base = `/api/author/stories/${story._id}/chapters`;
+  const created = await chapterWrite(author.cookie, base, { document: illustrated(asset.id) });
+  expect(created.status).toBe(201);
+  const url = `${base}/${created.body.chapter.id}`;
+  const loaded = await get(author.cookie, `${url}?format=rich`);
+  expect(loaded.body.chapter).toMatchObject({
+    document: illustrated(asset.id),
+    formatVersion: 'blocks-v3',
+  });
+  expect((await get(author.cookie, url)).body.error.code).toBe('unsupported_editor_format');
+  const revision = await ContentRevision.findOne({ chapterId: created.body.chapter.id });
+  expect(revision.mediaIds.map(String)).toEqual([asset.id]);
+  expect((await MediaAsset.findById(asset.id)).version).toBe(1);
+  const prepared = await get(
+    author.cookie,
+    `/api/author/submissions/prepare?storyId=${story._id}&chapterId=${created.body.chapter.id}`,
+  );
+  expect(prepared.status).toBe(200);
+  expect(prepared.body.target.formatVersion).toBe('blocks-v3');
+  expect(prepared.body.checks.find((item) => item.code === 'content').ok).toBe(true);
+  expect(prepared.body.checks.find((item) => item.code === 'media').ok).toBe(false);
+  const sent = await chapterWrite(author.cookie, '/api/author/submissions', {
+    storyId: String(story._id),
+    chapterId: created.body.chapter.id,
+    revisionId: String(revision._id),
+    expectedVersion: loaded.body.chapter.version,
+  });
+  expect(sent.body.error.code).toBe('submission_not_ready');
+  expect(await PublicationSubmission.countDocuments()).toBe(0);
+  const textOnly = { ...illustrated(asset.id), blocks: illustrated(asset.id).blocks.slice(0, 1) };
+  expect(
+    (
+      await chapterWrite(
+        author.cookie,
+        url,
+        { document: textOnly, expectedVersion: loaded.body.chapter.version },
+        'put',
+      )
+    ).status,
+  ).toBe(200);
+  expect((await get(author.cookie, `${url}?format=rich`)).body.chapter.formatVersion).toBe(
+    'blocks-v2',
+  );
+  expect((await ContentRevision.findById(revision._id)).mediaIds.map(String)).toEqual([asset.id]);
+  expect((await remove(author.cookie, { ...asset, version: 1 })).body.error.code).toBe(
+    'media_in_use',
+  );
+});
+it('rejects foreign, wrong-story, unavailable or malformed image references without creating chapters', async () => {
+  const author = await authenticatedAccount('author');
+  const other = await authenticatedAccount('author');
+  const story = await makeStory(author);
+  const second = await makeStory(author, 'Truyện khác');
+  const foreign = (await upload(other.cookie)).body.asset;
+  const wrongStory = (await upload(author.cookie, { storyId: String(second._id) })).body.asset;
+  const base = `/api/author/stories/${story._id}/chapters`;
+  expect(
+    (await chapterWrite(author.cookie, base, { document: illustrated(foreign.id) })).status,
+  ).toBe(409);
+  expect(
+    (await chapterWrite(author.cookie, base, { document: illustrated(wrongStory.id) })).body.error
+      .code,
+  ).toBe('media_wrong_story');
+  const own = (await upload(author.cookie)).body.asset;
+  const invalid = illustrated(own.id);
+  invalid.blocks[1].url = 'https://elsewhere.test/image.png';
+  expect((await chapterWrite(author.cookie, base, { document: invalid })).status).toBe(400);
+  const noAlt = illustrated(own.id);
+  noAlt.blocks[1].alt = ' ';
+  expect((await chapterWrite(author.cookie, base, { document: noAlt })).status).toBe(400);
+  const tooMany = illustrated(own.id);
+  tooMany.blocks = Array.from({ length: 21 }, () => tooMany.blocks[1]);
+  expect((await chapterWrite(author.cookie, base, { document: tooMany })).status).toBe(400);
+  await remove(author.cookie, own);
+  expect((await chapterWrite(author.cookie, base, { document: illustrated(own.id) })).status).toBe(
+    409,
+  );
+  expect(await Chapter.countDocuments()).toBe(0);
+  expect(await ContentRevision.countDocuments()).toBe(0);
+});
+it('rolls back media pins and chapter creation when audit fails, and rejects missing image bytes', async () => {
+  const author = await authenticatedAccount('author');
+  const story = await makeStory(author);
+  const asset = (await upload(author.cookie)).body.asset;
+  const base = `/api/author/stories/${story._id}/chapters`;
+  const spy = vi.spyOn(AuditEvent, 'create').mockRejectedValueOnce(new Error('Audit unavailable'));
+  try {
+    expect(
+      (await chapterWrite(author.cookie, base, { document: illustrated(asset.id) })).status,
+    ).toBe(500);
+  } finally {
+    spy.mockRestore();
+  }
+  expect((await MediaAsset.findById(asset.id)).version).toBe(0);
+  expect(await Chapter.countDocuments()).toBe(0);
+  const row = await MediaAsset.findById(asset.id).select('+objectKey');
+  await writeFile(path.join(root, row.objectKey), Buffer.alloc(row.sizeBytes));
+  expect(
+    (await chapterWrite(author.cookie, base, { document: illustrated(asset.id) })).status,
+  ).toBe(404);
+  expect(await ContentRevision.countDocuments()).toBe(0);
+});
+it('serializes attaching and deleting the same image without leaving a broken chapter reference', async () => {
+  const author = await authenticatedAccount('author');
+  const story = await makeStory(author);
+  const asset = (await upload(author.cookie)).body.asset;
+  const [saved, deleted] = await Promise.all([
+    chapterWrite(author.cookie, `/api/author/stories/${story._id}/chapters`, {
+      document: illustrated(asset.id),
+    }),
+    remove(author.cookie, asset),
+  ]);
+  expect([
+    [201, 409],
+    [409, 200],
+  ]).toContainEqual([saved.status, deleted.status]);
+  const row = await MediaAsset.findById(asset.id);
+  const references = await ContentRevision.countDocuments({ mediaIds: asset.id });
+  expect(row.status === 'available' ? references === 1 : references === 0).toBe(true);
+});
+it('refuses to flatten or overwrite an illustrated revision whose media manifest does not match its blocks', async () => {
+  const author = await authenticatedAccount('author');
+  const story = await makeStory(author);
+  const asset = (await upload(author.cookie)).body.asset;
+  const base = `/api/author/stories/${story._id}/chapters`;
+  const created = await chapterWrite(author.cookie, base, { document: illustrated(asset.id) });
+  const url = `${base}/${created.body.chapter.id}`;
+  const inconsistent = await ContentRevision.findOne({ chapterId: created.body.chapter.id });
+  inconsistent.mediaIds = [];
+  await inconsistent.save();
+  expect((await get(author.cookie, `${url}?format=rich`)).body.error.code).toBe(
+    'unsupported_editor_format',
+  );
+  expect(
+    (
+      await chapterWrite(
+        author.cookie,
+        url,
+        { document: illustrated(asset.id), expectedVersion: created.body.chapter.version },
+        'put',
+      )
+    ).status,
+  ).toBe(409);
+  expect(await ContentRevision.countDocuments({ chapterId: created.body.chapter.id })).toBe(1);
 });

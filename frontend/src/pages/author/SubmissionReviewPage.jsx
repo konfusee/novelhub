@@ -194,14 +194,19 @@ function SubmissionPackage({ storyId, chapterId, onSubmitted }) {
   const percent = data.checks.length ? Math.round((passed / data.checks.length) * 100) : 0;
   const ready =
     resource.status === 'ready' && data.ready && (!data.requiresRights || asserted) && !sent;
+  const richTarget = ['blocks-v2', 'blocks-v3'].includes(data.target?.formatVersion);
+  const chapterMedia = Boolean(chapterId && data.target?.formatVersion === 'blocks-v3');
   const back = chapterId
-    ? `/author/stories/${storyId}/chapters/${chapterId}/edit`
+    ? `/author/stories/${storyId}/chapters/${chapterId}/edit${richTarget ? '?mode=rich' : ''}`
     : `/author/stories/${storyId}`;
   const fixes = {
     editable: { to: `/author/stories/${storyId}?tab=reviews`, label: 'status' },
     content: { to: chapterId ? back : `/author/stories/${storyId}?tab=details`, label: 'content' },
     categories: { to: `/author/stories/${storyId}?tab=details`, label: 'categories' },
-    media: { to: `/author/stories/${storyId}?tab=media`, label: 'media' },
+    media: {
+      to: chapterMedia ? back : `/author/stories/${storyId}?tab=media`,
+      label: chapterMedia ? 'chapterMedia' : 'media',
+    },
     parent: { to: `/author/submissions?storyId=${encodeURIComponent(storyId)}`, label: 'parent' },
   };
   const send = async () => {
@@ -332,7 +337,11 @@ function SubmissionPackage({ storyId, chapterId, onSubmitted }) {
                             </ButtonLink>
                             {['parent', 'media', 'editable'].includes(check.code) && (
                               <p className="mt-2 text-xs leading-5 text-muted">
-                                {t(`submissionFixes.${check.code}Hint`)}
+                                {t(
+                                  check.code === 'media' && chapterMedia
+                                    ? 'submissionFixes.chapterMediaHint'
+                                    : `submissionFixes.${check.code}Hint`,
+                                )}
                               </p>
                             )}
                           </div>

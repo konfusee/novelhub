@@ -21,7 +21,7 @@ export function RichChapterInput({
     const focus = selection?.focusNode;
     const anchorOffset = selection?.anchorOffset;
     const focusOffset = selection?.focusOffset;
-    const allowed = new Set(['P', 'DIV', 'H2', 'H3', 'BLOCKQUOTE', 'HR']);
+    const allowed = new Set(['P', 'DIV', 'H2', 'H3', 'BLOCKQUOTE', 'HR', 'FIGURE']);
     let paragraph;
     let changed = false;
     for (const node of [...root.current.childNodes]) {
@@ -82,6 +82,27 @@ export function RichChapterInput({
     writeChapterDom(root.current, initial.current);
   }, []);
   useImperativeHandle(ref, () => ({
+    changeImage(index, changes) {
+      if (disabled) return false;
+      const next = { ...current.current, blocks: [...current.current.blocks] };
+      if (index === null) next.blocks.push(changes, { type: 'paragraph', inlines: [] });
+      else if (next.blocks[index]?.type === 'image') {
+        if (changes === null) next.blocks.splice(index, 1);
+        else next.blocks[index] = { ...next.blocks[index], ...changes };
+      } else return false;
+      if (!next.blocks.length) next.blocks.push({ type: 'paragraph', inlines: [] });
+      if (
+        next.blocks.length > 1000 ||
+        next.blocks.filter((block) => block.type === 'image').length > 20
+      )
+        return false;
+      history.current = [...history.current.slice(-49), current.current];
+      future.current = [];
+      current.current = next;
+      writeChapterDom(root.current, next);
+      onChange(next);
+      return true;
+    },
     replace(document) {
       initial.current = document;
       current.current = document;
@@ -114,7 +135,7 @@ export function RichChapterInput({
       if (command?.[0] === 'formatBlock') {
         const range = selection.getRangeAt(0);
         let selected = [...root.current.children].filter((node) => {
-          if (node.tagName === 'HR') return false;
+          if (['HR', 'FIGURE'].includes(node.tagName)) return false;
           if (range.collapsed)
             return (
               node.contains(range.startContainer) ||
