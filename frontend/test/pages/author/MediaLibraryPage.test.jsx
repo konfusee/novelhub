@@ -50,6 +50,7 @@ it('shows server images, actual totals, MIME and date without mock quota or asse
   expect(within(detail).getByText('image/webp')).toBeTruthy();
   expect(within(detail).getByText(new Date(asset.createdAt).toLocaleString('vi-VN'))).toBeTruthy();
   expect(within(detail).getByRole('img').src).toContain('/api/author/media/abc/content');
+  expect(within(detail).getByRole('img').getAttribute('crossorigin')).toBe('use-credentials');
   expect(screen.queryByText(/GB/)).toBeNull();
   expect(screen.getByText('1 ảnh trong thư viện')).toBeTruthy();
   expect(screen.getByText('Đã tải 1 / 1 ảnh. Bộ lọc áp dụng cho các ảnh đã tải.')).toBeTruthy();

@@ -61,9 +61,12 @@ it('stores decoded image bytes and MongoDB metadata, lists real totals and serve
   const listed = await get(author.cookie);
   expect(listed.body.stats).toEqual({ bytes: bytes.length, count: 1 });
   expect(listed.body.items[0]).toEqual(asset);
-  const image = await get(author.cookie, `/api${asset.url}`);
+  const image = await get(author.cookie, `/api${asset.url}`).set('Origin', origin);
   expect(image.status).toBe(200);
   expect(image.headers['cache-control']).toBe('private, no-store');
+  expect(image.headers['access-control-allow-origin']).toBe(origin);
+  expect(image.headers['access-control-allow-credentials']).toBe('true');
+  expect(image.headers['cross-origin-resource-policy']).toBe('same-origin');
   expect(image.body).toEqual(bytes);
   expect((await get(other.cookie)).body.items).toEqual([]);
   expect((await get(other.cookie, `/api${asset.url}`)).status).toBe(404);
