@@ -718,6 +718,7 @@ function AssetPreview({ asset, children }) {
       {url && failedUrl !== url ? (
         <img
           src={url}
+          crossOrigin="use-credentials"
           alt={asset.name}
           loading="lazy"
           onError={() => setFailedUrl(url)}

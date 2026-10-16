@@ -47,3 +47,5 @@ Tab Media của quản lý truyện truyền `storyId` sang thư viện. Ảnh t
 Màn hình quản lý truyện giải thích chưa hỗ trợ tải âm thanh, bỏ đường dẫn âm thanh dẫn nhầm sang thư viện ảnh. 19 test UI trên MediaLibraryPage và StoryManagerPage đạt; browser đi theo link và tải ảnh vào đúng truyện trên DB tạm đã xác nhận.
 
 Tên ảnh dài được rút gọn theo ký tự Unicode nguyên vẹn, tránh tách đôi emoji thành ký tự lỗi. Đã tái hiện lỗi trước khi sửa; sau sửa tên và bytes ảnh đọc lại đúng. 10 test author-media và 3 test cấu hình lưu ảnh đạt.
+
+Ảnh dùng CORS có credentials khi API_BASE khác origin. Đã tái hiện ảnh bị chặn khi frontend chạy localhost:5181 và API chạy localhost:5183; sau sửa ảnh mở đúng với CORS_ORIGIN cho frontend và cookie hợp lệ. Giữ header bảo vệ tài nguyên cùng quyền sở hữu. Ảnh trình duyệt kiểm chứng: cross-origin-library.png trong outputs của workspace.
