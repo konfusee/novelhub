@@ -15,10 +15,18 @@ export function ChapterLifecycleDialog({ story, chapter, action, onClose, onSave
     setBusy(true);
     setError('');
     try {
-      await apiRequest(`/author/stories/${story.id}/chapters/${chapter.id}/lifecycle`, {
-        method: 'POST',
-        body: { action, expectedVersion: chapter.version, expectedStoryVersion: story.version },
-      });
+      const result = await apiRequest(
+        `/author/stories/${story.id}/chapters/${chapter.id}/lifecycle`,
+        {
+          method: 'POST',
+          body: { action, expectedVersion: chapter.version, expectedStoryVersion: story.version },
+        },
+      );
+      if (
+        action === 'unpublish' &&
+        (result?.chapter?.id !== chapter.id || result.chapter.status !== 'unpublished')
+      )
+        throw new Error(t('chapterLifecycle.error'));
       onSaved();
     } catch (failure) {
       setError(failure.message || t('chapterLifecycle.error'));
@@ -51,7 +59,7 @@ export function ChapterLifecycleDialog({ story, chapter, action, onClose, onSave
           <Button onClick={onReload}>{t('chapterLifecycle.reload')}</Button>
         ) : (
           <Button
-            variant={action === 'delete' ? 'danger' : 'primary'}
+            variant={['delete', 'unpublish'].includes(action) ? 'danger' : 'primary'}
             disabled={busy}
             onClick={confirm}
           >

@@ -10,7 +10,7 @@ import {
 import { HttpError } from '../middleware/errors.js';
 import { draftLifecycle } from './author-story-lifecycle.js';
 import { canReorderDraftChapters } from './author-chapter-order.js';
-import { chapterDraftLifecycle } from './author-chapter-lifecycle.js';
+import { chapterCanUnpublish, chapterDraftLifecycle } from './author-chapter-lifecycle.js';
 import { chapterTextProjection } from './rich-chapter-document.js';
 
 export async function authorStoryWorkspace(account, storyId) {
@@ -85,6 +85,7 @@ export async function authorStoryWorkspace(account, storyId) {
       : null;
     return {
       ...chapterDraftLifecycle(chapter, revision, story, lifecycle),
+      canUnpublish: chapterCanUnpublish(chapter, story),
       id: String(chapter._id),
       version: chapter.version,
       title: chapter.title,

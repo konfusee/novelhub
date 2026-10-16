@@ -3,6 +3,16 @@ import { withTransaction } from '../db/connection.js';
 import { HttpError } from '../middleware/errors.js';
 import { lockAuthor, ownStory } from './author-ownership.js';
 import { draftLifecycle, isPrivateDraftChapter } from './author-story-lifecycle.js';
+import { digest } from './submission-digests.js';
+
+export function chapterCanUnpublish(chapter, story) {
+  return Boolean(
+    !story.authoringFrozen &&
+    ['published', 'unpublished'].includes(story.publicationStatus) &&
+    chapter.status === 'published' &&
+    chapter.publishedRevisionId,
+  );
+}
 
 export function chapterDraftLifecycle(chapter, revision, story, lifecycle) {
   const safe =
@@ -39,22 +49,21 @@ export async function changeChapterDraftLifecycle(account, storyId, chapterId, i
       authorAccountId: account._id,
       contentType: 'chapter',
     }).session(session);
-    const flags = chapterDraftLifecycle(
-      chapter,
-      revision,
-      story,
-      await draftLifecycle(story, session),
-    );
+    const flags =
+      input.action === 'unpublish'
+        ? { canUnpublish: chapterCanUnpublish(chapter, story) }
+        : chapterDraftLifecycle(chapter, revision, story, await draftLifecycle(story, session));
     const allowed = {
       archive: flags.canArchive,
       restore: flags.canRestore,
       delete: flags.canDelete,
+      unpublish: flags.canUnpublish,
     };
     if (!allowed[input.action])
       throw new HttpError(
         409,
         'chapter_lifecycle_not_allowed',
-        'Chỉ xóa, lưu trữ hoặc khôi phục chương nháp riêng tư đủ điều kiện, không có nội dung đã phát hành hay gói đang chờ duyệt.',
+        'Chương chưa đủ điều kiện cho thao tác này hoặc truyện đang bị khóa. Hãy tải lại trạng thái.',
       );
     const now = new Date();
     const before = chapter.status;
@@ -64,7 +73,12 @@ export async function changeChapterDraftLifecycle(account, storyId, chapterId, i
         .session(session);
       chapter.orderKey = Math.min(0, first?.orderKey ?? 0) - 1;
     }
-    chapter.status = input.action === 'restore' ? 'draft' : 'archived';
+    chapter.status =
+      input.action === 'unpublish'
+        ? 'unpublished'
+        : input.action === 'restore'
+          ? 'draft'
+          : 'archived';
     chapter.publicationTransition = {
       actorAccountId: account._id,
       occurredAt: now,
@@ -74,6 +88,7 @@ export async function changeChapterDraftLifecycle(account, storyId, chapterId, i
         archive: 'author-draft-archived',
         restore: 'author-draft-restored',
         delete: 'author-draft-deleted',
+        unpublish: 'author-chapter-unpublished',
       }[input.action],
     };
     await chapter.save({ session });
@@ -88,12 +103,22 @@ export async function changeChapterDraftLifecycle(account, storyId, chapterId, i
             archive: 'chapter.draft-archived',
             restore: 'chapter.draft-restored',
             delete: 'chapter.draft-deleted',
+            unpublish: 'chapter.unpublished',
           }[input.action],
           targetType: 'Chapter',
           targetId: chapter._id,
           targetVersion: chapter.version,
           result: 'accepted',
           occurredAt: now,
+          ...(input.action === 'unpublish'
+            ? {
+                dataDigest: digest({
+                  publishedRevisionId: String(chapter.publishedRevisionId),
+                  from: before,
+                  to: chapter.status,
+                }),
+              }
+            : {}),
         },
       ],
       { session },

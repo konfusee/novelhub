@@ -407,6 +407,7 @@ export function StoryManagerPage() {
                     items={[
                       ...filters,
                       { value: 'Archived', label: t('chapterLifecycle.archivedFilter') },
+                      { value: 'Unpublished', label: t('chapterLifecycle.unpublishedFilter') },
                     ]}
                   />
                 </div>
@@ -759,6 +760,11 @@ function ChapterRow({ chapter, storyId, onLifecycle, onRelease }) {
           {chapter.canDelete && (
             <Button variant="danger" size="sm" onClick={() => onLifecycle('delete')}>
               {t('chapterLifecycle.delete')}
+            </Button>
+          )}
+          {chapter.canUnpublish && (
+            <Button variant="danger" size="sm" onClick={() => onLifecycle('unpublish')}>
+              {t('chapterLifecycle.unpublish')}
             </Button>
           )}
           <ButtonLink
