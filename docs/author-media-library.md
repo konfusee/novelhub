@@ -45,3 +45,5 @@ Khi triển khai cần cấp quyền đọc/ghi cho tài khoản chạy backend,
 Tab Media của quản lý truyện truyền `storyId` sang thư viện. Ảnh tải mới chọn sẵn truyện khi máy chủ xác nhận truyện thuộc tài khoản và còn chỉnh sửa được; người dùng có thể đổi hoặc bỏ lựa chọn. ID không hợp lệ/không có trong danh sách truyện nhận ảnh không được âm thầm gửi kèm upload. Khóa tải ảnh trong lúc đang đọc danh sách để tránh mất ngữ cảnh. Danh sách thư viện vẫn là toàn bộ ảnh của tài khoản, không tự đổi bộ lọc.
 
 Màn hình quản lý truyện giải thích chưa hỗ trợ tải âm thanh, bỏ đường dẫn âm thanh dẫn nhầm sang thư viện ảnh. 19 test UI trên MediaLibraryPage và StoryManagerPage đạt; browser đi theo link và tải ảnh vào đúng truyện trên DB tạm đã xác nhận.
+
+Tên ảnh dài được rút gọn theo ký tự Unicode nguyên vẹn, tránh tách đôi emoji thành ký tự lỗi. Đã tái hiện lỗi trước khi sửa; sau sửa tên và bytes ảnh đọc lại đúng. 10 test author-media và 3 test cấu hình lưu ảnh đạt.

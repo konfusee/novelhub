@@ -99,11 +99,14 @@ export async function uploadAuthorMedia(config, account, input, bytes) {
     if (result.data.length > MEDIA_UPLOAD_BYTES)
       throw new HttpError(400, 'image_too_large', 'Ảnh sau xử lý vượt quá 10 MB.');
     const name =
-      input.name
-        .normalize('NFC')
-        .replace(/[\\/<>:"|?*\p{Cc}]/gu, '_')
-        .replace(/\.(png|jpe?g|webp)$/iu, '')
+      Array.from(
+        input.name
+          .normalize('NFC')
+          .replace(/[\\/<>:"|?*\p{Cc}]/gu, '_')
+          .replace(/\.(png|jpe?g|webp)$/iu, ''),
+      )
         .slice(0, 100)
+        .join('')
         .replace(/[. ]+$/u, '') || 'image';
     const key = `${randomUUID()}~${result.info.width}x${result.info.height}~${name}.webp`;
     await mkdir(mediaRoot(config), { recursive: true });
