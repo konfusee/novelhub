@@ -1,0 +1,230 @@
+import {
+  AuditEvent,
+  Chapter,
+  EvidenceBatch,
+  PublicationSubmission,
+  RightsDeclaration,
+  Story,
+} from '../models/index.js';
+import { withTransaction } from '../db/connection.js';
+import { HttpError } from '../middleware/errors.js';
+import { lockAuthor, ownStory } from './author-ownership.js';
+import { loadSubmittedPackage } from './author-submitted-package.js';
+import { digest } from './submission-digests.js';
+
+async function packageFor(account, story, chapterId, revisionId, session) {
+  const submission = revisionId
+    ? await PublicationSubmission.findOne({
+        storyId: story._id,
+        chapterId,
+        revisionId,
+        authorAccountId: account._id,
+      })
+        .session(session ?? null)
+        .lean()
+    : null;
+  if (!submission) return null;
+  try {
+    return await loadSubmittedPackage(account, submission._id, session);
+  } catch (error) {
+    if (!(error instanceof HttpError) || ![404, 409].includes(error.status)) throw error;
+    return null;
+  }
+}
+const approved = (snapshot) =>
+  Boolean(
+    snapshot?.submission.status === 'approved' &&
+    ['approved', 'immutable'].includes(snapshot.revision.status) &&
+    snapshot.rights.status === 'asserted',
+  );
+
+async function releaseState(account, storyId, chapterId, session) {
+  const story = await ownStory(account, storyId, session);
+  const chapter = await Chapter.findOne({ _id: chapterId, storyId: story._id }).session(
+    session ?? null,
+  );
+  if (!chapter) throw new HttpError(404, 'not_found', 'Không tìm thấy chương.');
+  const revisionId = chapter.draftRevisionId ?? chapter.currentRevisionId;
+  const snapshot = await packageFor(account, story, chapter._id, revisionId, session);
+  const parent = await packageFor(account, story, null, story.publishedRevisionId, session);
+  const submission = snapshot?.submission;
+  const batch = submission?.currentEvidenceBatchId
+    ? await EvidenceBatch.findOne({
+        _id: submission.currentEvidenceBatchId,
+        submissionId: submission._id,
+        revisionId,
+        packageDigest: submission.packageDigest,
+      })
+        .session(session ?? null)
+        .lean()
+    : null;
+  const evidenceReady = Boolean(
+    batch &&
+    ((batch.status === 'available-for-human-review' && batch.stage === 'llm') ||
+      (batch.status === 'failed' &&
+        ['embedding', 'comparison', 'llm'].includes(batch.failedStage))),
+  );
+  const previous = await Chapter.exists({
+    storyId: story._id,
+    orderKey: { $lt: chapter.orderKey },
+    firstReleasedAt: null,
+    'publicationTransition.result': { $ne: 'author-draft-deleted' },
+  }).session(session ?? null);
+  const checks = [
+    { code: 'approval', ok: approved(snapshot) },
+    { code: 'integrity', ok: Boolean(snapshot) },
+    { code: 'evidence', ok: evidenceReady },
+    { code: 'parent', ok: story.publicationStatus === 'published' && approved(parent) },
+    { code: 'order', ok: !previous },
+    { code: 'free', ok: !chapter.earlyAccess?.enabled },
+    {
+      code: 'format',
+      ok: Boolean(snapshot && ['blocks-v1', 'blocks-v2'].includes(snapshot.revision.formatVersion)),
+    },
+    {
+      code: 'editable',
+      ok:
+        !story.authoringFrozen &&
+        ['approved', 'published'].includes(chapter.status) &&
+        String(chapter.publishedRevisionId) !== String(revisionId),
+    },
+  ];
+  return { story, chapter, snapshot, parent, checks };
+}
+
+export async function prepareChapterRelease(account, storyId, chapterId) {
+  const { story, chapter, snapshot, checks } = await releaseState(account, storyId, chapterId);
+  return {
+    target: {
+      storyId: String(story._id),
+      chapterId: String(chapter._id),
+      version: chapter.version,
+      storyVersion: story.version,
+      revisionId: snapshot ? String(snapshot.revision._id) : null,
+      submissionId: snapshot ? String(snapshot.submission._id) : null,
+      title: snapshot?.revision.content.title ?? chapter.title,
+    },
+    checks,
+    ready: checks.every((check) => check.ok),
+  };
+}
+
+export async function publishChapter(account, storyId, chapterId, input) {
+  return withTransaction(async (session) => {
+    await lockAuthor(account, session);
+    const { story, chapter, snapshot, parent, checks } = await releaseState(
+      account,
+      storyId,
+      chapterId,
+      session,
+    );
+    if (
+      !snapshot ||
+      String(snapshot.revision._id) !== input.revisionId ||
+      String(snapshot.submission._id) !== input.submissionId
+    )
+      throw new HttpError(
+        409,
+        'stale_content',
+        'Gói chương đã duyệt đã thay đổi. Hãy kiểm tra lại.',
+      );
+    if (
+      chapter.status === 'published' &&
+      String(chapter.publishedRevisionId) === input.revisionId &&
+      chapter.publicationTransition?.result === 'author-chapter-published' &&
+      !story.authoringFrozen &&
+      checks.filter((check) => check.code !== 'editable').every((check) => check.ok)
+    )
+      return {
+        id: String(chapter._id),
+        status: 'published',
+        version: chapter.version,
+        replayed: true,
+      };
+    if (chapter.version !== input.expectedVersion || story.version !== input.expectedStoryVersion)
+      throw new HttpError(
+        409,
+        'stale_content',
+        'Truyện hoặc chương đã thay đổi. Hãy kiểm tra lại.',
+      );
+    if (!checks.every((check) => check.ok))
+      throw new HttpError(409, 'release_not_ready', 'Chương chưa đủ điều kiện phát hành.', {
+        checks,
+      });
+    const pinnedStory = await Story.updateOne(
+      {
+        _id: story._id,
+        version: input.expectedStoryVersion,
+        publicationStatus: 'published',
+        authoringFrozen: false,
+      },
+      { $inc: { version: 1 } },
+      { session },
+    );
+    if (pinnedStory.modifiedCount !== 1)
+      throw new HttpError(409, 'stale_content', 'Truyện cha đã thay đổi. Hãy kiểm tra lại.');
+    // Pin both approvals and declarations, including inherited rights only once.
+    for (const [Model, rows, status] of [
+      [PublicationSubmission, [snapshot.submission, parent.submission], 'approved'],
+      [RightsDeclaration, [snapshot.rights, parent.rights], 'asserted'],
+    ]) {
+      const unique = new Map(rows.map((row) => [String(row._id), row]));
+      for (const row of unique.values()) {
+        const result = await Model.updateOne(
+          { _id: row._id, version: row.version, status },
+          { $inc: { version: 1 } },
+          { session },
+        );
+        if (result.modifiedCount !== 1)
+          throw new HttpError(409, 'stale_content', 'Quyết định duyệt hoặc quyền đã thay đổi.');
+      }
+    }
+    const now = new Date();
+    const from = chapter.status;
+    const previousPublishedRevisionId = chapter.publishedRevisionId
+      ? String(chapter.publishedRevisionId)
+      : null;
+    chapter.title = snapshot.revision.content.title;
+    chapter.status = 'published';
+    chapter.publishedRevisionId = snapshot.revision._id;
+    chapter.currentRevisionId = snapshot.revision._id;
+    chapter.draftRevisionId = undefined;
+    chapter.firstReleasedAt = chapter.firstReleasedAt ?? now;
+    chapter.publishedAt = chapter.publishedAt ?? now;
+    chapter.publicationTransition = {
+      actorAccountId: account._id,
+      occurredAt: now,
+      from,
+      to: 'published',
+      result: 'author-chapter-published',
+    };
+    await chapter.save({ session });
+    await AuditEvent.create(
+      [
+        {
+          actorType: 'account',
+          actorId: account._id,
+          action: 'chapter.published',
+          targetType: 'Chapter',
+          targetId: chapter._id,
+          targetVersion: chapter.version,
+          result: 'accepted',
+          occurredAt: now,
+          dataDigest: digest({
+            revisionId: input.revisionId,
+            submissionId: input.submissionId,
+            packageDigest: snapshot.revision.packageDigest,
+            previousPublishedRevisionId,
+          }),
+        },
+      ],
+      { session },
+    );
+    return {
+      id: String(chapter._id),
+      status: 'published',
+      version: chapter.version,
+      replayed: false,
+    };
+  });
+}

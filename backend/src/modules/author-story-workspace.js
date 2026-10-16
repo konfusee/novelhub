@@ -62,6 +62,15 @@ export async function authorStoryWorkspace(account, storyId) {
       'chapterId storyId authorAccountId contentType content formatVersion status immutableAt',
     )
     .lean();
+  const approvedChapters = await PublicationSubmission.find({
+    storyId: story._id,
+    chapterId: { $ne: null },
+    revisionId: { $in: revisionIds },
+    authorAccountId: account._id,
+    status: 'approved',
+  })
+    .select('chapterId revisionId')
+    .lean();
   const rows = chapters.map((chapter) => {
     const revisionId =
       chapter.draftRevisionId ?? chapter.currentRevisionId ?? chapter.publishedRevisionId;
@@ -81,6 +90,15 @@ export async function authorStoryWorkspace(account, storyId) {
       title: chapter.title,
       number: chapter.orderKey,
       status: chapter.status,
+      canRelease: Boolean(
+        !story.authoringFrozen &&
+        story.publicationStatus === 'published' &&
+        ['approved', 'published'].includes(chapter.status) &&
+        String(revisionId) !== String(chapter.publishedRevisionId) &&
+        approvedChapters.some(
+          (item) => item.chapterId.equals(chapter._id) && item.revisionId.equals(revisionId),
+        ),
+      ),
       words,
       reads: views.find((item) => item._id?.equals(chapter._id))?.count ?? 0,
       updatedAt: chapter.updatedAt,

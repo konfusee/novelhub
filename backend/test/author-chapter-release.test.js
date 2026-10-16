@@ -1,0 +1,362 @@
+import request from 'supertest';
+import { afterEach, expect, it, vi } from 'vitest';
+import { createApp } from '../src/app.js';
+import {
+  AuditEvent,
+  Category,
+  Chapter,
+  ContentRevision,
+  EvidenceBatch,
+  PublicationSubmission,
+  RightsDeclaration,
+  Story,
+} from '../src/models/index.js';
+import { authenticatedAccount } from './fixtures/accounts.js';
+import { testConfig } from './config.js';
+import { useTestDatabase } from './db.js';
+useTestDatabase();
+afterEach(() => vi.restoreAllMocks());
+const origin = 'http://localhost:5173';
+const app = createApp(testConfig({ cookieName: 'novelhub_session', corsOrigin: origin }));
+const write = (cookie, url, body, method = 'post') =>
+  request(app)[method](url).set('Cookie', cookie).set('Origin', origin).send(body);
+const get = (cookie, url) => request(app).get(url).set('Cookie', cookie);
+
+// Human decisions are isolated fixtures; author endpoints never grant approval.
+async function approve(sent) {
+  const submission = await PublicationSubmission.findById(sent.body.submission.id);
+  submission.status = 'approved';
+  await submission.save();
+  const revision = await ContentRevision.findById(submission.revisionId);
+  revision.status = 'approved';
+  await revision.save();
+  const batch = await EvidenceBatch.findById(submission.currentEvidenceBatchId);
+  batch.status = 'available-for-human-review';
+  batch.stage = 'llm';
+  await batch.save();
+  const Model = submission.chapterId ? Chapter : Story;
+  const entity = await Model.findById(submission.chapterId ?? submission.storyId);
+  if (submission.chapterId) entity.status = 'approved';
+  else {
+    entity.publicationStatus = 'approved';
+    entity.authoringFrozen = false;
+  }
+  await entity.save();
+  return { submission, revision, batch, entity };
+}
+async function fixture({ rich = false, preceding = false } = {}) {
+  const author = await authenticatedAccount('author');
+  const cookie = author.cookie;
+  const category = await Category.create({
+    name: 'Kỳ ảo',
+    normalizedName: 'ky ao',
+    createdBy: author.account._id,
+  });
+  const created = await write(cookie, '/api/author/stories', {
+    title: 'Truyện công khai',
+    description: 'Mô tả truyện thật.',
+    categoryIds: [String(category._id)],
+  });
+  const storyId = created.body.story.id;
+  const prep = (await get(cookie, `/api/author/submissions/prepare?storyId=${storyId}`)).body;
+  const sent = await write(cookie, '/api/author/submissions', {
+    storyId,
+    revisionId: prep.target.revisionId,
+    expectedVersion: prep.target.version,
+    rights: { asserted: true, basis: 'original', sourceLicenceNote: '' },
+  });
+  expect(sent.status).toBe(201);
+  const parent = await approve(sent);
+  const released = await write(cookie, `/api/author/stories/${storyId}/release`, {
+    revisionId: String(parent.revision._id),
+    submissionId: String(parent.submission._id),
+    expectedVersion: parent.entity.version,
+  });
+  expect(released.status).toBe(201);
+  let earlier;
+  if (preceding)
+    earlier = (
+      await write(cookie, `/api/author/stories/${storyId}/chapters`, {
+        title: 'Chương trước',
+        paragraphs: ['Nội dung trước.'],
+      })
+    ).body.chapter;
+  const chapter = (
+    await write(cookie, `/api/author/stories/${storyId}/chapters`, {
+      title: 'Chương được duyệt',
+      paragraphs: ['Nội dung xuất bản thật.'],
+    })
+  ).body.chapter;
+  const chapterId = chapter.id;
+  if (rich)
+    expect(
+      (
+        await write(
+          cookie,
+          `/api/author/stories/${storyId}/chapters/${chapterId}`,
+          {
+            expectedVersion: chapter.version,
+            document: {
+              title: 'Chương được duyệt',
+              blocks: [
+                { type: 'paragraph', inlines: [{ text: 'Nội dung in đậm.', marks: ['bold'] }] },
+              ],
+            },
+          },
+          'put',
+        )
+      ).status,
+    ).toBe(200);
+  const prepared = (
+    await get(cookie, `/api/author/submissions/prepare?storyId=${storyId}&chapterId=${chapterId}`)
+  ).body;
+  const chapterSent = await write(cookie, '/api/author/submissions', {
+    storyId,
+    chapterId,
+    revisionId: prepared.target.revisionId,
+    expectedVersion: prepared.target.version,
+  });
+  expect(chapterSent.status).toBe(201);
+  const approvedChapter = await approve(chapterSent);
+  const endpoint = `/api/author/stories/${storyId}/chapters/${chapterId}/release`;
+  const prepare = () => get(cookie, endpoint);
+  const target = (await prepare()).body.target;
+  const body = {
+    revisionId: target.revisionId,
+    submissionId: target.submissionId,
+    expectedVersion: target.version,
+    expectedStoryVersion: target.storyVersion,
+  };
+  return {
+    author,
+    cookie,
+    storyId,
+    chapterId,
+    earlier,
+    parent,
+    ...approvedChapter,
+    endpoint,
+    prepare,
+    body,
+  };
+}
+it.each([false, true])(
+  'publishes the exact approved free chapter (rich=%s) to the real reader API',
+  async (rich) => {
+    const f = await fixture({ rich });
+    const publicUrl = `/api/catalog/stories/${f.storyId}/chapters/${f.chapterId}`;
+    expect((await request(app).get(publicUrl)).status).toBe(404);
+    expect((await f.prepare()).body.ready).toBe(true);
+    expect((await write(f.cookie, f.endpoint, f.body)).status).toBe(201);
+    const read = await request(app).get(publicUrl);
+    expect(read.status).toBe(200);
+    expect(read.body.chapter.revisionId).toBe(f.body.revisionId);
+    expect(read.body.chapter.blocks).toEqual(
+      rich
+        ? [{ type: 'paragraph', inlines: [{ text: 'Nội dung in đậm.', marks: ['bold'] }] }]
+        : [{ type: 'paragraph', text: 'Nội dung xuất bản thật.' }],
+    );
+    const chapter = await Chapter.findById(f.chapterId);
+    expect(chapter.firstReleasedAt).toBeInstanceOf(Date);
+    expect(chapter.draftRevisionId).toBeUndefined();
+    expect(
+      (await request(app).get(`/api/catalog/stories/${f.storyId}`)).body.chapters,
+    ).toHaveLength(1);
+  },
+);
+it('serializes concurrent replay without changing first release, version or duplicating audit', async () => {
+  const f = await fixture();
+  const results = await Promise.all([
+    write(f.cookie, f.endpoint, f.body),
+    write(f.cookie, f.endpoint, f.body),
+  ]);
+  expect(results.map((r) => r.status).sort()).toEqual([200, 201]);
+  const before = await Chapter.findById(f.chapterId);
+  expect((await write(f.cookie, f.endpoint, f.body)).body.chapter.replayed).toBe(true);
+  const after = await Chapter.findById(f.chapterId);
+  expect(after.firstReleasedAt).toEqual(before.firstReleasedAt);
+  expect(after.version).toBe(before.version);
+  expect(await AuditEvent.countDocuments({ action: 'chapter.published' })).toBe(1);
+});
+it('blocks an unreleased earlier chapter including archived drafts; skips only deleted drafts', async () => {
+  const f = await fixture({ preceding: true });
+  expect((await f.prepare()).body.checks.find((c) => c.code === 'order').ok).toBe(false);
+  expect((await write(f.cookie, f.endpoint, f.body)).status).toBe(409);
+  const earlier = await Chapter.findById(f.earlier.id);
+  earlier.status = 'archived';
+  await earlier.save();
+  expect((await write(f.cookie, f.endpoint, f.body)).status).toBe(409);
+  earlier.publicationTransition = { result: 'author-draft-deleted' };
+  await earlier.save();
+  expect((await write(f.cookie, f.endpoint, f.body)).status).toBe(201);
+});
+it('allows an earlier previously released chapter even when unpublished', async () => {
+  const f = await fixture({ preceding: true });
+  const earlier = await Chapter.findById(f.earlier.id);
+  earlier.firstReleasedAt = new Date('2026-01-01');
+  earlier.status = 'unpublished';
+  await earlier.save();
+  expect((await write(f.cookie, f.endpoint, f.body)).status).toBe(201);
+});
+it.each(['pending', 'embedding-complete', 'discovery-complete', 'llm-complete'])(
+  'blocks incomplete %s evidence despite an inconsistent approval fixture',
+  async (status) => {
+    const f = await fixture();
+    f.batch.status = status;
+    await f.batch.save();
+    expect((await write(f.cookie, f.endpoint, f.body)).body.error.code).toBe('release_not_ready');
+  },
+);
+it('does not convert early-access content to free, including expired early access', async () => {
+  const f = await fixture();
+  f.entity.earlyAccess = {
+    enabled: true,
+    coinPrice: 10,
+    durationDays: 1,
+    endsAt: new Date('2020-01-01'),
+  };
+  await f.entity.save();
+  f.body.expectedVersion = f.entity.version;
+  expect((await f.prepare()).body.checks.find((c) => c.code === 'free').ok).toBe(false);
+  expect((await write(f.cookie, f.endpoint, f.body)).status).toBe(409);
+  expect((await Chapter.findById(f.chapterId)).earlyAccess.coinPrice).toBe(10);
+});
+it('rejects stale parent/chapter versions and client-supplied approval or price', async () => {
+  const f = await fixture();
+  for (const extra of [{ expectedVersion: 999 }, { expectedStoryVersion: 999 }])
+    expect((await write(f.cookie, f.endpoint, { ...f.body, ...extra })).status).toBe(409);
+  for (const extra of [{ status: 'approved' }, { earlyAccess: { enabled: false } }])
+    expect((await write(f.cookie, f.endpoint, { ...f.body, ...extra })).status).toBe(400);
+});
+it('enforces authentication, author role, ownership and chapter/story binding', async () => {
+  const f = await fixture();
+  expect((await request(app).get(f.endpoint)).status).toBe(401);
+  for (const role of ['reader', 'admin', 'moderator']) {
+    const other = await authenticatedAccount(role);
+    expect((await get(other.cookie, f.endpoint)).status).toBe(403);
+  }
+  const other = await authenticatedAccount('author');
+  expect((await get(other.cookie, f.endpoint)).status).toBe(404);
+  expect((await write(other.cookie, f.endpoint, f.body)).status).toBe(404);
+  expect(
+    (await get(f.cookie, f.endpoint.replace(f.chapterId, String(other.account._id)))).status,
+  ).toBe(404);
+});
+it.each(['parent', 'frozen', 'rights', 'approval', 'digest'])(
+  'blocks a changed %s condition before publication',
+  async (condition) => {
+    const f = await fixture();
+    if (condition === 'parent' || condition === 'frozen') {
+      const story = await Story.findById(f.storyId);
+      if (condition === 'parent') story.publicationStatus = 'unpublished';
+      else story.authoringFrozen = true;
+      await story.save();
+      f.body.expectedStoryVersion = story.version;
+    } else if (condition === 'rights') {
+      const rights = await RightsDeclaration.findById(f.revision.rightsDeclarationId);
+      rights.status = 'superseded';
+      await rights.save();
+    } else if (condition === 'approval') {
+      f.submission.status = 'rejected';
+      await f.submission.save();
+    } else
+      await ContentRevision.collection.updateOne(
+        { _id: f.revision._id },
+        { $set: { 'content.title': 'Bị thay ngoài luồng' } },
+      );
+    expect((await write(f.cookie, f.endpoint, f.body)).status).toBe(409);
+    expect((await Chapter.findById(f.chapterId)).publishedRevisionId).toBeUndefined();
+  },
+);
+it('rolls back publication and declaration/approval pins when audit fails', async () => {
+  const f = await fixture();
+  const rights = await RightsDeclaration.findById(f.revision.rightsDeclarationId);
+  const sub = await PublicationSubmission.findById(f.submission._id);
+  vi.spyOn(AuditEvent, 'create').mockRejectedValueOnce(new Error('Injected audit failure'));
+  expect((await write(f.cookie, f.endpoint, f.body)).status).toBe(500);
+  const chapter = await Chapter.findById(f.chapterId);
+  expect(chapter.firstReleasedAt).toBeUndefined();
+  expect(chapter.publishedRevisionId).toBeUndefined();
+  expect(chapter.version).toBe(f.body.expectedVersion);
+  expect((await Story.findById(f.storyId)).version).toBe(f.body.expectedStoryVersion);
+  expect((await RightsDeclaration.findById(rights._id)).version).toBe(rights.version);
+  expect((await PublicationSubmission.findById(sub._id)).version).toBe(sub.version);
+});
+it('allows a human-approved terminal failure without rewriting the failed evidence', async () => {
+  const f = await fixture();
+  f.batch.status = 'failed';
+  f.batch.failedStage = 'comparison';
+  await f.batch.save();
+  expect((await write(f.cookie, f.endpoint, f.body)).status).toBe(201);
+  expect((await EvidenceBatch.findById(f.batch._id)).status).toBe('failed');
+});
+it('rejects mismatched evidence digests and a ready batch at an unfinished stage', async () => {
+  const f = await fixture();
+  f.batch.stage = 'embedding';
+  await f.batch.save();
+  expect((await f.prepare()).body.checks.find((c) => c.code === 'evidence').ok).toBe(false);
+  expect((await write(f.cookie, f.endpoint, f.body)).status).toBe(409);
+  f.batch.stage = 'llm';
+  f.batch.packageDigest = '0'.repeat(64);
+  await f.batch.save();
+  expect((await write(f.cookie, f.endpoint, f.body)).status).toBe(409);
+});
+it('preserves the first release time when a separately approved replacement is published', async () => {
+  const f = await fixture();
+  expect((await write(f.cookie, f.endpoint, f.body)).status).toBe(201);
+  const first = await Chapter.findById(f.chapterId);
+  // Revision creation is normally driven by the revise/resubmit workflow.
+  const source = f.revision.toObject();
+  for (const key of [
+    '_id',
+    'createdAt',
+    'updatedAt',
+    'version',
+    'immutableAt',
+    'packageDigest',
+    'rightsDigest',
+    'mediaDigest',
+    'rightsDeclarationId',
+  ])
+    delete source[key];
+  source.revisionNumber += 1;
+  source.status = 'editable';
+  source.content = {
+    title: 'Bản thay thế',
+    blocks: [{ type: 'paragraph', text: 'Nội dung thay thế.' }],
+  };
+  const draft = await ContentRevision.create(source);
+  first.draftRevisionId = draft._id;
+  first.currentRevisionId = draft._id;
+  first.status = 'draft';
+  await first.save();
+  const url = `/api/catalog/stories/${f.storyId}/chapters/${f.chapterId}`;
+  expect(String(first.publishedRevisionId)).toBe(f.body.revisionId);
+  const prepared = (
+    await get(
+      f.cookie,
+      `/api/author/submissions/prepare?storyId=${f.storyId}&chapterId=${f.chapterId}`,
+    )
+  ).body;
+  const sent = await write(f.cookie, '/api/author/submissions', {
+    storyId: f.storyId,
+    chapterId: f.chapterId,
+    revisionId: String(draft._id),
+    expectedVersion: prepared.target.version,
+  });
+  expect(sent.status).toBe(201);
+  const replacement = await approve(sent);
+  const candidate = (await f.prepare()).body.target;
+  expect(
+    (
+      await write(f.cookie, f.endpoint, {
+        revisionId: String(replacement.revision._id),
+        submissionId: String(replacement.submission._id),
+        expectedVersion: candidate.version,
+        expectedStoryVersion: candidate.storyVersion,
+      })
+    ).status,
+  ).toBe(201);
+  expect((await Chapter.findById(f.chapterId)).firstReleasedAt).toEqual(first.firstReleasedAt);
+  expect((await request(app).get(url)).body.chapter.title).toBe('Bản thay thế');
+});
