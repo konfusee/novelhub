@@ -30,4 +30,4 @@ Truyện có metadata công khai nhưng chưa có chương vẫn giữ bố cụ
 - 71 test frontend liên quan bao phủ xác nhận thật, failed gate/stale/error, cờ workspace, editor/preview và trạng thái trang độc giả chưa có chương. Một kiểm thử editor được sửa để đợi DOM rich-text hoàn tất thay vì đọc trước hiệu ứng khởi tạo.
 - Browser dùng MongoDB tạm: xác nhận phát hành, publishedRevisionId khớp gói và catalog trả đúng metadata với 0 chương. Đã kiểm tra modal ở 390/768/1024px và desktop, sáng/tối. Quyết định duyệt và terminal evidence trong fixture không phải API Moderator hoặc xử lý AI thật.
 
-Còn phát hành chương theo thứ tự, lập lịch/due job, early access, unpublish/republish, bìa/banner, ảnh công khai và tích hợp kiểm duyệt/bằng chứng. Không đánh dấu toàn bộ use case phát hành hoàn thiện từ chặng metadata này.
+Phát hành chương miễn phí theo thứ tự và phục vụ ảnh minh họa đã được bổ sung; xem `author-chapter-release.md` và `author-published-images.md`. Còn lập lịch/due job, early access, unpublish/republish, bìa/banner và tích hợp kiểm duyệt/bằng chứng. Các use case phát hành vẫn Một phần.

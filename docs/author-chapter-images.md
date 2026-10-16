@@ -42,4 +42,4 @@ Checklist chương có ảnh dẫn đúng về editor có định dạng để x
 - Browser gửi chương có ảnh qua backend thật/MongoDB tạm: gói validated, một manifest, khai báo quyền riêng, EvidenceBatch pending; mở lại trang vẫn hiển thị đúng giấy phép đã lưu và khóa sửa. Biểu mẫu kiểm tra sáng/tối, 390/768/1024px và desktop.
 - Bổ sung test snapshot/digest, thứ tự và khử trùng ảnh, giữ manifest lịch sử, xóa manifest khi bỏ hết ảnh và rollback khi MIME metadata không đúng định dạng đã chuẩn hóa.
 
-AUT-04/AUT-06 vẫn Một phần do còn gói xuất bản có media.
+Gói chương có ảnh đã được nối tới phát hành miễn phí và trình đọc công khai, giữ manifest/checksum theo revision; xem `author-published-images.md`. AUT-04/AUT-06 vẫn Một phần do còn bìa/banner và vòng đời media xuất bản đầy đủ.
