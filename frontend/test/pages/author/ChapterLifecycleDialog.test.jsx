@@ -69,3 +69,22 @@ it('keeps the dialog on errors and requires explicit refresh for a stale version
   fireEvent.click(reload);
   expect(callbacks.onReload).toHaveBeenCalledOnce();
 });
+it('confirms unpublishing with a clear preservation notice and the actual unpublished result', async () => {
+  mocks.apiRequest.mockResolvedValue({ chapter: { id: 'chapter', status: 'unpublished' } });
+  const callbacks = view('unpublish');
+  expect(screen.getByText(/không hoàn xu hay thay đổi quyền đọc đã mua/)).toBeTruthy();
+  expect(mocks.apiRequest).not.toHaveBeenCalled();
+  fireEvent.click(screen.getByRole('button', { name: 'Xác nhận', exact: true }));
+  await waitFor(() => expect(callbacks.onSaved).toHaveBeenCalledOnce());
+  expect(mocks.apiRequest).toHaveBeenCalledWith(
+    '/author/stories/story/chapters/chapter/lifecycle',
+    { method: 'POST', body: { action: 'unpublish', expectedVersion: 3, expectedStoryVersion: 8 } },
+  );
+});
+it('does not claim unpublishing when the server returns an unexpected state', async () => {
+  mocks.apiRequest.mockResolvedValue({ chapter: { id: 'chapter', status: 'published' } });
+  const callbacks = view('unpublish');
+  fireEvent.click(screen.getByRole('button', { name: 'Xác nhận', exact: true }));
+  await screen.findByRole('alert');
+  expect(callbacks.onSaved).not.toHaveBeenCalled();
+});

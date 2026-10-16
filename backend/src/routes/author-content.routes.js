@@ -112,7 +112,7 @@ export function createAuthorContentRouter(config) {
       const input = parse(
         z
           .object({
-            action: z.enum(['archive', 'restore', 'delete']),
+            action: z.enum(['archive', 'restore', 'delete', 'unpublish']),
             expectedVersion: z.number().int().min(0),
             expectedStoryVersion: z.number().int().min(0),
           })

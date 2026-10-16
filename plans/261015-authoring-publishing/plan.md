@@ -277,3 +277,5 @@ Một task chỉ Done khi API lưu/đọc thật, UI phản ánh kết quả th�
 - 17/10/2026: phản hồi chương/ảnh, kể cả lỗi 403/404, đặt private/no-store và Vary Cookie trước kiểm tra quyền; tránh cache lỗi cũ sau phát hành hoặc thay đổi quyền đọc. Giữ nguyên điều kiện công khai và quyền đọc sớm.
 
 - 17/10/2026: đối chiếu requirements-baseline/decision-log và chặn Guest đọc trực tiếp văn bản/ảnh chương sau chương 1; cần session hợp lệ, không bỏ qua unlock. Preview trang chủ chỉ lấy chương orderKey=1, không rơi sang chương sau khi chương đầu bị khóa/gỡ. UI Reader đang có sẵn yêu cầu đăng nhập nên giữ nguyên bố cục.
+
+- 17/10/2026: gỡ xuất bản chương theo quyền Author hiện hành, version truyện/chương và audit atomic. Giữ revision/lần phát hành đầu/đọc sớm/unlock, không hoàn xu; không cho trực tiếp republish. UI tái dùng xác nhận, thêm bộ lọc đã gỡ và đọc trạng thái thật. 39 backend, 21 UI liên quan, lint/i18n/icons/build và browser sáng/tối/390-768-1024-desktop đạt trên MongoDB thử. Xem docs/author-chapter-unpublish.md; UC-AUT-03/10 vẫn Một phần.

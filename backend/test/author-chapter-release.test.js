@@ -10,6 +10,7 @@ import {
   PublicationSubmission,
   RightsDeclaration,
   Story,
+  UnlockEntitlement,
 } from '../src/models/index.js';
 import { authenticatedAccount } from './fixtures/accounts.js';
 import { testConfig } from './config.js';
@@ -359,4 +360,120 @@ it('preserves the first release time when a separately approved replacement is p
   ).toBe(201);
   expect((await Chapter.findById(f.chapterId)).firstReleasedAt).toEqual(first.firstReleasedAt);
   expect((await request(app).get(url)).body.chapter.title).toBe('Bản thay thế');
+});
+
+async function publishedFixture() {
+  const f = await fixture();
+  expect((await write(f.cookie, f.endpoint, f.body)).status).toBe(201);
+  const workspace = (await get(f.cookie, `/api/author/stories/${f.storyId}/workspace`)).body;
+  const row = workspace.chapters.find((chapter) => chapter.id === f.chapterId);
+  expect(row.canUnpublish).toBe(true);
+  return {
+    ...f,
+    lifecycleUrl: `/api/author/stories/${f.storyId}/chapters/${f.chapterId}/lifecycle`,
+    lifecycleBody: {
+      action: 'unpublish',
+      expectedVersion: row.version,
+      expectedStoryVersion: workspace.story.version,
+    },
+  };
+}
+it('unpublishes an owned chapter while retaining its snapshot and first-release history', async () => {
+  const f = await publishedFixture();
+  const before = await Chapter.findById(f.chapterId);
+  expect((await write(f.cookie, f.lifecycleUrl, f.lifecycleBody)).status).toBe(200);
+  const after = await Chapter.findById(f.chapterId);
+  expect(after.status).toBe('unpublished');
+  for (const field of [
+    'publishedRevisionId',
+    'currentRevisionId',
+    'firstReleasedAt',
+    'publishedAt',
+    'orderKey',
+  ])
+    expect(after[field]).toEqual(before[field]);
+  expect(after.publicationTransition.result).toBe('author-chapter-unpublished');
+  expect(
+    (await request(app).get(`/api/catalog/stories/${f.storyId}/chapters/${f.chapterId}`)).status,
+  ).toBe(404);
+  const workspace = (await get(f.cookie, `/api/author/stories/${f.storyId}/workspace`)).body;
+  expect(workspace.chapters[0].canUnpublish).toBe(false);
+  expect(workspace.stats.publishedChapters).toBe(0);
+  expect(await ContentRevision.countDocuments({ _id: before.publishedRevisionId })).toBe(1);
+  expect(await AuditEvent.countDocuments({ action: 'chapter.unpublished' })).toBe(1);
+  expect((await f.prepare()).body.ready).toBe(false);
+});
+it('retains paid entitlements and the original early-access window without a financial write', async () => {
+  const f = await publishedFixture();
+  const chapter = await Chapter.findById(f.chapterId);
+  const endsAt = new Date(Date.now() + 86400000);
+  chapter.earlyAccess = { enabled: true, coinPrice: 10, durationDays: 1, endsAt };
+  await chapter.save();
+  f.lifecycleBody.expectedVersion = chapter.version;
+  const reader = await authenticatedAccount();
+  const unlock = await UnlockEntitlement.create({
+    accountId: reader.account._id,
+    storyId: f.storyId,
+    chapterId: f.chapterId,
+    publishedRevisionId: chapter.publishedRevisionId,
+    status: 'active',
+    purchasedAt: new Date(),
+    expiresAt: endsAt,
+    priceCoins: 10,
+  });
+  expect((await write(f.cookie, f.lifecycleUrl, f.lifecycleBody)).status).toBe(200);
+  expect((await UnlockEntitlement.findById(unlock._id)).toObject()).toEqual(unlock.toObject());
+  expect((await Chapter.findById(f.chapterId)).earlyAccess.toObject()).toEqual(
+    chapter.earlyAccess.toObject(),
+  );
+  expect(
+    (await get(reader.cookie, `/api/catalog/stories/${f.storyId}/chapters/${f.chapterId}`)).status,
+  ).toBe(404);
+});
+it('allows only one concurrent unpublish and rejects stale or forged lifecycle input', async () => {
+  const f = await publishedFixture();
+  expect(
+    (await write(f.cookie, f.lifecycleUrl, { ...f.lifecycleBody, expectedStoryVersion: 999 }))
+      .status,
+  ).toBe(409);
+  expect(
+    (await write(f.cookie, f.lifecycleUrl, { ...f.lifecycleBody, expectedVersion: 999 })).status,
+  ).toBe(409);
+  expect(
+    (await write(f.cookie, f.lifecycleUrl, { ...f.lifecycleBody, status: 'unpublished' })).status,
+  ).toBe(400);
+  expect(
+    (await write(f.cookie, f.lifecycleUrl, { ...f.lifecycleBody, action: 'republish' })).status,
+  ).toBe(400);
+  const results = await Promise.all([
+    write(f.cookie, f.lifecycleUrl, f.lifecycleBody),
+    write(f.cookie, f.lifecycleUrl, f.lifecycleBody),
+  ]);
+  expect(results.map((response) => response.status).sort()).toEqual([200, 409]);
+  expect(await AuditEvent.countDocuments({ action: 'chapter.unpublished' })).toBe(1);
+});
+it('blocks unpublishing by other authors or non-authors and while the parent is frozen', async () => {
+  const f = await publishedFixture();
+  const other = await authenticatedAccount('author');
+  expect((await write(other.cookie, f.lifecycleUrl, f.lifecycleBody)).status).toBe(404);
+  for (const role of ['reader', 'admin', 'moderator']) {
+    const account = await authenticatedAccount(role);
+    expect((await write(account.cookie, f.lifecycleUrl, f.lifecycleBody)).status).toBe(403);
+  }
+  const story = await Story.findById(f.storyId);
+  story.authoringFrozen = true;
+  await story.save();
+  f.lifecycleBody.expectedStoryVersion = story.version;
+  expect((await write(f.cookie, f.lifecycleUrl, f.lifecycleBody)).status).toBe(409);
+  expect((await Chapter.findById(f.chapterId)).status).toBe('published');
+});
+it('rolls back chapter and parent versions when an unpublish audit fails', async () => {
+  const f = await publishedFixture();
+  vi.spyOn(AuditEvent, 'create').mockRejectedValueOnce(new Error('Injected audit failure'));
+  expect((await write(f.cookie, f.lifecycleUrl, f.lifecycleBody)).status).toBe(500);
+  const chapter = await Chapter.findById(f.chapterId);
+  expect(chapter.status).toBe('published');
+  expect(chapter.version).toBe(f.lifecycleBody.expectedVersion);
+  expect((await Story.findById(f.storyId)).version).toBe(f.lifecycleBody.expectedStoryVersion);
+  expect(await AuditEvent.countDocuments({ action: 'chapter.unpublished' })).toBe(0);
 });

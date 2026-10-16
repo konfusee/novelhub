@@ -376,3 +376,35 @@ it('opens chapter release using only the server eligibility hint and refreshes a
     'Đã xuất bản',
   );
 });
+it('unpublishes through server eligibility, refreshes the row and retains it in the unpublished filter', async () => {
+  let unpublished = false;
+  mocks.apiRequest.mockImplementation(async (_path, options) => {
+    if (options?.method === 'POST') {
+      unpublished = true;
+      return { chapter: { id: 'seven', status: 'unpublished' } };
+    }
+    return {
+      ...workspace,
+      chapters: [
+        {
+          ...workspace.chapters[0],
+          status: unpublished ? 'unpublished' : 'published',
+          canUnpublish: !unpublished,
+          version: 3,
+        },
+      ],
+    };
+  });
+  view();
+  fireEvent.click(await screen.findByRole('button', { name: 'Gỡ xuất bản chương', exact: true }));
+  expect(unpublished).toBe(false);
+  fireEvent.click(screen.getByRole('button', { name: 'Xác nhận', exact: true }));
+  await screen.findByText('Đã gỡ xuất bản chương. Nội dung và lịch sử vẫn được giữ lại.');
+  await waitFor(() =>
+    expect(screen.queryByRole('button', { name: 'Gỡ xuất bản chương', exact: true })).toBeNull(),
+  );
+  fireEvent.click(screen.getByRole('button', { name: 'Đã gỡ xuất bản', exact: true }));
+  expect(screen.getByRole('row', { name: /Chương 7: Chương bảy thật/ }).textContent).toContain(
+    'Đã gỡ xuất bản',
+  );
+});
