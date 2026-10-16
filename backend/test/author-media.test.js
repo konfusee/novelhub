@@ -259,3 +259,11 @@ it('blocks regrouping referenced media and rolls back when audit cannot be writt
   expect(unchanged.storyId).toBeUndefined();
   expect(unchanged.version).toBe(0);
 });
+it('preserves whole Unicode characters in long image names and reads the stored image back', async () => {
+  const author = await authenticatedAccount('author');
+  const name = `${'a'.repeat(99)}🌿.png`;
+  const response = await upload(author.cookie, { name });
+  expect(response.status).toBe(201);
+  expect(response.body.asset.name).toBe(`${'a'.repeat(99)}🌿.webp`);
+  expect((await get(author.cookie, `/api${response.body.asset.url}`)).status).toBe(200);
+});
