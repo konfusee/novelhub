@@ -254,6 +254,7 @@ Keep mock data structured and separate from JSX when it represents backend entit
 
 ## 20. JavaScript and Code Style
 
+- MUST keep unit/component tests in `frontend/test`, mirroring the relevant `src` subdirectories. Do not colocate `.test.*` or `.spec.*` files with application code in `src`. Import and mock the actual modules under `src`; use `npm test -w frontend -- test/...` for a focused run.
 - This is a JavaScript/JSX project. Do not add TypeScript piecemeal without a system-level migration proposal.
 - Use function components and hooks; hooks must follow React hook rules.
 - Use PascalCase component files and components, camelCase functions/variables, and UPPER_SNAKE_CASE for stable storage keys/constants when appropriate.
