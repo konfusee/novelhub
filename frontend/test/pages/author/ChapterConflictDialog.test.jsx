@@ -12,7 +12,7 @@ const latest = {
   paragraphs: ['Thay đổi từ thẻ khác.'],
   canEdit: true,
 };
-function view() {
+function view(richDocument) {
   const callbacks = { onClose: vi.fn(), onApply: vi.fn() };
   render(
     <LocaleProvider>
@@ -20,6 +20,7 @@ function view() {
         chapter={{ id: 'chapter', storyId: 'story' }}
         title="Tiêu đề đang viết"
         body="Nội dung chưa lưu."
+        richDocument={richDocument}
         {...callbacks}
       />
     </LocaleProvider>,
@@ -29,6 +30,30 @@ function view() {
 afterEach(() => {
   cleanup();
   vi.resetAllMocks();
+});
+it('preserves structured local edits and allows explicit adoption of the structured server version', async () => {
+  const local = {
+    title: 'Đang viết',
+    blocks: [{ type: 'quote', inlines: [{ text: 'Bản tôi', marks: ['italic'] }] }],
+  };
+  const remote = {
+    title: 'Bản mới',
+    blocks: [{ type: 'heading', level: 2, inlines: [{ text: 'Bản máy chủ', marks: ['bold'] }] }],
+  };
+  mocks.apiRequest.mockResolvedValue({ chapter: { ...latest, document: remote } });
+  const callbacks = view(local);
+  const input = await screen.findByRole('textbox', { name: 'Nội dung sau khi gộp' });
+  expect(input.querySelector('em').textContent).toBe('Bản tôi');
+  const checked = screen.getByRole('checkbox');
+  fireEvent.click(checked);
+  fireEvent.click(screen.getByRole('button', { name: 'Đưa bản đã gộp về editor' }));
+  expect(callbacks.onApply.mock.calls[0][0].document.blocks).toEqual(local.blocks);
+  fireEvent.click(screen.getByRole('button', { name: 'Dùng bản mới làm bản gộp' }));
+  expect(input.querySelector('h2 strong').textContent).toBe('Bản máy chủ');
+  expect(screen.getByRole('button', { name: 'Đưa bản đã gộp về editor' }).disabled).toBe(true);
+  fireEvent.click(checked);
+  fireEvent.click(screen.getByRole('button', { name: 'Đưa bản đã gộp về editor' }));
+  expect(callbacks.onApply.mock.calls[1][0]).toMatchObject({ document: remote, version: 12 });
 });
 it('compares full text and applies only the reviewed merge with the fetched version, without writing', async () => {
   mocks.apiRequest.mockResolvedValue({ chapter: latest });

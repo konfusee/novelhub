@@ -26,9 +26,9 @@ const chapter = {
 function SubmissionDestination() {
   return <p>submission-destination{useLocation().search}</p>;
 }
-const view = () =>
+const view = (query = '') =>
   render(
-    <MemoryRouter initialEntries={['/author/stories/owned/chapters/seven/edit']}>
+    <MemoryRouter initialEntries={[`/author/stories/owned/chapters/seven/edit${query}`]}>
       <LocaleProvider>
         <Routes>
           <Route path="/author/submissions" element={<SubmissionDestination />} />
@@ -43,6 +43,44 @@ const view = () =>
 afterEach(() => {
   cleanup();
   vi.resetAllMocks();
+});
+it('loads structured editing explicitly, keeps marks when saving and previews the same document', async () => {
+  const document = {
+    title: chapter.title,
+    blocks: [{ type: 'paragraph', inlines: [{ text: 'Nội dung đậm', marks: ['bold'] }] }],
+  };
+  mocks.apiRequest.mockImplementation(async (_path, options) =>
+    options?.method === 'PUT'
+      ? { chapter: { version: 10 } }
+      : { chapter: { ...chapter, document } },
+  );
+  view('?mode=rich');
+  const editor = await screen.findByRole('textbox', { name: 'Nội dung chương có định dạng' });
+  expect(editor.querySelector('strong').textContent).toBe('Nội dung đậm');
+  expect(screen.getByRole('button', { name: 'In đậm', exact: true }).disabled).toBe(false);
+  expect(screen.getByRole('button', { name: 'Hình ảnh', exact: true }).disabled).toBe(true);
+  editor.querySelector('strong').textContent = 'Nội dung đậm vừa sửa';
+  fireEvent.input(editor);
+  fireEvent.click(screen.getByRole('button', { name: 'Lưu', exact: true }));
+  await waitFor(() =>
+    expect(mocks.apiRequest).toHaveBeenCalledWith('/author/stories/owned/chapters/seven', {
+      method: 'PUT',
+      body: {
+        document: {
+          ...document,
+          blocks: [
+            { type: 'paragraph', inlines: [{ text: 'Nội dung đậm vừa sửa', marks: ['bold'] }] },
+          ],
+        },
+        expectedVersion: 9,
+      },
+    }),
+  );
+  fireEvent.click(screen.getByRole('button', { name: 'Xem trước', exact: true }));
+  expect(
+    screen.getByRole('article', { name: 'Nội dung chương xem trước' }).querySelector('strong')
+      .textContent,
+  ).toBe('Nội dung đậm vừa sửa');
 });
 it('keeps unsupported formatting unavailable without inserting rejected Markdown or HTML', async () => {
   mocks.apiRequest.mockResolvedValue({ chapter });
