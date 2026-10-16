@@ -47,6 +47,28 @@ describe('chapter editor round-trip protection', () => {
       { type: 'quote', inlines: [{ text: 'Lời trích dẫn', marks: [] }] },
     ],
   };
+  it('creates a structured chapter in one transaction instead of flattening a duplicate', async () => {
+    const f = await fixture();
+    const base = f.path.slice(0, f.path.lastIndexOf('/'));
+    const created = await write('post', base, f.author.cookie, { document });
+    expect(created.status).toBe(201);
+    const read = await request(app)
+      .get(`${base}/${created.body.chapter.id}?format=rich`)
+      .set('Cookie', f.author.cookie);
+    expect(read.body.chapter.document.blocks[1].inlines[0]).toEqual({
+      text: 'Tiếng Việt 👩‍💻',
+      marks: ['bold', 'italic'],
+    });
+    expect(
+      (
+        await write('post', base, f.author.cookie, {
+          document,
+          paragraphs: ['Không được bỏ định dạng'],
+        })
+      ).status,
+    ).toBe(400);
+    expect(await Chapter.countDocuments({ storyId: f.chapter.storyId })).toBe(2);
+  });
   it('upgrades plain drafts explicitly, stores rich revisions and refuses lossy legacy saves', async () => {
     const f = await fixture();
     const upgraded = await request(app).get(`${f.path}?format=rich`).set('Cookie', f.author.cookie);

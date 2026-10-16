@@ -223,6 +223,21 @@ describe('MongoDB catalogue and author drafts', () => {
     expect((await request(app).get('/api/catalog/home')).body.preview.paragraphs).toEqual([
       'Paid text',
     ]);
+    published.formatVersion = 'blocks-v2';
+    published.content = {
+      title: 'Public chapter',
+      blocks: [
+        { type: 'heading', level: 2, inlines: [{ text: 'Tiêu đề', marks: [] }] },
+        { type: 'paragraph', inlines: [{ text: 'Paid text', marks: ['bold'] }] },
+        { type: 'scene-break' },
+      ],
+    };
+    await published.save();
+    expect((await request(app).get(path)).body.chapter.blocks).toEqual(published.content.blocks);
+    expect((await request(app).get('/api/catalog/home')).body.preview.paragraphs).toEqual([
+      'Tiêu đề',
+      'Paid text',
+    ]);
   });
   it('allows only Admin to create real categories and records an audit event', async () => {
     const admin = await authenticatedAccount('admin');

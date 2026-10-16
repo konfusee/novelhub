@@ -265,52 +265,82 @@ describe('exact owner submission packages', () => {
     ])
       expect(await Model.countDocuments()).toBe(0);
   });
-  it('submits a chapter only under an approved parent with frozen story rights', async () => {
-    const f = await fixture();
-    const created = await write(`/api/author/stories/${f.storyId}/chapters`, f.author.cookie, {
-      title: 'Chương thật',
-      paragraphs: ['Nội dung chương hoàn chỉnh.'],
-    });
-    const chapterId = created.body.chapter.id;
-    const prepare = () =>
-      request(app)
-        .get(`/api/author/submissions/prepare?storyId=${f.storyId}&chapterId=${chapterId}`)
-        .set('Cookie', f.author.cookie);
-    expect((await prepare()).body.checks.find((check) => check.code === 'parent').ok).toBe(false);
-    const story = await Story.findById(f.storyId);
-    const revision = await ContentRevision.findById(story.currentRevisionId);
-    revision.status = 'approved';
-    revision.immutableAt = new Date();
-    await revision.save();
-    const submission = await PublicationSubmission.create({
-      storyId: story._id,
-      revisionId: revision._id,
-      authorAccountId: f.author.account._id,
-      status: 'approved',
-    });
-    await RightsDeclaration.create({
-      storyId: story._id,
-      submissionId: submission._id,
-      revisionId: revision._id,
-      basis: 'original',
-      asserted: true,
-      declaredBy: f.author.account._id,
-      status: 'asserted',
-      immutableAt: new Date(),
-    });
-    story.publicationStatus = 'approved';
-    await story.save();
-    const prepared = (await prepare()).body;
-    expect(prepared.ready).toBe(true);
-    expect(prepared.requiresRights).toBe(false);
-    const body = {
-      storyId: f.storyId,
-      chapterId,
-      revisionId: prepared.target.revisionId,
-      expectedVersion: prepared.target.version,
-    };
-    expect((await write('/api/author/submissions', f.author.cookie, body)).status).toBe(201);
-    expect((await Chapter.findById(chapterId)).status).toBe('submitted');
-    expect(await RightsDeclaration.countDocuments()).toBe(1);
-  });
+  it.each(['blocks-v1', 'blocks-v2'])(
+    'submits %s only under an approved parent with frozen story rights',
+    async (format) => {
+      const f = await fixture();
+      const created = await write(`/api/author/stories/${f.storyId}/chapters`, f.author.cookie, {
+        title: 'Chương thật',
+        paragraphs: ['Nội dung chương hoàn chỉnh.'],
+      });
+      const chapterId = created.body.chapter.id;
+      if (format === 'blocks-v2') {
+        const updated = await write(
+          `/api/author/stories/${f.storyId}/chapters/${chapterId}`,
+          f.author.cookie,
+          {
+            expectedVersion: created.body.chapter.version,
+            document: {
+              title: 'Chương thật',
+              blocks: [
+                { type: 'heading', level: 2, inlines: [{ text: 'Mở đầu', marks: [] }] },
+                {
+                  type: 'paragraph',
+                  inlines: [{ text: 'Nội dung chương hoàn chỉnh.', marks: ['bold', 'italic'] }],
+                },
+                { type: 'scene-break' },
+              ],
+            },
+          },
+          'put',
+        );
+        expect(updated.status).toBe(200);
+      }
+      const prepare = () =>
+        request(app)
+          .get(`/api/author/submissions/prepare?storyId=${f.storyId}&chapterId=${chapterId}`)
+          .set('Cookie', f.author.cookie);
+      expect((await prepare()).body.checks.find((check) => check.code === 'parent').ok).toBe(false);
+      const story = await Story.findById(f.storyId);
+      const revision = await ContentRevision.findById(story.currentRevisionId);
+      revision.status = 'approved';
+      revision.immutableAt = new Date();
+      await revision.save();
+      const submission = await PublicationSubmission.create({
+        storyId: story._id,
+        revisionId: revision._id,
+        authorAccountId: f.author.account._id,
+        status: 'approved',
+      });
+      await RightsDeclaration.create({
+        storyId: story._id,
+        submissionId: submission._id,
+        revisionId: revision._id,
+        basis: 'original',
+        asserted: true,
+        declaredBy: f.author.account._id,
+        status: 'asserted',
+        immutableAt: new Date(),
+      });
+      story.publicationStatus = 'approved';
+      await story.save();
+      const prepared = (await prepare()).body;
+      expect(prepared.ready).toBe(true);
+      expect(prepared.requiresRights).toBe(false);
+      const body = {
+        storyId: f.storyId,
+        chapterId,
+        revisionId: prepared.target.revisionId,
+        expectedVersion: prepared.target.version,
+      };
+      expect((await write('/api/author/submissions', f.author.cookie, body)).status).toBe(201);
+      expect((await Chapter.findById(chapterId)).status).toBe('submitted');
+      const frozen = await ContentRevision.findById(prepared.target.revisionId);
+      expect(frozen.formatVersion).toBe(format);
+      expect(frozen.immutableAt).toBeTruthy();
+      if (format === 'blocks-v2')
+        expect(frozen.content.blocks[1].inlines[0].marks).toEqual(['bold', 'italic']);
+      expect(await RightsDeclaration.countDocuments()).toBe(1);
+    },
+  );
 });
