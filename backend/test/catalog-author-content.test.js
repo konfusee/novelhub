@@ -17,6 +17,65 @@ function write(method, path, cookie, body) {
 }
 
 describe('MongoDB catalogue and author drafts', () => {
+  it('versions category edits without changing the published snapshot and rejects retired categories', async () => {
+    const author = await authenticatedAccount('author');
+    const first = await categoryFor(author.account);
+    const second = await Category.create({
+      name: 'Bí ẩn',
+      normalizedName: 'bí ẩn',
+      createdBy: author.account._id,
+    });
+    const body = {
+      title: 'Truyện thể loại',
+      description: 'Tóm tắt.',
+      categoryIds: [String(first._id)],
+    };
+    const created = await write('post', '/api/author/stories', author.cookie, body);
+    const story = await Story.findById(created.body.story.id);
+    const publicRevision = await ContentRevision.findById(story.currentRevisionId);
+    publicRevision.status = 'approved';
+    publicRevision.immutableAt = new Date();
+    await publicRevision.save();
+    story.publicationStatus = 'published';
+    story.publishedRevisionId = publicRevision._id;
+    await story.save();
+    const path = `/api/author/stories/${story._id}`;
+    const updated = await write('put', path, author.cookie, {
+      title: body.title,
+      description: body.description,
+      categoryIds: [String(second._id)],
+      expectedVersion: story.version,
+    });
+    expect(updated.status).toBe(200);
+    expect(updated.body.story.categoryIds).toEqual([String(second._id)]);
+    const changed = await Story.findById(story._id);
+    expect(String(changed.publishedRevisionId)).toBe(String(publicRevision._id));
+    expect((await ContentRevision.findById(changed.currentRevisionId)).content.categoryIds).toEqual(
+      [String(second._id)],
+    );
+    expect((await ContentRevision.findById(publicRevision._id)).content.categoryIds).toEqual([
+      String(first._id),
+    ]);
+    expect((await request(app).get(`/api/catalog/stories?category=${first._id}`)).body.total).toBe(
+      1,
+    );
+    expect((await request(app).get(`/api/catalog/stories?category=${second._id}`)).body.total).toBe(
+      0,
+    );
+    second.status = 'retired';
+    await second.save();
+    expect(
+      (
+        await write('put', path, author.cookie, {
+          title: body.title,
+          description: body.description,
+          categoryIds: [String(second._id)],
+          expectedVersion: changed.version,
+        })
+      ).status,
+    ).toBe(400);
+    expect(await ContentRevision.countDocuments({ storyId: story._id })).toBe(2);
+  });
   it('returns truly empty collections without demo records', async () => {
     expect((await request(app).get('/api/catalog/stories')).body).toMatchObject({
       items: [],

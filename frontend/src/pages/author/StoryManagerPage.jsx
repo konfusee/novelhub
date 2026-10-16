@@ -22,7 +22,7 @@ import {
   Star,
 } from '../../components/icons';
 import { AuthorLayout } from '../../layouts';
-import { useBackendDocument } from '../../api/useBackendResource';
+import { useBackendDocument, useBackendResource } from '../../api/useBackendResource';
 import { apiRequest } from '../../api/client';
 import { useLocale } from '../../context/LocaleContext';
 import { StoryCover } from '../../components/story/StoryCover';
@@ -636,6 +636,17 @@ function ChapterRow({ chapter, storyId }) {
 
 function StoryDetails({ story, onSaved }) {
   const { t } = useLocale();
+  const categories = useBackendResource('/catalog/categories');
+  const [categoryIds, setCategoryIds] = useState(story.categoryIds ?? []);
+  const categoriesChanged = JSON.stringify(categoryIds) !== JSON.stringify(story.categoryIds ?? []);
+  const retired = categoryIds
+    .filter((id) =>
+      ['ready', 'empty'].includes(categories.status)
+        ? !categories.data.some((item) => item.id === id)
+        : story.categories?.some((item) => item.id === id && item.status === 'retired'),
+    )
+    .map((id) => story.categories?.find((item) => item.id === id) ?? { id, name: id });
+  const genreOptions = [...categories.data, ...retired];
   const [version, setVersion] = useState(story.version);
   const [saveError, setSaveError] = useState('');
   const [title, setTitle] = useState(story.title);
@@ -646,7 +657,7 @@ function StoryDetails({ story, onSaved }) {
   const submit = async (event) => {
     event.preventDefault();
     if (!story.canEdit || status === 'saving') return;
-    if (titleError || synopsisError) {
+    if (titleError || synopsisError || (categoriesChanged && !categoryIds.length)) {
       setStatus('invalid');
       return;
     }
@@ -655,11 +666,25 @@ function StoryDetails({ story, onSaved }) {
     try {
       const result = await apiRequest(`/author/stories/${story.id}`, {
         method: 'PUT',
-        body: { title: title.trim(), description: synopsis.trim(), expectedVersion: version },
+        body: {
+          title: title.trim(),
+          description: synopsis.trim(),
+          expectedVersion: version,
+          ...(categoriesChanged ? { categoryIds } : {}),
+        },
       });
       setVersion(result.story.version);
       setStatus('saved');
-      onSaved(result.story);
+      onSaved({
+        ...result.story,
+        ...(categoriesChanged
+          ? {
+              genres: categoryIds.map(
+                (id) => genreOptions.find((item) => item.id === id)?.name ?? id,
+              ),
+            }
+          : {}),
+      });
     } catch (error) {
       setStatus('error');
       setSaveError(error.message || t('managerData.saveError'));
@@ -714,6 +739,62 @@ function StoryDetails({ story, onSaved }) {
       >
         Tóm tắt cần ít nhất 40 ký tự.
       </p>
+      <fieldset disabled={!story.canEdit || status === 'saving'} className="mt-5">
+        <legend className="text-sm font-semibold">{t('managerData.categories')}</legend>
+        <p className="mt-2 text-xs text-muted">{t('managerData.categoriesHint')}</p>
+        {categories.status === 'loading' ? (
+          <Skeleton className="mt-3 h-10 w-full" />
+        ) : categories.status === 'error' ? (
+          <div className="mt-3">
+            <p role="alert" className="text-sm text-rose-strong">
+              {t('managerData.categoriesError')}
+            </p>
+            <Button
+              type="button"
+              variant="secondary"
+              size="sm"
+              className="mt-2"
+              onClick={categories.retry}
+            >
+              {t('managerData.retryCategories')}
+            </Button>
+          </div>
+        ) : categories.status === 'empty' && !retired.length ? (
+          <p className="mt-3 text-sm text-muted">{t('managerData.categoriesEmpty')}</p>
+        ) : null}
+        <div className="mt-3 flex flex-wrap gap-2">
+          {genreOptions.map((item) => (
+            <label
+              key={item.id}
+              className="flex min-h-11 items-center gap-2 rounded-full border border-line bg-elevated px-3 py-2 text-sm"
+            >
+              <input
+                type="checkbox"
+                checked={categoryIds.includes(item.id)}
+                disabled={!categoryIds.includes(item.id) && categoryIds.length >= 10}
+                onChange={(event) => {
+                  setCategoryIds((current) =>
+                    event.target.checked
+                      ? [...current, item.id]
+                      : current.filter((id) => id !== item.id),
+                  );
+                  setStatus('idle');
+                }}
+                className="size-4 accent-brand"
+              />
+              {item.name}
+              {retired.some((old) => old.id === item.id) && (
+                <span className="text-xs text-muted">{t('managerData.retiredCategory')}</span>
+              )}
+            </label>
+          ))}
+        </div>
+        {showErrors && !categoryIds.length && (
+          <p role="alert" className="mt-2 text-xs text-rose-strong">
+            {t('managerData.categoriesRequired')}
+          </p>
+        )}
+      </fieldset>
       {saveError && (
         <p role="alert" className="mt-3 text-sm text-rose-strong">
           {saveError}

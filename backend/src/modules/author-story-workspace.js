@@ -13,7 +13,7 @@ export async function authorStoryWorkspace(account, storyId) {
   if (!story) throw new HttpError(404, 'not_found', 'Không tìm thấy truyện.');
   const [categories, chapters, views, ratings] = await Promise.all([
     Category.find({ _id: { $in: story.categoryIds } })
-      .select('name')
+      .select('name status')
       .lean(),
     Chapter.find({ storyId: story._id }).sort({ orderKey: -1, _id: -1 }).lean(),
     StatisticsEvent.aggregate([
@@ -75,6 +75,11 @@ export async function authorStoryWorkspace(account, storyId) {
       title: story.title,
       description: story.description ?? '',
       genres: categories.map((item) => item.name),
+      categories: categories.map((item) => ({
+        id: String(item._id),
+        name: item.name,
+        status: item.status,
+      })),
       categoryIds: story.categoryIds.map(String),
       author: account.displayName,
       status: story.publicationStatus,
