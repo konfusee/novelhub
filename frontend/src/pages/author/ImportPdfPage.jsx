@@ -16,6 +16,7 @@ import { apiRequest } from '../../api/client';
 import { useBackendResource } from '../../api/useBackendResource';
 import { useLocale } from '../../context/LocaleContext';
 import { suggestDocumentChapters } from './documentChapters';
+import { chapterParagraphs, ChapterTextError } from './chapterParagraphs';
 
 const formats = ['pdf', 'doc', 'docx', 'txt', 'md'];
 const wordCount = (text) => text.trim().split(/\s+/u).filter(Boolean).length;
@@ -154,21 +155,16 @@ export function ImportPdfPage() {
           expectedVersion: target.version,
           chapters: selected.map((chapter) => ({
             title: chapter.title,
-            paragraphs: chapter.text
-              .split(/\n\s*\n/u)
-              .flatMap((paragraph) => {
-                const chunks = [];
-                for (let offset = 0; offset < paragraph.length; offset += 20000)
-                  chunks.push(paragraph.slice(offset, offset + 20000));
-                return chunks;
-              })
-              .filter((paragraph) => paragraph.trim()),
+            paragraphs: chapterParagraphs(chapter.text),
           })),
         },
       });
       if (!controller.signal.aborted) setResult(response);
     } catch (failure) {
-      if (!controller.signal.aborted) setError(failure.message);
+      if (!controller.signal.aborted)
+        setError(
+          failure instanceof ChapterTextError ? t(`chapterText.${failure.code}`) : failure.message,
+        );
     } finally {
       if (pending.current === controller) {
         pending.current = null;

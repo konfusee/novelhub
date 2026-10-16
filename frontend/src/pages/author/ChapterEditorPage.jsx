@@ -34,6 +34,7 @@ import { AuthorLayout } from '../../layouts';
 import { useBackendDocument } from '../../api/useBackendResource';
 import { apiRequest } from '../../api/client';
 import { useLocale } from '../../context/LocaleContext';
+import { chapterParagraphs, ChapterTextError } from './chapterParagraphs';
 import {
   Badge,
   Button,
@@ -253,11 +254,12 @@ function ChapterEditor({ chapter }) {
     setSaveBusy(true);
     setSaveError('');
     try {
+      const paragraphs = chapterParagraphs(body);
       const result = await apiRequest(`/author/stories/${chapter.storyId}/chapters/${chapter.id}`, {
         method: 'PUT',
         body: {
           title: title.trim(),
-          paragraphs: paragraphsOf(body).length ? paragraphsOf(body) : [''],
+          paragraphs: paragraphs.length ? paragraphs : [''],
           expectedVersion: version,
         },
       });
@@ -265,7 +267,11 @@ function ChapterEditor({ chapter }) {
       setSaved(true);
       return true;
     } catch (error) {
-      setSaveError(error.message || t('editorData.saveError'));
+      setSaveError(
+        error instanceof ChapterTextError
+          ? t(`chapterText.${error.code}`)
+          : error.message || t('editorData.saveError'),
+      );
       return false;
     } finally {
       busyRef.current = false;

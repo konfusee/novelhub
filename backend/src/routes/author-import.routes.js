@@ -8,6 +8,7 @@ import { Story, Chapter, ContentRevision, ContentImport, AuditEvent } from '../m
 import { withTransaction } from '../db/connection.js';
 import { lockAuthor, ownStory, editable } from '../modules/author-ownership.js';
 import { extractDocument } from '../modules/document-extraction.js';
+import { chapterParagraphText } from '../modules/chapter-document.js';
 
 const digest = (value) => createHash('sha256').update(value).digest('hex');
 const inputSchema = z
@@ -20,7 +21,11 @@ const inputSchema = z
         z
           .object({
             title: z.string().trim().min(1).max(200),
-            paragraphs: z.array(z.string().trim().min(1).max(20000)).min(1).max(1000),
+            paragraphs: z
+              .array(chapterParagraphText)
+              .min(1)
+              .max(1000)
+              .refine((paragraphs) => paragraphs.some((text) => text.trim())),
           })
           .strict(),
       )
