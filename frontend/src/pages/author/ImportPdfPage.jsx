@@ -15,6 +15,7 @@ import {
 import { apiRequest } from '../../api/client';
 import { useBackendResource } from '../../api/useBackendResource';
 import { useLocale } from '../../context/LocaleContext';
+import { suggestDocumentChapters } from './documentChapters';
 
 const formats = ['pdf', 'doc', 'docx', 'txt', 'md'];
 const wordCount = (text) => text.trim().split(/\s+/u).filter(Boolean).length;
@@ -108,6 +109,24 @@ export function ImportPdfPage() {
       ...chapters.slice(index + 1),
     ]);
     setActive(next.id);
+    cursor.current = 0;
+    setError('');
+  }
+  function suggest() {
+    if (!current || busyRef.current) return;
+    const suggestions = suggestDocumentChapters(current.text, message('preamble'));
+    if (!suggestions || chapters.length - 1 + suggestions.length > 100) {
+      setError(message('noHeadings'));
+      return;
+    }
+    const index = chapters.findIndex((chapter) => chapter.id === active);
+    const replacements = suggestions.map((chapter) => ({
+      ...chapter,
+      id: crypto.randomUUID(),
+      selected: current.selected,
+    }));
+    setChapters([...chapters.slice(0, index), ...replacements, ...chapters.slice(index + 1)]);
+    setActive(replacements[0].id);
     cursor.current = 0;
     setError('');
   }
@@ -383,6 +402,14 @@ export function ImportPdfPage() {
                           onClick={split}
                         >
                           {message('split')}
+                        </Button>
+                        <Button
+                          className="mt-3 sm:ml-2"
+                          variant="secondary"
+                          disabled={!!busy}
+                          onClick={suggest}
+                        >
+                          {message('suggest')}
                         </Button>
                         <p className="mt-2 text-xs text-muted">{message('splitHint')}</p>
                       </>
