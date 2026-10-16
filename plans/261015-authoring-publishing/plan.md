@@ -5,12 +5,13 @@ Ngày lập: 15/10/2026. Trạng thái: đang triển khai; P1 đã hoàn thiệ
 ## Cập nhật ngày 16/10/2026
 
 - P2 đã nối MongoDB cho danh sách truyện, tạo truyện/chương, metadata và thể loại versioned, editor và kho nháp. Đổi thể loại giữ snapshot công khai (`c268cba`); editor chặn ghi đè mất định dạng (`7b63155`); lưu trữ/khôi phục nháp riêng tư có audit (`6990fa2`). Còn canonical rich-text AST, đổi thứ tự và vòng đời truyện đã phát hành; không coi toàn bộ P2 đã nghiệm thu.
-- P3 đã lưu khai báo original/licensed theo gói thông tin truyện, xác nhận và ghi chú nguồn bất biến. Chương dùng khai báo của phiên bản truyện đã duyệt. Nhập PDF/DOC/DOCX/TXT/MD đã nối MongoDB, có kiểm tra/sửa/tách/gộp và lưu chương nháp trong transaction. Còn tách chương tự động, rich-text và upload ảnh. Xem `docs/author-document-import.md`.
+- P3 đã lưu khai báo original/licensed theo gói thông tin truyện, xác nhận và ghi chú nguồn bất biến. Chương dùng khai báo của phiên bản truyện đã duyệt. Nhập PDF/DOC/DOCX/TXT/MD đã nối MongoDB, có kiểm tra/sửa/tách/gộp và lưu chương nháp trong transaction. Còn nhận diện cấu trúc ngoài mẫu Chương/Chapter liên tiếp, rich-text và upload ảnh. Xem `docs/author-document-import.md`.
 - P4 đã có kiểm tra điều kiện, đóng băng exact revision, digest, audit, lịch sử/phản hồi theo chủ sở hữu và tạo bản sửa mới từ kết quả rejected/revision-requested. Gửi lại tạo gói mới; gói cũ không bị sửa. Commit: `4fb096e`, `041f6b3`, `2bb5f62`.
 - Gói mới có trạng thái validated và EvidenceBatch pending. Chưa có worker xử lý bằng chứng AI trong luồng này; không tự tạo kết quả kiểm duyệt hoặc đưa gói vào trạng thái sẵn sàng quyết định.
 - P6 đã có analytics lượt xem và số dư/gross allocation-credit thật. Còn chỉ số chưa có nguồn, đối soát, lịch sử giao dịch và payout.
 - Excel giữ các chức năng rộng ở mức Một phần: 3 hoàn thiện, 12 một phần, 11 có nền tảng, 1 đã thay thế. Công thức và cấu trúc hai sheet được giữ nguyên.
-- Ưu tiên tiếp: canonical AST và media, tách chương tự động, tích hợp bằng chứng/kiểm duyệt, rồi phát hành và early access. Giữ nguyên schema backend theo yêu cầu.
+- Gợi ý tách chương đã hỗ trợ tiêu đề Chương/Chapter có số liên tiếp, giữ lời tựa và toàn bộ nội dung hiện tại; tác giả chủ động áp dụng rồi kiểm tra trước khi lưu. Còn nhận diện cấu trúc tài liệu ngoài mẫu này.
+- Ưu tiên tiếp: canonical AST và media, tích hợp bằng chứng/kiểm duyệt, rồi phát hành và early access. Giữ nguyên schema backend theo yêu cầu.
 
 ## Tiến độ ngày 15/10/2026
 
