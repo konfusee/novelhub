@@ -20,6 +20,7 @@ import { AuthorLayout } from '../../layouts';
 import { useBackendDocument } from '../../api/useBackendResource';
 import { apiRequest } from '../../api/client';
 import { useLocale } from '../../context/LocaleContext';
+import { ChapterLifecycleDialog } from './ChapterLifecycleDialog';
 import {
   Badge,
   Button,
@@ -76,7 +77,25 @@ export function DraftsPage() {
   const [newOpen, setNewOpen] = useState(false);
   const [newTitle, setNewTitle] = useState('Bản thảo chưa đặt tên');
   const [newTouched, setNewTouched] = useState(false);
-  const [previewing, setPreviewing] = useState(null);
+  const [deleting, setDeleting] = useState(null);
+  async function openDelete(draft) {
+    if (busyRef.current) return;
+    busyRef.current = true;
+    setBusy(true);
+    setRequestError('');
+    try {
+      const workspace = await apiRequest(`/author/stories/${draft.storyId}/workspace`);
+      const chapter = workspace.chapters.find((item) => item.id === draft.id);
+      if (!chapter?.canDelete || chapter.version !== draft.version)
+        throw new Error(t('draftsData.stale'));
+      setDeleting({ story: workspace.story, chapter, action: 'delete' });
+    } catch (failure) {
+      setRequestError(failure.message);
+    } finally {
+      busyRef.current = false;
+      setBusy(false);
+    }
+  }
   const draftsResource = {
     ...resource,
     data: resource.data.items,
@@ -303,7 +322,7 @@ export function DraftsPage() {
                 key={draft.id}
                 draft={draft}
                 featured={index === 0 && view === 'grid'}
-                onPreview={() => setPreviewing(draft)}
+                onDelete={() => openDelete(draft)}
                 onDuplicate={() => duplicate(draft)}
                 busy={busy}
               />
@@ -443,37 +462,26 @@ export function DraftsPage() {
           </form>
         </Modal>
 
-        <Modal
-          open={Boolean(previewing)}
-          title="Xem trước bản nháp"
-          onClose={() => setPreviewing(null)}
-          className="max-w-2xl"
-        >
-          {previewing && (
-            <article>
-              <p className="text-xs font-semibold text-brand-strong">Truyện: {previewing.story}</p>
-              <h3 className="mt-2 text-h3">{previewing.title}</h3>
-              <p className="mt-4 rounded-2xl bg-reader p-5 text-base leading-8 text-ink">
-                {previewing.excerpt}
-              </p>
-              <div className="mt-6 flex flex-wrap justify-end gap-2">
-                <Button variant="secondary" onClick={() => setPreviewing(null)}>
-                  Đóng
-                </Button>
-                <ButtonLink to={editorRoute(previewing)}>
-                  <WandSparkles size={16} aria-hidden="true" />
-                  Tiếp tục chỉnh sửa
-                </ButtonLink>
-              </div>
-            </article>
-          )}
-        </Modal>
+        {deleting && (
+          <ChapterLifecycleDialog
+            {...deleting}
+            onClose={() => setDeleting(null)}
+            onReload={() => {
+              setDeleting(null);
+              resource.retry();
+            }}
+            onSaved={() => {
+              setDeleting(null);
+              resource.retry();
+            }}
+          />
+        )}
       </div>
     </AuthorLayout>
   );
 }
 
-function DraftCard({ draft, featured, onPreview, onDuplicate, busy }) {
+function DraftCard({ draft, featured, onDelete, onDuplicate, busy }) {
   const { t } = useLocale();
   const words = wordCount(draft);
   const synced = draft.meta === 'Stored';
@@ -534,16 +542,20 @@ function DraftCard({ draft, featured, onPreview, onDuplicate, busy }) {
             label={`Xóa ${draft.title}`}
             size="sm"
             tone="rose"
-            disabled
-            title={t('draftsData.noDelete')}
+            disabled={busy}
+            onClick={onDelete}
           >
             <Trash2 size={16} />
           </IconButton>
           <div className="ml-auto flex flex-wrap gap-2">
-            <Button variant="secondary" size="sm" onClick={onPreview}>
+            <ButtonLink
+              variant="secondary"
+              size="sm"
+              to={`/author/stories/${draft.storyId}/chapters/${draft.id}/preview`}
+            >
               <Eye size={14} aria-hidden="true" />
               Xem trước
-            </Button>
+            </ButtonLink>
             <ButtonLink to={editorRoute(draft)} size="sm">
               <WandSparkles size={14} aria-hidden="true" />
               Tiếp tục chỉnh sửa

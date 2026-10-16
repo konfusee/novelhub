@@ -36,6 +36,7 @@ import { apiRequest } from '../../api/client';
 import { useLocale } from '../../context/LocaleContext';
 import { chapterParagraphs, ChapterTextError } from './chapterParagraphs';
 import { ChapterConflictDialog } from './ChapterConflictDialog';
+import { DraftReadingCanvas } from './DraftReadingCanvas';
 import {
   Badge,
   Button,
@@ -369,6 +370,8 @@ function ChapterEditor({ chapter }) {
         onOpenLeft={() => setLeftOpen(true)}
         onOpenRight={() => setRightOpen(true)}
         onPreview={() => setPreviewOpen(true)}
+        importTo={chapter.canEdit ? `/author/import?storyId=${chapter.storyId}` : null}
+        onLeave={leave}
         onSubmit={() => setSubmit('confirm')}
         submitDisabled={saveBusy || conflict || !chapter.canEdit}
       />
@@ -554,22 +557,20 @@ function ChapterEditor({ chapter }) {
         open={previewOpen}
         title="Xem trước cho độc giả"
         onClose={() => setPreviewOpen(false)}
-        className="max-w-2xl"
+        className="max-w-5xl"
       >
-        <article className="sm:rounded-2xl sm:bg-reader sm:p-8">
-          <h3 className="text-h2">{title.trim() || 'Chương chưa đặt tên'}</h3>
-          <div className="mt-5 space-y-5 text-base leading-8 text-ink">
-            {paragraphsOf(body).map((part, index) =>
-              part === SCENE_BREAK ? (
-                <p key={index} aria-hidden="true" className="text-center tracking-[1em] text-muted">
-                  ***
-                </p>
-              ) : (
-                <p key={index}>{part}</p>
-              ),
-            )}
-          </div>
-        </article>
+        <p className="mb-4 text-sm text-muted">{t('authorDraftActions.localPreview')}</p>
+        <DraftReadingCanvas
+          storyTitle={chapter.storyTitle}
+          document={{
+            title: title.trim() || t('editorData.untitled'),
+            blocks: paragraphsOf(body).map((text) =>
+              text === SCENE_BREAK
+                ? { type: 'scene-break' }
+                : { type: 'paragraph', inlines: [{ text, marks: [] }] },
+            ),
+          }}
+        />
       </Modal>
 
       <Modal
@@ -613,7 +614,10 @@ function EditorHeader({
   onPreview,
   onSubmit,
   submitDisabled = !onSubmit,
+  importTo,
+  onLeave,
 }) {
+  const { t } = useLocale();
   return (
     <div className="flex flex-wrap items-center gap-x-3 gap-y-2 border-b border-hairline bg-surface px-4 py-3">
       <IconButton
@@ -653,6 +657,11 @@ function EditorHeader({
       <div className="flex w-full flex-wrap items-center gap-2 xl:w-auto">
         {badges}
         <div className="ml-auto flex items-center gap-2">
+          {importTo && (
+            <ButtonLink to={importTo} variant="secondary" size="sm" onClick={onLeave}>
+              {t('authorDraftActions.import')}
+            </ButtonLink>
+          )}
           <Button variant="secondary" size="sm" onClick={onPreview} disabled={!onPreview}>
             <Eye size={14} aria-hidden="true" />
             Xem trước

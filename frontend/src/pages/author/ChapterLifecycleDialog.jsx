@@ -50,7 +50,11 @@ export function ChapterLifecycleDialog({ story, chapter, action, onClose, onSave
         {conflict ? (
           <Button onClick={onReload}>{t('chapterLifecycle.reload')}</Button>
         ) : (
-          <Button disabled={busy} onClick={confirm}>
+          <Button
+            variant={action === 'delete' ? 'danger' : 'primary'}
+            disabled={busy}
+            onClick={confirm}
+          >
             {t(busy ? 'chapterLifecycle.saving' : 'chapterLifecycle.confirm')}
           </Button>
         )}

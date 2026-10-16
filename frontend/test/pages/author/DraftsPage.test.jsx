@@ -48,6 +48,31 @@ afterEach(() => {
   cleanup();
   vi.resetAllMocks();
 });
+it('prepares owner deletion, requires confirmation and refreshes after the server accepts', async () => {
+  let deleted = false;
+  mocks.apiRequest.mockImplementation(async (path, options) => {
+    if (path.endsWith('/workspace'))
+      return { story: { id: 'owned', version: 9 }, chapters: [{ ...draft, canDelete: true }] };
+    if (options?.method === 'POST') {
+      deleted = true;
+      return {};
+    }
+    return { ...data, items: deleted ? [] : [draft] };
+  });
+  view();
+  fireEvent.click(await screen.findByRole('button', { name: 'Xóa Bản thảo trong DB' }));
+  await screen.findByRole('dialog', { name: 'Xóa bản nháp' });
+  expect(deleted).toBe(false);
+  fireEvent.click(screen.getByRole('button', { name: 'Xác nhận', exact: true }));
+  await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull());
+  expect(mocks.apiRequest).toHaveBeenCalledWith('/author/stories/owned/chapters/seven/lifecycle', {
+    method: 'POST',
+    body: { action: 'delete', expectedVersion: 4, expectedStoryVersion: 9 },
+  });
+  await waitFor(() =>
+    expect(screen.queryByRole('link', { name: 'Tiếp tục chỉnh sửa' })).toBeNull(),
+  );
+});
 it('loads real draft metrics and history with exact editor links', async () => {
   mocks.apiRequest.mockResolvedValue(data);
   view();

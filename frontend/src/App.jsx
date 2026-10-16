@@ -85,6 +85,9 @@ const StoryManagerPage = lazy(() =>
 const ChapterEditorPage = lazy(() =>
   import('./pages/author/ChapterEditorPage').then((m) => ({ default: m.ChapterEditorPage })),
 );
+const AuthorPreviewPage = lazy(() =>
+  import('./pages/author/AuthorPreviewPage').then((m) => ({ default: m.AuthorPreviewPage })),
+);
 const DraftsPage = lazy(() =>
   import('./pages/author/DraftsPage').then((m) => ({ default: m.DraftsPage })),
 );
@@ -361,6 +364,14 @@ function AppRoutes() {
             element={role('author', <ChapterEditorPage />, true)}
           />
           <Route path="/author/drafts" element={role('author', <DraftsPage />, true)} />
+          <Route
+            path="/author/stories/:storyId/preview"
+            element={role('author', <AuthorPreviewPage />, true)}
+          />
+          <Route
+            path="/author/stories/:storyId/chapters/:chapterId/preview"
+            element={role('author', <AuthorPreviewPage />, true)}
+          />
           <Route path="/author/import" element={role('author', <ImportPdfPage />, true)} />
           <Route path="/author/media" element={role('author', <MediaLibraryPage />, true)} />
           <Route path="/author/ai" element={role('author', <AiWritingAssistantPage />, true)} />
