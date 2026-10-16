@@ -50,3 +50,37 @@ it('never persists raw HTML nodes, image references, script bodies or style decl
     { type: 'paragraph', inlines: [{ text: 'Văn bảnliên kết', marks: [] }] },
   ]);
 });
+it('round-trips private image references and escaped captions without persisting URLs or HTML', () => {
+  const block = {
+    type: 'image',
+    mediaId: '6ad218e46c26c31ff0ed423c',
+    alt: 'Rừng Việt Nam',
+    caption: '<script>nội dung chú thích</script>',
+  };
+  const root = document.createElement('div');
+  writeChapterDom(root, { title: 'Ảnh', blocks: [block] });
+  expect(root.querySelector('script')).toBeNull();
+  expect(root.querySelector('img').crossOrigin).toBe('use-credentials');
+  expect(readChapterDom(root)).toEqual([block]);
+  expect(richChapterBody({ blocks: [block] })).toBe('');
+});
+it('preserves image references when the browser nests a figure inside a formatted text block', () => {
+  const block = {
+    type: 'image',
+    mediaId: '6ad218e46c26c31ff0ed423c',
+    alt: 'Ảnh riêng',
+    caption: 'Chú thích',
+  };
+  const root = document.createElement('div');
+  writeChapterDom(root, { blocks: [block] });
+  const figure = root.firstChild;
+  const heading = document.createElement('h2');
+  const bold = document.createElement('b');
+  bold.append(figure);
+  heading.append(document.createTextNode('Tiêu đề'), bold);
+  root.replaceChildren(heading);
+  expect(readChapterDom(root)).toEqual([
+    { type: 'heading', level: 2, inlines: [{ text: 'Tiêu đề', marks: [] }] },
+    block,
+  ]);
+});

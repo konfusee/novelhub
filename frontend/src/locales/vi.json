@@ -2,7 +2,7 @@
   "richEditor": {
     "open": "Soạn thảo có định dạng",
     "body": "Nội dung chương có định dạng",
-    "hint": "Bôi chọn nội dung rồi dùng công cụ định dạng. Dán dưới dạng văn bản để tránh đưa mã HTML vào bản thảo. Hình ảnh chưa được hỗ trợ.",
+    "hint": "Bôi chọn nội dung rồi dùng công cụ định dạng. Dán dưới dạng văn bản; dùng công cụ Hình ảnh để thêm ảnh riêng từ thư viện vào cuối chương.",
     "selectText": "Đặt con trỏ hoặc bôi chọn nội dung trong bản thảo trước khi dùng công cụ.",
     "pasteHint": "Hãy dán văn bản hoặc dùng trang Nhập tài liệu. Chưa hỗ trợ kéo thả hình ảnh vào bản thảo.",
     "useServer": "Dùng bản mới làm bản gộp"
@@ -15,7 +15,9 @@
     "parent": "Hoàn thiện và gửi duyệt truyện cha",
     "editableHint": "Nếu đang chờ duyệt, hãy theo dõi kết quả. Nếu có yêu cầu sửa, mở phản hồi để tạo bản nháp chỉnh sửa mới.",
     "parentHint": "Mở gói thông tin truyện để kiểm tra nội dung, khai báo quyền và gửi duyệt. Chương chỉ gửi được khi truyện cha đã được phê duyệt.",
-    "mediaHint": "Luồng gửi duyệt hiện chưa hỗ trợ gói có media. Mở mục media để xem phạm vi và trạng thái hỗ trợ; cần xử lý media trước khi gửi."
+    "mediaHint": "Luồng gửi duyệt hiện chưa hỗ trợ gói có media. Mở mục media để xem phạm vi và trạng thái hỗ trợ; cần xử lý media trước khi gửi.",
+    "chapterMedia": "Chỉnh ảnh trong bản nháp",
+    "chapterMediaHint": "Mở đúng chương có định dạng để gỡ ảnh khỏi bản nháp nếu muốn gửi bản văn bản, hoặc giữ nháp có ảnh để chỉnh sửa tiếp. Ảnh và lịch sử trong thư viện được giữ nguyên."
   },
   "authorDraftActions": {
     "unavailable": "Không tìm thấy nội dung để xem trước hoặc bạn không có quyền truy cập.",
@@ -1333,7 +1335,7 @@
       },
       "media": {
         "title": "Gói không chứa media chưa hỗ trợ",
-        "hint": "Luồng hiện tại chưa đóng băng ảnh bìa hoặc ảnh minh họa. Gói có media cần được xử lý ở phần thư viện media trước khi gửi."
+        "hint": "Luồng gửi duyệt hiện chưa đóng băng ảnh bìa hoặc ảnh minh họa. Ảnh có thể lưu trong bản nháp riêng; cần xử lý trước khi gửi."
       },
       "parent": {
         "title": "Điều kiện truyện cha",
@@ -1489,5 +1491,22 @@
     "cancel": "Hủy",
     "contextHint": "Ảnh tải mới được xếp vào truyện “{{title}}”. Có thể đổi lựa chọn bên dưới.",
     "contextUnavailable": "Truyện từ liên kết chưa sẵn sàng để nhận ảnh. Hãy chọn một truyện còn chỉnh sửa được trong tài khoản."
+  },
+  "chapterImages": {
+    "title": "Chọn ảnh cho chương",
+    "hint": "Chọn ảnh của bạn thuộc truyện này hoặc chưa gán truyện. Ảnh được thêm cuối chương và chỉ lưu trong bản nháp, tối đa 20 ảnh. Chưa hỗ trợ gửi duyệt chương có ảnh.",
+    "library": "Mở thư viện để tải ảnh (tab mới)",
+    "loading": "Đang tải ảnh của bạn…",
+    "pick": "Chọn ảnh {{name}}",
+    "empty": "Chưa có ảnh phù hợp trong các trang đã tải. Mở thư viện để tải ảnh hoặc tải thêm trang.",
+    "alt": "Mô tả ảnh cho người đọc (bắt buộc)",
+    "caption": "Chú thích ảnh (tùy chọn)",
+    "altRequired": "Nhập mô tả ảnh trước khi thêm.",
+    "limit": "Chương chỉ hỗ trợ tối đa 20 ảnh và 1.000 khối nội dung.",
+    "add": "Thêm ảnh cuối chương",
+    "controls": "Ảnh trong bản nháp",
+    "draftOnly": "Gỡ ảnh chỉ thay đổi bản nháp đang soạn. Ảnh và lịch sử cũ vẫn được giữ trong tài khoản.",
+    "number": "Ảnh {{number}}",
+    "remove": "Gỡ ảnh {{number}} khỏi bản nháp"
   }
 }

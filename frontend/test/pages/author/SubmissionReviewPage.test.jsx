@@ -174,3 +174,34 @@ it('does not silently select the first owned story', async () => {
   );
   expect(mocks.apiRequest.mock.calls.some(([path]) => path.includes('/prepare?'))).toBe(false);
 });
+it('links illustrated drafts back to rich editing instead of an unrelated library destination', async () => {
+  mocks.apiRequest.mockImplementation(async (path) => {
+    if (path.includes('/prepare?'))
+      return {
+        ...prepared,
+        target: { ...prepared.target, formatVersion: 'blocks-v3' },
+        ready: false,
+        requiresRights: false,
+        checks: prepared.checks.map((row) => ({
+          ...row,
+          ok: row.code !== 'media' && row.code !== 'content',
+        })),
+      };
+    if (path.includes('/workspace'))
+      return { chapters: [{ id: 'chapter7', title: 'Chương có ảnh' }] };
+    return {
+      stories: [{ id: 'owned', title: 'Truyện' }],
+      items: [],
+      page: 1,
+      pageCount: 1,
+      total: 0,
+    };
+  });
+  view('?storyId=owned&chapterId=chapter7');
+  expect(
+    (await screen.findByRole('link', { name: 'Chỉnh ảnh trong bản nháp' })).getAttribute('href'),
+  ).toBe('/author/stories/owned/chapters/chapter7/edit?mode=rich');
+  expect(screen.getByRole('link', { name: 'Sửa nội dung' }).getAttribute('href')).toBe(
+    '/author/stories/owned/chapters/chapter7/edit?mode=rich',
+  );
+});

@@ -1,4 +1,5 @@
-// DOM is an editing surface only. Persist an allowlisted text AST, never HTML.
+import { privateMediaUrl } from '../../api/media';
+// DOM is an editing surface only. Persist an allowlisted AST, never HTML.
 const blocks = new Set(['P', 'DIV', 'H2', 'H3', 'BLOCKQUOTE']);
 const markTags = { B: 'bold', STRONG: 'bold', I: 'italic', EM: 'italic', U: 'underline' };
 export function readChapterDom(root) {
@@ -8,7 +9,20 @@ export function readChapterDom(root) {
     result.push({ type, ...(level ? { level } : {}), inlines: pending });
     pending = [];
   };
-  function inline(node, inherited = []) {
+  const imageFrom = (node) => ({
+    type: 'image',
+    mediaId: node.dataset.mediaId ?? '',
+    alt: node.dataset.alt ?? '',
+    caption: node.dataset.caption ?? '',
+  });
+  function inline(node, inherited = [], context = {}) {
+    // Browsers can wrap a non-editable figure while formatting adjacent text.
+    // Keep its reference instead of turning its caption into ordinary prose.
+    if (node.nodeType === 1 && node.tagName === 'FIGURE') {
+      if (pending.length) flush(context.type ?? 'paragraph', context.level);
+      result.push(imageFrom(node));
+      return;
+    }
     if (node.nodeType === 3) {
       if (!node.textContent) return;
       const marks = [...new Set(inherited)].sort();
@@ -20,7 +34,7 @@ export function readChapterDom(root) {
     }
     if (node.nodeType !== 1 || ['SCRIPT', 'STYLE', 'IMG', 'IFRAME'].includes(node.tagName)) return;
     if (node.tagName === 'BR') {
-      inline(root.ownerDocument.createTextNode('\n'), inherited);
+      inline(root.ownerDocument.createTextNode('\n'), inherited, context);
       return;
     }
     const mark = markTags[node.tagName];
@@ -34,30 +48,36 @@ export function readChapterDom(root) {
       node.style?.textDecoration?.includes('underline')
     )
       next.push('underline');
-    for (const child of node.childNodes) inline(child, next);
+    for (const child of node.childNodes) inline(child, next, context);
   }
   function visit(node, context) {
-    if (node.nodeType === 1 && node.tagName === 'HR') {
+    if (node.nodeType === 1 && node.tagName === 'FIGURE') {
+      if (pending.length) flush();
+      result.push(imageFrom(node));
+    } else if (node.nodeType === 1 && node.tagName === 'HR') {
       if (pending.length) flush();
       result.push({ type: 'scene-break' });
     } else if (node.nodeType === 1 && blocks.has(node.tagName)) {
       if (pending.length) flush();
       const nested = [...node.children].some(
-        (child) => blocks.has(child.tagName) || child.tagName === 'HR',
+        (child) => blocks.has(child.tagName) || ['HR', 'FIGURE'].includes(child.tagName),
       );
       if (nested) {
         for (const child of node.childNodes)
           visit(child, node.tagName === 'BLOCKQUOTE' ? 'quote' : context);
       } else {
-        // A lone BR is the browser's empty paragraph placeholder.
-        if (!(node.childNodes.length === 1 && node.firstChild.nodeName === 'BR')) inline(node);
         const type =
           node.tagName === 'BLOCKQUOTE'
             ? 'quote'
             : /^H[23]$/.test(node.tagName)
               ? 'heading'
               : (context ?? 'paragraph');
-        flush(type, type === 'heading' ? Number(node.tagName[1]) : undefined);
+        const level = type === 'heading' ? Number(node.tagName[1]) : undefined;
+        const before = result.length;
+        // A lone BR is the browser's empty paragraph placeholder.
+        if (!(node.childNodes.length === 1 && node.firstChild.nodeName === 'BR'))
+          inline(node, [], { type, level });
+        if (pending.length || result.length === before) flush(type, level);
       }
     } else inline(node);
   }
@@ -69,6 +89,24 @@ export function readChapterDom(root) {
 export function writeChapterDom(root, document) {
   const dom = root.ownerDocument;
   const nodes = document.blocks.map((block) => {
+    if (block.type === 'image') {
+      const figure = dom.createElement('figure');
+      figure.contentEditable = 'false';
+      figure.dataset.mediaId = block.mediaId;
+      figure.dataset.alt = block.alt;
+      figure.dataset.caption = block.caption ?? '';
+      figure.className = 'my-6 rounded-2xl border border-hairline p-3';
+      const image = dom.createElement('img');
+      image.crossOrigin = 'use-credentials';
+      image.src = privateMediaUrl(block.mediaId);
+      image.alt = block.alt;
+      image.className = 'mx-auto max-h-[60dvh] max-w-full object-contain';
+      const caption = dom.createElement('figcaption');
+      caption.textContent = block.caption ?? '';
+      caption.className = 'mt-2 text-center text-sm text-muted';
+      figure.append(image, caption);
+      return figure;
+    }
     const tag = {
       paragraph: 'p',
       heading: `h${block.level}`,
@@ -95,8 +133,10 @@ export function writeChapterDom(root, document) {
 export const richChapterBody = (document) =>
   document.blocks
     .map((block) =>
-      block.type === 'scene-break'
-        ? '*     *     *'
-        : block.inlines.map((span) => span.text).join(''),
+      block.type === 'image'
+        ? ''
+        : block.type === 'scene-break'
+          ? '*     *     *'
+          : block.inlines.map((span) => span.text).join(''),
     )
     .join('\n\n');

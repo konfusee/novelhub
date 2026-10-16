@@ -50,3 +50,37 @@ it('changes only selected block types and supports undo/redo without flattening 
     { type: 'heading', level: 2, inlines: [{ text: 'Đoạn mới thay toàn bộ', marks: [] }] },
   ]);
 });
+it('keeps image blocks and captions across text edits and undo, and removes them without deleting library assets', () => {
+  const ref = createRef();
+  const onChange = vi.fn();
+  const block = {
+    type: 'image',
+    mediaId: '6ad218e46c26c31ff0ed423c',
+    alt: 'Rừng',
+    caption: 'Minh họa',
+  };
+  const initialDocument = {
+    title: 'Chương',
+    blocks: [{ type: 'paragraph', inlines: [{ text: 'Nội dung', marks: [] }] }],
+  };
+  render(
+    <RichChapterInput
+      ref={ref}
+      initialDocument={initialDocument}
+      label="Bản thảo"
+      onChange={onChange}
+    />,
+  );
+  act(() => ref.current.changeImage(null, block));
+  const input = screen.getByRole('textbox');
+  expect(input.querySelector('img').alt).toBe('Rừng');
+  input.querySelector('p').textContent = 'Chỉnh văn bản';
+  fireEvent.input(input);
+  expect(onChange.mock.calls.at(-1)[0].blocks[1]).toEqual(block);
+  act(() => ref.current.changeImage(1, { caption: 'Chú thích đã sửa' }));
+  expect(input.querySelector('figcaption').textContent).toBe('Chú thích đã sửa');
+  act(() => ref.current.changeImage(1, null));
+  expect(input.querySelector('img')).toBeNull();
+  fireEvent.keyDown(input, { ctrlKey: true, key: 'z' });
+  expect(input.querySelector('img').alt).toBe('Rừng');
+});

@@ -18,7 +18,12 @@ import {
 } from '../modules/author-payouts.js';
 import { lockAuthor, ownStory, editable } from '../modules/author-ownership.js';
 import { assertTextEditorRevision, chapterParagraphText } from '../modules/chapter-document.js';
-import { readRichChapter, richChapterDocument } from '../modules/rich-chapter-document.js';
+import {
+  readRichChapter,
+  editableChapterDocument,
+  chapterDocumentFormat,
+} from '../modules/rich-chapter-document.js';
+import { pinChapterImages } from '../modules/author-chapter-media.js';
 import { changeDraftLifecycle } from '../modules/author-story-lifecycle.js';
 import { reorderDraftChapters } from '../modules/author-chapter-order.js';
 import { changeChapterDraftLifecycle } from '../modules/author-chapter-lifecycle.js';
@@ -390,7 +395,7 @@ export function createAuthorContentRouter(config) {
   router.post('/author/stories/:storyId/chapters', async (req, res, next) => {
     try {
       const input = parse(
-        z.union([chapterInput, z.object({ document: richChapterDocument }).strict()]),
+        z.union([chapterInput, z.object({ document: editableChapterDocument }).strict()]),
         req.body,
       );
       const title = input.document?.title ?? input.title;
@@ -419,7 +424,14 @@ export function createAuthorContentRouter(config) {
               chapterId: created._id,
               authorAccountId: req.account._id,
               revisionNumber: 1,
-              formatVersion: input.document ? 'blocks-v2' : 'blocks-v1',
+              formatVersion: input.document ? chapterDocumentFormat(input.document) : 'blocks-v1',
+              mediaIds: await pinChapterImages(
+                config,
+                req.account,
+                story._id,
+                input.document,
+                session,
+              ),
               content: input.document ?? {
                 title: input.title,
                 blocks: input.paragraphs.map((text) => ({ type: 'paragraph', text })),
@@ -490,7 +502,10 @@ export function createAuthorContentRouter(config) {
           version: chapter.version,
           status: chapter.status,
           ...(document
-            ? { document, formatVersion: 'blocks-v2' }
+            ? {
+                document,
+                formatVersion: revision.formatVersion === 'blocks-v3' ? 'blocks-v3' : 'blocks-v2',
+              }
             : {
                 paragraphs: (revision?.content?.blocks ?? [])
                   .filter((block) => block.type === 'paragraph')
@@ -508,7 +523,7 @@ export function createAuthorContentRouter(config) {
         z.union([
           chapterInput.extend({ expectedVersion: z.number().int().min(0) }),
           z
-            .object({ document: richChapterDocument, expectedVersion: z.number().int().min(0) })
+            .object({ document: editableChapterDocument, expectedVersion: z.number().int().min(0) })
             .strict(),
         ]),
         req.body,
@@ -553,7 +568,14 @@ export function createAuthorContentRouter(config) {
               authorAccountId: req.account._id,
               revisionNumber: (last?.revisionNumber ?? 0) + 1,
               parentRevisionId: last?._id,
-              formatVersion: input.document ? 'blocks-v2' : 'blocks-v1',
+              formatVersion: input.document ? chapterDocumentFormat(input.document) : 'blocks-v1',
+              mediaIds: await pinChapterImages(
+                config,
+                req.account,
+                story._id,
+                input.document,
+                session,
+              ),
               content: input.document ?? {
                 title: input.title,
                 blocks: input.paragraphs.map((text) => ({ type: 'paragraph', text })),

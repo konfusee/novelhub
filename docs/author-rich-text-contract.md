@@ -63,3 +63,7 @@ freezes the exact AST with the existing package digest and rights checks. Publis
 chapter APIs and Guest/Reader canvases render the same text structure/marks.
 No automatic approval, publication, frontend mock data or database migration is
 introduced. Media is reserved for AUT-06 and its ownership/rights checks.
+
+## Private illustrated drafts
+
+Text-only blocks-v2 remains unchanged. Private images use the separate blocks-v3 contract; see author-chapter-images.md for ownership, revision media manifests, editing and submission limits.

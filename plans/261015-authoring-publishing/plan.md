@@ -263,3 +263,5 @@ Một task chỉ Done khi API lưu/đọc thật, UI phản ánh kết quả th�
 - P2/AUT-06: sắp xếp ảnh hàng loạt theo truyện lưu thật, xác nhận danh sách lọc, tối đa 100 ảnh, kiểm tra quyền/version/tham chiếu/truyện bị khóa và rollback cả nhóm. 9 test backend, 7 test UI, browser gán và reload đạt; vẫn chưa tự gắn media vào gói xuất bản.
 
 - Excel theo dõi đã cập nhật xóa/preview nháp, rich-text, checklist sửa nhanh và thư viện ảnh thật. AUT-06 chuyển Có nền tảng → Một phần. Tổng 26 UC đang áp dụng: 3 Hoàn thiện, 15 Một phần, 8 Có nền tảng; 1 UC đã thay thế không nằm trong tổng. Công thức và bố cục được giữ, không đánh dấu xong phần media xuất bản.
+
+- P2/AUT-04/AUT-06: chèn ảnh riêng từ thư viện vào bản nháp chương, lưu blocks-v3 và mediaIds atomic, pin version/audit, quyền/bytes/checksum và giữ history. Editor hỗ trợ alt/chú thích/gỡ/undo/preview; checklist dẫn về đúng rich editor. 38 test backend và 42 UI liên quan đạt, browser lưu/reload/preview và responsive sáng/tối đã kiểm tra. Không đổi schema; còn rights/manifest/digest và ảnh từ gói xuất bản. Xem docs/author-chapter-images.md.

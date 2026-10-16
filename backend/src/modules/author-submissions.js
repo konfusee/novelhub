@@ -16,7 +16,11 @@ import { HttpError } from '../middleware/errors.js';
 import { withTransaction } from '../db/connection.js';
 import { lockAuthor, ownStory } from './author-ownership.js';
 import { textChapterDocument } from './chapter-document.js';
-import { richChapterDocument, chapterTextProjection } from './rich-chapter-document.js';
+import {
+  richChapterDocument,
+  editableChapterDocument,
+  chapterTextProjection,
+} from './rich-chapter-document.js';
 
 const oid = z.string().regex(/^[a-f\d]{24}$/i);
 const storyContent = z
@@ -69,7 +73,9 @@ async function packageState(account, input, session) {
   let valid = input.chapterId
     ? ((revision.formatVersion === 'blocks-v1' && textChapterDocument.safeParse(content).success) ||
         (revision.formatVersion === 'blocks-v2' &&
-          richChapterDocument.safeParse(content).success)) &&
+          richChapterDocument.safeParse(content).success) ||
+        (revision.formatVersion === 'blocks-v3' &&
+          editableChapterDocument.safeParse(content).success)) &&
       chapterTextProjection(revision).some((text) => text.trim())
     : revision.formatVersion === 'story-v1' && storyContent.safeParse(content).success;
   const text = input.chapterId
@@ -77,7 +83,7 @@ async function packageState(account, input, session) {
     : (content.description ?? '');
   valid = Boolean(
     valid &&
-    (revision.formatVersion === 'blocks-v2' || !markup.test(text)) &&
+    (['blocks-v2', 'blocks-v3'].includes(revision.formatVersion) || !markup.test(text)) &&
     !markup.test(content.title ?? ''),
   );
   const rawCategoryIds = input.chapterId ? story.categoryIds.map(String) : content.categoryIds;
@@ -95,6 +101,7 @@ async function packageState(account, input, session) {
     new Set(categoryIds.map(String)).size === categoryIds.length &&
     active === categoryIds.length;
   const mediaSupported =
+    revision.formatVersion !== 'blocks-v3' &&
     !story.coverMediaId &&
     !story.theme?.coverBannerMediaId &&
     !revision.mediaIds?.length &&
@@ -155,6 +162,7 @@ export async function prepareSubmission(account, input) {
       version: state.target.version,
       revisionId: String(state.revision._id),
       revisionNumber: state.revision.revisionNumber,
+      formatVersion: state.revision.formatVersion,
     },
     checks: state.checks,
     ready: state.checks.every((check) => check.ok),

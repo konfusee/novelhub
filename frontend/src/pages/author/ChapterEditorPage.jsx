@@ -38,6 +38,8 @@ import { chapterParagraphs, ChapterTextError } from './chapterParagraphs';
 import { ChapterConflictDialog } from './ChapterConflictDialog';
 import { DraftReadingCanvas } from './DraftReadingCanvas';
 import { RichChapterInput } from './RichChapterInput';
+import { ChapterImagePicker } from './ChapterImagePicker';
+import { ChapterImageControls } from './ChapterImageControls';
 import { richChapterBody } from './richChapterDom';
 import {
   Badge,
@@ -239,6 +241,7 @@ function ChapterEditor({ chapter }) {
   const [leftOpen, setLeftOpen] = useState(false);
   const [rightOpen, setRightOpen] = useState(false);
   const [previewOpen, setPreviewOpen] = useState(false);
+  const [imagePicker, setImagePicker] = useState(false);
   const [submit, setSubmit] = useState('idle');
   const words = useMemo(() => countWords(body), [body]);
   const minutes = Math.max(1, Math.round(words / WORDS_PER_MINUTE));
@@ -252,6 +255,10 @@ function ChapterEditor({ chapter }) {
   const applyTool = (edit, key) => {
     if (rich) {
       if (saveBusy || !chapter.canEdit) return;
+      if (key === 'image') {
+        setImagePicker(true);
+        return;
+      }
       if (!bodyRef.current?.format(key)) setSaveError(t('richEditor.selectText'));
       return;
     }
@@ -417,17 +424,15 @@ function ChapterEditor({ chapter }) {
                   key={key}
                   type="button"
                   aria-label={t(`editorTools.${key}`)}
-                  aria-describedby={
-                    !edit && (!rich || key === 'image') ? 'editor-format-support' : undefined
-                  }
+                  aria-describedby={!edit && !rich ? 'editor-format-support' : undefined}
                   title={
-                    edit || (rich && key !== 'image')
+                    edit || rich
                       ? t(`editorTools.${key}`)
                       : t('editorTools.unavailable', { tool: t(`editorTools.${key}`) })
                   }
                   onMouseDown={(event) => event.preventDefault()}
                   onClick={() => applyTool(edit, key)}
-                  disabled={(!edit && (!rich || key === 'image')) || saveBusy || !chapter.canEdit}
+                  disabled={(!edit && !rich) || saveBusy || !chapter.canEdit}
                   className="grid size-9 shrink-0 place-items-center rounded-full text-ink/75 transition-[background-color,color,transform] duration-200 hover:bg-elevated hover:text-brand-strong active:scale-[0.96] disabled:cursor-not-allowed disabled:opacity-40 pointer-coarse:size-11"
                 >
                   <Icon size={16} />
@@ -528,6 +533,13 @@ function ChapterEditor({ chapter }) {
                 className="mt-6 min-h-[60dvh] w-full resize-none rounded-2xl bg-transparent text-base leading-8 text-ink outline-none [field-sizing:content] placeholder:text-muted sm:text-lg sm:leading-9"
               />
             )}
+            {rich && (
+              <ChapterImageControls
+                document={richDocument}
+                disabled={saveBusy || !chapter.canEdit}
+                onChange={(index, changes) => bodyRef.current?.changeImage(index, changes)}
+              />
+            )}
             <div className="mt-6 flex flex-wrap items-center justify-between gap-3 border-t border-hairline pt-5 text-sm text-muted">
               <span role="status" className="flex items-center gap-2">
                 <Save size={14} aria-hidden="true" />
@@ -596,6 +608,17 @@ function ChapterEditor({ chapter }) {
             setConflict(false);
             setSaveError('');
             setCompareOpen(false);
+          }}
+        />
+      )}
+      {imagePicker && (
+        <ChapterImagePicker
+          storyId={chapter.storyId}
+          onClose={() => setImagePicker(false)}
+          onAdd={(block) => {
+            const added = bodyRef.current?.changeImage(null, block);
+            if (added) setImagePicker(false);
+            return added;
           }}
         />
       )}

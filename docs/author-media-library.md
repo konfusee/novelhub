@@ -49,3 +49,5 @@ Màn hình quản lý truyện giải thích chưa hỗ trợ tải âm thanh, b
 Tên ảnh dài được rút gọn theo ký tự Unicode nguyên vẹn, tránh tách đôi emoji thành ký tự lỗi. Đã tái hiện lỗi trước khi sửa; sau sửa tên và bytes ảnh đọc lại đúng. 10 test author-media và 3 test cấu hình lưu ảnh đạt.
 
 Ảnh dùng CORS có credentials khi API_BASE khác origin. Đã tái hiện ảnh bị chặn khi frontend chạy localhost:5181 và API chạy localhost:5183; sau sửa ảnh mở đúng với CORS_ORIGIN cho frontend và cookie hợp lệ. Giữ header bảo vệ tài nguyên cùng quyền sở hữu. Ảnh trình duyệt kiểm chứng: cross-origin-library.png trong outputs của workspace.
+
+Ảnh đã có thể gắn vào AST bản nháp chương dưới format blocks-v3, sửa mô tả/chú thích, gỡ và xem trước riêng. Xem author-chapter-images.md. Chưa đóng băng/gửi duyệt/phát hành gói có media; AUT-06 vẫn Một phần.
