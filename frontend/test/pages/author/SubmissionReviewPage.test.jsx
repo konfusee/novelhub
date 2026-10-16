@@ -60,6 +60,25 @@ afterEach(() => {
   cleanup();
   vi.resetAllMocks();
 });
+it('offers specific repair destinations for every failed server check and keeps successful checks free of repair actions', async () => {
+  fixture({ ready: false });
+  view('?storyId=owned&chapterId=chapter7');
+  expect((await screen.findByRole('link', { name: 'Sửa nội dung' })).getAttribute('href')).toBe(
+    '/author/stories/owned/chapters/chapter7/edit',
+  );
+  expect(screen.getByRole('link', { name: 'Chỉnh thể loại truyện' }).getAttribute('href')).toBe(
+    '/author/stories/owned?tab=details',
+  );
+  expect(screen.getByRole('link', { name: 'Xem media của truyện' }).getAttribute('href')).toBe(
+    '/author/stories/owned?tab=media',
+  );
+  expect(
+    screen.getByRole('link', { name: 'Hoàn thiện và gửi duyệt truyện cha' }).getAttribute('href'),
+  ).toBe('/author/submissions?storyId=owned');
+  expect(
+    screen.getByRole('link', { name: 'Xem trạng thái và phản hồi' }).getAttribute('href'),
+  ).toBe('/author/stories/owned?tab=reviews');
+});
 it('creates a fresh draft from persisted feedback and navigates to the exact owner work', async () => {
   mocks.apiRequest.mockImplementation(async (path, options) => {
     if (options?.method === 'POST')

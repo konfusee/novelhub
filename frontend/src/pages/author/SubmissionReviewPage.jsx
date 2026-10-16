@@ -197,6 +197,13 @@ function SubmissionPackage({ storyId, chapterId, onSubmitted }) {
   const back = chapterId
     ? `/author/stories/${storyId}/chapters/${chapterId}/edit`
     : `/author/stories/${storyId}`;
+  const fixes = {
+    editable: { to: `/author/stories/${storyId}?tab=reviews`, label: 'status' },
+    content: { to: chapterId ? back : `/author/stories/${storyId}?tab=details`, label: 'content' },
+    categories: { to: `/author/stories/${storyId}?tab=details`, label: 'categories' },
+    media: { to: `/author/stories/${storyId}?tab=media`, label: 'media' },
+    parent: { to: `/author/submissions?storyId=${encodeURIComponent(storyId)}`, label: 'parent' },
+  };
   const send = async () => {
     if (!ready || busyRef.current) return;
     busyRef.current = true;
@@ -318,6 +325,18 @@ function SubmissionPackage({ storyId, chapterId, onSubmitted }) {
                         <p className="mt-2 text-xs font-semibold">
                           {t(check.ok ? 'submissionData.pass' : 'submissionData.fail')}
                         </p>
+                        {!check.ok && fixes[check.code] && (
+                          <div className="mt-3">
+                            <ButtonLink variant="secondary" size="sm" to={fixes[check.code].to}>
+                              {t(`submissionFixes.${fixes[check.code].label}`)}
+                            </ButtonLink>
+                            {['parent', 'media', 'editable'].includes(check.code) && (
+                              <p className="mt-2 text-xs leading-5 text-muted">
+                                {t(`submissionFixes.${check.code}Hint`)}
+                              </p>
+                            )}
+                          </div>
+                        )}
                       </div>
                     </li>
                   ))}
