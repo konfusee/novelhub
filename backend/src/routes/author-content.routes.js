@@ -9,6 +9,7 @@ import { authorStoryWorkspace } from '../modules/author-story-workspace.js';
 import { authorDrafts } from '../modules/author-drafts.js';
 import { authorAnalytics } from '../modules/author-analytics.js';
 import { authorEarnings } from '../modules/author-earnings.js';
+import { authorTransactions, authorTransactionQuery } from '../modules/author-transactions.js';
 import { lockAuthor, ownStory, editable } from '../modules/author-ownership.js';
 import { assertTextEditorRevision, chapterParagraphText } from '../modules/chapter-document.js';
 import { changeDraftLifecycle } from '../modules/author-story-lifecycle.js';
@@ -113,6 +114,20 @@ export function createAuthorContentRouter(config) {
       next(error);
     }
   });
+  router.get(
+    '/author/transactions',
+    requireAuth(config),
+    requireRole('author'),
+    async (req, res, next) => {
+      try {
+        res.json(
+          await authorTransactions(req.account._id, parse(authorTransactionQuery, req.query)),
+        );
+      } catch (error) {
+        next(error);
+      }
+    },
+  );
   router.get(
     '/author/earnings',
     requireAuth(config),

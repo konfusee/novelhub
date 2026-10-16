@@ -1119,6 +1119,34 @@
     "invalidUnicode": "Nội dung có ký tự Unicode không hợp lệ. Hãy kiểm tra đoạn vừa dán; bản đang soạn vẫn được giữ nguyên.",
     "tooManyParagraphs": "Một chương hỗ trợ tối đa 1.000 đoạn. Hãy tách thành nhiều chương; nội dung đang soạn vẫn được giữ nguyên."
   },
+  "authorTransactions": {
+    "title": "Biến động ví thu nhập",
+    "hint": "Các khoản tăng, giảm đã ghi nhận trong ví thu nhập theo kỳ đang chọn. Thời gian theo giờ Việt Nam.",
+    "direction": "Chiều biến động",
+    "all": "Tất cả",
+    "credit": "Tăng thu nhập",
+    "debit": "Giảm thu nhập",
+    "loading": "Đang tải biến động ví thu nhập",
+    "error": "Không tải được biến động ví thu nhập",
+    "retry": "Thử lại lịch sử",
+    "empty": "Chưa có biến động trong kỳ",
+    "emptyHint": "Chỉ các khoản đã ghi nhận trong ví thu nhập mới xuất hiện tại đây. Bạn có thể đổi kỳ hoặc chiều biến động.",
+    "time": "Thời gian",
+    "type": "Nội dung",
+    "amount": "Số xu",
+    "page": "Trang {{count}}",
+    "previous": "Trang trước",
+    "next": "Trang sau",
+    "types": {
+      "allocation-credit": "Phân bổ thu nhập",
+      "withdrawal-debit": "Trừ ví để thanh toán",
+      "adjustment": "Điều chỉnh",
+      "reversal": "Đảo giao dịch",
+      "deletion-forfeiture": "Tất toán số dư khi đóng tài khoản",
+      "topup-credit": "Ghi có nạp xu",
+      "unlock-debit": "Mở khóa chương"
+    }
+  },
   "chapterConflict": {
     "title": "So sánh và gộp bản nháp",
     "notice": "Chương đã thay đổi ở nơi khác. Nội dung bạn đang viết vẫn được giữ; hãy so sánh với bản mới trước khi lưu tiếp.",

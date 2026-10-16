@@ -23,6 +23,7 @@ import {
   Tabs,
 } from '../../components/ui';
 import { useLocale } from '../../context/LocaleContext';
+import { AuthorTransactionHistory } from './AuthorTransactionHistory';
 
 const emptyEarnings = { balance: '0', allocationCredits: 0, bars: [], labels: [], stories: [] };
 /* Fixed, varied bar heights (%) for the revenue chart skeleton, one per weekday. */
@@ -241,6 +242,7 @@ export function AuthorEarningsPage() {
                 </Card>
               </>
             )}
+            <AuthorTransactionHistory period={period} />
           </div>
 
           <aside className="min-w-0 space-y-6">
