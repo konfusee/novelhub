@@ -1,4 +1,5 @@
 import { useMemo, useRef, useState } from 'react';
+import { useSearchParams } from 'react-router';
 import {
   AlertTriangle,
   Check,
@@ -67,6 +68,8 @@ const assetUrl = (asset) =>
 const emptyMedia = { items: [], stories: [], stats: { bytes: 0, count: 0 }, nextCursor: null };
 
 export function MediaLibraryPage() {
+  const [searchParams] = useSearchParams();
+  const requestedStory = searchParams.get('storyId');
   const { t } = useLocale();
   const [cursor, setCursor] = useState('');
   const [previous, setPrevious] = useState([]);
@@ -89,7 +92,12 @@ export function MediaLibraryPage() {
   const [busy, setBusy] = useState(false);
   const busyRef = useRef(false);
   const [kind, setKind] = useState('image');
-  const [uploadStory, setUploadStory] = useState('');
+  const [uploadStory, setUploadStory] = useState(null);
+  const contextStory = resource.data.stories.find((item) => item.id === requestedStory);
+  const uploadCandidate = uploadStory ?? contextStory?.id ?? '';
+  const uploadStoryId = resource.data.stories.some((item) => item.id === uploadCandidate)
+    ? uploadCandidate
+    : '';
   const fileRef = useRef(null);
   const inspectorRef = useRef(null);
   const [filter, setFilter] = useState('All Assets');
@@ -168,7 +176,7 @@ export function MediaLibraryPage() {
     }
   };
   const addFile = async (file) => {
-    if (!file || busyRef.current) return;
+    if (!file || busyRef.current || resource.status === 'loading') return;
     if (!/\.(png|jpe?g|webp)$/iu.test(file.name) || !file.size || file.size > 10 * 1024 * 1024) {
       setUploadNotice({ tone: 'error', text: t('mediaData.invalidFile') });
       return;
@@ -180,7 +188,7 @@ export function MediaLibraryPage() {
       const query = new URLSearchParams({
         name: file.name,
         kind,
-        ...(uploadStory ? { storyId: uploadStory } : {}),
+        ...(uploadStoryId ? { storyId: uploadStoryId } : {}),
       });
       const result = await apiRequest(`/author/media?${query}`, {
         method: 'POST',
@@ -306,7 +314,10 @@ export function MediaLibraryPage() {
                   tabIndex={-1}
                   aria-hidden="true"
                 />
-                <Button disabled={busy} onClick={() => fileRef.current?.click()}>
+                <Button
+                  disabled={busy || resource.status === 'loading'}
+                  onClick={() => fileRef.current?.click()}
+                >
                   <Upload size={16} aria-hidden="true" />
                   Tải media mới
                 </Button>
@@ -348,6 +359,14 @@ export function MediaLibraryPage() {
                   <span>{t('mediaData.limit')}</span>
                 </li>
               </ul>
+              {contextStory && uploadStory === null && (
+                <p className="mt-3 text-sm text-brand-strong">
+                  {t('mediaData.contextHint', { title: contextStory.title })}
+                </p>
+              )}
+              {requestedStory && resource.status === 'ready' && !contextStory && (
+                <p className="mt-3 text-sm text-muted">{t('mediaData.contextUnavailable')}</p>
+              )}
               <div className="mt-5 grid gap-3 sm:grid-cols-2">
                 <label className="text-sm font-semibold">
                   {t('mediaData.kind')}
@@ -365,7 +384,7 @@ export function MediaLibraryPage() {
                 <label className="text-sm font-semibold">
                   {t('mediaData.story')}
                   <Select
-                    value={uploadStory}
+                    value={uploadStoryId}
                     onChange={(event) => setUploadStory(event.target.value)}
                     disabled={busy || resource.status === 'loading'}
                     className="mt-2 w-full"
@@ -476,7 +495,11 @@ export function MediaLibraryPage() {
                   title="Thư viện media còn trống"
                   description={t('mediaData.emptyHint')}
                   action={
-                    <Button size="sm" onClick={() => fileRef.current?.click()}>
+                    <Button
+                      disabled={busy || resource.status === 'loading'}
+                      size="sm"
+                      onClick={() => fileRef.current?.click()}
+                    >
                       <Upload size={14} aria-hidden="true" />
                       Tải media mới
                     </Button>
@@ -541,7 +564,7 @@ export function MediaLibraryPage() {
 
             <button
               type="button"
-              disabled={busy}
+              disabled={busy || resource.status === 'loading'}
               onClick={() => fileRef.current?.click()}
               onDragOver={(event) => {
                 event.preventDefault();

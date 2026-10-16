@@ -69,8 +69,8 @@ const tabItems = [
 const linkedTabs = {
   media: {
     icon: Images,
-    title: 'Thư viện media và bản âm thanh',
-    description: 'Ảnh bìa, minh họa và bản thu âm của truyện được quản lý trong Thư viện media.',
+    titleKey: 'managerData.mediaTitle',
+    descriptionKey: 'managerData.mediaHint',
     to: '/author/media',
     action: 'Mở thư viện media',
   },
@@ -307,11 +307,15 @@ export function StoryManagerPage() {
           <Card className="mt-5 p-0">
             <EmptyState
               icon={linked.icon}
-              title={linked.title}
-              description={linked.description}
+              title={linked.titleKey ? t(linked.titleKey) : linked.title}
+              description={linked.descriptionKey ? t(linked.descriptionKey) : linked.description}
               action={
                 <ButtonLink
-                  to={tab === 'reviews' ? `${linked.to}?storyId=${storyId}` : linked.to}
+                  to={
+                    ['reviews', 'media'].includes(tab)
+                      ? `${linked.to}?storyId=${storyId}`
+                      : linked.to
+                  }
                   variant="secondary"
                   size="sm"
                   trailingIcon={ChevronRight}
@@ -1015,14 +1019,7 @@ function StoryHealth({ stats }) {
             <Badge tone="orange">—</Badge>
           </div>
           <div aria-hidden="true" className="mt-3 h-1.5 rounded-full bg-elevated" />
-          <ButtonLink
-            to="/author/media"
-            variant="ghost"
-            size="sm"
-            className="-ml-3 mt-2 px-3 text-orange-strong"
-          >
-            Quản lý bản âm thanh
-          </ButtonLink>
+          <p className="mt-3 text-xs text-muted">{t('mediaData.audioUnavailable')}</p>
         </div>
         <h3 className="mt-5 text-sm font-semibold">Cột mốc xuất bản</h3>
         <ul className="mt-3 space-y-3">
