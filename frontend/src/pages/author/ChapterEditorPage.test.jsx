@@ -42,6 +42,56 @@ afterEach(() => {
   cleanup();
   vi.resetAllMocks();
 });
+it('keeps unsupported formatting unavailable without inserting rejected Markdown or HTML', async () => {
+  mocks.apiRequest.mockResolvedValue({ chapter });
+  view();
+  const body = await screen.findByRole('textbox', { name: 'Nội dung chương' });
+  const original = body.value;
+  for (const name of [
+    'In đậm',
+    'In nghiêng',
+    'Gạch chân',
+    'Tiêu đề 2',
+    'Tiêu đề 3',
+    'Trích dẫn',
+    'Hình ảnh',
+  ]) {
+    const button = screen.getByRole('button', { name, exact: true });
+    expect(button.disabled).toBe(true);
+    expect(button.getAttribute('aria-describedby')).toBe('editor-format-support');
+    fireEvent.click(button);
+  }
+  expect(body.value).toBe(original);
+  expect(screen.getByRole('button', { name: 'Lưu', exact: true }).disabled).toBe(true);
+  expect(screen.getByText(/Hiện lưu dưới dạng văn bản thuần/)).toBeTruthy();
+});
+it('retains supported scene, dialogue and mention edits and persists them as plain paragraphs', async () => {
+  mocks.apiRequest.mockImplementation(async (_path, options) =>
+    options?.method === 'PUT' ? { chapter: { version: 10 } } : { chapter },
+  );
+  view();
+  const body = await screen.findByRole('textbox', { name: 'Nội dung chương' });
+  fireEvent.change(body, { target: { value: 'Lời thoại' } });
+  body.setSelectionRange(0, body.value.length);
+  fireEvent.click(screen.getByRole('button', { name: 'Hội thoại', exact: true }));
+  expect(body.value).toBe('“Lời thoại”');
+  body.setSelectionRange(body.value.length, body.value.length);
+  fireEvent.click(screen.getByRole('button', { name: 'Đường phân cách cảnh', exact: true }));
+  expect(body.value).toContain('*     *     *');
+  body.setSelectionRange(body.value.length, body.value.length);
+  fireEvent.click(screen.getByRole('button', { name: 'Đề cập', exact: true }));
+  fireEvent.click(screen.getByRole('button', { name: 'Lưu', exact: true }));
+  await waitFor(() =>
+    expect(mocks.apiRequest).toHaveBeenCalledWith('/author/stories/owned/chapters/seven', {
+      method: 'PUT',
+      body: {
+        title: 'Chương thật',
+        paragraphs: ['“Lời thoại”', '*     *     *', '@'],
+        expectedVersion: 9,
+      },
+    }),
+  );
+});
 it('saves edits beyond 20,000 characters without breaking an emoji', async () => {
   mocks.apiRequest.mockImplementation(async (_path, options) =>
     options?.method === 'PUT' ? { chapter: { version: 10 } } : { chapter },
