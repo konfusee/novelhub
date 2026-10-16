@@ -15,6 +15,7 @@ import { createAdminCategoryRouter } from './routes/admin-category.routes.js';
 import { createWorkspaceDataRouter } from './routes/workspace-data.routes.js';
 import { createReaderDataRouter } from './routes/reader-data.routes.js';
 import { createAuthorSubmissionsRouter } from './routes/author-submissions.routes.js';
+import { createAuthorImportRouter } from './routes/author-import.routes.js';
 
 // Runtime configuration is validated by loadEnv and mapped by toAppConfig.
 export function createApp(config) {
@@ -23,7 +24,15 @@ export function createApp(config) {
   app.disable('x-powered-by');
   app.use(helmet());
   app.use(cors({ origin: corsOrigin.split(',').map((o) => o.trim()), credentials: true }));
-  app.use(express.json({ limit: httpJsonLimitKb * 1024 }));
+  const standardJson = express.json({ limit: httpJsonLimitKb * 1024 });
+  const importJson = express.json({ limit: '2mb' });
+  app.use((req, res, next) =>
+    (req.method === 'POST' && req.path === '/api/author/imports' ? importJson : standardJson)(
+      req,
+      res,
+      next,
+    ),
+  );
   app.use(csrfProtection({ corsOrigin, cookieName }));
   if (logger) app.use(pinoHttp({ logger, ...httpLogOptions }));
   app.use('/api', healthRouter);
@@ -33,6 +42,7 @@ export function createApp(config) {
   app.use('/api', createCatalogRouter(config));
   app.use('/api', createAuthorContentRouter(config));
   app.use('/api', createAuthorSubmissionsRouter(config));
+  app.use('/api', createAuthorImportRouter(config));
   app.use('/api', createAdminCategoryRouter(config));
   app.use('/api', createWorkspaceDataRouter(config));
   app.use('/api', createReaderDataRouter(config));
