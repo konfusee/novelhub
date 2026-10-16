@@ -1,4 +1,5 @@
 import request from 'supertest';
+import { createHash } from 'node:crypto';
 import { afterAll, beforeAll, expect, it, vi } from 'vitest';
 import { mkdtemp, readdir, readFile, writeFile, rm } from 'node:fs/promises';
 import os from 'node:os';
@@ -303,6 +304,22 @@ it('pins owned images to immutable revision history, round-trips drafts and bloc
   expect((await get(author.cookie, url)).body.error.code).toBe('unsupported_editor_format');
   const revision = await ContentRevision.findOne({ chapterId: created.body.chapter.id });
   expect(revision.mediaIds.map(String)).toEqual([asset.id]);
+  const stored = await MediaAsset.findById(asset.id);
+  expect(revision.validation).toEqual({
+    mediaManifestVersion: 'chapter-images-v1',
+    mediaManifest: [
+      {
+        mediaId: asset.id,
+        checksum: stored.checksum,
+        sizeBytes: stored.sizeBytes,
+        contentType: 'image/webp',
+        storageProvider: 'local',
+      },
+    ],
+  });
+  expect(revision.mediaDigest).toBe(
+    createHash('sha256').update(JSON.stringify(revision.validation.mediaManifest)).digest('hex'),
+  );
   expect((await MediaAsset.findById(asset.id)).version).toBe(1);
   const prepared = await get(
     author.cookie,
@@ -334,10 +351,61 @@ it('pins owned images to immutable revision history, round-trips drafts and bloc
   expect((await get(author.cookie, `${url}?format=rich`)).body.chapter.formatVersion).toBe(
     'blocks-v2',
   );
+  const current = await Chapter.findById(created.body.chapter.id);
+  const textRevision = await ContentRevision.findById(current.draftRevisionId);
+  expect(textRevision.mediaIds).toEqual([]);
+  expect(textRevision.mediaDigest).toBeUndefined();
+  expect(textRevision.validation).toBeUndefined();
+  expect((await ContentRevision.findById(revision._id)).mediaDigest).toBe(revision.mediaDigest);
   expect((await ContentRevision.findById(revision._id)).mediaIds.map(String)).toEqual([asset.id]);
   expect((await remove(author.cookie, { ...asset, version: 1 })).body.error.code).toBe(
     'media_in_use',
   );
+});
+it('rejects incompatible image metadata without persisting a chapter or attachment audit', async () => {
+  const author = await authenticatedAccount('author');
+  const story = await makeStory(author);
+  const asset = (await upload(author.cookie)).body.asset;
+  await MediaAsset.updateOne({ _id: asset.id }, { $set: { contentType: 'image/jpeg' } });
+  const response = await chapterWrite(author.cookie, `/api/author/stories/${story._id}/chapters`, {
+    document: illustrated(asset.id),
+  });
+  expect(response.status).toBe(409);
+  expect(response.body.error.code).toBe('media_changed');
+  expect(await Chapter.countDocuments()).toBe(0);
+  expect(await ContentRevision.countDocuments({ contentType: 'chapter' })).toBe(0);
+  expect(await AuditEvent.countDocuments({ action: 'media.attached' })).toBe(0);
+  expect((await MediaAsset.findById(asset.id)).version).toBe(asset.version);
+});
+it('snapshots unique images in document order and keeps earlier manifests after reordering', async () => {
+  const author = await authenticatedAccount('author');
+  const story = await makeStory(author);
+  const first = (await upload(author.cookie)).body.asset;
+  const second = (await upload(author.cookie)).body.asset;
+  const document = illustrated(second.id);
+  document.blocks.push(illustrated(first.id).blocks[1], illustrated(second.id).blocks[1]);
+  const base = `/api/author/stories/${story._id}/chapters`;
+  const created = await chapterWrite(author.cookie, base, { document });
+  expect(created.status).toBe(201);
+  const old = await ContentRevision.findOne({ chapterId: created.body.chapter.id });
+  expect(old.validation.mediaManifest.map((item) => item.mediaId)).toEqual([second.id, first.id]);
+  expect((await MediaAsset.findById(second.id)).version).toBe(1);
+  const reordered = {
+    ...document,
+    blocks: [document.blocks[0], document.blocks[2], document.blocks[1], document.blocks[3]],
+  };
+  const saved = await chapterWrite(
+    author.cookie,
+    `${base}/${created.body.chapter.id}`,
+    { document: reordered, expectedVersion: created.body.chapter.version },
+    'put',
+  );
+  expect(saved.status).toBe(200);
+  const chapter = await Chapter.findById(created.body.chapter.id);
+  const fresh = await ContentRevision.findById(chapter.draftRevisionId);
+  expect(fresh.validation.mediaManifest.map((item) => item.mediaId)).toEqual([first.id, second.id]);
+  expect(fresh.mediaDigest).not.toBe(old.mediaDigest);
+  expect((await ContentRevision.findById(old._id)).validation).toEqual(old.validation);
 });
 it('rejects foreign, wrong-story, unavailable or malformed image references without creating chapters', async () => {
   const author = await authenticatedAccount('author');

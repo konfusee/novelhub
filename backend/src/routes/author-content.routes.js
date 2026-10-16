@@ -425,13 +425,7 @@ export function createAuthorContentRouter(config) {
               authorAccountId: req.account._id,
               revisionNumber: 1,
               formatVersion: input.document ? chapterDocumentFormat(input.document) : 'blocks-v1',
-              mediaIds: await pinChapterImages(
-                config,
-                req.account,
-                story._id,
-                input.document,
-                session,
-              ),
+              ...(await pinChapterImages(config, req.account, story._id, input.document, session)),
               content: input.document ?? {
                 title: input.title,
                 blocks: input.paragraphs.map((text) => ({ type: 'paragraph', text })),
@@ -569,13 +563,7 @@ export function createAuthorContentRouter(config) {
               revisionNumber: (last?.revisionNumber ?? 0) + 1,
               parentRevisionId: last?._id,
               formatVersion: input.document ? chapterDocumentFormat(input.document) : 'blocks-v1',
-              mediaIds: await pinChapterImages(
-                config,
-                req.account,
-                story._id,
-                input.document,
-                session,
-              ),
+              ...(await pinChapterImages(config, req.account, story._id, input.document, session)),
               content: input.document ?? {
                 title: input.title,
                 blocks: input.paragraphs.map((text) => ({ type: 'paragraph', text })),

@@ -15,6 +15,8 @@ Trong chế độ soạn có định dạng (`?mode=rich`), công cụ Hình ả
 - GET rich trả đúng format và tài liệu; PUT/POST lưu AST và mediaIds trong cùng transaction. Bỏ hết ảnh tạo revision blocks-v2 mới, revision có ảnh cũ được giữ nguyên.
 - Khi lưu, máy chủ kiểm tra Author/owner/story, trạng thái ảnh available/private/local, ảnh chưa gán truyện hoặc thuộc đúng truyện, bytes và checksum. Pin version MediaAsset và ghi audit cùng transaction; một tham chiếu lỗi làm rollback toàn bộ chương và các pin.
 - Gắn ảnh và xóa ảnh dùng chung account lock. Không thể tạo chương trỏ tới ảnh đã xóa trong tranh chấp đồng thời. Library không cho xóa ảnh đã được bất kỳ revision lịch sử nào tham chiếu.
+- Khi tạo/lưu revision có ảnh, `validation.mediaManifestVersion = chapter-images-v1` và `validation.mediaManifest` giữ mediaId, SHA-256, sizeBytes, contentType và storageProvider theo thứ tự xuất hiện đầu tiên trong AST. `mediaDigest` là SHA-256 của JSON manifest này; ảnh lặp chỉ có một mục. Không lưu objectKey hay URL vào manifest. Máy chủ đối chiếu bytes với metadata trong transaction và chỉ nhận WebP đã chuẩn hóa.
+- Mỗi revision mới có manifest riêng. Đổi thứ tự ảnh đổi digest; bỏ hết ảnh tạo revision không mang manifest/digest cũ. Revision lịch sử không bị ghi đè. Đây là snapshot bản nháp, chưa phải bằng chứng quyền sử dụng hoặc package gửi duyệt đã đóng băng.
 - Ảnh và chú thích không được tính là số từ văn bản truyện. Sửa chữ, heading hoặc inline marks vẫn giữ nguyên ảnh, kể cả khi trình duyệt bọc figure vào khối định dạng khác.
 
 ## Gửi duyệt còn thiếu
@@ -29,5 +31,6 @@ Checklist chương có ảnh dẫn đúng về editor có định dạng để x
 - 42 test frontend liên quan: chọn ảnh, alt bắt buộc, lọc đúng truyện, giữ chữ đậm, lưu AST, preview, chú thích/gỡ/undo và đường dẫn sửa nhanh. Test nằm trong frontend/test.
 - Browser trên MongoDB tạm: chọn ảnh từ thư viện, thêm mô tả/chú thích, lưu, reload, API đọc lại blocks-v3 và preview giữ ảnh/định dạng. Kiểm tra 390/768/1024px và desktop, sáng/tối; không tràn ngang trong các màn hình đã kiểm tra.
 - Dữ liệu thử và ảnh minh họa kiểm thử không được nạp vào database chính. Giữ nguyên thay đổi ngoài phạm vi của chủ dự án.
+- Bổ sung test snapshot/digest, thứ tự và khử trùng ảnh, giữ manifest lịch sử, xóa manifest khi bỏ hết ảnh và rollback khi MIME metadata không đúng định dạng đã chuẩn hóa.
 
 AUT-04/AUT-06 vẫn Một phần do còn gói xuất bản có media.

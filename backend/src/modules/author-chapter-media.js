@@ -1,3 +1,4 @@
+import { createHash } from 'node:crypto';
 import { MediaAsset, AuditEvent } from '../models/index.js';
 import { readAuthorMedia } from './author-media.js';
 import { chapterMediaIds } from './rich-chapter-document.js';
@@ -6,7 +7,7 @@ import { HttpError } from '../middleware/errors.js';
 // Runs within the chapter save transaction, after the owner account lock.
 export async function pinChapterImages(config, account, storyId, document, session) {
   const ids = chapterMediaIds(document);
-  if (!ids.length) return [];
+  if (!ids.length) return { mediaIds: [] };
   const assets = await MediaAsset.find({
     _id: { $in: ids },
     ownerAccountId: account._id,
@@ -20,14 +21,31 @@ export async function pinChapterImages(config, account, storyId, document, sessi
       'media_unavailable',
       'Một ảnh không còn sẵn sàng trong thư viện của bạn.',
     );
-  for (const asset of assets) {
+  const manifest = [];
+  for (const id of ids) {
+    const asset = assets.find((item) => String(item._id) === id);
     if (asset.storyId && String(asset.storyId) !== String(storyId))
       throw new HttpError(
         409,
         'media_wrong_story',
         'Ảnh đang được xếp vào truyện khác. Hãy chọn ảnh đúng truyện hoặc chưa gán truyện.',
       );
-    await readAuthorMedia(config, account._id, asset._id);
+    const bytes = await readAuthorMedia(config, account._id, asset._id);
+    // Check the transaction snapshot as well as the metadata used by the file reader.
+    const checksum = createHash('sha256').update(bytes).digest('hex');
+    if (
+      checksum !== asset.checksum ||
+      bytes.length !== asset.sizeBytes ||
+      asset.contentType !== 'image/webp'
+    )
+      throw new HttpError(409, 'media_changed', 'Tệp ảnh đã thay đổi. Hãy tải lại thư viện.');
+    manifest.push({
+      mediaId: id,
+      checksum,
+      sizeBytes: bytes.length,
+      contentType: asset.contentType,
+      storageProvider: asset.storageProvider,
+    });
     const result = await MediaAsset.updateOne(
       { _id: asset._id, version: asset.version },
       { $inc: { version: 1 } },
@@ -51,5 +69,9 @@ export async function pinChapterImages(config, account, storyId, document, sessi
       { session },
     );
   }
-  return ids;
+  return {
+    mediaIds: ids,
+    mediaDigest: createHash('sha256').update(JSON.stringify(manifest)).digest('hex'),
+    validation: { mediaManifestVersion: 'chapter-images-v1', mediaManifest: manifest },
+  };
 }
