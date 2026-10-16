@@ -10,6 +10,12 @@ import { authorDrafts } from '../modules/author-drafts.js';
 import { authorAnalytics } from '../modules/author-analytics.js';
 import { authorEarnings } from '../modules/author-earnings.js';
 import { authorTransactions, authorTransactionQuery } from '../modules/author-transactions.js';
+import {
+  authorPayouts,
+  authorPayoutDetail,
+  authorPayoutQuery,
+  authorPayoutId,
+} from '../modules/author-payouts.js';
 import { lockAuthor, ownStory, editable } from '../modules/author-ownership.js';
 import { assertTextEditorRevision, chapterParagraphText } from '../modules/chapter-document.js';
 import { changeDraftLifecycle } from '../modules/author-story-lifecycle.js';
@@ -67,6 +73,32 @@ export function createAuthorContentRouter(config) {
     },
   );
   router.use('/author/stories', requireAuth(config), requireRole('author'));
+  router.get(
+    '/author/payouts',
+    requireAuth(config),
+    requireRole('author'),
+    async (req, res, next) => {
+      try {
+        res.json(await authorPayouts(req.account._id, parse(authorPayoutQuery, req.query)));
+      } catch (error) {
+        next(error);
+      }
+    },
+  );
+  router.get(
+    '/author/payouts/:payoutId',
+    requireAuth(config),
+    requireRole('author'),
+    async (req, res, next) => {
+      try {
+        res.json(
+          await authorPayoutDetail(req.account._id, parse(authorPayoutId, req.params.payoutId)),
+        );
+      } catch (error) {
+        next(error);
+      }
+    },
+  );
   router.post('/author/stories/:storyId/chapters/:chapterId/lifecycle', async (req, res, next) => {
     try {
       const input = parse(

@@ -29,7 +29,9 @@ afterEach(() => {
 });
 it('shows recorded credits separately from the real wallet without fabricated USD or prices', async () => {
   mocks.apiRequest.mockImplementation(async (path) =>
-    path.startsWith('/author/transactions') ? { items: [], nextCursor: null } : data,
+    path.startsWith('/author/transactions') || path.startsWith('/author/payouts')
+      ? { items: [], nextCursor: null }
+      : data,
   );
   view();
   expect(await screen.findByText('555 xu')).toBeTruthy();
@@ -49,7 +51,9 @@ it('shows recorded credits separately from the real wallet without fabricated US
 });
 it('uses actual owned IDs for management and has no fake successful price save', async () => {
   mocks.apiRequest.mockImplementation(async (path) =>
-    path.startsWith('/author/transactions') ? { items: [], nextCursor: null } : data,
+    path.startsWith('/author/transactions') || path.startsWith('/author/payouts')
+      ? { items: [], nextCursor: null }
+      : data,
   );
   view();
   await screen.findByText('555 xu');
