@@ -31,3 +31,11 @@ Chưa gắn ảnh vào AST chương hoặc gói gửi duyệt, chưa xuất bả
 Nút Sắp xếp hàng loạt dùng đúng danh sách đã lọc và đã tải, hiển thị tên ảnh để xem lại trước khi lưu. Lỗi máy chủ giữ nguyên hộp thoại và lựa chọn; giao diện chỉ cập nhật sau khi API chấp nhận. Khi các ảnh cùng thuộc một truyện thì chọn sẵn truyện đó. Không dùng cập nhật mảng giả trong frontend.
 
 Kiểm chứng mở rộng: 9 kiểm thử backend và 7 kiểm thử UI đạt. Browser gán ảnh vào truyện trên MongoDB tạm, reload vẫn đúng truyện; hộp thoại và danh sách chọn truyện hoạt động trên màn hình 390px.
+
+## Cấu hình lưu bền
+
+`MEDIA_STORAGE_DIR` trong backend/.env nhận đường dẫn tuyệt đối, ví dụ `D:/NovelHubData/media` hoặc `/var/lib/novelhub/media`. Để trống giữ mặc định backend/uploads/media. Máy chủ từ chối cấu hình đường dẫn tương đối/ký tự điều khiển ngay khi khởi động. Không sửa backend/.env của chủ dự án trong thay đổi này.
+
+Khi triển khai cần cấp quyền đọc/ghi cho tài khoản chạy backend, gắn volume lưu bền và backup thư mục cùng MongoDB. Khi đổi thư mục cho dữ liệu có sẵn, sao chép nguyên tên/tệp ảnh sang thư mục mới trước khi đổi cấu hình và khởi động lại. Không tự chuyển, xóa hay đổi tên tệp cũ. API vẫn kiểm tra checksum và quyền chủ sở hữu tại thư mục đã cấu hình.
+
+15 kiểm thử đạt trong ba file author-media, media-storage-config và google-env. Cấu hình mới không thay model/schema MongoDB.

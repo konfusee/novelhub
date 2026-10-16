@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import path from 'node:path';
 
 const envSchema = z.object({
   NODE_ENV: z.enum(['development', 'test', 'production']),
@@ -32,6 +33,15 @@ const envSchema = z.object({
   CAPTCHA_TTL_MINUTES: z.coerce.number().int().positive().max(1440),
   CAPTCHA_MAX_ENTRIES: z.coerce.number().int().positive().max(1000000),
   CAPTCHA_MAX_REQUESTS: z.coerce.number().int().positive().max(1000000),
+  MEDIA_STORAGE_DIR: z
+    .string()
+    .trim()
+    .min(1)
+    .refine(
+      (value) => path.isAbsolute(value) && !/[\p{Cc}]/u.test(value),
+      'MEDIA_STORAGE_DIR must be an absolute directory path',
+    )
+    .optional(),
   HTTP_JSON_LIMIT_KB: z.coerce.number().int().positive().max(1000000),
   DB_SERVER_SELECTION_TIMEOUT_MS: z.coerce.number().int().min(1).max(120000),
   SMTP_CONNECTION_TIMEOUT_MS: z.coerce.number().int().min(1).max(120000),
@@ -75,6 +85,7 @@ export function loadEnv(source = process.env) {
     'SMTP_USER',
     'SMTP_PASSWORD',
     'SMTP_FROM',
+    'MEDIA_STORAGE_DIR',
   ]) {
     if (normalized[key] === '') delete normalized[key];
   }
@@ -113,6 +124,7 @@ export function toAppConfig(env) {
     emailVerificationTtlMinutes: env.EMAIL_VERIFICATION_TTL_MINUTES,
     passwordResetTtlMinutes: env.PASSWORD_RESET_TTL_MINUTES,
     httpJsonLimitKb: env.HTTP_JSON_LIMIT_KB,
+    mediaStorageDir: env.MEDIA_STORAGE_DIR,
     securityConfig: {
       emailSendAttempts: env.EMAIL_SEND_ATTEMPTS,
       windowMs: env.AUTH_RATE_LIMIT_WINDOW_MINUTES * 60000,
