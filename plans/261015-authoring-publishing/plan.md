@@ -261,3 +261,5 @@ Một task chỉ Done khi API lưu/đọc thật, UI phản ánh kết quả th�
 - P2/AUT-06: thư viện ảnh dùng metadata MongoDB và bytes thật trên máy chủ; upload PNG/JPEG/WebP, kiểm tra nội dung, ảnh riêng theo chủ sở hữu, phân trang/thống kê, xóa có version và kiểm tra tham chiếu. Không đổi schema và giữ bố cục frontend. 6 test backend, 5 test UI và browser responsive/sáng/tối đạt. Xem docs/author-media-library.md. Chưa gắn media vào AST/gói xuất bản, AUT-06 vẫn Một phần.
 
 - P2/AUT-06: sắp xếp ảnh hàng loạt theo truyện lưu thật, xác nhận danh sách lọc, tối đa 100 ảnh, kiểm tra quyền/version/tham chiếu/truyện bị khóa và rollback cả nhóm. 9 test backend, 7 test UI, browser gán và reload đạt; vẫn chưa tự gắn media vào gói xuất bản.
+
+- Excel theo dõi đã cập nhật xóa/preview nháp, rich-text, checklist sửa nhanh và thư viện ảnh thật. AUT-06 chuyển Có nền tảng → Một phần. Tổng 26 UC đang áp dụng: 3 Hoàn thiện, 15 Một phần, 8 Có nền tảng; 1 UC đã thay thế không nằm trong tổng. Công thức và bố cục được giữ, không đánh dấu xong phần media xuất bản.
