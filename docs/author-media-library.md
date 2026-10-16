@@ -39,3 +39,9 @@ Kiểm chứng mở rộng: 9 kiểm thử backend và 7 kiểm thử UI đạt.
 Khi triển khai cần cấp quyền đọc/ghi cho tài khoản chạy backend, gắn volume lưu bền và backup thư mục cùng MongoDB. Khi đổi thư mục cho dữ liệu có sẵn, sao chép nguyên tên/tệp ảnh sang thư mục mới trước khi đổi cấu hình và khởi động lại. Không tự chuyển, xóa hay đổi tên tệp cũ. API vẫn kiểm tra checksum và quyền chủ sở hữu tại thư mục đã cấu hình.
 
 15 kiểm thử đạt trong ba file author-media, media-storage-config và google-env. Cấu hình mới không thay model/schema MongoDB.
+
+## Đi từ truyện sang thư viện
+
+Tab Media của quản lý truyện truyền `storyId` sang thư viện. Ảnh tải mới chọn sẵn truyện khi máy chủ xác nhận truyện thuộc tài khoản và còn chỉnh sửa được; người dùng có thể đổi hoặc bỏ lựa chọn. ID không hợp lệ/không có trong danh sách truyện nhận ảnh không được âm thầm gửi kèm upload. Khóa tải ảnh trong lúc đang đọc danh sách để tránh mất ngữ cảnh. Danh sách thư viện vẫn là toàn bộ ảnh của tài khoản, không tự đổi bộ lọc.
+
+Màn hình quản lý truyện giải thích chưa hỗ trợ tải âm thanh, bỏ đường dẫn âm thanh dẫn nhầm sang thư viện ảnh. 19 test UI trên MediaLibraryPage và StoryManagerPage đạt; browser đi theo link và tải ảnh vào đúng truyện trên DB tạm đã xác nhận.

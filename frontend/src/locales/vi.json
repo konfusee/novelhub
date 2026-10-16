@@ -1129,7 +1129,9 @@
     "lifecycleCancel": "Hủy",
     "lifecycleConfirm": "Xác nhận",
     "lifecycleBusy": "Đang cập nhật…",
-    "lifecycleError": "Chưa cập nhật được trạng thái. Hãy tải lại và kiểm tra phiên bản truyện."
+    "lifecycleError": "Chưa cập nhật được trạng thái. Hãy tải lại và kiểm tra phiên bản truyện.",
+    "mediaTitle": "Thư viện hình ảnh",
+    "mediaHint": "Quản lý ảnh bìa, minh họa và biểu ngữ. Truyện hiện tại được chọn sẵn khi tải ảnh mới. Chưa hỗ trợ tải âm thanh."
   },
   "chapterOrder": {
     "unavailable": "Chỉ sắp xếp truyện nháp riêng tư có ít nhất hai chương, không bị khóa, chưa phát hành và không có gói đang chờ duyệt. Tối đa 1.000 chương.",
@@ -1484,6 +1486,8 @@
     "organize": "Lưu sắp xếp",
     "organizing": "Đang lưu sắp xếp…",
     "organized": "Đã cập nhật nhóm cho {{count}} ảnh.",
-    "cancel": "Hủy"
+    "cancel": "Hủy",
+    "contextHint": "Ảnh tải mới được xếp vào truyện “{{title}}”. Có thể đổi lựa chọn bên dưới.",
+    "contextUnavailable": "Truyện từ liên kết chưa sẵn sàng để nhận ảnh. Hãy chọn một truyện còn chỉnh sửa được trong tài khoản."
   }
 }

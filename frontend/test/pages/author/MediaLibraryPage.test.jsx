@@ -1,5 +1,6 @@
 import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { afterEach, beforeEach, expect, it, vi } from 'vitest';
+import { MemoryRouter } from 'react-router';
 import { LocaleProvider } from '../../../src/context/LocaleContext';
 import { MediaLibraryPage } from '../../../src/pages/author/MediaLibraryPage';
 const mocks = vi.hoisted(() => ({ apiRequest: vi.fn() }));
@@ -26,11 +27,13 @@ const data = {
   stats: { bytes: 512, count: 1 },
   nextCursor: null,
 };
-const view = () =>
+const view = (entry = '/author/media') =>
   render(
-    <LocaleProvider>
-      <MediaLibraryPage />
-    </LocaleProvider>,
+    <MemoryRouter initialEntries={[entry]}>
+      <LocaleProvider>
+        <MediaLibraryPage />
+      </LocaleProvider>
+    </MemoryRouter>,
   );
 beforeEach(() => {
   window.matchMedia = vi.fn(() => ({ matches: false }));
@@ -168,4 +171,52 @@ it('retains the organization dialog and destination on stale-server errors', asy
   fireEvent.click(within(dialog).getByRole('button', { name: 'Lưu sắp xếp' }));
   expect(await within(dialog).findByRole('alert')).toHaveProperty('textContent', 'Ảnh đã thay đổi');
   expect(within(dialog).getByRole('combobox').textContent).toContain('Truyện của tôi');
+});
+it('preselects only an editable owner story from the manager link and sends that story on upload', async () => {
+  mocks.apiRequest.mockImplementation(async (_path, options) =>
+    options?.method === 'POST' ? { asset } : data,
+  );
+  const { container } = view('/author/media?storyId=story');
+  expect(
+    await screen.findByText(
+      'Ảnh tải mới được xếp vào truyện “Truyện của tôi”. Có thể đổi lựa chọn bên dưới.',
+    ),
+  ).toBeTruthy();
+  expect(screen.getByRole('combobox', { name: 'Sắp xếp theo truyện' }).textContent).toContain(
+    'Truyện của tôi',
+  );
+  const file = new File(['image'], 'photo.png', { type: 'image/png' });
+  fireEvent.change(container.querySelector('input[type="file"]'), { target: { files: [file] } });
+  await screen.findByText('Ảnh đã được lưu trên máy chủ.');
+  expect(mocks.apiRequest).toHaveBeenCalledWith(
+    '/author/media?name=photo.png&kind=image&storyId=story',
+    { method: 'POST', body: file, binary: true },
+  );
+});
+it('does not attach unknown story ids from a URL and allows overriding a valid preselection', async () => {
+  mocks.apiRequest.mockImplementation(async (_path, options) =>
+    options?.method === 'POST' ? { asset } : data,
+  );
+  view('/author/media?storyId=foreign');
+  await screen.findByText(
+    'Truyện từ liên kết chưa sẵn sàng để nhận ảnh. Hãy chọn một truyện còn chỉnh sửa được trong tài khoản.',
+  );
+  expect(screen.getByRole('combobox', { name: 'Sắp xếp theo truyện' }).textContent).toContain(
+    'Chưa gán truyện',
+  );
+  cleanup();
+  const result = view('/author/media?storyId=story');
+  await screen.findByRole('button', { name: `Xem chi tiết ${asset.name}` });
+  fireEvent.click(screen.getByRole('combobox', { name: 'Sắp xếp theo truyện' }));
+  fireEvent.click(await screen.findByRole('option', { name: 'Chưa gán truyện', exact: true }));
+  const file = new File(['image'], 'photo.png', { type: 'image/png' });
+  fireEvent.change(result.container.querySelector('input[type="file"]'), {
+    target: { files: [file] },
+  });
+  await screen.findByText('Ảnh đã được lưu trên máy chủ.');
+  expect(mocks.apiRequest).toHaveBeenCalledWith('/author/media?name=photo.png&kind=image', {
+    method: 'POST',
+    body: file,
+    binary: true,
+  });
 });

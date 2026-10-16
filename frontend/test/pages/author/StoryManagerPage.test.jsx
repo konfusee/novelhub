@@ -305,3 +305,15 @@ it('shows an error instead of exposing a fallback story and disables creation fo
     expect(screen.getByRole('button', { name: 'Thêm chương mới' }).disabled).toBe(true),
   );
 });
+it('passes the current story to the image library and explains that audio upload is unavailable', async () => {
+  mocks.apiRequest.mockResolvedValue(workspace);
+  view();
+  await screen.findByText('Chương 7: Chương bảy thật');
+  expect(screen.queryByRole('link', { name: 'Quản lý bản âm thanh' })).toBeNull();
+  expect(screen.getByText('Chưa hỗ trợ tải âm thanh')).toBeTruthy();
+  fireEvent.click(screen.getByRole('button', { name: 'Media và bản âm thanh', exact: true }));
+  expect(screen.getByRole('heading', { name: 'Thư viện hình ảnh', exact: true })).toBeTruthy();
+  expect(
+    screen.getByRole('link', { name: 'Mở thư viện media', exact: true }).getAttribute('href'),
+  ).toBe('/author/media?storyId=owned');
+});
