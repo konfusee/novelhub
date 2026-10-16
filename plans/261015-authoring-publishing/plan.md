@@ -4,6 +4,7 @@ Ngày lập: 15/10/2026. Trạng thái: đang triển khai; P1 đã hoàn thiệ
 
 ## Cập nhật ngày 16/10/2026
 
+- P6 bổ sung lịch sử ledger của ví thu nhập Author (`d0bb0cf`), lọc ngày/tuần/tháng, tăng/giảm và cursor pagination. Chỉ đọc ví đúng chủ; không thay schema hoặc nạp giao dịch thử vào DB nhóm. 6 test backend, 6 test frontend liên quan và browser đạt. Xem `docs/author-transactions.md`. Còn đối soát, báo cáo doanh số và payout; workbook đang mở nên chưa ghi thêm bằng chứng này.
 - P2 bổ sung so sánh/gộp bản nháp khi lưu gặp xung đột version (`88dccb8`). Giữ bản chưa lưu, đối chiếu MongoDB, xác nhận gộp và lưu riêng theo version mới; không tự ghi đè. 17 test frontend liên quan và browser hai thẻ đạt; xem `docs/author-editor-conflicts.md`. UC-AUT-04 vẫn Một phần. Chưa bổ sung bằng chứng này vào workbook do đang có file khóa Excel mở.
 - P2 sửa thanh công cụ editor đang chèn HTML/Markdown chưa được luồng gửi duyệt hỗ trợ (`e4c9208`). Giữ bố cục, vô hiệu rõ công cụ chưa hỗ trợ; thao tác văn bản thuần vẫn lưu thật. 9 test editor, lint/build và browser đạt. Xem `docs/author-editor-toolbar.md`. Canonical rich-text AST/media còn thiếu, UC-AUT-04 vẫn Một phần.
 - P2 bổ sung lưu trữ/khôi phục chương nháp riêng tư có xác nhận, version truyện/chương, audit và rollback (`21e2edb`). Giữ ID, thứ tự và nội dung; xem `docs/author-chapter-lifecycle.md`. Đã kiểm tra 30 test backend, 13 test UI và browser. Còn xóa chương, nội dung đã phát hành và AST/media; không đánh dấu toàn bộ quản lý chương hoàn thiện.
@@ -11,7 +12,7 @@ Ngày lập: 15/10/2026. Trạng thái: đang triển khai; P1 đã hoàn thiệ
 - P3 đã lưu khai báo original/licensed theo gói thông tin truyện, xác nhận và ghi chú nguồn bất biến. Chương dùng khai báo của phiên bản truyện đã duyệt. Nhập PDF/DOC/DOCX/TXT/MD đã nối MongoDB, có kiểm tra/sửa/tách/gộp và lưu chương nháp trong transaction. Còn nhận diện cấu trúc ngoài mẫu Chương/Chapter liên tiếp, rich-text và upload ảnh. Xem `docs/author-document-import.md`.
 - P4 đã có kiểm tra điều kiện, đóng băng exact revision, digest, audit, lịch sử/phản hồi theo chủ sở hữu và tạo bản sửa mới từ kết quả rejected/revision-requested. Gửi lại tạo gói mới; gói cũ không bị sửa. Commit: `4fb096e`, `041f6b3`, `2bb5f62`.
 - Gói mới có trạng thái validated và EvidenceBatch pending. Chưa có worker xử lý bằng chứng AI trong luồng này; không tự tạo kết quả kiểm duyệt hoặc đưa gói vào trạng thái sẵn sàng quyết định.
-- P6 đã có analytics lượt xem và số dư/gross allocation-credit thật. Còn chỉ số chưa có nguồn, đối soát, lịch sử giao dịch và payout.
+- P6 đã có analytics lượt xem, số dư/gross allocation-credit và lịch sử biến động ví thật. Còn chỉ số chưa có nguồn, báo cáo doanh số theo chương, đối soát và payout.
 - Excel giữ các chức năng rộng ở mức Một phần: 3 hoàn thiện, 12 một phần, 11 có nền tảng, 1 đã thay thế. Công thức và cấu trúc hai sheet được giữ nguyên.
 - Gợi ý tách chương đã hỗ trợ tiêu đề Chương/Chapter có số liên tiếp, giữ lời tựa và toàn bộ nội dung hiện tại; tác giả chủ động áp dụng rồi kiểm tra trước khi lưu. Còn nhận diện cấu trúc tài liệu ngoài mẫu này.
 - Ưu tiên tiếp: canonical AST và media, tích hợp bằng chứng/kiểm duyệt, rồi phát hành và early access. Giữ nguyên schema backend theo yêu cầu.
