@@ -184,8 +184,24 @@ export async function submittedPackage(account, submissionId) {
   };
 }
 
-export async function submittedImage(config, account, submissionId, mediaId) {
-  const { manifest } = await loadSubmittedPackage(account, submissionId);
+export async function submittedImage(
+  config,
+  account,
+  submissionId,
+  mediaId,
+  { requireApproved = false } = {},
+) {
+  const { manifest, submission, revision, rights } = await loadSubmittedPackage(
+    account,
+    submissionId,
+  );
+  if (
+    requireApproved &&
+    (submission.status !== 'approved' ||
+      !['approved', 'immutable'].includes(revision.status) ||
+      rights.status !== 'asserted')
+  )
+    throw new HttpError(404, 'not_found', 'Ảnh chưa sẵn sàng.');
   const entry = manifest.find((item) => item.mediaId === mediaId);
   if (!entry) throw new HttpError(404, 'not_found', 'Ảnh không thuộc gói đã gửi.');
   const bytes = await readAuthorMedia(config, account._id, mediaId);
