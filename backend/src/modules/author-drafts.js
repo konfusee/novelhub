@@ -1,4 +1,5 @@
 import { Chapter, ContentRevision, Story } from '../models/index.js';
+import { chapterTextProjection } from './rich-chapter-document.js';
 
 export async function authorDrafts(accountId) {
   const stories = await Story.find({
@@ -28,9 +29,7 @@ export async function authorDrafts(accountId) {
         item.storyId.equals(chapter.storyId),
     );
     if (!revision) return [];
-    const paragraphs = (revision.content?.blocks ?? [])
-      .filter((block) => block.type === 'paragraph' && typeof block.text === 'string')
-      .map((block) => block.text);
+    const paragraphs = chapterTextProjection(revision);
     return [
       {
         id: String(chapter._id),

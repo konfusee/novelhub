@@ -32,6 +32,117 @@ async function fixture() {
   return { author, chapter, revision, path: `${base}/${chapter._id}` };
 }
 describe('chapter editor round-trip protection', () => {
+  const document = {
+    title: 'Chương có định dạng',
+    blocks: [
+      { type: 'heading', level: 2, inlines: [{ text: 'Mở đầu', marks: [] }] },
+      {
+        type: 'paragraph',
+        inlines: [
+          { text: 'Tiếng Việt 👩‍💻', marks: ['italic', 'bold'] },
+          { text: ' nguyên vẹn', marks: ['underline'] },
+        ],
+      },
+      { type: 'scene-break' },
+      { type: 'quote', inlines: [{ text: 'Lời trích dẫn', marks: [] }] },
+    ],
+  };
+  it('upgrades plain drafts explicitly, stores rich revisions and refuses lossy legacy saves', async () => {
+    const f = await fixture();
+    const upgraded = await request(app).get(`${f.path}?format=rich`).set('Cookie', f.author.cookie);
+    expect(upgraded.status).toBe(200);
+    expect(upgraded.body.chapter.document.blocks).toEqual([
+      { type: 'paragraph', inlines: [{ text: 'Nội dung nguyên vẹn.', marks: [] }] },
+    ]);
+    expect(await ContentRevision.countDocuments({ chapterId: f.chapter._id })).toBe(1);
+    const saved = await write('put', f.path, f.author.cookie, {
+      document,
+      expectedVersion: f.chapter.version,
+    });
+    expect(saved.status).toBe(200);
+    const read = await request(app).get(`${f.path}?format=rich`).set('Cookie', f.author.cookie);
+    const normalized = structuredClone(document);
+    normalized.blocks[1].inlines[0].marks = ['bold', 'italic'];
+    expect(read.body.chapter.document).toEqual(normalized);
+    expect(read.body.chapter.title).toBe(document.title);
+    const original = await ContentRevision.findById(f.revision._id);
+    expect(original.content.blocks[0].text).toBe('Nội dung nguyên vẹn.');
+    const latest = await ContentRevision.findOne({ chapterId: f.chapter._id, revisionNumber: 2 });
+    expect(latest.formatVersion).toBe('blocks-v2');
+    expect(latest.content).toEqual(normalized);
+    expect(latest.parentRevisionId.equals(f.revision._id)).toBe(true);
+    const drafts = await request(app).get('/api/author/drafts').set('Cookie', f.author.cookie);
+    expect(drafts.body.items[0].excerpt).toBe(
+      'Mở đầu\n\nTiếng Việt 👩‍💻 nguyên vẹn\n\nLời trích dẫn',
+    );
+    expect(drafts.body.items[0].words).toBe(10);
+    const dashboard = await request(app)
+      .get('/api/author/dashboard')
+      .set('Cookie', f.author.cookie);
+    expect(dashboard.body.drafts[0].written).toBe(10);
+    const legacy = await write('put', f.path, f.author.cookie, {
+      title: 'Mất định dạng',
+      paragraphs: ['Không cho phép'],
+      expectedVersion: saved.body.chapter.version,
+    });
+    expect(legacy.status).toBe(409);
+    expect(legacy.body.error.code).toBe('unsupported_editor_format');
+    const stale = await write('put', f.path, f.author.cookie, {
+      document,
+      expectedVersion: f.chapter.version,
+    });
+    expect(stale.status).toBe(409);
+    expect(stale.body.error.code).toBe('stale_content');
+    expect(await ContentRevision.countDocuments({ chapterId: f.chapter._id })).toBe(2);
+  });
+  it('applies ownership and frozen-source protection to rich writes', async () => {
+    const f = await fixture();
+    const other = await authenticatedAccount('author');
+    expect(
+      (await request(app).get(`${f.path}?format=rich`).set('Cookie', other.cookie)).status,
+    ).toBe(404);
+    expect(
+      (await write('put', f.path, other.cookie, { document, expectedVersion: f.chapter.version }))
+        .status,
+    ).toBe(404);
+    f.revision.immutableAt = new Date();
+    f.revision.status = 'submitted';
+    await f.revision.save();
+    expect(
+      (await request(app).get(`${f.path}?format=rich`).set('Cookie', f.author.cookie)).body.chapter
+        .canEdit,
+    ).toBe(false);
+    const saved = await write('put', f.path, f.author.cookie, {
+      document,
+      expectedVersion: f.chapter.version,
+    });
+    expect(saved.body.error.code).toBe('content_frozen');
+    expect(await ContentRevision.countDocuments({ chapterId: f.chapter._id })).toBe(1);
+  });
+  it.each([
+    { type: 'image', mediaId: 'unowned' },
+    { type: 'paragraph', inlines: [{ text: 'x', marks: ['script'] }] },
+    { type: 'paragraph', inlines: [{ text: 'x', marks: ['bold', 'bold'] }] },
+    { type: 'heading', level: 1, inlines: [] },
+    { type: 'paragraph', inlines: [{ text: '\ud800', marks: [] }] },
+    { type: 'paragraph', inlines: [{ text: 'x', marks: [], html: '<script>' }] },
+    {
+      type: 'paragraph',
+      inlines: [
+        { text: 'x'.repeat(10001), marks: [] },
+        { text: 'y'.repeat(10000), marks: [] },
+      ],
+    },
+  ])('rejects unsupported/invalid AST without altering MongoDB', async (block) => {
+    const f = await fixture();
+    const saved = await write('put', f.path, f.author.cookie, {
+      document: { title: 'Chương', blocks: [block] },
+      expectedVersion: f.chapter.version,
+    });
+    expect(saved.status).toBe(400);
+    expect(await ContentRevision.countDocuments({ chapterId: f.chapter._id })).toBe(1);
+    expect((await Chapter.findById(f.chapter._id)).version).toBe(f.chapter.version);
+  });
   it.each(['heading', 'image', 'marks', 'future-format'])(
     'does not flatten or overwrite %s content',
     async (kind) => {
@@ -62,6 +173,16 @@ describe('chapter editor round-trip protection', () => {
       });
       expect(saved.status).toBe(409);
       expect(saved.body.error.code).toBe('unsupported_editor_format');
+      const richRead = await request(app)
+        .get(`${f.path}?format=rich`)
+        .set('Cookie', f.author.cookie);
+      expect(richRead.status).toBe(409);
+      const richSave = await write('put', f.path, f.author.cookie, {
+        document,
+        expectedVersion: f.chapter.version,
+      });
+      expect(richSave.status).toBe(409);
+      expect(richSave.body.error.code).toBe('unsupported_editor_format');
       expect((await ContentRevision.findById(f.revision._id)).content).toEqual(content);
       expect(await ContentRevision.countDocuments({ chapterId: f.chapter._id })).toBe(1);
       expect((await Chapter.findById(f.chapter._id)).version).toBe(f.chapter.version);
