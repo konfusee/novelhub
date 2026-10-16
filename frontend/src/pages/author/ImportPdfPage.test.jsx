@@ -38,6 +38,30 @@ afterEach(() => {
   cleanup();
   vi.resetAllMocks();
 });
+it('imports a long paragraph with its complete emoji instead of two broken surrogate halves', async () => {
+  const source = 'a'.repeat(19999) + '🌸 Kết thúc.';
+  const { container } = view({ previewText: source });
+  await choose(container);
+  await destination();
+  fireEvent.click(screen.getByRole('button', { name: 'Nhập thành bản nháp' }));
+  await screen.findByText(/Đã lưu .* chương nháp/);
+  const paragraphs = mocks.apiRequest.mock.calls.find(([path]) => path === '/author/imports')[1]
+    .body.chapters[0].paragraphs;
+  expect(paragraphs.join('')).toBe(source);
+  expect(
+    paragraphs.every((paragraph) => paragraph.length <= 20000 && paragraph.isWellFormed()),
+  ).toBe(true);
+});
+it('explains paragraph limits without posting or discarding reviewed text', async () => {
+  const source = Array(1001).fill('Đoạn').join('\n\n');
+  const { container } = view({ previewText: source });
+  await choose(container);
+  await destination();
+  fireEvent.click(screen.getByRole('button', { name: 'Nhập thành bản nháp' }));
+  expect((await screen.findByRole('alert')).textContent).toContain('tối đa 1.000 đoạn');
+  expect(screen.getByRole('textbox', { name: 'ban-thao' }).value).toBe(source);
+  expect(mocks.apiRequest.mock.calls.some(([path]) => path === '/author/imports')).toBe(false);
+});
 it('suggests chapters from current edits only after an explicit action and keeps the preamble', async () => {
   const source =
     'Lời tựa của tác giả.\n\nChương 1: Mở đầu\nNội dung thứ nhất.\n\nChương 2: Tiếp theo\nNội dung thứ hai.';

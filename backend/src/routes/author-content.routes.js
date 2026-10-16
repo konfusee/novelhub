@@ -10,7 +10,7 @@ import { authorDrafts } from '../modules/author-drafts.js';
 import { authorAnalytics } from '../modules/author-analytics.js';
 import { authorEarnings } from '../modules/author-earnings.js';
 import { lockAuthor, ownStory, editable } from '../modules/author-ownership.js';
-import { assertTextEditorRevision } from '../modules/chapter-document.js';
+import { assertTextEditorRevision, chapterParagraphText } from '../modules/chapter-document.js';
 import { changeDraftLifecycle } from '../modules/author-story-lifecycle.js';
 
 const objectId = z.string().regex(/^[a-f\d]{24}$/i);
@@ -28,7 +28,7 @@ const storyInput = z
 const chapterInput = z
   .object({
     title: z.string().trim().min(1).max(200),
-    paragraphs: z.array(z.string().max(20000)).min(1).max(1000),
+    paragraphs: z.array(chapterParagraphText).min(1).max(1000),
   })
   .strict();
 function parse(schema, value) {

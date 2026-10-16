@@ -57,6 +57,59 @@ async function fixture(format = 'txt') {
   return { author, story, input };
 }
 describe('author text document import', () => {
+  it('preserves chunk-boundary spaces and emoji through import, editor reload and a new revision', async () => {
+    const f = await fixture();
+    const paragraphs = ['a'.repeat(19999) + ' ', ' 🌸 Nội dung tiếng Việt.'];
+    const response = await write('/api/author/imports', f.author.cookie, {
+      ...f.input,
+      chapters: [{ title: 'Chương dài', paragraphs }],
+    });
+    expect(response.status).toBe(201);
+    const path = `/api/author/stories/${f.story._id}/chapters/${response.body.chapterIds[0]}`;
+    const loaded = await request(app).get(path).set('Cookie', f.author.cookie);
+    expect(loaded.body.chapter.paragraphs).toEqual(paragraphs);
+    const next = [...paragraphs, 'Đoạn vừa bổ sung 🌿.'];
+    const saved = await request(app)
+      .put(path)
+      .set('Cookie', f.author.cookie)
+      .set('Origin', origin)
+      .send({
+        title: 'Chương dài',
+        paragraphs: next,
+        expectedVersion: loaded.body.chapter.version,
+      });
+    expect(saved.status).toBe(200);
+    expect(
+      (await request(app).get(path).set('Cookie', f.author.cookie)).body.chapter.paragraphs,
+    ).toEqual(next);
+    expect(
+      (
+        await ContentRevision.find({ chapterId: response.body.chapterIds[0] })
+          .sort({ revisionNumber: 1 })
+          .lean()
+      ).map((revision) => revision.content.blocks.map((block) => block.text)),
+    ).toEqual([paragraphs, next]);
+  });
+  it('rejects broken Unicode and blank imports before creating any chapter', async () => {
+    const f = await fixture();
+    for (const paragraphs of [['Nội dung\ud83c'], [' '.repeat(10)], ['a'.repeat(20001)]]) {
+      const response = await write('/api/author/imports', f.author.cookie, {
+        ...f.input,
+        chapters: [{ title: 'Không được lưu', paragraphs }],
+      });
+      expect(response.status).toBe(400);
+    }
+    expect(await Chapter.countDocuments()).toBe(0);
+    expect(
+      (
+        await write(`/api/author/stories/${f.story._id}/chapters`, f.author.cookie, {
+          title: 'Không được lưu',
+          paragraphs: ['\udf38'],
+        })
+      ).status,
+    ).toBe(400);
+    expect(await Chapter.countDocuments()).toBe(0);
+  });
   it.each(['txt', 'pdf'])(
     'saves reviewed %s chapters atomically with provenance and no original file',
     async (format) => {

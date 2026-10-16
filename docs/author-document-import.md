@@ -22,6 +22,8 @@ API yêu cầu phiên đăng nhập, vai trò Author và Origin hợp lệ cho r
 
 ## Xử lý tệp và dữ liệu
 
+Màn nhập và editor dùng chung bộ chia đoạn theo giới hạn 20.000 đơn vị UTF-16 của `blocks-v1`. Ranh giới tách không cắt đôi cụm ký tự: emoji nhiều thành phần, cờ và dấu tiếng Việt kết hợp được giữ cùng nhau. Giữ khoảng trắng đầu/cuối đoạn và tại ranh giới các đoạn khi mở lại rồi lưu tiếp. Xuống dòng CRLF được chuẩn hóa thành LF. Nội dung quá 1.000 đoạn hoặc có Unicode lỗi được báo rõ và giữ nguyên trong màn soạn, không gửi yêu cầu lưu không hợp lệ. Backend kiểm tra lại Unicode và giữ khoảng trắng của đoạn đã nhận; không thay model/schema.
+
 Parser chạy trong worker riêng, tối đa hai worker đồng thời, giới hạn heap 128 MB và thời gian 15 giây. Hủy request hoặc hết giờ chấm dứt worker. Tệp nguồn xử lý trong bộ nhớ; không ghi tệp tạm, object storage, URL/path hoặc MediaAsset. Bộ đệm request được xóa sau khi xử lý; worker bị đóng trên cả nhánh thành công và thất bại.
 
 Chỉ nội dung đã kiểm tra được lưu thành revision cùng checksum/audit tối thiểu. PDF dùng ContentImport `text-layer-pdf` hiện có. DOC/DOCX/TXT/MD ghi định dạng trong AuditEvent `text-import.<format>`; không gắn nhãn các định dạng này là PDF và không mở rộng enum/model.
@@ -40,3 +42,5 @@ Parser tham chiếu: [unpdf](https://github.com/unjs/unpdf), [word-extractor](ht
 - UI kiểm tra upload File thật tới transport, tách/gộp nội dung, chọn truyện DB và giữ nội dung khi lưu lỗi.
 - Browser đã nhập Markdown qua bộ chọn tệp, lưu thành nháp và mở danh sách thấy đúng nội dung/23 từ/liên kết editor. Light/dark, 390/768/1024 px không tràn ngang; không có warn/error console. Không nạp dữ liệu thử vào database nhóm.
 - Bổ sung gợi ý tách chương: 19 kiểm thử liên quan đạt, bao gồm giữ nguyên từng ký tự, lời tựa, nội dung đã sửa, số La Mã/Ả Rập và từ chối trường hợp mơ hồ. Browser đã tạo phần mở đầu cùng hai chương và lưu đủ ba phần trên MongoDB tạm; 390/768/1024 px không tràn ngang, không có lỗi/cảnh báo console.
+- Kiểm tra bản thảo dài: MongoDB tạm giữ đúng emoji, dấu tiếng Việt và khoảng trắng qua nhập, đọc editor và lưu revision mới. Browser đã lưu bản vượt 20.000 ký tự, reload và đối chiếu đầy đủ nội dung sau khi loại dấu phân cách đoạn do editor chèn; giữ nguyên emoji gia đình/dấu kết hợp và không có ký tự thay thế U+FFFD. Không có warn/error console.
+- Lượt hồi quy bản thảo dài: 27 test backend (nhập, nội dung, định dạng, gửi duyệt) và 30 test frontend liên quan đạt. Kiểm tra frontend chạy tuần tự để tránh timeout khi chạy cùng lint/build trên máy phát triển. Lint hai workspace, i18n 1.148 khóa, build và diff check đạt. Các giới hạn 20.000 ký tự mỗi đoạn/1.000 đoạn mỗi chương được giữ nguyên.

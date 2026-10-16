@@ -42,6 +42,37 @@ afterEach(() => {
   cleanup();
   vi.resetAllMocks();
 });
+it('saves edits beyond 20,000 characters without breaking an emoji', async () => {
+  mocks.apiRequest.mockImplementation(async (_path, options) =>
+    options?.method === 'PUT' ? { chapter: { version: 10 } } : { chapter },
+  );
+  view();
+  const text = 'a'.repeat(19999) + '🌸' + 'Nội dung vừa sửa.';
+  fireEvent.change(await screen.findByRole('textbox', { name: 'Nội dung chương' }), {
+    target: { value: text },
+  });
+  fireEvent.click(screen.getByRole('button', { name: 'Lưu', exact: true }));
+  await waitFor(() =>
+    expect(mocks.apiRequest.mock.calls.some(([, options]) => options?.method === 'PUT')).toBe(true),
+  );
+  const paragraphs = mocks.apiRequest.mock.calls.find(([, options]) => options?.method === 'PUT')[1]
+    .body.paragraphs;
+  expect(paragraphs.join('')).toBe(text);
+  expect(
+    paragraphs.every((paragraph) => paragraph.length <= 20000 && paragraph.isWellFormed()),
+  ).toBe(true);
+});
+it('keeps an oversized paragraph count editable and explains how to resolve it before saving', async () => {
+  mocks.apiRequest.mockResolvedValue({ chapter });
+  view();
+  const editor = await screen.findByRole('textbox', { name: 'Nội dung chương' });
+  const text = Array(1001).fill('Đoạn').join('\n\n');
+  fireEvent.change(editor, { target: { value: text } });
+  fireEvent.click(screen.getByRole('button', { name: 'Lưu', exact: true }));
+  expect((await screen.findByRole('alert')).textContent).toContain('tối đa 1.000 đoạn');
+  expect(editor.value).toBe(text);
+  expect(mocks.apiRequest.mock.calls.some(([, options]) => options?.method === 'PUT')).toBe(false);
+});
 it('explains unsupported content without opening a truncated editable body', async () => {
   mocks.apiRequest.mockRejectedValue(
     Object.assign(new Error('Unsupported'), { code: 'unsupported_editor_format', status: 409 }),

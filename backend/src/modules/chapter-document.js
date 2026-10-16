@@ -1,13 +1,18 @@
 import { z } from 'zod';
 import { HttpError } from '../middleware/errors.js';
 
+export const chapterParagraphText = z
+  .string()
+  .max(20000)
+  .refine((text) => text.isWellFormed());
+
 // The current textarea editor round-trips only plain paragraphs. Never flatten
 // richer/unknown documents into a partial string and accept it as a full save.
 export const textChapterDocument = z
   .object({
     title: z.string().trim().min(1).max(200),
     blocks: z
-      .array(z.object({ type: z.literal('paragraph'), text: z.string().max(20000) }).strict())
+      .array(z.object({ type: z.literal('paragraph'), text: chapterParagraphText }).strict())
       .min(1)
       .max(1000),
   })
