@@ -38,6 +38,7 @@ import {
 } from '../../components/ui';
 import { ReaderRange, ReaderSettings } from '../../components/reader/ReaderSettings';
 import { ChapterSegment } from '../../components/reader/ChapterSegment';
+import { ChapterInlineText } from '../../components/reader/ChapterInlineText';
 import { useChapterSwipe } from '../../components/reader/useChapterSwipe';
 import { useBackendDocument } from '../../api/useBackendResource';
 import { apiRequest } from '../../api/client';
@@ -862,17 +863,23 @@ function LoadedChapterReader({ catalog, chapterNumber }) {
     setSelection(null);
   };
   const removeAnnotation = (id) => persistAnnotations(annotations.filter((item) => item.id !== id));
-  const renderParagraph = (paragraph, index, key) => {
+  const renderParagraph = (paragraph, index, key, inlines) => {
+    const renderText = (start, end) =>
+      inlines ? (
+        <ChapterInlineText inlines={inlines} start={start} end={end} />
+      ) : (
+        paragraph.slice(start, end)
+      );
     const marks = annotationsFor(key)
       .filter((item) => item.index === index && paragraph.includes(item.text))
       .map((item) => ({ ...item, start: paragraph.indexOf(item.text) }))
       .sort((a, b) => a.start - b.start);
-    if (!marks.length) return paragraph;
+    if (!marks.length) return renderText(0, paragraph.length);
     const nodes = [];
     let cursor = 0;
     marks.forEach((mark) => {
       if (mark.start < cursor) return;
-      nodes.push(paragraph.slice(cursor, mark.start));
+      nodes.push(<span key={`before-${mark.id}`}>{renderText(cursor, mark.start)}</span>);
       nodes.push(
         <mark
           key={mark.id}
@@ -884,7 +891,7 @@ function LoadedChapterReader({ catalog, chapterNumber }) {
             color: HIGHLIGHT_INK,
           }}
         >
-          {mark.text}
+          {renderText(mark.start, mark.start + mark.text.length)}
           {mark.note && (
             <MessageSquareText size={12} aria-hidden="true" className="ml-1 inline align-super" />
           )}
@@ -892,7 +899,7 @@ function LoadedChapterReader({ catalog, chapterNumber }) {
       );
       cursor = mark.start + mark.text.length;
     });
-    nodes.push(paragraph.slice(cursor));
+    nodes.push(<span key="tail">{renderText(cursor, paragraph.length)}</span>);
     return nodes;
   };
   const chapters = useMemo(

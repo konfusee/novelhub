@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import { ChapterInlineText } from '../../components/reader/ChapterInlineText';
 import {
   AlertTriangle,
   AlignJustify,
@@ -55,7 +56,9 @@ export function GuestReaderPreviewPage() {
   const number = chapter.number ?? '';
   const nextChapter = chapterPreview[chapterIndex + 1];
   const previousChapter = chapterPreview[chapterIndex - 1];
-  const paragraphs = resource.data.chapter.blocks.map((block) => block.text);
+  const paragraphs = resource.data.chapter.blocks.map(
+    (block) => block.text ?? block.inlines?.map((span) => span.text).join('') ?? '',
+  );
   const wordCount = paragraphs.join(' ').trim().split(/\s+/).filter(Boolean).length;
   const { status, retry } = resource;
   const { resolvedTheme, setTheme } = useTheme();
@@ -245,18 +248,35 @@ export function GuestReaderPreviewPage() {
           )}
           {status === 'ready' && (
             <div className="space-y-6" style={{ fontSize, lineHeight }}>
-              {paragraphs.map((paragraph, index) => (
-                <p
-                  className={
-                    index === 3
-                      ? 'border-y border-hairline py-6 text-center font-medium italic text-brand-strong'
-                      : ''
-                  }
-                  key={paragraph}
-                >
-                  {paragraph}
-                </p>
-              ))}
+              {paragraphs.map((paragraph, index) => {
+                const block = resource.data.chapter.blocks[index];
+                if (block.type === 'scene-break')
+                  return <hr key={index} className="my-8 border-line" />;
+                const Block =
+                  block.type === 'heading'
+                    ? block.level === 2
+                      ? 'h2'
+                      : 'h3'
+                    : block.type === 'quote'
+                      ? 'blockquote'
+                      : 'p';
+                return (
+                  <Block
+                    className={
+                      block.type === 'heading'
+                        ? 'font-bold text-[1.25em]'
+                        : block.type === 'quote'
+                          ? 'border-l-2 border-brand pl-4 italic'
+                          : index === 3
+                            ? 'border-y border-hairline py-6 text-center font-medium italic text-brand-strong'
+                            : ''
+                    }
+                    key={index}
+                  >
+                    {block.inlines ? <ChapterInlineText inlines={block.inlines} /> : paragraph}
+                  </Block>
+                );
+              })}
             </div>
           )}
         </article>

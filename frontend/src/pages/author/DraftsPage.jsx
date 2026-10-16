@@ -170,15 +170,30 @@ export function DraftsPage() {
     setBusy(true);
     setRequestError('');
     try {
-      const { chapter } = await apiRequest(`/author/stories/${draft.storyId}/chapters/${draft.id}`);
+      const path = `/author/stories/${draft.storyId}/chapters/${draft.id}`;
+      let response;
+      try {
+        response = await apiRequest(path);
+      } catch (failure) {
+        if (failure.code !== 'unsupported_editor_format') throw failure;
+        response = await apiRequest(`${path}?format=rich`);
+      }
+      const { chapter } = response;
       if (!chapter.canEdit || chapter.version !== draft.version)
         throw new Error(t('draftsData.stale'));
       const result = await apiRequest(`/author/stories/${draft.storyId}/chapters`, {
         method: 'POST',
-        body: {
-          title: `${chapter.title.slice(0, 180)} (${t('draftsData.copy')})`,
-          paragraphs: chapter.paragraphs.length ? chapter.paragraphs : [''],
-        },
+        body: chapter.document
+          ? {
+              document: {
+                ...chapter.document,
+                title: `${chapter.title.slice(0, 180)} (${t('draftsData.copy')})`,
+              },
+            }
+          : {
+              title: `${chapter.title.slice(0, 180)} (${t('draftsData.copy')})`,
+              paragraphs: chapter.paragraphs.length ? chapter.paragraphs : [''],
+            },
       });
       if (!result.chapter?.id) throw new Error(t('draftsData.error'));
       resource.retry();

@@ -8,16 +8,7 @@ import {
 } from '../../components/reader/readerOptions';
 import { Button } from '../../components/ui';
 import { useLocale } from '../../context/LocaleContext';
-
-function InlineText({ inlines }) {
-  return inlines.map((span, index) => {
-    let node = span.text;
-    if (span.marks.includes('bold')) node = <strong>{node}</strong>;
-    if (span.marks.includes('italic')) node = <em>{node}</em>;
-    if (span.marks.includes('underline')) node = <u>{node}</u>;
-    return <span key={index}>{node}</span>;
-  });
-}
+import { ChapterInlineText } from '../../components/reader/ChapterInlineText';
 
 // Same reading font, width limits, spacing options and surface geometry as the reader.
 // Preview settings stay local; preview never records a read, view, purchase or progress.
@@ -91,7 +82,7 @@ export function DraftReadingCanvas({ document, storyTitle }) {
                   .trim() === '*     *     *')
             )
               return <hr key={index} className="my-8 border-hairline" />;
-            const text = <InlineText inlines={block.inlines} />;
+            const text = <ChapterInlineText inlines={block.inlines} />;
             if (block.type === 'heading') {
               const Heading = block.level === 2 ? 'h2' : 'h3';
               return (

@@ -1,13 +1,19 @@
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { Button, Input, Modal } from '../../components/ui';
 import { useBackendDocument } from '../../api/useBackendResource';
 import { useLocale } from '../../context/LocaleContext';
+import { RichChapterInput } from './RichChapterInput';
+import { DraftReadingCanvas } from './DraftReadingCanvas';
+import { richChapterBody } from './richChapterDom';
 
 const empty = Object.freeze({ chapter: null });
-export function ChapterConflictDialog({ chapter, title, body, onClose, onApply }) {
+export function ChapterConflictDialog({ chapter, title, body, richDocument, onClose, onApply }) {
+  const rich = Boolean(richDocument);
+  const richRef = useRef(null);
+  const [mergedDocument, setMergedDocument] = useState(richDocument);
   const { t } = useLocale();
   const resource = useBackendDocument(
-    `/author/stories/${chapter.storyId}/chapters/${chapter.id}`,
+    `/author/stories/${chapter.storyId}/chapters/${chapter.id}${rich ? '?format=rich' : ''}`,
     empty,
   );
   const [mergedTitle, setMergedTitle] = useState(title);
@@ -20,8 +26,10 @@ export function ChapterConflictDialog({ chapter, title, body, onClose, onApply }
     latest.storyId === chapter.storyId &&
     Number.isSafeInteger(latest.version) &&
     latest.version >= 0 &&
-    Array.isArray(latest.paragraphs) &&
-    latest.paragraphs.every((text) => typeof text === 'string') &&
+    (rich
+      ? Array.isArray(latest.document?.blocks)
+      : Array.isArray(latest.paragraphs) &&
+        latest.paragraphs.every((text) => typeof text === 'string')) &&
     typeof latest.title === 'string';
   const canApply = valid && latest.canEdit && checked && Boolean(mergedTitle.trim());
   function refresh() {
@@ -53,12 +61,16 @@ export function ChapterConflictDialog({ chapter, title, body, onClose, onApply }
                 <label className="block text-xs text-muted" htmlFor="conflict-latest-body">
                   {t('chapterConflict.latestBody')}
                 </label>
-                <textarea
-                  id="conflict-latest-body"
-                  readOnly
-                  value={latest.paragraphs.join('\n\n')}
-                  className="h-56 w-full resize-y rounded-2xl border border-line bg-elevated p-3 text-sm leading-6 text-ink"
-                />
+                {rich ? (
+                  <DraftReadingCanvas document={latest.document} storyTitle={chapter.storyTitle} />
+                ) : (
+                  <textarea
+                    id="conflict-latest-body"
+                    readOnly
+                    value={latest.paragraphs.join('\n\n')}
+                    className="h-56 w-full resize-y rounded-2xl border border-line bg-elevated p-3 text-sm leading-6 text-ink"
+                  />
+                )}
               </section>
               <section className="min-w-0 space-y-3" aria-label={t('chapterConflict.merged')}>
                 <h3 className="text-sm font-semibold">{t('chapterConflict.merged')}</h3>
@@ -77,15 +89,43 @@ export function ChapterConflictDialog({ chapter, title, body, onClose, onApply }
                 <label className="block text-xs text-muted" htmlFor="conflict-merged-body">
                   {t('chapterConflict.mergedBody')}
                 </label>
-                <textarea
-                  id="conflict-merged-body"
-                  value={mergedBody}
-                  onChange={(event) => {
-                    setMergedBody(event.target.value);
-                    setChecked(false);
-                  }}
-                  className="h-56 w-full resize-y rounded-2xl border border-line bg-surface p-3 text-sm leading-6 text-ink"
-                />
+                {rich ? (
+                  <>
+                    <Button
+                      variant="secondary"
+                      size="sm"
+                      onClick={() => {
+                        setMergedTitle(latest.document.title);
+                        setMergedDocument(latest.document);
+                        richRef.current?.replace(latest.document);
+                        setChecked(false);
+                      }}
+                    >
+                      {t('richEditor.useServer')}
+                    </Button>
+                    <RichChapterInput
+                      ref={richRef}
+                      initialDocument={richDocument}
+                      label={t('chapterConflict.mergedBody')}
+                      onChange={(document) => {
+                        setMergedDocument(document);
+                        setChecked(false);
+                      }}
+                      onSave={() => {}}
+                      onError={() => setChecked(false)}
+                    />
+                  </>
+                ) : (
+                  <textarea
+                    id="conflict-merged-body"
+                    value={mergedBody}
+                    onChange={(event) => {
+                      setMergedBody(event.target.value);
+                      setChecked(false);
+                    }}
+                    className="h-56 w-full resize-y rounded-2xl border border-line bg-surface p-3 text-sm leading-6 text-ink"
+                  />
+                )}
               </section>
             </div>
           )}
@@ -118,7 +158,16 @@ export function ChapterConflictDialog({ chapter, title, body, onClose, onApply }
           disabled={!canApply}
           onClick={() => {
             if (canApply)
-              onApply({ title: mergedTitle, body: mergedBody, version: latest.version });
+              onApply(
+                rich
+                  ? {
+                      title: mergedTitle,
+                      body: richChapterBody(mergedDocument),
+                      document: { ...mergedDocument, title: mergedTitle },
+                      version: latest.version,
+                    }
+                  : { title: mergedTitle, body: mergedBody, version: latest.version },
+              );
           }}
         >
           {t('chapterConflict.apply')}

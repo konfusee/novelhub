@@ -133,7 +133,9 @@ export function ChapterSegment({
   );
   const data = {
     title: resource.data.chapter.title,
-    paragraphs: resource.data.chapter.blocks.map((block) => block.text),
+    paragraphs: resource.data.chapter.blocks.map(
+      (block) => block.text ?? block.inlines?.map((span) => span.text).join('') ?? '',
+    ),
   };
   const status = resource.status === 'ready' && !data.paragraphs.length ? 'empty' : resource.status;
   const retry = resource.retry;
@@ -212,23 +214,40 @@ export function ChapterSegment({
             textAlign: settings.align,
           }}
         >
-          {data.paragraphs.map((paragraph, index) => (
-            <p
-              data-paragraph={index}
-              key={paragraph.slice(0, 24)}
-              style={{
-                marginBottom:
-                  index === data.paragraphs.length - 1 ? 0 : `${settings.paragraphGap}px`,
-              }}
-              className={
-                index === 0
-                  ? 'first-letter:float-left first-letter:mr-2.5 first-letter:mt-1 first-letter:text-[3.4em] first-letter:font-semibold first-letter:leading-[.8] first-letter:text-brand'
-                  : ''
-              }
-            >
-              {renderParagraph(paragraph, index, chapterKey)}
-            </p>
-          ))}
+          {data.paragraphs.map((paragraph, index) => {
+            const block = resource.data.chapter.blocks[index];
+            if (block.type === 'scene-break')
+              return <hr key={index} className="my-8 border-line" />;
+            const Block =
+              block.type === 'heading'
+                ? block.level === 2
+                  ? 'h2'
+                  : 'h3'
+                : block.type === 'quote'
+                  ? 'blockquote'
+                  : 'p';
+            return (
+              <Block
+                data-paragraph={index}
+                key={index}
+                style={{
+                  marginBottom:
+                    index === data.paragraphs.length - 1 ? 0 : `${settings.paragraphGap}px`,
+                }}
+                className={
+                  block.type === 'heading'
+                    ? 'font-bold text-[1.25em]'
+                    : block.type === 'quote'
+                      ? 'border-l-2 border-brand pl-4 italic'
+                      : index === 0
+                        ? 'first-letter:float-left first-letter:mr-2.5 first-letter:mt-1 first-letter:text-[3.4em] first-letter:font-semibold first-letter:leading-[.8] first-letter:text-brand'
+                        : ''
+                }
+              >
+                {renderParagraph(paragraph, index, chapterKey, block.inlines)}
+              </Block>
+            );
+          })}
         </article>
       )}
     </section>

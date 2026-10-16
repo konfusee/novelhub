@@ -1,4 +1,12 @@
 {
+  "richEditor": {
+    "open": "Soạn thảo có định dạng",
+    "body": "Nội dung chương có định dạng",
+    "hint": "Bôi chọn nội dung rồi dùng công cụ định dạng. Dán dưới dạng văn bản để tránh đưa mã HTML vào bản thảo. Hình ảnh chưa được hỗ trợ.",
+    "selectText": "Đặt con trỏ hoặc bôi chọn nội dung trong bản thảo trước khi dùng công cụ.",
+    "pasteHint": "Hãy dán văn bản hoặc dùng trang Nhập tài liệu. Chưa hỗ trợ kéo thả hình ảnh vào bản thảo.",
+    "useServer": "Dùng bản mới làm bản gộp"
+  },
   "submissionFixes": {
     "status": "Xem trạng thái và phản hồi",
     "content": "Sửa nội dung",
@@ -1315,7 +1323,7 @@
       },
       "content": {
         "title": "Nội dung và định dạng",
-        "hint": "Thông tin truyện hoặc chương phải hợp lệ, có nội dung. Hiện hỗ trợ đoạn văn thuần; các khối hoặc ký pháp định dạng chưa hỗ trợ cần được xử lý trước khi gửi."
+        "hint": "Thông tin truyện hoặc chương phải hợp lệ và có nội dung. Hỗ trợ đoạn văn, tiêu đề, trích dẫn, ngắt cảnh và định dạng chữ trong chế độ soạn thảo có định dạng. Các khối ngoài phạm vi hỗ trợ cần được xử lý trước khi gửi."
       },
       "categories": {
         "title": "Thể loại đang hoạt động",

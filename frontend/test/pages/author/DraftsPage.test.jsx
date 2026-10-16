@@ -48,6 +48,27 @@ afterEach(() => {
   cleanup();
   vi.resetAllMocks();
 });
+it('duplicates structured drafts without losing heading or inline marks', async () => {
+  const document = {
+    title: draft.title,
+    blocks: [{ type: 'heading', level: 2, inlines: [{ text: 'Tiêu đề', marks: ['bold'] }] }],
+  };
+  mocks.apiRequest.mockImplementation(async (path, options) => {
+    if (path === '/author/stories/owned/chapters/seven')
+      throw Object.assign(new Error('Rich'), { code: 'unsupported_editor_format' });
+    if (path.endsWith('?format=rich')) return { chapter: { ...draft, canEdit: true, document } };
+    if (options?.method === 'POST') return { chapter: { id: 'copy' } };
+    return data;
+  });
+  view();
+  fireEvent.click(await screen.findByRole('button', { name: 'Nhân bản Bản thảo trong DB' }));
+  await waitFor(() =>
+    expect(mocks.apiRequest).toHaveBeenCalledWith('/author/stories/owned/chapters', {
+      method: 'POST',
+      body: { document: { ...document, title: 'Bản thảo trong DB (bản sao)' } },
+    }),
+  );
+});
 it('prepares owner deletion, requires confirmation and refreshes after the server accepts', async () => {
   let deleted = false;
   mocks.apiRequest.mockImplementation(async (path, options) => {

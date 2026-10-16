@@ -60,6 +60,48 @@ afterEach(() => {
   vi.clearAllMocks();
 });
 describe('full reader uses persisted chapters while retaining its controls', () => {
+  it('retains source formatting across a reader highlight spanning multiple inline runs', async () => {
+    const original = mocks.apiRequest.getMockImplementation();
+    mocks.apiRequest.mockImplementation((path, options) =>
+      path.includes('/chapters/')
+        ? Promise.resolve({
+            chapter: {
+              title: 'Có định dạng',
+              revisionId: 'rich-revision',
+              blocks: [
+                { type: 'heading', level: 2, inlines: [{ text: 'Tiêu đề chương', marks: [] }] },
+                {
+                  type: 'paragraph',
+                  inlines: [
+                    { text: 'Có chữ ', marks: ['bold'] },
+                    { text: 'đậm bên trong.', marks: ['italic'] },
+                  ],
+                },
+              ],
+            },
+          })
+        : original(path, options),
+    );
+    localStorage.setItem(
+      'novelhub.reader.annotations.v1',
+      JSON.stringify([
+        {
+          id: 77,
+          chapter: 'mongo-story-1',
+          index: 1,
+          text: 'chữ đậm',
+          color: 'yellow',
+          note: 'Ghi chú của tôi',
+        },
+      ]),
+    );
+    view();
+    await screen.findByRole('heading', { name: 'Tiêu đề chương', level: 2 });
+    const highlight = document.getElementById('annotation-77');
+    expect(highlight.querySelector('strong').textContent).toBe('chữ ');
+    expect(highlight.querySelector('em').textContent).toBe('đậm');
+    expect(highlight.title).toBe('Ghi chú của tôi');
+  });
   it('renders real prose and navigates to the next existing chapter even with gaps in numbering', async () => {
     view();
     expect(
