@@ -2,6 +2,16 @@
 
 Ngày lập: 15/10/2026. Trạng thái: đang triển khai; P1 đã hoàn thiện phạm vi hồ sơ Author trên môi trường kiểm tra.
 
+## Cập nhật ngày 16/10/2026
+
+- P2 đã nối MongoDB cho danh sách truyện, tạo truyện/chương, metadata và thể loại versioned, editor và kho nháp. Đổi thể loại không thay snapshot/bộ lọc truyện công khai (`c268cba`). Còn canonical rich-text AST, đổi thứ tự và vòng đời archive/delete; không coi toàn bộ P2 đã nghiệm thu.
+- P3 đã lưu khai báo original/licensed theo gói thông tin truyện, xác nhận và ghi chú nguồn bất biến. Chương dùng khai báo của phiên bản truyện đã duyệt. Upload ảnh và nhập PDF chưa hoàn thiện.
+- P4 đã có kiểm tra điều kiện, đóng băng exact revision, digest, audit, lịch sử/phản hồi theo chủ sở hữu và tạo bản sửa mới từ kết quả rejected/revision-requested. Gửi lại tạo gói mới; gói cũ không bị sửa. Commit: `4fb096e`, `041f6b3`, `2bb5f62`.
+- Gói mới có trạng thái validated và EvidenceBatch pending. Chưa có worker xử lý bằng chứng AI trong luồng này; không tự tạo kết quả kiểm duyệt hoặc đưa gói vào trạng thái sẵn sàng quyết định.
+- P6 đã có analytics lượt xem và số dư/gross allocation-credit thật. Còn chỉ số chưa có nguồn, đối soát, lịch sử giao dịch và payout.
+- Excel giữ các chức năng rộng ở mức Một phần: 3 hoàn thiện, 11 một phần, 12 có nền tảng, 1 đã thay thế. Công thức và cấu trúc hai sheet được giữ nguyên.
+- Ưu tiên tiếp: canonical AST và media/PDF, tích hợp bằng chứng/kiểm duyệt, rồi phát hành và early access. Giữ nguyên schema backend theo yêu cầu.
+
 ## Tiến độ ngày 15/10/2026
 
 - Nền test và hợp đồng Author: `8e7b41f`. Test fixtures tách biệt database nhóm; phần category/policy của P0 tiếp tục trong P2/P5.
@@ -18,7 +28,7 @@ Phạm vi theo yêu cầu mới gồm 16 dòng Author và phần liên quan Auth
 
 Nguồn nghiệp vụ: `docs/decision-log.md`, `docs/requirements-baseline.md`; danh mục tham chiếu: `docs/source/use-case-list.md`. Bản rà soát workspace đã ghi rõ các xung đột ID và diagram. Yêu cầu mở rộng phần 2 của chủ dự án thay thế phân công cũ về phạm vi công việc; quyền actor và các quy tắc tiền/nội dung vẫn giữ theo quyết định V1.
 
-## Hiện trạng
+## Hiện trạng lúc lập kế hoạch (15/10/2026)
 
 - Có auth, session, middleware kiểm tra quyền, API gửi/xem đơn Author.
 - Có model nội dung, identity/governance, audit/notification, finance và statistics; chưa có API/service nghiệp vụ phần 2 hoàn chỉnh.
