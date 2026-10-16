@@ -8,6 +8,7 @@ import {
 } from '../models/index.js';
 import { HttpError } from '../middleware/errors.js';
 import { draftLifecycle } from './author-story-lifecycle.js';
+import { canReorderDraftChapters } from './author-chapter-order.js';
 
 export async function authorStoryWorkspace(account, storyId) {
   const story = await Story.findOne({ _id: storyId, authorAccountId: account._id }).lean();
@@ -39,7 +40,7 @@ export async function authorStoryWorkspace(account, storyId) {
     authorAccountId: account._id,
     contentType: 'chapter',
   })
-    .select('chapterId content')
+    .select('chapterId content status immutableAt')
     .lean();
   const rows = chapters.map((chapter) => {
     const revisionId =
@@ -54,6 +55,7 @@ export async function authorStoryWorkspace(account, storyId) {
       : null;
     return {
       id: String(chapter._id),
+      version: chapter.version,
       title: chapter.title,
       number: chapter.orderKey,
       status: chapter.status,
@@ -74,6 +76,7 @@ export async function authorStoryWorkspace(account, storyId) {
   return {
     story: {
       ...lifecycle,
+      canReorder: canReorderDraftChapters(chapters, revisions, lifecycle),
       id: String(story._id),
       title: story.title,
       description: story.description ?? '',
