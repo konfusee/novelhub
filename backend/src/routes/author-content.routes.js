@@ -25,6 +25,7 @@ import {
 } from '../modules/rich-chapter-document.js';
 import { pinChapterImages } from '../modules/author-chapter-media.js';
 import { changeDraftLifecycle } from '../modules/author-story-lifecycle.js';
+import { prepareStoryRelease, publishStory } from '../modules/author-story-release.js';
 import { reorderDraftChapters } from '../modules/author-chapter-order.js';
 import { changeChapterDraftLifecycle } from '../modules/author-chapter-lifecycle.js';
 
@@ -278,6 +279,33 @@ export function createAuthorContentRouter(config) {
   router.get('/author/stories/:storyId/workspace', async (req, res, next) => {
     try {
       res.json(await authorStoryWorkspace(req.account, req.params.storyId));
+    } catch (error) {
+      next(error);
+    }
+  });
+  router.get('/author/stories/:storyId/release', async (req, res, next) => {
+    try {
+      res
+        .set('Cache-Control', 'private, no-store')
+        .json(await prepareStoryRelease(req.account, parse(objectId, req.params.storyId)));
+    } catch (error) {
+      next(error);
+    }
+  });
+  router.post('/author/stories/:storyId/release', async (req, res, next) => {
+    try {
+      const input = parse(
+        z
+          .object({
+            revisionId: objectId,
+            submissionId: objectId,
+            expectedVersion: z.number().int().min(0),
+          })
+          .strict(),
+        req.body,
+      );
+      const story = await publishStory(req.account, parse(objectId, req.params.storyId), input);
+      res.status(story.replayed ? 200 : 201).json({ story });
     } catch (error) {
       next(error);
     }

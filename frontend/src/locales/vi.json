@@ -1273,6 +1273,25 @@
     "unsupportedTitle": "Chưa hỗ trợ định dạng nội dung này",
     "loadErrorTitle": "Không tải được chương"
   },
+  "storyRelease": {
+    "title": "Phát hành thông tin truyện",
+    "hint": "Chỉ công khai thông tin truyện đã được duyệt. Các chương vẫn cần được duyệt và phát hành riêng. Hãy kiểm tra đúng gói trước khi xác nhận.",
+    "confirm": "Phát hành ngay",
+    "publishing": "Đang phát hành…",
+    "checkAgain": "Kiểm tra lại điều kiện",
+    "failed": "Chưa xác nhận được kết quả phát hành. Hãy kiểm tra lại trước khi thử tiếp.",
+    "success": "Đã phát hành thông tin truyện được duyệt.",
+    "viewPublic": "Xem truyện đã công khai",
+    "checks": {
+      "approval": "Đúng phiên bản đã được phê duyệt",
+      "integrity": "Gói gửi còn đầy đủ và toàn vẹn",
+      "evidence": "Bằng chứng đã xử lý hoặc có lỗi đã ghi nhận để duyệt thủ công",
+      "rights": "Khai báo quyền vẫn có hiệu lực",
+      "categories": "Thể loại đang hoạt động",
+      "media": "Không có ảnh bìa hoặc banner chưa được hỗ trợ",
+      "editable": "Truyện không bị khóa và phiên bản này chưa phát hành"
+    }
+  },
   "submissionPackage": {
     "title": "Xem gói đã gửi",
     "hint": "Bản xem riêng của đúng phiên bản đã gửi duyệt. Nội dung này không đổi theo bản nháp mới và không ghi lượt đọc.",
