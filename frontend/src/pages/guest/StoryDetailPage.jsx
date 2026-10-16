@@ -161,8 +161,8 @@ function StoryAsideSkeleton() {
             <Skeleton className="h-3 w-20" />
           </div>
           <div className="flex-1 space-y-2">
-            {ratingBreakdown.map((value) => (
-              <span key={value} className="flex h-4 items-center gap-2">
+            {ratingBreakdown.map((_, index) => (
+              <span key={index} className="flex h-4 items-center gap-2">
                 <Skeleton className="h-2.5 w-6" />
                 <Skeleton className="h-2 flex-1" />
                 <Skeleton className="h-2.5 w-8" />
@@ -222,6 +222,7 @@ export function StoryDetailPage({ embedded = false }) {
     })),
   };
   const firstChapterId = chapterFeed.data[0]?.id;
+  const PreviewAction = firstChapterId ? ButtonLink : Button;
 
   const storyLoading = story.status === 'loading';
   const storyReady = story.status === 'ready';
@@ -310,9 +311,11 @@ export function StoryDetailPage({ embedded = false }) {
               eager
               className="mx-auto aspect-[2/3] w-full max-w-44 self-start rounded-2xl border border-hairline shadow-soft sm:max-w-56 lg:max-w-none [@media(max-height:500px)]:max-w-36"
               badge={
-                <span className="absolute left-3 top-3 rounded-full bg-surface/95 px-3 py-1 text-xs font-semibold text-brand-strong shadow-whisper">
-                  {t('storyDetail.freePreview')}
-                </span>
+                firstChapterId && (
+                  <span className="absolute left-3 top-3 rounded-full bg-surface/95 px-3 py-1 text-xs font-semibold text-brand-strong shadow-whisper">
+                    {t('storyDetail.freePreview')}
+                  </span>
+                )
               }
             />
             <div className="min-w-0 lg:pl-4">
@@ -378,26 +381,30 @@ export function StoryDetailPage({ embedded = false }) {
                 {t(synopsisOpen ? 'storyDetail.synopsisLess' : 'storyDetail.synopsisMore')}
               </button>
               <div className="mt-5 flex flex-wrap items-center gap-3 lg:mt-7">
-                <ButtonLink
-                  to={
-                    isAuthenticated
-                      ? `/read/${storyId}/${firstChapterId}`
-                      : `/stories/${storyId}/preview/${firstChapterId}`
-                  }
+                <PreviewAction
+                  {...(firstChapterId
+                    ? {
+                        to: isAuthenticated
+                          ? `/read/${storyId}/${firstChapterId}`
+                          : `/stories/${storyId}/preview/${firstChapterId}`,
+                      }
+                    : { disabled: true })}
                   size="lg"
                   trailingIcon={ArrowRight}
                 >
                   <BookOpen size={18} aria-hidden="true" />
                   {t('storyDetail.readPreview')}
-                </ButtonLink>
-                <ButtonLink
-                  to={`/listen/${storyId}/${firstChapterId}`}
+                </PreviewAction>
+                <PreviewAction
+                  {...(firstChapterId
+                    ? { to: `/listen/${storyId}/${firstChapterId}` }
+                    : { disabled: true })}
                   size="lg"
                   variant="secondary"
                 >
                   <Headphones size={18} aria-hidden="true" />
                   {t('storyDetail.listenPreview')}
-                </ButtonLink>
+                </PreviewAction>
                 <IconButton
                   label={t('storyDetail.bookmark')}
                   tone="purple"
@@ -450,7 +457,7 @@ export function StoryDetailPage({ embedded = false }) {
                     <div className="mb-4 flex flex-wrap items-center justify-between gap-2 text-sm text-muted">
                       <span>
                         {t('pagination.chapterRange', {
-                          start: (chapterPage - 1) * 5 + 1,
+                          start: chapters.length ? (chapterPage - 1) * 5 + 1 : 0,
                           end: Math.min(chapterPage * 5, chapters.length),
                           count: chapters.length,
                         })}
@@ -542,14 +549,16 @@ export function StoryDetailPage({ embedded = false }) {
                       <p className="font-semibold">{storyDetail.title}</p>
                       <p className="text-sm text-muted">{t('storyDetail.relatedAudiobooks')}</p>
                     </div>
-                    <ButtonLink
-                      to={`/listen/${storyId}/${firstChapterId}`}
+                    <PreviewAction
+                      {...(firstChapterId
+                        ? { to: `/listen/${storyId}/${firstChapterId}` }
+                        : { disabled: true })}
                       variant="accent"
                       size="sm"
                     >
                       <Headphones size={14} aria-hidden="true" />
                       {t('storyDetail.listenPreview')}
-                    </ButtonLink>
+                    </PreviewAction>
                   </div>
                 )}
               </div>
