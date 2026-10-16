@@ -44,6 +44,67 @@ afterEach(() => {
   cleanup();
   vi.resetAllMocks();
 });
+it('confirms archive and restore using persisted versions without deleting the work', async () => {
+  let archived = false;
+  let version = 7;
+  mocks.apiRequest.mockImplementation(async (path, options) => {
+    if (path === '/catalog/categories') return { items: [] };
+    if (options?.method === 'POST') {
+      archived = options.body.action === 'archive';
+      version++;
+      return { story: { id: 'owned', status: archived ? 'archived' : 'draft', version } };
+    }
+    return {
+      ...workspace,
+      story: {
+        ...workspace.story,
+        status: archived ? 'archived' : 'draft',
+        version,
+        canEdit: !archived,
+        canArchive: !archived,
+        canRestore: archived,
+      },
+    };
+  });
+  view();
+  fireEvent.click(await screen.findByRole('button', { name: 'Sửa thông tin' }));
+  fireEvent.click(await screen.findByRole('button', { name: 'Lưu trữ bản nháp', exact: true }));
+  expect(mocks.apiRequest.mock.calls.some(([, options]) => options?.method === 'POST')).toBe(false);
+  fireEvent.click(await screen.findByRole('button', { name: 'Xác nhận', exact: true }));
+  const restore = await screen.findByRole('button', { name: 'Khôi phục bản nháp', exact: true });
+  expect(screen.getByRole('textbox', { name: 'Tên truyện' }).disabled).toBe(true);
+  expect(mocks.apiRequest).toHaveBeenCalledWith('/author/stories/owned/lifecycle', {
+    method: 'POST',
+    body: { action: 'archive', expectedVersion: 7 },
+  });
+  fireEvent.click(restore);
+  fireEvent.click(await screen.findByRole('button', { name: 'Xác nhận', exact: true }));
+  await waitFor(() =>
+    expect(screen.getByRole('textbox', { name: 'Tên truyện' }).disabled).toBe(false),
+  );
+  expect(mocks.apiRequest).toHaveBeenCalledWith('/author/stories/owned/lifecycle', {
+    method: 'POST',
+    body: { action: 'restore', expectedVersion: 8 },
+  });
+});
+it('prevents archiving unsaved edits and retains the form when archive conflicts', async () => {
+  mocks.apiRequest.mockImplementation(async (path, options) => {
+    if (path === '/catalog/categories') return { items: [] };
+    if (options?.method === 'POST') throw new Error('Truyện đã thay đổi');
+    return { ...workspace, story: { ...workspace.story, status: 'draft', canArchive: true } };
+  });
+  view();
+  fireEvent.click(await screen.findByRole('button', { name: 'Sửa thông tin' }));
+  const title = screen.getByRole('textbox', { name: 'Tên truyện' });
+  fireEvent.change(title, { target: { value: 'Chưa lưu' } });
+  expect(screen.getByRole('button', { name: 'Lưu trữ bản nháp', exact: true }).disabled).toBe(true);
+  fireEvent.change(title, { target: { value: workspace.story.title } });
+  fireEvent.click(screen.getByRole('button', { name: 'Lưu trữ bản nháp', exact: true }));
+  fireEvent.click(await screen.findByRole('button', { name: 'Xác nhận', exact: true }));
+  await screen.findByText('Truyện đã thay đổi');
+  expect(title.value).toBe(workspace.story.title);
+  expect(screen.queryByRole('button', { name: 'Khôi phục bản nháp', exact: true })).toBeNull();
+});
 it('loads real categories and saves the selected IDs in the next draft revision', async () => {
   mocks.apiRequest.mockImplementation(async (path, options) => {
     if (path === '/catalog/categories')

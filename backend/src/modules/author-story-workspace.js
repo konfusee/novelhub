@@ -7,10 +7,12 @@ import {
   Story,
 } from '../models/index.js';
 import { HttpError } from '../middleware/errors.js';
+import { draftLifecycle } from './author-story-lifecycle.js';
 
 export async function authorStoryWorkspace(account, storyId) {
   const story = await Story.findOne({ _id: storyId, authorAccountId: account._id }).lean();
   if (!story) throw new HttpError(404, 'not_found', 'Không tìm thấy truyện.');
+  const lifecycle = await draftLifecycle(story);
   const [categories, chapters, views, ratings] = await Promise.all([
     Category.find({ _id: { $in: story.categoryIds } })
       .select('name status')
@@ -71,6 +73,7 @@ export async function authorStoryWorkspace(account, storyId) {
   });
   return {
     story: {
+      ...lifecycle,
       id: String(story._id),
       title: story.title,
       description: story.description ?? '',

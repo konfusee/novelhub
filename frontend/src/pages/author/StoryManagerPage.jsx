@@ -1,7 +1,8 @@
-import { useMemo, useState } from 'react';
+import { useMemo, useRef, useState } from 'react';
 import { Link, useParams } from 'react-router';
 import {
   AlertTriangle,
+  Archive,
   BarChart3,
   BookOpen,
   CheckCircle2,
@@ -286,6 +287,7 @@ export function StoryManagerPage() {
           <StoryDetails
             key={story.id}
             story={story}
+            onLifecycle={workspace.retry}
             onSaved={(updated) =>
               setSavedStory({ source: workspace.data, story: { ...story, ...updated } })
             }
@@ -634,7 +636,7 @@ function ChapterRow({ chapter, storyId }) {
   );
 }
 
-function StoryDetails({ story, onSaved }) {
+function StoryDetails({ story, onSaved, onLifecycle }) {
   const { t } = useLocale();
   const categories = useBackendResource('/catalog/categories');
   const [categoryIds, setCategoryIds] = useState(story.categoryIds ?? []);
@@ -652,11 +654,13 @@ function StoryDetails({ story, onSaved }) {
   const [title, setTitle] = useState(story.title);
   const [synopsis, setSynopsis] = useState(story.description);
   const [status, setStatus] = useState('idle');
+  const [lifecycleBusy, setLifecycleBusy] = useState(false);
+  const dirty = title !== story.title || synopsis !== story.description || categoriesChanged;
   const titleError = !title.trim();
   const synopsisError = synopsis.trim().length < 40;
   const submit = async (event) => {
     event.preventDefault();
-    if (!story.canEdit || status === 'saving') return;
+    if (!story.canEdit || status === 'saving' || lifecycleBusy) return;
     if (titleError || synopsisError || (categoriesChanged && !categoryIds.length)) {
       setStatus('invalid');
       return;
@@ -701,7 +705,7 @@ function StoryDetails({ story, onSaved }) {
       <Input
         id="story-title"
         value={title}
-        disabled={!story.canEdit || status === 'saving'}
+        disabled={!story.canEdit || status === 'saving' || lifecycleBusy}
         maxLength={100}
         onChange={(event) => {
           setTitle(event.target.value);
@@ -723,7 +727,7 @@ function StoryDetails({ story, onSaved }) {
       <textarea
         id="story-synopsis"
         value={synopsis}
-        disabled={!story.canEdit || status === 'saving'}
+        disabled={!story.canEdit || status === 'saving' || lifecycleBusy}
         maxLength={2000}
         onChange={(event) => {
           setSynopsis(event.target.value);
@@ -739,7 +743,7 @@ function StoryDetails({ story, onSaved }) {
       >
         Tóm tắt cần ít nhất 40 ký tự.
       </p>
-      <fieldset disabled={!story.canEdit || status === 'saving'} className="mt-5">
+      <fieldset disabled={!story.canEdit || status === 'saving' || lifecycleBusy} className="mt-5">
         <legend className="text-sm font-semibold">{t('managerData.categories')}</legend>
         <p className="mt-2 text-xs text-muted">{t('managerData.categoriesHint')}</p>
         {categories.status === 'loading' ? (
@@ -804,12 +808,95 @@ function StoryDetails({ story, onSaved }) {
         <p role="status" className="mr-auto text-xs text-brand-strong">
           {status === 'saved' ? 'Đã lưu thông tin truyện.' : ''}
         </p>
-        <Button type="submit" disabled={status === 'saving' || !story.canEdit}>
+        <Button type="submit" disabled={status === 'saving' || !story.canEdit || lifecycleBusy}>
           <Save size={16} aria-hidden="true" />
           {status === 'saving' ? 'Đang lưu...' : 'Lưu thông tin'}
         </Button>
       </div>
+      <DraftLifecycle
+        story={story}
+        version={version}
+        disabled={dirty || status === 'saving'}
+        onBusy={setLifecycleBusy}
+        onChanged={onLifecycle}
+      />
     </Card>
+  );
+}
+
+function DraftLifecycle({ story, version, disabled, onBusy, onChanged }) {
+  const { t } = useLocale();
+  const [open, setOpen] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const busyRef = useRef(false);
+  const [error, setError] = useState('');
+  const restore = story.status === 'archived';
+  const allowed = restore ? story.canRestore : story.canArchive;
+  const submit = async () => {
+    if (busyRef.current || disabled || !allowed) return;
+    busyRef.current = true;
+    setBusy(true);
+    onBusy(true);
+    setError('');
+    try {
+      const response = await apiRequest(`/author/stories/${story.id}/lifecycle`, {
+        method: 'POST',
+        body: { action: restore ? 'restore' : 'archive', expectedVersion: version },
+      });
+      if (response?.story?.status !== (restore ? 'draft' : 'archived'))
+        throw new Error(t('managerData.lifecycleError'));
+      setOpen(false);
+      onChanged();
+    } catch (failure) {
+      setError(failure.message || t('managerData.lifecycleError'));
+    } finally {
+      busyRef.current = false;
+      setBusy(false);
+      onBusy(false);
+    }
+  };
+  return (
+    <section className="mt-6 border-t border-hairline pt-5">
+      <h3 className="text-sm font-semibold">{t('managerData.lifecycleTitle')}</h3>
+      <p className="mt-2 text-sm leading-6 text-muted">{t('managerData.lifecycleHint')}</p>
+      {disabled && <p className="mt-2 text-xs text-muted">{t('managerData.lifecycleSaveFirst')}</p>}
+      <Button
+        type="button"
+        variant="secondary"
+        className="mt-4"
+        disabled={!allowed || disabled || busy}
+        onClick={() => {
+          setError('');
+          setOpen(true);
+        }}
+      >
+        <Archive size={16} />
+        {t(restore ? 'managerData.restoreDraft' : 'managerData.archiveDraft')}
+      </Button>
+      <Modal
+        open={open}
+        title={t(restore ? 'managerData.restoreDraft' : 'managerData.archiveDraft')}
+        onClose={() => !busy && setOpen(false)}
+      >
+        <p className="font-semibold">{story.title}</p>
+        <p className="mt-3 text-sm leading-6 text-muted">
+          {t(restore ? 'managerData.restoreDraftHint' : 'managerData.archiveDraftHint')}
+        </p>
+        {error && (
+          <p role="alert" className="mt-3 text-sm text-rose-strong">
+            {error}
+          </p>
+        )}
+        <div className="mt-6 flex flex-wrap justify-end gap-2">
+          <Button type="button" variant="secondary" disabled={busy} onClick={() => setOpen(false)}>
+            {t('managerData.lifecycleCancel')}
+          </Button>
+          <Button type="button" disabled={busy || !allowed || disabled} onClick={submit}>
+            {t(busy ? 'managerData.lifecycleBusy' : 'managerData.lifecycleConfirm')}
+          </Button>
+        </div>
+      </Modal>
+    </section>
   );
 }
 

@@ -1087,7 +1087,18 @@
     "categoriesEmpty": "Chưa có thể loại đang hoạt động.",
     "categoriesRequired": "Hãy chọn ít nhất một thể loại đang hoạt động.",
     "retiredCategory": "Ngừng hoạt động",
-    "retryCategories": "Tải lại thể loại"
+    "retryCategories": "Tải lại thể loại",
+    "lifecycleTitle": "Lưu trữ bản nháp",
+    "lifecycleHint": "Áp dụng cho truyện nháp riêng tư chưa từng phát hành, không bị khóa và không có gói đang chờ duyệt. Không xóa truyện hoặc chương.",
+    "lifecycleSaveFirst": "Lưu thay đổi thông tin trước khi lưu trữ hoặc khôi phục.",
+    "archiveDraft": "Lưu trữ bản nháp",
+    "restoreDraft": "Khôi phục bản nháp",
+    "archiveDraftHint": "Truyện và chương được giữ nguyên. Bản nháp tạm ẩn khỏi kho nháp và không thể chỉnh sửa; bạn có thể khôi phục trong trang quản lý truyện.",
+    "restoreDraftHint": "Đưa truyện trở lại trạng thái bản nháp để tiếp tục chỉnh sửa. Thao tác này không xuất bản truyện.",
+    "lifecycleCancel": "Hủy",
+    "lifecycleConfirm": "Xác nhận",
+    "lifecycleBusy": "Đang cập nhật…",
+    "lifecycleError": "Chưa cập nhật được trạng thái. Hãy tải lại và kiểm tra phiên bản truyện."
   },
   "editorData": {
     "chapterCount": "{{count}} chương trong truyện",

@@ -11,6 +11,7 @@ import { authorAnalytics } from '../modules/author-analytics.js';
 import { authorEarnings } from '../modules/author-earnings.js';
 import { lockAuthor, ownStory, editable } from '../modules/author-ownership.js';
 import { assertTextEditorRevision } from '../modules/chapter-document.js';
+import { changeDraftLifecycle } from '../modules/author-story-lifecycle.js';
 
 const objectId = z.string().regex(/^[a-f\d]{24}$/i);
 const storyInput = z
@@ -175,6 +176,23 @@ export function createAuthorContentRouter(config) {
   router.get('/author/stories/:storyId/workspace', async (req, res, next) => {
     try {
       res.json(await authorStoryWorkspace(req.account, req.params.storyId));
+    } catch (error) {
+      next(error);
+    }
+  });
+  router.post('/author/stories/:storyId/lifecycle', async (req, res, next) => {
+    try {
+      const id = parse(objectId, req.params.storyId);
+      const input = parse(
+        z
+          .object({
+            action: z.enum(['archive', 'restore']),
+            expectedVersion: z.number().int().min(0),
+          })
+          .strict(),
+        req.body,
+      );
+      res.json({ story: await changeDraftLifecycle(req.account, id, input) });
     } catch (error) {
       next(error);
     }
