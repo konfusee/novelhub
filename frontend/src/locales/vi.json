@@ -1080,7 +1080,14 @@
     "actualPublished": "{{count}} chương đã xuất bản",
     "audioUnknown": "Chưa có thống kê âm thanh",
     "adviceTitle": "Lời khuyên biên tập viên",
-    "adviceUnknown": "Chưa có phản hồi biên tập cho truyện này."
+    "adviceUnknown": "Chưa có phản hồi biên tập cho truyện này.",
+    "categories": "Thể loại truyện",
+    "categoriesHint": "Chọn từ 1 đến 10 thể loại đang hoạt động. Thay đổi được lưu vào bản nháp, không thay phiên bản đang công khai.",
+    "categoriesError": "Không tải được danh sách thể loại. Thông tin hiện có được giữ nguyên.",
+    "categoriesEmpty": "Chưa có thể loại đang hoạt động.",
+    "categoriesRequired": "Hãy chọn ít nhất một thể loại đang hoạt động.",
+    "retiredCategory": "Ngừng hoạt động",
+    "retryCategories": "Tải lại thể loại"
   },
   "editorData": {
     "chapterCount": "{{count}} chương trong truyện",

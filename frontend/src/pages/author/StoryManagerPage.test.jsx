@@ -44,6 +44,36 @@ afterEach(() => {
   cleanup();
   vi.resetAllMocks();
 });
+it('loads real categories and saves the selected IDs in the next draft revision', async () => {
+  mocks.apiRequest.mockImplementation(async (path, options) => {
+    if (path === '/catalog/categories')
+      return {
+        items: [
+          { id: 'fantasy', name: 'Kỳ ảo' },
+          { id: 'mystery', name: 'Bí ẩn' },
+        ],
+      };
+    if (options?.method === 'PUT')
+      return { story: { ...workspace.story, categoryIds: options.body.categoryIds, version: 8 } };
+    return { ...workspace, story: { ...workspace.story, categoryIds: ['fantasy'] } };
+  });
+  view();
+  fireEvent.click(await screen.findByRole('button', { name: 'Sửa thông tin' }));
+  const mystery = await screen.findByRole('checkbox', { name: 'Bí ẩn', exact: true });
+  fireEvent.click(mystery);
+  fireEvent.click(screen.getByRole('checkbox', { name: 'Kỳ ảo', exact: true }));
+  fireEvent.click(screen.getByRole('button', { name: 'Lưu thông tin' }));
+  await screen.findByText('Đã lưu thông tin truyện.');
+  expect(mocks.apiRequest).toHaveBeenCalledWith('/author/stories/owned', {
+    method: 'PUT',
+    body: {
+      title: workspace.story.title,
+      description: workspace.story.description,
+      expectedVersion: 7,
+      categoryIds: ['mystery'],
+    },
+  });
+});
 it('reads owned chapters with exact IDs and saves versioned metadata from the existing form', async () => {
   mocks.apiRequest.mockImplementation(async (_path, options) =>
     options?.method === 'PUT'
@@ -127,7 +157,7 @@ it('keeps unsaved metadata after a conflict and never claims a successful save',
     target: { value: 'Chưa lưu' },
   });
   fireEvent.click(screen.getByRole('button', { name: 'Lưu thông tin' }));
-  expect(await screen.findByRole('alert')).toBeTruthy();
+  expect(await screen.findByText('Phiên bản đã thay đổi')).toBeTruthy();
   expect(screen.getByRole('textbox', { name: 'Tên truyện' }).value).toBe('Chưa lưu');
   expect(screen.queryByText('Đã lưu thông tin truyện.')).toBeNull();
 });

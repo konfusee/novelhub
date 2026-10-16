@@ -181,7 +181,10 @@ export function createAuthorContentRouter(config) {
   router.put('/author/stories/:storyId', async (req, res, next) => {
     try {
       const input = parse(
-        storyInput.omit({ categoryIds: true }).extend({ expectedVersion: z.number().int().min(0) }),
+        storyInput.extend({
+          categoryIds: storyInput.shape.categoryIds.optional(),
+          expectedVersion: z.number().int().min(0),
+        }),
         req.body,
       );
       const story = await withTransaction(async (session) => {
@@ -194,6 +197,15 @@ export function createAuthorContentRouter(config) {
             'stale_content',
             'Truyện đã thay đổi. Hãy tải lại trước khi lưu.',
           );
+        const categoryIds = input.categoryIds ?? current.categoryIds.map(String);
+        if (input.categoryIds) {
+          const count = await Category.countDocuments({
+            _id: { $in: categoryIds },
+            status: 'active',
+          }).session(session);
+          if (count !== categoryIds.length)
+            throw new HttpError(400, 'invalid_categories', 'Hãy chọn thể loại đang hoạt động.');
+        }
         const last = await ContentRevision.findOne({ storyId: current._id, contentType: 'story' })
           .sort({ revisionNumber: -1 })
           .session(session);
@@ -209,7 +221,7 @@ export function createAuthorContentRouter(config) {
               content: {
                 title: input.title,
                 description: input.description,
-                categoryIds: current.categoryIds.map(String),
+                categoryIds,
               },
             },
           ],
@@ -217,6 +229,7 @@ export function createAuthorContentRouter(config) {
         );
         current.title = input.title;
         current.description = input.description;
+        current.categoryIds = categoryIds;
         current.draftRevisionId = revision._id;
         current.currentRevisionId = revision._id;
         await current.save({ session });
