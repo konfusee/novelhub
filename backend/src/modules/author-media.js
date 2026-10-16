@@ -191,16 +191,7 @@ export async function deleteAuthorMedia(account, id, expectedVersion) {
     if (!asset) throw new HttpError(404, 'not_found', 'Không tìm thấy ảnh.');
     if (asset.version !== expectedVersion)
       throw new HttpError(409, 'stale_content', 'Ảnh đã thay đổi. Hãy tải lại thư viện.');
-    const revision = await ContentRevision.exists({ mediaIds: asset._id }).session(session);
-    const story = await Story.exists({
-      $or: [{ coverMediaId: asset._id }, { 'theme.coverBannerMediaId': asset._id }],
-    }).session(session);
-    if (revision || story || asset.revisionId || asset.chapterId || asset.rightsDeclarationId)
-      throw new HttpError(
-        409,
-        'media_in_use',
-        'Ảnh đang được sử dụng hoặc đã gắn quyền nội dung, không thể xóa.',
-      );
+    await assertUnused(asset, session);
     asset.status = 'deleted';
     asset.deletedAt = new Date();
     await asset.save({ session });
@@ -220,5 +211,73 @@ export async function deleteAuthorMedia(account, id, expectedVersion) {
       { session },
     );
     return { id: String(asset._id) };
+  });
+}
+
+async function assertUnused(asset, session) {
+  const revision = await ContentRevision.exists({ mediaIds: asset._id }).session(session);
+  const story = await Story.exists({
+    $or: [{ coverMediaId: asset._id }, { 'theme.coverBannerMediaId': asset._id }],
+  }).session(session);
+  if (revision || story || asset.revisionId || asset.chapterId || asset.rightsDeclarationId)
+    throw new HttpError(
+      409,
+      'media_in_use',
+      'Ảnh đang được sử dụng hoặc đã gắn quyền nội dung, không thể thay đổi.',
+    );
+}
+
+export async function organizeAuthorMedia(account, input) {
+  return withTransaction(async (session) => {
+    await lockAuthor(account, session);
+    if (input.storyId) editable(await ownStory(account, input.storyId, session));
+    const assets = await MediaAsset.find({
+      _id: { $in: input.items.map((item) => item.id) },
+      ownerAccountId: account._id,
+      status: 'available',
+    }).session(session);
+    if (assets.length !== input.items.length)
+      throw new HttpError(404, 'not_found', 'Một ảnh không còn trong thư viện của bạn.');
+    const expected = new Map(
+      input.items.map((item) => [item.id.toLowerCase(), item.expectedVersion]),
+    );
+    const checkedStories = new Set();
+    let changed = 0;
+    for (const asset of assets) {
+      if (asset.version !== expected.get(String(asset._id)))
+        throw new HttpError(
+          409,
+          'stale_content',
+          'Ảnh đã thay đổi. Hãy tải lại thư viện trước khi sắp xếp.',
+        );
+      await assertUnused(asset, session);
+      if (asset.storyId && !checkedStories.has(String(asset.storyId))) {
+        editable(await ownStory(account, asset.storyId, session));
+        checkedStories.add(String(asset.storyId));
+      }
+      if ((asset.storyId ? String(asset.storyId) : null) === input.storyId) continue;
+      asset.storyId = input.storyId ?? undefined;
+      await asset.save({ session });
+      await AuditEvent.create(
+        [
+          {
+            actorType: 'account',
+            actorId: account._id,
+            action: 'media.organized',
+            targetType: 'MediaAsset',
+            targetId: asset._id,
+            targetVersion: asset.version,
+            result: 'accepted',
+            occurredAt: new Date(),
+          },
+        ],
+        { session },
+      );
+      changed += 1;
+    }
+    return {
+      changed,
+      items: assets.map((asset) => ({ id: String(asset._id), version: asset.version })),
+    };
   });
 }

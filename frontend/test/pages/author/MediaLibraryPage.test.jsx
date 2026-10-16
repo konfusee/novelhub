@@ -116,3 +116,56 @@ it('renders API errors and empty state honestly without fallback assets', async 
   await waitFor(() => expect(screen.getByText('0 B')).toBeTruthy());
   expect(screen.queryByRole('img')).toBeNull();
 });
+it('organizes exactly the filtered images and only changes their group after the server accepts', async () => {
+  let saved = false;
+  mocks.apiRequest.mockImplementation(async (path) => {
+    if (path === '/author/media/organize') {
+      saved = true;
+      return { changed: 1 };
+    }
+    return {
+      ...data,
+      items: [
+        { ...asset, storyId: saved ? 'story' : null },
+        { ...asset, id: 'other', name: 'Khác.webp', storyId: null },
+      ],
+    };
+  });
+  view();
+  await screen.findByRole('button', { name: `Xem chi tiết ${asset.name}` });
+  fireEvent.change(screen.getByRole('searchbox', { name: 'Tìm tài nguyên' }), {
+    target: { value: 'Ảnh lưu thật' },
+  });
+  fireEvent.click(screen.getByRole('button', { name: 'Sắp xếp hàng loạt' }));
+  const dialog = screen.getByRole('dialog', { name: 'Sắp xếp ảnh theo truyện' });
+  expect(within(dialog).getByText(asset.name)).toBeTruthy();
+  expect(within(dialog).queryByText('Khác.webp')).toBeNull();
+  fireEvent.click(within(dialog).getByRole('combobox', { name: 'Truyện nhận ảnh' }));
+  fireEvent.click(
+    await within(dialog).findByRole('option', { name: 'Truyện của tôi', exact: true }),
+  );
+  expect(saved).toBe(false);
+  fireEvent.click(within(dialog).getByRole('button', { name: 'Lưu sắp xếp' }));
+  await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull());
+  expect(mocks.apiRequest).toHaveBeenCalledWith('/author/media/organize', {
+    method: 'POST',
+    body: { storyId: 'story', items: [{ id: 'abc', expectedVersion: 3 }] },
+  });
+  expect(await screen.findByText('Đã cập nhật nhóm cho 1 ảnh.')).toBeTruthy();
+});
+it('retains the organization dialog and destination on stale-server errors', async () => {
+  mocks.apiRequest.mockImplementation(async (path) => {
+    if (path.endsWith('/organize')) throw new Error('Ảnh đã thay đổi');
+    return data;
+  });
+  view();
+  fireEvent.click(await screen.findByRole('button', { name: 'Sắp xếp hàng loạt' }));
+  const dialog = screen.getByRole('dialog');
+  fireEvent.click(within(dialog).getByRole('combobox', { name: 'Truyện nhận ảnh' }));
+  fireEvent.click(
+    await within(dialog).findByRole('option', { name: 'Truyện của tôi', exact: true }),
+  );
+  fireEvent.click(within(dialog).getByRole('button', { name: 'Lưu sắp xếp' }));
+  expect(await within(dialog).findByRole('alert')).toHaveProperty('textContent', 'Ảnh đã thay đổi');
+  expect(within(dialog).getByRole('combobox').textContent).toContain('Truyện của tôi');
+});

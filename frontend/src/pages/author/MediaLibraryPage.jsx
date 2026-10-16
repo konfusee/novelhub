@@ -103,6 +103,9 @@ export function MediaLibraryPage() {
   const [uploadNotice, setUploadNotice] = useState(null);
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [deleteError, setDeleteError] = useState('');
+  const [bulkItems, setBulkItems] = useState(null);
+  const [bulkStory, setBulkStory] = useState('');
+  const [bulkError, setBulkError] = useState('');
 
   const library = useMemo(
     () =>
@@ -232,6 +235,33 @@ export function MediaLibraryPage() {
     }
   };
 
+  const organize = async () => {
+    if (!bulkItems?.length || busyRef.current) return;
+    busyRef.current = true;
+    setBusy(true);
+    setBulkError('');
+    try {
+      const result = await apiRequest('/author/media/organize', {
+        method: 'POST',
+        body: {
+          storyId: bulkStory || null,
+          items: bulkItems.map(({ id, version }) => ({ id, expectedVersion: version })),
+        },
+      });
+      setBulkItems(null);
+      reload();
+      setUploadNotice({
+        tone: 'success',
+        text: t('mediaData.organized', { count: result.changed }),
+      });
+    } catch (failure) {
+      setBulkError(failure.message);
+    } finally {
+      busyRef.current = false;
+      setBusy(false);
+    }
+  };
+
   return (
     <AuthorLayout>
       <div className="page-author py-7">
@@ -246,7 +276,21 @@ export function MediaLibraryPage() {
                 </p>
               </div>
               <div className="flex flex-wrap gap-2">
-                <Button disabled title={t('mediaData.bulkUnavailable')} variant="secondary">
+                <Button
+                  disabled={busy || !showCounts || !shown.length || shown.length > 100}
+                  title={t('mediaData.bulkLimit')}
+                  onClick={() => {
+                    setBulkItems(shown.map(({ id, version, name }) => ({ id, version, name })));
+                    setBulkStory(
+                      shown.every((item) => item.storyId === shown[0].storyId) &&
+                        stories.some((item) => item.id === shown[0].storyId)
+                        ? shown[0].storyId
+                        : '',
+                    );
+                    setBulkError('');
+                  }}
+                  variant="secondary"
+                >
                   <FolderOpen size={16} aria-hidden="true" />
                   Sắp xếp hàng loạt
                 </Button>
@@ -562,6 +606,54 @@ export function MediaLibraryPage() {
             )}
           </div>
         </div>
+
+        <Modal
+          open={Boolean(bulkItems)}
+          title={t('mediaData.bulkTitle')}
+          onClose={() => {
+            if (!busy) setBulkItems(null);
+          }}
+        >
+          <p className="text-sm leading-6 text-muted">
+            {t('mediaData.bulkHint', { count: bulkItems?.length ?? 0 })}
+          </p>
+          <ul className="mt-3 max-h-40 overflow-y-auto rounded-2xl bg-elevated p-3 text-sm">
+            {bulkItems?.map((item) => (
+              <li key={item.id} className="break-all py-1">
+                {item.name}
+              </li>
+            ))}
+          </ul>
+          <label className="mt-4 block text-sm font-semibold">
+            {t('mediaData.bulkDestination')}
+            <Select
+              className="mt-2 w-full"
+              value={bulkStory}
+              disabled={busy}
+              onChange={(event) => setBulkStory(event.target.value)}
+            >
+              <option value="">{t('mediaData.unassigned')}</option>
+              {stories.map((item) => (
+                <option key={item.id} value={item.id}>
+                  {item.title}
+                </option>
+              ))}
+            </Select>
+          </label>
+          {bulkError && (
+            <p role="alert" className="mt-3 text-sm text-rose-strong">
+              {bulkError}
+            </p>
+          )}
+          <div className="mt-6 flex flex-wrap justify-end gap-2">
+            <Button variant="secondary" disabled={busy} onClick={() => setBulkItems(null)}>
+              {t('mediaData.cancel')}
+            </Button>
+            <Button disabled={busy || !bulkItems?.length} onClick={organize}>
+              {t(busy ? 'mediaData.organizing' : 'mediaData.organize')}
+            </Button>
+          </div>
+        </Modal>
 
         <Modal
           open={confirmDelete && Boolean(selected)}

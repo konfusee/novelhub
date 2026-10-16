@@ -23,3 +23,11 @@ Giữ shell, thẻ ảnh, bộ lọc, lưới/danh sách và bảng chi tiết. 
 ## Phạm vi còn lại
 
 Chưa gắn ảnh vào AST chương hoặc gói gửi duyệt, chưa xuất bản ảnh ra public, chưa có audio/object storage adapter. AUT-06 vẫn Một phần. Cần lưu bền thư mục uploads cùng backup MongoDB khi triển khai. Tiến trình bị tắt đột ngột giữa ghi tệp và commit DB có thể để lại tệp mồ côi; chưa có tác vụ dọn mồ côi. Dung lượng UI là tổng ảnh available, không bao gồm bytes giữ lại cho lịch sử đã xóa.
+
+## Sắp xếp ảnh theo truyện
+
+`POST /api/author/media/organize` nhận `storyId` (hoặc null để bỏ nhóm) và 1–100 cặp `id/expectedVersion` không trùng. Máy chủ kiểm tra toàn bộ quyền sở hữu, phiên bản, ảnh chưa dùng và truyện nguồn/đích còn chỉnh sửa được; thay đổi và audit nằm trong một transaction. Một ảnh lỗi thì cả nhóm giữ nguyên. Không sửa schema, không đổi nội dung revision hay tự gắn ảnh bìa xuất bản.
+
+Nút Sắp xếp hàng loạt dùng đúng danh sách đã lọc và đã tải, hiển thị tên ảnh để xem lại trước khi lưu. Lỗi máy chủ giữ nguyên hộp thoại và lựa chọn; giao diện chỉ cập nhật sau khi API chấp nhận. Khi các ảnh cùng thuộc một truyện thì chọn sẵn truyện đó. Không dùng cập nhật mảng giả trong frontend.
+
+Kiểm chứng mở rộng: 9 kiểm thử backend và 7 kiểm thử UI đạt. Browser gán ảnh vào truyện trên MongoDB tạm, reload vẫn đúng truyện; hộp thoại và danh sách chọn truyện hoạt động trên màn hình 390px.

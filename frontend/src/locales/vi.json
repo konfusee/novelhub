@@ -1448,7 +1448,6 @@
   },
   "mediaData": {
     "description": "Quản lý ảnh riêng trong tài khoản. Thông tin và dung lượng lấy trực tiếp từ máy chủ.",
-    "bulkUnavailable": "Chưa hỗ trợ gán hàng loạt. Chọn truyện trước khi tải ảnh.",
     "storage": "Ảnh trong tài khoản",
     "private": "Riêng tư",
     "storageHint": "Ảnh được lưu trên máy chủ và đồng bộ với tài khoản. Tải ảnh chưa tự gắn vào bản xuất bản.",
@@ -1477,6 +1476,14 @@
     "emptyHint": "Tải ảnh bìa, minh họa hoặc biểu ngữ đầu tiên. Ảnh được lưu riêng trong tài khoản.",
     "unavailable": "Ảnh chưa sẵn sàng hoặc không còn truy cập được.",
     "grouping": "Truyện liên quan",
-    "inspectHint": "Chọn ảnh để xem thông tin, liên kết riêng và thao tác quản lý."
+    "inspectHint": "Chọn ảnh để xem thông tin, liên kết riêng và thao tác quản lý.",
+    "bulkLimit": "Sắp xếp tối đa 100 ảnh đang hiển thị mỗi lần. Dùng bộ lọc để thu hẹp danh sách.",
+    "bulkTitle": "Sắp xếp ảnh theo truyện",
+    "bulkHint": "Sắp xếp {{count}} ảnh trong danh sách dưới đây. Thao tác chỉ thay đổi nhóm trong thư viện, chưa đưa ảnh vào bản xuất bản. Ảnh đã dùng trong nội dung hoặc thuộc truyện bị khóa không thể chuyển nhóm.",
+    "bulkDestination": "Truyện nhận ảnh",
+    "organize": "Lưu sắp xếp",
+    "organizing": "Đang lưu sắp xếp…",
+    "organized": "Đã cập nhật nhóm cho {{count}} ảnh.",
+    "cancel": "Hủy"
   }
 }

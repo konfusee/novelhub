@@ -259,3 +259,5 @@ npm run icons:check -w frontend
 Một task chỉ Done khi API lưu/đọc thật, UI phản ánh kết quả thật, quyền/version/error được kiểm tra, test đạt và mapping/tài liệu thay đổi đã cập nhật. Mốc demo và công sức sẽ ước lượng lại sau PR 1; chưa có deadline nên không gán lịch cố định thiếu căn cứ.
 
 - P2/AUT-06: thư viện ảnh dùng metadata MongoDB và bytes thật trên máy chủ; upload PNG/JPEG/WebP, kiểm tra nội dung, ảnh riêng theo chủ sở hữu, phân trang/thống kê, xóa có version và kiểm tra tham chiếu. Không đổi schema và giữ bố cục frontend. 6 test backend, 5 test UI và browser responsive/sáng/tối đạt. Xem docs/author-media-library.md. Chưa gắn media vào AST/gói xuất bản, AUT-06 vẫn Một phần.
+
+- P2/AUT-06: sắp xếp ảnh hàng loạt theo truyện lưu thật, xác nhận danh sách lọc, tối đa 100 ảnh, kiểm tra quyền/version/tham chiếu/truyện bị khóa và rollback cả nhóm. 9 test backend, 7 test UI, browser gán và reload đạt; vẫn chưa tự gắn media vào gói xuất bản.
