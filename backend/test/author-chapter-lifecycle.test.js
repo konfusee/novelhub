@@ -57,6 +57,79 @@ async function fixture() {
   };
 }
 describe('private chapter lifecycle', () => {
+  it('deletes a private draft from working lists, keeps history and prevents restore or overwrite', async () => {
+    const f = await fixture();
+    const before = await Chapter.findById(f.chapterId).lean();
+    const revisions = await ContentRevision.find({ chapterId: f.chapterId }).lean();
+    const input = await f.input('delete');
+    const other = await authenticatedAccount('author');
+    expect((await write(f.path, other.cookie, input)).status).toBe(404);
+    expect(
+      (
+        await write(f.path, f.author.cookie, {
+          ...input,
+          expectedVersion: input.expectedVersion + 1,
+        })
+      ).status,
+    ).toBe(409);
+    expect((await write(f.path, f.author.cookie, input)).status).toBe(200);
+    expect((await f.workspace()).body.chapters).toEqual([]);
+    const after = await Chapter.findById(f.chapterId).lean();
+    expect(after.status).toBe('archived');
+    expect(after.publicationTransition.result).toBe('author-draft-deleted');
+    expect(after.orderKey).toBeLessThan(0);
+    expect(after.draftRevisionId).toEqual(before.draftRevisionId);
+    expect(await ContentRevision.find({ chapterId: f.chapterId }).lean()).toEqual(revisions);
+    expect(
+      (await request(app).get(`${f.base}/chapters/${f.chapterId}`).set('Cookie', f.author.cookie))
+        .status,
+    ).toBe(404);
+    expect(
+      (await request(app).get(`${f.base}/chapters`).set('Cookie', f.author.cookie)).body.items,
+    ).toEqual([]);
+    expect(
+      (await request(app).get('/api/author/drafts').set('Cookie', f.author.cookie)).body.items,
+    ).toEqual([]);
+    expect(
+      (await request(app).get('/api/author/dashboard').set('Cookie', f.author.cookie)).body
+        .stories[0].chapters,
+    ).toBe(0);
+    expect(
+      (
+        await write(f.path, f.author.cookie, {
+          action: 'restore',
+          expectedVersion: after.version,
+          expectedStoryVersion: (await Story.findById(f.storyId)).version,
+        })
+      ).status,
+    ).toBe(409);
+    expect(
+      await AuditEvent.countDocuments({ action: 'chapter.draft-deleted', targetId: f.chapterId }),
+    ).toBe(1);
+    const added = await write(`${f.base}/chapters`, f.author.cookie, {
+      title: 'Chương thay thế',
+      paragraphs: ['Bản mới'],
+    });
+    expect(added.status).toBe(201);
+    expect((await Chapter.findById(added.body.chapter.id)).orderKey).toBe(1);
+    const second = await write(`${f.base}/chapters`, f.author.cookie, {
+      title: 'Chương hai',
+      paragraphs: ['Bản mới hai'],
+    });
+    const workspace = (await f.workspace()).body;
+    expect(workspace.story.canReorder).toBe(true);
+    expect(
+      (
+        await write(`${f.base}/chapters/reorder`, f.author.cookie, {
+          expectedVersion: workspace.story.version,
+          chapters: [second.body.chapter, added.body.chapter].map((chapter) => ({
+            id: chapter.id,
+            expectedVersion: chapter.version,
+          })),
+        })
+      ).status,
+    ).toBe(200);
+  });
   it('archives and restores without changing content, revisions, order or publication', async () => {
     const f = await fixture();
     const before = await Chapter.findById(f.chapterId).lean();
@@ -121,7 +194,7 @@ describe('private chapter lifecycle', () => {
       (await request(app).post(f.path).set('Cookie', f.author.cookie).send(input)).status,
     ).toBe(403);
     for (const bad of [
-      { ...input, action: 'delete' },
+      { ...input, action: 'purge' },
       { ...input, title: 'injected' },
       { action: 'archive' },
     ])

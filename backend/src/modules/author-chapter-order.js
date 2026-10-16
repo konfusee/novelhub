@@ -39,7 +39,10 @@ export async function reorderDraftChapters(account, storyId, input) {
         'Truyện đã thay đổi. Hãy tải lại trước khi sắp xếp.',
       );
     const lifecycle = await draftLifecycle(story, session);
-    const chapters = await Chapter.find({ storyId: story._id })
+    const chapters = await Chapter.find({
+      storyId: story._id,
+      'publicationTransition.result': { $ne: 'author-draft-deleted' },
+    })
       .sort({ orderKey: 1 })
       .limit(1001)
       .session(session);

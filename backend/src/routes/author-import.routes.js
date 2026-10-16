@@ -194,7 +194,7 @@ export function createAuthorImportRouter(config) {
                 _id: chapterId,
                 storyId: story._id,
                 title: chapter.title,
-                orderKey: (last?.orderKey ?? 0) + index + 1,
+                orderKey: Math.max(0, last?.orderKey ?? 0) + index + 1,
                 draftRevisionId: revisionId,
                 currentRevisionId: revisionId,
               },

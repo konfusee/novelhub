@@ -105,7 +105,7 @@ export function createAuthorContentRouter(config) {
       const input = parse(
         z
           .object({
-            action: z.enum(['archive', 'restore']),
+            action: z.enum(['archive', 'restore', 'delete']),
             expectedVersion: z.number().int().min(0),
             expectedStoryVersion: z.number().int().min(0),
           })
@@ -366,7 +366,10 @@ export function createAuthorContentRouter(config) {
   router.get('/author/stories/:storyId/chapters', async (req, res, next) => {
     try {
       await ownStory(req.account, req.params.storyId);
-      const chapters = await Chapter.find({ storyId: req.params.storyId })
+      const chapters = await Chapter.find({
+        storyId: req.params.storyId,
+        'publicationTransition.result': { $ne: 'author-draft-deleted' },
+      })
         .sort({ orderKey: 1 })
         .limit(1000)
         .lean();
@@ -395,7 +398,13 @@ export function createAuthorContentRouter(config) {
           .sort({ orderKey: -1 })
           .session(session);
         const [created] = await Chapter.create(
-          [{ storyId: story._id, title: input.title, orderKey: (last?.orderKey ?? 0) + 1 }],
+          [
+            {
+              storyId: story._id,
+              title: input.title,
+              orderKey: Math.max(0, last?.orderKey ?? 0) + 1,
+            },
+          ],
           { session },
         );
         const [revision] = await ContentRevision.create(
@@ -435,6 +444,7 @@ export function createAuthorContentRouter(config) {
       const chapter = await Chapter.findOne({
         _id: req.params.chapterId,
         storyId: req.params.storyId,
+        'publicationTransition.result': { $ne: 'author-draft-deleted' },
       }).lean();
       if (!chapter) throw new HttpError(404, 'not_found', 'Không tìm thấy chương.');
       const revision = await ContentRevision.findOne({

@@ -16,7 +16,10 @@ export async function authorDashboard(accountId) {
     .lean();
   const ids = stories.map((story) => story._id);
   const [chapters, views, ratings, followers, wallet, feedback, feedbackTotal] = await Promise.all([
-    Chapter.find({ storyId: { $in: ids } })
+    Chapter.find({
+      storyId: { $in: ids },
+      'publicationTransition.result': { $ne: 'author-draft-deleted' },
+    })
       .select('storyId title status draftRevisionId updatedAt')
       .sort({ updatedAt: -1, _id: -1 })
       .lean(),

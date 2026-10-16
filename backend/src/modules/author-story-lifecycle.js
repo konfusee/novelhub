@@ -12,7 +12,9 @@ export function isPrivateDraftChapter(chapter, authorId) {
     !chapter.cancelledAt &&
     (chapter.status === 'draft' ||
       (chapter.status === 'archived' &&
-        chapter.publicationTransition?.result === 'author-draft-archived' &&
+        ['author-draft-archived', 'author-draft-deleted'].includes(
+          chapter.publicationTransition?.result,
+        ) &&
         String(chapter.publicationTransition?.actorAccountId) === String(authorId)))
   );
 }
