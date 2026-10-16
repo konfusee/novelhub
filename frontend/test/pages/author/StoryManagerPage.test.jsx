@@ -1,6 +1,6 @@
 import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { afterEach, expect, it, vi } from 'vitest';
-import { MemoryRouter, Route, Routes } from 'react-router';
+import { MemoryRouter, Route, Routes, useLocation } from 'react-router';
 import { LocaleProvider } from '../../../src/context/LocaleContext';
 import { StoryManagerPage } from '../../../src/pages/author/StoryManagerPage';
 const mocks = vi.hoisted(() => ({ apiRequest: vi.fn() }));
@@ -32,12 +32,25 @@ const workspace = {
   ],
   stats: { availableWords: 23, publishedChapters: 0, reads: 0, rating: '—', ratings: 0 },
 };
+function EditDestination() {
+  const location = useLocation();
+  return (
+    <p>
+      {location.pathname}
+      {location.search}
+    </p>
+  );
+}
 const view = () =>
   render(
     <MemoryRouter initialEntries={['/author/stories/owned']}>
       <LocaleProvider>
         <Routes>
           <Route path="/author/stories/:storyId" element={<StoryManagerPage />} />
+          <Route
+            path="/author/stories/:storyId/chapters/:chapterId/edit"
+            element={<EditDestination />}
+          />
         </Routes>
       </LocaleProvider>
     </MemoryRouter>,
@@ -407,4 +420,38 @@ it('unpublishes through server eligibility, refreshes the row and retains it in 
   expect(screen.getByRole('row', { name: /Chương 7: Chương bảy thật/ }).textContent).toContain(
     'Đã gỡ xuất bản',
   );
+});
+it('opens a new rich correction from the exact unpublished chapter source after confirmation', async () => {
+  mocks.apiRequest.mockImplementation(async (_path, options) =>
+    options?.method === 'POST'
+      ? {
+          revision: {
+            id: 'fresh',
+            storyId: 'owned',
+            chapterId: 'seven',
+            formatVersion: 'blocks-v3',
+          },
+        }
+      : {
+          ...workspace,
+          chapters: [
+            {
+              ...workspace.chapters[0],
+              status: 'unpublished',
+              reviseSource: { id: 'source', version: 12 },
+            },
+          ],
+        },
+  );
+  view();
+  fireEvent.click(await screen.findByRole('button', { name: 'Tạo bản sửa chương', exact: true }));
+  expect(
+    mocks.apiRequest.mock.calls.filter(([, options]) => options.method === 'POST'),
+  ).toHaveLength(0);
+  fireEvent.click(screen.getByRole('button', { name: 'Xác nhận', exact: true }));
+  await screen.findByText('/author/stories/owned/chapters/seven/edit?mode=rich');
+  expect(mocks.apiRequest).toHaveBeenCalledWith('/author/submissions/source/revise', {
+    method: 'POST',
+    body: { expectedVersion: 12 },
+  });
 });

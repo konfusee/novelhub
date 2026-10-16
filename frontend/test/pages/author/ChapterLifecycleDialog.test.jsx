@@ -10,7 +10,12 @@ function view(action = 'archive') {
     <LocaleProvider>
       <ChapterLifecycleDialog
         story={{ id: 'story', version: 8 }}
-        chapter={{ id: 'chapter', title: 'Chương được giữ lại', version: 3 }}
+        chapter={{
+          id: 'chapter',
+          title: 'Chương được giữ lại',
+          version: 3,
+          reviseSource: { id: 'submission', version: 9 },
+        }}
         action={action}
         {...callbacks}
       />
@@ -84,6 +89,32 @@ it('confirms unpublishing with a clear preservation notice and the actual unpubl
 it('does not claim unpublishing when the server returns an unexpected state', async () => {
   mocks.apiRequest.mockResolvedValue({ chapter: { id: 'chapter', status: 'published' } });
   const callbacks = view('unpublish');
+  fireEvent.click(screen.getByRole('button', { name: 'Xác nhận', exact: true }));
+  await screen.findByRole('alert');
+  expect(callbacks.onSaved).not.toHaveBeenCalled();
+});
+it('creates an unpublished correction from the exact server submission version after confirmation', async () => {
+  const revision = {
+    id: 'fresh',
+    storyId: 'story',
+    chapterId: 'chapter',
+    formatVersion: 'blocks-v3',
+  };
+  mocks.apiRequest.mockResolvedValue({ revision });
+  const callbacks = view('reviseUnpublished');
+  expect(mocks.apiRequest).not.toHaveBeenCalled();
+  fireEvent.click(screen.getByRole('button', { name: 'Xác nhận', exact: true }));
+  await waitFor(() => expect(callbacks.onSaved).toHaveBeenCalledWith({ revision }));
+  expect(mocks.apiRequest).toHaveBeenCalledWith('/author/submissions/submission/revise', {
+    method: 'POST',
+    body: { expectedVersion: 9 },
+  });
+});
+it('retains a correction error when the returned revision belongs to another chapter', async () => {
+  mocks.apiRequest.mockResolvedValue({
+    revision: { id: 'fresh', storyId: 'story', chapterId: 'other' },
+  });
+  const callbacks = view('reviseUnpublished');
   fireEvent.click(screen.getByRole('button', { name: 'Xác nhận', exact: true }));
   await screen.findByRole('alert');
   expect(callbacks.onSaved).not.toHaveBeenCalled();

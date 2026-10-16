@@ -17,6 +17,7 @@ import { lockAuthor, ownStory } from './author-ownership.js';
 import { textChapterDocument } from './chapter-document.js';
 import { digest, rightsFacts } from './submission-digests.js';
 import { inspectChapterImages, pinChapterImages } from './author-chapter-media.js';
+import { loadSubmittedPackage } from './author-submitted-package.js';
 import {
   richChapterDocument,
   editableChapterDocument,
@@ -32,6 +33,22 @@ const storyContent = z
   })
   .strict();
 const markup = /<\/?[a-z][^>]*>|```|\*\*|__|!\[[^\]]*\]\(|^\s{0,3}(?:#{1,6}\s|>\s)/imu;
+
+export function canReviseUnpublished(submission, target, revision, story) {
+  return Boolean(
+    submission.chapterId &&
+    submission.status === 'approved' &&
+    !story.authoringFrozen &&
+    ['published', 'unpublished'].includes(story.publicationStatus) &&
+    target?.status === 'unpublished' &&
+    String(target.storyId) === String(submission.storyId) &&
+    String(revision?._id) === String(submission.revisionId) &&
+    revision?.immutableAt &&
+    ['approved', 'immutable'].includes(revision.status) &&
+    String(target.publishedRevisionId) === String(submission.revisionId) &&
+    String(target.draftRevisionId ?? target.currentRevisionId) === String(submission.revisionId),
+  );
+}
 
 async function packageState(account, input, session, config) {
   const story = await ownStory(account, input.storyId, session);
@@ -395,13 +412,22 @@ export async function submissionList(account, { page = 1 } = {}) {
       .skip((page - 1) * 10)
       .limit(10)
       .lean(),
-    Story.find({ authorAccountId: account._id }).sort({ updatedAt: -1 }).select('title').lean(),
+    Story.find({ authorAccountId: account._id })
+      .sort({ updatedAt: -1 })
+      .select('title authoringFrozen publicationStatus')
+      .lean(),
   ]);
   const revisions = await ContentRevision.find({
     _id: { $in: items.map((item) => item.revisionId) },
     authorAccountId: account._id,
   })
-    .select('content.title revisionNumber')
+    .select('content.title revisionNumber status immutableAt')
+    .lean();
+  const chapters = await Chapter.find({
+    _id: { $in: items.map((item) => item.chapterId).filter(Boolean) },
+    storyId: { $in: stories.map((story) => story._id) },
+  })
+    .select('status publishedRevisionId draftRevisionId currentRevisionId storyId')
     .lean();
   const history = await ModerationHistory.find({
     submissionId: { $in: items.map((item) => item._id) },
@@ -429,6 +455,14 @@ export async function submissionList(account, { page = 1 } = {}) {
         title: revision?.content?.title ?? '',
         revisionNumber: revision?.revisionNumber ?? null,
         status: item.status,
+        canRevise:
+          ['rejected', 'revision-requested'].includes(item.status) ||
+          canReviseUnpublished(
+            item,
+            chapters.find((chapter) => chapter._id.equals(item.chapterId)),
+            revision,
+            stories.find((story) => story._id.equals(item.storyId)) ?? {},
+          ),
         version: item.version,
         submittedAt: item.submittedAt,
         decisionSummary: item.decisionSummary ?? '',
@@ -458,8 +492,6 @@ export async function reviseSubmission(account, submissionId, expectedVersion) {
     if (!submission) throw new HttpError(404, 'not_found', 'Không tìm thấy gói gửi.');
     if (submission.version !== expectedVersion)
       throw new HttpError(409, 'stale_submission', 'Kết quả xét duyệt đã thay đổi. Hãy tải lại.');
-    if (!['rejected', 'revision-requested'].includes(submission.status))
-      throw new HttpError(409, 'revision_not_allowed', 'Gói chưa có kết quả yêu cầu chỉnh sửa.');
     const story = await ownStory(account, submission.storyId, session);
     if (story.publicationStatus === 'archived')
       throw new HttpError(409, 'content_frozen', 'Truyện đã được lưu trữ.');
@@ -481,6 +513,21 @@ export async function reviseSubmission(account, submissionId, expectedVersion) {
     }).session(session);
     if (!current)
       throw new HttpError(409, 'missing_revision', 'Không tìm thấy phiên bản hiện tại.');
+    const unpublished = canReviseUnpublished(submission, target, current, story);
+    const unpublishedReplay =
+      submission.chapterId &&
+      submission.status === 'approved' &&
+      target.status === 'draft' &&
+      String(target.publishedRevisionId) === String(submission.revisionId) &&
+      current.parentRevisionId?.equals(submission.revisionId) &&
+      current.status === 'editable' &&
+      !current.immutableAt;
+    if (
+      !['rejected', 'revision-requested'].includes(submission.status) &&
+      !unpublished &&
+      !unpublishedReplay
+    )
+      throw new HttpError(409, 'revision_not_allowed', 'Gói chưa đủ điều kiện tạo bản sửa.');
     if (
       current.parentRevisionId?.equals(submission.revisionId) &&
       current.status === 'editable' &&
@@ -495,6 +542,7 @@ export async function reviseSubmission(account, submissionId, expectedVersion) {
       };
     if (!current._id.equals(submission.revisionId) || !current.immutableAt)
       throw new HttpError(409, 'stale_content', 'Nội dung đã chuyển sang phiên bản khác.');
+    if (unpublished) await loadSubmittedPackage(account, submission._id, session);
     const last = await ContentRevision.findOne({
       storyId: story._id,
       contentType: current.contentType,
@@ -537,6 +585,10 @@ export async function reviseSubmission(account, submissionId, expectedVersion) {
         story.publicationStatus = story.publishedRevisionId ? 'unpublished' : 'draft';
     }
     await target.save({ session });
+    if (unpublished) {
+      story.increment();
+      await story.save({ session });
+    }
     const now = new Date();
     await AuditEvent.create(
       [

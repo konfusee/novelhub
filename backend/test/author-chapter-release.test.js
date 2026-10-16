@@ -477,3 +477,96 @@ it('rolls back chapter and parent versions when an unpublish audit fails', async
   expect((await Story.findById(f.storyId)).version).toBe(f.lifecycleBody.expectedStoryVersion);
   expect(await AuditEvent.countDocuments({ action: 'chapter.unpublished' })).toBe(0);
 });
+async function unpublishedFixture() {
+  const f = await publishedFixture();
+  expect((await write(f.cookie, f.lifecycleUrl, f.lifecycleBody)).status).toBe(200);
+  const workspace = (await get(f.cookie, `/api/author/stories/${f.storyId}/workspace`)).body;
+  const source = workspace.chapters[0].reviseSource;
+  expect(source.id).toBe(String(f.submission._id));
+  return {
+    ...f,
+    reviseUrl: `/api/author/submissions/${source.id}/revise`,
+    reviseBody: { expectedVersion: source.version },
+  };
+}
+it('creates one fresh private revision from unpublished approved content and preserves the old package', async () => {
+  const f = await unpublishedFixture();
+  const before = await Chapter.findById(f.chapterId);
+  const old = await ContentRevision.findById(before.publishedRevisionId).lean();
+  const feed = (await get(f.cookie, '/api/author/submissions')).body;
+  expect(feed.items.find((row) => row.id === String(f.submission._id)).canRevise).toBe(true);
+  const results = await Promise.all([
+    write(f.cookie, f.reviseUrl, f.reviseBody),
+    write(f.cookie, f.reviseUrl, f.reviseBody),
+  ]);
+  expect(results.map((row) => row.status).sort()).toEqual([200, 201]);
+  expect(results[0].body.revision.id).toBe(results[1].body.revision.id);
+  const after = await Chapter.findById(f.chapterId);
+  const fresh = await ContentRevision.findById(after.draftRevisionId);
+  expect(after.status).toBe('draft');
+  expect(after.firstReleasedAt).toEqual(before.firstReleasedAt);
+  expect(after.publishedRevisionId).toEqual(before.publishedRevisionId);
+  expect(fresh.status).toBe('editable');
+  expect(fresh.content).toEqual(old.content);
+  expect(String(fresh.parentRevisionId)).toBe(String(old._id));
+  expect(fresh.immutableAt).toBeUndefined();
+  expect(fresh.packageDigest).toBeUndefined();
+  expect(fresh.rightsDeclarationId).toBeUndefined();
+  expect(await ContentRevision.findById(old._id).lean()).toEqual(old);
+  expect(
+    (await request(app).get(`/api/catalog/stories/${f.storyId}/chapters/${f.chapterId}`)).status,
+  ).toBe(404);
+  expect((await f.prepare()).body.ready).toBe(false);
+  const prepared = (
+    await get(
+      f.cookie,
+      `/api/author/submissions/prepare?storyId=${f.storyId}&chapterId=${f.chapterId}`,
+    )
+  ).body;
+  expect(prepared.ready).toBe(true);
+  const sent = await write(f.cookie, '/api/author/submissions', {
+    storyId: f.storyId,
+    chapterId: f.chapterId,
+    revisionId: String(fresh._id),
+    expectedVersion: prepared.target.version,
+  });
+  expect(sent.status).toBe(201);
+  expect((await f.prepare()).body.ready).toBe(false);
+  expect((await PublicationSubmission.findById(sent.body.submission.id)).status).toBe('validated');
+});
+it('does not offer a fresh approved-source revision while the chapter is still published', async () => {
+  const f = await publishedFixture();
+  const sub = await PublicationSubmission.findById(f.submission._id);
+  const feed = (await get(f.cookie, '/api/author/submissions')).body;
+  expect(feed.items.find((row) => row.id === String(sub._id)).canRevise).toBe(false);
+  expect(
+    (
+      await write(f.cookie, `/api/author/submissions/${sub._id}/revise`, {
+        expectedVersion: sub.version,
+      })
+    ).status,
+  ).toBe(409);
+});
+it('rejects stale or foreign unpublished revision requests and a corrupt immutable source', async () => {
+  const f = await unpublishedFixture();
+  expect((await write(f.cookie, f.reviseUrl, { expectedVersion: 999 })).status).toBe(409);
+  const other = await authenticatedAccount('author');
+  expect((await write(other.cookie, f.reviseUrl, f.reviseBody)).status).toBe(404);
+  await ContentRevision.collection.updateOne(
+    { _id: f.revision._id },
+    { $set: { 'content.title': 'Corrupt source' } },
+  );
+  expect((await write(f.cookie, f.reviseUrl, f.reviseBody)).status).toBe(409);
+  expect((await Chapter.findById(f.chapterId)).status).toBe('unpublished');
+});
+it('rolls back an unpublished revision and parent versions when its audit fails', async () => {
+  const f = await unpublishedFixture();
+  const chapter = await Chapter.findById(f.chapterId);
+  const story = await Story.findById(f.storyId);
+  const count = await ContentRevision.countDocuments();
+  vi.spyOn(AuditEvent, 'create').mockRejectedValueOnce(new Error('Injected audit failure'));
+  expect((await write(f.cookie, f.reviseUrl, f.reviseBody)).status).toBe(500);
+  expect(await ContentRevision.countDocuments()).toBe(count);
+  expect((await Chapter.findById(f.chapterId)).version).toBe(chapter.version);
+  expect((await Story.findById(f.storyId)).version).toBe(story.version);
+});
