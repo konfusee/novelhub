@@ -19,4 +19,4 @@ Số xu giữ nguyên amount/direction đã ghi nhận, không suy doanh thu t�
 - Lint hai workspace, i18n 1.228 khóa, build frontend, icons, Prettier và diff check đạt.
 - Browser dùng MongoDB replica set tạm có 21 bản ghi thử: trang đầu 20, trang sau 1, quay lại, lọc khoản giảm, đổi kỳ và reload đều đọc đúng API. Kiểm tra light/dark, 390/768/1024 px không tràn ngang toàn trang; bảng rộng cuộn trong card. Console cuối không warn/error. Fixture giao dịch không được nạp vào database nhóm.
 
-Đây là phần lịch sử ledger của P6, chưa hoàn thiện đối soát, doanh số theo chương, phiếu/tháng payout, trạng thái Paid/Failed hoặc thực thi thanh toán. Tiến độ use case rộng tiếp tục Một phần. Workbook đang có file khóa Excel mở nên bằng chứng commit này được ghi tại tài liệu/kế hoạch, chưa ghi đè workbook.
+Đây là phần lịch sử ledger của P6. Đọc trạng thái/phiếu payout đã được bổ sung trong `8e5e236`, xem `author-payout-history.md`; sửa reset cursor khi quay về bộ lọc cũ trong `6aea15e`. Còn đối soát, doanh số theo chương và thực thi payout đầy đủ. Tiến độ use case rộng tiếp tục Một phần; bằng chứng đã đồng bộ workbook.

@@ -12,4 +12,4 @@ Kiểm tra 16/10/2026: 17 test frontend liên quan đạt, bao phủ đọc đ�
 
 Browser sử dụng MongoDB replica set tạm: hai thẻ cùng chương, thẻ thứ hai lưu trước, thẻ thứ nhất gặp 409, mở so sánh thấy hai thay đổi khác nhau, hủy giữ bản local, gộp cả hai thay đổi, áp dụng chưa lưu, lưu riêng rồi reload đọc đủ nội dung từ MongoDB. Kiểm tra light/dark và 390/768/1024 px không tràn ngang; thao tác bằng bàn phím. Lượt console sau reload cuối không có warn/error. Không ghi fixture vào database nhóm.
 
-UC-AUT-04 tiếp tục ở mức Một phần. Bằng chứng commit này được ghi tại đây và kế hoạch; workbook chưa ghi thêm commit vì có file khóa Excel đang mở tại thời điểm chốt chức năng.
+UC-AUT-04 tiếp tục ở mức Một phần. Bằng chứng đã được đồng bộ vào workbook cùng tài liệu và kế hoạch.
