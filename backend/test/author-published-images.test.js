@@ -174,6 +174,7 @@ it('publishes the frozen illustrated package and serves only its bound WebP whil
   expect(image.status).toBe(200);
   expect(image.headers['content-type']).toMatch(/image\/webp/);
   expect(image.headers['cache-control']).toBe('private, no-store');
+  expect(image.headers.vary).toMatch(/Cookie/);
   expect(image.headers['x-content-type-options']).toBe('nosniff');
   const asset = await MediaAsset.findById(f.asset.id).select('+objectKey');
   expect(image.body).toEqual(await readFile(path.join(root, asset.objectKey)));
@@ -321,3 +322,26 @@ it.each(['expired', 'revoked', 'wrong-revision'])(
     expect((await get(reader.cookie, f.imageUrl)).status).toBe(403);
   },
 );
+it('marks unpublished, wrong-revision and locked chapter/image errors as private and non-cacheable', async () => {
+  const f = await fixture();
+  const check = async (url, status) => {
+    const response = await request(app).get(url);
+    expect(response.status).toBe(status);
+    expect(response.headers['cache-control']).toBe('private, no-store');
+    expect(response.headers.vary).toMatch(/Cookie/);
+  };
+  await check(f.publicUrl, 404);
+  await check(f.imageUrl, 404);
+  expect((await write(f.cookie, f.endpoint, f.body)).status).toBe(201);
+  await check(f.imageUrl.replace(f.target.revisionId, f.storyId), 404);
+  const chapter = await Chapter.findById(f.chapterId);
+  chapter.earlyAccess = {
+    enabled: true,
+    durationDays: 1,
+    coinPrice: 10,
+    endsAt: new Date(Date.now() + 86400000),
+  };
+  await chapter.save();
+  await check(f.publicUrl, 403);
+  await check(f.imageUrl, 403);
+});

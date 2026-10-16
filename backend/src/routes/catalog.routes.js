@@ -388,6 +388,7 @@ export function createCatalogRouter(config) {
     }
   });
   router.get('/catalog/stories/:storyId/chapters/:chapterId', async (req, res, next) => {
+    res.set('Cache-Control', 'private, no-store').vary('Cookie');
     try {
       const chapter = await visibleChapter(config, req.params, req.headers.cookie);
       const revision = await ContentRevision.findOne({
@@ -407,7 +408,6 @@ export function createCatalogRouter(config) {
         if (!(error instanceof HttpError)) throw error;
         throw new HttpError(404, 'not_found', 'Chương chưa sẵn sàng.');
       }
-      res.set('Cache-Control', 'private, no-store');
       res.json({
         chapter: {
           id: String(chapter._id),
@@ -429,6 +429,7 @@ export function createCatalogRouter(config) {
   router.get(
     '/catalog/stories/:storyId/chapters/:chapterId/revisions/:revisionId/media/:mediaId',
     async (req, res, next) => {
+      res.set('Cache-Control', 'private, no-store').vary('Cookie');
       try {
         const chapter = await visibleChapter(config, req.params, req.headers.cookie);
         if (String(chapter.publishedRevisionId) !== req.params.revisionId)
@@ -458,11 +459,7 @@ export function createCatalogRouter(config) {
           req.params.mediaId,
           { requireApproved: true },
         );
-        res
-          .set('Cache-Control', 'private, no-store')
-          .set('X-Content-Type-Options', 'nosniff')
-          .type('image/webp')
-          .send(bytes);
+        res.set('X-Content-Type-Options', 'nosniff').type('image/webp').send(bytes);
       } catch (error) {
         next(error);
       }
