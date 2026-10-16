@@ -35,6 +35,7 @@ import { useBackendDocument } from '../../api/useBackendResource';
 import { apiRequest } from '../../api/client';
 import { useLocale } from '../../context/LocaleContext';
 import { chapterParagraphs, ChapterTextError } from './chapterParagraphs';
+import { ChapterConflictDialog } from './ChapterConflictDialog';
 import {
   Badge,
   Button,
@@ -210,6 +211,8 @@ function ChapterEditor({ chapter }) {
   const [saveBusy, setSaveBusy] = useState(false);
   const busyRef = useRef(false);
   const [saveError, setSaveError] = useState('');
+  const [conflict, setConflict] = useState(false);
+  const [compareOpen, setCompareOpen] = useState(false);
   const bodyRef = useRef(null);
   const [title, setTitle] = useState(chapter.title);
   const [body, setBody] = useState(chapter.body);
@@ -246,6 +249,7 @@ function ChapterEditor({ chapter }) {
   };
   const saveChapter = async () => {
     if (busyRef.current) return false;
+    if (conflict) return false;
     if (saved) return true;
     if (!chapter.canEdit) return false;
     if (!title.trim()) {
@@ -269,6 +273,10 @@ function ChapterEditor({ chapter }) {
       setSaved(true);
       return true;
     } catch (error) {
+      if (error.status === 409 && error.code === 'stale_content') {
+        setConflict(true);
+        setSubmit('idle');
+      }
       setSaveError(
         error instanceof ChapterTextError
           ? t(`chapterText.${error.code}`)
@@ -319,7 +327,7 @@ function ChapterEditor({ chapter }) {
       groups={groups}
       onAdd={addChapter}
       storyId={chapter.storyId}
-      addDisabled={saveBusy || !chapter.canCreate}
+      addDisabled={saveBusy || conflict || !chapter.canCreate}
       onLeave={leave}
     />
   );
@@ -362,7 +370,7 @@ function ChapterEditor({ chapter }) {
         onOpenRight={() => setRightOpen(true)}
         onPreview={() => setPreviewOpen(true)}
         onSubmit={() => setSubmit('confirm')}
-        submitDisabled={saveBusy || !chapter.canEdit}
+        submitDisabled={saveBusy || conflict || !chapter.canEdit}
       />
 
       <div className="nh-grid-12 nh-fade-enter grid min-h-0 flex-1 nh-layout-xl-3-6-3">
@@ -406,7 +414,7 @@ function ChapterEditor({ chapter }) {
               variant="secondary"
               size="sm"
               onClick={saveChapter}
-              disabled={saved || saveBusy || !chapter.canEdit}
+              disabled={saved || saveBusy || conflict || !chapter.canEdit}
               className="shrink-0"
             >
               <Save size={14} aria-hidden="true" />
@@ -423,6 +431,19 @@ function ChapterEditor({ chapter }) {
             <p role="alert" className="px-5 pt-4 text-sm text-rose-strong">
               {saveError}
             </p>
+          )}
+          {conflict && (
+            <div className="px-5 pt-3">
+              <p className="text-sm leading-6 text-muted">{t('chapterConflict.notice')}</p>
+              <Button
+                variant="secondary"
+                size="sm"
+                className="mt-2"
+                onClick={() => setCompareOpen(true)}
+              >
+                {t('chapterConflict.open')}
+              </Button>
+            </div>
           )}
           <article className="mx-auto max-w-[760px] px-5 py-10 sm:px-10 lg:py-14">
             <label htmlFor="chapter-title" className="sr-only">
@@ -512,6 +533,23 @@ function ChapterEditor({ chapter }) {
         {utilityPanel}
       </EditorSheet>
 
+      {compareOpen && (
+        <ChapterConflictDialog
+          chapter={chapter}
+          title={title}
+          body={body}
+          onClose={() => setCompareOpen(false)}
+          onApply={(merged) => {
+            setTitle(merged.title);
+            setBody(merged.body);
+            setVersion(merged.version);
+            setSaved(false);
+            setConflict(false);
+            setSaveError('');
+            setCompareOpen(false);
+          }}
+        />
+      )}
       <Modal
         open={previewOpen}
         title="Xem trước cho độc giả"

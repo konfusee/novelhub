@@ -185,6 +185,53 @@ it('loads actual paragraphs and uses the next stored chapter ID, then saves succ
     }),
   );
 });
+it('merges a stale draft explicitly and saves only on a separate action against the fetched version', async () => {
+  let reads = 0;
+  let writes = 0;
+  mocks.apiRequest.mockImplementation(async (_path, options) => {
+    if (options?.method === 'PUT') {
+      if (++writes === 1)
+        throw Object.assign(new Error('Chương đã thay đổi'), {
+          status: 409,
+          code: 'stale_content',
+        });
+      return { chapter: { version: 14 } };
+    }
+    return {
+      chapter:
+        ++reads === 1 ? chapter : { ...chapter, version: 13, paragraphs: ['Bản mới ở thẻ khác.'] },
+    };
+  });
+  view();
+  const body = await screen.findByRole('textbox', { name: 'Nội dung chương' });
+  fireEvent.change(body, { target: { value: 'Bản chưa lưu.' } });
+  fireEvent.click(screen.getByRole('button', { name: 'Lưu', exact: true }));
+  await screen.findByRole('button', { name: 'So sánh với bản mới' });
+  expect(body.value).toBe('Bản chưa lưu.');
+  expect(screen.getByRole('button', { name: 'Lưu', exact: true }).disabled).toBe(true);
+  expect(screen.getByRole('button', { name: 'Gửi chương', exact: true }).disabled).toBe(true);
+  fireEvent.keyDown(body, { key: 's', ctrlKey: true });
+  expect(writes).toBe(1);
+  fireEvent.click(screen.getByRole('button', { name: 'So sánh với bản mới' }));
+  await screen.findByRole('textbox', { name: 'Nội dung đã lưu' });
+  fireEvent.change(screen.getByRole('textbox', { name: 'Nội dung sau khi gộp' }), {
+    target: { value: 'Bản mới ở thẻ khác.\n\nBản chưa lưu.' },
+  });
+  fireEvent.click(screen.getByRole('checkbox'));
+  fireEvent.click(screen.getByRole('button', { name: 'Đưa bản đã gộp về editor' }));
+  expect(writes).toBe(1);
+  expect(body.value).toBe('Bản mới ở thẻ khác.\n\nBản chưa lưu.');
+  fireEvent.click(screen.getByRole('button', { name: 'Lưu', exact: true }));
+  await waitFor(() => expect(writes).toBe(2));
+  expect(mocks.apiRequest).toHaveBeenLastCalledWith('/author/stories/owned/chapters/seven', {
+    method: 'PUT',
+    body: {
+      title: 'Chương thật',
+      paragraphs: ['Bản mới ở thẻ khác.', 'Bản chưa lưu.'],
+      expectedVersion: 13,
+    },
+  });
+});
 it('retains unsaved text on a conflict instead of reporting a successful save', async () => {
   mocks.apiRequest.mockImplementation(async (_path, options) => {
     if (options?.method === 'PUT') throw new Error('Phiên bản đã thay đổi');
