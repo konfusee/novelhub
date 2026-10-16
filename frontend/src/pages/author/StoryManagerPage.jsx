@@ -29,6 +29,8 @@ import { useLocale } from '../../context/LocaleContext';
 import { StoryCover } from '../../components/story/StoryCover';
 import { ChapterOrderDialog } from './ChapterOrderDialog';
 import { ChapterLifecycleDialog } from './ChapterLifecycleDialog';
+import { StoryReleaseDialog } from './StoryReleaseDialog';
+import { ROUTES } from '../../app/routes';
 import {
   Badge,
   Button,
@@ -152,6 +154,7 @@ export function StoryManagerPage() {
   const [notice, setNotice] = useState('');
   const [orderOpen, setOrderOpen] = useState(false);
   const [chapterAction, setChapterAction] = useState(null);
+  const [releaseOpen, setReleaseOpen] = useState(false);
   const createChapter = async (event) => {
     event.preventDefault();
     if (newBusy || !newTitle.trim()) return;
@@ -253,6 +256,20 @@ export function StoryManagerPage() {
               </ul>
             </div>
             <div className="flex flex-wrap gap-2 lg:max-w-xs lg:justify-end">
+              {(story.canReleaseMetadata ?? story.status === 'approved') && (
+                <Button
+                  variant="secondary"
+                  disabled={workspace.status !== 'ready'}
+                  onClick={() => setReleaseOpen(true)}
+                >
+                  {t('storyRelease.title')}
+                </Button>
+              )}
+              {story.status === 'published' && (
+                <ButtonLink variant="secondary" to={ROUTES.story(storyId)}>
+                  {t('storyRelease.viewPublic')}
+                </ButtonLink>
+              )}
               <Button
                 disabled={!story.canEdit || workspace.status !== 'ready'}
                 onClick={() => setNewOpen(true)}
@@ -277,6 +294,17 @@ export function StoryManagerPage() {
           </div>
         </Card>
 
+        {releaseOpen && (
+          <StoryReleaseDialog
+            storyId={storyId}
+            onClose={() => setReleaseOpen(false)}
+            onReleased={() => {
+              setReleaseOpen(false);
+              setNotice(t('storyRelease.success'));
+              workspace.retry();
+            }}
+          />
+        )}
         <div className="mt-6 max-w-full">
           <Tabs
             singleRow

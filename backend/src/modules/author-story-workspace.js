@@ -2,6 +2,7 @@ import {
   Category,
   Chapter,
   ContentRevision,
+  PublicationSubmission,
   Rating,
   StatisticsEvent,
   Story,
@@ -16,7 +17,8 @@ export async function authorStoryWorkspace(account, storyId) {
   const story = await Story.findOne({ _id: storyId, authorAccountId: account._id }).lean();
   if (!story) throw new HttpError(404, 'not_found', 'Không tìm thấy truyện.');
   const lifecycle = await draftLifecycle(story);
-  const [categories, chapters, views, ratings] = await Promise.all([
+  const metadataRevisionId = story.draftRevisionId ?? story.currentRevisionId;
+  const [categories, chapters, views, ratings, approvedMetadata] = await Promise.all([
     Category.find({ _id: { $in: story.categoryIds } })
       .select('name status')
       .lean(),
@@ -34,6 +36,15 @@ export async function authorStoryWorkspace(account, storyId) {
       { $match: { storyId: story._id, status: 'active' } },
       { $group: { _id: null, average: { $avg: '$value' }, count: { $sum: 1 } } },
     ]),
+    metadataRevisionId
+      ? PublicationSubmission.exists({
+          storyId: story._id,
+          revisionId: metadataRevisionId,
+          chapterId: null,
+          authorAccountId: account._id,
+          status: 'approved',
+        })
+      : Promise.resolve(null),
   ]);
   const revisionIds = chapters
     .map(
@@ -88,6 +99,12 @@ export async function authorStoryWorkspace(account, storyId) {
     story: {
       ...lifecycle,
       canReorder: canReorderDraftChapters(chapters, revisions, lifecycle),
+      canReleaseMetadata: Boolean(
+        approvedMetadata &&
+        !story.authoringFrozen &&
+        ['approved', 'published'].includes(story.publicationStatus) &&
+        String(metadataRevisionId) !== String(story.publishedRevisionId),
+      ),
       id: String(story._id),
       title: story.title,
       description: story.description ?? '',

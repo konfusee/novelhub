@@ -317,3 +317,20 @@ it('passes the current story to the image library and explains that audio upload
     screen.getByRole('link', { name: 'Mở thư viện media', exact: true }).getAttribute('href'),
   ).toBe('/author/media?storyId=owned');
 });
+it.each([false, true])(
+  'uses the server metadata-release flag on an already published story: %s',
+  async (canReleaseMetadata) => {
+    mocks.apiRequest.mockResolvedValue({
+      ...workspace,
+      story: { ...workspace.story, status: 'published', canReleaseMetadata },
+    });
+    view();
+    await screen.findByRole('heading', { name: 'Truyện thuộc tài khoản' });
+    expect(
+      Boolean(screen.queryByRole('button', { name: 'Phát hành thông tin truyện', exact: true })),
+    ).toBe(canReleaseMetadata);
+    expect(screen.getByRole('link', { name: 'Xem truyện đã công khai' }).getAttribute('href')).toBe(
+      '/stories/owned',
+    );
+  },
+);

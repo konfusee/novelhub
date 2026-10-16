@@ -33,13 +33,15 @@ const unavailable = () =>
     'Gói đã gửi không còn đủ dữ liệu toàn vẹn để xem. Bản gốc được giữ nguyên.',
   );
 
-async function loadPackage(account, submissionId) {
+export async function loadSubmittedPackage(account, submissionId, session) {
   const submission = await PublicationSubmission.findOne({
     _id: submissionId,
     authorAccountId: account._id,
-  }).lean();
+  })
+    .session(session ?? null)
+    .lean();
   if (!submission) throw new HttpError(404, 'not_found', 'Không tìm thấy gói đã gửi.');
-  await ownStory(account, submission.storyId);
+  await ownStory(account, submission.storyId, session);
   const revision = await ContentRevision.findOne({
     _id: submission.revisionId,
     storyId: submission.storyId,
@@ -47,7 +49,9 @@ async function loadPackage(account, submissionId) {
     chapterId: submission.chapterId ?? null,
     contentType: submission.chapterId ? 'chapter' : 'story',
     immutableAt: { $ne: null },
-  }).lean();
+  })
+    .session(session ?? null)
+    .lean();
   if (!revision?.packageDigest || revision.packageDigest !== submission.packageDigest)
     throw unavailable();
   const rights = await RightsDeclaration.findOne({
@@ -56,7 +60,9 @@ async function loadPackage(account, submissionId) {
     declaredBy: account._id,
     asserted: true,
     immutableAt: { $ne: null },
-  }).lean();
+  })
+    .session(session ?? null)
+    .lean();
   if (!rights) throw unavailable();
   const illustrated = revision.formatVersion === 'blocks-v3';
   if (
@@ -112,7 +118,9 @@ async function loadPackage(account, submissionId) {
       declaredBy: account._id,
       asserted: true,
       immutableAt: { $ne: null },
-    }).lean();
+    })
+      .session(session ?? null)
+      .lean();
     parent = parentRights
       ? await ContentRevision.findOne({
           _id: parentRights.revisionId,
@@ -120,7 +128,9 @@ async function loadPackage(account, submissionId) {
           authorAccountId: account._id,
           contentType: 'story',
           immutableAt: { $ne: null },
-        }).lean()
+        })
+          .session(session ?? null)
+          .lean()
       : null;
     if (!parent || typeof parent.content?.title !== 'string') throw unavailable();
   }
@@ -146,7 +156,7 @@ async function loadPackage(account, submissionId) {
 }
 
 export async function submittedPackage(account, submissionId) {
-  const { submission, revision, rights, parent, manifest, document } = await loadPackage(
+  const { submission, revision, rights, parent, manifest, document } = await loadSubmittedPackage(
     account,
     submissionId,
   );
@@ -175,7 +185,7 @@ export async function submittedPackage(account, submissionId) {
 }
 
 export async function submittedImage(config, account, submissionId, mediaId) {
-  const { manifest } = await loadPackage(account, submissionId);
+  const { manifest } = await loadSubmittedPackage(account, submissionId);
   const entry = manifest.find((item) => item.mediaId === mediaId);
   if (!entry) throw new HttpError(404, 'not_found', 'Ảnh không thuộc gói đã gửi.');
   const bytes = await readAuthorMedia(config, account._id, mediaId);
