@@ -10,6 +10,7 @@ import { authorDrafts } from '../modules/author-drafts.js';
 import { authorAnalytics } from '../modules/author-analytics.js';
 import { authorEarnings } from '../modules/author-earnings.js';
 import { lockAuthor, ownStory, editable } from '../modules/author-ownership.js';
+import { assertTextEditorRevision } from '../modules/chapter-document.js';
 
 const objectId = z.string().regex(/^[a-f\d]{24}$/i);
 const storyInput = z
@@ -326,6 +327,7 @@ export function createAuthorContentRouter(config) {
       }).lean();
       if (!revision)
         throw new HttpError(409, 'missing_revision', 'Không tải được bản nội dung của chương.');
+      assertTextEditorRevision(revision);
       const outline = await Chapter.find({ storyId: story._id })
         .sort({ orderKey: 1 })
         .select('title orderKey')
@@ -340,7 +342,11 @@ export function createAuthorContentRouter(config) {
           storyTitle: story.title,
           number: chapter.orderKey,
           canCreate,
-          canEdit: canCreate && chapter.status === 'draft',
+          canEdit:
+            canCreate &&
+            chapter.status === 'draft' &&
+            revision.status === 'editable' &&
+            !revision.immutableAt,
           outline: outline.map((item) => ({
             id: String(item._id),
             number: item.orderKey,
@@ -379,6 +385,18 @@ export function createAuthorContentRouter(config) {
             'stale_content',
             'Chương đã thay đổi hoặc bị khóa. Hãy tải lại.',
           );
+        const source = await ContentRevision.findOne({
+          _id: chapter.draftRevisionId ?? chapter.currentRevisionId,
+          storyId: story._id,
+          chapterId: chapter._id,
+          contentType: 'chapter',
+          authorAccountId: req.account._id,
+        }).session(session);
+        if (!source)
+          throw new HttpError(409, 'missing_revision', 'Không tìm thấy bản nháp hiện tại.');
+        assertTextEditorRevision(source);
+        if (source.status !== 'editable' || source.immutableAt)
+          throw new HttpError(409, 'content_frozen', 'Phiên bản hiện tại đã bị khóa chỉnh sửa.');
         const last = await ContentRevision.findOne({ chapterId: chapter._id })
           .sort({ revisionNumber: -1 })
           .session(session);

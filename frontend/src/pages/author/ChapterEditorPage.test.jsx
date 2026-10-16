@@ -42,6 +42,17 @@ afterEach(() => {
   cleanup();
   vi.resetAllMocks();
 });
+it('explains unsupported content without opening a truncated editable body', async () => {
+  mocks.apiRequest.mockRejectedValue(
+    Object.assign(new Error('Unsupported'), { code: 'unsupported_editor_format', status: 409 }),
+  );
+  view();
+  await screen.findByText(/Định dạng của bản nội dung này chưa được trình soạn hiện tại hỗ trợ/);
+  expect(screen.queryByRole('textbox', { name: 'Nội dung chương' })).toBeNull();
+  expect(screen.getByRole('link', { name: 'Về trang quản lý truyện' }).getAttribute('href')).toBe(
+    '/author/stories/owned',
+  );
+});
 it('saves dirty paragraphs before opening the exact chapter submission package', async () => {
   mocks.apiRequest.mockImplementation(async (_path, options) =>
     options?.method === 'PUT' ? { chapter: { version: 10 } } : { chapter },

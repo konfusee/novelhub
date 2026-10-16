@@ -15,6 +15,7 @@ import {
 import { HttpError } from '../middleware/errors.js';
 import { withTransaction } from '../db/connection.js';
 import { lockAuthor, ownStory } from './author-ownership.js';
+import { textChapterDocument } from './chapter-document.js';
 
 const oid = z.string().regex(/^[a-f\d]{24}$/i);
 const storyContent = z
@@ -22,15 +23,6 @@ const storyContent = z
     title: z.string().trim().min(1).max(200),
     description: z.string().trim().min(1).max(10000),
     categoryIds: z.array(oid).min(1).max(10),
-  })
-  .strict();
-const chapterContent = z
-  .object({
-    title: z.string().trim().min(1).max(200),
-    blocks: z
-      .array(z.object({ type: z.literal('paragraph'), text: z.string().max(20000) }).strict())
-      .min(1)
-      .max(1000),
   })
   .strict();
 const markup = /<\/?[a-z][^>]*>|```|\*\*|__|!\[[^\]]*\]\(|^\s{0,3}(?:#{1,6}\s|>\s)/imu;
@@ -75,7 +67,7 @@ async function packageState(account, input, session) {
   const blocks = Array.isArray(content.blocks) ? content.blocks : [];
   let valid = input.chapterId
     ? revision.formatVersion === 'blocks-v1' &&
-      chapterContent.safeParse(content).success &&
+      textChapterDocument.safeParse(content).success &&
       content.blocks.some((block) => block.text.trim())
     : revision.formatVersion === 'story-v1' && storyContent.safeParse(content).success;
   const text = input.chapterId

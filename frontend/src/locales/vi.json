@@ -1105,7 +1105,12 @@
     "next": "Tiếp tục đến Chương {{count}}",
     "back": "Về quản lý truyện",
     "noSubmission": "Chưa nối quy trình gửi duyệt ở trình soạn thảo. Bạn có thể lưu bản nháp; không có yêu cầu duyệt nào được tạo ở đây.",
-    "noNotes": "Chưa hỗ trợ lưu ghi chú riêng cho chương."
+    "noNotes": "Chưa hỗ trợ lưu ghi chú riêng cho chương.",
+    "unsupportedFormat": "Định dạng của bản nội dung này chưa được trình soạn hiện tại hỗ trợ. Nội dung gốc vẫn được giữ nguyên; hệ thống chặn lưu đè để tránh mất tiêu đề trong chương, ảnh hoặc định dạng.",
+    "loadError": "Không tải được nội dung chương. Hãy kiểm tra kết nối và thử lại.",
+    "backToManager": "Về trang quản lý truyện",
+    "unsupportedTitle": "Chưa hỗ trợ định dạng nội dung này",
+    "loadErrorTitle": "Không tải được chương"
   },
   "submissionData": {
     "studio": "Studio tác giả",
