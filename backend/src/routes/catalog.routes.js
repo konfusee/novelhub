@@ -21,6 +21,7 @@ import {
   publishedCatalogueStats,
 } from '../modules/catalog-query.js';
 import { catalogPresentation } from '../modules/catalog-presentation.js';
+import { richChapterDocument, chapterTextProjection } from '../modules/rich-chapter-document.js';
 
 const filters = z
   .object({
@@ -189,7 +190,7 @@ export function createCatalogRouter(config) {
             contentType: 'chapter',
             status: { $in: ['approved', 'immutable'] },
           })
-            .select('content')
+            .select('content formatVersion')
             .lean();
           if (!revision) continue;
           preview = {
@@ -197,10 +198,7 @@ export function createCatalogRouter(config) {
             chapterId: String(chapter._id),
             number: chapter.orderKey,
             title: revision.content?.title ?? '',
-            paragraphs: (revision.content?.blocks ?? [])
-              .filter((block) => block.type === 'paragraph' && typeof block.text === 'string')
-              .slice(0, 2)
-              .map((block) => block.text),
+            paragraphs: chapterTextProjection(revision).slice(0, 2),
           };
           break;
         }
@@ -391,18 +389,25 @@ export function createCatalogRouter(config) {
         contentType: 'chapter',
         status: { $in: ['approved', 'immutable'] },
       })
-        .select('content')
+        .select('content formatVersion')
         .lean();
       if (!revision) throw new HttpError(404, 'not_found', 'Chương chưa sẵn sàng.');
+      const rich =
+        revision.formatVersion === 'blocks-v2'
+          ? richChapterDocument.safeParse(revision.content)
+          : null;
+      if (rich && !rich.success) throw new HttpError(404, 'not_found', 'Chương chưa sẵn sàng.');
       res.json({
         chapter: {
           id: String(chapter._id),
           title: revision.content.title ?? '',
           publishedAt: chapter.publishedAt ?? null,
           revisionId: String(revision._id),
-          blocks: (revision.content.blocks ?? [])
-            .filter((block) => block.type === 'paragraph' && typeof block.text === 'string')
-            .map((block) => ({ type: 'paragraph', text: block.text })),
+          blocks: rich
+            ? rich.data.blocks
+            : (revision.content.blocks ?? [])
+                .filter((block) => block.type === 'paragraph' && typeof block.text === 'string')
+                .map((block) => ({ type: 'paragraph', text: block.text })),
         },
       });
     } catch (error) {

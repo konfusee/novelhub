@@ -16,6 +16,7 @@ import { HttpError } from '../middleware/errors.js';
 import { withTransaction } from '../db/connection.js';
 import { lockAuthor, ownStory } from './author-ownership.js';
 import { textChapterDocument } from './chapter-document.js';
+import { richChapterDocument, chapterTextProjection } from './rich-chapter-document.js';
 
 const oid = z.string().regex(/^[a-f\d]{24}$/i);
 const storyContent = z
@@ -66,14 +67,19 @@ async function packageState(account, input, session) {
       : {};
   const blocks = Array.isArray(content.blocks) ? content.blocks : [];
   let valid = input.chapterId
-    ? revision.formatVersion === 'blocks-v1' &&
-      textChapterDocument.safeParse(content).success &&
-      content.blocks.some((block) => block.text.trim())
+    ? ((revision.formatVersion === 'blocks-v1' && textChapterDocument.safeParse(content).success) ||
+        (revision.formatVersion === 'blocks-v2' &&
+          richChapterDocument.safeParse(content).success)) &&
+      chapterTextProjection(revision).some((text) => text.trim())
     : revision.formatVersion === 'story-v1' && storyContent.safeParse(content).success;
   const text = input.chapterId
-    ? blocks.map((block) => block?.text ?? '').join('\n')
+    ? chapterTextProjection(revision).join('\n')
     : (content.description ?? '');
-  valid = Boolean(valid && !markup.test(text) && !markup.test(content.title ?? ''));
+  valid = Boolean(
+    valid &&
+    (revision.formatVersion === 'blocks-v2' || !markup.test(text)) &&
+    !markup.test(content.title ?? ''),
+  );
   const rawCategoryIds = input.chapterId ? story.categoryIds.map(String) : content.categoryIds;
   const categoryIds = Array.isArray(rawCategoryIds)
     ? rawCategoryIds.filter((value) => oid.safeParse(value).success)
@@ -153,15 +159,9 @@ export async function prepareSubmission(account, input) {
     checks: state.checks,
     ready: state.checks.every((check) => check.ok),
     words: (input.chapterId
-      ? Array.isArray(state.revision.content?.blocks)
-        ? state.revision.content.blocks
-        : []
-      : [{ text: state.revision.content?.description }]
-    ).reduce(
-      (sum, block) =>
-        sum + (typeof block?.text === 'string' ? (block.text.match(/\S+/gu)?.length ?? 0) : 0),
-      0,
-    ),
+      ? chapterTextProjection(state.revision)
+      : [state.revision.content?.description ?? '']
+    ).reduce((sum, text) => sum + (text.match(/\S+/gu)?.length ?? 0), 0),
     requiresRights: !input.chapterId,
   };
 }
@@ -228,7 +228,7 @@ export async function submitContent(account, input) {
       rightsDigest,
       mediaDigest,
       packageDigest,
-      validation: { valid: true, validator: 'publishing-text-v1', validatedAt: now },
+      validation: { valid: true, validator: 'publishing-text-v2', validatedAt: now },
       status: 'submitted',
       submittedAt: now,
       immutableAt: now,

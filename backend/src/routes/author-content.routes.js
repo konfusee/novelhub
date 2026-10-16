@@ -389,7 +389,11 @@ export function createAuthorContentRouter(config) {
   });
   router.post('/author/stories/:storyId/chapters', async (req, res, next) => {
     try {
-      const input = parse(chapterInput, req.body);
+      const input = parse(
+        z.union([chapterInput, z.object({ document: richChapterDocument }).strict()]),
+        req.body,
+      );
+      const title = input.document?.title ?? input.title;
       const chapter = await withTransaction(async (session) => {
         await lockAuthor(req.account, session);
         const story = await ownStory(req.account, req.params.storyId, session);
@@ -401,7 +405,7 @@ export function createAuthorContentRouter(config) {
           [
             {
               storyId: story._id,
-              title: input.title,
+              title,
               orderKey: Math.max(0, last?.orderKey ?? 0) + 1,
             },
           ],
@@ -415,8 +419,8 @@ export function createAuthorContentRouter(config) {
               chapterId: created._id,
               authorAccountId: req.account._id,
               revisionNumber: 1,
-              formatVersion: 'blocks-v1',
-              content: {
+              formatVersion: input.document ? 'blocks-v2' : 'blocks-v1',
+              content: input.document ?? {
                 title: input.title,
                 blocks: input.paragraphs.map((text) => ({ type: 'paragraph', text })),
               },
