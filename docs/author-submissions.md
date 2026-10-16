@@ -10,6 +10,8 @@ Checkpoint: 17/10/2026. Không thay đổi model/schema backend.
 | GET /author/submissions/prepare?storyId=…&chapterId=… | Kiểm tra đúng bản nháp, phiên bản và điều kiện gửi. Bỏ chapterId để kiểm tra thông tin truyện. |
 | POST /author/submissions | Gửi storyId, chapterId nếu có, revisionId và expectedVersion từ prepare. Gói truyện cần rights; chương văn bản kế thừa quyền truyện; chương có ảnh cần rights và imageManifestDigest. |
 | POST /author/submissions/:id/revise | Gửi expectedVersion của submission để tạo bản nháp sửa từ kết quả rejected hoặc revision-requested. |
+| GET /author/submissions/:id/package | Đọc gói bất biến của đúng chủ, kiểm tra digest và trả nội dung/quyền của lần gửi đó. |
+| GET /author/submissions/:id/media/:mediaId/content | Đọc ảnh riêng đúng manifest gói, đối chiếu checksum/dung lượng, không thay bằng ảnh thư viện mới. |
 
 Mọi API yêu cầu Author đang hoạt động và chỉ đọc/ghi nội dung thuộc tài khoản. Request ghi dùng kiểm tra Origin hiện có. Giao dịch kiểm tra lại role, authorizationEpoch và credentialVersion, không chỉ dựa vào menu frontend.
 
@@ -28,6 +30,7 @@ Mọi API yêu cầu Author đang hoạt động và chỉ đọc/ghi nội dung
 - Tạo ContentRevision editable mới, parentRevisionId trỏ revision đã xét. Nội dung, chữ ký quyền, digest và lịch sử của gói cũ không bị sửa hoặc tái sử dụng làm chữ ký cho bản mới.
 - Gửi lại dùng quy trình prepare/submit và tạo gói, bằng chứng cùng khai báo quyền mới cho truyện. Gửi lặp thao tác tạo bản sửa ngay sau thành công trả cùng revision; không tạo thêm bản sao.
 - Editor lưu bản nháp thành công trước khi mở đúng storyId/chapterId gửi duyệt. Lỗi lưu hoặc gửi giữ dữ liệu nhập; không hiển thị thành công giả.
+- Lịch sử có liên kết xem đúng gói cũ, không mở nhầm bản nháp đang sửa. Nội dung, khai báo quyền và ảnh được đọc theo submission; xem `author-submitted-package.md`.
 
 ## Giới hạn còn lại
 

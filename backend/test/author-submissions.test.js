@@ -336,6 +336,15 @@ describe('exact owner submission packages', () => {
       expect((await write('/api/author/submissions', f.author.cookie, body)).status).toBe(201);
       expect((await Chapter.findById(chapterId)).status).toBe('submitted');
       const frozen = await ContentRevision.findById(prepared.target.revisionId);
+      const storedSubmission = await PublicationSubmission.findOne({ revisionId: frozen._id });
+      const packageResponse = await request(app)
+        .get(`/api/author/submissions/${storedSubmission._id}/package`)
+        .set('Cookie', f.author.cookie);
+      expect(packageResponse.status).toBe(200);
+      expect(packageResponse.body.revision.id).toBe(String(frozen._id));
+      expect(
+        packageResponse.body.chapter.document.blocks.some((block) => block.type === 'paragraph'),
+      ).toBe(true);
       expect(frozen.formatVersion).toBe(format);
       expect(frozen.immutableAt).toBeTruthy();
       if (format === 'blocks-v2')
@@ -343,4 +352,48 @@ describe('exact owner submission packages', () => {
       expect(await RightsDeclaration.countDocuments()).toBe(1);
     },
   );
+});
+it('reads the original submitted story after a new draft and denies other accounts without mutations', async () => {
+  const f = await fixture();
+  const sent = await write('/api/author/submissions', f.author.cookie, f.body);
+  const submission = await PublicationSubmission.findById(sent.body.submission.id);
+  submission.status = 'revision-requested';
+  await submission.save();
+  await write(`/api/author/submissions/${submission._id}/revise`, f.author.cookie, {
+    expectedVersion: submission.version,
+  });
+  const story = await Story.findById(f.storyId);
+  const draft = await ContentRevision.findById(story.draftRevisionId);
+  draft.content = { ...draft.content, title: 'Tên bản nháp mới', description: 'Nội dung mới' };
+  await draft.save();
+  const endpoint = `/api/author/submissions/${submission._id}/package`;
+  const before = await AuditEvent.countDocuments();
+  const response = await request(app).get(endpoint).set('Cookie', f.author.cookie);
+  expect(response.status).toBe(200);
+  expect(response.body.metadata.title).toBe('Bản nháp của tôi');
+  expect(response.body.metadata.description).toBe('Tóm tắt thật để gửi duyệt.');
+  expect(response.body.rights).toEqual(f.body.rights);
+  expect(response.headers['cache-control']).toBe('private, no-store');
+  expect(response.body).not.toHaveProperty('objectKey');
+  expect((await request(app).get(endpoint).set('Cookie', f.other.cookie)).status).toBe(404);
+  for (const role of ['reader', 'moderator', 'admin']) {
+    const account = await authenticatedAccount(role);
+    expect((await request(app).get(endpoint).set('Cookie', account.cookie)).status).toBe(403);
+  }
+  expect((await request(app).get(endpoint)).status).toBe(401);
+  expect(await AuditEvent.countDocuments()).toBe(before);
+});
+it('rejects a corrupt frozen package instead of displaying a current draft', async () => {
+  const f = await fixture();
+  const sent = await write('/api/author/submissions', f.author.cookie, f.body);
+  // Simulate damaged persisted data, bypassing normal immutable model guards in this isolated fixture.
+  await ContentRevision.collection.updateOne(
+    { _id: (await ContentRevision.findById(f.body.revisionId))._id },
+    { $set: { 'content.title': 'Damaged' } },
+  );
+  const response = await request(app)
+    .get(`/api/author/submissions/${sent.body.submission.id}/package`)
+    .set('Cookie', f.author.cookie);
+  expect(response.status).toBe(409);
+  expect(response.body.error.code).toBe('package_unavailable');
 });

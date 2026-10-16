@@ -1273,6 +1273,14 @@
     "unsupportedTitle": "Chưa hỗ trợ định dạng nội dung này",
     "loadErrorTitle": "Không tải được chương"
   },
+  "submissionPackage": {
+    "title": "Xem gói đã gửi",
+    "hint": "Bản xem riêng của đúng phiên bản đã gửi duyệt. Nội dung này không đổi theo bản nháp mới và không ghi lượt đọc.",
+    "back": "Về lịch sử gửi duyệt",
+    "unavailable": "Không thể tải gói đã gửi. Hãy thử lại.",
+    "declarationHint": "Khai báo của tác giả tại thời điểm gửi, chưa phải kết luận kiểm duyệt hoặc bằng chứng xác minh quyền.",
+    "images": "{{count}} ảnh trong gói. Tệp ảnh được kiểm tra theo bản đã gửi khi hiển thị."
+  },
   "submissionData": {
     "studio": "Studio tác giả",
     "title": "Kiểm tra và gửi duyệt",

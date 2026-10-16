@@ -1,4 +1,3 @@
-import { createHash } from 'node:crypto';
 import mongoose from 'mongoose';
 import { z } from 'zod';
 import {
@@ -16,6 +15,7 @@ import { HttpError } from '../middleware/errors.js';
 import { withTransaction } from '../db/connection.js';
 import { lockAuthor, ownStory } from './author-ownership.js';
 import { textChapterDocument } from './chapter-document.js';
+import { digest, rightsFacts } from './submission-digests.js';
 import { inspectChapterImages, pinChapterImages } from './author-chapter-media.js';
 import {
   richChapterDocument,
@@ -32,25 +32,6 @@ const storyContent = z
   })
   .strict();
 const markup = /<\/?[a-z][^>]*>|```|\*\*|__|!\[[^\]]*\]\(|^\s{0,3}(?:#{1,6}\s|>\s)/imu;
-const canonical = (value) =>
-  Array.isArray(value)
-    ? value.map(canonical)
-    : value && typeof value === 'object'
-      ? Object.fromEntries(
-          Object.keys(value)
-            .sort()
-            .map((key) => [key, canonical(value[key])]),
-        )
-      : value;
-const digest = (value) =>
-  createHash('sha256')
-    .update(JSON.stringify(canonical(value)))
-    .digest('hex');
-const rightsFacts = (rights) => ({
-  basis: rights.basis,
-  asserted: rights.asserted,
-  sourceLicenceNote: rights.sourceLicenceNote ?? '',
-});
 
 async function packageState(account, input, session, config) {
   const story = await ownStory(account, input.storyId, session);

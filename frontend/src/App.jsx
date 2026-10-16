@@ -88,6 +88,9 @@ const ChapterEditorPage = lazy(() =>
 const AuthorPreviewPage = lazy(() =>
   import('./pages/author/AuthorPreviewPage').then((m) => ({ default: m.AuthorPreviewPage })),
 );
+const SubmittedPackagePage = lazy(() =>
+  import('./pages/author/SubmittedPackagePage').then((m) => ({ default: m.SubmittedPackagePage })),
+);
 const DraftsPage = lazy(() =>
   import('./pages/author/DraftsPage').then((m) => ({ default: m.DraftsPage })),
 );
@@ -380,6 +383,10 @@ function AppRoutes() {
             element={role('author', <SubmissionReviewPage />, true)}
           />
           <Route path="/author/analytics" element={role('author', <AuthorAnalyticsPage />, true)} />
+          <Route
+            path="/author/submissions/:submissionId/preview"
+            element={role('author', <SubmittedPackagePage />, true)}
+          />
           <Route path="/author/earnings" element={role('author', <AuthorEarningsPage />, true)} />
           <Route
             path="/author/profile"
