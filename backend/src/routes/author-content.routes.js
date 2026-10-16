@@ -26,6 +26,7 @@ import {
 import { pinChapterImages } from '../modules/author-chapter-media.js';
 import { changeDraftLifecycle } from '../modules/author-story-lifecycle.js';
 import { prepareStoryRelease, publishStory } from '../modules/author-story-release.js';
+import { prepareChapterRelease, publishChapter } from '../modules/author-chapter-release.js';
 import { reorderDraftChapters } from '../modules/author-chapter-order.js';
 import { changeChapterDraftLifecycle } from '../modules/author-chapter-lifecycle.js';
 
@@ -279,6 +280,45 @@ export function createAuthorContentRouter(config) {
   router.get('/author/stories/:storyId/workspace', async (req, res, next) => {
     try {
       res.json(await authorStoryWorkspace(req.account, req.params.storyId));
+    } catch (error) {
+      next(error);
+    }
+  });
+  router.get('/author/stories/:storyId/chapters/:chapterId/release', async (req, res, next) => {
+    try {
+      res
+        .set('Cache-Control', 'private, no-store')
+        .json(
+          await prepareChapterRelease(
+            req.account,
+            parse(objectId, req.params.storyId),
+            parse(objectId, req.params.chapterId),
+          ),
+        );
+    } catch (error) {
+      next(error);
+    }
+  });
+  router.post('/author/stories/:storyId/chapters/:chapterId/release', async (req, res, next) => {
+    try {
+      const input = parse(
+        z
+          .object({
+            revisionId: objectId,
+            submissionId: objectId,
+            expectedVersion: z.number().int().min(0),
+            expectedStoryVersion: z.number().int().min(0),
+          })
+          .strict(),
+        req.body,
+      );
+      const chapter = await publishChapter(
+        req.account,
+        parse(objectId, req.params.storyId),
+        parse(objectId, req.params.chapterId),
+        input,
+      );
+      res.status(chapter.replayed ? 200 : 201).json({ chapter });
     } catch (error) {
       next(error);
     }

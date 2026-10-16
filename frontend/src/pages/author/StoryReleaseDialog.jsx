@@ -6,8 +6,24 @@ import { Button, ButtonLink, Modal } from '../../components/ui';
 
 const emptyRelease = { target: {}, checks: [], ready: false };
 export function StoryReleaseDialog({ storyId, onClose, onReleased }) {
+  return <ReleaseDialog storyId={storyId} onClose={onClose} onReleased={onReleased} />;
+}
+export function ChapterReleaseDialog({ storyId, chapterId, onClose, onReleased }) {
+  return (
+    <ReleaseDialog
+      storyId={storyId}
+      chapterId={chapterId}
+      onClose={onClose}
+      onReleased={onReleased}
+    />
+  );
+}
+function ReleaseDialog({ storyId, chapterId, onClose, onReleased }) {
   const { t } = useLocale();
-  const resource = useBackendDocument(`/author/stories/${storyId}/release`, emptyRelease);
+  const chapter = Boolean(chapterId);
+  const endpoint = `/author/stories/${storyId}${chapter ? `/chapters/${chapterId}` : ''}/release`;
+  const label = chapter ? 'chapterRelease' : 'storyRelease';
+  const resource = useBackendDocument(endpoint, emptyRelease);
   const [busy, setBusy] = useState(false);
   const busyRef = useRef(false);
   const [error, setError] = useState('');
@@ -20,15 +36,17 @@ export function StoryReleaseDialog({ storyId, onClose, onReleased }) {
     setBusy(true);
     setError('');
     try {
-      const result = await apiRequest(`/author/stories/${storyId}/release`, {
+      const result = await apiRequest(endpoint, {
         method: 'POST',
         body: {
           revisionId: data.target.revisionId,
           submissionId: data.target.submissionId,
           expectedVersion: data.target.version,
+          ...(chapter ? { expectedStoryVersion: data.target.storyVersion } : {}),
         },
       });
-      if (!result?.story?.id || result.story.status !== 'published')
+      const released = result?.[chapter ? 'chapter' : 'story'];
+      if (!released?.id || released.status !== 'published')
         throw new Error(t('storyRelease.failed'));
       onReleased();
     } catch (failure) {
@@ -39,8 +57,8 @@ export function StoryReleaseDialog({ storyId, onClose, onReleased }) {
     }
   };
   return (
-    <Modal open title={t('storyRelease.title')} onClose={() => !busy && onClose()}>
-      <p className="text-sm leading-6 text-muted">{t('storyRelease.hint')}</p>
+    <Modal open title={t(`${label}.title`)} onClose={() => !busy && onClose()}>
+      <p className="text-sm leading-6 text-muted">{t(`${label}.hint`)}</p>
       {resource.status === 'loading' ? (
         <p role="status" className="mt-4 text-sm">
           {t('authorDraftActions.loading')}
@@ -58,7 +76,7 @@ export function StoryReleaseDialog({ storyId, onClose, onReleased }) {
                 key={check.code}
                 className="grid grid-cols-[minmax(0,1fr)_auto] items-start gap-3 text-sm"
               >
-                <span>{t(`storyRelease.checks.${check.code}`)}</span>
+                <span>{t(`${label}.checks.${check.code}`)}</span>
                 <strong className={check.ok ? 'text-brand-strong' : 'text-rose-strong'}>
                   {t(check.ok ? 'submissionData.pass' : 'submissionData.fail')}
                 </strong>

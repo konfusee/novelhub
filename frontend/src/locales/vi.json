@@ -1273,6 +1273,21 @@
     "unsupportedTitle": "Chưa hỗ trợ định dạng nội dung này",
     "loadErrorTitle": "Không tải được chương"
   },
+  "chapterRelease": {
+    "title": "Phát hành chương",
+    "hint": "Công khai đúng gói chương đã được duyệt để độc giả đọc miễn phí. Các chương trước phải đã từng phát hành. Chương có ảnh hoặc đọc sớm cần luồng phát hành tương ứng.",
+    "success": "Đã phát hành chương. Độc giả có thể đọc phiên bản đã duyệt.",
+    "checks": {
+      "approval": "Gói chương và quyền đã được duyệt hợp lệ",
+      "integrity": "Nội dung khớp gói bất biến đã gửi",
+      "evidence": "Bằng chứng đã kết thúc xử lý để con người xem xét",
+      "parent": "Truyện cha đã công khai với gói và quyền hợp lệ",
+      "order": "Các chương đứng trước đã từng phát hành",
+      "free": "Chương miễn phí, không thuộc đọc sớm",
+      "format": "Nội dung văn bản được trình đọc hỗ trợ",
+      "editable": "Truyện không bị khóa và có phiên bản mới được duyệt"
+    }
+  },
   "storyRelease": {
     "title": "Phát hành thông tin truyện",
     "hint": "Chỉ công khai thông tin truyện đã được duyệt. Các chương vẫn cần được duyệt và phát hành riêng. Hãy kiểm tra đúng gói trước khi xác nhận.",

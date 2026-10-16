@@ -29,7 +29,7 @@ import { useLocale } from '../../context/LocaleContext';
 import { StoryCover } from '../../components/story/StoryCover';
 import { ChapterOrderDialog } from './ChapterOrderDialog';
 import { ChapterLifecycleDialog } from './ChapterLifecycleDialog';
-import { StoryReleaseDialog } from './StoryReleaseDialog';
+import { ChapterReleaseDialog, StoryReleaseDialog } from './StoryReleaseDialog';
 import { ROUTES } from '../../app/routes';
 import {
   Badge,
@@ -155,6 +155,7 @@ export function StoryManagerPage() {
   const [orderOpen, setOrderOpen] = useState(false);
   const [chapterAction, setChapterAction] = useState(null);
   const [releaseOpen, setReleaseOpen] = useState(false);
+  const [releaseChapter, setReleaseChapter] = useState(null);
   const createChapter = async (event) => {
     event.preventDefault();
     if (newBusy || !newTitle.trim()) return;
@@ -305,6 +306,19 @@ export function StoryManagerPage() {
             }}
           />
         )}
+        {releaseChapter && (
+          <ChapterReleaseDialog
+            key={releaseChapter.id}
+            storyId={storyId}
+            chapterId={releaseChapter.id}
+            onClose={() => setReleaseChapter(null)}
+            onReleased={() => {
+              setReleaseChapter(null);
+              setNotice(t('chapterRelease.success'));
+              workspace.retry();
+            }}
+          />
+        )}
         <div className="mt-6 max-w-full">
           <Tabs
             singleRow
@@ -443,6 +457,7 @@ export function StoryManagerPage() {
                           key={chapter.id}
                           chapter={chapter}
                           storyId={storyId}
+                          onRelease={() => setReleaseChapter(chapter)}
                           onLifecycle={(action) => setChapterAction({ story, chapter, action })}
                         />
                       ))}
@@ -652,7 +667,7 @@ function ChapterRowSkeleton() {
   );
 }
 
-function ChapterRow({ chapter, storyId, onLifecycle }) {
+function ChapterRow({ chapter, storyId, onLifecycle, onRelease }) {
   const { t, formatDate, formatNumber } = useLocale();
   const note =
     chapter.status === 'Scheduled' && chapter.requestedReleaseAt
@@ -708,6 +723,11 @@ function ChapterRow({ chapter, storyId, onLifecycle }) {
       </td>
       <td className="px-4 py-4">
         <div className="flex flex-wrap justify-end gap-2">
+          {chapter.canRelease && (
+            <Button size="sm" onClick={onRelease}>
+              {t('chapterRelease.title')}
+            </Button>
+          )}
           <ButtonLink
             to={`/author/stories/${storyId}/chapters/${chapter.id}/edit`}
             variant={draft ? 'primary' : 'secondary'}

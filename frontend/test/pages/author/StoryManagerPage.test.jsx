@@ -334,3 +334,45 @@ it.each([false, true])(
     );
   },
 );
+it('opens chapter release using only the server eligibility hint and refreshes after confirmation', async () => {
+  let released = false;
+  mocks.apiRequest.mockImplementation(async (path, options) => {
+    if (options?.method === 'POST') {
+      released = true;
+      return { chapter: { id: 'seven', status: 'published' } };
+    }
+    if (path.endsWith('/release'))
+      return {
+        target: {
+          chapterId: 'seven',
+          version: 3,
+          storyVersion: 7,
+          revisionId: 'rev',
+          submissionId: 'sub',
+          title: 'Chương bảy thật',
+        },
+        ready: true,
+        checks: [],
+      };
+    return {
+      ...workspace,
+      chapters: [
+        {
+          ...workspace.chapters[0],
+          status: released ? 'published' : 'approved',
+          canRelease: !released,
+        },
+      ],
+    };
+  });
+  view();
+  fireEvent.click(await screen.findByRole('button', { name: 'Phát hành chương', exact: true }));
+  fireEvent.click(await screen.findByRole('button', { name: 'Phát hành ngay' }));
+  await screen.findByText('Đã phát hành chương. Độc giả có thể đọc phiên bản đã duyệt.');
+  await waitFor(() =>
+    expect(screen.queryByRole('button', { name: 'Phát hành chương', exact: true })).toBeNull(),
+  );
+  expect(screen.getByRole('row', { name: /Chương 7: Chương bảy thật/ }).textContent).toContain(
+    'Đã xuất bản',
+  );
+});
