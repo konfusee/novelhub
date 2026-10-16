@@ -4,6 +4,7 @@ import { requireAuth, requireRole } from '../middleware/auth.js';
 import { HttpError } from '../middleware/errors.js';
 import {
   authorMedia,
+  organizeAuthorMedia,
   uploadAuthorMedia,
   readAuthorMedia,
   deleteAuthorMedia,
@@ -70,6 +71,29 @@ export function createAuthorMediaRouter(config) {
           Vary: 'Cookie',
         })
         .send(bytes);
+    } catch (error) {
+      next(error);
+    }
+  });
+  router.post('/author/media/organize', async (req, res, next) => {
+    try {
+      const input = parse(
+        z
+          .object({
+            storyId: oid.nullable().transform((value) => value?.toLowerCase() ?? null),
+            items: z
+              .array(z.object({ id: oid, expectedVersion: z.number().int().min(0) }).strict())
+              .min(1)
+              .max(100)
+              .refine(
+                (items) =>
+                  new Set(items.map((item) => item.id.toLowerCase())).size === items.length,
+              ),
+          })
+          .strict(),
+        req.body,
+      );
+      res.json(await organizeAuthorMedia(req.account, input));
     } catch (error) {
       next(error);
     }

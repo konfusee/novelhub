@@ -157,3 +157,105 @@ it('paginates without leaking other accounts and reports totals across all pages
   expect(second.nextCursor).toBeNull();
   expect((await get(author.cookie, '/api/author/media?cursor=bad')).status).toBe(400);
 });
+const organize = (cookie, assets, storyId = null) =>
+  request(app)
+    .post('/api/author/media/organize')
+    .set('Cookie', cookie)
+    .set('Origin', origin)
+    .send({
+      storyId,
+      items: assets.map((asset) => ({ id: asset.id, expectedVersion: asset.version })),
+    });
+const makeStory = async (owner, name = 'Truyện nhận ảnh') => {
+  const category = await Category.create({
+    name: `Loại ${crypto.randomUUID()}`,
+    normalizedName: crypto.randomUUID(),
+    createdBy: owner.account._id,
+  });
+  return Story.create({
+    authorAccountId: owner.account._id,
+    title: name,
+    description: 'Tóm tắt',
+    categoryIds: [category._id],
+  });
+};
+it('organizes private images atomically, persists versions and supports removing the story grouping', async () => {
+  const author = await authenticatedAccount('author');
+  const story = await makeStory(author);
+  const assets = [
+    (await upload(author.cookie)).body.asset,
+    (await upload(author.cookie)).body.asset,
+  ];
+  const result = await organize(author.cookie, assets, String(story._id));
+  expect(result.status).toBe(200);
+  expect(result.body.changed).toBe(2);
+  expect(result.body.items.map((item) => item.version)).toEqual([1, 1]);
+  let listed = (await get(author.cookie)).body;
+  expect(listed.items.every((item) => item.storyId === String(story._id))).toBe(true);
+  expect(await AuditEvent.countDocuments({ action: 'media.organized' })).toBe(2);
+  expect((await organize(author.cookie, listed.items)).status).toBe(200);
+  listed = (await get(author.cookie)).body;
+  expect(listed.items.every((item) => item.storyId === null && item.version === 2)).toBe(true);
+  expect((await organize(author.cookie, listed.items)).body.changed).toBe(0);
+});
+it('rejects foreign destinations, duplicate ids, stale batches and locked source stories without partial changes', async () => {
+  const author = await authenticatedAccount('author');
+  const other = await authenticatedAccount('author');
+  const story = await makeStory(author);
+  const foreign = await makeStory(other);
+  const assets = [
+    (await upload(author.cookie)).body.asset,
+    (await upload(author.cookie)).body.asset,
+  ];
+  expect((await organize(author.cookie, assets, String(foreign._id))).status).toBe(404);
+  expect((await organize(author.cookie, [assets[0], assets[0]], String(story._id))).status).toBe(
+    400,
+  );
+  expect(
+    (await organize(author.cookie, [assets[0], { ...assets[1], version: 77 }], String(story._id)))
+      .status,
+  ).toBe(409);
+  expect(
+    (await get(author.cookie)).body.items.every(
+      (item) => item.storyId === null && item.version === 0,
+    ),
+  ).toBe(true);
+  expect(await AuditEvent.countDocuments({ action: 'media.organized' })).toBe(0);
+  story.authoringFrozen = true;
+  await story.save();
+  expect((await organize(author.cookie, assets, String(story._id))).body.error.code).toBe(
+    'content_frozen',
+  );
+  story.authoringFrozen = false;
+  await story.save();
+  await organize(author.cookie, assets, String(story._id));
+  story.authoringFrozen = true;
+  await story.save();
+  expect(
+    (await organize(author.cookie, (await get(author.cookie)).body.items)).body.error.code,
+  ).toBe('content_frozen');
+});
+it('blocks regrouping referenced media and rolls back when audit cannot be written', async () => {
+  const author = await authenticatedAccount('author');
+  const other = await authenticatedAccount('author');
+  const story = await makeStory(author);
+  const asset = (await upload(author.cookie)).body.asset;
+  expect((await organize(other.cookie, [asset], String(story._id))).status).toBe(404);
+  await MediaAsset.updateOne(
+    { _id: asset.id },
+    { $set: { rightsDeclarationId: other.account._id } },
+  );
+  expect((await organize(author.cookie, [asset], String(story._id))).body.error.code).toBe(
+    'media_in_use',
+  );
+  await MediaAsset.updateOne({ _id: asset.id }, { $unset: { rightsDeclarationId: 1 } });
+  const spy = vi.spyOn(AuditEvent, 'create').mockRejectedValueOnce(new Error('Audit unavailable'));
+  try {
+    expect((await organize(author.cookie, [asset], String(story._id))).status).toBe(500);
+  } finally {
+    spy.mockRestore();
+  }
+  const unchanged = await MediaAsset.findById(asset.id);
+  expect(unchanged.storyId).toBeUndefined();
+  expect(unchanged.version).toBe(0);
+});
