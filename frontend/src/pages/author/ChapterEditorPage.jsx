@@ -157,9 +157,24 @@ export function ChapterEditorPage() {
                   <EmptyState
                     tone="rose"
                     icon={AlertTriangle}
-                    title="Không tải được chương"
-                    description="Kết nối tới máy chủ bị gián đoạn. Hãy thử tải lại sau ít phút."
-                    action={<RetryButton onClick={chapter.retry} />}
+                    title={
+                      chapter.error?.code === 'unsupported_editor_format'
+                        ? t('editorData.unsupportedTitle')
+                        : t('editorData.loadErrorTitle')
+                    }
+                    description={
+                      chapter.error?.code === 'unsupported_editor_format'
+                        ? t('editorData.unsupportedFormat')
+                        : t('editorData.loadError')
+                    }
+                    action={
+                      <>
+                        <RetryButton onClick={chapter.retry} />
+                        <ButtonLink to={STORY_ROUTE} variant="secondary" size="sm">
+                          {t('editorData.backToManager')}
+                        </ButtonLink>
+                      </>
+                    }
                   />
                 ) : (
                   <EmptyState
