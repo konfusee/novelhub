@@ -600,6 +600,14 @@ function SubmissionEntry({ item, choose }) {
           {t('submissionData.revise')}
         </Button>
       )}
+      <ButtonLink
+        className="mt-3 sm:ml-2"
+        size="sm"
+        variant="secondary"
+        to={`/author/submissions/${item.id}/preview`}
+      >
+        {t('submissionPackage.title')}
+      </ButtonLink>
       <Modal
         open={confirm}
         title={t('submissionData.revise')}

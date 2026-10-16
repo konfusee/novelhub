@@ -2,6 +2,7 @@ import { Router } from 'express';
 import { z } from 'zod';
 import { requireAuth, requireRole } from '../middleware/auth.js';
 import { HttpError } from '../middleware/errors.js';
+import { submittedImage, submittedPackage } from '../modules/author-submitted-package.js';
 import {
   prepareSubmission,
   submitContent,
@@ -44,6 +45,36 @@ function parse(schema, value) {
 export function createAuthorSubmissionsRouter(config) {
   const router = Router();
   router.use('/author/submissions', requireAuth(config), requireRole('author'));
+  router.get('/author/submissions/:submissionId/package', async (req, res, next) => {
+    try {
+      res
+        .set({ 'Cache-Control': 'private, no-store', Vary: 'Cookie' })
+        .json(await submittedPackage(req.account, parse(id, req.params.submissionId)));
+    } catch (error) {
+      next(error);
+    }
+  });
+  router.get('/author/submissions/:submissionId/media/:mediaId/content', async (req, res, next) => {
+    try {
+      const bytes = await submittedImage(
+        config,
+        req.account,
+        parse(id, req.params.submissionId),
+        parse(id, req.params.mediaId).toLowerCase(),
+      );
+      res
+        .set({
+          'Content-Type': 'image/webp',
+          'Content-Disposition': 'inline; filename="image.webp"',
+          'Cache-Control': 'private, no-store',
+          'X-Content-Type-Options': 'nosniff',
+          Vary: 'Cookie',
+        })
+        .send(bytes);
+    } catch (error) {
+      next(error);
+    }
+  });
   router.get('/author/submissions', async (req, res, next) => {
     try {
       res.json(

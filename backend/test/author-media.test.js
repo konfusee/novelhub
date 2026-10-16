@@ -739,3 +739,94 @@ it('creates a fresh illustrated draft after feedback, preserves its manifest and
   expect(await RightsDeclaration.countDocuments()).toBe(3);
   expect((await ContentRevision.findById(previous._id)).validation).toEqual(previous.validation);
 });
+it('serves only images bound to an exact owner package and detects replaced bytes even when library metadata matches', async () => {
+  const f = await submissionWithImages();
+  const sent = await chapterWrite(f.author.cookie, '/api/author/submissions', f.body);
+  const base = `/api/author/submissions/${sent.body.submission.id}`;
+  const response = await get(f.author.cookie, `${base}/package`);
+  expect(response.status).toBe(200);
+  expect(response.body.chapter.document).toEqual(illustrated(f.asset.id));
+  expect(response.body.media.map((item) => item.mediaId)).toEqual([f.asset.id]);
+  expect(JSON.stringify(response.body)).not.toContain('objectKey');
+  const asset = await MediaAsset.findById(f.asset.id).select('+objectKey');
+  const imagePath = `${base}/media/${f.asset.id}/content`;
+  const image = await get(f.author.cookie, imagePath).set('Origin', origin);
+  expect(image.status).toBe(200);
+  expect(image.body).toEqual(await readFile(path.join(root, asset.objectKey)));
+  expect(image.headers['cache-control']).toBe('private, no-store');
+  expect(image.headers['access-control-allow-credentials']).toBe('true');
+  const extra = (await upload(f.author.cookie)).body.asset;
+  expect((await get(f.author.cookie, `${base}/media/${extra.id}/content`)).status).toBe(404);
+  const other = await authenticatedAccount('author');
+  expect((await get(other.cookie, imagePath)).status).toBe(404);
+  expect((await request(app).get(imagePath)).status).toBe(401);
+  const changed = await sharp({
+    create: { width: 80, height: 120, channels: 4, background: '#f08030' },
+  })
+    .webp()
+    .toBuffer();
+  await writeFile(path.join(root, asset.objectKey), changed);
+  await MediaAsset.updateOne(
+    { _id: asset._id },
+    {
+      $set: {
+        checksum: createHash('sha256').update(changed).digest('hex'),
+        sizeBytes: changed.length,
+      },
+    },
+  );
+  // The library can read these new bytes, but the submitted package must refuse them.
+  expect((await get(f.author.cookie, `/api${f.asset.url}`)).status).toBe(200);
+  const rejected = await get(f.author.cookie, imagePath);
+  expect(rejected.status).toBe(409);
+  expect(rejected.body.error.code).toBe('media_changed');
+  expect((await get(f.author.cookie, `${base}/package`)).body.chapter.document).toEqual(
+    illustrated(f.asset.id),
+  );
+});
+it('keeps submitted image content and declarations separate from a revised draft', async () => {
+  const f = await submissionWithImages();
+  const sent = await chapterWrite(f.author.cookie, '/api/author/submissions', f.body);
+  const submission = await PublicationSubmission.findById(sent.body.submission.id);
+  submission.status = 'revision-requested';
+  await submission.save();
+  await chapterWrite(f.author.cookie, `/api/author/submissions/${submission._id}/revise`, {
+    expectedVersion: submission.version,
+  });
+  const chapter = await Chapter.findById(f.chapterId);
+  const saved = await chapterWrite(
+    f.author.cookie,
+    `/api/author/stories/${f.story._id}/chapters/${f.chapterId}`,
+    {
+      expectedVersion: chapter.version,
+      document: {
+        title: 'Bản mới không có ảnh',
+        blocks: [{ type: 'paragraph', inlines: [{ text: 'Nội dung sửa mới', marks: [] }] }],
+      },
+    },
+    'put',
+  );
+  expect(saved.status).toBe(200);
+  const response = await get(f.author.cookie, `/api/author/submissions/${submission._id}/package`);
+  expect(response.status).toBe(200);
+  expect(response.body.chapter.document).toEqual(illustrated(f.asset.id));
+  expect(response.body.rights).toEqual(f.body.rights);
+  expect(response.body.revision.id).toBe(f.body.revisionId);
+  expect(response.body.media.length).toBe(1);
+});
+it('reports a missing submitted image without substituting another asset', async () => {
+  const f = await submissionWithImages();
+  const sent = await chapterWrite(f.author.cookie, '/api/author/submissions', f.body);
+  const asset = await MediaAsset.findById(f.asset.id).select('+objectKey');
+  await rm(path.join(root, asset.objectKey));
+  expect(
+    (await get(f.author.cookie, `/api/author/submissions/${sent.body.submission.id}/package`))
+      .status,
+  ).toBe(200);
+  const response = await get(
+    f.author.cookie,
+    `/api/author/submissions/${sent.body.submission.id}/media/${asset._id}/content`,
+  );
+  expect(response.status).toBe(404);
+  expect(response.body.error.code).toBe('media_unavailable');
+});

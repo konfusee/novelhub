@@ -1,20 +1,23 @@
 import { useState } from 'react';
-import { privateMediaUrl } from '../../api/media';
+import { privateMediaUrl, submittedMediaUrl } from '../../api/media';
 import { useLocale } from '../../context/LocaleContext';
-export function PrivateChapterImage({ block }) {
+export function PrivateChapterImage({ block, submissionId }) {
   const { t } = useLocale();
   const [failed, setFailed] = useState(null);
+  const src = submissionId
+    ? submittedMediaUrl(submissionId, block.mediaId)
+    : privateMediaUrl(block.mediaId);
   return (
     <figure className="my-6 rounded-2xl border border-hairline p-3">
-      {failed === block.mediaId ? (
+      {failed === src ? (
         <p className="text-sm text-muted">{t('mediaData.unavailable')}</p>
       ) : (
         <img
-          src={privateMediaUrl(block.mediaId)}
+          src={src}
           crossOrigin="use-credentials"
           alt={block.alt}
           loading="lazy"
-          onError={() => setFailed(block.mediaId)}
+          onError={() => setFailed(src)}
           className="mx-auto max-h-[70dvh] max-w-full object-contain"
         />
       )}

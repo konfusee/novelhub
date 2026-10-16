@@ -13,8 +13,9 @@ import { PrivateChapterImage } from '../../components/story/PrivateChapterImage'
 
 // Same reading font, width limits, spacing options and surface geometry as the reader.
 // Preview settings stay local; preview never records a read, view, purchase or progress.
-export function DraftReadingCanvas({ document, storyTitle }) {
+export function DraftReadingCanvas({ document, storyTitle, submissionId, headingLevel = 1 }) {
   const { t } = useLocale();
+  const Heading = headingLevel === 2 ? 'h2' : 'h1';
   const [fontSize, setFontSize] = useState(20);
   const [width, setWidth] = useState(800);
   const [lineHeight, setLineHeight] = useState(1.8);
@@ -65,7 +66,7 @@ export function DraftReadingCanvas({ document, storyTitle }) {
       <div className="mx-auto w-full" style={{ maxWidth: width }}>
         <header className="px-4 py-8 text-center sm:px-6 sm:py-12">
           <p className="break-words text-sm text-brand-strong">{storyTitle}</p>
-          <h1 className="mt-3 break-words text-h2">{document.title}</h1>
+          <Heading className="mt-3 break-words text-h2">{document.title}</Heading>
         </header>
         <article
           aria-label={t('authorDraftActions.manuscript')}
@@ -73,7 +74,8 @@ export function DraftReadingCanvas({ document, storyTitle }) {
           style={{ fontFamily: DEFAULT_READER_FONT, fontSize, lineHeight }}
         >
           {document.blocks.map((block, index) => {
-            if (block.type === 'image') return <PrivateChapterImage key={index} block={block} />;
+            if (block.type === 'image')
+              return <PrivateChapterImage key={index} block={block} submissionId={submissionId} />;
             const className = 'mb-[22px] whitespace-pre-wrap break-words last:mb-0';
             if (
               block.type === 'scene-break' ||
