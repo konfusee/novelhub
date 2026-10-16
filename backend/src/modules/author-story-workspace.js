@@ -9,6 +9,7 @@ import {
 import { HttpError } from '../middleware/errors.js';
 import { draftLifecycle } from './author-story-lifecycle.js';
 import { canReorderDraftChapters } from './author-chapter-order.js';
+import { chapterDraftLifecycle } from './author-chapter-lifecycle.js';
 
 export async function authorStoryWorkspace(account, storyId) {
   const story = await Story.findOne({ _id: storyId, authorAccountId: account._id }).lean();
@@ -40,7 +41,7 @@ export async function authorStoryWorkspace(account, storyId) {
     authorAccountId: account._id,
     contentType: 'chapter',
   })
-    .select('chapterId content status immutableAt')
+    .select('chapterId storyId authorAccountId contentType content status immutableAt')
     .lean();
   const rows = chapters.map((chapter) => {
     const revisionId =
@@ -54,6 +55,7 @@ export async function authorStoryWorkspace(account, storyId) {
           .reduce((sum, block) => sum + (block.text.match(/\S+/gu)?.length ?? 0), 0)
       : null;
     return {
+      ...chapterDraftLifecycle(chapter, revision, story, lifecycle),
       id: String(chapter._id),
       version: chapter.version,
       title: chapter.title,

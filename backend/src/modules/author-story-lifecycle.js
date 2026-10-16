@@ -3,17 +3,28 @@ import { withTransaction } from '../db/connection.js';
 import { HttpError } from '../middleware/errors.js';
 import { lockAuthor, ownStory } from './author-ownership.js';
 
+export function isPrivateDraftChapter(chapter, authorId) {
+  return (
+    !chapter.firstReleasedAt &&
+    !chapter.publishedAt &&
+    !chapter.publishedRevisionId &&
+    !chapter.requestedReleaseAt &&
+    !chapter.cancelledAt &&
+    (chapter.status === 'draft' ||
+      (chapter.status === 'archived' &&
+        chapter.publicationTransition?.result === 'author-draft-archived' &&
+        String(chapter.publicationTransition?.actorAccountId) === String(authorId)))
+  );
+}
+
 export async function draftLifecycle(story, session) {
   const queries = [
-    Chapter.exists({
-      storyId: story._id,
-      $or: [
-        { status: { $ne: 'draft' } },
-        { firstReleasedAt: { $ne: null } },
-        { publishedAt: { $ne: null } },
-        { publishedRevisionId: { $ne: null } },
-      ],
-    }).session(session ?? null),
+    Chapter.find({ storyId: story._id })
+      .select(
+        'status firstReleasedAt publishedAt publishedRevisionId requestedReleaseAt cancelledAt publicationTransition',
+      )
+      .session(session ?? null)
+      .lean(),
     PublicationSubmission.exists({
       storyId: story._id,
       status: { $in: ['validated', 'pending-review', 'decision-pending'] },
@@ -31,14 +42,14 @@ export async function draftLifecycle(story, session) {
       : Promise.resolve(null),
   ];
   // MongoDB transactions must not run parallel operations on the same session.
-  const [releasedChapter, activeSubmission, editableRevision] = session
+  const [chapters, activeSubmission, editableRevision] = session
     ? [await queries[0], await queries[1], await queries[2]]
     : await Promise.all(queries);
   const safe =
     !story.authoringFrozen &&
     !story.publishedRevisionId &&
     !story.publishedAt &&
-    !releasedChapter &&
+    chapters.every((chapter) => isPrivateDraftChapter(chapter, story.authorAccountId)) &&
     !activeSubmission &&
     Boolean(editableRevision);
   return {
