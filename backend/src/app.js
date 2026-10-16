@@ -16,6 +16,7 @@ import { createWorkspaceDataRouter } from './routes/workspace-data.routes.js';
 import { createReaderDataRouter } from './routes/reader-data.routes.js';
 import { createAuthorSubmissionsRouter } from './routes/author-submissions.routes.js';
 import { createAuthorImportRouter } from './routes/author-import.routes.js';
+import { createAuthorMediaRouter } from './routes/author-media.routes.js';
 
 // Runtime configuration is validated by loadEnv and mapped by toAppConfig.
 export function createApp(config) {
@@ -43,6 +44,7 @@ export function createApp(config) {
   app.use('/api', createAuthorContentRouter(config));
   app.use('/api', createAuthorSubmissionsRouter(config));
   app.use('/api', createAuthorImportRouter(config));
+  app.use('/api', createAuthorMediaRouter(config));
   app.use('/api', createAdminCategoryRouter(config));
   app.use('/api', createWorkspaceDataRouter(config));
   app.use('/api', createReaderDataRouter(config));

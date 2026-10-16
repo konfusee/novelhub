@@ -24,6 +24,7 @@
     "nodemailer": "^10.1.0",
     "pino": "^10.4.0",
     "pino-http": "^11.0.0",
+    "sharp": "^0.35.5",
     "svg-captcha": "^1.4.0",
     "unpdf": "1.9.0",
     "word-extractor": "1.0.4",

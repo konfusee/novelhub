@@ -4,14 +4,11 @@ import {
   Check,
   Cloud,
   Copy,
-  FileAudio,
   FolderOpen,
   Grid2X2,
   Image,
   Link2,
   List,
-  Pause,
-  Play,
   RefreshCw,
   Search,
   Trash2,
@@ -19,9 +16,9 @@ import {
   X,
 } from '../../components/icons';
 import { AuthorLayout } from '../../layouts';
-import { mediaAssets } from '../../data/mock/author';
-import { useMockResource } from '../../context/MockDataContext';
-import { StoryCover } from '../../components/story/StoryCover';
+import { useBackendDocument } from '../../api/useBackendResource';
+import { apiRequest, API_BASE } from '../../api/client';
+import { useLocale } from '../../context/LocaleContext';
 import {
   Badge,
   Button,
@@ -58,41 +55,75 @@ const statusTones = {
   New: 'purple',
 };
 const UNASSIGNED = 'Chưa gán';
-const waveform = [35, 70, 45, 90, 55, 75, 40, 85, 60, 30, 70];
 
 const formatSize = (bytes) =>
-  bytes >= 1024 * 1024
-    ? `${(bytes / 1024 / 1024).toFixed(1)} MB`
-    : `${Math.max(1, Math.round(bytes / 1024))} KB`;
+  bytes < 1024
+    ? `${bytes} B`
+    : bytes >= 1024 * 1024
+      ? `${(bytes / 1024 / 1024).toFixed(1)} MB`
+      : `${Math.max(1, Math.round(bytes / 1024))} KB`;
 const assetUrl = (asset) =>
-  `https://cdn.novelhub.vn/media/${asset.id}/${encodeURIComponent(asset.name)}`;
+  asset.url ? new URL(`${API_BASE}${asset.url}`, window.location.origin).href : '';
+const emptyMedia = { items: [], stories: [], stats: { bytes: 0, count: 0 }, nextCursor: null };
 
 export function MediaLibraryPage() {
+  const { t } = useLocale();
+  const [cursor, setCursor] = useState('');
+  const [previous, setPrevious] = useState([]);
+  const resource = useBackendDocument(
+    `/author/media${cursor ? `?cursor=${cursor}` : ''}`,
+    emptyMedia,
+  );
+  const media = {
+    ...resource,
+    status:
+      resource.status === 'ready' && !previous.length && !resource.data.items.length
+        ? 'empty'
+        : resource.status,
+  };
+  const reload = () => {
+    setPrevious([]);
+    setCursor('');
+    resource.retry();
+  };
+  const [busy, setBusy] = useState(false);
+  const busyRef = useRef(false);
+  const [kind, setKind] = useState('image');
+  const [uploadStory, setUploadStory] = useState('');
   const fileRef = useRef(null);
   const inspectorRef = useRef(null);
-  const [assets, setAssets] = useState(mediaAssets);
   const [filter, setFilter] = useState('All Assets');
   const [query, setQuery] = useState('');
   const [story, setStory] = useState('All Stories');
   const [sort, setSort] = useState('Newest Uploads');
   const [view, setView] = useState('grid');
-  const [selectedId, setSelectedId] = useState(mediaAssets[0].id);
-  const [playing, setPlaying] = useState(null);
+  const [selectedId, setSelectedId] = useState(null);
   const [copied, setCopied] = useState(false);
   const [dragging, setDragging] = useState(false);
   const [uploadNotice, setUploadNotice] = useState(null);
-  const [bulkOpen, setBulkOpen] = useState(false);
-  const [bulkStory, setBulkStory] = useState('The Silent Forest');
   const [confirmDelete, setConfirmDelete] = useState(false);
+  const [deleteError, setDeleteError] = useState('');
 
-  const media = useMockResource('author:media', assets);
-  const library = media.data;
+  const library = useMemo(
+    () =>
+      [...previous, ...resource.data.items].map((asset) => ({
+        ...asset,
+        type: asset.kind === 'cover' ? 'Story Covers' : 'Chapter Art & Maps',
+        kind: 'image',
+        color: 'var(--primary)',
+        icon: 'IMG',
+        size: asset.sizeBytes == null ? '—' : formatSize(asset.sizeBytes),
+        dimensions: asset.width && asset.height ? `${asset.width} × ${asset.height}` : '—',
+        story:
+          resource.data.stories.find((item) => item.id === asset.storyId)?.title ??
+          (asset.storyId ? t('mediaData.associatedStory') : UNASSIGNED),
+        status: t('mediaData.stored'),
+      })),
+    [previous, resource.data, t],
+  );
   const selected =
     media.status === 'ready' ? (library.find((asset) => asset.id === selectedId) ?? null) : null;
-  const stories = useMemo(
-    () => [...new Set(library.map((asset) => asset.story))].filter((name) => name !== UNASSIGNED),
-    [library],
-  );
+  const stories = resource.data.stories;
   const counts = useMemo(
     () =>
       Object.fromEntries(
@@ -111,12 +142,14 @@ export function MediaLibraryPage() {
       .filter(
         (asset) =>
           (filter === 'All Assets' || asset.type === filter) &&
-          (story === 'All Stories' || asset.story === story) &&
+          (story === 'All Stories' || asset.storyId === story) &&
           (!needle ||
             asset.name.toLowerCase().includes(needle) ||
             asset.story.toLowerCase().includes(needle)),
       )
-      .sort((a, b) => (sort === 'Name A–Z' ? a.name.localeCompare(b.name) : b.id - a.id));
+      .sort((a, b) =>
+        sort === 'Name A–Z' ? a.name.localeCompare(b.name) : b.id.localeCompare(a.id),
+      );
   }, [library, filter, query, story, sort]);
   const gridClass = `mt-5 grid gap-3 sm:gap-4 ${view === 'grid' ? 'grid-cols-2 lg:grid-cols-3 xl:grid-cols-2 2xl:grid-cols-3' : ''}`;
   const showCounts = media.status === 'ready' || media.status === 'empty';
@@ -131,31 +164,35 @@ export function MediaLibraryPage() {
       );
     }
   };
-  const addFile = (file) => {
-    if (!file) return;
-    const isAudio = file.type.startsWith('audio');
-    if (!isAudio && !file.type.startsWith('image')) {
-      setUploadNotice({
-        tone: 'error',
-        text: `“${file.name}” không phải tệp hình ảnh hoặc âm thanh.`,
-      });
+  const addFile = async (file) => {
+    if (!file || busyRef.current) return;
+    if (!/\.(png|jpe?g|webp)$/iu.test(file.name) || !file.size || file.size > 10 * 1024 * 1024) {
+      setUploadNotice({ tone: 'error', text: t('mediaData.invalidFile') });
       return;
     }
-    const next = {
-      id: Date.now(),
-      name: file.name,
-      type: isAudio ? 'Audiobook Narration' : 'Chapter Art & Maps',
-      kind: isAudio ? 'audio' : 'image',
-      color: isAudio ? 'var(--accent-orange)' : 'var(--accent-purple)',
-      size: formatSize(file.size),
-      dimensions: 'Đang chờ phân tích',
-      story: UNASSIGNED,
-      status: 'New',
-      icon: 'NEW',
-    };
-    setAssets((current) => [next, ...current]);
-    select(next);
-    setUploadNotice({ tone: 'success', text: `Đã tải lên “${file.name}”.` });
+    busyRef.current = true;
+    setBusy(true);
+    setUploadNotice(null);
+    try {
+      const query = new URLSearchParams({
+        name: file.name,
+        kind,
+        ...(uploadStory ? { storyId: uploadStory } : {}),
+      });
+      const result = await apiRequest(`/author/media?${query}`, {
+        method: 'POST',
+        body: file,
+        binary: true,
+      });
+      setSelectedId(result.asset.id);
+      reload();
+      setUploadNotice({ tone: 'success', text: t('mediaData.uploaded') });
+    } catch (failure) {
+      setUploadNotice({ tone: 'error', text: failure.message });
+    } finally {
+      busyRef.current = false;
+      setBusy(false);
+    }
   };
   const resetFilters = () => {
     setFilter('All Assets');
@@ -165,11 +202,34 @@ export function MediaLibraryPage() {
   const copyUrl = async () => {
     if (!selected) return;
     try {
-      await navigator.clipboard?.writeText(assetUrl(selected));
+      if (!navigator.clipboard || !assetUrl(selected)) throw new Error(t('mediaData.copyError'));
+      await navigator.clipboard.writeText(assetUrl(selected));
     } catch {
-      // Clipboard can be unavailable (insecure context); the URL is still shown in the panel.
+      setUploadNotice({ tone: 'error', text: t('mediaData.copyError') });
+      return;
     }
     setCopied(true);
+  };
+  const remove = async () => {
+    setDeleteError('');
+    if (!selected || busyRef.current) return;
+    busyRef.current = true;
+    setBusy(true);
+    try {
+      await apiRequest(`/author/media/${selected.id}/delete`, {
+        method: 'POST',
+        body: { expectedVersion: selected.version },
+      });
+      setConfirmDelete(false);
+      setSelectedId(null);
+      reload();
+      setUploadNotice({ tone: 'success', text: t('mediaData.deleted') });
+    } catch (failure) {
+      setDeleteError(failure.message);
+    } finally {
+      busyRef.current = false;
+      setBusy(false);
+    }
   };
 
   return (
@@ -182,11 +242,11 @@ export function MediaLibraryPage() {
                 <p className="nh-eyebrow">Studio tác giả · Sản xuất</p>
                 <h1 className="mt-3 text-h2 sm:text-h1">Thư viện media và tài nguyên</h1>
                 <p className="mt-2 max-w-[60ch] text-sm leading-6 text-muted">
-                  Quản lý bìa sách, minh họa nhân vật, bản đồ thế giới và tệp thu âm sách nói gốc.
+                  {t('mediaData.description')}
                 </p>
               </div>
               <div className="flex flex-wrap gap-2">
-                <Button onClick={() => setBulkOpen(true)} variant="secondary">
+                <Button disabled title={t('mediaData.bulkUnavailable')} variant="secondary">
                   <FolderOpen size={16} aria-hidden="true" />
                   Sắp xếp hàng loạt
                 </Button>
@@ -198,11 +258,11 @@ export function MediaLibraryPage() {
                   }}
                   className="hidden"
                   type="file"
-                  accept="image/*,audio/*"
+                  accept="image/png,image/jpeg,image/webp"
                   tabIndex={-1}
                   aria-hidden="true"
                 />
-                <Button onClick={() => fileRef.current?.click()}>
+                <Button disabled={busy} onClick={() => fileRef.current?.click()}>
                   <Upload size={16} aria-hidden="true" />
                   Tải media mới
                 </Button>
@@ -216,47 +276,65 @@ export function MediaLibraryPage() {
                 </span>
                 <div className="min-w-0">
                   <div className="flex flex-wrap items-center gap-2">
-                    <h2 className="text-base font-semibold">Dung lượng lưu trữ tác giả</h2>
-                    <Badge tone="purple">Hạng: Tác giả Pro</Badge>
+                    <h2 className="text-base font-semibold">{t('mediaData.storage')}</h2>
+                    <Badge tone="purple">{t('mediaData.private')}</Badge>
                   </div>
-                  <p className="mt-1 text-caption text-muted">
-                    Phân phối CDN nhanh qua 14 điểm độc giả toàn cầu
-                  </p>
+                  <p className="mt-1 text-caption text-muted">{t('mediaData.storageHint')}</p>
                 </div>
                 <p className="sm:ml-auto sm:text-right">
-                  <strong className="text-h3 tabular-nums">4,8 GB</strong>{' '}
-                  <span className="text-sm text-muted">đã dùng trên 20 GB</span>
+                  <strong className="text-h3 tabular-nums">
+                    {showCounts ? formatSize(resource.data.stats.bytes) : '—'}
+                  </strong>{' '}
+                  <span className="text-sm text-muted">{t('mediaData.activeImages')}</span>
                 </p>
-              </div>
-              <div
-                role="img"
-                aria-label="Đã dùng 4,8 GB trên 20 GB: hình ảnh 1,2 GB, âm thanh 3,6 GB"
-                className="mt-5 flex h-2.5 gap-0.5 overflow-hidden rounded-full bg-ink/8"
-              >
-                <span className="w-[6%] rounded-full bg-brand" />
-                <span className="w-[18%] rounded-full bg-orange" />
               </div>
               <ul className="mt-3 flex flex-wrap gap-x-5 gap-y-2 text-xs text-muted">
                 <li className="flex items-baseline gap-2">
                   <span className="size-2 shrink-0 rounded-full bg-brand" aria-hidden="true" />
                   <span>
-                    Hình ảnh và minh họa: <strong className="text-ink">1,2 GB</strong> (32 tệp)
+                    {t('mediaData.total', { count: showCounts ? resource.data.stats.count : '—' })}
                   </span>
                 </li>
                 <li className="flex items-baseline gap-2">
                   <span className="size-2 shrink-0 rounded-full bg-orange" aria-hidden="true" />
-                  <span>
-                    Bản âm thanh và track thành phần: <strong className="text-ink">3,6 GB</strong>{' '}
-                    (16 tệp)
-                  </span>
+                  <span>{t('mediaData.audioUnavailable')}</span>
                 </li>
                 <li className="flex items-baseline gap-2">
                   <span className="size-2 shrink-0 rounded-full bg-ink/15" aria-hidden="true" />
-                  <span>
-                    Dung lượng trống: <strong className="text-ink">15,2 GB</strong>
-                  </span>
+                  <span>{t('mediaData.limit')}</span>
                 </li>
               </ul>
+              <div className="mt-5 grid gap-3 sm:grid-cols-2">
+                <label className="text-sm font-semibold">
+                  {t('mediaData.kind')}
+                  <Select
+                    value={kind}
+                    onChange={(event) => setKind(event.target.value)}
+                    disabled={busy}
+                    className="mt-2 w-full"
+                  >
+                    <option value="image">{t('mediaData.image')}</option>
+                    <option value="cover">{t('mediaData.cover')}</option>
+                    <option value="banner">{t('mediaData.banner')}</option>
+                  </Select>
+                </label>
+                <label className="text-sm font-semibold">
+                  {t('mediaData.story')}
+                  <Select
+                    value={uploadStory}
+                    onChange={(event) => setUploadStory(event.target.value)}
+                    disabled={busy || resource.status === 'loading'}
+                    className="mt-2 w-full"
+                  >
+                    <option value="">{t('mediaData.unassigned')}</option>
+                    {stories.map((item) => (
+                      <option key={item.id} value={item.id}>
+                        {item.title}
+                      </option>
+                    ))}
+                  </Select>
+                </label>
+              </div>
             </Card>
 
             <div className="mt-6 flex flex-col gap-3 border-b border-hairline pb-4">
@@ -313,8 +391,10 @@ export function MediaLibraryPage() {
                     onChange={(event) => setStory(event.target.value)}
                   >
                     <option value="All Stories">Tất cả truyện</option>
-                    {stories.map((name) => (
-                      <option key={name}>{name}</option>
+                    {stories.map((item) => (
+                      <option key={item.id} value={item.id}>
+                        {item.title}
+                      </option>
                     ))}
                   </Select>
                   <Select
@@ -350,7 +430,7 @@ export function MediaLibraryPage() {
                 <EmptyState
                   icon={Image}
                   title="Thư viện media còn trống"
-                  description="Tải lên bìa truyện, minh họa hoặc bản thu âm đầu tiên để dùng cho các chương."
+                  description={t('mediaData.emptyHint')}
                   action={
                     <Button size="sm" onClick={() => fileRef.current?.click()}>
                       <Upload size={14} aria-hidden="true" />
@@ -367,8 +447,6 @@ export function MediaLibraryPage() {
                     asset={asset}
                     selected={selected?.id === asset.id}
                     view={view}
-                    playing={playing === asset.id}
-                    onPlay={() => setPlaying((value) => (value === asset.id ? null : asset.id))}
                     onSelect={() => select(asset)}
                   />
                 ))}
@@ -387,9 +465,39 @@ export function MediaLibraryPage() {
                 />
               </Card>
             )}
+            <div className="mt-4 flex flex-wrap items-center gap-3">
+              <p className="text-xs text-muted">
+                {t('mediaData.loaded', {
+                  count: library.length,
+                  total: showCounts ? resource.data.stats.count : '—',
+                })}
+              </p>
+              <Button
+                variant="secondary"
+                size="sm"
+                disabled={busy || resource.status === 'loading'}
+                onClick={reload}
+              >
+                {t('mediaData.refresh')}
+              </Button>
+              {resource.data.nextCursor && (
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  disabled={busy}
+                  onClick={() => {
+                    setPrevious([...previous, ...resource.data.items]);
+                    setCursor(resource.data.nextCursor);
+                  }}
+                >
+                  {t('mediaData.more')}
+                </Button>
+              )}
+            </div>
 
             <button
               type="button"
+              disabled={busy}
               onClick={() => fileRef.current?.click()}
               onDragOver={(event) => {
                 event.preventDefault();
@@ -411,7 +519,9 @@ export function MediaLibraryPage() {
               <span className="text-sm font-semibold text-brand-strong">
                 {dragging ? 'Thả tệp để tải lên' : 'Thả tệp vào đây hoặc duyệt để tải lên'}
               </span>
-              <span className="text-xs text-muted">Hình ảnh hoặc âm thanh, một tệp mỗi lần</span>
+              <span className="text-xs text-muted">
+                {t(busy ? 'mediaData.uploading' : 'mediaData.limit')}
+              </span>
             </button>
             <p
               role="status"
@@ -443,72 +553,37 @@ export function MediaLibraryPage() {
                 copied={copied}
                 onCopy={copyUrl}
                 onClose={() => setSelectedId(null)}
-                onDelete={() => setConfirmDelete(true)}
+                onDelete={() => {
+                  setDeleteError('');
+                  setConfirmDelete(true);
+                }}
+                busy={busy}
               />
             )}
           </div>
         </div>
 
-        <Modal open={bulkOpen} title="Sắp xếp hàng loạt" onClose={() => setBulkOpen(false)}>
-          <p className="text-sm leading-6 text-muted">
-            Gán {shown.length} tài nguyên đang hiển thị theo bộ lọc hiện tại cho một truyện.
-          </p>
-          <label htmlFor="bulk-story" className="mt-5 block text-sm font-semibold">
-            Gán cho truyện
-          </label>
-          <Select
-            id="bulk-story"
-            className="mt-2 w-full"
-            value={bulkStory}
-            onChange={(event) => setBulkStory(event.target.value)}
-          >
-            {stories.map((name) => (
-              <option key={name}>{name}</option>
-            ))}
-          </Select>
-          <div className="mt-6 flex flex-wrap justify-end gap-2">
-            <Button variant="secondary" onClick={() => setBulkOpen(false)}>
-              Hủy
-            </Button>
-            <Button
-              disabled={!shown.length}
-              onClick={() => {
-                const ids = new Set(shown.map((asset) => asset.id));
-                setAssets((current) =>
-                  current.map((asset) =>
-                    ids.has(asset.id) ? { ...asset, story: bulkStory } : asset,
-                  ),
-                );
-                setBulkOpen(false);
-              }}
-            >
-              <FolderOpen size={16} aria-hidden="true" />
-              Gán {shown.length} tài nguyên
-            </Button>
-          </div>
-        </Modal>
-
         <Modal
           open={confirmDelete && Boolean(selected)}
           title="Xóa tài nguyên?"
-          onClose={() => setConfirmDelete(false)}
+          onClose={() => {
+            if (!busy) setConfirmDelete(false);
+          }}
         >
           <p className="text-sm leading-6 text-muted">
-            <strong className="break-all text-ink">{selected?.name}</strong> sẽ bị xóa khỏi thư viện
-            và gỡ liên kết khỏi {selected?.story}.
+            <strong className="break-all text-ink">{selected?.name}</strong>
+            <span className="mt-2 block">{t('mediaData.deleteHint')}</span>
           </p>
+          {deleteError && (
+            <p role="alert" className="mt-3 text-sm text-rose-strong">
+              {deleteError}
+            </p>
+          )}
           <div className="mt-6 flex flex-wrap justify-end gap-2">
-            <Button variant="secondary" onClick={() => setConfirmDelete(false)}>
+            <Button disabled={busy} variant="secondary" onClick={() => setConfirmDelete(false)}>
               Hủy
             </Button>
-            <Button
-              variant="danger"
-              onClick={() => {
-                setAssets((current) => current.filter((item) => item.id !== selected?.id));
-                setSelectedId(null);
-                setConfirmDelete(false);
-              }}
-            >
+            <Button variant="danger" disabled={busy} onClick={remove}>
               <Trash2 size={16} aria-hidden="true" />
               Xóa khỏi thư viện
             </Button>
@@ -519,45 +594,24 @@ export function MediaLibraryPage() {
   );
 }
 
-function AssetPreview({ asset, large = false, children }) {
-  if (asset.type === 'Story Covers') {
-    return (
-      <div className="relative grid h-full place-items-center bg-elevated p-4">
-        <StoryCover
-          story={{ title: asset.story, color: asset.color }}
-          className={`aspect-[2/3] h-full max-h-full shadow-soft ${large ? 'rounded-2xl' : 'rounded-xl'}`}
-        />
-        {children}
-      </div>
-    );
-  }
-  const Icon = asset.kind === 'audio' ? FileAudio : Image;
+function AssetPreview({ asset, children }) {
+  const { t } = useLocale();
+  const [failedUrl, setFailedUrl] = useState(null);
+  const url = assetUrl(asset);
   return (
-    <div
-      className="relative grid h-full place-items-center overflow-hidden text-white"
-      style={{
-        backgroundImage: `linear-gradient(160deg, color-mix(in oklab, ${asset.color} 78%, white), ${asset.color} 55%, color-mix(in oklab, ${asset.color} 70%, black))`,
-      }}
-    >
-      {asset.kind === 'audio' ? (
-        <div
-          aria-hidden="true"
-          className="absolute inset-x-5 bottom-4 flex h-1/3 items-end justify-between"
-        >
-          {waveform.map((height, index) => (
-            <span
-              key={index}
-              className="w-1 rounded-full bg-white/70"
-              style={{ height: `${height}%` }}
-            />
-          ))}
-        </div>
+    <div className="relative grid h-full place-items-center bg-elevated">
+      {url && failedUrl !== url ? (
+        <img
+          src={url}
+          alt={asset.name}
+          loading="lazy"
+          onError={() => setFailedUrl(url)}
+          className="h-full w-full object-contain"
+        />
       ) : (
-        <span className="flex flex-col items-center gap-2" aria-hidden="true">
-          <Icon size={large ? 40 : 28} className="opacity-85" />
-          <span className="rounded-full bg-white/18 px-2.5 py-0.5 text-[11px] font-semibold tracking-[.12em]">
-            {asset.icon}
-          </span>
+        <span className="flex flex-col items-center gap-2 p-4 text-center text-xs text-muted">
+          <Image size={28} aria-hidden="true" />
+          {t('mediaData.unavailable')}
         </span>
       )}
       {children}
@@ -565,7 +619,7 @@ function AssetPreview({ asset, large = false, children }) {
   );
 }
 
-function AssetCard({ asset, selected, view, playing, onPlay, onSelect }) {
+function AssetCard({ asset, selected, view, onSelect }) {
   const list = view === 'list';
   return (
     <article
@@ -582,17 +636,6 @@ function AssetCard({ asset, selected, view, playing, onPlay, onSelect }) {
         className={`pointer-events-none relative ${list ? 'w-28 shrink-0 sm:w-36' : 'aspect-[4/3]'}`}
       >
         <AssetPreview asset={asset}>
-          {asset.kind === 'audio' && (
-            <button
-              type="button"
-              onClick={onPlay}
-              aria-pressed={playing}
-              className="pointer-events-auto relative z-10 grid size-12 place-items-center rounded-full bg-white/22 text-white ring-1 ring-white/40 transition-transform duration-200 hover:scale-105 active:scale-[0.96]"
-              aria-label={playing ? `Tạm dừng ${asset.name}` : `Phát ${asset.name}`}
-            >
-              {playing ? <Pause size={20} /> : <Play size={20} />}
-            </button>
-          )}
           {selected && (
             <span className="absolute right-3 top-3 grid size-7 place-items-center rounded-full bg-brand text-on-brand shadow-whisper">
               <Check size={14} aria-hidden="true" />
@@ -620,7 +663,8 @@ function AssetCard({ asset, selected, view, playing, onPlay, onSelect }) {
   );
 }
 
-function AssetInspector({ asset, copied, onCopy, onClose, onDelete }) {
+function AssetInspector({ asset, copied, onCopy, onClose, onDelete, busy }) {
+  const { t } = useLocale();
   if (!asset)
     return (
       <Card as="aside" className="hidden p-0 xl:block">
@@ -628,7 +672,7 @@ function AssetInspector({ asset, copied, onCopy, onClose, onDelete }) {
           icon={Image}
           headingAs="h2"
           title="Chưa chọn tài nguyên"
-          description="Chọn một tài nguyên để kiểm tra chi tiết và liên kết xuất bản."
+          description={t('mediaData.inspectHint')}
         />
       </Card>
     );
@@ -654,18 +698,14 @@ function AssetInspector({ asset, copied, onCopy, onClose, onDelete }) {
           <dl className="mt-5 divide-y divide-hairline rounded-2xl bg-elevated px-4 text-xs md:mt-0 xl:mt-5">
             <Detail label="Kích thước / Thời lượng" value={asset.dimensions} />
             <Detail label="Dung lượng tệp" value={asset.size} />
+            <Detail label="Định dạng / MIME" value={asset.contentType ?? '—'} />
             <Detail
-              label="Định dạng / MIME"
-              value={
-                asset.kind === 'audio'
-                  ? 'audio/wav (Không mất dữ liệu)'
-                  : 'image/png (Không mất dữ liệu)'
-              }
+              label="Thời gian tải lên"
+              value={asset.createdAt ? new Date(asset.createdAt).toLocaleString('vi-VN') : '—'}
             />
-            <Detail label="Thời gian tải lên" value="14/10/2026 · 10:24" />
           </dl>
           <div className="mt-4 rounded-2xl border border-hairline p-4">
-            <p className="text-xs font-semibold text-ink/70">Liên kết xuất bản</p>
+            <p className="text-xs font-semibold text-ink/70">{t('mediaData.grouping')}</p>
             <div className="mt-3 flex flex-wrap items-center gap-2">
               <Badge tone={statusTones[asset.status]}>
                 {statusLabels[asset.status] ?? asset.status}
@@ -676,7 +716,13 @@ function AssetInspector({ asset, copied, onCopy, onClose, onDelete }) {
               </span>
             </div>
           </div>
-          <Button variant="secondary" onClick={onCopy} className="mt-5 w-full">
+          <p className="mt-3 text-xs text-muted">{t('mediaData.privateUrl')}</p>
+          <Button
+            disabled={busy || !asset.url}
+            variant="secondary"
+            onClick={onCopy}
+            className="mt-5 w-full"
+          >
             {copied ? (
               <Check size={16} aria-hidden="true" />
             ) : (
@@ -684,7 +730,7 @@ function AssetInspector({ asset, copied, onCopy, onClose, onDelete }) {
             )}
             {copied ? 'Đã sao chép URL tài nguyên' : 'Sao chép URL tài nguyên'}
           </Button>
-          <Button variant="danger" onClick={onDelete} className="mt-2 w-full">
+          <Button disabled={busy} variant="danger" onClick={onDelete} className="mt-2 w-full">
             <Trash2 size={16} aria-hidden="true" />
             Xóa khỏi thư viện
           </Button>
