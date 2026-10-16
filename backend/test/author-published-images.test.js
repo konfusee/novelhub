@@ -66,7 +66,7 @@ async function approve(sent) {
   }
   return sub;
 }
-async function fixture() {
+async function fixture({ later = false } = {}) {
   const author = await authenticatedAccount('author');
   const cookie = author.cookie;
   const category = await Category.create({
@@ -100,6 +100,41 @@ async function fixture() {
       })
     ).status,
   ).toBe(201);
+  let firstChapterId;
+  if (later) {
+    firstChapterId = (
+      await write(cookie, `/api/author/stories/${storyId}/chapters`, {
+        title: 'Chương mở đầu',
+        paragraphs: ['Nội dung được đọc thử.'],
+      })
+    ).body.chapter.id;
+    const preparedFirst = (
+      await get(
+        cookie,
+        `/api/author/submissions/prepare?storyId=${storyId}&chapterId=${firstChapterId}`,
+      )
+    ).body;
+    await approve(
+      await write(cookie, '/api/author/submissions', {
+        storyId,
+        chapterId: firstChapterId,
+        revisionId: preparedFirst.target.revisionId,
+        expectedVersion: preparedFirst.target.version,
+      }),
+    );
+    const endpoint = `/api/author/stories/${storyId}/chapters/${firstChapterId}/release`;
+    const firstTarget = (await get(cookie, endpoint)).body.target;
+    expect(
+      (
+        await write(cookie, endpoint, {
+          revisionId: firstTarget.revisionId,
+          submissionId: firstTarget.submissionId,
+          expectedVersion: firstTarget.version,
+          expectedStoryVersion: firstTarget.storyVersion,
+        })
+      ).status,
+    ).toBe(201);
+  }
   const asset = (
     await request(app)
       .post('/api/author/media')
@@ -148,6 +183,7 @@ async function fixture() {
   const publicUrl = `/api/catalog/stories/${storyId}/chapters/${chapterId}`;
   const imageUrl = `${publicUrl}/revisions/${target.revisionId}/media/${asset.id}`;
   return {
+    firstChapterId,
     author,
     cookie,
     storyId,
@@ -344,4 +380,28 @@ it('marks unpublished, wrong-revision and locked chapter/image errors as private
   await chapter.save();
   await check(f.publicUrl, 403);
   await check(f.imageUrl, 403);
+});
+it('allows guests only chapter one and requires a valid session for later free text and images', async () => {
+  const f = await fixture({ later: true });
+  expect((await write(f.cookie, f.endpoint, f.body)).status).toBe(201);
+  const firstUrl = `/api/catalog/stories/${f.storyId}/chapters/${f.firstChapterId}`;
+  expect((await request(app).get(firstUrl)).status).toBe(200);
+  for (const url of [f.publicUrl, f.imageUrl]) {
+    const guest = await request(app).get(url);
+    expect(guest.status).toBe(401);
+    expect(JSON.stringify(guest.body)).not.toContain('Nội dung và hình minh họa');
+    expect(guest.headers['cache-control']).toBe('private, no-store');
+    expect((await get('novelhub_session=invalid', url)).status).toBe(401);
+  }
+  const reader = await authenticatedAccount();
+  expect((await get(reader.cookie, f.publicUrl)).status).toBe(200);
+  expect((await get(reader.cookie, f.imageUrl)).status).toBe(200);
+  const home = await request(app).get('/api/catalog/home');
+  expect(home.body.preview.chapterId).toBe(f.firstChapterId);
+  expect(JSON.stringify(home.body)).not.toContain('Nội dung và hình minh họa');
+  const first = await Chapter.findById(f.firstChapterId);
+  first.status = 'unpublished';
+  await first.save();
+  expect((await request(app).get('/api/catalog/home')).body.preview).toBeNull();
+  expect((await get(reader.cookie, f.publicUrl)).status).toBe(200);
 });

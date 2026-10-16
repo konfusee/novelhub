@@ -74,11 +74,13 @@ async function visibleChapter(config, params, cookie) {
       publishedRevisionId: { $ne: null },
     }).lean());
   if (!chapter) throw new HttpError(404, 'not_found', 'Không tìm thấy chương đã xuất bản.');
+  const auth = await resolveSession(readCookie(cookie, config.cookieName));
+  if (chapter.orderKey !== 1 && !auth)
+    throw new HttpError(401, 'authentication_required', 'Đăng nhập để đọc các chương tiếp theo.');
   if (chapter.earlyAccess?.enabled) {
     if (!chapter.earlyAccess.endsAt)
       throw new HttpError(403, 'chapter_locked', 'Chương chưa mở để đọc.');
     if (chapter.earlyAccess.endsAt > new Date()) {
-      const auth = await resolveSession(readCookie(cookie, config.cookieName));
       const entitlement =
         auth &&
         (await UnlockEntitlement.exists({
@@ -206,6 +208,7 @@ export function createCatalogRouter(config) {
       for (const story of stories) {
         const chapters = await Chapter.find({
           storyId: story.id,
+          orderKey: 1,
           status: 'published',
           publishedRevisionId: { $ne: null },
           $or: [
