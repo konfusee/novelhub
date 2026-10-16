@@ -1,6 +1,6 @@
 # Gửi duyệt và tạo bản sửa của Author
 
-Checkpoint: 16/10/2026. Không thay đổi model/schema backend.
+Checkpoint: 17/10/2026. Không thay đổi model/schema backend.
 
 ## API đã triển khai
 
@@ -8,15 +8,15 @@ Checkpoint: 16/10/2026. Không thay đổi model/schema backend.
 | --- | --- |
 | GET /author/submissions?page=1 | 10 gói/trang theo chủ sở hữu; trạng thái, phiên bản, bằng chứng, phản hồi và lịch sử đã lưu. |
 | GET /author/submissions/prepare?storyId=…&chapterId=… | Kiểm tra đúng bản nháp, phiên bản và điều kiện gửi. Bỏ chapterId để kiểm tra thông tin truyện. |
-| POST /author/submissions | Gửi storyId, chapterId nếu có, revisionId và expectedVersion lấy từ prepare. Gói truyện bắt buộc có rights; gói chương không nhận rights mới. |
+| POST /author/submissions | Gửi storyId, chapterId nếu có, revisionId và expectedVersion từ prepare. Gói truyện cần rights; chương văn bản kế thừa quyền truyện; chương có ảnh cần rights và imageManifestDigest. |
 | POST /author/submissions/:id/revise | Gửi expectedVersion của submission để tạo bản nháp sửa từ kết quả rejected hoặc revision-requested. |
 
 Mọi API yêu cầu Author đang hoạt động và chỉ đọc/ghi nội dung thuộc tài khoản. Request ghi dùng kiểm tra Origin hiện có. Giao dịch kiểm tra lại role, authorizationEpoch và credentialVersion, không chỉ dựa vào menu frontend.
 
 ## Gói gửi bất biến
 
-- Server xác thực story-v1 hoặc blocks-v1, đoạn văn thuần, thể loại đang hoạt động, trạng thái chỉnh sửa và quyền truyện cha. Gói chứa media chưa có adapter đóng băng bị chặn rõ ràng.
-- Rights của truyện gồm basis original/licensed, asserted=true và sourceLicenceNote tùy chọn. Khi gửi, facts được khóa cùng revision và digest. Chương chỉ dùng khai báo bất biến của phiên bản truyện đã duyệt.
+- Server xác thực story-v1 và blocks-v1/v2/v3, thể loại, trạng thái chỉnh sửa và quyền truyện cha. Rich-text giữ AST; chương có ảnh kiểm tra bytes/metadata/manifest theo revision. Ảnh bìa/banner chưa hỗ trợ vẫn bị chặn.
+- Rights gồm basis original/licensed, asserted=true và sourceLicenceNote. Truyện và chương có ảnh tạo khai báo riêng bất biến theo revision; chương văn bản kế thừa quyền truyện. Chương có ảnh cần digest chính xác và ghi chú bắt buộc nếu licensed. Xem `author-chapter-images.md`.
 - Một transaction lưu revision đóng băng, RightsDeclaration nếu cần, PublicationSubmission, EvidenceBatch, audit và ModerationHistory. Lỗi ghi cuối giao dịch rollback toàn bộ.
 - Gửi lại cùng revision và cùng quyền trả lại gói đã có; không nhân đôi gói/quyền/lô bằng chứng. Khai báo quyền khác với gói cũ bị từ chối. Hai yêu cầu đồng thời được tuần tự hóa theo Author.
 - Gói mới ở validated, lô bằng chứng ở pending. Đây là trạng thái chờ xử lý, không phải đã duyệt, đã phân công kiểm duyệt viên hay đã công khai. PublishedRevisionId đang phục vụ độc giả được giữ nguyên.
@@ -31,6 +31,6 @@ Mọi API yêu cầu Author đang hoạt động và chỉ đọc/ghi nội dung
 
 ## Giới hạn còn lại
 
-Chưa hoàn thiện canonical rich-text AST, gói media, worker embedding/comparison/LLM, quyết định kiểm duyệt, phát hành theo thứ tự, lịch phát hành và early access. Nhập tài liệu thành chương nháp đã có trong `author-document-import.md`, còn tách chương tự động và rich-text. Không có bước tự duyệt hoặc tự phát hành để thay các phần còn thiếu.
+Còn worker embedding/comparison/LLM, quyết định kiểm duyệt, phục vụ ảnh từ package đã duyệt, phát hành theo thứ tự/lịch/early access và hỗ trợ ảnh bìa/banner trong package. Nhập tài liệu thành chương nháp đã có trong `author-document-import.md`. Không có bước tự duyệt hoặc tự phát hành để thay các phần còn thiếu.
 
 Kiểm thử bao gồm quyền sở hữu, stale version, gửi đồng thời, rollback, quyền bất biến, snapshot công khai, tạo bản sửa và gửi vòng mới. Lượt kiểm tra trình duyệt trước khi pause đã gửi thật trên MongoDB tạm và thấy gói/lịch sử pending; không ghi dữ liệu thử vào MongoDB đang dùng.

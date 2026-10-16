@@ -19,18 +19,27 @@ Trong chế độ soạn có định dạng (`?mode=rich`), công cụ Hình ả
 - Mỗi revision mới có manifest riêng. Đổi thứ tự ảnh đổi digest; bỏ hết ảnh tạo revision không mang manifest/digest cũ. Revision lịch sử không bị ghi đè. Đây là snapshot bản nháp, chưa phải bằng chứng quyền sử dụng hoặc package gửi duyệt đã đóng băng.
 - Ảnh và chú thích không được tính là số từ văn bản truyện. Sửa chữ, heading hoặc inline marks vẫn giữ nguyên ảnh, kể cả khi trình duyệt bọc figure vào khối định dạng khác.
 
-## Gửi duyệt còn thiếu
+## Gửi duyệt chương có ảnh
 
-**blocks-v3 vẫn là bản nháp riêng, chưa được gửi duyệt/phát hành.** Checklist nhận diện nội dung hợp lệ nhưng media chưa hỗ trợ; POST gửi duyệt cũng từ chối, không tạo package. Còn khai báo quyền theo ảnh, đóng băng manifest/digest và phục vụ ảnh từ package đã duyệt. Không tự approve hay publish.
+Chương blocks-v3 có thể gửi duyệt khi truyện cha đã duyệt, quyền truyện cha còn hợp lệ và toàn bộ checklist đạt. Prepare kiểm tra lại bytes, metadata, thứ tự mediaIds và manifest/digest đã lưu. Nháp có ảnh trước khi có manifest cần lưu lại bằng editor.
+
+Prepare trả `requiresRights: true` và `imageRights: {count, mediaDigest}`. POST cần `rights` (basis, asserted=true, sourceLicenceNote) và `imageManifestDigest` trùng bản chuẩn bị. Khai báo áp dụng cho toàn bộ nội dung chương và tập ảnh chính xác, không phải bằng chứng tải lên đồng nghĩa với có quyền. Nếu basis=licensed thì phải ghi nguồn/phạm vi cấp phép. Chương văn bản vẫn kế thừa quyền truyện cha và không nhận khai báo ảnh.
+
+Transaction kiểm tra/pin ảnh lại, tạo RightsDeclaration riêng theo revision chương và đóng băng manifest, rightsDigest, mediaDigest, packageDigest cùng revision. validation lưu liên kết quyền truyện cha. Gửi lặp chỉ trả lại gói cũ khi khai báo và digest ảnh khớp; lỗi audit rollback pin/quyền/package/bằng chứng. Không sửa model/schema và không gán lại quyền trên MediaAsset tái sử dụng.
+
+Gói ở validated, EvidenceBatch ở pending. Chưa có worker bằng chứng hoặc API quyết định kiểm duyệt trong phạm vi này. **Gửi duyệt không tự phê duyệt/phát hành; ảnh công khai từ package đã duyệt vẫn cần triển khai.** Ảnh bìa/banner còn bị chặn.
+
+Sau reload, biểu mẫu đọc đúng khai báo bất biến từ máy chủ và khóa sửa. Khi có yêu cầu chỉnh sửa, tạo revision mới giữ AST/manifest nhưng bỏ chữ ký quyền/package cũ, mở đúng rich editor và yêu cầu xác nhận quyền mới khi gửi lại.
 
 Checklist chương có ảnh dẫn đúng về editor có định dạng để xử lý ảnh. Các bản rich-text cũng được đưa về đúng chế độ soạn khi sửa nội dung; gói thông tin truyện giữ đường dẫn media riêng.
 
 ## Kiểm chứng
 
-- 38 test backend liên quan: lưu/đọc/đổi phiên bản, quyền, sai truyện, thiếu/hỏng bytes, rollback audit, lịch sử media, manifest không khớp, tranh chấp gắn/xóa và chặn gửi duyệt.
-- 42 test frontend liên quan: chọn ảnh, alt bắt buộc, lọc đúng truyện, giữ chữ đậm, lưu AST, preview, chú thích/gỡ/undo và đường dẫn sửa nhanh. Test nằm trong frontend/test.
+- 48 test backend liên quan: lưu/đọc/đổi phiên bản, quyền, sai truyện, thiếu/hỏng bytes, rollback audit, lịch sử media, manifest không khớp, tranh chấp gắn/xóa, gửi duyệt đồng thời và tạo bản sửa từ phản hồi.
+- 47 test frontend liên quan: chọn ảnh, alt bắt buộc, lọc đúng truyện, giữ chữ đậm, lưu AST, preview, chú thích/gỡ/undo, đường dẫn sửa nhanh, giấy phép bắt buộc, xác nhận lại khi đổi revision và đọc quyền bất biến sau reload. Test nằm trong frontend/test.
 - Browser trên MongoDB tạm: chọn ảnh từ thư viện, thêm mô tả/chú thích, lưu, reload, API đọc lại blocks-v3 và preview giữ ảnh/định dạng. Kiểm tra 390/768/1024px và desktop, sáng/tối; không tràn ngang trong các màn hình đã kiểm tra.
 - Dữ liệu thử và ảnh minh họa kiểm thử không được nạp vào database chính. Giữ nguyên thay đổi ngoài phạm vi của chủ dự án.
+- Browser gửi chương có ảnh qua backend thật/MongoDB tạm: gói validated, một manifest, khai báo quyền riêng, EvidenceBatch pending; mở lại trang vẫn hiển thị đúng giấy phép đã lưu và khóa sửa. Biểu mẫu kiểm tra sáng/tối, 390/768/1024px và desktop.
 - Bổ sung test snapshot/digest, thứ tự và khử trùng ảnh, giữ manifest lịch sử, xóa manifest khi bỏ hết ảnh và rollback khi MIME metadata không đúng định dạng đã chuẩn hóa.
 
 AUT-04/AUT-06 vẫn Một phần do còn gói xuất bản có media.

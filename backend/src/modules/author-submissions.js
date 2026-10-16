@@ -16,6 +16,7 @@ import { HttpError } from '../middleware/errors.js';
 import { withTransaction } from '../db/connection.js';
 import { lockAuthor, ownStory } from './author-ownership.js';
 import { textChapterDocument } from './chapter-document.js';
+import { inspectChapterImages, pinChapterImages } from './author-chapter-media.js';
 import {
   richChapterDocument,
   editableChapterDocument,
@@ -51,7 +52,7 @@ const rightsFacts = (rights) => ({
   sourceLicenceNote: rights.sourceLicenceNote ?? '',
 });
 
-async function packageState(account, input, session) {
+async function packageState(account, input, session, config) {
   const story = await ownStory(account, input.storyId, session);
   const target = input.chapterId
     ? await Chapter.findOne({ _id: input.chapterId, storyId: story._id }).session(session ?? null)
@@ -100,12 +101,30 @@ async function packageState(account, input, session) {
     categoryIds.length > 0 &&
     new Set(categoryIds.map(String)).size === categoryIds.length &&
     active === categoryIds.length;
+  const illustrated = Boolean(input.chapterId && revision.formatVersion === 'blocks-v3');
+  let images = null;
+  if (illustrated && valid) {
+    try {
+      images = await inspectChapterImages(config, account, story._id, content, session);
+      if (
+        !images.mediaIds.length ||
+        JSON.stringify(revision.mediaIds.map(String)) !== JSON.stringify(images.mediaIds) ||
+        revision.mediaDigest !== images.mediaDigest ||
+        digest(revision.validation?.mediaManifest ?? null) !==
+          digest(images.validation.mediaManifest) ||
+        revision.validation?.mediaManifestVersion !== 'chapter-images-v1'
+      )
+        images = null;
+    } catch (error) {
+      if (!(error instanceof HttpError) || ![404, 409].includes(error.status)) throw error;
+    }
+  }
   const mediaSupported =
-    revision.formatVersion !== 'blocks-v3' &&
     !story.coverMediaId &&
     !story.theme?.coverBannerMediaId &&
-    !revision.mediaIds?.length &&
-    !blocks.some((block) => block?.type === 'image');
+    (illustrated
+      ? Boolean(images)
+      : !revision.mediaIds?.length && !blocks.some((block) => block?.type === 'image'));
   const rights = input.chapterId
     ? await RightsDeclaration.findOne({
         storyId: story._id,
@@ -142,6 +161,8 @@ async function packageState(account, input, session) {
     target,
     revision,
     rights,
+    images,
+    illustrated,
     checks: [
       { code: 'editable', ok: editable },
       { code: 'content', ok: valid },
@@ -151,8 +172,16 @@ async function packageState(account, input, session) {
     ],
   };
 }
-export async function prepareSubmission(account, input) {
-  const state = await packageState(account, input);
+export async function prepareSubmission(account, input, config) {
+  const state = await packageState(account, input, undefined, config);
+  const frozenRights = state.revision.immutableAt
+    ? await RightsDeclaration.findOne({
+        _id: state.revision.rightsDeclarationId,
+        revisionId: state.revision._id,
+        declaredBy: account._id,
+        immutableAt: { $ne: null },
+      }).lean()
+    : null;
   return {
     story: { id: String(state.story._id), title: state.story.title, author: account.displayName },
     target: {
@@ -170,10 +199,19 @@ export async function prepareSubmission(account, input) {
       ? chapterTextProjection(state.revision)
       : [state.revision.content?.description ?? '']
     ).reduce((sum, text) => sum + (text.match(/\S+/gu)?.length ?? 0), 0),
-    requiresRights: !input.chapterId,
+    requiresRights: !input.chapterId || state.illustrated,
+    ...(frozenRights ? { frozenRights: rightsFacts(frozenRights) } : {}),
+    ...(state.illustrated
+      ? {
+          imageRights: {
+            mediaDigest: state.revision.mediaDigest ?? null,
+            count: state.revision.mediaIds.length,
+          },
+        }
+      : {}),
   };
 }
-export async function submitContent(account, input) {
+export async function submitContent(account, input, config) {
   return withTransaction(async (session) => {
     await lockAuthor(account, session);
     await ownStory(account, input.storyId, session);
@@ -184,16 +222,28 @@ export async function submitContent(account, input) {
       chapterId: input.chapterId ?? null,
     }).session(session);
     if (existing) {
-      if (!input.chapterId) {
+      const frozen = await ContentRevision.findById(existing.revisionId).session(session);
+      const illustrated = frozen?.formatVersion === 'blocks-v3';
+      if (!input.chapterId || illustrated) {
         const rights = await RightsDeclaration.findOne({ submissionId: existing._id }).session(
           session,
         );
-        if (!rights || digest(rightsFacts(rights)) !== digest(rightsFacts(input.rights)))
+        if (
+          !rights ||
+          !input.rights ||
+          digest(rightsFacts(rights)) !== digest(rightsFacts(input.rights)) ||
+          (illustrated && input.imageManifestDigest !== frozen.mediaDigest)
+        )
           throw new HttpError(409, 'package_changed', 'Nội dung quyền khác với gói đã gửi.');
-      }
+      } else if (input.rights || input.imageManifestDigest)
+        throw new HttpError(
+          400,
+          'validation_error',
+          'Chương văn bản dùng khai báo quyền của truyện.',
+        );
       return { id: String(existing._id), status: existing.status, replayed: true };
     }
-    const state = await packageState(account, input, session);
+    const state = await packageState(account, input, session, config);
     if (
       String(state.revision._id) !== input.revisionId ||
       state.target.version !== input.expectedVersion
@@ -203,10 +253,36 @@ export async function submitContent(account, input) {
       throw new HttpError(409, 'submission_not_ready', 'Bản nháp chưa đủ điều kiện gửi.', {
         checks: state.checks,
       });
+    if (state.illustrated) {
+      if (!input.rights || input.imageManifestDigest !== state.images.mediaDigest)
+        throw new HttpError(
+          409,
+          'image_rights_required',
+          'Hãy khai báo quyền cho đúng danh sách ảnh của bản nháp.',
+        );
+      if (input.rights.basis === 'licensed' && !input.rights.sourceLicenceNote?.trim())
+        throw new HttpError(
+          400,
+          'licence_note_required',
+          'Hãy ghi nguồn và phạm vi được cấp phép cho nội dung và ảnh.',
+        );
+      // Pin the verified assets in the same transaction as the immutable package.
+      const pinned = await pinChapterImages(
+        config,
+        account,
+        state.story._id,
+        state.revision.content,
+        session,
+      );
+      if (pinned.mediaDigest !== state.images.mediaDigest)
+        throw new HttpError(409, 'media_changed', 'Ảnh đã thay đổi. Hãy kiểm tra lại bản nháp.');
+    } else if (input.imageManifestDigest || (input.chapterId && input.rights)) {
+      throw new HttpError(400, 'validation_error', 'Khai báo ảnh không phù hợp với phiên bản này.');
+    }
     const now = new Date();
     const submissionId = new mongoose.Types.ObjectId();
     let rights = state.rights;
-    if (!input.chapterId) {
+    if (!input.chapterId || state.illustrated) {
       [rights] = await RightsDeclaration.create(
         [
           {
@@ -223,8 +299,14 @@ export async function submitContent(account, input) {
         { session },
       );
     }
-    const rightsDigest = digest(rightsFacts(rights));
-    const mediaDigest = digest([]);
+    const rightsDigest = state.illustrated
+      ? digest({
+          declaration: rightsFacts(rights),
+          parentRightsDeclarationId: String(state.rights._id),
+          mediaDigest: state.images.mediaDigest,
+        })
+      : digest(rightsFacts(rights));
+    const mediaDigest = state.images?.mediaDigest ?? digest([]);
     const packageDigest = digest({
       formatVersion: state.revision.formatVersion,
       content: state.revision.content,
@@ -236,7 +318,13 @@ export async function submitContent(account, input) {
       rightsDigest,
       mediaDigest,
       packageDigest,
-      validation: { valid: true, validator: 'publishing-text-v2', validatedAt: now },
+      validation: {
+        ...(state.images?.validation ?? {}),
+        ...(state.illustrated ? { parentRightsDeclarationId: String(state.rights._id) } : {}),
+        valid: true,
+        validator: state.illustrated ? 'publishing-images-v1' : 'publishing-text-v2',
+        validatedAt: now,
+      },
       status: 'submitted',
       submittedAt: now,
       immutableAt: now,
@@ -421,6 +509,7 @@ export async function reviseSubmission(account, submissionId, expectedVersion) {
         id: String(current._id),
         storyId: String(story._id),
         chapterId: submission.chapterId ? String(target._id) : null,
+        formatVersion: current.formatVersion,
         replayed: true,
       };
     if (!current._id.equals(submission.revisionId) || !current.immutableAt)
@@ -444,6 +533,15 @@ export async function reviseSubmission(account, submissionId, expectedVersion) {
           content: structuredClone(current.content),
           formatVersion: current.formatVersion,
           mediaIds: current.mediaIds,
+          ...(current.formatVersion === 'blocks-v3'
+            ? {
+                mediaDigest: current.mediaDigest,
+                validation: {
+                  mediaManifestVersion: current.validation?.mediaManifestVersion,
+                  mediaManifest: structuredClone(current.validation?.mediaManifest),
+                },
+              }
+            : {}),
           ...(current.altText ? { altText: current.altText } : {}),
         },
       ],
@@ -495,6 +593,7 @@ export async function reviseSubmission(account, submissionId, expectedVersion) {
       id: String(revision._id),
       storyId: String(story._id),
       chapterId: submission.chapterId ? String(target._id) : null,
+      formatVersion: revision.formatVersion,
       replayed: false,
     };
   });

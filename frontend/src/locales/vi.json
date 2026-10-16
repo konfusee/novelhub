@@ -1303,8 +1303,11 @@
     "original": "Tác phẩm gốc của tôi",
     "licensed": "Được cấp quyền sử dụng",
     "assertion": "Tôi xác nhận có quyền gửi và xuất bản nội dung này theo cơ sở đã chọn.",
+    "imageAssertion": "Tôi xác nhận có quyền gửi và xuất bản nội dung chương cùng toàn bộ ảnh trong phiên bản này theo cơ sở đã chọn.",
+    "imageRightsHint": "Khai báo áp dụng cho nội dung chương và {{count}} ảnh trong bản nháp này. Việc tải ảnh lên không chứng minh quyền sử dụng. Quyền của truyện cha vẫn phải hợp lệ.",
+    "requiredLicenceNote": "Nguồn và phạm vi cấp phép cho nội dung và ảnh (bắt buộc)",
     "licenceNote": "Ghi chú nguồn hoặc giấy phép (không bắt buộc)",
-    "rightsHint": "Khai báo này được lưu cùng phiên bản truyện gửi duyệt và không thể sửa sau khi gửi.",
+    "rightsHint": "Khai báo này được lưu cùng đúng phiên bản gửi duyệt và không thể sửa sau khi gửi.",
     "parentRights": "Chương sử dụng khai báo quyền đã đóng băng của phiên bản truyện được duyệt. Hãy gửi duyệt thông tin truyện trước nếu điều kiện này chưa đạt.",
     "notes": "Ghi chú cho kiểm duyệt viên",
     "notesUnavailable": "Luồng hiện tại chưa lưu ghi chú biên tập riêng. Ô này tạm khóa để tránh mất thông tin bạn nhập.",
@@ -1334,8 +1337,8 @@
         "hint": "Truyện cần ít nhất một thể loại hợp lệ đang hoạt động, không trùng lặp."
       },
       "media": {
-        "title": "Gói không chứa media chưa hỗ trợ",
-        "hint": "Luồng gửi duyệt hiện chưa đóng băng ảnh bìa hoặc ảnh minh họa. Ảnh có thể lưu trong bản nháp riêng; cần xử lý trước khi gửi."
+        "title": "Ảnh và tệp trong gói gửi",
+        "hint": "Ảnh trong chương phải thuộc bạn, còn đọc được và khớp danh sách đã lưu cùng bản nháp. Bản nháp có ảnh cũ cần lưu lại trước khi gửi. Ảnh bìa và banner chưa được hỗ trợ trong gói gửi."
       },
       "parent": {
         "title": "Điều kiện truyện cha",

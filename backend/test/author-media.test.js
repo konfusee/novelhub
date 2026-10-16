@@ -14,6 +14,8 @@ import {
   Chapter,
   ContentRevision,
   PublicationSubmission,
+  RightsDeclaration,
+  EvidenceBatch,
 } from '../src/models/index.js';
 import { authenticatedAccount } from './fixtures/accounts.js';
 import { testConfig } from './config.js';
@@ -288,7 +290,7 @@ const illustrated = (id) => ({
     { type: 'image', mediaId: id, alt: 'Đường qua khu rừng', caption: 'Minh họa riêng' },
   ],
 });
-it('pins owned images to immutable revision history, round-trips drafts and blocks media submission', async () => {
+it('pins owned images to revision history and blocks submission until the parent is approved', async () => {
   const author = await authenticatedAccount('author');
   const story = await makeStory(author);
   const asset = (await upload(author.cookie, { storyId: String(story._id) })).body.asset;
@@ -328,7 +330,9 @@ it('pins owned images to immutable revision history, round-trips drafts and bloc
   expect(prepared.status).toBe(200);
   expect(prepared.body.target.formatVersion).toBe('blocks-v3');
   expect(prepared.body.checks.find((item) => item.code === 'content').ok).toBe(true);
-  expect(prepared.body.checks.find((item) => item.code === 'media').ok).toBe(false);
+  expect(prepared.body.checks.find((item) => item.code === 'media').ok).toBe(true);
+  expect(prepared.body.requiresRights).toBe(true);
+  expect(prepared.body.imageRights).toEqual({ count: 1, mediaDigest: revision.mediaDigest });
   const sent = await chapterWrite(author.cookie, '/api/author/submissions', {
     storyId: String(story._id),
     chapterId: created.body.chapter.id,
@@ -503,4 +507,235 @@ it('refuses to flatten or overwrite an illustrated revision whose media manifest
     ).status,
   ).toBe(409);
   expect(await ContentRevision.countDocuments({ chapterId: created.body.chapter.id })).toBe(1);
+});
+async function submissionWithImages() {
+  const author = await authenticatedAccount('author');
+  const story = await makeStory(author);
+  const parent = await ContentRevision.create({
+    storyId: story._id,
+    authorAccountId: author.account._id,
+    contentType: 'story',
+    revisionNumber: 1,
+    formatVersion: 'story-v1',
+    status: 'approved',
+    immutableAt: new Date(),
+    content: {
+      title: story.title,
+      description: story.description,
+      categoryIds: story.categoryIds.map(String),
+    },
+  });
+  const parentSubmission = await PublicationSubmission.create({
+    storyId: story._id,
+    revisionId: parent._id,
+    authorAccountId: author.account._id,
+    status: 'approved',
+  });
+  const parentRights = await RightsDeclaration.create({
+    storyId: story._id,
+    revisionId: parent._id,
+    submissionId: parentSubmission._id,
+    basis: 'original',
+    asserted: true,
+    declaredBy: author.account._id,
+    status: 'asserted',
+    immutableAt: new Date(),
+  });
+  story.currentRevisionId = parent._id;
+  story.publicationStatus = 'approved';
+  await story.save();
+  const asset = (await upload(author.cookie)).body.asset;
+  const created = await chapterWrite(author.cookie, `/api/author/stories/${story._id}/chapters`, {
+    document: illustrated(asset.id),
+  });
+  expect(created.status).toBe(201);
+  const chapterId = created.body.chapter.id;
+  const prepare = () =>
+    get(
+      author.cookie,
+      `/api/author/submissions/prepare?storyId=${story._id}&chapterId=${chapterId}`,
+    );
+  const data = (await prepare()).body;
+  expect(data.ready).toBe(true);
+  return {
+    author,
+    story,
+    asset,
+    chapterId,
+    prepare,
+    parentRights,
+    body: {
+      storyId: String(story._id),
+      chapterId,
+      revisionId: data.target.revisionId,
+      expectedVersion: data.target.version,
+      imageManifestDigest: data.imageRights.mediaDigest,
+      rights: { basis: 'original', asserted: true, sourceLicenceNote: '' },
+    },
+  };
+}
+it('freezes illustrated chapter rights and manifest once, replays identical requests and rejects changed rights', async () => {
+  const f = await submissionWithImages();
+  const before = await ContentRevision.findById(f.body.revisionId);
+  const results = await Promise.all([
+    chapterWrite(f.author.cookie, '/api/author/submissions', f.body),
+    chapterWrite(f.author.cookie, '/api/author/submissions', f.body),
+  ]);
+  expect(results.map((r) => r.status).sort()).toEqual([200, 201]);
+  const frozen = await ContentRevision.findById(f.body.revisionId);
+  expect(frozen.mediaDigest).toBe(before.mediaDigest);
+  expect(frozen.validation.mediaManifest).toEqual(before.validation.mediaManifest);
+  expect(frozen.validation.parentRightsDeclarationId).toBe(String(f.parentRights._id));
+  expect(frozen.validation.validator).toBe('publishing-images-v1');
+  expect(frozen.immutableAt).toBeTruthy();
+  const rights = await RightsDeclaration.findById(frozen.rightsDeclarationId);
+  expect(String(rights.revisionId)).toBe(f.body.revisionId);
+  expect(rights.immutableAt).toBeTruthy();
+  expect((await f.prepare()).body.frozenRights).toEqual(f.body.rights);
+  expect(await RightsDeclaration.countDocuments()).toBe(2);
+  expect(await EvidenceBatch.countDocuments({ status: 'pending' })).toBe(1);
+  expect((await Chapter.findById(f.chapterId)).status).toBe('submitted');
+  expect((await MediaAsset.findById(f.asset.id)).version).toBe(2);
+  for (const changed of [
+    { ...f.body, imageManifestDigest: '0'.repeat(64) },
+    { ...f.body, rights: { ...f.body.rights, sourceLicenceNote: 'Khác' } },
+  ])
+    expect(
+      (await chapterWrite(f.author.cookie, '/api/author/submissions', changed)).body.error.code,
+    ).toBe('package_changed');
+  const attempted = await chapterWrite(
+    f.author.cookie,
+    `/api/author/stories/${f.story._id}/chapters/${f.chapterId}`,
+    {
+      document: illustrated(f.asset.id),
+      expectedVersion: 1,
+    },
+    'put',
+  );
+  expect(attempted.status).toBe(409);
+});
+it('requires rights bound to the image manifest and a note for licensed images without freezing on failure', async () => {
+  const f = await submissionWithImages();
+  const rights = f.body.rights;
+  const plain = { ...f.body };
+  delete plain.rights;
+  delete plain.imageManifestDigest;
+  expect(
+    (await chapterWrite(f.author.cookie, '/api/author/submissions', plain)).body.error.code,
+  ).toBe('image_rights_required');
+  expect(
+    (
+      await chapterWrite(f.author.cookie, '/api/author/submissions', {
+        ...f.body,
+        imageManifestDigest: '0'.repeat(64),
+      })
+    ).status,
+  ).toBe(409);
+  expect(
+    (
+      await chapterWrite(f.author.cookie, '/api/author/submissions', {
+        ...f.body,
+        rights: { ...rights, basis: 'licensed', sourceLicenceNote: '   ' },
+      })
+    ).body.error.code,
+  ).toBe('licence_note_required');
+  expect(await EvidenceBatch.countDocuments()).toBe(0);
+  expect((await ContentRevision.findById(f.body.revisionId)).immutableAt).toBeFalsy();
+  expect((await MediaAsset.findById(f.asset.id)).version).toBe(1);
+  expect(
+    (
+      await chapterWrite(f.author.cookie, '/api/author/submissions', {
+        ...f.body,
+        rights: {
+          ...rights,
+          basis: 'licensed',
+          sourceLicenceNote: 'Giấy phép minh họa cho chương này.',
+        },
+      })
+    ).status,
+  ).toBe(201);
+});
+it.each(['missing-bytes', 'changed-bytes', 'changed-manifest', 'quarantined'])(
+  'rejects %s between prepare and submit without creating a package',
+  async (mode) => {
+    const f = await submissionWithImages();
+    const asset = await MediaAsset.findById(f.asset.id).select('+objectKey');
+    if (mode === 'missing-bytes') await rm(path.join(root, asset.objectKey));
+    if (mode === 'changed-bytes')
+      await writeFile(path.join(root, asset.objectKey), Buffer.from('changed'));
+    if (mode === 'changed-manifest')
+      await ContentRevision.updateOne(
+        { _id: f.body.revisionId, immutableAt: null },
+        { $set: { 'validation.mediaManifest.0.checksum': '0'.repeat(64) } },
+      );
+    if (mode === 'quarantined') {
+      asset.status = 'quarantined';
+      await asset.save();
+    }
+    const data = (await f.prepare()).body;
+    expect(data.ready).toBe(false);
+    expect(data.checks.find((c) => c.code === 'media').ok).toBe(false);
+    expect((await chapterWrite(f.author.cookie, '/api/author/submissions', f.body)).status).toBe(
+      409,
+    );
+    expect(await EvidenceBatch.countDocuments()).toBe(0);
+    expect(await RightsDeclaration.countDocuments()).toBe(1);
+    expect((await ContentRevision.findById(f.body.revisionId)).immutableAt).toBeFalsy();
+  },
+);
+it('rolls back image pin, rights and package when final submission audit fails', async () => {
+  const f = await submissionWithImages();
+  const original = AuditEvent.create.bind(AuditEvent);
+  const spy = vi.spyOn(AuditEvent, 'create').mockImplementation((docs, options) => {
+    if (docs.some((doc) => doc.action !== 'media.attached'))
+      throw new Error('Submission audit unavailable');
+    return original(docs, options);
+  });
+  try {
+    expect((await chapterWrite(f.author.cookie, '/api/author/submissions', f.body)).status).toBe(
+      500,
+    );
+  } finally {
+    spy.mockRestore();
+  }
+  expect((await MediaAsset.findById(f.asset.id)).version).toBe(1);
+  expect(await RightsDeclaration.countDocuments()).toBe(1);
+  expect(await EvidenceBatch.countDocuments()).toBe(0);
+  expect((await Chapter.findById(f.chapterId)).status).toBe('draft');
+  expect((await ContentRevision.findById(f.body.revisionId)).immutableAt).toBeFalsy();
+});
+it('creates a fresh illustrated draft after feedback, preserves its manifest and requires a new rights declaration', async () => {
+  const f = await submissionWithImages();
+  const sent = await chapterWrite(f.author.cookie, '/api/author/submissions', f.body);
+  const submission = await PublicationSubmission.findById(sent.body.submission.id);
+  submission.status = 'revision-requested';
+  await submission.save();
+  const previous = await ContentRevision.findById(f.body.revisionId);
+  const revised = await chapterWrite(
+    f.author.cookie,
+    `/api/author/submissions/${submission._id}/revise`,
+    { expectedVersion: submission.version },
+  );
+  expect(revised.status).toBe(201);
+  expect(revised.body.revision.formatVersion).toBe('blocks-v3');
+  const fresh = await ContentRevision.findById(revised.body.revision.id);
+  expect(fresh.validation.mediaManifest).toEqual(previous.validation.mediaManifest);
+  expect(fresh.mediaDigest).toBe(previous.mediaDigest);
+  expect(fresh.rightsDeclarationId).toBeUndefined();
+  expect(fresh.rightsDigest).toBeUndefined();
+  expect(fresh.packageDigest).toBeUndefined();
+  expect(fresh.immutableAt).toBeUndefined();
+  expect(fresh.validation.parentRightsDeclarationId).toBeUndefined();
+  const prepared = (await f.prepare()).body;
+  expect(prepared.ready).toBe(true);
+  expect(prepared.frozenRights).toBeUndefined();
+  const resubmitted = await chapterWrite(f.author.cookie, '/api/author/submissions', {
+    ...f.body,
+    revisionId: String(fresh._id),
+    expectedVersion: prepared.target.version,
+  });
+  expect(resubmitted.status).toBe(201);
+  expect(resubmitted.body.submission.id).not.toBe(sent.body.submission.id);
+  expect(await RightsDeclaration.countDocuments()).toBe(3);
+  expect((await ContentRevision.findById(previous._id)).validation).toEqual(previous.validation);
 });
