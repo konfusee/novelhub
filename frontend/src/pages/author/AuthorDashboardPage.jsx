@@ -140,7 +140,7 @@ export function AuthorDashboardPage() {
           <div className="flex flex-wrap gap-2">
             <ButtonLink to="/author/import" variant="secondary">
               <Import size={16} aria-hidden="true" />
-              Nhập PDF
+              {t('navigation.importPdf')}
             </ButtonLink>
             <ButtonLink to="/author/stories/new">
               <Plus size={16} aria-hidden="true" />

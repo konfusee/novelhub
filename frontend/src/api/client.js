@@ -24,15 +24,18 @@ export class ApiError extends Error {
   }
 }
 
-export async function apiRequest(path, { method = 'GET', body, signal } = {}) {
+export async function apiRequest(path, { method = 'GET', body, signal, binary = false } = {}) {
   let response;
   try {
     response = await fetch(`${API_BASE}${path}`, {
       method,
       credentials: 'include',
       signal,
-      headers: body === undefined ? undefined : { 'Content-Type': 'application/json' },
-      body: body === undefined ? undefined : JSON.stringify(body),
+      headers:
+        body === undefined
+          ? undefined
+          : { 'Content-Type': binary ? 'application/octet-stream' : 'application/json' },
+      body: body === undefined ? undefined : binary ? body : JSON.stringify(body),
     });
   } catch (error) {
     if (error.name === 'AbortError') throw error;

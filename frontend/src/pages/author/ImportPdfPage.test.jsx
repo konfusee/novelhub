@@ -1,0 +1,101 @@
+import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { afterEach, expect, it, vi } from 'vitest';
+import { MemoryRouter } from 'react-router';
+import { LocaleProvider } from '../../context/LocaleContext';
+import { ImportPdfPage } from './ImportPdfPage';
+const mocks = vi.hoisted(() => ({ apiRequest: vi.fn() }));
+vi.mock('../../api/client', () => ({ apiRequest: mocks.apiRequest }));
+vi.mock('../../layouts', () => ({ AuthorLayout: ({ children }) => <main>{children}</main> }));
+const text = 'Đoạn đầu tiên.\n\nĐoạn tiếp theo.';
+function view({ saveError = false } = {}) {
+  mocks.apiRequest.mockImplementation(async (path) => {
+    if (path === '/author/imports/targets')
+      return { items: [{ id: 'real-story', title: 'Truyện từ MongoDB', version: 3 }] };
+    if (path.startsWith('/author/imports/preview'))
+      return { text, format: 'md', receipt: 'signed-receipt' };
+    if (saveError) throw new Error('Không lưu được MongoDB');
+    return { storyId: 'real-story', chapterIds: ['chapter-one', 'chapter-two'] };
+  });
+  return render(
+    <MemoryRouter>
+      <LocaleProvider>
+        <ImportPdfPage />
+      </LocaleProvider>
+    </MemoryRouter>,
+  );
+}
+async function choose(container) {
+  const file = new File(['# Văn bản'], 'ban-thao.md', { type: 'text/markdown' });
+  fireEvent.change(container.querySelector('input[type="file"]'), { target: { files: [file] } });
+  await screen.findByRole('textbox', { name: 'ban-thao' });
+  return file;
+}
+async function destination() {
+  fireEvent.click(screen.getByRole('combobox', { name: 'Truyện nhận bản nháp' }));
+  fireEvent.click(await screen.findByRole('option', { name: 'Truyện từ MongoDB' }));
+}
+afterEach(() => {
+  cleanup();
+  vi.resetAllMocks();
+});
+it('uploads the actual file, reviews real text and waits for persistence before reporting success', async () => {
+  const { container } = view();
+  expect(screen.queryByText(/Chronicles/)).toBeNull();
+  const file = await choose(container);
+  expect(mocks.apiRequest).toHaveBeenCalledWith(
+    '/author/imports/preview?format=md',
+    expect.objectContaining({ body: file, binary: true, method: 'POST' }),
+  );
+  expect(screen.getByRole('textbox', { name: 'ban-thao' }).value).toBe(text);
+  const editor = screen.getByRole('textbox', { name: 'ban-thao' });
+  editor.setSelectionRange(16, 16);
+  fireEvent.select(editor);
+  fireEvent.click(screen.getByRole('button', { name: 'Tách tại con trỏ' }));
+  const titles = screen.getAllByRole('textbox', { name: /Tiêu đề chương/ });
+  expect(titles).toHaveLength(2);
+  await destination();
+  fireEvent.click(screen.getByRole('button', { name: 'Nhập thành bản nháp' }));
+  expect(await screen.findByText('Đã lưu 2 chương nháp')).toBeTruthy();
+  const body = mocks.apiRequest.mock.calls.find(([path]) => path === '/author/imports')[1].body;
+  expect(body).toMatchObject({
+    receipt: 'signed-receipt',
+    storyId: 'real-story',
+    expectedVersion: 3,
+  });
+  expect(body.chapters.map((chapter) => chapter.paragraphs.join('')).join('')).toBe(
+    text.replace(/\n/g, ''),
+  );
+});
+it('retains edited content and never shows success when saving fails', async () => {
+  const { container } = view({ saveError: true });
+  await choose(container);
+  await destination();
+  fireEvent.change(screen.getByRole('textbox', { name: 'ban-thao' }), {
+    target: { value: 'Tác giả đã sửa.' },
+  });
+  fireEvent.click(screen.getByRole('button', { name: 'Nhập thành bản nháp' }));
+  expect((await screen.findByRole('alert')).textContent).toBe('Không lưu được MongoDB');
+  expect(screen.getByRole('textbox', { name: 'ban-thao' }).value).toBe('Tác giả đã sửa.');
+  expect(screen.queryByText(/Đã lưu .* chương nháp/)).toBeNull();
+  await waitFor(() =>
+    expect(screen.getByRole('button', { name: 'Nhập thành bản nháp' }).disabled).toBe(false),
+  );
+});
+it('merges actual text without fabricated words and rejects unsupported files before uploading', async () => {
+  const { container } = view();
+  fireEvent.change(container.querySelector('input[type="file"]'), {
+    target: { files: [new File(['bad'], 'image.png')] },
+  });
+  expect((await screen.findByRole('alert')).textContent).toContain('PDF, DOC, DOCX, TXT hoặc MD');
+  expect(mocks.apiRequest.mock.calls.some(([path]) => path.includes('/preview'))).toBe(false);
+  await choose(container);
+  const editor = screen.getByRole('textbox', { name: 'ban-thao' });
+  editor.setSelectionRange(16, 16);
+  fireEvent.select(editor);
+  fireEvent.click(screen.getByRole('button', { name: 'Tách tại con trỏ' }));
+  fireEvent.click(screen.getAllByRole('button', { name: 'Gộp chương tiếp' })[0]);
+  expect(screen.getAllByRole('textbox', { name: /Tiêu đề chương/ })).toHaveLength(1);
+  expect(screen.getByRole('textbox', { name: 'ban-thao' }).value.replace(/\s/g, '')).toBe(
+    text.replace(/\s/g, ''),
+  );
+});
