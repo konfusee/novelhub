@@ -2,10 +2,11 @@
 
 ## Scope
 
-This increment adds the backend contract for structured text, without changing any
-Mongoose models or automatically migrating existing MongoDB records. The current
-frontend remains the plain paragraph editor; rich toolbar activation, editing,
-preview and conflict merging are the next increment. AUT-04 remains partial.
+The contract supports structured text without changing Mongoose models or
+automatically migrating existing MongoDB records. The frontend now offers an
+explicit rich editing mode, preview and structured conflict resolution; see
+`author-rich-editor.md`. AUT-04 remains partial because media is outside this
+text-only contract.
 
 ## API
 
@@ -14,6 +15,8 @@ preview and conflict merging are the next increment. AUT-04 remains partial.
 - GET `/api/author/stories/:storyId/chapters/:chapterId?format=rich` returns
   `chapter.document` and `formatVersion: blocks-v2`. A valid blocks-v1 draft is
   adapted in memory only; reading creates no revision and changes no versions.
+- Chapter POST accepts the legacy `{title, paragraphs}` or `{document}` to create
+  a structured draft (including duplication) atomically.
 - Existing PUT accepts either the legacy `{title, paragraphs, expectedVersion}`
   or `{document, expectedVersion}` exclusively. Rich saves create a new blocks-v2
   ContentRevision using the existing transaction, author ownership lock, source
@@ -55,7 +58,8 @@ writes, immutable original revisions, canonical mark ordering, stale writes,
 foreign ownership, frozen sources, lossy-save rejection and malformed AST inputs.
 Related draft, dashboard, workspace and submission suites are included in regression.
 
-The existing submission validator deliberately still refuses blocks-v2 until
-review/reader rendering and editor integration are ready. No automatic approval,
-publication, frontend mock data or database migration is introduced. Media is
-reserved for AUT-06 and its ownership/rights checks.
+Submission validation now accepts validated text-only blocks-v2 packages and
+freezes the exact AST with the existing package digest and rights checks. Published
+chapter APIs and Guest/Reader canvases render the same text structure/marks.
+No automatic approval, publication, frontend mock data or database migration is
+introduced. Media is reserved for AUT-06 and its ownership/rights checks.
