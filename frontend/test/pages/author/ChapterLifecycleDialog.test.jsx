@@ -22,7 +22,7 @@ afterEach(() => {
   cleanup();
   vi.resetAllMocks();
 });
-it.each(['archive', 'restore'])(
+it.each(['archive', 'restore', 'delete'])(
   'only persists %s after confirmation with both captured versions',
   async (action) => {
     mocks.apiRequest.mockResolvedValue({});

@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import { useSearchParams } from 'react-router';
 import { ArrowLeft, CheckCircle2, FileText, ShieldCheck, Upload } from '../../components/icons';
 import { AuthorLayout } from '../../layouts';
 import {
@@ -21,6 +22,7 @@ import { chapterParagraphs, ChapterTextError } from './chapterParagraphs';
 const formats = ['pdf', 'doc', 'docx', 'txt', 'md'];
 const wordCount = (text) => text.trim().split(/\s+/u).filter(Boolean).length;
 export function ImportPdfPage() {
+  const [search] = useSearchParams();
   const { t, formatNumber } = useLocale();
   const message = (key, values) => t(`documentImport.${key}`, values);
   const picker = useRef(null);
@@ -33,7 +35,7 @@ export function ImportPdfPage() {
   const [preview, setPreview] = useState(null);
   const [chapters, setChapters] = useState([]);
   const [active, setActive] = useState('');
-  const [destination, setDestination] = useState('');
+  const [destination, setDestination] = useState(() => search.get('storyId') ?? '');
   const [result, setResult] = useState(null);
   useEffect(() => () => pending.current?.abort(), []);
   const selected = chapters.filter((chapter) => chapter.selected);

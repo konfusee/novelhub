@@ -1,5 +1,5 @@
 import { useMemo, useRef, useState } from 'react';
-import { Link, useParams } from 'react-router';
+import { Link, useParams, useSearchParams } from 'react-router';
 import {
   AlertTriangle,
   Archive,
@@ -110,7 +110,16 @@ const statusTones = { Published: 'green', Scheduled: 'orange', 'In Review': 'pur
 export function StoryManagerPage() {
   const { storyId } = useParams();
   const { t } = useLocale();
-  const [tab, setTab] = useState('chapters');
+  const [search, setSearch] = useSearchParams();
+  const tab = tabItems.some((item) => item.value === search.get('tab'))
+    ? search.get('tab')
+    : 'chapters';
+  const setTab = (value) =>
+    setSearch((previous) => {
+      const next = new URLSearchParams(previous);
+      next.set('tab', value);
+      return next;
+    });
   const [filter, setFilter] = useState('All');
   const [query, setQuery] = useState('');
   const [page, setPage] = useState(1);
@@ -255,17 +264,15 @@ export function StoryManagerPage() {
                 <Edit3 size={16} aria-hidden="true" />
                 Sửa thông tin
               </Button>
-              {story.status === 'published' ? (
-                <ButtonLink to={`/stories/${storyId}`} variant="secondary">
-                  <Eye size={16} aria-hidden="true" />
-                  Xem trước như độc giả
+              {story.canEdit && (
+                <ButtonLink to={`/author/import?storyId=${storyId}`} variant="secondary">
+                  {t('authorDraftActions.import')}
                 </ButtonLink>
-              ) : (
-                <Button variant="secondary" disabled title={t('managerData.notPublic')}>
-                  <Eye size={16} aria-hidden="true" />
-                  Xem trước như độc giả
-                </Button>
               )}
+              <ButtonLink to={`/author/stories/${storyId}/preview`} variant="secondary">
+                <Eye size={16} aria-hidden="true" />
+                Xem trước như độc giả
+              </ButtonLink>
             </div>
           </div>
         </Card>
@@ -697,6 +704,18 @@ function ChapterRow({ chapter, storyId, onLifecycle }) {
               {t(chapter.canRestore ? 'chapterLifecycle.restore' : 'chapterLifecycle.archive')}
             </Button>
           )}
+          {chapter.canDelete && (
+            <Button variant="danger" size="sm" onClick={() => onLifecycle('delete')}>
+              {t('chapterLifecycle.delete')}
+            </Button>
+          )}
+          <ButtonLink
+            to={`/author/stories/${storyId}/chapters/${chapter.id}/preview`}
+            variant="secondary"
+            size="sm"
+          >
+            {t('authorDraftActions.preview')}
+          </ButtonLink>
           <ButtonLink
             to="/author/analytics"
             variant="secondary"
