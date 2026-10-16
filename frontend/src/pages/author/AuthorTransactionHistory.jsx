@@ -19,11 +19,19 @@ function historyFrom(response) {
   return response;
 }
 export function AuthorTransactionHistory({ period }) {
-  const { t, formatNumber } = useLocale();
   const [direction, setDirection] = useState('all');
-  const filter = `${period}:${direction}`;
-  const [position, setPosition] = useState({ filter, cursors: [''] });
-  const cursors = position.filter === filter ? position.cursors : [''];
+  return (
+    <TransactionHistoryPage
+      key={period}
+      period={period}
+      direction={direction}
+      onDirectionChange={setDirection}
+    />
+  );
+}
+function TransactionHistoryPage({ period, direction, onDirectionChange }) {
+  const { t, formatNumber } = useLocale();
+  const [cursors, setCursors] = useState(['']);
   const query = new URLSearchParams({ period, direction, limit: '20' });
   if (cursors.at(-1)) query.set('cursor', cursors.at(-1));
   const history = useBackendResource(`/author/transactions?${query}`, empty, historyFrom);
@@ -44,7 +52,10 @@ export function AuthorTransactionHistory({ period }) {
           <Select
             id="author-ledger-direction"
             value={direction}
-            onChange={(event) => setDirection(event.target.value)}
+            onChange={(event) => {
+              setCursors(['']);
+              onDirectionChange(event.target.value);
+            }}
           >
             <option value="all">{t('authorTransactions.all')}</option>
             <option value="credit">{t('authorTransactions.credit')}</option>
@@ -124,7 +135,7 @@ export function AuthorTransactionHistory({ period }) {
             variant="secondary"
             size="sm"
             disabled={loading || cursors.length === 1}
-            onClick={() => setPosition({ filter, cursors: cursors.slice(0, -1) })}
+            onClick={() => setCursors(cursors.slice(0, -1))}
           >
             {t('authorTransactions.previous')}
           </Button>
@@ -132,7 +143,7 @@ export function AuthorTransactionHistory({ period }) {
             variant="secondary"
             size="sm"
             disabled={loading || history.status !== 'ready' || !history.data.nextCursor}
-            onClick={() => setPosition({ filter, cursors: [...cursors, history.data.nextCursor] })}
+            onClick={() => setCursors([...cursors, history.data.nextCursor])}
           >
             {t('authorTransactions.next')}
           </Button>

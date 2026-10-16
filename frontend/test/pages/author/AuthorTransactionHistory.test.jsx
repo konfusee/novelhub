@@ -55,6 +55,16 @@ it('uses cursor pagination and resets to the first page when period or direction
     '/author/transactions?period=day&direction=all&limit=20',
     expect.any(Object),
   );
+  view.rerender(element('month'));
+  await waitFor(() =>
+    expect(mocks.apiRequest).toHaveBeenLastCalledWith(
+      '/author/transactions?period=month&direction=all&limit=20',
+      expect.any(Object),
+    ),
+  );
+  expect(screen.getByText('Trang 1')).toBeTruthy();
+  view.rerender(element('day'));
+  await screen.findByText('Phân bổ thu nhập');
   fireEvent.click(screen.getByRole('combobox', { name: 'Chiều biến động' }));
   fireEvent.click(screen.getByRole('option', { name: 'Giảm thu nhập', exact: true }));
   await waitFor(() =>
