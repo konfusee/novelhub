@@ -6,6 +6,7 @@ import { draftLifecycle, isPrivateDraftChapter } from './author-story-lifecycle.
 
 export function chapterDraftLifecycle(chapter, revision, story, lifecycle) {
   const safe =
+    chapter.publicationTransition?.result !== 'author-draft-deleted' &&
     lifecycle.canArchive &&
     isPrivateDraftChapter(chapter, story.authorAccountId) &&
     revision &&
@@ -19,6 +20,7 @@ export function chapterDraftLifecycle(chapter, revision, story, lifecycle) {
   return {
     canArchive: Boolean(safe && chapter.status === 'draft'),
     canRestore: Boolean(safe && chapter.status === 'archived'),
+    canDelete: Boolean(safe && chapter.status === 'draft'),
   };
 }
 
@@ -43,21 +45,36 @@ export async function changeChapterDraftLifecycle(account, storyId, chapterId, i
       story,
       await draftLifecycle(story, session),
     );
-    if (!(input.action === 'archive' ? flags.canArchive : flags.canRestore))
+    const allowed = {
+      archive: flags.canArchive,
+      restore: flags.canRestore,
+      delete: flags.canDelete,
+    };
+    if (!allowed[input.action])
       throw new HttpError(
         409,
         'chapter_lifecycle_not_allowed',
-        'Chỉ lưu trữ hoặc khôi phục chương nháp riêng tư đủ điều kiện, không có nội dung đã phát hành hay gói đang chờ duyệt.',
+        'Chỉ xóa, lưu trữ hoặc khôi phục chương nháp riêng tư đủ điều kiện, không có nội dung đã phát hành hay gói đang chờ duyệt.',
       );
     const now = new Date();
     const before = chapter.status;
-    chapter.status = input.action === 'archive' ? 'archived' : 'draft';
+    if (input.action === 'delete') {
+      const first = await Chapter.findOne({ storyId: story._id })
+        .sort({ orderKey: 1 })
+        .session(session);
+      chapter.orderKey = Math.min(0, first?.orderKey ?? 0) - 1;
+    }
+    chapter.status = input.action === 'restore' ? 'draft' : 'archived';
     chapter.publicationTransition = {
       actorAccountId: account._id,
       occurredAt: now,
       from: before,
       to: chapter.status,
-      result: input.action === 'archive' ? 'author-draft-archived' : 'author-draft-restored',
+      result: {
+        archive: 'author-draft-archived',
+        restore: 'author-draft-restored',
+        delete: 'author-draft-deleted',
+      }[input.action],
     };
     await chapter.save({ session });
     story.increment();
@@ -67,7 +84,11 @@ export async function changeChapterDraftLifecycle(account, storyId, chapterId, i
         {
           actorType: 'account',
           actorId: account._id,
-          action: input.action === 'archive' ? 'chapter.draft-archived' : 'chapter.draft-restored',
+          action: {
+            archive: 'chapter.draft-archived',
+            restore: 'chapter.draft-restored',
+            delete: 'chapter.draft-deleted',
+          }[input.action],
           targetType: 'Chapter',
           targetId: chapter._id,
           targetVersion: chapter.version,

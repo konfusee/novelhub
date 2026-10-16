@@ -20,7 +20,12 @@ export async function authorStoryWorkspace(account, storyId) {
     Category.find({ _id: { $in: story.categoryIds } })
       .select('name status')
       .lean(),
-    Chapter.find({ storyId: story._id }).sort({ orderKey: -1, _id: -1 }).lean(),
+    Chapter.find({
+      storyId: story._id,
+      'publicationTransition.result': { $ne: 'author-draft-deleted' },
+    })
+      .sort({ orderKey: -1, _id: -1 })
+      .lean(),
     StatisticsEvent.aggregate([
       { $match: { storyId: story._id, eventType: 'view' } },
       { $group: { _id: '$chapterId', count: { $sum: 1 } } },
