@@ -2,6 +2,25 @@ import { expect, it } from 'vitest';
 import { suggestDocumentChapters } from '../../../src/pages/author/documentChapters';
 
 const suggest = (text) => suggestDocumentChapters(text, 'Phần mở đầu', { format: 'md' });
+it('rejects numbered titles from extracted code and quotes while preserving real numbered manuscripts', () => {
+  const text = 'Chương 1\nNội dung đầu.\nChương 2\nNội dung sau.';
+  for (const numberedHeadings of [[], ['Chương 1'], ['Chương 2']]) {
+    expect(
+      suggestDocumentChapters(text, 'Phần mở đầu', {
+        format: 'md',
+        headings: [],
+        numberedHeadings,
+      }),
+    ).toBeNull();
+  }
+  const result = suggestDocumentChapters(text, 'Phần mở đầu', {
+    format: 'md',
+    headings: [],
+    numberedHeadings: ['Chương 1', 'Chương 2'],
+  });
+  expect(result.map((chapter) => chapter.title)).toEqual(['Chương 1', 'Chương 2']);
+  expect(result.map((chapter) => chapter.text).join('')).toBe(text);
+});
 it.each([
   [
     { level: 2, title: 'Chương 1' },

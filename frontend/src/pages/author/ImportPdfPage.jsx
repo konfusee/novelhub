@@ -120,6 +120,7 @@ export function ImportPdfPage() {
     const suggestions = suggestDocumentChapters(current.text, message('preamble'), {
       format: preview?.format,
       headings: preview?.headings,
+      numberedHeadings: preview?.numberedHeadings,
     });
     if (!suggestions || chapters.length - 1 + suggestions.length > 100) {
       setError(message('noHeadings'));
