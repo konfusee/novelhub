@@ -1,5 +1,6 @@
 import { Chapter, Story, StatisticsEvent, ReadingProgress } from '../models/index.js';
 import { HttpError } from '../middleware/errors.js';
+import { authorCohortRetention } from './author-cohort-retention.js';
 
 export async function authorAnalytics(
   accountId,
@@ -43,7 +44,7 @@ export async function authorAnalytics(
     day: { $gte: labels[0], $lte: today },
   };
   const progressStart = new Date(`${labels[0]}T00:00:00+07:00`);
-  const [daily, readers, progress] = await Promise.all([
+  const [daily, readers, cohortRetention, progress] = await Promise.all([
     StatisticsEvent.aggregate([{ $match: match }, { $group: { _id: '$day', count: { $sum: 1 } } }]),
     StatisticsEvent.aggregate([
       { $match: match },
@@ -58,6 +59,7 @@ export async function authorAnalytics(
         },
       },
     ]),
+    authorCohortRetention(match, labels[0], today),
     ReadingProgress.aggregate([
       {
         $match: {
@@ -122,6 +124,7 @@ export async function authorAnalytics(
     audience: { accounts: readers[0]?.accounts ?? 0, guestDevices: readers[0]?.guestDevices ?? 0 },
     returningReaders,
     returnRate: readerCount ? (returningReaders / readerCount) * 100 : null,
+    cohortRetention,
     completionProgress: {
       total: progress[0]?.total ?? 0,
       completed: progress[0]?.completed ?? 0,

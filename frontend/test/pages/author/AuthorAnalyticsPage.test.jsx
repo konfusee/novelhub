@@ -1,4 +1,4 @@
-import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { afterEach, expect, it, vi } from 'vitest';
 import { MemoryRouter } from 'react-router';
 import { LocaleProvider } from '../../../src/context/LocaleContext';
@@ -65,7 +65,14 @@ it('exports actual daily rows and treats formula-like story titles as literal te
     },
   );
   vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(() => {});
-  mocks.apiRequest.mockResolvedValue({ ...data, stories: [{ id: 'real-owned', title: '=1+1' }] });
+  mocks.apiRequest.mockResolvedValue({
+    ...data,
+    stories: [{ id: 'real-owned', title: '=1+1' }],
+    cohortRetention: [
+      { day: 1, eligible: 4, returned: 2, rate: 50 },
+      { day: 7, eligible: 3, returned: 1, rate: 100 / 3 },
+    ],
+  });
   view();
   await screen.findByText('3');
   fireEvent.click(screen.getByRole('combobox', { name: 'Chọn truyện' }));
@@ -88,6 +95,9 @@ it('exports actual daily rows and treats formula-like story titles as literal te
   expect(report).toContain('"Tiến độ đạt 100%","1"');
   expect(report).toContain('"Định danh tài khoản","1"');
   expect(report).toContain('"Định danh thiết bị khách","1"');
+  expect(report).toContain('"Giữ chân ngày 7","33,3%"');
+  expect(report).toContain('"Định danh đủ ngày 7","3"');
+  expect(report).toContain('"Định danh quay lại đúng ngày 7","1"');
 });
 it('renders recorded daily counts and unknown unsupported metrics without sample claims', async () => {
   mocks.apiRequest.mockResolvedValue(data);
@@ -267,4 +277,51 @@ it('does not divide by zero or chart inconsistent audience totals', async () => 
   view();
   await screen.findByText('Chưa có định danh độc giả hợp lệ trong bộ lọc này.');
   expect(screen.queryByText('3 (150%)')).toBeNull();
+});
+
+it('renders mature day-1/day-7 cohort denominators without mixing them with in-period return rate', async () => {
+  mocks.apiRequest.mockResolvedValue({
+    ...data,
+    cohortRetention: [
+      { day: 1, eligible: 4, returned: 2, rate: 50 },
+      { day: 7, eligible: 3, returned: 1, rate: 100 / 3 },
+    ],
+  });
+  view();
+  const section = (
+    await screen.findByRole('heading', { name: 'Giữ chân theo ngày quan sát' })
+  ).closest('section');
+  expect(within(section).getByText('50%')).toBeTruthy();
+  expect(within(section).getByText('33,3%')).toBeTruthy();
+  expect(within(section).getByText('2 / 4 định danh đủ ngày quan sát')).toBeTruthy();
+  expect(within(section).getByText('1 / 3 định danh đủ ngày quan sát')).toBeTruthy();
+});
+it('distinguishes zero mature-cohort returns from insufficient observation', async () => {
+  mocks.apiRequest.mockResolvedValue({
+    ...data,
+    cohortRetention: [
+      { day: 1, eligible: 2, returned: 0, rate: 0 },
+      { day: 7, eligible: 0, returned: 0, rate: null },
+    ],
+  });
+  view();
+  const section = (
+    await screen.findByRole('heading', { name: 'Giữ chân theo ngày quan sát' })
+  ).closest('section');
+  expect(within(section).getByText('0%')).toBeTruthy();
+  expect(within(section).getByText('0 / 2 định danh đủ ngày quan sát')).toBeTruthy();
+  expect(within(section).getByText(/Chưa đủ ngày quan sát/)).toBeTruthy();
+  expect(within(section).queryByText('0 / 0 định danh đủ ngày quan sát')).toBeNull();
+});
+it('does not chart invalid cohort responses as measured retention', async () => {
+  mocks.apiRequest.mockResolvedValue({
+    ...data,
+    cohortRetention: [{ day: 1, eligible: 1, returned: 2, rate: 200 }],
+  });
+  view();
+  const section = (
+    await screen.findByRole('heading', { name: 'Giữ chân theo ngày quan sát' })
+  ).closest('section');
+  expect(within(section).queryByText('200%')).toBeNull();
+  expect(within(section).getAllByText(/Chưa đủ ngày quan sát/)).toHaveLength(2);
 });

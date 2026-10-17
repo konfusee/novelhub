@@ -307,3 +307,79 @@ it('measures only current text progress active in the Vietnam range without chan
   expect(JSON.stringify(result)).not.toContain(String(before[0].accountId));
   expect(await ReadingProgress.find().sort({ _id: 1 }).lean()).toEqual(before);
 });
+
+it('measures exact day-1/day-7 returns only for mature new cohorts using all scoped history', async () => {
+  const author = await authenticatedAccount('author');
+  const category = await Category.create({
+    name: 'Cohort',
+    normalizedName: 'cohort',
+    createdBy: author.account._id,
+  });
+  const story = await Story.create({
+    title: 'Cohort',
+    authorAccountId: author.account._id,
+    categoryIds: [category._id],
+  });
+  const [one, two] = await Chapter.create(
+    [1, 2].map((orderKey) => ({ storyId: story._id, title: 'Chapter ' + orderKey, orderKey })),
+  );
+  let sequence = 0;
+  const event = (key, day, chapterId = one._id, viewerType = 'account') => ({
+    sourceEventKey: 'cohort-' + sequence++,
+    eventType: 'view',
+    day,
+    viewerType,
+    viewerKey: key,
+    storyId: story._id,
+    chapterId,
+    occurredAt: new Date(day + 'T00:00:00Z'),
+  });
+  await StatisticsEvent.create([
+    event('private-cohort-a', '2026-10-08'),
+    event('private-cohort-a', '2026-10-09'),
+    event('private-cohort-a', '2026-10-15', two._id),
+    event('private-cohort-a', '2026-10-16', two._id),
+    event('b', '2026-10-08'),
+    event('b', '2026-10-10'),
+    event('b', '2026-10-16'),
+    event('recent', '2026-10-16'),
+    event('today', '2026-10-17'),
+    event('future', '2026-10-20'),
+    event('day1-only', '2026-10-15'),
+    event('old', '2026-09-01'),
+    event('old', '2026-10-08'),
+    event('old', '2026-10-09'),
+    event('private-cohort-a', '2026-10-08', one._id, 'guest-device'),
+    event('private-cohort-a', '2026-10-09', one._id, 'guest-device'),
+  ]);
+  const before = await StatisticsEvent.find().sort({ _id: 1 }).lean();
+  const now = new Date('2026-10-16T18:00:00Z');
+  const report = await authorAnalytics(
+    author.account._id,
+    { days: 30, storyId: String(story._id) },
+    now,
+  );
+  expect(report.cohortRetention[0]).toEqual({ day: 1, eligible: 4, returned: 2, rate: 50 });
+  expect(report.cohortRetention[1]).toMatchObject({ day: 7, eligible: 3, returned: 1 });
+  expect(report.cohortRetention[1].rate).toBeCloseTo(33.3333333, 6);
+  const chapter = await authorAnalytics(
+    author.account._id,
+    { days: 30, storyId: String(story._id), chapterId: String(two._id) },
+    now,
+  );
+  expect(chapter.cohortRetention).toEqual([
+    { day: 1, eligible: 1, returned: 1, rate: 100 },
+    { day: 7, eligible: 0, returned: 0, rate: null },
+  ]);
+  const short = await authorAnalytics(
+    author.account._id,
+    { days: 7, storyId: String(story._id) },
+    now,
+  );
+  expect(short.cohortRetention).toEqual([
+    { day: 1, eligible: 1, returned: 0, rate: 0 },
+    { day: 7, eligible: 0, returned: 0, rate: null },
+  ]);
+  expect(JSON.stringify(report.cohortRetention)).not.toContain('private-cohort-a');
+  expect(await StatisticsEvent.find().sort({ _id: 1 }).lean()).toEqual(before);
+});

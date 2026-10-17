@@ -122,6 +122,30 @@ export function AuthorAnalyticsPage() {
           [t('analyticsData.guestIdentities'), audience.guestDevices, 'orange'],
         ]
       : [];
+  const cohorts = [1, 7].map((day) => {
+    const item = Array.isArray(analytics.data.cohortRetention)
+      ? analytics.data.cohortRetention.find((row) => row?.day === day)
+      : null;
+    const valid =
+      Number.isSafeInteger(item?.eligible) &&
+      item.eligible >= 0 &&
+      Number.isSafeInteger(item.returned) &&
+      item.returned >= 0 &&
+      item.returned <= item.eligible &&
+      (item.eligible > 0
+        ? Number.isFinite(item.rate) && item.rate >= 0 && item.rate <= 100
+        : item.rate === null && item.returned === 0);
+    return {
+      day,
+      valid,
+      eligible: item?.eligible,
+      returned: item?.returned,
+      label:
+        valid && item.eligible > 0
+          ? formatPercent(Math.round(item.rate * 10) / 10)
+          : t('analyticsData.unknown'),
+    };
+  });
   const storyLabel =
     analytics.data.stories.find((item) => item.id === story)?.title ??
     t('analyticsData.allStories');
@@ -205,6 +229,18 @@ export function AuthorAnalyticsPage() {
         hasAudience ? audience.guestDevices : t('analyticsData.unknown'),
       ],
       [t('analyticsData.audienceHint')],
+      [t('analyticsData.cohortHint')],
+      ...cohorts.flatMap((cohort) => [
+        [t('analyticsData.cohortDay', { day: cohort.day }), cohort.label],
+        [
+          t('analyticsData.cohortEligible', { day: cohort.day }),
+          cohort.valid ? cohort.eligible : t('analyticsData.unknown'),
+        ],
+        [
+          t('analyticsData.cohortReturned', { day: cohort.day }),
+          cohort.valid ? cohort.returned : t('analyticsData.unknown'),
+        ],
+      ]),
       [],
       [t('analyticsData.date'), t('analyticsData.views')],
       ...labels.map((label, index) => [label, daily[index]]),
@@ -449,6 +485,34 @@ export function AuthorAnalyticsPage() {
                     </p>
                   </div>
                 </div>
+              )}
+              {!loading && (
+                <section className="mt-5 border-t border-hairline pt-5">
+                  <h3 className="text-h3">{t('analyticsData.cohortTitle')}</h3>
+                  <p className="mt-2 text-sm leading-6 text-muted">
+                    {t('analyticsData.cohortHint')}
+                  </p>
+                  <dl className="mt-4 grid gap-3 sm:grid-cols-2">
+                    {cohorts.map((cohort) => (
+                      <div key={cohort.day} className="rounded-2xl bg-elevated p-4">
+                        <dt className="text-sm font-semibold">
+                          {t('analyticsData.cohortDay', { day: cohort.day })}
+                        </dt>
+                        <dd className="mt-2">
+                          <strong className="text-h3 tabular-nums">{cohort.label}</strong>
+                          <p className="mt-2 text-xs leading-5 text-muted">
+                            {cohort.valid && cohort.eligible > 0
+                              ? t('analyticsData.cohortCount', {
+                                  returned: cohort.returned,
+                                  eligible: cohort.eligible,
+                                })
+                              : t('analyticsData.cohortNotMature')}
+                          </p>
+                        </dd>
+                      </div>
+                    ))}
+                  </dl>
+                </section>
               )}
             </Card>
 

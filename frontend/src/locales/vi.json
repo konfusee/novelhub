@@ -1169,7 +1169,14 @@
     "accountIdentities": "Định danh tài khoản",
     "guestIdentities": "Định danh thiết bị khách",
     "audienceLoading": "Đang tải loại định danh độc giả",
-    "noAudience": "Chưa có định danh độc giả hợp lệ trong bộ lọc này."
+    "noAudience": "Chưa có định danh độc giả hợp lệ trong bộ lọc này.",
+    "cohortTitle": "Giữ chân theo ngày quan sát",
+    "cohortDay": "Giữ chân ngày {{day}}",
+    "cohortHint": "Nhóm mới có lần đọc đầu tiên được ghi nhận trong kỳ, theo truyện/chương đang lọc và toàn bộ lịch sử hiện có. Chỉ tính quay lại đúng ngày 1 hoặc ngày 7 đã kết thúc theo giờ Việt Nam; không tính hôm nay chưa đủ ngày. Đây là định danh, không phải số người.",
+    "cohortCount": "{{returned}} / {{eligible}} định danh đủ ngày quan sát",
+    "cohortNotMature": "Chưa đủ ngày quan sát hoặc chưa có định danh mới trong kỳ. Chọn kỳ dài hơn để xem ngày 7.",
+    "cohortEligible": "Định danh đủ ngày {{day}}",
+    "cohortReturned": "Định danh quay lại đúng ngày {{day}}"
   },
   "draftsData": {
     "error": "Không lưu được bản nháp. Hãy thử lại.",
