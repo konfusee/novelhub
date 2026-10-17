@@ -1,4 +1,6 @@
-import { useId, useMemo, useState } from 'react';
+import { useLocale } from '../../context/LocaleContext';
+import { PolicySettingsPanel } from './PolicySettingsPanel';
+import { useMemo, useState } from 'react';
 import {
   AlertTriangle,
   Bot,
@@ -10,11 +12,9 @@ import {
   KeyRound,
   RefreshCw,
   RotateCcw,
-  Save,
   Search,
   ShieldAlert,
   ShieldCheck,
-  SlidersHorizontal,
 } from '../../components/icons';
 import { AdminLayout } from '../../layouts';
 import { useMockResource } from '../../context/MockDataContext';
@@ -138,16 +138,6 @@ const logDetailLabels = {
   'Role: Moderator': 'Vai trò: Kiểm duyệt viên',
 };
 
-const thresholds = ['Từ chương 3', 'Từ chương 4 cần xu để mở khóa', 'Từ chương 6'];
-const initialSettings = {
-  siteName: 'NovelHub',
-  tagline: 'Những câu chuyện cho ngày mai tươi sáng hơn.',
-  theme: 'light',
-  threshold: thresholds[1],
-  coinRate: '100 xu = 0,99 USD',
-  revenueSplit: '70% tác giả / 20% âm thanh / 10% nền tảng',
-  pdfLimit: '50 MB',
-};
 const serviceSections = {
   'TTS & Audio Narration': 'TTS Neural Engine',
   'AI Models & Orchestrator': 'AI Writing Co-Pilot',
@@ -155,21 +145,15 @@ const serviceSections = {
 };
 
 export function PlatformSettingsPage() {
+  const { t } = useLocale();
   const integrations = useMockResource('admin:integrations', services);
-  const config = useMockResource('admin:platform-settings', initialSettings);
   const auditStream = useMockResource('admin:audit-stream', logs);
-  const [section, setSection] = useState('External Services & APIs');
+  const [section, setSection] = useState('Platform Settings');
   const [maintenance, setMaintenance] = useState(false);
   const [confirmMaintenance, setConfirmMaintenance] = useState(false);
   const [query, setQuery] = useState('');
   const [actor, setActor] = useState('All');
   const [modal, setModal] = useState('');
-  /* Local saves and unsaved edits layered over the loaded settings; null = use what loaded. */
-  const [savedOverride, setSavedOverride] = useState(null);
-  const [draft, setDraft] = useState(null);
-  const [savedNotice, setSavedNotice] = useState(false);
-  const savedSettings = savedOverride ?? config.data;
-  const settings = draft ?? savedSettings;
   const filtered = useMemo(() => {
     const needle = query.trim().toLowerCase();
     return auditStream.data.filter(
@@ -180,11 +164,6 @@ export function PlatformSettingsPage() {
   const visibleServices = integrations.data.filter(
     (service) => section === 'External Services & APIs' || serviceSections[section] === service[0],
   );
-  const dirty = Object.keys(settings).some((key) => settings[key] !== savedSettings[key]);
-  const update = (key, value) => {
-    setDraft((current) => ({ ...(current ?? savedSettings), [key]: value }));
-    setSavedNotice(false);
-  };
   const isServiceSection = section !== 'Platform Settings' && section !== 'Audit Logs';
 
   return (
@@ -198,10 +177,10 @@ export function PlatformSettingsPage() {
             <h1 className="mt-1 text-h2 sm:text-h1">Cài đặt nền tảng, dịch vụ ngoài và kiểm tra</h1>
             <p className="mt-2 flex items-start gap-2 text-caption font-medium text-brand-strong">
               <span aria-hidden="true" className="mt-1.5 size-2 shrink-0 rounded-full bg-brand" />
-              Môi trường thật · Cụm US-East · Kho khóa đang hoạt động
+              {t(section === 'Platform Settings' ? 'policy.live' : 'policy.otherSections')}
             </p>
           </div>
-          <div className="flex flex-wrap gap-2">
+          <div className={section === 'Platform Settings' ? 'hidden' : 'flex flex-wrap gap-2'}>
             <Button
               variant="secondary"
               onClick={() => setModal('Đã xuất luồng kiểm tra (bản mẫu).')}
@@ -286,152 +265,7 @@ export function PlatformSettingsPage() {
           </section>
         )}
 
-        {section === 'Platform Settings' && (
-          <>
-            <Card
-              as="form"
-              className="mt-6"
-              aria-busy={config.status === 'loading'}
-              onSubmit={(event) => event.preventDefault()}
-            >
-              <div className="flex items-start gap-3">
-                <span className="grid size-10 shrink-0 place-items-center rounded-2xl bg-brand/10 text-brand-strong">
-                  <SlidersHorizontal size={19} aria-hidden="true" />
-                </span>
-                <div className="min-w-0">
-                  <h2 className="text-h3">Tham số cấu hình chung của nền tảng</h2>
-                  <p className="mt-1 text-caption text-muted">
-                    Nhận diện nền tảng, mặc định cho độc giả, tỷ lệ doanh thu và giới hạn tài
-                    nguyên.
-                  </p>
-                </div>
-              </div>
-              {config.status === 'loading' ? (
-                <SettingsFormSkeleton />
-              ) : config.status === 'error' ? (
-                <LoadError
-                  title="Không tải được cấu hình đã lưu"
-                  description="Kho cấu hình chưa phản hồi. Nền tảng vẫn dùng giá trị đang hiệu lực."
-                  onRetry={config.retry}
-                />
-              ) : config.status === 'empty' ? (
-                <EmptyState
-                  icon={SlidersHorizontal}
-                  headingAs="h3"
-                  title="Chưa có cấu hình đã lưu"
-                  description="Nền tảng đang chạy với giá trị mặc định. Xem nhật ký kiểm tra để biết lần thay đổi gần nhất."
-                  action={
-                    <Button variant="secondary" size="sm" onClick={() => setSection('Audit Logs')}>
-                      <FileSearch size={14} />
-                      Mở nhật ký kiểm tra
-                    </Button>
-                  }
-                />
-              ) : (
-                <div className="nh-fade-enter">
-                  <SettingsGroup title="Nhận diện nền tảng">
-                    <Field
-                      label="Tên trang"
-                      value={settings.siteName}
-                      onChange={(value) => update('siteName', value)}
-                    />
-                    <Field
-                      label="Khẩu hiệu nền tảng"
-                      value={settings.tagline}
-                      onChange={(value) => update('tagline', value)}
-                    />
-                  </SettingsGroup>
-
-                  <SettingsGroup
-                    title="Mặc định cho độc giả"
-                    after={
-                      <fieldset className="mt-5">
-                        <legend className="text-sm font-semibold">
-                          Ngưỡng khóa chương mặc định
-                        </legend>
-                        <div className="nh-grid-12 mt-2 grid gap-3 nh-sm-cols-3">
-                          {thresholds.map((item) => {
-                            const checked = settings.threshold === item;
-                            return (
-                              <label
-                                key={item}
-                                className={`flex min-h-12 cursor-pointer items-center gap-3 rounded-2xl border px-4 py-3 text-sm transition-colors ${checked ? 'border-brand bg-brand/8 font-semibold' : 'border-line hover:border-brand/40'}`}
-                              >
-                                <input
-                                  type="radio"
-                                  name="threshold"
-                                  className="size-4 shrink-0 accent-brand"
-                                  checked={checked}
-                                  onChange={() => update('threshold', item)}
-                                />
-                                {item}
-                              </label>
-                            );
-                          })}
-                        </div>
-                      </fieldset>
-                    }
-                  >
-                    <SelectField
-                      label="Giao diện mặc định của độc giả"
-                      value={settings.theme}
-                      onChange={(value) => update('theme', value)}
-                    />
-                  </SettingsGroup>
-
-                  <SettingsGroup title="Doanh thu và giới hạn tài nguyên">
-                    <Field
-                      label="Tỷ lệ quy đổi xu sang USD"
-                      value={settings.coinRate}
-                      onChange={(value) => update('coinRate', value)}
-                    />
-                    <Field
-                      label="Tỷ lệ phân chia doanh thu tác giả"
-                      value={settings.revenueSplit}
-                      onChange={(value) => update('revenueSplit', value)}
-                    />
-                    <Field
-                      label="Dung lượng PDF tải lên tối đa"
-                      value={settings.pdfLimit}
-                      onChange={(value) => update('pdfLimit', value)}
-                    />
-                  </SettingsGroup>
-                  {savedNotice && (
-                    <p
-                      role="status"
-                      className="mt-6 rounded-2xl bg-brand/10 p-3 text-sm text-brand-strong"
-                    >
-                      Đã lưu cấu hình nền tảng (bản mẫu).
-                    </p>
-                  )}
-                </div>
-              )}
-            </Card>
-            {dirty && (
-              <Card className="nh-dialog-enter mt-4 flex flex-col gap-4 border-orange/40 p-5 sm:flex-row sm:items-center">
-                <p role="status" className="min-w-0 flex-1 text-sm font-semibold">
-                  Bạn có thay đổi cấu hình chưa lưu.
-                </p>
-                <div className="flex flex-wrap gap-2">
-                  <Button variant="secondary" onClick={() => setDraft(null)}>
-                    <RotateCcw size={16} />
-                    Hủy thay đổi
-                  </Button>
-                  <Button
-                    onClick={() => {
-                      setSavedOverride(settings);
-                      setDraft(null);
-                      setSavedNotice(true);
-                    }}
-                  >
-                    <Save size={16} />
-                    Lưu cấu hình
-                  </Button>
-                </div>
-              </Card>
-            )}
-          </>
-        )}
+        {section === 'Platform Settings' && <PolicySettingsPanel />}
 
         {section === 'Audit Logs' && (
           <Card className="mt-6 overflow-hidden p-0">
@@ -678,55 +512,6 @@ function ServiceCard({ service, onAction }) {
     </Card>
   );
 }
-function SettingsGroup({ title, after, children }) {
-  return (
-    <fieldset className="mt-6 border-t border-hairline pt-6">
-      <legend className="sr-only">{title}</legend>
-      <h3 aria-hidden="true" className="text-base font-semibold">
-        {title}
-      </h3>
-      <div className="nh-grid-12 mt-4 grid gap-5 nh-lg-cols-2">{children}</div>
-      {after}
-    </fieldset>
-  );
-}
-function Field({ label, value, onChange }) {
-  const id = useId();
-  return (
-    <div>
-      <label htmlFor={id} className="text-sm font-semibold">
-        {label}
-      </label>
-      <Input
-        id={id}
-        value={value}
-        onChange={(event) => onChange(event.target.value)}
-        className="mt-2"
-      />
-    </div>
-  );
-}
-function SelectField({ label, value, onChange }) {
-  const id = useId();
-  return (
-    <div>
-      <label htmlFor={id} className="text-sm font-semibold">
-        {label}
-      </label>
-      <Select
-        id={id}
-        value={value}
-        onChange={(event) => onChange(event.target.value)}
-        className="mt-2 w-full"
-      >
-        <option value="light">Giao diện sáng (Giấy da)</option>
-        <option value="dark">Giao diện tối (Nửa đêm)</option>
-        <option value="system">Theo hệ thống</option>
-      </Select>
-    </div>
-  );
-}
-
 /* ServiceCard geometry: icon + uptime badge, name, provider, metric well, full-width action. */
 function ServiceCardSkeleton() {
   return (
@@ -750,47 +535,6 @@ function ServiceCardSkeleton() {
       </div>
       <Skeleton className="mt-auto h-11 w-full" />
     </Card>
-  );
-}
-
-/* The three settings groups with labelled 44px fields and the three threshold options. */
-function SettingsFormSkeleton() {
-  const group = (fields, after) => (
-    <div className="mt-6 border-t border-hairline pt-6">
-      <span className="flex h-6 items-center">
-        <Skeleton className="h-4 w-40" />
-      </span>
-      <div className="nh-grid-12 mt-4 grid gap-5 nh-lg-cols-2">
-        {fields.map((width) => (
-          <div key={width}>
-            <span className="flex h-[1.625rem] items-center">
-              <Skeleton className={`h-3.5 ${width}`} />
-            </span>
-            <Skeleton className="mt-2 h-11 w-full" />
-          </div>
-        ))}
-      </div>
-      {after}
-    </div>
-  );
-  return (
-    <div aria-hidden="true">
-      {group(['w-20', 'w-32'])}
-      {group(
-        ['w-52'],
-        <div className="mt-5">
-          <span className="flex h-5 items-center">
-            <Skeleton className="h-3.5 w-48" />
-          </span>
-          <div className="nh-grid-12 mt-2 grid gap-3 nh-sm-cols-3">
-            {[0, 1, 2].map((index) => (
-              <Skeleton key={index} className="h-12 w-full rounded-2xl" />
-            ))}
-          </div>
-        </div>,
-      )}
-      {group(['w-44', 'w-52', 'w-48'])}
-    </div>
   );
 }
 
