@@ -14,6 +14,8 @@ Kết quả: 3 test backend và 22 test frontend (analytics + workspace truyện
 
 ## Định danh quay lại trong kỳ
 
+Các liên kết phân tích từ thẻ sức khỏe và tab phân tích trong quản lý truyện giữ `storyId` của truyện đang mở. Liên kết thống kê ở từng chương tiếp tục giữ cả `storyId` và `chapterId`; không đưa tác giả về tổng số liệu toàn bộ truyện ngoài ý muốn.
+
 API bổ sung returningReaders và returnRate: một định danh (viewerType, viewerKey) quay lại khi có view ở ít nhất hai ngày Việt Nam khác nhau trong cùng bộ lọc. Nhiều chương trong cùng ngày không tạo thêm ngày; thay đổi bộ lọc chương tính lại cả tử và mẫu số. Khi mẫu số bằng 0, rate là null; khi có độc giả nhưng chưa ai quay lại, rate là 0. Không trả khóa độc giả và không thay đổi sự kiện nguồn.
 
 Card thay thế vùng biểu đồ giữ chân chưa có dữ liệu bằng tỷ lệ quay lại có định nghĩa, số định danh quay lại/tổng và giá trị làm tròn một chữ số. CSV ghi cùng chỉ số. Giữ chân theo cohort, hoàn thành chương, âm thanh và nguồn độc giả vẫn chưa được triển khai. 4 test backend và 7 test UI analytics đạt; browser dùng ba sự kiện qua hai ngày để đối chiếu 1/2 định danh và 50%. Không tuyên bố toàn bộ frontend suite đã đạt.
