@@ -13,9 +13,14 @@ const messages = {
     'Markdown chứa HTML hoặc hình ảnh chưa được hỗ trợ. Hãy chuyển sang văn bản thuần.',
 };
 export async function extractDocument(buffer, format, { signal, timeout = 15000 } = {}) {
-  if (running >= 2)
+  if (running >= 2) {
+    buffer.fill(0);
     throw new HttpError(429, 'import_busy', 'Máy chủ đang phân tích tài liệu khác. Hãy thử lại.');
-  if (signal?.aborted) throw new HttpError(400, 'import_cancelled', 'Đã hủy phân tích.');
+  }
+  if (signal?.aborted) {
+    buffer.fill(0);
+    throw new HttpError(400, 'import_cancelled', 'Đã hủy phân tích.');
+  }
   running++;
   let worker;
   let timer;
