@@ -1,9 +1,13 @@
+import { useState } from 'react';
+import { PolicySettingsForm } from './PolicySettingsForm';
 import { Button, Card, Skeleton } from '../../components/ui';
 import { useBackendDocument } from '../../api/useBackendResource';
 import { useLocale } from '../../context/LocaleContext';
 
 export function PolicySettingsPanel() {
   const { t, formatNumber, formatDate } = useLocale();
+  const [busy, setBusy] = useState(false);
+  const [saved, setSaved] = useState(false);
   const resource = useBackendDocument('/admin/policy', null);
   const policy = resource.status === 'ready' ? resource.data.policy : null;
   return (
@@ -15,7 +19,7 @@ export function PolicySettingsPanel() {
         </div>
         <Button
           variant="secondary"
-          disabled={resource.status === 'loading'}
+          disabled={busy || resource.status === 'loading'}
           onClick={resource.retry}
         >
           {t('policy.reload')}
@@ -57,9 +61,22 @@ export function PolicySettingsPanel() {
           <p className="mt-5 text-caption text-muted">{t('policy.agreement')}</p>
         </>
       )}
-      <p className="mt-5 border-t border-hairline pt-4 text-caption text-muted">
-        {t('policy.readOnly')}
-      </p>
+      {saved && (
+        <p role="status" className="mt-4 text-brand-strong">
+          {t('policy.saved')}
+        </p>
+      )}
+      {resource.status === 'ready' && (
+        <PolicySettingsForm
+          key={`${policy?.id ?? 'initial'}:${policy?.version ?? 0}`}
+          policy={policy}
+          onBusy={setBusy}
+          onSaved={() => {
+            setSaved(true);
+            resource.retry();
+          }}
+        />
+      )}
     </Card>
   );
 }

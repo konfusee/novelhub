@@ -1758,8 +1758,18 @@
     "authorSharePercent": "Tỷ lệ mặc định của tác giả (%)",
     "platformSharePercent": "Tỷ lệ mặc định của nền tảng (%)",
     "agreement": "Thỏa thuận riêng của tác giả được ưu tiên trước tỷ lệ mặc định này.",
-    "readOnly": "Hiện hỗ trợ xem chính sách. Chức năng tạo và kích hoạt phiên bản chính sách mới chưa được triển khai.",
     "live": "Chính sách hiện hành được đọc từ MongoDB",
-    "otherSections": "Các tab dịch vụ và nhật ký hiện vẫn là bản mẫu"
+    "otherSections": "Các tab dịch vụ và nhật ký hiện vẫn là bản mẫu",
+    "replace": "Tạo phiên bản giới hạn mới",
+    "initialize": "Khởi tạo chính sách đầu tiên",
+    "activationHint": "Phiên bản mới có hiệu lực ngay khi lưu. Cấu hình chương đã lưu và lịch sử tài chính được giữ nguyên.",
+    "initialTerms": "Chính sách đầu tiên dùng tỷ lệ mặc định 70% tác giả / 30% nền tảng, ngưỡng rút 100.000 xu và thời hạn đơn/yêu cầu 24 giờ theo cấu hình hệ thống.",
+    "reason": "Lý do thay đổi (bắt buộc)",
+    "invalid": "Các giới hạn phải là số nguyên, tối thiểu không lớn hơn tối đa; thời hạn ít nhất 1 ngày.",
+    "activate": "Lưu và kích hoạt chính sách",
+    "saving": "Đang kích hoạt…",
+    "saved": "Đã kích hoạt chính sách mới. Các giá trị hiển thị được tải lại từ máy chủ.",
+    "saveError": "Chưa xác nhận được kết quả lưu. Hãy tải lại chính sách trước khi tiếp tục.",
+    "futureBlocked": "Đã có chính sách hiệu lực trong tương lai. Cần xử lý chính sách đó trước khi kích hoạt phiên bản mới."
   }
 }

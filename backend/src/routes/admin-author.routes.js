@@ -1,5 +1,5 @@
 import { authorAgreement, saveAuthorAgreement } from '../modules/author-agreement.js';
-import { adminPolicy } from '../modules/admin-policy.js';
+import { activatePolicy, adminPolicy } from '../modules/admin-policy.js';
 import { Router } from 'express';
 import { z } from 'zod';
 import { requireAuth, requireRole } from '../middleware/auth.js';
@@ -33,6 +33,49 @@ const decisionSchema = z
 
 export function createAdminAuthorRouter(config) {
   const router = Router();
+  router.post(
+    '/admin/policy',
+    requireAuth(config),
+    requireRole('admin'),
+    async (req, res, next) => {
+      try {
+        const integer = z.number().int().min(0).max(Number.MAX_SAFE_INTEGER);
+        const parsed = z
+          .object({
+            priceMinCoins: integer,
+            priceMaxCoins: integer,
+            durationMinDays: integer.min(1),
+            durationMaxDays: integer.min(1),
+            expectedPolicyId: z
+              .string()
+              .regex(/^[a-f\d]{24}$/i)
+              .nullable(),
+            expectedPolicyVersion: integer.nullable(),
+            reason: z.string().trim().min(1).max(1000),
+          })
+          .strict()
+          .refine(
+            (value) =>
+              value.priceMinCoins <= value.priceMaxCoins &&
+              value.durationMinDays <= value.durationMaxDays &&
+              (value.expectedPolicyId === null) === (value.expectedPolicyVersion === null),
+          )
+          .safeParse(req.body);
+        if (!parsed.success)
+          throw new HttpError(
+            400,
+            'validation_error',
+            'Cần giới hạn nguyên hợp lệ, phiên bản chính sách và lý do.',
+          );
+        res
+          .status(201)
+          .set('Cache-Control', 'private, no-store')
+          .json(await activatePolicy(req.account, parsed.data));
+      } catch (error) {
+        next(error);
+      }
+    },
+  );
   router.get(
     '/admin/policy',
     requireAuth(config),
