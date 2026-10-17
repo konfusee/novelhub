@@ -16,6 +16,136 @@ const inheritedFields = [
   'claimExpiryHours',
 ];
 
+export async function rescheduleFuturePolicy(admin, policyId, input) {
+  return withTransaction(async (session) => {
+    const actor = await Account.findOneAndUpdate(
+      {
+        _id: admin._id,
+        status: 'active',
+        authorizationEpoch: admin.authorizationEpoch,
+        credentialVersion: admin.credentialVersion,
+      },
+      { $inc: { version: 1 } },
+      { session },
+    );
+    const role = await RoleAssignment.exists({
+      accountId: admin._id,
+      role: 'admin',
+      status: 'active',
+    }).session(session);
+    if (!actor || !role)
+      throw new HttpError(403, 'forbidden', 'Quyền quản trị không còn hiệu lực.');
+    const previous = await PolicyVersion.findById(policyId).session(session);
+    if (!previous) throw new HttpError(404, 'not_found', 'Không tìm thấy chính sách.');
+    const now = new Date();
+    const effectiveAt = new Date(input.effectiveAt);
+    if (!Number.isFinite(effectiveAt.getTime()) || effectiveAt <= now)
+      throw new HttpError(
+        400,
+        'invalid_policy_schedule',
+        'Ngày hiệu lực phải nằm trong tương lai.',
+      );
+    if (
+      previous.status !== 'effective' ||
+      !previous.effectiveAt ||
+      previous.effectiveAt <= now ||
+      previous.version !== input.expectedVersion
+    )
+      throw new HttpError(
+        409,
+        'policy_changed',
+        'Lịch đã thay đổi hoặc đã đến ngày hiệu lực. Hãy tải lại.',
+      );
+    if (effectiveAt.getTime() === previous.effectiveAt.getTime())
+      throw new HttpError(
+        409,
+        'schedule_unchanged',
+        'Cần chọn thời điểm hiệu lực khác lịch hiện tại.',
+      );
+    const current = await PolicyVersion.exists({
+      status: 'effective',
+      effectiveAt: { $lte: now },
+    }).session(session);
+    if (!current)
+      throw new HttpError(409, 'policy_required', 'Cần chính sách hiện hành trước khi đổi lịch.');
+    const other = await PolicyVersion.exists({
+      _id: { $ne: previous._id },
+      status: 'effective',
+      effectiveAt: { $gt: now },
+    }).session(session);
+    if (other)
+      throw new HttpError(409, 'future_policy', 'Cần xử lý các lịch trùng trước khi đổi lịch.');
+    const cancelled = await PolicyVersion.findOneAndUpdate(
+      {
+        _id: previous._id,
+        status: 'effective',
+        version: input.expectedVersion,
+        effectiveAt: { $gt: now },
+      },
+      { $set: { status: 'superseded' }, $inc: { version: 1 } },
+      { session, returnDocument: 'after' },
+    );
+    if (!cancelled) throw new HttpError(409, 'policy_changed', 'Lịch đã thay đổi. Hãy tải lại.');
+    const terms = Object.fromEntries(
+      [
+        'priceMinCoins',
+        'priceMaxCoins',
+        'durationMinDays',
+        'durationMaxDays',
+        ...inheritedFields,
+      ].map((field) => [field, previous[field]]),
+    );
+    const [replacement] = await PolicyVersion.create(
+      [{ ...terms, status: 'effective', effectiveAt, actorAccountId: admin._id }],
+      { session },
+    );
+    await AuditEvent.create(
+      [
+        {
+          actorType: 'account',
+          actorId: admin._id,
+          action: 'policy.cancelled',
+          targetType: 'policy',
+          targetId: previous._id,
+          targetVersion: cancelled.version,
+          result: 'accepted',
+          reason: input.reason,
+          occurredAt: now,
+          dataDigest: digest({
+            previousPolicyId: previous.id,
+            previousEffectiveAt: previous.effectiveAt.toISOString(),
+            replacementPolicyId: replacement.id,
+            effectiveAt: effectiveAt.toISOString(),
+          }),
+        },
+        {
+          actorType: 'account',
+          actorId: admin._id,
+          action: 'policy.scheduled',
+          targetType: 'policy',
+          targetId: replacement._id,
+          targetVersion: replacement.version,
+          result: 'accepted',
+          reason: input.reason,
+          occurredAt: now,
+          dataDigest: digest({
+            previousPolicyId: previous.id,
+            policy: { ...replacement.toObject(), effectiveAt: effectiveAt.toISOString() },
+          }),
+        },
+      ],
+      { session, ordered: true },
+    );
+    return {
+      policyId: replacement.id,
+      version: replacement.version,
+      effectiveAt,
+      previousPolicyId: previous.id,
+      previousVersion: cancelled.version,
+    };
+  });
+}
+
 export async function cancelFuturePolicy(admin, policyId, input) {
   return withTransaction(async (session) => {
     const actor = await Account.findOneAndUpdate(

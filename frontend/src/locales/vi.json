@@ -1811,6 +1811,19 @@
     "identity": "Mã phiên bản: {{id}}",
     "cancelled": "Đã hủy lịch"
   },
+  "policyReschedule": {
+    "action": "Đổi lịch hiệu lực",
+    "title": "Đổi lịch chính sách",
+    "description": "Chọn thời điểm mới cho cùng các điều khoản đã lưu. Hệ thống hủy lịch cũ và tạo bản thay thế trong một lần lưu, giữ lại lịch sử và chính sách đang áp dụng.",
+    "previous": "Lịch đang có: {{date}}",
+    "date": "Ngày và giờ hiệu lực mới",
+    "reason": "Lý do đổi lịch (bắt buộc)",
+    "confirm": "Xác nhận đổi lịch",
+    "busy": "Đang đổi lịch…",
+    "invalid": "Chọn thời điểm trong tương lai và khác lịch hiện tại.",
+    "error": "Chưa thể xác nhận đổi lịch. Nội dung đã nhập vẫn được giữ; đóng và tải lại lịch sử trước khi thử lại.",
+    "saved": "Đã đổi lịch hiệu lực. Lịch cũ được giữ trong lịch sử; chính sách hiện hành không thay đổi."
+  },
   "policyCancel": {
     "title": "Hủy lịch hiệu lực chính sách",
     "description": "Chính sách chưa đến ngày hiệu lực sẽ không được áp dụng. Bản ghi và lịch sử được giữ nguyên; chính sách đang áp dụng không bị thay đổi.",

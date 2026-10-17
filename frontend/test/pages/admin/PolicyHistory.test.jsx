@@ -39,6 +39,86 @@ const view = () =>
       <PolicyHistory />
     </LocaleProvider>,
   );
+it('offers rescheduling only for a future policy and opens the exact record without writing', async () => {
+  mocks.apiRequest.mockResolvedValue(
+    response(
+      [
+        {
+          ...entry,
+          id: '111111111111111111111111',
+          future: true,
+          current: false,
+          effectiveAt: '2099-01-01T00:00:00Z',
+        },
+        { ...entry, id: 'current' },
+      ],
+      1,
+      2,
+    ),
+  );
+  view();
+  await screen.findByRole('button', { name: 'Đổi lịch hiệu lực' });
+  expect(screen.getAllByRole('button', { name: 'Đổi lịch hiệu lực' })).toHaveLength(1);
+  fireEvent.click(screen.getByRole('button', { name: 'Đổi lịch hiệu lực' }));
+  expect(screen.getByRole('heading', { name: 'Đổi lịch chính sách' })).toBeTruthy();
+  expect(screen.getAllByText(/111111111111111111111111/)).toHaveLength(2);
+  expect(mocks.apiRequest.mock.calls.every(([, options]) => !options.method)).toBe(true);
+});
+it('returns to page one and refreshes the replacement schedule after a successful reschedule', async () => {
+  const future = {
+    ...entry,
+    id: '111111111111111111111111',
+    version: 4,
+    current: false,
+    future: true,
+    effectiveAt: '2099-01-01T00:00:00Z',
+  };
+  const replacement = {
+    ...future,
+    id: '222222222222222222222222',
+    version: 0,
+    reason: 'Lịch thay thế',
+  };
+  const selected = '2099-02-01T07:00';
+  let saved = false;
+  mocks.apiRequest.mockImplementation((path, options) => {
+    if (options?.method === 'POST') {
+      saved = true;
+      return Promise.resolve({
+        policyId: replacement.id,
+        version: 0,
+        effectiveAt: new Date(selected).toISOString(),
+        previousPolicyId: future.id,
+        previousVersion: 5,
+      });
+    }
+    return Promise.resolve(
+      path.includes('page=2')
+        ? response([future], 2, 6, 2)
+        : response([saved ? replacement : entry], 1, 6, 2),
+    );
+  });
+  view();
+  await screen.findByText(entry.reason);
+  fireEvent.click(screen.getByRole('button', { name: 'Trang lịch sử tiếp' }));
+  await screen.findByRole('button', { name: 'Đổi lịch hiệu lực' });
+  fireEvent.click(screen.getByRole('button', { name: 'Đổi lịch hiệu lực' }));
+  fireEvent.change(screen.getByLabelText('Ngày và giờ hiệu lực mới'), {
+    target: { value: selected },
+  });
+  fireEvent.change(screen.getByLabelText('Lý do đổi lịch (bắt buộc)'), {
+    target: { value: 'Lịch thay thế' },
+  });
+  fireEvent.click(screen.getByRole('button', { name: 'Xác nhận đổi lịch' }));
+  await screen.findByText('Lịch thay thế');
+  expect(screen.queryByRole('heading', { name: 'Đổi lịch chính sách' })).toBeNull();
+  expect(screen.getByRole('button', { name: 'Trang lịch sử trước' }).disabled).toBe(true);
+  expect(
+    mocks.apiRequest.mock.calls.filter(
+      ([path]) => path === '/admin/policy/history?page=1&pageSize=5',
+    ),
+  ).toHaveLength(2);
+});
 it('reads persisted history, reasons and terms with no fabricated activation or writes', async () => {
   mocks.apiRequest.mockResolvedValue(response());
   view();

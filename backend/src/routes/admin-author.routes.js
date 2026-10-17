@@ -4,6 +4,7 @@ import {
   adminPolicy,
   adminPolicyHistory,
   cancelFuturePolicy,
+  rescheduleFuturePolicy,
 } from '../modules/admin-policy.js';
 import { Router } from 'express';
 import { z } from 'zod';
@@ -38,6 +39,35 @@ const decisionSchema = z
 
 export function createAdminAuthorRouter(config) {
   const router = Router();
+  router.post(
+    '/admin/policy/:policyId/reschedule',
+    requireAuth(config),
+    requireRole('admin'),
+    async (req, res, next) => {
+      try {
+        const parsed = z
+          .object({
+            expectedVersion: z.number().int().min(0).max(Number.MAX_SAFE_INTEGER),
+            effectiveAt: z.string().datetime({ offset: true }),
+            reason: z.string().trim().min(1).max(1000),
+          })
+          .strict()
+          .safeParse(req.body);
+        if (!parsed.success || !/^[a-f\d]{24}$/i.test(req.params.policyId))
+          throw new HttpError(
+            400,
+            'validation_error',
+            'Cần mã chính sách, phiên bản, ngày hiệu lực và lý do hợp lệ.',
+          );
+        res
+          .status(201)
+          .set('Cache-Control', 'private, no-store')
+          .json(await rescheduleFuturePolicy(req.account, req.params.policyId, parsed.data));
+      } catch (error) {
+        next(error);
+      }
+    },
+  );
   router.post(
     '/admin/policy/:policyId/cancel',
     requireAuth(config),

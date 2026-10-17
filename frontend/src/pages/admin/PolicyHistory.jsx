@@ -1,4 +1,5 @@
 import { PolicyCancellationDialog } from './PolicyCancellationDialog';
+import { PolicyReschedulingDialog } from './PolicyReschedulingDialog';
 import { useState } from 'react';
 import { Badge, Button, Skeleton } from '../../components/ui';
 import { useBackendDocument } from '../../api/useBackendResource';
@@ -13,6 +14,8 @@ export function PolicyHistory() {
   const [page, setPage] = useState(1);
   const [cancelling, setCancelling] = useState(null);
   const [cancelled, setCancelled] = useState(false);
+  const [rescheduling, setRescheduling] = useState(null);
+  const [rescheduled, setRescheduled] = useState(false);
   const resource = useBackendDocument(`/admin/policy/history?page=${page}&pageSize=5`, null);
   const document =
     resource.status === 'ready' && Array.isArray(resource.data?.items) ? resource.data : null;
@@ -116,14 +119,14 @@ export function PolicyHistory() {
                     </p>
                   )}
                   {item.future && (
-                    <Button
-                      size="sm"
-                      variant="secondary"
-                      className="mt-3"
-                      onClick={() => setCancelling(item)}
-                    >
-                      {t('policyCancel.action')}
-                    </Button>
+                    <div className="mt-3 flex flex-wrap gap-2">
+                      <Button size="sm" variant="secondary" onClick={() => setRescheduling(item)}>
+                        {t('policyReschedule.action')}
+                      </Button>
+                      <Button size="sm" variant="secondary" onClick={() => setCancelling(item)}>
+                        {t('policyCancel.action')}
+                      </Button>
+                    </div>
                   )}
                 </li>
               ))}
@@ -164,6 +167,27 @@ export function PolicyHistory() {
         <p role="status" className="mt-4 text-caption text-brand-strong">
           {t('policyCancel.saved')}
         </p>
+      )}
+      {rescheduled && (
+        <p role="status" className="mt-4 text-caption text-brand-strong">
+          {t('policyReschedule.saved')}
+        </p>
+      )}
+      {rescheduling && (
+        <PolicyReschedulingDialog
+          policy={rescheduling}
+          onClose={() => setRescheduling(null)}
+          onSaved={() => {
+            setRescheduling(null);
+            setRescheduled(true);
+            setPage(1);
+            if (page === 1) resource.retry();
+          }}
+          onReload={() => {
+            setRescheduling(null);
+            resource.retry();
+          }}
+        />
       )}
       {cancelling && (
         <PolicyCancellationDialog
