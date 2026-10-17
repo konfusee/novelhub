@@ -44,6 +44,19 @@ const decide = (application, body = {}, user = admin) =>
 const pending = async () => (await submit()).body.application;
 
 describe('author application decisions', () => {
+  it.each(['suspended', 'anonymized'])(
+    'does not grant Author to an account that became %s after applying',
+    async (status) => {
+      const application = await pending();
+      await Account.updateOne({ _id: reader.account._id }, { $set: { status } });
+      expect((await decide(application)).status).toBe(409);
+      expect((await AuthorApplication.findById(application.id)).status).toBe('submitted');
+      expect(
+        await RoleAssignment.countDocuments({ accountId: reader.account._id, role: 'author' }),
+      ).toBe(0);
+      expect(await AuditEvent.countDocuments()).toBe(0);
+    },
+  );
   it('allows a revoked former Author to reapply without rewriting the prior decision or unfreezing old stories', async () => {
     const first = await pending();
     expect((await decide(first)).status).toBe(200);

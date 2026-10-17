@@ -1,4 +1,4 @@
-import { MemoryRouter } from 'react-router';
+import { MemoryRouter, useNavigate } from 'react-router';
 import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { afterEach, expect, it, vi } from 'vitest';
 import { LocaleProvider } from '../../../src/context/LocaleContext';
@@ -29,6 +29,27 @@ function view(url = '/admin/audit-logs') {
     </LocaleProvider>,
   );
 }
+it('restores the visible filters with browser history instead of keeping the later form values', async () => {
+  mocks.apiRequest.mockResolvedValue({ items: [], total: 0, page: 1, pageSize: 20 });
+  function Back() {
+    const navigate = useNavigate();
+    return <button onClick={() => navigate(-1)}>Back</button>;
+  }
+  render(
+    <LocaleProvider>
+      <MemoryRouter initialEntries={['/admin/audit-logs?action=story.created']}>
+        <Back />
+        <AuditEventsPage />
+      </MemoryRouter>
+    </LocaleProvider>,
+  );
+  fireEvent.change(screen.getByLabelText('Mã hành động'), { target: { value: 'chapter.saved' } });
+  fireEvent.click(screen.getByRole('button', { name: 'Lọc nhật ký' }));
+  await waitFor(() => expect(mocks.apiRequest.mock.calls.at(-1)[0]).toContain('chapter.saved'));
+  fireEvent.click(screen.getByRole('button', { name: 'Back', exact: true }));
+  await waitFor(() => expect(screen.getByLabelText('Mã hành động').value).toBe('story.created'));
+  expect(mocks.apiRequest.mock.calls.at(-1)[0]).toContain('story.created');
+});
 it('renders stored events as escaped text, applies server filters and resets pagination', async () => {
   mocks.apiRequest.mockResolvedValue({ items: [event], total: 21, page: 1, pageSize: 20 });
   const { container } = view();
