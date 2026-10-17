@@ -29,7 +29,7 @@ it('renders persisted bounds and reloads actual server data without a save simul
   view();
   await screen.findByText('321');
   expect(mocks.apiRequest.mock.calls[0][0]).toBe('/admin/policy');
-  expect(screen.queryByRole('button', { name: /Lưu/ })).toBeNull();
+  expect(screen.getByRole('button', { name: 'Lưu và kích hoạt chính sách' }).disabled).toBe(true);
   mocks.apiRequest.mockResolvedValue({ policy: null });
   fireEvent.click(screen.getByRole('button', { name: 'Tải lại chính sách' }));
   await screen.findByText(/Chưa có chính sách đang hiệu lực/);
