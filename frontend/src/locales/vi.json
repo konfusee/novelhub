@@ -1,4 +1,75 @@
 {
+  "adminAccounts": {
+    "breadcrumb": "Bảng điều khiển quản trị / Quản lý truy cập",
+    "title": "Người dùng và tài khoản",
+    "summary": "{{accounts}} tài khoản · {{authors}} tác giả · {{staff}} nhân viên/kiểm duyệt viên",
+    "unavailable": "Chức năng chưa hỗ trợ trên máy chủ",
+    "export": "Xuất danh bạ",
+    "invite": "Mời nhân viên",
+    "search": "Tìm tên, email hoặc mã tài khoản",
+    "statusFilter": "Lọc theo trạng thái",
+    "allStatuses": "Tất cả trạng thái",
+    "sortLabel": "Sắp xếp danh sách",
+    "sort": {
+      "newest": "Tham gia mới nhất",
+      "oldest": "Tham gia lâu nhất",
+      "stories": "Nhiều truyện nhất",
+      "coins": "Nhiều xu độc giả nhất"
+    },
+    "roleFilter": "Lọc theo vai trò",
+    "roleCount": "{{role}} {{count}}",
+    "roles": {
+      "all": "Tất cả",
+      "reader": "Độc giả",
+      "author": "Tác giả",
+      "moderator": "Kiểm duyệt viên",
+      "admin": "Quản trị viên"
+    },
+    "statuses": {
+      "active": "Đang hoạt động",
+      "suspended": "Đã đình chỉ",
+      "pending-verification": "Chờ xác minh",
+      "anonymized": "Đã ẩn danh"
+    },
+    "columns": {
+      "identity": "Người dùng và định danh",
+      "role": "Vai trò hệ thống",
+      "status": "Trạng thái",
+      "joined": "Ngày tham gia",
+      "activity": "Truyện và xu độc giả",
+      "actions": "Thao tác"
+    },
+    "failed": "Không tải được dữ liệu tài khoản",
+    "reload": "Tải lại dữ liệu",
+    "table": "Danh sách tài khoản người dùng",
+    "inspect": "Kiểm tra",
+    "stories": "{{count}} truyện",
+    "coins": "{{count}} xu",
+    "empty": "Không có người dùng nào khớp bộ lọc",
+    "clear": "Xóa bộ lọc",
+    "shown": "Đang hiển thị {{count}} / {{total}} tài khoản",
+    "loading": "Đang tải dữ liệu tài khoản…",
+    "pagination": "Phân trang danh sách người dùng",
+    "close": "Đóng thông tin tài khoản",
+    "editRole": "Sửa vai trò",
+    "adjust": "Điều chỉnh xu",
+    "warn": "Gửi cảnh báo",
+    "suspend": "Đình chỉ / khôi phục",
+    "info": "Thông tin tài khoản",
+    "email": "Địa chỉ email",
+    "authoring": "Hồ sơ sáng tác và chỉ số",
+    "storyTotal": "Tổng số truyện",
+    "noStories": "Chưa có truyện trong tài khoản.",
+    "finance": "Tài chính và nhuận bút",
+    "wallets": {
+      "reader-coins": "Ví xu độc giả",
+      "author-earnings": "Ví thu nhập tác giả",
+      "system-earnings": "Ví hệ thống"
+    },
+    "noWallet": "Chưa có ví được ghi nhận.",
+    "audit": "Nhật ký tài khoản gần đây",
+    "noAudit": "Chưa có sự kiện kiểm toán trực tiếp cho tài khoản này."
+  },
   "authorRevocation": {
     "title": "Quyền tác giả",
     "description": "Danh sách quyền Author hiện hành từ máy chủ. Thu hồi quyền sẽ giữ nội dung đang công khai và hủy công việc chưa phát hành.",

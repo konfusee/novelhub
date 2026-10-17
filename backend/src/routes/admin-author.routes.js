@@ -2,6 +2,7 @@ import { Router } from 'express';
 import { z } from 'zod';
 import { requireAuth, requireRole } from '../middleware/auth.js';
 import { HttpError } from '../middleware/errors.js';
+import { adminUsers, adminUserDetail } from '../modules/admin-users.js';
 import {
   authorRoleView,
   revokeAuthorRole,
@@ -30,6 +31,40 @@ const decisionSchema = z
 
 export function createAdminAuthorRouter(config) {
   const router = Router();
+  router.use('/admin/accounts', requireAuth(config), requireRole('admin'));
+  router.get('/admin/accounts', async (req, res, next) => {
+    try {
+      const parsed = z
+        .object({
+          page: z.coerce.number().int().min(1).max(100000).default(1),
+          pageSize: z.coerce.number().int().min(1).max(50).default(10),
+          query: z.string().trim().max(100).default(''),
+          role: z.enum(['all', 'reader', 'author', 'moderator', 'admin']).default('all'),
+          status: z
+            .enum(['all', 'active', 'suspended', 'pending-verification', 'anonymized'])
+            .default('all'),
+          sort: z.enum(['newest', 'oldest', 'stories', 'coins']).default('newest'),
+        })
+        .strict()
+        .safeParse(req.query);
+      if (!parsed.success)
+        throw new HttpError(400, 'validation_error', 'Bộ lọc tài khoản không hợp lệ.');
+      res.set('Cache-Control', 'private, no-store').json(await adminUsers(parsed.data));
+    } catch (error) {
+      next(error);
+    }
+  });
+  router.get('/admin/accounts/:accountId', async (req, res, next) => {
+    try {
+      if (!/^[a-f\d]{24}$/i.test(req.params.accountId))
+        throw new HttpError(400, 'validation_error', 'Mã tài khoản không hợp lệ.');
+      res
+        .set('Cache-Control', 'private, no-store')
+        .json(await adminUserDetail(req.params.accountId));
+    } catch (error) {
+      next(error);
+    }
+  });
   router.use('/admin/authors', requireAuth(config), requireRole('admin'));
   router.get('/admin/authors', async (req, res, next) => {
     try {
