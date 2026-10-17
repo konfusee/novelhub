@@ -165,7 +165,16 @@ export function ImportPdfPage() {
           })),
         },
       });
-      if (!controller.signal.aborted) setResult(response);
+      if (controller.signal.aborted) return;
+      if (
+        response?.storyId !== target.id ||
+        !Array.isArray(response.chapterIds) ||
+        response.chapterIds.length !== selected.length ||
+        response.chapterIds.some((id) => typeof id !== 'string' || !id.trim()) ||
+        new Set(response.chapterIds).size !== response.chapterIds.length
+      )
+        throw new Error(message('invalidSaveResponse'));
+      setResult(response);
     } catch (failure) {
       if (!controller.signal.aborted)
         setError(

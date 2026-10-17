@@ -9,8 +9,14 @@ vi.mock('../../../src/layouts', () => ({
   AuthorLayout: ({ children }) => <main>{children}</main>,
 }));
 const text = 'Đoạn đầu tiên.\n\nĐoạn tiếp theo.';
-function view({ saveError = false, previewText = text, headings, numberedHeadings } = {}) {
-  mocks.apiRequest.mockImplementation(async (path) => {
+function view({
+  saveError = false,
+  previewText = text,
+  headings,
+  numberedHeadings,
+  saveResponse,
+} = {}) {
+  mocks.apiRequest.mockImplementation(async (path, options) => {
     if (path === '/author/imports/targets')
       return { items: [{ id: 'real-story', title: 'Truyện từ MongoDB', version: 3 }] };
     if (path.startsWith('/author/imports/preview'))
@@ -22,7 +28,12 @@ function view({ saveError = false, previewText = text, headings, numberedHeading
         numberedHeadings,
       };
     if (saveError) throw new Error('Không lưu được MongoDB');
-    return { storyId: 'real-story', chapterIds: ['chapter-one', 'chapter-two'] };
+    return (
+      saveResponse ?? {
+        storyId: 'real-story',
+        chapterIds: options.body.chapters.map((_, index) => `chapter-${index}`),
+      }
+    );
   });
   return render(
     <MemoryRouter>
@@ -177,6 +188,27 @@ it('uploads the actual file, reviews real text and waits for persistence before 
     text.replace(/\n/g, ''),
   );
 });
+it.each([
+  {},
+  { storyId: 'other-story', chapterIds: ['chapter-0'] },
+  { storyId: 'real-story', chapterIds: [] },
+  { storyId: 'real-story', chapterIds: [''] },
+  { storyId: 'real-story', chapterIds: ['chapter-0', 'chapter-0'] },
+])(
+  'retains the reviewed manuscript when the save response is inconsistent: %j',
+  async (saveResponse) => {
+    const { container } = view({ saveResponse });
+    await choose(container);
+    await destination();
+    fireEvent.change(screen.getByRole('textbox', { name: 'ban-thao' }), {
+      target: { value: 'Bản thảo đã kiểm tra.' },
+    });
+    fireEvent.click(screen.getByRole('button', { name: 'Nhập thành bản nháp' }));
+    expect((await screen.findByRole('alert')).textContent).toContain('Chưa xác nhận được đầy đủ');
+    expect(screen.queryByText(/Đã lưu .* chương nháp/)).toBeNull();
+    expect(screen.getByRole('textbox', { name: 'ban-thao' }).value).toBe('Bản thảo đã kiểm tra.');
+  },
+);
 it('retains edited content and never shows success when saving fails', async () => {
   const { container } = view({ saveError: true });
   await choose(container);
