@@ -113,6 +113,7 @@ it.each([
   expect(revoked).not.toHaveBeenCalled();
 });
 it('loads and searches real authors, then refreshes the list after confirmed revocation', async () => {
+  const changed = vi.fn();
   let removed = false;
   mocks.apiRequest.mockImplementation(async (path, options) => {
     if (options.method === 'POST') {
@@ -129,7 +130,7 @@ it('loads and searches real authors, then refreshes the list after confirmed rev
   });
   render(
     <LocaleProvider>
-      <AuthorRoleManagement />
+      <AuthorRoleManagement onChanged={changed} />
     </LocaleProvider>,
   );
   await screen.findByText('Tác giả thật');
@@ -149,6 +150,7 @@ it('loads and searches real authors, then refreshes the list after confirmed rev
   fireEvent.click(screen.getByRole('button', { name: 'Xác nhận thu hồi quyền', exact: true }));
   await screen.findByText(/Đã thu hồi quyền: đóng băng 2 truyện/);
   await screen.findByText('Không có tác giả phù hợp với bộ lọc.');
+  expect(changed).toHaveBeenCalledTimes(1);
 });
 it('offers reload after a failed role preparation and never posts automatically', async () => {
   mocks.apiRequest.mockRejectedValueOnce(new Error('Mất kết nối.')).mockResolvedValue(role);

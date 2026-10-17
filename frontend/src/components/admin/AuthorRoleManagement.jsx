@@ -6,7 +6,7 @@ import { Avatar, Badge, Button, Card, Input, Modal } from '../ui';
 
 const emptyFeed = { items: [], total: 0 };
 const emptyRole = { role: null };
-export function AuthorRoleManagement() {
+export function AuthorRoleManagement({ onChanged }) {
   const { t } = useLocale();
   const [filter, setFilter] = useState({ page: 1, query: '' });
   const [query, setQuery] = useState('');
@@ -128,6 +128,7 @@ export function AuthorRoleManagement() {
           accountId={selected.accountId}
           onClose={() => setSelected(null)}
           onRevoked={(result) => {
+            onChanged?.();
             setSelected(null);
             setNotice(
               t('authorRevocation.success', {
