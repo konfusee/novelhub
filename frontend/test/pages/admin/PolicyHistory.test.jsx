@@ -22,6 +22,8 @@ const entry = {
   authorSharePercent: 82,
   platformSharePercent: 18,
   withdrawalThresholdCoins: 150000,
+  orderExpiryHours: 12,
+  claimExpiryHours: 48,
   reason: 'Chính sách đã được lưu',
 };
 const response = (items = [entry], page = 1, total = 1, totalPages = 1) => ({
@@ -44,6 +46,8 @@ it('reads persisted history, reasons and terms with no fabricated activation or 
   expect(mocks.apiRequest.mock.calls[0][0]).toBe('/admin/policy/history?page=1&pageSize=5');
   expect(screen.getByText('82% / 18%')).toBeTruthy();
   expect(screen.getByText('150.000')).toBeTruthy();
+  expect(screen.getByText('12')).toBeTruthy();
+  expect(screen.getByText('48')).toBeTruthy();
   expect(screen.getByText('Đang áp dụng')).toBeTruthy();
   expect(screen.getByRole('button', { name: 'Trang lịch sử trước' }).disabled).toBe(true);
   expect(screen.getByRole('button', { name: 'Trang lịch sử tiếp' }).disabled).toBe(true);

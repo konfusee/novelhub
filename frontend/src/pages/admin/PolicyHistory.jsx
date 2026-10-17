@@ -99,6 +99,14 @@ export function PolicyHistory() {
                       <dd>{formatNumber(item.withdrawalThresholdCoins)}</dd>
                     </div>
                   </dl>
+                  <dl className="nh-grid-12 mt-3 grid gap-3 text-caption nh-sm-cols-2">
+                    {['orderExpiryHours', 'claimExpiryHours'].map((field) => (
+                      <div key={field}>
+                        <dt className="text-muted">{t(`policy.${field}`)}</dt>
+                        <dd>{formatNumber(item[field])}</dd>
+                      </div>
+                    ))}
+                  </dl>
                   <p className="mt-3 whitespace-pre-wrap break-words text-caption text-muted">
                     {item.reason || t('policyHistory.noReason')}
                   </p>

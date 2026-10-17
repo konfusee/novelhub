@@ -17,6 +17,8 @@ const policy = {
   durationMaxDays: 14,
   authorSharePercent: 70,
   withdrawalThresholdCoins: 100000,
+  orderExpiryHours: 12,
+  claimExpiryHours: 48,
 };
 function view(current = policy) {
   const onSaved = vi.fn();
@@ -50,6 +52,8 @@ it('requires a changed bound and reason, sends exact policy tokens and accepts a
       durationMaxDays: 14,
       authorSharePercent: 70,
       withdrawalThresholdCoins: 100000,
+      orderExpiryHours: 12,
+      claimExpiryHours: 48,
       reason: 'Điều chỉnh mới',
       expectedPolicyId: policy.id,
       expectedPolicyVersion: 7,
@@ -60,6 +64,8 @@ it('initializes with explicit bounds, null tokens and disclosed default terms', 
   mocks.apiRequest.mockResolvedValue({ policyId: '000000000000000000000001', version: 0 });
   const callbacks = view(null);
   expect(screen.getByLabelText('Tỷ lệ mặc định của tác giả (%)').value).toBe('70');
+  expect(screen.getByLabelText('Thời hạn đơn nạp (giờ)').value).toBe('24');
+  expect(screen.getByLabelText('Thời hạn nhận xử lý (giờ)').value).toBe('24');
   for (const [label, value] of [
     ['Giá tối thiểu (xu)', '0'],
     ['Giá tối đa (xu)', '900'],
@@ -98,7 +104,7 @@ it('blocks duplicate submissions and requires reload after uncertain failure', a
   fill('Giá tối thiểu (xu)', '300');
   fill('Lý do thay đổi (bắt buộc)', 'Điều chỉnh');
   fireEvent.click(button());
-  const busyButton = screen.getByRole('button', { name: 'Đang kích hoạt…' });
+  const busyButton = screen.getByRole('button', { name: 'Đang lưu chính sách…' });
   fireEvent.click(busyButton);
   expect(mocks.apiRequest).toHaveBeenCalledOnce();
   reject(new Error('network'));
@@ -171,7 +177,39 @@ it('schedules a future local time as UTC without changing current terms', async 
     expectedPolicyVersion: 7,
     priceMinCoins: 200,
     authorSharePercent: 70,
+    orderExpiryHours: 12,
+    claimExpiryHours: 48,
   });
+});
+it('saves expiry-only changes without replacing unrelated policy terms', async () => {
+  mocks.apiRequest.mockResolvedValue({ policyId: '555555555555555555555555', version: 0 });
+  const callbacks = view();
+  fill('Thời hạn đơn nạp (giờ)', '0');
+  fill('Thời hạn nhận xử lý (giờ)', '36');
+  fill('Lý do thay đổi (bắt buộc)', 'Cập nhật thời hạn');
+  fireEvent.click(button());
+  await waitFor(() => expect(callbacks.onSaved).toHaveBeenCalledOnce());
+  expect(mocks.apiRequest.mock.calls[0][1].body).toMatchObject({
+    orderExpiryHours: 0,
+    claimExpiryHours: 36,
+    priceMinCoins: 200,
+    authorSharePercent: 70,
+    expectedPolicyId: policy.id,
+    expectedPolicyVersion: policy.version,
+  });
+});
+it('blocks missing, fractional, negative and unsafe expiry values before sending', () => {
+  view();
+  fill('Lý do thay đổi (bắt buộc)', 'Kiểm tra thời hạn');
+  for (const label of ['Thời hạn đơn nạp (giờ)', 'Thời hạn nhận xử lý (giờ)']) {
+    for (const value of ['', '-1', '1.5', String(Number.MAX_SAFE_INTEGER + 1)]) {
+      fill(label, value);
+      expect(button().disabled).toBe(true);
+    }
+    fill(label, '24');
+  }
+  expect(button().disabled).toBe(false);
+  expect(mocks.apiRequest).not.toHaveBeenCalled();
 });
 it('blocks past/empty schedules and requires an existing current policy', () => {
   view();

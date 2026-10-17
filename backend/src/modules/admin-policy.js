@@ -166,6 +166,11 @@ export async function activatePolicy(admin, input) {
           {
             ...(!previous ? { _id: INITIAL_POLICY_ID } : {}),
             ...inherited,
+            ...Object.fromEntries(
+              ['orderExpiryHours', 'claimExpiryHours']
+                .filter((field) => input[field] !== undefined)
+                .map((field) => [field, input[field]]),
+            ),
             ...(input.authorSharePercent !== undefined
               ? {
                   authorSharePercent: input.authorSharePercent,

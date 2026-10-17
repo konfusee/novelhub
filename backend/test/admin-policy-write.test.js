@@ -280,7 +280,7 @@ it('changes default revenue/threshold while preserving individual agreements and
   });
   expect(JSON.stringify(await RevenueAllocation.findById(allocation._id).lean())).toBe(original);
 });
-it('rejects invalid finance policy values and forbids direct platform-share and expiry overrides', async () => {
+it('rejects invalid finance policy values and forbids direct platform-share overrides', async () => {
   const admin = await authenticatedAccount('admin');
   for (const patch of [
     { authorSharePercent: -1 },
@@ -290,8 +290,8 @@ it('rejects invalid finance policy values and forbids direct platform-share and 
     { withdrawalThresholdCoins: 1.5 },
     { withdrawalThresholdCoins: Number.MAX_SAFE_INTEGER + 1 },
     { platformSharePercent: 30 },
-    { orderExpiryHours: 12 },
-    { claimExpiryHours: 12 },
+    { orderExpiryHours: -1 },
+    { claimExpiryHours: 1.5 },
   ]) {
     expect((await post(admin, { ...input, ...patch })).status).toBe(400);
   }

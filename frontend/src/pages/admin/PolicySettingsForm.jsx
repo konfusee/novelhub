@@ -10,6 +10,8 @@ const fields = [
   'durationMaxDays',
   'authorSharePercent',
   'withdrawalThresholdCoins',
+  'orderExpiryHours',
+  'claimExpiryHours',
 ];
 const initialValue = (policy, field) =>
   String(
@@ -18,7 +20,9 @@ const initialValue = (policy, field) =>
         ? 70
         : !policy && field === 'withdrawalThresholdCoins'
           ? 100000
-          : ''),
+          : !policy && ['orderExpiryHours', 'claimExpiryHours'].includes(field)
+            ? 24
+            : ''),
   );
 // Read the clock only for initialization and user actions, never while rendering.
 const actionTime = () => Date.now();
@@ -136,6 +140,7 @@ export function PolicySettingsForm({ policy, onSaved, onBusy }) {
         })}
       </p>
       <p className="mt-2 text-caption text-muted">{t('policy.financeScope')}</p>
+      <p className="mt-2 text-caption text-muted">{t('policy.expiryScope')}</p>
       <fieldset disabled={busy || failed} className="mt-5">
         <label className="flex items-start gap-3 text-sm font-semibold">
           <input
