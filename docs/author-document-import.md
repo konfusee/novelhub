@@ -54,6 +54,12 @@ Khối mã (fenced hoặc thụt lề), danh sách và bảng được kết th�
 
 22 kiểm thử parser và 10 kiểm thử API nhập đạt; kiểm thử tích hợp tải Markdown thật qua preview, lưu hai chương vào MongoDB tạm rồi đọc lại qua API editor để đối chiếu nội dung. Lint và Prettier của các file sửa đạt. Đây là kiểm chứng parser/API, không phải nghiệm thu toàn bộ UC hay kiểm tra browser mới.
 
+### Hủy nhập và giải phóng lượt phân tích ngày 18/10/2026
+
+Buffer nguồn được xóa cả khi yêu cầu đã hủy trước khi tạo worker hoặc bị từ chối do đủ hai lượt phân tích. Kiểm thử xác nhận hủy hai worker trả lại đủ hai lượt cho yêu cầu tiếp theo, đồng thời xóa buffer của cả yêu cầu đang chạy và yêu cầu bị từ chối. Không thay giới hạn đồng thời, thời gian chờ, API hay schema.
+
+35 kiểm thử parser/API nhập đạt; lint và Prettier của các file sửa đạt. Đây là bổ sung xử lý vòng đời parser, không thay UI hoặc triển khai media/AI.
+
 ## Kiểm chứng ngày 16/10/2026
 
 - Kiểm thử parser dùng PDF/DOCX tự tạo, TXT/UTF-16/MD; từ chối tệp hỏng, sai mã hóa, PDF không có text, Markdown HTML/ảnh, quá dài, hủy và timeout.

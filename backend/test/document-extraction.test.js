@@ -107,4 +107,37 @@ describe('real document extraction', () => {
     await expect(pending).rejects.toMatchObject({ code: 'import_cancelled' });
     expect(buffer.every((byte) => byte === 0)).toBe(true);
   });
+  it('clears an already cancelled input without consuming a parser slot', async () => {
+    const controller = new AbortController();
+    controller.abort();
+    const buffer = Buffer.from('Bản thảo đã hủy.');
+    await expect(
+      extractDocument(buffer, 'txt', { signal: controller.signal }),
+    ).rejects.toMatchObject({ code: 'import_cancelled' });
+    expect(buffer.every((byte) => byte === 0)).toBe(true);
+    expect((await extractDocument(Buffer.from('Lần nhập mới.'), 'txt')).text).toBe('Lần nhập mới.');
+  });
+  it('clears rejected busy input and releases both slots after cancellation', async () => {
+    const controllers = [new AbortController(), new AbortController()];
+    const buffers = [Buffer.from('Bản thảo thứ nhất.'), Buffer.from('Bản thảo thứ hai.')];
+    const pending = Promise.allSettled(
+      buffers.map((buffer, index) =>
+        extractDocument(buffer, 'txt', { signal: controllers[index].signal }),
+      ),
+    );
+    try {
+      const busy = Buffer.from('Bản thảo đang chờ.');
+      await expect(extractDocument(busy, 'txt')).rejects.toMatchObject({ code: 'import_busy' });
+      expect(busy.every((byte) => byte === 0)).toBe(true);
+    } finally {
+      controllers.forEach((controller) => controller.abort());
+      await pending;
+    }
+    expect(buffers.every((buffer) => buffer.every((byte) => byte === 0))).toBe(true);
+    const next = await Promise.all([
+      extractDocument(Buffer.from('Lần nhập mới một.'), 'txt'),
+      extractDocument(Buffer.from('Lần nhập mới hai.'), 'txt'),
+    ]);
+    expect(next.map((result) => result.text)).toEqual(['Lần nhập mới một.', 'Lần nhập mới hai.']);
+  });
 });
