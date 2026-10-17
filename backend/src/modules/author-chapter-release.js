@@ -39,7 +39,14 @@ const approved = (snapshot) =>
     snapshot.rights.status === 'asserted',
   );
 
-async function releaseState(account, storyId, chapterId, session, config) {
+export async function chapterReleaseState(
+  account,
+  storyId,
+  chapterId,
+  session,
+  config,
+  scheduled = false,
+) {
   const story = await ownStory(account, storyId, session);
   const chapter = await Chapter.findOne({ _id: chapterId, storyId: story._id }).session(
     session ?? null,
@@ -108,7 +115,7 @@ async function releaseState(account, storyId, chapterId, session, config) {
       code: 'editable',
       ok:
         !story.authoringFrozen &&
-        ['approved', 'published'].includes(chapter.status) &&
+        (scheduled ? ['scheduled', 'due'] : ['approved', 'published']).includes(chapter.status) &&
         String(chapter.publishedRevisionId) !== String(revisionId),
     },
   ];
@@ -116,7 +123,7 @@ async function releaseState(account, storyId, chapterId, session, config) {
 }
 
 export async function prepareChapterRelease(account, storyId, chapterId, config) {
-  const { story, chapter, snapshot, checks } = await releaseState(
+  const { story, chapter, snapshot, checks } = await chapterReleaseState(
     account,
     storyId,
     chapterId,
@@ -139,15 +146,27 @@ export async function prepareChapterRelease(account, storyId, chapterId, config)
 }
 
 export async function publishChapter(account, storyId, chapterId, input, config) {
+  return commitChapterRelease(account, storyId, chapterId, input, config);
+}
+
+// The scheduler is an internal caller; HTTP input cannot enable this mode.
+export async function publishScheduledChapter(account, storyId, chapterId, input, config, now) {
+  return commitChapterRelease(account, storyId, chapterId, input, config, now);
+}
+
+async function commitChapterRelease(account, storyId, chapterId, input, config, scheduledAt) {
   return withTransaction(async (session) => {
     await lockAuthor(account, session);
-    const { story, chapter, snapshot, parent, checks } = await releaseState(
+    const { story, chapter, snapshot, parent, checks } = await chapterReleaseState(
       account,
       storyId,
       chapterId,
       session,
       config,
+      Boolean(scheduledAt),
     );
+    if (scheduledAt && (!chapter.requestedReleaseAt || chapter.requestedReleaseAt > scheduledAt))
+      throw new HttpError(409, 'release_not_due', 'Chương chưa đến lịch phát hành.');
     if (
       !snapshot ||
       String(snapshot.revision._id) !== input.revisionId ||
@@ -209,7 +228,7 @@ export async function publishChapter(account, storyId, chapterId, input, config)
           throw new HttpError(409, 'stale_content', 'Quyết định duyệt hoặc quyền đã thay đổi.');
       }
     }
-    const now = new Date();
+    const now = scheduledAt ?? new Date();
     if (snapshot.revision.formatVersion === 'blocks-v3') {
       const images = await pinChapterImages(config, account, story._id, snapshot.document, session);
       if (
@@ -240,7 +259,7 @@ export async function publishChapter(account, storyId, chapterId, input, config)
     await AuditEvent.create(
       [
         {
-          actorType: 'account',
+          actorType: scheduledAt ? 'system' : 'account',
           actorId: account._id,
           action: 'chapter.published',
           targetType: 'Chapter',

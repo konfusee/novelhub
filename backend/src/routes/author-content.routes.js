@@ -27,6 +27,7 @@ import { pinChapterImages } from '../modules/author-chapter-media.js';
 import { changeDraftLifecycle } from '../modules/author-story-lifecycle.js';
 import { prepareStoryRelease, publishStory } from '../modules/author-story-release.js';
 import { prepareChapterRelease, publishChapter } from '../modules/author-chapter-release.js';
+import { changeChapterSchedule } from '../modules/chapter-scheduler.js';
 import { reorderDraftChapters } from '../modules/author-chapter-order.js';
 import { changeChapterDraftLifecycle } from '../modules/author-chapter-lifecycle.js';
 
@@ -81,6 +82,33 @@ export function createAuthorContentRouter(config) {
     },
   );
   router.use('/author/stories', requireAuth(config), requireRole('author'));
+  router.put('/author/stories/:storyId/chapters/:chapterId/schedule', async (req, res, next) => {
+    try {
+      const input = parse(
+        z
+          .object({
+            revisionId: objectId,
+            submissionId: objectId,
+            expectedVersion: z.number().int().min(0),
+            expectedStoryVersion: z.number().int().min(0),
+            requestedReleaseAt: z.iso.datetime({ offset: true }).nullable(),
+          })
+          .strict(),
+        req.body,
+      );
+      res.set('Cache-Control', 'private, no-store').json({
+        chapter: await changeChapterSchedule(
+          req.account,
+          parse(objectId, req.params.storyId),
+          parse(objectId, req.params.chapterId),
+          input,
+          config,
+        ),
+      });
+    } catch (error) {
+      next(error);
+    }
+  });
   router.get(
     '/author/payouts',
     requireAuth(config),

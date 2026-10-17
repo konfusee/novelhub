@@ -22,6 +22,7 @@ import {
 import { authenticatedAccount } from './fixtures/accounts.js';
 import { testConfig } from './config.js';
 import { useTestDatabase } from './db.js';
+import { releaseDueChapters } from '../src/modules/chapter-scheduler.js';
 useTestDatabase();
 let root, app, png;
 const origin = 'http://localhost:5173';
@@ -458,3 +459,34 @@ it('creates a private illustrated correction after unpublishing and requires a n
   ).toBe(201);
   expect((await request(app).get(f.imageUrl)).status).toBe(404);
 });
+it.each([false, true])(
+  'rechecks the frozen image bytes at scheduled release (tampered=%s)',
+  async (tampered) => {
+    const f = await fixture();
+    const releaseAt = new Date(Date.now() + 60000);
+    expect(
+      (
+        await request(app)
+          .put(f.endpoint.replace(/release$/, 'schedule'))
+          .set('Cookie', f.cookie)
+          .set('Origin', origin)
+          .send({ ...f.body, requestedReleaseAt: releaseAt.toISOString() })
+      ).status,
+    ).toBe(200);
+    if (tampered) {
+      const asset = await MediaAsset.findById(f.asset.id).select('+objectKey');
+      await writeFile(path.join(root, asset.objectKey), Buffer.from('changed image bytes'));
+    }
+    const result = await releaseDueChapters(
+      testConfig({
+        cookieName: 'novelhub_session',
+        corsOrigin: origin,
+        mediaStorageDir: root,
+      }),
+      { now: releaseAt },
+    );
+    expect(result.published).toBe(tampered ? 0 : 1);
+    expect((await request(app).get(f.imageUrl)).status).toBe(tampered ? 404 : 200);
+    expect((await Chapter.findById(f.chapterId)).status).toBe(tampered ? 'due' : 'published');
+  },
+);

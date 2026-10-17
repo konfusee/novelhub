@@ -5,6 +5,7 @@ import { createLogger } from './config/logger.js';
 import { createSmtpEmailDelivery } from './email/delivery.js';
 import { connectDatabase, disconnectDatabase } from './db/connection.js';
 import './models/index.js';
+import { startChapterScheduler } from './modules/chapter-scheduler.js';
 
 loadDotenv();
 const env = loadEnv();
@@ -29,17 +30,20 @@ await connectDatabase(env.MONGODB_URI, {
 });
 logger.info('connected to MongoDB');
 
-const server = createApp({
+const config = {
   logger,
   emailDelivery,
   ...toAppConfig(env),
-}).listen(env.PORT, () => {
+};
+const stopScheduler = startChapterScheduler(config, logger);
+const server = createApp(config).listen(env.PORT, () => {
   logger.info(`NovelHub API listening on port ${env.PORT}`);
 });
 
 async function shutdown(signal) {
   logger.info(`${signal} received, shutting down`);
   server.close();
+  await stopScheduler();
   await disconnectDatabase();
   process.exit(0);
 }
