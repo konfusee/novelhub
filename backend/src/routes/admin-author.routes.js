@@ -1,3 +1,4 @@
+import { authorAgreement } from '../modules/author-agreement.js';
 import { Router } from 'express';
 import { z } from 'zod';
 import { requireAuth, requireRole } from '../middleware/auth.js';
@@ -66,6 +67,17 @@ export function createAdminAuthorRouter(config) {
     }
   });
   router.use('/admin/authors', requireAuth(config), requireRole('admin'));
+  router.get('/admin/authors/:accountId/agreement', async (req, res, next) => {
+    try {
+      if (!/^[a-f\d]{24}$/i.test(req.params.accountId))
+        throw new HttpError(400, 'validation_error', 'Mã tài khoản không hợp lệ.');
+      res
+        .set('Cache-Control', 'private, no-store')
+        .json(await authorAgreement(req.params.accountId));
+    } catch (error) {
+      next(error);
+    }
+  });
   router.get('/admin/authors', async (req, res, next) => {
     try {
       const parsed = z

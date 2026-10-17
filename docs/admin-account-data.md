@@ -13,3 +13,5 @@ No backend model/schema or shared UI primitive was changed. No accounts, money o
 Tests: `backend/test/admin-users.test.js` covers Admin access, strict filters, aggregate totals, literal search, distinct pages, sorting, wallet separation, actual story/audit detail and anonymized/private-field redaction. Frontend tests cover live values, server requests, actual inspector content, errors without mock fallback, disabled unsupported actions and directory-refresh notification after Author revocation. Other Admin pages and remaining domain mock datasets are outside this increment.
 
 Validation for this increment: 6 backend and 14 related frontend tests passed; lint, targeted formatting, Vietnamese content validation (1,489 keys), icon checks and production build passed. Main API/frontend readiness endpoints returned HTTP 200 after disposable test cleanup.
+
+Follow-up: the account-specific agreement page now reads real current rates and bounded history through the Admin agreement API; active Authors have an inspector link again. See `author-revenue-agreement.md`. Agreement editing remains unsupported and the page no longer offers simulated localStorage saves.

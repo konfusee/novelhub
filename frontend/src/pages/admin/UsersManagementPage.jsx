@@ -1,3 +1,4 @@
+import { ROUTES } from '../../app/routes';
 import { useRef, useState } from 'react';
 import {
   AlertTriangle,
@@ -22,6 +23,7 @@ import {
   Avatar,
   Badge,
   Button,
+  ButtonLink,
   Card,
   EmptyState,
   IconButton,
@@ -363,6 +365,11 @@ function UserInspector({ user, titleRef, onClose }) {
             <X size={16} />
           </IconButton>
         </div>
+        {user.roles.includes('author') && (
+          <ButtonLink to={ROUTES.adminUser(user.id)} variant="secondary" size="sm" className="mt-4">
+            {t('agreement.title')}
+          </ButtonLink>
+        )}
         <div className="mt-5 grid gap-2 sm:grid-cols-2">
           {['editRole', 'adjust', 'warn', 'suspend'].map((action) => (
             <Button

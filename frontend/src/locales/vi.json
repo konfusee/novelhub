@@ -1677,5 +1677,31 @@
     "draftOnly": "Gỡ ảnh chỉ thay đổi bản nháp đang soạn. Ảnh và lịch sử cũ vẫn được giữ trong tài khoản.",
     "number": "Ảnh {{number}}",
     "remove": "Gỡ ảnh {{number}} khỏi bản nháp"
+  },
+  "agreement": {
+    "back": "Người dùng và tài khoản",
+    "platform": "Tỷ lệ của NovelHub (%)",
+    "noFallback": "Không hiển thị tài khoản hoặc tỷ lệ mẫu. Hãy kiểm tra quyền truy cập và thử lại.",
+    "title": "Thỏa thuận doanh thu",
+    "author": "Tỷ lệ của tác giả (%)",
+    "source": {
+      "policy": "Theo chính sách đang hiệu lực",
+      "agreement": "Thỏa thuận đang hiệu lực",
+      "default": "Mặc định 70/30"
+    },
+    "history": "Lịch sử thỏa thuận",
+    "recorded": "Đã đến ngày hiệu lực",
+    "reload": "Tải lại từ máy chủ",
+    "readOnly": "Dữ liệu từ máy chủ. Chức năng điều chỉnh thỏa thuận chưa được hỗ trợ.",
+    "total": "Tổng: 100%. Không thay đổi các khoản doanh thu đã ghi nhận.",
+    "historyHint": "Tối đa 20 bản ghi mới nhất. Tỷ lệ có ngày hiệu lực trong tương lai chưa áp dụng.",
+    "noHistory": "Chưa có thỏa thuận riêng. Tỷ lệ hiển thị theo chính sách hoặc mặc định.",
+    "retry": "Thử lại",
+    "missing": "Không tìm thấy tác giả",
+    "scheduled": "Chưa đến ngày hiệu lực",
+    "loading": "Đang tải thỏa thuận doanh thu…",
+    "breadcrumb": "Tài chính / Cài đặt thỏa thuận",
+    "split": "Tỷ lệ chia doanh thu",
+    "error": "Không tải được thỏa thuận doanh thu"
   }
 }

@@ -1,3 +1,4 @@
+import { MemoryRouter } from 'react-router';
 import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { afterEach, expect, it, vi } from 'vitest';
 import { LocaleProvider } from '../../../src/context/LocaleContext';
@@ -32,7 +33,9 @@ const feed = {
 function view() {
   render(
     <LocaleProvider>
-      <UsersManagementPage />
+      <MemoryRouter>
+        <UsersManagementPage />
+      </MemoryRouter>
     </LocaleProvider>,
   );
 }
