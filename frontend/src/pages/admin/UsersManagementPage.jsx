@@ -20,6 +20,7 @@ import { ROUTES } from '../../app/routes';
 import { adminUsers } from '../../data/mock/admin';
 import { useMockResource } from '../../context/MockDataContext';
 import { AuthorApplications } from '../../components/admin/AuthorApplications';
+import { AuthorRoleManagement } from '../../components/admin/AuthorRoleManagement';
 import {
   Avatar,
   Badge,
@@ -146,6 +147,7 @@ export function UsersManagementPage() {
         </header>
 
         <AuthorApplications />
+        <AuthorRoleManagement />
         <Card className="mt-6 p-4 sm:p-5">
           <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-[minmax(0,2fr)_minmax(0,1fr)_minmax(0,1fr)]">
             <Input

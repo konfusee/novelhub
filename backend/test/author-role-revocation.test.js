@@ -347,3 +347,43 @@ it('preserves deleted draft tombstones rather than resurfacing them as cancelled
   expect((await write(f.admin.cookie, f.url, f.revoke)).status).toBe(200);
   expect(await Chapter.findById(deleted._id).lean()).toEqual(before);
 });
+it('lists only current author accounts, supports literal search and pagination, and rejects non-admin access', async () => {
+  const f = await revocationFixture();
+  const url = '/api/admin/authors?page=1&pageSize=1&query=';
+  const response = await get(f.admin.cookie, url);
+  expect(response.status).toBe(200);
+  expect(response.headers['cache-control']).toBe('private, no-store');
+  expect(response.body.total).toBe(1);
+  expect(response.body.items[0].accountId).toBe(String(f.author.account._id));
+  expect(response.body.items[0]).not.toHaveProperty('password');
+  expect((await get(f.admin.cookie, '/api/admin/authors?query=.*')).body.total).toBe(0);
+  expect((await get(f.admin.cookie, '/api/admin/authors?pageSize=999')).status).toBe(400);
+  expect((await get(f.cookie, url)).status).toBe(403);
+  expect((await request(app).get(url)).status).toBe(401);
+  expect((await write(f.admin.cookie, f.url, f.revoke)).status).toBe(200);
+  expect((await get(f.admin.cookie, url)).body.total).toBe(0);
+});
+it('paginates distinct author accounts and escapes all search metacharacters literally', async () => {
+  const admin = await authenticatedAccount('admin');
+  const first = await authenticatedAccount('author', { displayName: 'Tác giả .* [A]' });
+  const second = await authenticatedAccount('author', {
+    displayName: 'Tác giả khác',
+    status: 'suspended',
+  });
+  await authenticatedAccount('author', { status: 'anonymized' });
+  const a = (await get(admin.cookie, '/api/admin/authors?page=1&pageSize=1')).body;
+  const b = (await get(admin.cookie, '/api/admin/authors?page=2&pageSize=1')).body;
+  expect(a.total).toBe(2);
+  expect(b.total).toBe(2);
+  expect(new Set([...a.items, ...b.items].map((item) => item.accountId))).toEqual(
+    new Set([String(first.account._id), String(second.account._id)]),
+  );
+  const literal = await get(
+    admin.cookie,
+    `/api/admin/authors?query=${encodeURIComponent('.* [A]')}`,
+  );
+  expect(literal.status).toBe(200);
+  expect(literal.body.total).toBe(1);
+  expect(literal.body.items[0].accountId).toBe(String(first.account._id));
+  expect((await get(admin.cookie, '/api/admin/authors?query=%5B')).status).toBe(200);
+});

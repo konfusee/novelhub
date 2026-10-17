@@ -11,6 +11,47 @@ import {
 } from '../../models/index.js';
 import { digest } from '../submission-digests.js';
 
+export async function listActiveAuthors({ page, pageSize, query }) {
+  const literal = query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const [result] = await RoleAssignment.aggregate([
+    { $match: { role: 'author', status: 'active' } },
+    { $lookup: { from: 'accounts', localField: 'accountId', foreignField: '_id', as: 'account' } },
+    { $unwind: '$account' },
+    {
+      $match: {
+        'account.status': { $in: ['active', 'suspended'] },
+        ...(query
+          ? {
+              $or: [
+                { 'account.displayName': { $regex: literal, $options: 'i' } },
+                { 'account.email': { $regex: literal, $options: 'i' } },
+              ],
+            }
+          : {}),
+      },
+    },
+    { $sort: { grantedAt: -1, _id: -1 } },
+    {
+      $facet: {
+        items: [
+          { $skip: (page - 1) * pageSize },
+          { $limit: pageSize },
+          {
+            $project: {
+              _id: 0,
+              accountId: { $toString: '$account._id' },
+              displayName: '$account.displayName',
+              status: '$account.status',
+            },
+          },
+        ],
+        total: [{ $count: 'count' }],
+      },
+    },
+  ]);
+  return { items: result.items, total: result.total[0]?.count ?? 0, page, pageSize };
+}
+
 export async function authorRoleView(accountId) {
   const account = await Account.findById(accountId).select('displayName status version').lean();
   if (!account) throw new HttpError(404, 'not_found', 'Không tìm thấy tài khoản.');

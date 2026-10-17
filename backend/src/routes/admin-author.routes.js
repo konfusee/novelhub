@@ -2,7 +2,11 @@ import { Router } from 'express';
 import { z } from 'zod';
 import { requireAuth, requireRole } from '../middleware/auth.js';
 import { HttpError } from '../middleware/errors.js';
-import { authorRoleView, revokeAuthorRole } from '../modules/author-access/revocation.js';
+import {
+  authorRoleView,
+  revokeAuthorRole,
+  listActiveAuthors,
+} from '../modules/author-access/revocation.js';
 import {
   decideApplication,
   getApplication,
@@ -27,6 +31,23 @@ const decisionSchema = z
 export function createAdminAuthorRouter(config) {
   const router = Router();
   router.use('/admin/authors', requireAuth(config), requireRole('admin'));
+  router.get('/admin/authors', async (req, res, next) => {
+    try {
+      const parsed = z
+        .object({
+          page: z.coerce.number().int().min(1).max(100000).default(1),
+          pageSize: z.coerce.number().int().min(1).max(50).default(10),
+          query: z.string().trim().max(100).default(''),
+        })
+        .strict()
+        .safeParse(req.query);
+      if (!parsed.success)
+        throw new HttpError(400, 'validation_error', 'Bộ lọc tác giả không hợp lệ.');
+      res.set('Cache-Control', 'private, no-store').json(await listActiveAuthors(parsed.data));
+    } catch (error) {
+      next(error);
+    }
+  });
   router.get('/admin/authors/:accountId/role', async (req, res, next) => {
     try {
       if (!/^[a-f\d]{24}$/i.test(req.params.accountId))
