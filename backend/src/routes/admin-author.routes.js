@@ -1,4 +1,4 @@
-import { authorAgreement } from '../modules/author-agreement.js';
+import { authorAgreement, saveAuthorAgreement } from '../modules/author-agreement.js';
 import { Router } from 'express';
 import { z } from 'zod';
 import { requireAuth, requireRole } from '../middleware/auth.js';
@@ -67,6 +67,34 @@ export function createAdminAuthorRouter(config) {
     }
   });
   router.use('/admin/authors', requireAuth(config), requireRole('admin'));
+  router.post('/admin/authors/:accountId/agreement', async (req, res, next) => {
+    try {
+      const parsed = z
+        .object({
+          percentage: z.number().int().min(0).max(100),
+          reason: z.string().trim().min(1).max(1000),
+          expectedAccountVersion: z.number().int().min(0),
+          expectedLatestRateId: z
+            .string()
+            .regex(/^[a-f\d]{24}$/i)
+            .nullable(),
+        })
+        .strict()
+        .safeParse(req.body);
+      if (!parsed.success || !/^[a-f\d]{24}$/i.test(req.params.accountId))
+        throw new HttpError(
+          400,
+          'validation_error',
+          'Cần tỷ lệ, lý do và phiên bản thỏa thuận hợp lệ.',
+        );
+      res
+        .status(201)
+        .set('Cache-Control', 'private, no-store')
+        .json(await saveAuthorAgreement(req.account, req.params.accountId, parsed.data));
+    } catch (error) {
+      next(error);
+    }
+  });
   router.get('/admin/authors/:accountId/agreement', async (req, res, next) => {
     try {
       if (!/^[a-f\d]{24}$/i.test(req.params.accountId))

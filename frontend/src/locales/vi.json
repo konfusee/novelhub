@@ -1692,7 +1692,7 @@
     "history": "Lịch sử thỏa thuận",
     "recorded": "Đã đến ngày hiệu lực",
     "reload": "Tải lại từ máy chủ",
-    "readOnly": "Dữ liệu từ máy chủ. Chức năng điều chỉnh thỏa thuận chưa được hỗ trợ.",
+    "readOnly": "Dữ liệu từ máy chủ. Chỉ có thể điều chỉnh khi tài khoản còn quyền tác giả.",
     "total": "Tổng: 100%. Không thay đổi các khoản doanh thu đã ghi nhận.",
     "historyHint": "Tối đa 20 bản ghi mới nhất. Tỷ lệ có ngày hiệu lực trong tương lai chưa áp dụng.",
     "noHistory": "Chưa có thỏa thuận riêng. Tỷ lệ hiển thị theo chính sách hoặc mặc định.",
@@ -1702,6 +1702,16 @@
     "loading": "Đang tải thỏa thuận doanh thu…",
     "breadcrumb": "Tài chính / Cài đặt thỏa thuận",
     "split": "Tỷ lệ chia doanh thu",
-    "error": "Không tải được thỏa thuận doanh thu"
+    "error": "Không tải được thỏa thuận doanh thu",
+    "editHint": "Tạo thỏa thuận mới có hiệu lực ngay khi máy chủ ghi nhận. Bản ghi cũ được giữ nguyên.",
+    "invalid": "Tỷ lệ tác giả phải là số nguyên từ 0 đến 100.",
+    "reason": "Lý do điều chỉnh (bắt buộc)",
+    "futureHint": "Thỏa thuận mới không hủy các tỷ lệ đã có ngày hiệu lực trong tương lai. Hãy kiểm tra lịch sử trước khi lưu.",
+    "failed": "Chưa xác nhận được kết quả lưu thỏa thuận.",
+    "reloadRequired": "Tải lại dữ liệu trước khi thử lưu tiếp.",
+    "saved": "Máy chủ đã ghi nhận thỏa thuận mới: tác giả {{percentage}}%.",
+    "save": "Lưu thỏa thuận",
+    "saving": "Đang lưu…",
+    "discard": "Hoàn tác"
   }
 }
