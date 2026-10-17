@@ -17,8 +17,8 @@ export function suggestDocumentChapters(
   { format, headings: markdownHeadings } = {},
 ) {
   if (format === 'md' && Array.isArray(markdownHeadings) && markdownHeadings.length) {
-    const result = outlinedChapters(text, preambleTitle, markdownHeadings);
-    if (result) return result;
+    // An ambiguous or edited outline must not fall through to unrelated numbered lines.
+    return outlinedChapters(text, preambleTitle, markdownHeadings);
   }
   if (
     format === 'md' &&

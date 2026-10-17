@@ -2,6 +2,24 @@ import { expect, it } from 'vitest';
 import { suggestDocumentChapters } from '../../../src/pages/author/documentChapters';
 
 const suggest = (text) => suggestDocumentChapters(text, 'Phần mở đầu', { format: 'md' });
+it.each([
+  [
+    { level: 2, title: 'Chương 1' },
+    { level: 2, title: 'Tên đã đổi' },
+  ],
+  [
+    { level: 2, title: 'Chương 1' },
+    { level: 2, title: 'Chương 1' },
+  ],
+  [
+    { level: 0, title: 'Chương 1' },
+    { level: 2, title: 'Chương 2' },
+  ],
+])('does not fall back to numbered lines when an extracted outline is ambiguous', (...headings) => {
+  const text = 'Chương 1\nNội dung đầu.\nChương 2\nNội dung sau.';
+  expect(suggestDocumentChapters(text, 'Phần mở đầu', { format: 'md', headings })).toBeNull();
+  expect(suggestDocumentChapters(text, 'Phần mở đầu', { format: 'txt' })).toHaveLength(2);
+});
 it('uses root heading metadata against current plain text edits without treating code titles as chapters', () => {
   const text = 'Sách\n\nLời tựa.\n\nMột\n\nVăn bản đã sửa.\n## Mã giả\n\nHai\n\nKết thúc.';
   const headings = [
