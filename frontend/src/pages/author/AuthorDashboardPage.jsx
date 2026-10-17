@@ -2,7 +2,6 @@ import { useState } from 'react';
 import {
   AlertTriangle,
   ArrowRight,
-  Bot,
   BookOpen,
   Coins,
   Edit3,
@@ -14,7 +13,6 @@ import {
   Plus,
   RefreshCw,
   Send,
-  Sparkles,
   Star,
   Target,
   UsersRound,
@@ -432,30 +430,7 @@ export function AuthorDashboardPage() {
             </Reveal>
           </div>
 
-          <aside className="min-w-0 space-y-6" aria-label="Trợ lý và phản hồi">
-            <Card className="border-purple/40">
-              <div className="flex flex-wrap items-center justify-between gap-2">
-                <h2 className="flex items-center gap-2 text-h3">
-                  <span className="grid size-9 place-items-center rounded-xl bg-purple/12 text-purple-strong">
-                    <Bot size={18} />
-                  </span>
-                  Trợ lý sáng tác AI
-                </h2>
-                <Badge tone="purple">{t('authorData.noAi')}</Badge>
-              </div>
-              <p className="mt-3 text-caption text-muted">{t('authorData.noAiAnalysis')}</p>
-              <div className="mt-4 space-y-3">
-                <Insight title="Cảnh báo nhịp độ chương">{t('authorData.noAiAnalysis')}</Insight>
-                <Insight title="Kiểm tra tính nhất quán thế giới truyện">
-                  {t('authorData.noAiAnalysis')}
-                </Insight>
-              </div>
-              <Button disabled variant="tertiary" className="mt-5 w-full">
-                <Sparkles size={16} aria-hidden="true" />
-                {t('authorData.noAi')}
-              </Button>
-            </Card>
-
+          <aside className="min-w-0 space-y-6" aria-label="Phản hồi độc giả">
             <Card>
               <div className="flex items-center justify-between gap-2">
                 <h2 className="text-h3">Phản hồi của độc giả</h2>
@@ -703,14 +678,5 @@ function SkeletonLine({ box = 'h-5', className }) {
     <span className={`flex items-center ${box}`}>
       <Skeleton className={className} />
     </span>
-  );
-}
-
-function Insight({ title, children }) {
-  return (
-    <div className="rounded-2xl bg-purple/10 p-4 ring-1 ring-inset ring-purple/20">
-      <strong className="text-sm">{title}</strong>
-      <p className="mt-1.5 text-xs leading-5 text-ink/70">{children}</p>
-    </div>
   );
 }

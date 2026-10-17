@@ -29,6 +29,7 @@ it('creates a real private draft with the chosen category ID and links the confi
     options?.method === 'POST' ? { story: { id: 'created-real' } } : categories,
   );
   view();
+  expect(screen.queryByRole('button', { name: 'Gợi ý trau chuốt bằng AI' })).toBeNull();
   expect(screen.getByRole('textbox', { name: /Tên truyện/ }).value).toBe('');
   fireEvent.change(screen.getByRole('textbox', { name: /Tên truyện/ }), {
     target: { value: 'Truyện mới của tôi' },

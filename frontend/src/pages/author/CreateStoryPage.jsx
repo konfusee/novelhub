@@ -12,7 +12,6 @@ import {
   Plus,
   RefreshCw,
   Save,
-  Sparkles,
   Tags,
   Trash2,
   X,
@@ -299,17 +298,6 @@ export function CreateStoryPage() {
                       />
                       <div className="flex flex-wrap items-center gap-2 border-t border-hairline px-3 py-2">
                         <span className="text-xs text-muted">Tối thiểu {MIN_SYNOPSIS} ký tự</span>
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="sm"
-                          disabled
-                          title={t('authorData.noAi')}
-                          className="ml-auto text-purple-strong"
-                        >
-                          <Sparkles size={14} aria-hidden="true" />
-                          Gợi ý trau chuốt bằng AI
-                        </Button>
                       </div>
                     </div>
                   </Field>

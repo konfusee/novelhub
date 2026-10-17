@@ -100,11 +100,6 @@ const ImportPdfPage = lazy(() =>
 const MediaLibraryPage = lazy(() =>
   import('./pages/author/MediaLibraryPage').then((m) => ({ default: m.MediaLibraryPage })),
 );
-const AiWritingAssistantPage = lazy(() =>
-  import('./pages/author/AiWritingAssistantPage').then((m) => ({
-    default: m.AiWritingAssistantPage,
-  })),
-);
 const SubmissionReviewPage = lazy(() =>
   import('./pages/author/SubmissionReviewPage').then((m) => ({ default: m.SubmissionReviewPage })),
 );
@@ -198,7 +193,6 @@ const pages = [
   DraftsPage,
   ImportPdfPage,
   MediaLibraryPage,
-  AiWritingAssistantPage,
   SubmissionReviewPage,
   AuthorAnalyticsPage,
   ModeratorOverviewPage,
@@ -377,7 +371,10 @@ function AppRoutes() {
           />
           <Route path="/author/import" element={role('author', <ImportPdfPage />, true)} />
           <Route path="/author/media" element={role('author', <MediaLibraryPage />, true)} />
-          <Route path="/author/ai" element={role('author', <AiWritingAssistantPage />, true)} />
+          <Route
+            path="/author/ai"
+            element={role('author', <Navigate to="/author" replace />, true)}
+          />
           <Route
             path="/author/submissions"
             element={role('author', <SubmissionReviewPage />, true)}

@@ -7,16 +7,13 @@ import {
   Bold,
   BookOpen,
   Check,
-  CheckCircle2,
   ChevronDown,
   ChevronRight,
   Eye,
   Heading2,
   Heading3,
   Image,
-  Info,
   Italic,
-  ListTree,
   MessageSquare,
   PanelLeft,
   PanelRight,
@@ -26,7 +23,6 @@ import {
   RefreshCw,
   Save,
   Send,
-  Sparkles,
   Underline,
   X,
 } from '../../components/icons';
@@ -62,7 +58,6 @@ const emptyChapter = { chapter: null };
 const utilityTabs = [
   { value: 'outline', label: 'Dàn ý' },
   { value: 'notes', label: 'Ghi chú' },
-  { value: 'ai', label: 'Trợ lý AI' },
   { value: 'checklist', label: 'Danh sách kiểm tra' },
 ];
 
@@ -235,7 +230,7 @@ function ChapterEditor({ chapter }) {
   const [body, setBody] = useState(chapter.body);
   const [saved, setSaved] = useState(true);
   const [caret, setCaret] = useState(0);
-  const [utility, setUtility] = useState('ai');
+  const [utility, setUtility] = useState('outline');
   const [notes, setNotes] = useState('');
   const groups = chapter.groups;
   const [leftOpen, setLeftOpen] = useState(false);
@@ -869,7 +864,7 @@ function WriterUtilitySkeleton() {
     <div className="space-y-5 p-5">
       {/* The tab rail is chrome: render it inert so its wrapped rows keep their real height. */}
       <div inert>
-        <Tabs label="Tiện ích sáng tác" value="ai" onChange={() => {}} items={utilityTabs} />
+        <Tabs label="Tiện ích sáng tác" value="outline" onChange={() => {}} items={utilityTabs} />
       </div>
       <Card as="div" aria-hidden="true" className="bg-elevated p-4">
         <div className="flex flex-wrap items-center justify-between gap-2">
@@ -1015,47 +1010,6 @@ function WriterUtility({ tab, setTab, body, title, words, saved, notes, setNotes
   return (
     <div className="space-y-5 p-5">
       <Tabs label="Tiện ích sáng tác" value={tab} onChange={setTab} items={utilityTabs} />
-      {tab === 'ai' && (
-        <>
-          <Card className="bg-elevated p-4">
-            <div className="flex flex-wrap items-center justify-between gap-2">
-              <strong className="flex items-center gap-2 text-sm">
-                <ListTree size={16} aria-hidden="true" className="text-purple" />
-                Phân tích nhịp độ
-              </strong>
-              <Badge tone="neutral">{t('authorData.noAi')}</Badge>
-            </div>
-            <p className="mt-2 text-sm leading-6 text-ink/70">{t('authorData.noAiAnalysis')}</p>
-          </Card>
-          <Card className="border-purple/40 bg-purple/8 p-4">
-            <strong className="flex items-center gap-2 text-sm text-purple-strong">
-              <Sparkles size={16} aria-hidden="true" />
-              Chuyển đoạn tiếp theo theo ngữ cảnh
-            </strong>
-            <p className="mt-2 text-sm leading-6 text-ink/70">{t('authorData.noAiAnalysis')}</p>
-            <Button variant="tertiary" disabled className="mt-4 w-full">
-              <Sparkles size={16} aria-hidden="true" />
-              Gợi ý đoạn tiếp theo
-            </Button>
-          </Card>
-          <Card className="p-4">
-            <strong className="text-sm">Theo dõi tính nhất quán</strong>
-            <p className="mt-3 flex items-baseline justify-between gap-2 text-sm font-semibold">
-              {t('authorData.noAi')}
-            </p>
-            <ul className="mt-2 space-y-2 text-xs leading-5 text-muted">
-              <li className="flex gap-2">
-                <CheckCircle2 size={14} aria-hidden="true" className="mt-0.5 shrink-0 text-brand" />
-                {t('authorData.noAiAnalysis')}
-              </li>
-              <li className="flex gap-2">
-                <Info size={14} aria-hidden="true" className="mt-0.5 shrink-0 text-orange-strong" />
-                {t('authorData.noAiAnalysis')}
-              </li>
-            </ul>
-          </Card>
-        </>
-      )}
       {tab === 'outline' && <Outline body={body} />}
       {tab === 'notes' && (
         <div>

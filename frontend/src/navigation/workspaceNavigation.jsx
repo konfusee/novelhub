@@ -3,7 +3,6 @@ import {
   Bell,
   BookHeart,
   BookOpen,
-  Bot,
   Boxes,
   CircleDollarSign,
   CirclePlus,
@@ -83,7 +82,6 @@ export const workspaceNavigation = {
         ['navigation.chapterEditor', '/author/editor', PenLine],
         ['navigation.importPdf', '/author/import', FileText],
         ['navigation.mediaLibrary', '/author/media', Images],
-        ['navigation.aiAssistant', '/author/ai', Bot],
       ],
     },
     {

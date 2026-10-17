@@ -70,7 +70,7 @@ it('shows owner metrics/drafts and filters story state without mock goals, AI cl
   expect(screen.getByRole('link', { name: 'Viết tiếp' }).getAttribute('href')).toBe(
     '/author/stories/owned-story/chapters/draft-seven/edit',
   );
-  expect(screen.getByRole('button', { name: 'Chưa có kết quả AI' }).disabled).toBe(true);
+  expect(screen.queryByRole('heading', { name: 'Trợ lý sáng tác AI' })).toBeNull();
   expect(screen.queryByText('1.2M')).toBeNull();
   expect(screen.queryByText('Đang hoạt động 4.5')).toBeNull();
   fireEvent.click(screen.getByRole('button', { name: 'Bản nháp', exact: true }));
