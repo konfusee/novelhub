@@ -108,3 +108,40 @@ it('rejects malformed responses instead of presenting them as an empty history',
   await screen.findByRole('alert');
   expect(screen.queryByText('Chưa có phiên bản chính sách nào.')).toBeNull();
 });
+it('cancels through the confirmation dialog and refreshes the persisted cancellation reason', async () => {
+  let cancelled = false;
+  const policy = {
+    ...entry,
+    id: '111111111111111111111111',
+    current: false,
+    future: true,
+    version: 4,
+  };
+  mocks.apiRequest.mockImplementation((_path, options) => {
+    if (options.method === 'POST') {
+      cancelled = true;
+      return Promise.resolve({ policyId: policy.id, version: 5 });
+    }
+    return Promise.resolve(
+      response([
+        {
+          ...policy,
+          future: !cancelled,
+          cancelled,
+          status: cancelled ? 'superseded' : 'effective',
+          cancellationReason: cancelled ? 'Hủy lịch thử nghiệm' : null,
+        },
+      ]),
+    );
+  });
+  view();
+  await screen.findByRole('button', { name: 'Hủy lịch chính sách' });
+  fireEvent.click(screen.getByRole('button', { name: 'Hủy lịch chính sách' }));
+  fireEvent.change(screen.getByLabelText('Lý do hủy lịch (bắt buộc)'), {
+    target: { value: 'Hủy lịch thử nghiệm' },
+  });
+  fireEvent.click(screen.getByRole('button', { name: 'Xác nhận hủy lịch' }));
+  await screen.findByText('Lý do hủy lịch: Hủy lịch thử nghiệm');
+  expect(screen.getByText('Đã hủy lịch')).toBeTruthy();
+  expect(screen.queryByRole('button', { name: 'Hủy lịch chính sách' })).toBeNull();
+});

@@ -1,5 +1,10 @@
 import { authorAgreement, saveAuthorAgreement } from '../modules/author-agreement.js';
-import { activatePolicy, adminPolicy, adminPolicyHistory } from '../modules/admin-policy.js';
+import {
+  activatePolicy,
+  adminPolicy,
+  adminPolicyHistory,
+  cancelFuturePolicy,
+} from '../modules/admin-policy.js';
 import { Router } from 'express';
 import { z } from 'zod';
 import { requireAuth, requireRole } from '../middleware/auth.js';
@@ -33,6 +38,33 @@ const decisionSchema = z
 
 export function createAdminAuthorRouter(config) {
   const router = Router();
+  router.post(
+    '/admin/policy/:policyId/cancel',
+    requireAuth(config),
+    requireRole('admin'),
+    async (req, res, next) => {
+      try {
+        const parsed = z
+          .object({
+            expectedVersion: z.number().int().min(0).max(Number.MAX_SAFE_INTEGER),
+            reason: z.string().trim().min(1).max(1000),
+          })
+          .strict()
+          .safeParse(req.body);
+        if (!parsed.success || !/^[a-f\d]{24}$/i.test(req.params.policyId))
+          throw new HttpError(
+            400,
+            'validation_error',
+            'Cần mã chính sách, phiên bản và lý do hợp lệ.',
+          );
+        res
+          .set('Cache-Control', 'private, no-store')
+          .json(await cancelFuturePolicy(req.account, req.params.policyId, parsed.data));
+      } catch (error) {
+        next(error);
+      }
+    },
+  );
   router.get(
     '/admin/policy/history',
     requireAuth(config),

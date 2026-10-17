@@ -1801,6 +1801,20 @@
     "page": "Trang {{page}} / {{pages}} · {{total}} phiên bản",
     "previous": "Trang lịch sử trước",
     "next": "Trang lịch sử tiếp",
-    "identity": "Mã phiên bản: {{id}}"
+    "identity": "Mã phiên bản: {{id}}",
+    "cancelled": "Đã hủy lịch"
+  },
+  "policyCancel": {
+    "title": "Hủy lịch hiệu lực chính sách",
+    "description": "Chính sách chưa đến ngày hiệu lực sẽ không được áp dụng. Bản ghi và lịch sử được giữ nguyên; chính sách đang áp dụng không bị thay đổi.",
+    "reason": "Lý do hủy lịch (bắt buộc)",
+    "action": "Hủy lịch chính sách",
+    "confirm": "Xác nhận hủy lịch",
+    "busy": "Đang hủy lịch…",
+    "close": "Đóng",
+    "reload": "Đóng và tải lại lịch sử",
+    "error": "Chưa xác nhận được kết quả hủy. Chính sách có thể đã thay đổi hoặc đến ngày hiệu lực. Hãy tải lại lịch sử trước khi tiếp tục.",
+    "saved": "Đã hủy lịch chính sách. Lịch sử đã được yêu cầu tải lại.",
+    "recordedReason": "Lý do hủy lịch: {{reason}}"
   }
 }

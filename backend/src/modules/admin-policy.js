@@ -16,6 +16,77 @@ const inheritedFields = [
   'claimExpiryHours',
 ];
 
+export async function cancelFuturePolicy(admin, policyId, input) {
+  return withTransaction(async (session) => {
+    const actor = await Account.findOneAndUpdate(
+      {
+        _id: admin._id,
+        status: 'active',
+        authorizationEpoch: admin.authorizationEpoch,
+        credentialVersion: admin.credentialVersion,
+      },
+      { $inc: { version: 1 } },
+      { session },
+    );
+    const role = await RoleAssignment.exists({
+      accountId: admin._id,
+      role: 'admin',
+      status: 'active',
+    }).session(session);
+    if (!actor || !role)
+      throw new HttpError(403, 'forbidden', 'Quyền quản trị không còn hiệu lực.');
+    const policy = await PolicyVersion.findById(policyId).session(session);
+    if (!policy) throw new HttpError(404, 'not_found', 'Không tìm thấy chính sách.');
+    const now = new Date();
+    if (
+      policy.version !== input.expectedVersion ||
+      policy.status !== 'effective' ||
+      !policy.effectiveAt ||
+      policy.effectiveAt <= now
+    )
+      throw new HttpError(
+        409,
+        'policy_changed',
+        'Chính sách đã thay đổi hoặc đã đến ngày hiệu lực. Hãy tải lại.',
+      );
+    const updated = await PolicyVersion.findOneAndUpdate(
+      {
+        _id: policy._id,
+        version: input.expectedVersion,
+        status: 'effective',
+        effectiveAt: { $gt: now },
+      },
+      { $set: { status: 'superseded' }, $inc: { version: 1 } },
+      { session, returnDocument: 'after' },
+    );
+    if (!updated)
+      throw new HttpError(409, 'policy_changed', 'Chính sách đã thay đổi. Hãy tải lại.');
+    await AuditEvent.create(
+      [
+        {
+          actorType: 'account',
+          actorId: admin._id,
+          action: 'policy.cancelled',
+          targetType: 'policy',
+          targetId: policy._id,
+          targetVersion: updated.version,
+          result: 'accepted',
+          reason: input.reason,
+          occurredAt: now,
+          dataDigest: digest({
+            policyId,
+            previousVersion: policy.version,
+            effectiveAt: policy.effectiveAt,
+            cancelledVersion: updated.version,
+          }),
+        },
+      ],
+      { session },
+    );
+    return { policyId: String(updated._id), version: updated.version };
+  });
+}
+
 export async function activatePolicy(admin, input) {
   try {
     return await withTransaction(async (session) => {
@@ -177,18 +248,18 @@ export async function adminPolicyHistory({ page, pageSize }, now = new Date()) {
     const audits = await AuditEvent.find({
       targetType: 'policy',
       targetId: { $in: rows.map((row) => row._id) },
-      action: 'policy.activated',
+      action: { $in: ['policy.activated', 'policy.cancelled'] },
       result: 'accepted',
     })
       .sort({ occurredAt: -1, _id: -1 })
-      .select('targetId reason')
+      .select('targetId action reason')
       .session(session)
       .lean();
     const reasons = new Map();
     for (const audit of audits)
-      if (!reasons.has(String(audit.targetId)))
+      if (!reasons.has(`${audit.targetId}:${audit.action}`))
         reasons.set(
-          String(audit.targetId),
+          `${audit.targetId}:${audit.action}`,
           typeof audit.reason === 'string' ? audit.reason.slice(0, 1000) : null,
         );
     return {
@@ -208,7 +279,9 @@ export async function adminPolicyHistory({ page, pageSize }, now = new Date()) {
         withdrawalThresholdCoins: row.withdrawalThresholdCoins,
         orderExpiryHours: row.orderExpiryHours,
         claimExpiryHours: row.claimExpiryHours,
-        reason: reasons.get(String(row._id)) ?? null,
+        reason: reasons.get(`${row._id}:policy.activated`) ?? null,
+        cancelled: row.status === 'superseded' && reasons.has(`${row._id}:policy.cancelled`),
+        cancellationReason: reasons.get(`${row._id}:policy.cancelled`) ?? null,
       })),
       page,
       pageSize,

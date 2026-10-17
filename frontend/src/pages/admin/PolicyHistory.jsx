@@ -1,3 +1,4 @@
+import { PolicyCancellationDialog } from './PolicyCancellationDialog';
 import { useState } from 'react';
 import { Badge, Button, Skeleton } from '../../components/ui';
 import { useBackendDocument } from '../../api/useBackendResource';
@@ -6,6 +7,8 @@ import { useLocale } from '../../context/LocaleContext';
 export function PolicyHistory() {
   const { t, formatNumber, formatDate } = useLocale();
   const [page, setPage] = useState(1);
+  const [cancelling, setCancelling] = useState(null);
+  const [cancelled, setCancelled] = useState(false);
   const resource = useBackendDocument(`/admin/policy/history?page=${page}&pageSize=5`, null);
   const document =
     resource.status === 'ready' && Array.isArray(resource.data?.items) ? resource.data : null;
@@ -50,7 +53,7 @@ export function PolicyHistory() {
                     </p>
                     <Badge tone={item.current ? 'green' : undefined}>
                       {t(
-                        `policyHistory.${item.current ? 'current' : item.future ? 'future' : item.status === 'draft' ? 'draft' : item.status === 'superseded' ? 'superseded' : 'earlier'}`,
+                        `policyHistory.${item.current ? 'current' : item.future ? 'future' : item.cancelled ? 'cancelled' : item.status === 'draft' ? 'draft' : item.status === 'superseded' ? 'superseded' : 'earlier'}`,
                       )}
                     </Badge>
                   </div>
@@ -93,6 +96,21 @@ export function PolicyHistory() {
                   <p className="mt-3 whitespace-pre-wrap break-words text-caption text-muted">
                     {item.reason || t('policyHistory.noReason')}
                   </p>
+                  {item.cancellationReason && (
+                    <p className="mt-2 whitespace-pre-wrap break-words text-caption text-muted">
+                      {t('policyCancel.recordedReason', { reason: item.cancellationReason })}
+                    </p>
+                  )}
+                  {item.future && (
+                    <Button
+                      size="sm"
+                      variant="secondary"
+                      className="mt-3"
+                      onClick={() => setCancelling(item)}
+                    >
+                      {t('policyCancel.action')}
+                    </Button>
+                  )}
                 </li>
               ))}
             </ol>
@@ -127,6 +145,26 @@ export function PolicyHistory() {
             </div>
           )}
         </>
+      )}
+      {cancelled && (
+        <p role="status" className="mt-4 text-caption text-brand-strong">
+          {t('policyCancel.saved')}
+        </p>
+      )}
+      {cancelling && (
+        <PolicyCancellationDialog
+          policy={cancelling}
+          onClose={() => setCancelling(null)}
+          onSaved={() => {
+            setCancelling(null);
+            setCancelled(true);
+            resource.retry();
+          }}
+          onReload={() => {
+            setCancelling(null);
+            resource.retry();
+          }}
+        />
       )}
     </section>
   );
