@@ -3,6 +3,18 @@ import { extractDocument } from '../src/modules/document-extraction.js';
 import { pdfDocument, docxDocument } from './fixtures/documents.js';
 
 describe('real document extraction', () => {
+  it('identifies numbered titles only in root Markdown paragraphs', async () => {
+    const result = await extractDocument(
+      Buffer.from(
+        'Chương 1: Mở đầu\nNội dung.\n\n```text\nChương 2: Trong mã\nVí dụ.\n```\n\n> Chương 3: Trích dẫn\n\n- Chương 4: Danh sách\n\n| Chapter 5 |\n| --- |\n| Ví dụ |\n\nChương 6: Kết thúc\nNội dung sau.',
+      ),
+      'md',
+    );
+    expect(result.headings).toEqual([]);
+    expect(result.numberedHeadings).toEqual(['Chương 1: Mở đầu', 'Chương 6: Kết thúc']);
+    expect(result.text).toContain('Chương 2: Trong mã');
+    expect(result.text).toContain('Chương 3: Trích dẫn');
+  });
   it.each([
     ['```text\nĐoạn mã cuối\n```', 'Đoạn mã cuối'],
     ['    Đoạn mã thụt lề', 'Đoạn mã thụt lề'],

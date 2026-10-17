@@ -46,6 +46,10 @@ Không thêm Markdown rendering hoặc rich-text import: giữ nguyên văn bả
 
 ### Sửa ranh giới khối Markdown ngày 18/10/2026
 
+Parser bổ sung `numberedHeadings` từ các đoạn văn gốc, giúp frontend đối chiếu Chương/Chapter đánh số và từ chối gợi ý khi gặp tiêu đề chỉ nằm trong mã, trích dẫn, bảng hoặc danh sách Markdown. Những khối này vẫn giữ trong văn bản trích xuất. Metadata chỉ phục vụ gợi ý, không lưu thêm trường hay thay schema; bản thảo đánh số thông thường tiếp tục được tách sau thao tác của tác giả.
+
+Lượt kiểm tra bổ sung: 33 backend và 41 frontend test liên quan đạt; lint, build, i18n và Prettier đạt. Browser kiểm tra ví dụ mã không bị tách, sau đó nhập bản thảo đánh số thật, lưu hai chương và mở lại danh sách từ MongoDB tạm. Sáng/tối tại 390/768/1024/1536px không tràn ngang; không có cảnh báo/lỗi console. Media được để cuối theo yêu cầu; không triển khai AI Author.
+
 Khối mã (fenced hoặc thụt lề), danh sách và bảng được kết thúc bằng ngắt đoạn khi chuyển thành văn bản. Tiêu đề ngay sau khối không còn dính vào ký tự cuối, giúp đối chiếu metadata và tách chương đúng. Không đổi giao diện, schema hoặc cơ chế lưu bản nháp.
 
 22 kiểm thử parser và 10 kiểm thử API nhập đạt; kiểm thử tích hợp tải Markdown thật qua preview, lưu hai chương vào MongoDB tạm rồi đọc lại qua API editor để đối chiếu nội dung. Lint và Prettier của các file sửa đạt. Đây là kiểm chứng parser/API, không phải nghiệm thu toàn bộ UC hay kiểm tra browser mới.

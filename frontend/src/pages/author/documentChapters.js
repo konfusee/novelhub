@@ -14,7 +14,7 @@ function ordinal(value) {
 export function suggestDocumentChapters(
   text,
   preambleTitle,
-  { format, headings: markdownHeadings } = {},
+  { format, headings: markdownHeadings, numberedHeadings } = {},
 ) {
   if (format === 'md' && Array.isArray(markdownHeadings) && markdownHeadings.length) {
     // An ambiguous or edited outline must not fall through to unrelated numbered lines.
@@ -37,6 +37,8 @@ export function suggestDocumentChapters(
     if (!heading || title.length > 200 || /\.{2,}|…|\t/.test(title)) continue;
     const number = ordinal(heading[2]);
     if (!number || number > 9999) continue;
+    if (format === 'md' && Array.isArray(numberedHeadings) && !numberedHeadings.includes(title))
+      return null;
     headings.push({
       title,
       start: match.index,

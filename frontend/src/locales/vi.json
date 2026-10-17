@@ -1634,7 +1634,7 @@
     "reviewHint": "Tài liệu ban đầu là một chương. Gợi ý tách theo tiêu đề Chương/Chapter liên tiếp, hoặc tiêu đề Markdown cùng cấp. Giữ nguyên văn bản đã trích xuất; kiểm tra, tách/gộp thủ công trước khi lưu.",
     "suggest": "Gợi ý tách theo tiêu đề",
     "preamble": "Phần mở đầu",
-    "noHeadings": "Chưa có ít nhất hai tiêu đề rõ ràng với nội dung riêng, cấu trúc đang mơ hồ hoặc vượt 100 chương. Tệp MD dùng tiêu đề cùng cấp đã trích xuất; các tệp khác dùng Chương/Chapter đánh số liên tiếp. Nội dung được giữ nguyên; bạn có thể tách tại con trỏ.",
+    "noHeadings": "Chưa có ít nhất hai tiêu đề rõ ràng với nội dung riêng, cấu trúc đang mơ hồ hoặc vượt 100 chương. Dùng Chương/Chapter đánh số liên tiếp hoặc tiêu đề Markdown cùng cấp; bỏ qua tiêu đề trong ví dụ mã, trích dẫn, bảng và danh sách Markdown. Nội dung được giữ nguyên; bạn có thể tách tại con trỏ.",
     "selectChapter": "Chọn chương {{number}}",
     "chapterTitle": "Tiêu đề chương {{number}}",
     "edit": "Sửa nội dung",

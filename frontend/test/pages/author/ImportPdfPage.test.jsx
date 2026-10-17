@@ -9,12 +9,18 @@ vi.mock('../../../src/layouts', () => ({
   AuthorLayout: ({ children }) => <main>{children}</main>,
 }));
 const text = 'Đoạn đầu tiên.\n\nĐoạn tiếp theo.';
-function view({ saveError = false, previewText = text, headings } = {}) {
+function view({ saveError = false, previewText = text, headings, numberedHeadings } = {}) {
   mocks.apiRequest.mockImplementation(async (path) => {
     if (path === '/author/imports/targets')
       return { items: [{ id: 'real-story', title: 'Truyện từ MongoDB', version: 3 }] };
     if (path.startsWith('/author/imports/preview'))
-      return { text: previewText, format: 'md', receipt: 'signed-receipt', headings };
+      return {
+        text: previewText,
+        format: 'md',
+        receipt: 'signed-receipt',
+        headings,
+        numberedHeadings,
+      };
     if (saveError) throw new Error('Không lưu được MongoDB');
     return { storyId: 'real-story', chapterIds: ['chapter-one', 'chapter-two'] };
   });
@@ -39,6 +45,16 @@ async function destination() {
 afterEach(() => {
   cleanup();
   vi.resetAllMocks();
+});
+it('keeps extracted code examples intact when the server marks no numbered chapter titles', async () => {
+  const source = 'Chương 1\nVí dụ mã đầu.\nChương 2\nVí dụ mã sau.';
+  const { container } = view({ previewText: source, headings: [], numberedHeadings: [] });
+  await choose(container);
+  fireEvent.click(screen.getByRole('button', { name: 'Gợi ý tách theo tiêu đề' }));
+  expect(screen.getAllByRole('textbox', { name: /Tiêu đề chương/ })).toHaveLength(1);
+  expect(screen.getByRole('textbox', { name: 'ban-thao' }).value).toBe(source);
+  expect(screen.getByRole('alert')).toBeTruthy();
+  expect(mocks.apiRequest.mock.calls.some(([path]) => path === '/author/imports')).toBe(false);
 });
 it('reviews Markdown headings explicitly and persists all sections through the existing API', async () => {
   const source =

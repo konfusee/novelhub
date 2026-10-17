@@ -106,7 +106,8 @@ async function extract() {
     /^\uFEFF?---[ \t]*\n[\s\S]*?\n(?:---|\.\.\.)[ \t]*(?:\n|$)/,
     '',
   );
-  const rootHeadings = marked.lexer(outlineSource).filter((token) => token.type === 'heading');
+  const rootTokens = marked.lexer(outlineSource);
+  const rootHeadings = rootTokens.filter((token) => token.type === 'heading');
   const headings =
     rootHeadings.length <= 1000
       ? rootHeadings.map((token) => ({
@@ -114,7 +115,17 @@ async function extract() {
           title: markdown(token.tokens).trim(),
         }))
       : [];
-  return { text: plain, headings };
+  // Numbered plain-text titles are eligible only outside examples, quotes, tables and lists.
+  const numberedTitles = rootTokens
+    .filter((token) => token.type === 'paragraph')
+    .flatMap((token) => markdown(token.tokens).split('\n'))
+    .map((line) => line.trim())
+    .filter((line) => /^(?:chương|chapter)\s+/iu.test(line));
+  return {
+    text: plain,
+    headings,
+    numberedHeadings: numberedTitles.length <= 1000 ? numberedTitles : [],
+  };
 }
 try {
   const result = await extract();
