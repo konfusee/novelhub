@@ -186,6 +186,7 @@
     "edit": "Chỉnh sửa chương"
   },
   "authorAccess": {
+    "reapplyAfterRevocation": "Đơn trước đã được duyệt nhưng quyền Author hiện không còn hiệu lực. Bạn có thể xác nhận lại thỏa thuận và gửi đơn mới để Admin xét duyệt. Nội dung đã đóng băng không tự mở lại khi được cấp quyền mới.",
     "checking": "Đang kiểm tra…",
     "statusChecked": "Đã kiểm tra lúc {{time}}. Trạng thái hồ sơ đang hiển thị là kết quả mới nhất từ máy chủ.",
     "statusFailed": "Không kiểm tra được trạng thái mới. Trạng thái đang hiển thị là lần tải trước; vui lòng thử lại.",
