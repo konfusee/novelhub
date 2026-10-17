@@ -1,3 +1,4 @@
+import { canConfigureEarlyAccess } from './author-early-access.js';
 import {
   Category,
   Chapter,
@@ -89,6 +90,7 @@ export async function authorStoryWorkspace(account, storyId) {
     );
     return {
       ...chapterDraftLifecycle(chapter, revision, story, lifecycle),
+      canConfigureEarlyAccess: canConfigureEarlyAccess(chapter, revision, story),
       canUnpublish: chapterCanUnpublish(chapter, story),
       canManageSchedule:
         !story.authoringFrozen &&
@@ -122,6 +124,7 @@ export async function authorStoryWorkspace(account, storyId) {
         ? {
             enabled: chapter.earlyAccess.enabled,
             coinPrice: chapter.earlyAccess.coinPrice ?? null,
+            durationDays: chapter.earlyAccess.durationDays ?? null,
             endsAt: chapter.earlyAccess.endsAt ?? null,
           }
         : null,

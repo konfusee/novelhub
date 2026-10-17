@@ -31,6 +31,7 @@ import { ChapterOrderDialog } from './ChapterOrderDialog';
 import { ChapterLifecycleDialog } from './ChapterLifecycleDialog';
 import { ChapterReleaseDialog, StoryReleaseDialog } from './StoryReleaseDialog';
 import { ChapterScheduleDialog } from './ChapterScheduleDialog';
+import { ChapterEarlyAccessDialog } from './ChapterEarlyAccessDialog';
 import { ROUTES } from '../../app/routes';
 import {
   Badge,
@@ -159,6 +160,7 @@ export function StoryManagerPage() {
   const [releaseOpen, setReleaseOpen] = useState(false);
   const [releaseChapter, setReleaseChapter] = useState(null);
   const [scheduleChapter, setScheduleChapter] = useState(null);
+  const [accessChapter, setAccessChapter] = useState(null);
   const createChapter = async (event) => {
     event.preventDefault();
     if (newBusy || !newTitle.trim()) return;
@@ -305,6 +307,18 @@ export function StoryManagerPage() {
             onReleased={() => {
               setReleaseOpen(false);
               setNotice(t('storyRelease.success'));
+              workspace.retry();
+            }}
+          />
+        )}
+        {accessChapter && (
+          <ChapterEarlyAccessDialog
+            storyId={storyId}
+            chapterId={accessChapter.id}
+            onClose={() => setAccessChapter(null)}
+            onSaved={() => {
+              setAccessChapter(null);
+              setNotice(t('earlyAccess.saved'));
               workspace.retry();
             }}
           />
@@ -476,6 +490,7 @@ export function StoryManagerPage() {
                           storyId={storyId}
                           onRelease={() => setReleaseChapter(chapter)}
                           onSchedule={() => setScheduleChapter(chapter)}
+                          onEarlyAccess={() => setAccessChapter(chapter)}
                           onLifecycle={(action) => setChapterAction({ story, chapter, action })}
                         />
                       ))}
@@ -692,7 +707,7 @@ function ChapterRowSkeleton() {
   );
 }
 
-function ChapterRow({ chapter, storyId, onLifecycle, onRelease, onSchedule }) {
+function ChapterRow({ chapter, storyId, onLifecycle, onRelease, onSchedule, onEarlyAccess }) {
   const { t, formatDate, formatNumber } = useLocale();
   const note =
     chapter.status === 'Scheduled' && chapter.requestedReleaseAt
@@ -721,6 +736,11 @@ function ChapterRow({ chapter, storyId, onLifecycle, onRelease, onSchedule }) {
               Chương {chapter.number}: {chapter.title}
             </strong>
             <p className="mt-1 text-xs leading-5 text-muted">{note}</p>
+            {chapter.status !== 'Published' && access?.enabled && (
+              <p className="mt-1 text-xs text-muted">
+                {t('earlyAccess.summary', { price: access.coinPrice, days: access.durationDays })}
+              </p>
+            )}
             <Badge tone={statusTones[chapter.status] ?? 'neutral'} className="mt-2 sm:hidden">
               {statusLabels[chapter.status] ?? chapter.status}
             </Badge>
@@ -751,6 +771,11 @@ function ChapterRow({ chapter, storyId, onLifecycle, onRelease, onSchedule }) {
           {chapter.canRelease && (
             <Button size="sm" onClick={onRelease}>
               {t('chapterRelease.title')}
+            </Button>
+          )}
+          {chapter.canConfigureEarlyAccess && (
+            <Button variant="secondary" size="sm" onClick={onEarlyAccess}>
+              {t('earlyAccess.title')}
             </Button>
           )}
           {chapter.canManageSchedule && (
