@@ -4,22 +4,37 @@ import { HttpError } from '../middleware/errors.js';
 import { lockAuthor, ownStory, editable } from './author-ownership.js';
 import { digest } from './submission-digests.js';
 
-export function canConfigureEarlyAccess(chapter, revision, story) {
+function unreleasedOwnedRevision(chapter, revision, story) {
   return Boolean(
     !story.authoringFrozen &&
     !['submitted', 'under-review', 'archived'].includes(story.publicationStatus) &&
-    chapter.status === 'draft' &&
     !chapter.firstReleasedAt &&
     !chapter.publishedRevisionId &&
     !chapter.earlyAccess?.endsAt &&
     revision &&
-    revision.status === 'editable' &&
-    !revision.immutableAt &&
     String(revision._id) === String(chapter.draftRevisionId ?? chapter.currentRevisionId) &&
     String(revision.chapterId) === String(chapter._id) &&
     String(revision.storyId) === String(story._id) &&
     String(revision.authorAccountId) === String(story.authorAccountId) &&
     revision.contentType === 'chapter',
+  );
+}
+export function canConfigureEarlyAccess(chapter, revision, story) {
+  return Boolean(
+    unreleasedOwnedRevision(chapter, revision, story) &&
+    chapter.status === 'draft' &&
+    revision.status === 'editable' &&
+    !revision.immutableAt,
+  );
+}
+export function canDisableEarlyAccess(chapter, revision, story) {
+  return Boolean(
+    chapter.earlyAccess?.enabled &&
+    (canConfigureEarlyAccess(chapter, revision, story) ||
+      (unreleasedOwnedRevision(chapter, revision, story) &&
+        ['approved', 'scheduled', 'due'].includes(chapter.status) &&
+        revision.status === 'approved' &&
+        revision.immutableAt)),
   );
 }
 async function state(account, storyId, chapterId, session) {
@@ -72,6 +87,7 @@ export async function prepareEarlyAccess(account, storyId, chapterId) {
     version: chapter.version,
     storyVersion: story.version,
     canEdit: canConfigureEarlyAccess(chapter, revision, story),
+    canDisable: canDisableEarlyAccess(chapter, revision, story),
     policy: policyView(policy),
     settings: settings(chapter),
   };
@@ -83,7 +99,10 @@ export async function changeEarlyAccess(account, storyId, chapterId, input) {
     editable(story);
     if (story.version !== input.expectedStoryVersion || chapter.version !== input.expectedVersion)
       throw new HttpError(409, 'stale_content', 'Truyện hoặc chương đã thay đổi. Hãy tải lại.');
-    if (!canConfigureEarlyAccess(chapter, revision, story))
+    if (!(
+      canConfigureEarlyAccess(chapter, revision, story) ||
+      (!input.enabled && canDisableEarlyAccess(chapter, revision, story))
+    ))
       throw new HttpError(
         409,
         'early_access_locked',

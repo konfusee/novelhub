@@ -864,3 +864,35 @@ it('prepares cancellation identities even for a corrupted scheduled package', as
   expect(response.body.target.submissionId).toBe(f.body.submissionId);
   expect(response.body.target.revisionId).toBe(f.body.revisionId);
 });
+
+it('explicitly clears unreleased approved early-access settings before using the existing free release guards', async () => {
+  const f = await fixture();
+  f.entity.earlyAccess = { enabled: true, coinPrice: 250, durationDays: 3 };
+  await f.entity.save();
+  expect((await f.prepare()).body.checks.find((c) => c.code === 'free').ok).toBe(false);
+  const path = `/api/author/stories/${f.storyId}/chapters/${f.chapterId}/early-access`;
+  const prepared = (await get(f.cookie, path)).body;
+  expect(prepared).toMatchObject({ canEdit: false, canDisable: true });
+  const before = await ContentRevision.findById(f.revision._id).lean();
+  const result = await write(
+    f.cookie,
+    path,
+    {
+      enabled: false,
+      expectedVersion: prepared.version,
+      expectedStoryVersion: prepared.storyVersion,
+    },
+    'put',
+  );
+  expect(result.status).toBe(200);
+  expect(await ContentRevision.findById(f.revision._id).lean()).toEqual(before);
+  const ready = (await f.prepare()).body;
+  expect(ready.ready).toBe(true);
+  const response = await write(f.cookie, f.endpoint, {
+    ...f.body,
+    expectedVersion: ready.target.version,
+    expectedStoryVersion: ready.target.storyVersion,
+  });
+  expect(response.status).toBe(201);
+  expect((await Chapter.findById(f.chapterId)).earlyAccess).toBeUndefined();
+});

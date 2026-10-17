@@ -1,4 +1,4 @@
-import { canConfigureEarlyAccess } from './author-early-access.js';
+import { canConfigureEarlyAccess, canDisableEarlyAccess } from './author-early-access.js';
 import {
   Category,
   Chapter,
@@ -90,7 +90,9 @@ export async function authorStoryWorkspace(account, storyId) {
     );
     return {
       ...chapterDraftLifecycle(chapter, revision, story, lifecycle),
-      canConfigureEarlyAccess: canConfigureEarlyAccess(chapter, revision, story),
+      canConfigureEarlyAccess:
+        canConfigureEarlyAccess(chapter, revision, story) ||
+        canDisableEarlyAccess(chapter, revision, story),
       canUnpublish: chapterCanUnpublish(chapter, story),
       canManageSchedule:
         !story.authoringFrozen &&

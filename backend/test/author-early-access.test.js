@@ -183,3 +183,112 @@ it('blocks frozen stories and previously released chapters even after a private 
   expect((await get(f.path, f.author.cookie)).body.canEdit).toBe(false);
   expect((await put(f)).status).toBe(409);
 });
+
+it.each(['approved', 'scheduled', 'due'])(
+  'lets an unreleased %s chapter become free without changing its approved content or schedule',
+  async (status) => {
+    const f = await fixture();
+    expect((await put(f)).status).toBe(200);
+    const revision = await ContentRevision.findById(f.revision._id);
+    revision.status = 'approved';
+    revision.immutableAt = new Date();
+    await revision.save();
+    const chapter = await Chapter.findById(f.chapter._id);
+    chapter.status = status;
+    if (status !== 'approved') chapter.requestedReleaseAt = new Date('2030-01-01');
+    await chapter.save();
+    const beforeRevision = await ContentRevision.findById(revision._id).lean();
+    const beforePolicy = await PolicyVersion.findById(f.policy._id).lean();
+    const prepared = (await get(f.path, f.author.cookie)).body;
+    expect(prepared).toMatchObject({ canEdit: false, canDisable: true });
+    const fresh = {
+      ...f.input,
+      expectedVersion: prepared.version,
+      expectedStoryVersion: prepared.storyVersion,
+      expectedPolicyVersion: prepared.policy.version,
+    };
+    expect((await put(f, { ...fresh, coinPrice: 300 })).status).toBe(409);
+    expect(
+      (
+        await put(f, {
+          enabled: false,
+          expectedVersion: prepared.version,
+          expectedStoryVersion: prepared.storyVersion,
+        })
+      ).status,
+    ).toBe(200);
+    const after = await Chapter.findById(chapter._id);
+    expect(after.status).toBe(status);
+    expect(after.requestedReleaseAt).toEqual(chapter.requestedReleaseAt);
+    expect(after.earlyAccess).toBeUndefined();
+    expect(after.firstReleasedAt).toBeUndefined();
+    expect(await ContentRevision.findById(revision._id).lean()).toEqual(beforeRevision);
+    expect(await PolicyVersion.findById(f.policy._id).lean()).toEqual(beforePolicy);
+    expect((await get(f.path, f.author.cookie)).body).toMatchObject({
+      canEdit: false,
+      canDisable: false,
+    });
+  },
+);
+it('does not offer the approved-to-free path for unfrozen editable or already released revisions', async () => {
+  const f = await fixture();
+  expect((await put(f)).status).toBe(200);
+  const chapter = await Chapter.findById(f.chapter._id);
+  chapter.status = 'approved';
+  await chapter.save();
+  let prepared = (await get(f.path, f.author.cookie)).body;
+  expect(prepared.canDisable).toBe(false);
+  expect(
+    (
+      await put(f, {
+        enabled: false,
+        expectedVersion: prepared.version,
+        expectedStoryVersion: prepared.storyVersion,
+      })
+    ).status,
+  ).toBe(409);
+  const revision = await ContentRevision.findById(f.revision._id);
+  revision.status = 'approved';
+  revision.immutableAt = new Date();
+  await revision.save();
+  chapter.firstReleasedAt = new Date();
+  await chapter.save();
+  prepared = (await get(f.path, f.author.cookie)).body;
+  expect(prepared.canDisable).toBe(false);
+  expect(
+    (
+      await put(f, {
+        enabled: false,
+        expectedVersion: prepared.version,
+        expectedStoryVersion: prepared.storyVersion,
+      })
+    ).status,
+  ).toBe(409);
+});
+it('rolls back disabling an approved chapter if its mandatory audit cannot be written', async () => {
+  const f = await fixture();
+  expect((await put(f)).status).toBe(200);
+  const revision = await ContentRevision.findById(f.revision._id);
+  revision.status = 'approved';
+  revision.immutableAt = new Date();
+  await revision.save();
+  const chapter = await Chapter.findById(f.chapter._id);
+  chapter.status = 'scheduled';
+  chapter.requestedReleaseAt = new Date('2030-01-01');
+  await chapter.save();
+  const prepared = (await get(f.path, f.author.cookie)).body;
+  const before = await Chapter.findById(chapter._id).lean();
+  const parent = await Story.findById(f.story._id).lean();
+  vi.spyOn(AuditEvent, 'create').mockRejectedValueOnce(new Error('Audit failed'));
+  expect(
+    (
+      await put(f, {
+        enabled: false,
+        expectedVersion: prepared.version,
+        expectedStoryVersion: prepared.storyVersion,
+      })
+    ).status,
+  ).toBe(500);
+  expect(await Chapter.findById(chapter._id).lean()).toEqual(before);
+  expect(await Story.findById(f.story._id).lean()).toEqual(parent);
+});
