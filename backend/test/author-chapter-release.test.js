@@ -3,18 +3,21 @@ import { afterEach, expect, it, vi } from 'vitest';
 import { createApp } from '../src/app.js';
 import {
   AuditEvent,
+  Account,
   Category,
   Chapter,
   ContentRevision,
   EvidenceBatch,
   PublicationSubmission,
   RightsDeclaration,
+  RoleAssignment,
   Story,
   UnlockEntitlement,
 } from '../src/models/index.js';
 import { authenticatedAccount } from './fixtures/accounts.js';
 import { testConfig } from './config.js';
 import { useTestDatabase } from './db.js';
+import { releaseDueChapters } from '../src/modules/chapter-scheduler.js';
 useTestDatabase();
 afterEach(() => vi.restoreAllMocks());
 const origin = 'http://localhost:5173';
@@ -569,4 +572,269 @@ it('rolls back an unpublished revision and parent versions when its audit fails'
   expect(await ContentRevision.countDocuments()).toBe(count);
   expect((await Chapter.findById(f.chapterId)).version).toBe(chapter.version);
   expect((await Story.findById(f.storyId)).version).toBe(story.version);
+});
+
+const schedulerConfig = testConfig({ cookieName: 'novelhub_session', corsOrigin: origin });
+async function scheduleFixture(options) {
+  const f = await fixture(options);
+  f.scheduleUrl = f.endpoint.replace(/release$/, 'schedule');
+  f.releaseAt = new Date(Date.now() + 60000);
+  f.scheduleBody = { ...f.body, requestedReleaseAt: f.releaseAt.toISOString() };
+  return f;
+}
+it('persists an approved schedule without early visibility, then publishes once after restart', async () => {
+  const f = await scheduleFixture();
+  expect((await write(f.cookie, f.scheduleUrl, f.scheduleBody, 'put')).status).toBe(200);
+  expect((await Chapter.findById(f.chapterId)).status).toBe('scheduled');
+  expect(await releaseDueChapters(schedulerConfig)).toEqual({ published: 0, deferred: 0 });
+  expect(
+    (await request(app).get(`/api/catalog/stories/${f.storyId}/chapters/${f.chapterId}`)).status,
+  ).toBe(404);
+  expect(await releaseDueChapters(schedulerConfig, { now: f.releaseAt })).toEqual({
+    published: 1,
+    deferred: 0,
+  });
+  const published = await Chapter.findById(f.chapterId);
+  expect(published.firstReleasedAt).toEqual(f.releaseAt);
+  expect(String(published.publishedRevisionId)).toBe(f.body.revisionId);
+  expect(
+    (await request(app).get(`/api/catalog/stories/${f.storyId}/chapters/${f.chapterId}`)).status,
+  ).toBe(200);
+  await releaseDueChapters(schedulerConfig, { now: f.releaseAt });
+  expect(await AuditEvent.countDocuments({ action: 'chapter.published' })).toBe(1);
+});
+it('keeps due chapters private while blocked and automatically retries when order permits', async () => {
+  const f = await scheduleFixture({ preceding: true });
+  expect((await write(f.cookie, f.scheduleUrl, f.scheduleBody, 'put')).status).toBe(200);
+  expect(await releaseDueChapters(schedulerConfig, { now: f.releaseAt })).toEqual({
+    published: 0,
+    deferred: 1,
+  });
+  expect((await Chapter.findById(f.chapterId)).status).toBe('due');
+  await releaseDueChapters(schedulerConfig, { now: f.releaseAt });
+  expect(await AuditEvent.countDocuments({ action: 'chapter.release-deferred' })).toBe(1);
+  const earlier = await Chapter.findById(f.earlier.id);
+  earlier.firstReleasedAt = new Date();
+  earlier.status = 'unpublished';
+  await earlier.save();
+  expect(await releaseDueChapters(schedulerConfig, { now: f.releaseAt })).toEqual({
+    published: 1,
+    deferred: 0,
+  });
+});
+it.each(['suspended', 'role-revoked', 'frozen', 'rights', 'approval', 'paid'])(
+  'rechecks %s at the actual scheduled release and retains the private binding',
+  async (guard) => {
+    const f = await scheduleFixture();
+    expect((await write(f.cookie, f.scheduleUrl, f.scheduleBody, 'put')).status).toBe(200);
+    if (guard === 'suspended')
+      await Account.updateOne({ _id: f.author.account._id }, { status: 'suspended' });
+    if (guard === 'role-revoked')
+      await RoleAssignment.updateOne(
+        { accountId: f.author.account._id, role: 'author' },
+        { status: 'revoked' },
+      );
+    if (guard === 'frozen') await Story.updateOne({ _id: f.storyId }, { authoringFrozen: true });
+    if (guard === 'rights')
+      await RightsDeclaration.updateOne(
+        { _id: f.revision.rightsDeclarationId, status: 'asserted' },
+        { $set: { status: 'superseded' } },
+      );
+    if (guard === 'approval')
+      await PublicationSubmission.updateOne({ _id: f.submission._id }, { status: 'rejected' });
+    if (guard === 'paid')
+      await Chapter.updateOne(
+        { _id: f.chapterId },
+        { earlyAccess: { enabled: true, coinPrice: 10, durationDays: 7 } },
+      );
+    expect((await releaseDueChapters(schedulerConfig, { now: f.releaseAt })).published).toBe(0);
+    expect((await Chapter.findById(f.chapterId)).publishedRevisionId).toBeUndefined();
+  },
+);
+it('cancels a schedule using fresh versions and rejects stale, foreign and malformed requests', async () => {
+  const f = await scheduleFixture();
+  expect(
+    (
+      await write(
+        f.cookie,
+        f.scheduleUrl,
+        { ...f.scheduleBody, requestedReleaseAt: 'tomorrow' },
+        'put',
+      )
+    ).status,
+  ).toBe(400);
+  const other = await authenticatedAccount('author');
+  expect((await write(other.cookie, f.scheduleUrl, f.scheduleBody, 'put')).status).toBe(404);
+  expect((await write(f.cookie, f.scheduleUrl, f.scheduleBody, 'put')).status).toBe(200);
+  expect((await write(f.cookie, f.scheduleUrl, f.scheduleBody, 'put')).status).toBe(409);
+  const target = (await f.prepare()).body.target;
+  expect(
+    (
+      await write(
+        f.cookie,
+        f.scheduleUrl,
+        {
+          ...f.scheduleBody,
+          expectedVersion: target.version,
+          expectedStoryVersion: target.storyVersion,
+          requestedReleaseAt: null,
+        },
+        'put',
+      )
+    ).status,
+  ).toBe(200);
+  const chapter = await Chapter.findById(f.chapterId);
+  expect(chapter.status).toBe('approved');
+  expect(chapter.requestedReleaseAt).toBeUndefined();
+  expect((await releaseDueChapters(schedulerConfig, { now: f.releaseAt })).published).toBe(0);
+});
+it('rolls back a schedule and parent version when audit storage fails', async () => {
+  const f = await scheduleFixture();
+  vi.spyOn(AuditEvent, 'create').mockRejectedValueOnce(new Error('Injected audit failure'));
+  expect((await write(f.cookie, f.scheduleUrl, f.scheduleBody, 'put')).status).toBe(500);
+  expect((await Chapter.findById(f.chapterId)).status).toBe('approved');
+  expect((await Story.findById(f.storyId)).version).toBe(f.body.expectedStoryVersion);
+});
+it('serializes competing scheduler sweeps into one published revision and audit', async () => {
+  const f = await scheduleFixture();
+  await write(f.cookie, f.scheduleUrl, f.scheduleBody, 'put');
+  await Promise.all([
+    releaseDueChapters(schedulerConfig, { now: f.releaseAt }),
+    releaseDueChapters(schedulerConfig, { now: f.releaseAt }),
+  ]);
+  expect((await Chapter.findById(f.chapterId)).status).toBe('published');
+  expect(await AuditEvent.countDocuments({ action: 'chapter.published' })).toBe(1);
+});
+it('accepts an elapsed release time as due and never releases approval without an explicit schedule', async () => {
+  const f = await scheduleFixture();
+  expect((await releaseDueChapters(schedulerConfig)).published).toBe(0);
+  expect((await Chapter.findById(f.chapterId)).status).toBe('approved');
+  expect(
+    (
+      await write(
+        f.cookie,
+        f.scheduleUrl,
+        { ...f.scheduleBody, requestedReleaseAt: new Date(Date.now() - 1000).toISOString() },
+        'put',
+      )
+    ).body.chapter.status,
+  ).toBe('due');
+  expect((await releaseDueChapters(schedulerConfig)).published).toBe(1);
+});
+it('replaces a schedule with fresh versions and honors the later time', async () => {
+  const f = await scheduleFixture();
+  await write(f.cookie, f.scheduleUrl, f.scheduleBody, 'put');
+  const target = (await f.prepare()).body.target;
+  const later = new Date(f.releaseAt.getTime() + 60000);
+  expect(
+    (
+      await write(
+        f.cookie,
+        f.scheduleUrl,
+        {
+          ...f.scheduleBody,
+          expectedVersion: target.version,
+          expectedStoryVersion: target.storyVersion,
+          requestedReleaseAt: later.toISOString(),
+        },
+        'put',
+      )
+    ).status,
+  ).toBe(200);
+  expect((await releaseDueChapters(schedulerConfig, { now: f.releaseAt })).published).toBe(0);
+  expect((await releaseDueChapters(schedulerConfig, { now: later })).published).toBe(1);
+});
+it('allows cancelling a scheduled package even when its immutable package is no longer valid', async () => {
+  const f = await scheduleFixture();
+  await write(f.cookie, f.scheduleUrl, f.scheduleBody, 'put');
+  await ContentRevision.collection.updateOne(
+    { _id: f.revision._id },
+    { $set: { 'content.title': 'Corrupt fixture' } },
+  );
+  const chapter = await Chapter.findById(f.chapterId);
+  const story = await Story.findById(f.storyId);
+  expect(
+    (
+      await write(
+        f.cookie,
+        f.scheduleUrl,
+        {
+          ...f.scheduleBody,
+          expectedVersion: chapter.version,
+          expectedStoryVersion: story.version,
+          requestedReleaseAt: null,
+        },
+        'put',
+      )
+    ).status,
+  ).toBe(200);
+  expect((await Chapter.findById(f.chapterId)).status).toBe('approved');
+});
+it('rolls back a failed scheduled publication, records deferral, and retries without duplicate release', async () => {
+  const f = await scheduleFixture();
+  await write(f.cookie, f.scheduleUrl, f.scheduleBody, 'put');
+  vi.spyOn(AuditEvent, 'create').mockRejectedValueOnce(new Error('Injected release audit failure'));
+  expect(await releaseDueChapters(schedulerConfig, { now: f.releaseAt })).toEqual({
+    published: 0,
+    deferred: 1,
+  });
+  const chapter = await Chapter.findById(f.chapterId);
+  expect(chapter.status).toBe('due');
+  expect(chapter.publishedRevisionId).toBeUndefined();
+  expect(chapter.firstReleasedAt).toBeUndefined();
+  expect(chapter.publicationTransition.failure).toBe('release_error');
+  expect(await AuditEvent.countDocuments({ action: 'chapter.published' })).toBe(0);
+  expect((await releaseDueChapters(schedulerConfig, { now: f.releaseAt })).published).toBe(1);
+  expect(await AuditEvent.countDocuments({ action: 'chapter.published' })).toBe(1);
+});
+it('cascades through approved due chapters in first-release order in the same sweep', async () => {
+  const f = await scheduleFixture({ preceding: true });
+  const prep = (
+    await get(
+      f.cookie,
+      `/api/author/submissions/prepare?storyId=${f.storyId}&chapterId=${f.earlier.id}`,
+    )
+  ).body;
+  await approve(
+    await write(f.cookie, '/api/author/submissions', {
+      storyId: f.storyId,
+      chapterId: f.earlier.id,
+      revisionId: prep.target.revisionId,
+      expectedVersion: prep.target.version,
+    }),
+  );
+  const current = (await f.prepare()).body.target;
+  f.scheduleBody.expectedVersion = current.version;
+  f.scheduleBody.expectedStoryVersion = current.storyVersion;
+  expect((await write(f.cookie, f.scheduleUrl, f.scheduleBody, 'put')).status).toBe(200);
+  const earlierUrl = `/api/author/stories/${f.storyId}/chapters/${f.earlier.id}`;
+  const target = (await get(f.cookie, `${earlierUrl}/release`)).body.target;
+  expect(
+    (
+      await write(
+        f.cookie,
+        `${earlierUrl}/schedule`,
+        {
+          revisionId: target.revisionId,
+          submissionId: target.submissionId,
+          expectedVersion: target.version,
+          expectedStoryVersion: target.storyVersion,
+          requestedReleaseAt: f.releaseAt.toISOString(),
+        },
+        'put',
+      )
+    ).status,
+  ).toBe(200);
+  expect(await releaseDueChapters(schedulerConfig, { now: f.releaseAt })).toEqual({
+    published: 2,
+    deferred: 0,
+  });
+  const audits = await AuditEvent.find({ action: 'chapter.published' }).sort({ _id: 1 });
+  expect(audits.map((audit) => String(audit.targetId))).toEqual([f.earlier.id, f.chapterId]);
+});
+it('rejects scheduling a chapter whose parent is archived', async () => {
+  const f = await scheduleFixture();
+  await Story.updateOne({ _id: f.storyId }, { publicationStatus: 'archived' });
+  expect((await write(f.cookie, f.scheduleUrl, f.scheduleBody, 'put')).status).toBe(409);
+  expect((await Chapter.findById(f.chapterId)).status).toBe('approved');
 });
