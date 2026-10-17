@@ -57,6 +57,41 @@ async function fixture(format = 'txt') {
   return { author, story, input };
 }
 describe('author text document import', () => {
+  it('preserves Markdown block boundaries through preview, draft save and editor reload', async () => {
+    const f = await fixture();
+    const extracted = await preview(
+      f.author.cookie,
+      'md',
+      Buffer.from(
+        '## Mở đầu\nNội dung đầu.\n\n```text\nĐoạn mã cuối\n```\n## Kết thúc\nNội dung sau.',
+      ),
+    );
+    expect(extracted.status).toBe(200);
+    expect(extracted.body.headings).toEqual([
+      { level: 2, title: 'Mở đầu' },
+      { level: 2, title: 'Kết thúc' },
+    ]);
+    const boundary = extracted.body.text.indexOf('Kết thúc\n');
+    expect(boundary).toBeGreaterThan(0);
+    expect(extracted.body.text.slice(0, boundary)).toMatch(/Đoạn mã cuối\n{2,}$/);
+    const parts = [extracted.body.text.slice(0, boundary), extracted.body.text.slice(boundary)];
+    const saved = await write('/api/author/imports', f.author.cookie, {
+      ...f.input,
+      receipt: extracted.body.receipt,
+      chapters: parts.map((text, index) => ({
+        title: extracted.body.headings[index].title,
+        paragraphs: [text.trim()],
+      })),
+    });
+    expect(saved.status).toBe(201);
+    for (const [index, id] of saved.body.chapterIds.entries()) {
+      const loaded = await request(app)
+        .get(`/api/author/stories/${f.story._id}/chapters/${id}`)
+        .set('Cookie', f.author.cookie);
+      expect(loaded.status).toBe(200);
+      expect(loaded.body.chapter.paragraphs).toEqual([parts[index].trim()]);
+    }
+  });
   it('preserves chunk-boundary spaces and emoji through import, editor reload and a new revision', async () => {
     const f = await fixture();
     const paragraphs = ['a'.repeat(19999) + ' ', ' 🌸 Nội dung tiếng Việt.'];

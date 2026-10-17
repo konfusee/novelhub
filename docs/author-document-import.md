@@ -44,6 +44,12 @@ Không thêm Markdown rendering hoặc rich-text import: giữ nguyên văn bả
 
 27 kiểm thử backend parser/import và 36 kiểm thử frontend liên quan đạt. Browser tải tệp MD thật, gợi ý phần mở đầu + Bến đầu + Chân trời, không tách heading trong code, lưu ba chương nháp rồi đọc lại từ MongoDB tạm. Sáng/tối 390/768/1024/1536px không tràn ngang. Còn nhập rich text và các cấu trúc tài liệu phức tạp khác; UC rộng vẫn Một phần.
 
+### Sửa ranh giới khối Markdown ngày 18/10/2026
+
+Khối mã (fenced hoặc thụt lề), danh sách và bảng được kết thúc bằng ngắt đoạn khi chuyển thành văn bản. Tiêu đề ngay sau khối không còn dính vào ký tự cuối, giúp đối chiếu metadata và tách chương đúng. Không đổi giao diện, schema hoặc cơ chế lưu bản nháp.
+
+22 kiểm thử parser và 10 kiểm thử API nhập đạt; kiểm thử tích hợp tải Markdown thật qua preview, lưu hai chương vào MongoDB tạm rồi đọc lại qua API editor để đối chiếu nội dung. Lint và Prettier của các file sửa đạt. Đây là kiểm chứng parser/API, không phải nghiệm thu toàn bộ UC hay kiểm tra browser mới.
+
 ## Kiểm chứng ngày 16/10/2026
 
 - Kiểm thử parser dùng PDF/DOCX tự tạo, TXT/UTF-16/MD; từ chối tệp hỏng, sai mã hóa, PDF không có text, Markdown HTML/ảnh, quá dài, hủy và timeout.

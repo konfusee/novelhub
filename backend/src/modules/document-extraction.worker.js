@@ -15,12 +15,15 @@ function markdown(tokens, depth = 0) {
   return tokens
     .map((token) => {
       if (['html', 'image'].includes(token.type)) throw new Error('unsupported_markdown');
+      if (token.type === 'code') return token.text + '\n\n';
       if (token.type === 'list')
-        return token.items.map((item) => markdown(item.tokens, depth + 1)).join('\n');
+        return token.items.map((item) => markdown(item.tokens, depth + 1)).join('\n') + '\n\n';
       if (token.type === 'table')
-        return [token.header, ...token.rows]
-          .map((row) => row.map((cell) => markdown(cell.tokens, depth + 1)).join('\t'))
-          .join('\n');
+        return (
+          [token.header, ...token.rows]
+            .map((row) => row.map((cell) => markdown(cell.tokens, depth + 1)).join('\t'))
+            .join('\n') + '\n\n'
+        );
       if (['space', 'br', 'hr'].includes(token.type)) return '\n';
       if (token.type === 'def') return '';
       if (token.tokens)
