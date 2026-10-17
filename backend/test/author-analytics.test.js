@@ -1,7 +1,8 @@
 import request from 'supertest';
+import { Types } from 'mongoose';
 import { expect, it } from 'vitest';
 import { createApp } from '../src/app.js';
-import { Category, Story, StatisticsEvent, Chapter } from '../src/models/index.js';
+import { Category, Story, StatisticsEvent, Chapter, ReadingProgress } from '../src/models/index.js';
 import { authorAnalytics } from '../src/modules/author-analytics.js';
 import { authenticatedAccount } from './fixtures/accounts.js';
 import { testConfig } from './config.js';
@@ -235,4 +236,73 @@ it('counts returners on distinct days, separates guest/account identities and re
   expect(await read(empty.id)).toMatchObject({ readers: 0, returningReaders: 0, returnRate: null });
   expect(JSON.stringify(all)).not.toContain('private-a');
   expect(await StatisticsEvent.countDocuments()).toBe(8);
+});
+
+it('measures only current text progress active in the Vietnam range without changing or exposing source rows', async () => {
+  const author = await authenticatedAccount('author');
+  const other = await authenticatedAccount('author');
+  const category = await Category.create({
+    name: 'Completion',
+    normalizedName: 'completion',
+    createdBy: author.account._id,
+  });
+  const story = await Story.create({
+    title: 'Completion',
+    authorAccountId: author.account._id,
+    categoryIds: [category._id],
+  });
+  const foreign = await Story.create({
+    title: 'Foreign',
+    authorAccountId: other.account._id,
+    categoryIds: [category._id],
+  });
+  const [one, two, deleted] = await Chapter.create(
+    [1, 2, 3].map((orderKey) => ({
+      title: 'Chapter ' + orderKey,
+      storyId: story._id,
+      orderKey,
+      ...(orderKey === 3 ? { publicationTransition: { result: 'author-draft-deleted' } } : {}),
+    })),
+  );
+  const now = new Date('2026-10-16T12:00:00Z');
+  const start = new Date('2026-10-09T17:00:00Z');
+  const make = (extra = {}) => ({
+    accountId: new Types.ObjectId(),
+    storyId: story._id,
+    chapterId: one._id,
+    mode: 'text',
+    position: 0.5,
+    lastReadAt: now,
+    ...extra,
+  });
+  await ReadingProgress.create([
+    make({ position: 1, completedAt: now }),
+    make({ lastReadAt: start }),
+    make({ chapterId: two._id, position: 1, completedAt: new Date(now.getTime() + 1) }),
+    make({ mode: 'audio', position: 1, completedAt: now }),
+    make({ lastReadAt: new Date(start.getTime() - 1) }),
+    make({ lastReadAt: new Date(now.getTime() + 1) }),
+    make({ chapterId: deleted._id }),
+    make({ chapterId: new Types.ObjectId() }),
+    make({ storyId: foreign._id }),
+    make({ position: 2 }),
+  ]);
+  const before = await ReadingProgress.find().sort({ _id: 1 }).lean();
+  const result = await authorAnalytics(
+    author.account._id,
+    { days: 7, storyId: String(story._id) },
+    now,
+  );
+  expect(result.completionProgress).toMatchObject({ total: 3, completed: 1 });
+  expect(result.completionProgress.rate).toBeCloseTo(33.333333333, 8);
+  const selected = await authorAnalytics(
+    author.account._id,
+    { days: 7, storyId: String(story._id), chapterId: String(two._id) },
+    now,
+  );
+  expect(selected.completionProgress).toEqual({ total: 1, completed: 0, rate: 0 });
+  const empty = await authorAnalytics(other.account._id, {}, now);
+  expect(empty.completionProgress).toEqual({ total: 0, completed: 0, rate: null });
+  expect(JSON.stringify(result)).not.toContain(String(before[0].accountId));
+  expect(await ReadingProgress.find().sort({ _id: 1 }).lean()).toEqual(before);
 });

@@ -1,4 +1,4 @@
-import { Chapter, Story, StatisticsEvent } from '../models/index.js';
+import { Chapter, Story, StatisticsEvent, ReadingProgress } from '../models/index.js';
 import { HttpError } from '../middleware/errors.js';
 
 export async function authorAnalytics(
@@ -42,7 +42,8 @@ export async function authorAnalytics(
     ...(selectedChapter ? { chapterId: selectedChapter._id } : {}),
     day: { $gte: labels[0], $lte: today },
   };
-  const [daily, readers] = await Promise.all([
+  const progressStart = new Date(`${labels[0]}T00:00:00+07:00`);
+  const [daily, readers, progress] = await Promise.all([
     StatisticsEvent.aggregate([{ $match: match }, { $group: { _id: '$day', count: { $sum: 1 } } }]),
     StatisticsEvent.aggregate([
       { $match: match },
@@ -52,6 +53,52 @@ export async function authorAnalytics(
           _id: null,
           count: { $sum: 1 },
           returning: { $sum: { $cond: [{ $gte: [{ $size: '$days' }, 2] }, 1, 0] } },
+        },
+      },
+    ]),
+    ReadingProgress.aggregate([
+      {
+        $match: {
+          storyId: { $in: selected },
+          mode: 'text',
+          ...(selectedChapter ? { chapterId: selectedChapter._id } : {}),
+          position: { $gte: 0, $lte: 1 },
+          lastReadAt: { $gte: progressStart, $lte: now },
+        },
+      },
+      {
+        $lookup: {
+          from: Chapter.collection.name,
+          localField: 'chapterId',
+          foreignField: '_id',
+          pipeline: [
+            { $match: { 'publicationTransition.result': { $ne: 'author-draft-deleted' } } },
+            { $project: { storyId: 1 } },
+          ],
+          as: 'chapter',
+        },
+      },
+      { $match: { $expr: { $eq: ['$storyId', { $arrayElemAt: ['$chapter.storyId', 0] }] } } },
+      {
+        $group: {
+          _id: null,
+          total: { $sum: 1 },
+          completed: {
+            $sum: {
+              $cond: [
+                {
+                  $and: [
+                    { $eq: ['$position', 1] },
+                    { $eq: [{ $type: '$completedAt' }, 'date'] },
+                    { $gte: ['$completedAt', progressStart] },
+                    { $lte: ['$completedAt', now] },
+                  ],
+                },
+                1,
+                0,
+              ],
+            },
+          },
         },
       },
     ]),
@@ -72,6 +119,11 @@ export async function authorAnalytics(
     readers: readerCount,
     returningReaders,
     returnRate: readerCount ? (returningReaders / readerCount) * 100 : null,
+    completionProgress: {
+      total: progress[0]?.total ?? 0,
+      completed: progress[0]?.completed ?? 0,
+      rate: progress[0]?.total ? (progress[0].completed / progress[0].total) * 100 : null,
+    },
     completion: null,
     earnings: null,
     formats: null,

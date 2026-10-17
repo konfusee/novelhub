@@ -28,6 +28,7 @@ const data = {
   readers: 2,
   returningReaders: 1,
   returnRate: 50,
+  completionProgress: { total: 3, completed: 1, rate: 100 / 3 },
 };
 const view = (url = '/author/analytics') =>
   render(
@@ -81,6 +82,9 @@ it('exports actual daily rows and treats formula-like story titles as literal te
   expect(report).toContain('"2026-10-16","2"');
   expect(report).toContain('"Chương","Chương 1: Chương đầu"');
   expect(report).toContain('"Tỷ lệ quay lại trong kỳ","50%"');
+  expect(report).toContain('"Tiến độ chương hoàn thành","33,3%"');
+  expect(report).toContain('"Tiến độ đọc được ghi nhận","3"');
+  expect(report).toContain('"Tiến độ đạt 100%","1"');
 });
 it('renders recorded daily counts and unknown unsupported metrics without sample claims', async () => {
   mocks.apiRequest.mockResolvedValue(data);
@@ -201,4 +205,38 @@ it('requests the selected chapter and permits clearing a missing chapter without
     ),
   );
   await screen.findByText('3');
+});
+
+it('shows measured completion with its explicit account/text/current-state scope', async () => {
+  mocks.apiRequest.mockResolvedValue(data);
+  view();
+  expect(await screen.findByText('33,3%')).toBeTruthy();
+  expect(screen.getByText('1 / 3 tiến độ')).toBeTruthy();
+  expect(screen.getByText(/Đây là trạng thái hiện tại, có thể đổi khi đọc lại/)).toBeTruthy();
+});
+it('distinguishes measured zero completion from no eligible progress', async () => {
+  mocks.apiRequest.mockResolvedValue({
+    ...data,
+    completionProgress: { total: 2, completed: 0, rate: 0 },
+  });
+  view();
+  expect(await screen.findByText('0 / 2 tiến độ')).toBeTruthy();
+  expect(screen.getByText('0%')).toBeTruthy();
+  cleanup();
+  mocks.apiRequest.mockResolvedValue({
+    ...data,
+    completionProgress: { total: 0, completed: 0, rate: null },
+  });
+  view();
+  expect(await screen.findByText('Chưa có tiến độ đọc trong kỳ')).toBeTruthy();
+  expect(screen.queryByText('0 / 0 tiến độ')).toBeNull();
+});
+it('does not display malformed completion counts as a measured percentage', async () => {
+  mocks.apiRequest.mockResolvedValue({
+    ...data,
+    completionProgress: { total: 1, completed: 2, rate: 200 },
+  });
+  view();
+  await screen.findByText('Chưa có tiến độ đọc trong kỳ');
+  expect(screen.queryByText('200%')).toBeNull();
 });

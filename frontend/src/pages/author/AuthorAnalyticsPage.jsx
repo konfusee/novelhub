@@ -94,6 +94,19 @@ export function AuthorAnalyticsPage() {
   const returnRateLabel = hasReturningData
     ? formatPercent(Math.round(returnRate * 10) / 10)
     : t('analyticsData.unknown');
+  const completion = analytics.data.completionProgress;
+  const hasCompletion =
+    Number.isSafeInteger(completion?.total) &&
+    completion.total > 0 &&
+    Number.isSafeInteger(completion.completed) &&
+    completion.completed >= 0 &&
+    completion.completed <= completion.total &&
+    Number.isFinite(completion.rate) &&
+    completion.rate >= 0 &&
+    completion.rate <= 100;
+  const completionLabel = hasCompletion
+    ? formatPercent(Math.round(completion.rate * 10) / 10)
+    : t('analyticsData.unknown');
   const channels = [];
   const devices = [];
   const storyLabel =
@@ -123,8 +136,13 @@ export function AuthorAnalyticsPage() {
     {
       icon: Sparkles,
       label: t('analyticsData.completion'),
-      value: '—',
-      delta: t('analyticsData.unknown'),
+      value: hasCompletion ? completionLabel : '—',
+      delta: hasCompletion
+        ? t('analyticsData.completedProgress', {
+            completed: completion.completed,
+            total: completion.total,
+          })
+        : t('analyticsData.noProgress'),
       tone: 'purple',
     },
     {
@@ -155,6 +173,16 @@ export function AuthorAnalyticsPage() {
         Number.isSafeInteger(returning) ? returning : t('analyticsData.unknown'),
       ],
       [t('analyticsData.returnRate'), returnRateLabel],
+      [t('analyticsData.completion'), completionLabel],
+      [
+        t('analyticsData.trackedProgress'),
+        hasCompletion ? completion.total : t('analyticsData.unknown'),
+      ],
+      [
+        t('analyticsData.finishedProgress'),
+        hasCompletion ? completion.completed : t('analyticsData.unknown'),
+      ],
+      [t('analyticsData.completionScope')],
       [],
       [t('analyticsData.date'), t('analyticsData.views')],
       ...labels.map((label, index) => [label, daily[index]]),
@@ -294,6 +322,11 @@ export function AuthorAnalyticsPage() {
               </section>
             )}
 
+            {!loading && (
+              <p className="mt-3 text-xs leading-5 text-muted">
+                {t('analyticsData.completionScope')}
+              </p>
+            )}
             <div className="nh-grid-12 mt-6 grid items-start gap-5 nh-layout-xl-8-4">
               <Card className="min-w-0">
                 <div className="flex flex-wrap items-start justify-between gap-3">

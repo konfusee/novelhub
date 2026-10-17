@@ -1144,7 +1144,7 @@
     "readers": "Định danh độc giả duy nhất",
     "recorded": "Dữ liệu đã ghi nhận",
     "readerHint": "Tài khoản và thiết bị khách",
-    "completion": "Tỷ lệ hoàn thành chương",
+    "completion": "Tiến độ chương hoàn thành",
     "revenue": "Doanh thu trong kỳ",
     "unknown": "Chưa có số liệu",
     "noRevenue": "Chưa có báo cáo doanh thu trong kỳ",
@@ -1158,7 +1158,12 @@
     "noRetention": "Chưa có thống kê đủ để tính giữ chân, hoàn thành chương hoặc so sánh với toàn nền tảng.",
     "noChannels": "Chưa ghi nhận nguồn kênh khám phá cho các lượt đọc.",
     "noDevices": "Chưa có thống kê thiết bị, giao diện hoặc gói đăng ký của độc giả.",
-    "noAdvice": "Chưa có nhận định biên tập được lưu cho dữ liệu phân tích này."
+    "noAdvice": "Chưa có nhận định biên tập được lưu cho dữ liệu phân tích này.",
+    "completedProgress": "{{completed}} / {{total}} tiến độ",
+    "noProgress": "Chưa có tiến độ đọc trong kỳ",
+    "trackedProgress": "Tiến độ đọc được ghi nhận",
+    "finishedProgress": "Tiến độ đạt 100%",
+    "completionScope": "Tỷ lệ hoàn thành tính trên tiến độ đọc văn bản đã lưu của tài khoản có hoạt động trong kỳ, theo truyện/chương đang lọc. Đây là trạng thái hiện tại, có thể đổi khi đọc lại; không gồm khách và âm thanh."
   },
   "draftsData": {
     "error": "Không lưu được bản nháp. Hãy thử lại.",
