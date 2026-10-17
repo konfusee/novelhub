@@ -265,7 +265,7 @@ export function AuthorDashboardPage() {
               <EmptyState
                 icon={Edit3}
                 title="Chưa có bản nháp nào đang viết"
-                description="Tạo truyện mới hoặc nhập bản thảo PDF để tiếp tục sáng tác tại đây."
+                description={t('documentImport.dashboardEmpty')}
                 action={
                   <ButtonLink to="/author/stories/new" size="sm">
                     <Plus size={14} aria-hidden="true" />

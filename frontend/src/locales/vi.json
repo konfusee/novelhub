@@ -1621,7 +1621,9 @@
     "destinationHint": "Sau khi tạo truyện ở thẻ mới, quay lại và tải lại danh sách. Bản nháp chưa được xuất bản.",
     "selected": "Đã chọn {{count}} chương",
     "saving": "Đang lưu…",
-    "save": "Nhập thành bản nháp"
+    "save": "Nhập thành bản nháp",
+    "dashboardEmpty": "Tạo truyện mới hoặc nhập bản thảo PDF, Word, TXT hay Markdown để tiếp tục sáng tác tại đây.",
+    "draftsEmpty": "Tạo bản nháp đầu tiên hoặc nhập bản thảo PDF, DOC, DOCX, TXT hay MD."
   },
   "mediaData": {
     "description": "Quản lý ảnh riêng trong tài khoản. Thông tin và dung lượng lấy trực tiếp từ máy chủ.",
