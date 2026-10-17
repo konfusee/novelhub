@@ -1776,5 +1776,31 @@
     "claimExpiryHours": "Thời hạn nhận xử lý (giờ)",
     "complement": "Tỷ lệ mặc định của nền tảng: {{value}}%. Tổng hai bên luôn bằng 100%.",
     "financeScope": "Thỏa thuận riêng của tác giả vẫn được ưu tiên. Thay đổi ngưỡng chỉ cung cấp chính sách cho lần xét rút tiếp theo; luồng xét và thanh toán tự động chưa được triển khai."
+  },
+  "policyHistory": {
+    "title": "Lịch sử chính sách",
+    "description": "Các phiên bản đã lưu, sắp xếp theo ngày hiệu lực mới nhất. Phiên bản cũ được giữ để tra cứu.",
+    "reload": "Tải lại lịch sử",
+    "loading": "Đang tải lịch sử chính sách",
+    "error": "Không tải được lịch sử chính sách. Hãy thử tải lại.",
+    "empty": "Chưa có phiên bản chính sách nào.",
+    "emptyPage": "Trang này chưa có phiên bản. Hãy quay về trang trước.",
+    "noDate": "Chưa đặt ngày hiệu lực",
+    "current": "Đang áp dụng",
+    "future": "Chưa đến ngày hiệu lực",
+    "draft": "Bản nháp",
+    "superseded": "Đã thay thế",
+    "earlier": "Phiên bản trước",
+    "price": "Giá đọc sớm",
+    "duration": "Thời hạn đọc sớm",
+    "share": "Tỷ lệ tác giả / nền tảng",
+    "coinRange": "{{min}}–{{max}} xu",
+    "dayRange": "{{min}}–{{max}} ngày",
+    "percentages": "{{author}}% / {{platform}}%",
+    "noReason": "Chưa có lý do kích hoạt được ghi nhận.",
+    "page": "Trang {{page}} / {{pages}} · {{total}} phiên bản",
+    "previous": "Trang lịch sử trước",
+    "next": "Trang lịch sử tiếp",
+    "identity": "Mã phiên bản: {{id}}"
   }
 }

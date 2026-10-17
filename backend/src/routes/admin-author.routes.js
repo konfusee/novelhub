@@ -1,5 +1,5 @@
 import { authorAgreement, saveAuthorAgreement } from '../modules/author-agreement.js';
-import { activatePolicy, adminPolicy } from '../modules/admin-policy.js';
+import { activatePolicy, adminPolicy, adminPolicyHistory } from '../modules/admin-policy.js';
 import { Router } from 'express';
 import { z } from 'zod';
 import { requireAuth, requireRole } from '../middleware/auth.js';
@@ -33,6 +33,31 @@ const decisionSchema = z
 
 export function createAdminAuthorRouter(config) {
   const router = Router();
+  router.get(
+    '/admin/policy/history',
+    requireAuth(config),
+    requireRole('admin'),
+    async (req, res, next) => {
+      try {
+        const parsed = z
+          .object({
+            page: z.coerce.number().int().min(1).max(100000).default(1),
+            pageSize: z.coerce.number().int().min(1).max(20).default(5),
+          })
+          .strict()
+          .safeParse(req.query);
+        if (!parsed.success)
+          throw new HttpError(
+            400,
+            'validation_error',
+            'Phân trang lịch sử chính sách không hợp lệ.',
+          );
+        res.set('Cache-Control', 'private, no-store').json(await adminPolicyHistory(parsed.data));
+      } catch (error) {
+        next(error);
+      }
+    },
+  );
   router.post(
     '/admin/policy',
     requireAuth(config),

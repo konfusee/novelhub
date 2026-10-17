@@ -1,3 +1,4 @@
+import { PolicyHistory } from './PolicyHistory';
 import { useState } from 'react';
 import { PolicySettingsForm } from './PolicySettingsForm';
 import { Button, Card, Skeleton } from '../../components/ui';
@@ -70,15 +71,18 @@ export function PolicySettingsPanel() {
         </p>
       )}
       {resource.status === 'ready' && (
-        <PolicySettingsForm
-          key={`${policy?.id ?? 'initial'}:${policy?.version ?? 0}`}
-          policy={policy}
-          onBusy={setBusy}
-          onSaved={() => {
-            setSaved(true);
-            resource.retry();
-          }}
-        />
+        <>
+          <PolicySettingsForm
+            key={`${policy?.id ?? 'initial'}:${policy?.version ?? 0}`}
+            policy={policy}
+            onBusy={setBusy}
+            onSaved={() => {
+              setSaved(true);
+              resource.retry();
+            }}
+          />
+          <PolicyHistory />
+        </>
       )}
     </Card>
   );

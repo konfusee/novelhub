@@ -6,6 +6,8 @@ import { digest } from './submission-digests.js';
 // Reserved identity of the first real policy. MongoDB's _id uniqueness serializes
 // concurrent initialization across different Admins without a schema or lock collection.
 const INITIAL_POLICY_ID = '000000000000000000000001';
+const policyFields =
+  'version status effectiveAt priceMinCoins priceMaxCoins durationMinDays durationMaxDays authorSharePercent platformSharePercent withdrawalThresholdCoins orderExpiryHours claimExpiryHours';
 const inheritedFields = [
   'withdrawalThresholdCoins',
   'authorSharePercent',
@@ -134,9 +136,7 @@ export async function activatePolicy(admin, input) {
 export async function adminPolicy(now = new Date()) {
   const policy = await PolicyVersion.findOne({ status: 'effective', effectiveAt: { $lte: now } })
     .sort({ effectiveAt: -1, _id: -1 })
-    .select(
-      'version effectiveAt priceMinCoins priceMaxCoins durationMinDays durationMaxDays authorSharePercent platformSharePercent withdrawalThresholdCoins orderExpiryHours claimExpiryHours',
-    )
+    .select(policyFields)
     .lean();
   return {
     policy: policy
@@ -156,4 +156,64 @@ export async function adminPolicy(now = new Date()) {
         }
       : null,
   };
+}
+
+export async function adminPolicyHistory({ page, pageSize }, now = new Date()) {
+  // Read a consistent page/count/current identity while activation may run concurrently.
+  return withTransaction(async (session) => {
+    const current = await PolicyVersion.findOne({ status: 'effective', effectiveAt: { $lte: now } })
+      .sort({ effectiveAt: -1, _id: -1 })
+      .select('_id')
+      .session(session)
+      .lean();
+    const total = await PolicyVersion.countDocuments().session(session);
+    const rows = await PolicyVersion.find()
+      .sort({ effectiveAt: -1, _id: -1 })
+      .skip((page - 1) * pageSize)
+      .limit(pageSize)
+      .select(policyFields)
+      .session(session)
+      .lean();
+    const audits = await AuditEvent.find({
+      targetType: 'policy',
+      targetId: { $in: rows.map((row) => row._id) },
+      action: 'policy.activated',
+      result: 'accepted',
+    })
+      .sort({ occurredAt: -1, _id: -1 })
+      .select('targetId reason')
+      .session(session)
+      .lean();
+    const reasons = new Map();
+    for (const audit of audits)
+      if (!reasons.has(String(audit.targetId)))
+        reasons.set(
+          String(audit.targetId),
+          typeof audit.reason === 'string' ? audit.reason.slice(0, 1000) : null,
+        );
+    return {
+      items: rows.map((row) => ({
+        id: String(row._id),
+        version: row.version,
+        status: row.status,
+        current: String(row._id) === String(current?._id),
+        future: row.status === 'effective' && row.effectiveAt > now,
+        effectiveAt: row.effectiveAt ?? null,
+        priceMinCoins: row.priceMinCoins,
+        priceMaxCoins: row.priceMaxCoins,
+        durationMinDays: row.durationMinDays,
+        durationMaxDays: row.durationMaxDays,
+        authorSharePercent: row.authorSharePercent,
+        platformSharePercent: row.platformSharePercent,
+        withdrawalThresholdCoins: row.withdrawalThresholdCoins,
+        orderExpiryHours: row.orderExpiryHours,
+        claimExpiryHours: row.claimExpiryHours,
+        reason: reasons.get(String(row._id)) ?? null,
+      })),
+      page,
+      pageSize,
+      total,
+      totalPages: Math.ceil(total / pageSize),
+    };
+  });
 }

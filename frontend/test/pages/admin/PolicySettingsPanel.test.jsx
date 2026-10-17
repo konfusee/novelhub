@@ -8,6 +8,14 @@ afterEach(() => {
   cleanup();
   vi.resetAllMocks();
 });
+const respond = (data) =>
+  mocks.apiRequest.mockImplementation((path) =>
+    Promise.resolve(
+      path.startsWith('/admin/policy/history')
+        ? { items: [], total: 0, page: 1, pageSize: 5, totalPages: 0 }
+        : data,
+    ),
+  );
 const view = () =>
   render(
     <LocaleProvider>
@@ -15,7 +23,7 @@ const view = () =>
     </LocaleProvider>,
   );
 it('renders persisted bounds and reloads actual server data without a save simulation', async () => {
-  mocks.apiRequest.mockResolvedValue({
+  respond({
     policy: {
       effectiveAt: '2026-01-01',
       priceMinCoins: 321,
@@ -30,13 +38,13 @@ it('renders persisted bounds and reloads actual server data without a save simul
   await screen.findByText('321');
   expect(mocks.apiRequest.mock.calls[0][0]).toBe('/admin/policy');
   expect(screen.getByRole('button', { name: 'Lưu và kích hoạt chính sách' }).disabled).toBe(true);
-  mocks.apiRequest.mockResolvedValue({ policy: null });
+  respond({ policy: null });
   fireEvent.click(screen.getByRole('button', { name: 'Tải lại chính sách' }));
   await screen.findByText(/Chưa có chính sách đang hiệu lực/);
   expect(screen.queryByText('321')).toBeNull();
 });
 it('keeps an empty database empty instead of displaying mock settings', async () => {
-  mocks.apiRequest.mockResolvedValue({ policy: null });
+  respond({ policy: null });
   view();
   await screen.findByText(/Chưa có chính sách đang hiệu lực/);
   expect(screen.queryByText('200')).toBeNull();
@@ -45,7 +53,7 @@ it('shows an error and supports retry without stale or fabricated values', async
   mocks.apiRequest.mockRejectedValue(new Error('offline'));
   view();
   await screen.findByRole('alert');
-  mocks.apiRequest.mockResolvedValue({ policy: null });
+  respond({ policy: null });
   fireEvent.click(screen.getByRole('button', { name: 'Tải lại chính sách' }));
   await screen.findByText(/Chưa có chính sách đang hiệu lực/);
   expect(screen.queryByRole('alert')).toBeNull();
