@@ -3,6 +3,7 @@ import { useBackendDocument } from '../../api/useBackendResource';
 import { apiRequest } from '../../api/client';
 import { useLocale } from '../../context/LocaleContext';
 import { Button, ButtonLink, Modal } from '../../components/ui';
+import { ROUTES } from '../../app/routes';
 
 const emptyRelease = { target: {}, checks: [], ready: false };
 export function StoryReleaseDialog({ storyId, onClose, onReleased }) {
@@ -28,8 +29,27 @@ function ReleaseDialog({ storyId, chapterId, onClose, onReleased }) {
   const busyRef = useRef(false);
   const [error, setError] = useState('');
   const data = resource.data;
+  const manager = ROUTES.authorStory(storyId);
+  const review = `/author/submissions?storyId=${encodeURIComponent(storyId)}${chapter ? `&chapterId=${encodeURIComponent(chapterId)}` : ''}`;
+  const fixes = {
+    approval: { to: review, label: 'review' },
+    integrity: { to: review, label: 'package' },
+    evidence: { to: review, label: 'evidence' },
+    rights: { to: review, label: 'rights' },
+    categories: { to: `${manager}?tab=details`, label: 'categories' },
+    parent: { to: `${manager}?tab=details`, label: 'parent' },
+    order: { to: `${manager}?tab=chapters`, label: 'order' },
+    free: { to: `${manager}?tab=chapters`, label: 'free' },
+    format: { to: review, label: 'format' },
+    media: { to: chapter ? review : `${manager}?tab=media`, label: 'media' },
+    editable: { to: `${manager}?tab=reviews`, label: 'status' },
+  };
   const ready =
-    resource.status === 'ready' && data.ready && data.target.revisionId && data.target.submissionId;
+    resource.status === 'ready' &&
+    !error &&
+    data.ready &&
+    data.target.revisionId &&
+    data.target.submissionId;
   const publish = async () => {
     if (!ready || busyRef.current) return;
     busyRef.current = true;
@@ -46,7 +66,7 @@ function ReleaseDialog({ storyId, chapterId, onClose, onReleased }) {
         },
       });
       const released = result?.[chapter ? 'chapter' : 'story'];
-      if (!released?.id || released.status !== 'published')
+      if (released?.id !== (chapter ? chapterId : storyId) || released.status !== 'published')
         throw new Error(t('storyRelease.failed'));
       onReleased();
     } catch (failure) {
@@ -60,7 +80,7 @@ function ReleaseDialog({ storyId, chapterId, onClose, onReleased }) {
     <Modal
       open
       title={t(!chapter && data.target.restoring ? 'storyRelease.restoreTitle' : `${label}.title`)}
-      onClose={() => !busy && onClose()}
+      onClose={() => !busyRef.current && onClose()}
     >
       <p className="text-sm leading-6 text-muted">
         {t(!chapter && data.target.restoring ? 'storyRelease.restoreHint' : `${label}.hint`)}
@@ -82,7 +102,24 @@ function ReleaseDialog({ storyId, chapterId, onClose, onReleased }) {
                 key={check.code}
                 className="grid grid-cols-[minmax(0,1fr)_auto] items-start gap-3 text-sm"
               >
-                <span>{t(`${label}.checks.${check.code}`)}</span>
+                <div className="min-w-0">
+                  <span>{t(`${label}.checks.${check.code}`)}</span>
+                  {!check.ok && fixes[check.code] && (
+                    <div className="mt-2">
+                      <ButtonLink
+                        variant="secondary"
+                        size="sm"
+                        to={fixes[check.code].to}
+                        onClick={onClose}
+                      >
+                        {t(`releaseFixes.${fixes[check.code].label}`)}
+                      </ButtonLink>
+                      <p className="mt-2 text-xs leading-5 text-muted">
+                        {t(`releaseFixes.${fixes[check.code].label}Hint`)}
+                      </p>
+                    </div>
+                  )}
+                </div>
                 <strong className={check.ok ? 'text-brand-strong' : 'text-rose-strong'}>
                   {t(check.ok ? 'submissionData.pass' : 'submissionData.fail')}
                 </strong>
@@ -110,7 +147,14 @@ function ReleaseDialog({ storyId, chapterId, onClose, onReleased }) {
         <Button variant="secondary" disabled={busy} onClick={onClose}>
           {t('submissionData.cancel')}
         </Button>
-        <Button variant="secondary" disabled={busy} onClick={resource.retry}>
+        <Button
+          variant="secondary"
+          disabled={busy}
+          onClick={() => {
+            setError('');
+            resource.retry();
+          }}
+        >
           {t('storyRelease.checkAgain')}
         </Button>
         <Button disabled={!ready || busy} onClick={publish}>
