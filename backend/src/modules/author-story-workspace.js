@@ -14,6 +14,8 @@ import { canReorderDraftChapters } from './author-chapter-order.js';
 import { chapterCanUnpublish, chapterDraftLifecycle } from './author-chapter-lifecycle.js';
 import { chapterTextProjection } from './rich-chapter-document.js';
 import { canReviseUnpublished } from './author-submissions.js';
+import { storyCanUnpublish } from './author-story-unpublish.js';
+import { canReleaseStoryVersion } from './author-story-release.js';
 
 export async function authorStoryWorkspace(account, storyId) {
   const story = await Story.findOne({ _id: storyId, authorAccountId: account._id }).lean();
@@ -137,12 +139,11 @@ export async function authorStoryWorkspace(account, storyId) {
       ...lifecycle,
       canReorder: canReorderDraftChapters(chapters, revisions, lifecycle),
       canReleaseMetadata: Boolean(
-        approvedMetadata &&
-        !story.authoringFrozen &&
-        ['approved', 'published'].includes(story.publicationStatus) &&
-        String(metadataRevisionId) !== String(story.publishedRevisionId),
+        approvedMetadata && canReleaseStoryVersion(story, metadataRevisionId),
       ),
       id: String(story._id),
+      publishedRevisionId: story.publishedRevisionId ? String(story.publishedRevisionId) : null,
+      canUnpublish: storyCanUnpublish(story),
       title: story.title,
       description: story.description ?? '',
       genres: categories.map((item) => item.name),

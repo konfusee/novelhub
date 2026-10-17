@@ -11,6 +11,23 @@ import { lockAuthor, ownStory } from './author-ownership.js';
 import { loadSubmittedPackage } from './author-submitted-package.js';
 import { digest } from './submission-digests.js';
 
+export function canReleaseStoryVersion(story, revisionId) {
+  const unpublished = story.publicationStatus === 'unpublished';
+  const authorWithdrew = story.publicationTransition?.result === 'author-story-unpublished';
+  const restoring =
+    unpublished &&
+    authorWithdrew &&
+    !story.draftRevisionId &&
+    String(story.publishedRevisionId) === String(revisionId);
+  return Boolean(
+    revisionId &&
+    !story.authoringFrozen &&
+    ['approved', 'published', 'unpublished'].includes(story.publicationStatus) &&
+    (!unpublished || authorWithdrew) &&
+    (restoring || String(story.publishedRevisionId) !== String(revisionId)),
+  );
+}
+
 async function releaseState(account, storyId, session) {
   const story = await ownStory(account, storyId, session);
   const revisionId = story.draftRevisionId ?? story.currentRevisionId;
@@ -72,10 +89,7 @@ async function releaseState(account, storyId, session) {
     { code: 'media', ok: !story.coverMediaId && !story.theme?.coverBannerMediaId },
     {
       code: 'editable',
-      ok:
-        !story.authoringFrozen &&
-        ['approved', 'published'].includes(story.publicationStatus) &&
-        String(story.publishedRevisionId) !== String(revisionId),
+      ok: canReleaseStoryVersion(story, revisionId),
     },
   ];
   return { story, submission, snapshot, checks };
@@ -90,6 +104,9 @@ export async function prepareStoryRelease(account, storyId) {
       revisionId: state.snapshot ? String(state.snapshot.revision._id) : null,
       submissionId: state.submission ? String(state.submission._id) : null,
       title: state.snapshot?.revision.content.title ?? state.story.title,
+      restoring:
+        state.story.publicationStatus === 'unpublished' &&
+        String(state.story.publishedRevisionId) === String(state.snapshot?.revision._id),
     },
     ready: state.checks.every((check) => check.ok),
     checks: state.checks,

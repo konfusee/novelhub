@@ -516,3 +516,23 @@ it('opens real schedule controls from the chapter row and refreshes status after
   await screen.findByText('Đã lưu lịch phát hành trên máy chủ.');
   expect(await screen.findByRole('button', { name: 'Đổi hoặc hủy lịch' })).toBeTruthy();
 });
+
+it('blocks story withdrawal while metadata edits are unsaved', async () => {
+  mocks.apiRequest.mockImplementation(async (path) =>
+    path === '/catalog/categories'
+      ? { items: [] }
+      : {
+          ...workspace,
+          story: { ...workspace.story, canUnpublish: true, publishedRevisionId: 'revision' },
+        },
+  );
+  view();
+  fireEvent.click(await screen.findByRole('button', { name: 'Sửa thông tin', exact: true }));
+  const button = await screen.findByRole('button', { name: 'Ngừng phát hành truyện', exact: true });
+  expect(button.disabled).toBe(false);
+  fireEvent.change(screen.getByRole('textbox', { name: 'Tên truyện' }), {
+    target: { value: 'Unsaved title' },
+  });
+  expect(button.disabled).toBe(true);
+  expect(mocks.apiRequest.mock.calls.some(([, options]) => options?.method === 'POST')).toBe(false);
+});

@@ -85,3 +85,17 @@ it('shows recoverable load errors without offering publication', async () => {
   await screen.findByRole('alert');
   expect(screen.getByRole('button', { name: 'Phát hành ngay' }).disabled).toBe(true);
 });
+
+it('labels restoration explicitly while retaining every server release gate', async () => {
+  mocks.apiRequest.mockResolvedValue({
+    ...prepared,
+    target: { ...prepared.target, restoring: true },
+  });
+  view();
+  expect(
+    await screen.findByRole('heading', { name: 'Phát hành lại thông tin truyện' }),
+  ).toBeTruthy();
+  expect(screen.getByText(/Những chương đã phát hành sẽ hiển thị lại/)).toBeTruthy();
+  expect(screen.getByRole('button', { name: 'Phát hành ngay' }).disabled).toBe(false);
+  expect(mocks.apiRequest.mock.calls.every(([, options]) => !options?.method)).toBe(true);
+});

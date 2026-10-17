@@ -896,3 +896,47 @@ it('explicitly clears unreleased approved early-access settings before using the
   expect(response.status).toBe(201);
   expect((await Chapter.findById(f.chapterId)).earlyAccess).toBeUndefined();
 });
+
+it('hides all released chapters with their parent and restores existing release bindings', async () => {
+  const f = await fixture();
+  expect((await write(f.cookie, f.endpoint, f.body)).status).toBe(201);
+  const before = await Chapter.findById(f.chapterId).lean();
+  const parent = await Story.findById(f.storyId);
+  const entitlement = await UnlockEntitlement.create({
+    accountId: f.author.account._id,
+    storyId: f.storyId,
+    chapterId: f.chapterId,
+    publishedRevisionId: before.publishedRevisionId,
+    status: 'active',
+    purchasedAt: new Date(),
+    expiresAt: new Date(Date.now() + 86400000),
+    priceCoins: 10,
+  });
+  const lifecycle = '/api/author/stories/' + f.storyId + '/lifecycle';
+  expect(
+    (
+      await write(f.cookie, lifecycle, {
+        action: 'unpublish',
+        expectedVersion: parent.version,
+        expectedPublishedRevisionId: String(parent.publishedRevisionId),
+        reason: 'Temporarily hidden',
+      })
+    ).status,
+  ).toBe(200);
+  const url = '/api/catalog/stories/' + f.storyId + '/chapters/' + f.chapterId;
+  expect((await request(app).get(url)).status).toBe(404);
+  expect(await Chapter.findById(f.chapterId).lean()).toEqual(before);
+  expect(await UnlockEntitlement.findById(entitlement._id).lean()).toEqual(entitlement.toObject());
+  const hidden = await Story.findById(f.storyId);
+  expect(
+    (
+      await write(f.cookie, '/api/author/stories/' + f.storyId + '/release', {
+        revisionId: String(parent.publishedRevisionId),
+        submissionId: String(f.parent.submission._id),
+        expectedVersion: hidden.version,
+      })
+    ).status,
+  ).toBe(201);
+  expect((await request(app).get(url)).status).toBe(200);
+  expect(await Chapter.findById(f.chapterId).lean()).toEqual(before);
+});
