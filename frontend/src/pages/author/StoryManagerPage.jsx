@@ -836,7 +836,7 @@ function ChapterRow({ chapter, storyId, onLifecycle, onRelease, onSchedule, onEa
             {t('authorDraftActions.preview')}
           </ButtonLink>
           <ButtonLink
-            to="/author/analytics"
+            to={ROUTES.authorAnalytics(storyId, chapter.id)}
             variant="secondary"
             size="sm"
             aria-label={`Xem phân tích chương ${chapter.number}: ${chapter.title}`}
