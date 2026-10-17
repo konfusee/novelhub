@@ -55,6 +55,9 @@ it('matches the currently effective policy, excluding draft, superseded and futu
       durationMaxDays: 8,
       authorSharePercent: 75,
       platformSharePercent: 25,
+      withdrawalThresholdCoins: 100000,
+      orderExpiryHours: 24,
+      claimExpiryHours: 24,
     },
   });
   const response = await request(app).get('/api/admin/policy').set('Cookie', admin.cookie);

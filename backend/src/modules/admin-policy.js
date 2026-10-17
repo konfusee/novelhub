@@ -79,6 +79,17 @@ export async function activatePolicy(admin, input) {
           {
             ...(!previous ? { _id: INITIAL_POLICY_ID } : {}),
             ...inherited,
+            ...(input.authorSharePercent !== undefined
+              ? {
+                  authorSharePercent: input.authorSharePercent,
+                  platformSharePercent: 100 - input.authorSharePercent,
+                }
+              : {}),
+            ...(input.withdrawalThresholdCoins !== undefined
+              ? {
+                  withdrawalThresholdCoins: input.withdrawalThresholdCoins,
+                }
+              : {}),
             status: 'effective',
             effectiveAt: now,
             actorAccountId: admin._id,
@@ -124,7 +135,7 @@ export async function adminPolicy(now = new Date()) {
   const policy = await PolicyVersion.findOne({ status: 'effective', effectiveAt: { $lte: now } })
     .sort({ effectiveAt: -1, _id: -1 })
     .select(
-      'version effectiveAt priceMinCoins priceMaxCoins durationMinDays durationMaxDays authorSharePercent platformSharePercent',
+      'version effectiveAt priceMinCoins priceMaxCoins durationMinDays durationMaxDays authorSharePercent platformSharePercent withdrawalThresholdCoins orderExpiryHours claimExpiryHours',
     )
     .lean();
   return {
@@ -139,6 +150,9 @@ export async function adminPolicy(now = new Date()) {
           durationMaxDays: policy.durationMaxDays,
           authorSharePercent: policy.authorSharePercent,
           platformSharePercent: policy.platformSharePercent,
+          withdrawalThresholdCoins: policy.withdrawalThresholdCoins,
+          orderExpiryHours: policy.orderExpiryHours,
+          claimExpiryHours: policy.claimExpiryHours,
         }
       : null,
   };

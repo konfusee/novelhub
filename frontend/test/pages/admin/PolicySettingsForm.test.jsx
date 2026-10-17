@@ -15,6 +15,8 @@ const policy = {
   priceMaxCoins: 5000,
   durationMinDays: 1,
   durationMaxDays: 14,
+  authorSharePercent: 70,
+  withdrawalThresholdCoins: 100000,
 };
 function view(current = policy) {
   const onSaved = vi.fn();
@@ -46,6 +48,8 @@ it('requires a changed bound and reason, sends exact policy tokens and accepts a
       priceMaxCoins: 5000,
       durationMinDays: 1,
       durationMaxDays: 14,
+      authorSharePercent: 70,
+      withdrawalThresholdCoins: 100000,
       reason: 'Điều chỉnh mới',
       expectedPolicyId: policy.id,
       expectedPolicyVersion: 7,
@@ -55,7 +59,7 @@ it('requires a changed bound and reason, sends exact policy tokens and accepts a
 it('initializes with explicit bounds, null tokens and disclosed default terms', async () => {
   mocks.apiRequest.mockResolvedValue({ policyId: '000000000000000000000001', version: 0 });
   const callbacks = view(null);
-  expect(screen.getByText(/70% tác giả/)).toBeTruthy();
+  expect(screen.getByLabelText('Tỷ lệ mặc định của tác giả (%)').value).toBe('70');
   for (const [label, value] of [
     ['Giá tối thiểu (xu)', '0'],
     ['Giá tối đa (xu)', '900'],
@@ -112,4 +116,36 @@ it('does not accept a successful HTTP response that returns the old policy ident
   await screen.findByRole('alert');
   expect(callbacks.onSaved).not.toHaveBeenCalled();
   expect(button().disabled).toBe(true);
+});
+it('allows a finance-only change and computes the platform complement without sending it', async () => {
+  mocks.apiRequest.mockResolvedValue({ policyId: '333333333333333333333333', version: 0 });
+  const callbacks = view();
+  fill('Tỷ lệ mặc định của tác giả (%)', '82');
+  fill('Ngưỡng rút tiền (xu)', '150000');
+  fill('Lý do thay đổi (bắt buộc)', 'Cập nhật chính sách doanh thu');
+  expect(screen.getByText(/nền tảng: 18%/)).toBeTruthy();
+  fireEvent.click(button());
+  await waitFor(() => expect(callbacks.onSaved).toHaveBeenCalledOnce());
+  expect(mocks.apiRequest.mock.calls[0][1].body).toMatchObject({
+    authorSharePercent: 82,
+    withdrawalThresholdCoins: 150000,
+    priceMinCoins: 200,
+  });
+  expect(mocks.apiRequest.mock.calls[0][1].body).not.toHaveProperty('platformSharePercent');
+});
+it('blocks invalid percentages and negative or fractional withdrawal thresholds', () => {
+  view();
+  fill('Lý do thay đổi (bắt buộc)', 'Kiểm tra');
+  for (const value of ['101', '-1', '70.5']) {
+    fill('Tỷ lệ mặc định của tác giả (%)', value);
+    expect(button().disabled).toBe(true);
+  }
+  fill('Tỷ lệ mặc định của tác giả (%)', '0');
+  fill('Ngưỡng rút tiền (xu)', '0');
+  expect(button().disabled).toBe(false);
+  for (const value of ['-1', '1.5']) {
+    fill('Ngưỡng rút tiền (xu)', value);
+    expect(button().disabled).toBe(true);
+  }
+  expect(mocks.apiRequest).not.toHaveBeenCalled();
 });

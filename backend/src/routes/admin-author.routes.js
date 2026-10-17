@@ -46,6 +46,8 @@ export function createAdminAuthorRouter(config) {
             priceMaxCoins: integer,
             durationMinDays: integer.min(1),
             durationMaxDays: integer.min(1),
+            authorSharePercent: integer.max(100).optional(),
+            withdrawalThresholdCoins: integer.optional(),
             expectedPolicyId: z
               .string()
               .regex(/^[a-f\d]{24}$/i)
