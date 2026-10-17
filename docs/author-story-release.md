@@ -22,6 +22,8 @@ Thông tin cập nhật của truyện đang công khai cũng có thể được
 
 Workspace trả canReleaseMetadata cho đúng gói đã duyệt chưa phát hành. Nút **Phát hành thông tin truyện** mở hộp xác nhận, kiểm tra lại điều kiện và có liên kết xem gói. Lỗi stale/API giữ hộp thoại, không báo thành công. Sau khi lưu thành công, trang làm mới trạng thái và cung cấp liên kết truyện công khai.
 
+Checklist phát hành truyện/chương có liên kết khắc phục cho từng điều kiện chưa đạt: bản gửi/phản hồi, thể loại, media, truyện cha, thứ tự chương và đọc sớm. Liên kết đóng hộp thoại trước khi chuyển tab, giữ đúng storyId/chapterId. Hướng dẫn nêu rõ thay đổi bản nháp cần duyệt lại, không sửa gói bất biến hoặc bỏ qua điều kiện máy chủ. Sau lỗi phát hành phải kiểm tra lại điều kiện trước khi xác nhận tiếp; phản hồi có ID truyện/chương khác không được coi là thành công. 28 kiểm thử UI liên quan đã đạt; browser MongoDB tạm xác minh điều kiện thể loại chưa đạt dẫn đúng tab thông tin, modal đóng, nút phát hành vẫn bị chặn. Bố cục sáng/tối không tràn ngang ở 390/768/1024/1536px.
+
 Truyện có metadata công khai nhưng chưa có chương vẫn giữ bố cục trang độc giả. Nút đọc/nghe tạm khóa, không tạo URL chứa undefined; số trang hiển thị 0–0 và không gắn nhãn có bản đọc thử. Khi có chương, các liên kết hiện có vẫn trỏ đúng chương đầu tiên.
 
 ## Kiểm chứng và phần còn lại

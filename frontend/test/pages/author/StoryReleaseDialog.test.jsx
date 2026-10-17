@@ -22,11 +22,11 @@ const prepared = {
     (code) => ({ code, ok: true }),
   ),
 };
-function view(onReleased = vi.fn()) {
+function view(onReleased = vi.fn(), onClose = vi.fn()) {
   render(
     <MemoryRouter>
       <LocaleProvider>
-        <StoryReleaseDialog storyId="story" onClose={vi.fn()} onReleased={onReleased} />
+        <StoryReleaseDialog storyId="story" onClose={onClose} onReleased={onReleased} />
       </LocaleProvider>
     </MemoryRouter>,
   );
@@ -98,4 +98,59 @@ it('labels restoration explicitly while retaining every server release gate', as
   expect(screen.getByText(/Những chương đã phát hành sẽ hiển thị lại/)).toBeTruthy();
   expect(screen.getByRole('button', { name: 'Phát hành ngay' }).disabled).toBe(false);
   expect(mocks.apiRequest.mock.calls.every(([, options]) => !options?.method)).toBe(true);
+});
+
+it.each([
+  ['approval', 'Xem duyệt và gửi lại', '/author/submissions?storyId=story'],
+  ['integrity', 'Kiểm tra gói đã gửi', '/author/submissions?storyId=story'],
+  ['rights', 'Kiểm tra khai báo quyền', '/author/submissions?storyId=story'],
+  ['categories', 'Chỉnh thể loại truyện', '/author/stories/story?tab=details'],
+  ['media', 'Kiểm tra media', '/author/stories/story?tab=media'],
+  ['editable', 'Xem trạng thái và phản hồi', '/author/stories/story?tab=reviews'],
+])('links failed %s to its owned recovery destination', async (code, label, href) => {
+  mocks.apiRequest.mockResolvedValue({
+    ...prepared,
+    ready: false,
+    checks: prepared.checks.map((check) => ({ ...check, ok: check.code !== code })),
+  });
+  view();
+  expect((await screen.findByRole('link', { name: label })).getAttribute('href')).toBe(href);
+  expect(screen.getByRole('button', { name: 'Phát hành ngay' }).disabled).toBe(true);
+  expect(mocks.apiRequest.mock.calls.every(([, options]) => !options?.method)).toBe(true);
+});
+it('requires a fresh readiness check after an uncertain mutation and rejects another story response', async () => {
+  let writes = 0;
+  mocks.apiRequest.mockImplementation(async (_path, options) => {
+    if (options?.method === 'POST') {
+      writes++;
+      return { story: { id: writes === 1 ? 'another-story' : 'story', status: 'published' } };
+    }
+    return prepared;
+  });
+  const released = view();
+  fireEvent.click(await screen.findByRole('button', { name: 'Phát hành ngay' }));
+  await screen.findByRole('alert');
+  expect(released).not.toHaveBeenCalled();
+  expect(screen.getByRole('button', { name: 'Phát hành ngay' }).disabled).toBe(true);
+  fireEvent.click(screen.getByRole('button', { name: 'Phát hành ngay' }));
+  expect(writes).toBe(1);
+  fireEvent.click(screen.getByRole('button', { name: 'Kiểm tra lại điều kiện' }));
+  await waitFor(() =>
+    expect(screen.getByRole('button', { name: 'Phát hành ngay' }).disabled).toBe(false),
+  );
+  expect(writes).toBe(1);
+  fireEvent.click(screen.getByRole('button', { name: 'Phát hành ngay' }));
+  await waitFor(() => expect(released).toHaveBeenCalledTimes(1));
+});
+
+it('closes the release overlay when navigating to a recovery tab on the same story', async () => {
+  mocks.apiRequest.mockResolvedValue({
+    ...prepared,
+    ready: false,
+    checks: [{ code: 'categories', ok: false }],
+  });
+  const close = vi.fn();
+  view(vi.fn(), close);
+  fireEvent.click(await screen.findByRole('link', { name: 'Chỉnh thể loại truyện' }));
+  expect(close).toHaveBeenCalledTimes(1);
 });

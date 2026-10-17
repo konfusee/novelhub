@@ -109,3 +109,37 @@ it('rejects a malformed success response and keeps the confirmation open', async
   expect(released).not.toHaveBeenCalled();
   expect(screen.getByRole('dialog')).toBeTruthy();
 });
+
+it.each([
+  ['approval', 'Xem duyệt và gửi lại', '/author/submissions?storyId=story&chapterId=chapter'],
+  ['parent', 'Hoàn thiện truyện cha', '/author/stories/story?tab=details'],
+  ['order', 'Xem các chương đứng trước', '/author/stories/story?tab=chapters'],
+  ['free', 'Xem cài đặt đọc sớm', '/author/stories/story?tab=chapters'],
+  ['format', 'Kiểm tra định dạng gói', '/author/submissions?storyId=story&chapterId=chapter'],
+  ['media', 'Kiểm tra media', '/author/submissions?storyId=story&chapterId=chapter'],
+])(
+  'offers the correct chapter recovery path for %s without publishing',
+  async (code, label, href) => {
+    mocks.apiRequest.mockResolvedValue({
+      ...prepared,
+      ready: false,
+      checks: prepared.checks.map((check) => ({ ...check, ok: check.code !== code })),
+    });
+    view();
+    expect((await screen.findByRole('link', { name: label })).getAttribute('href')).toBe(href);
+    expect(screen.getByRole('button', { name: 'Phát hành ngay' }).disabled).toBe(true);
+    expect(mocks.apiRequest.mock.calls.every(([, options]) => !options?.method)).toBe(true);
+  },
+);
+it('rejects publication confirmation for a different chapter', async () => {
+  mocks.apiRequest.mockImplementation(async (_path, options) =>
+    options?.method === 'POST'
+      ? { chapter: { id: 'other-chapter', status: 'published' } }
+      : prepared,
+  );
+  const released = view();
+  fireEvent.click(await screen.findByRole('button', { name: 'Phát hành ngay' }));
+  await screen.findByRole('alert');
+  expect(released).not.toHaveBeenCalled();
+  expect(screen.getByRole('button', { name: 'Phát hành ngay' }).disabled).toBe(true);
+});

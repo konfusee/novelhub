@@ -1858,5 +1858,29 @@
     "reload": "Hãy tải lại trạng thái trước khi thực hiện tiếp.",
     "refresh": "Tải lại trạng thái",
     "dirty": "Lưu hoặc hoàn tác thông tin đang sửa trước khi ngừng phát hành."
+  },
+  "releaseFixes": {
+    "review": "Xem duyệt và gửi lại",
+    "reviewHint": "Theo dõi phản hồi và gửi bản nháp mới khi cần. Chỉ gói đã duyệt mới được phát hành.",
+    "package": "Kiểm tra gói đã gửi",
+    "packageHint": "Đối chiếu đúng bản gửi và phản hồi. Không sửa trực tiếp nội dung trong gói bất biến.",
+    "evidence": "Xem tiến độ bằng chứng",
+    "evidenceHint": "Chờ xử lý bằng chứng kết thúc và quyết định duyệt. Không thể bỏ qua điều kiện này.",
+    "rights": "Kiểm tra khai báo quyền",
+    "rightsHint": "Kiểm tra quyền trong gói gửi. Thay đổi khai báo cần quy trình gửi duyệt phù hợp.",
+    "categories": "Chỉnh thể loại truyện",
+    "categoriesHint": "Chọn thể loại còn hoạt động, lưu bản nháp và gửi duyệt lại. Bản đã duyệt không tự thay đổi.",
+    "parent": "Hoàn thiện truyện cha",
+    "parentHint": "Kiểm tra và phát hành thông tin truyện đã duyệt trước khi phát hành chương.",
+    "order": "Xem các chương đứng trước",
+    "orderHint": "Phát hành các chương trước theo thứ tự. Không tự đổi thứ tự để vượt điều kiện.",
+    "free": "Xem cài đặt đọc sớm",
+    "freeHint": "Trong danh sách chương, mở cài đặt đọc sớm để chuyển chương đủ điều kiện về miễn phí. Phát hành trả phí chưa được hỗ trợ.",
+    "format": "Kiểm tra định dạng gói",
+    "formatHint": "Xem bản gửi và phản hồi để chuẩn bị bản nháp có định dạng được hỗ trợ rồi gửi duyệt lại.",
+    "media": "Kiểm tra media",
+    "mediaHint": "Kiểm tra tệp và quyền trong gói. Không thay tệp của bản đã duyệt để vượt kiểm tra toàn vẹn.",
+    "status": "Xem trạng thái và phản hồi",
+    "statusHint": "Truyện bị khóa hoặc gói chưa đủ điều kiện cần được xử lý qua quy trình duyệt. Mở trạng thái để xem chi tiết."
   }
 }
