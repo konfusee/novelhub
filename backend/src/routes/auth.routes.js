@@ -19,6 +19,7 @@ import { Account } from '../models/identity/account.model.js';
 import { Session } from '../models/identity/session.model.js';
 import { EmailToken } from '../models/identity/email-token.model.js';
 import { AuthorApplication } from '../models/identity/author-application.model.js';
+import { RoleAssignment } from '../models/identity/role-assignment.model.js';
 import { ExternalIdentity } from '../models/identity/external-identity.model.js';
 import { withTransaction } from '../db/connection.js';
 import {
@@ -497,8 +498,15 @@ export function createAuthRouter(config) {
       const application = await AuthorApplication.findOne({
         applicantAccountId: req.auth.account._id,
       }).sort({ submittedAt: -1, _id: -1 });
+      const roles = await RoleAssignment.find({ accountId: req.account._id, status: 'active' })
+        .select('role')
+        .lean();
       res.json({
         application: applicationView(application),
+        access: {
+          activeAuthor: roles.some((assignment) => assignment.role === 'author'),
+          canApply: !roles.length && Boolean(req.account.emailVerifiedAt && req.account.email),
+        },
       });
     } catch (error) {
       next(error);

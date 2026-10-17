@@ -29,9 +29,15 @@ export function AuthorApplyPage() {
   useEffect(() => {
     const controller = new AbortController();
     apiRequest('/auth/author-application', { signal: controller.signal })
-      .then(({ application }) => {
+      .then(({ application, access }) => {
         if (controller.signal.aborted) return;
-        setApplicationState(application?.status || 'none');
+        setApplicationState(
+          application?.status === 'approved' &&
+            access?.canApply === true &&
+            access?.activeAuthor === false
+            ? 'revoked'
+            : application?.status || 'none',
+        );
         setDecisionReason(application?.decisionReason || '');
         setSubmission({ status: 'idle', message: '' });
         setCheckedAt(new Date().toLocaleTimeString('vi-VN'));
@@ -171,6 +177,14 @@ export function AuthorApplyPage() {
                   onSubmit={finish}
                   className="mt-5 border-t border-hairline pt-5 lg:[@media(max-height:820px)]:mt-4 lg:[@media(max-height:820px)]:pt-4"
                 >
+                  {applicationState === 'revoked' && (
+                    <p
+                      role="status"
+                      className="mb-4 rounded-2xl bg-brand-soft p-3 text-sm text-ink"
+                    >
+                      {t('authorAccess.reapplyAfterRevocation')}
+                    </p>
+                  )}
                   {applicationState === 'rejected' && (
                     <p
                       role="status"

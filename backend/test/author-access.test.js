@@ -10,6 +10,8 @@ import { RoleAssignment } from '../src/models/identity/role-assignment.model.js'
 import { AuditEvent } from '../src/models/audit/audit-event.model.js';
 import { Notification } from '../src/models/notifications/notification.model.js';
 import { decideApplication } from '../src/modules/author-access/service.js';
+import { issueSession } from '../src/auth/session.js';
+import { Category, Story } from '../src/models/index.js';
 
 useTestDatabase();
 const app = createApp(
@@ -42,6 +44,74 @@ const decide = (application, body = {}, user = admin) =>
 const pending = async () => (await submit()).body.application;
 
 describe('author application decisions', () => {
+  it('allows a revoked former Author to reapply without rewriting the prior decision or unfreezing old stories', async () => {
+    const first = await pending();
+    expect((await decide(first)).status).toBe(200);
+    const role = await RoleAssignment.findOne({
+      accountId: reader.account._id,
+      role: 'author',
+      status: 'active',
+    });
+    const account = await Account.findById(reader.account._id);
+    const firstSession = await issueSession(account, 1);
+    const authorCookie = `novelhub_session=${firstSession.token}`;
+    const category = await Category.create({
+      name: 'Kỳ ảo',
+      normalizedName: 'kỳ ảo',
+      createdBy: account._id,
+    });
+    const oldStory = await Story.create({
+      authorAccountId: account._id,
+      title: 'Truyện cũ',
+      categoryIds: [category._id],
+    });
+    const accessBefore = await request(app)
+      .get('/api/auth/author-application')
+      .set('Cookie', authorCookie);
+    expect(accessBefore.body.access).toEqual({ activeAuthor: true, canApply: false });
+    const revoked = await request(app)
+      .post(`/api/admin/authors/${account._id}/revoke`)
+      .set('Cookie', admin.cookie)
+      .set('Origin', 'http://localhost:5173')
+      .send({
+        roleId: String(role._id),
+        expectedRoleVersion: role.version,
+        expectedAccountVersion: account.version,
+        reason: 'Thu hồi để kiểm tra vòng xin lại',
+      });
+    expect(revoked.status).toBe(200);
+    expect(
+      (await request(app).get('/api/auth/author-application').set('Cookie', authorCookie)).status,
+    ).toBe(401);
+    const readerSession = await issueSession(await Account.findById(account._id), 1);
+    const former = { cookie: `novelhub_session=${readerSession.token}` };
+    const accessAfter = await request(app)
+      .get('/api/auth/author-application')
+      .set('Cookie', former.cookie);
+    expect(accessAfter.body.application).toMatchObject({ id: first.id, status: 'approved' });
+    expect(accessAfter.body.access).toEqual({ activeAuthor: false, canApply: true });
+    const next = await submit(former);
+    expect(next.status).toBe(201);
+    expect(next.body.application.id).not.toBe(first.id);
+    expect((await decide(next.body.application)).status).toBe(200);
+    expect((await AuthorApplication.findById(first.id)).status).toBe('approved');
+    expect(
+      await RoleAssignment.countDocuments({
+        accountId: account._id,
+        role: 'author',
+        status: 'active',
+      }),
+    ).toBe(1);
+    expect(
+      await RoleAssignment.countDocuments({
+        accountId: account._id,
+        role: 'author',
+        status: 'revoked',
+      }),
+    ).toBe(1);
+    expect((await Story.findById(oldStory._id)).authoringFrozen).toBe(true);
+    expect((await Account.findById(account._id)).everAuthor).toBe(true);
+  });
   it('requires Admin and validates pagination and IDs', async () => {
     expect((await request(app).get(base)).status).toBe(401);
     for (const user of [
