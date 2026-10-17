@@ -11,7 +11,21 @@ function ordinal(value) {
   );
 }
 
-export function suggestDocumentChapters(text, preambleTitle) {
+export function suggestDocumentChapters(
+  text,
+  preambleTitle,
+  { format, headings: markdownHeadings } = {},
+) {
+  if (format === 'md' && Array.isArray(markdownHeadings) && markdownHeadings.length) {
+    const result = outlinedChapters(text, preambleTitle, markdownHeadings);
+    if (result) return result;
+  }
+  if (
+    format === 'md' &&
+    !Array.isArray(markdownHeadings) &&
+    /^ {0,3}(?:#{1,6}\s|`{3,}|~{3,})/m.test(text)
+  )
+    return markdownChapters(text, preambleTitle);
   const headings = [];
   const lines = text.matchAll(/^.*(?:\n|$)/gm);
   for (const match of lines) {
@@ -52,5 +66,106 @@ export function suggestDocumentChapters(text, preambleTitle) {
       ),
     });
   }
+  return result.length > 100 ? null : result;
+}
+
+function markdownChapters(text, preambleTitle) {
+  const headings = [];
+  let fence = null;
+  let comment = false;
+  let frontmatter = /^\uFEFF?---\s*(?:\r?\n|$)/.test(text);
+  for (const match of text.matchAll(/^.*(?:\n|$)/gm)) {
+    const line = match[0].replace(/\r?\n$/, '');
+    if (frontmatter) {
+      if (match.index > 0 && /^(?:---|\.\.\.)\s*$/.test(line)) frontmatter = false;
+      continue;
+    }
+    if (fence) {
+      const close = /^ {0,3}(`{3,}|~{3,})\s*$/.exec(line);
+      if (close && close[1][0] === fence[0] && close[1].length >= fence.length) fence = null;
+      continue;
+    }
+    if (comment || line.includes('<!--')) {
+      comment = !line.includes('-->');
+      continue;
+    }
+    const opening = /^ {0,3}(`{3,}|~{3,})/.exec(line);
+    if (opening) {
+      fence = opening[1];
+      continue;
+    }
+    const heading = /^ {0,3}(#{1,6})[ \t]+(.+?)\s*$/.exec(line);
+    if (!heading) continue;
+    const title = heading[2].replace(/[ \t]+#+[ \t]*$/, '').trim();
+    if (!title || title.length > 200 || /\.{2,}|…|\t/.test(title)) return null;
+    headings.push({
+      level: heading[1].length,
+      title,
+      start: match.index,
+      bodyStart: match.index + match[0].length,
+    });
+  }
+  if (fence || frontmatter || comment) return null;
+  return splitMarkdownHeadings(text, preambleTitle, headings);
+}
+
+function outlinedChapters(text, preambleTitle, outline) {
+  if (outline.length > 1000) return null;
+  const lines = [...text.matchAll(/^.*(?:\n|$)/gm)];
+  const headings = [];
+  for (const item of outline) {
+    if (
+      !item ||
+      !Number.isInteger(item.level) ||
+      item.level < 1 ||
+      item.level > 6 ||
+      typeof item.title !== 'string' ||
+      !item.title.trim() ||
+      item.title.length > 200 ||
+      /\.{2,}|…|\t/.test(item.title)
+    )
+      return null;
+    const matches = lines.filter((line) => line[0].trim() === item.title.trim());
+    if (matches.length !== 1 || headings.some((heading) => heading.start === matches[0].index))
+      return null;
+    const line = matches[0];
+    headings.push({
+      level: item.level,
+      title: item.title.trim(),
+      start: line.index,
+      bodyStart: line.index + line[0].length,
+    });
+  }
+  if (headings.some((heading, index) => index > 0 && heading.start <= headings[index - 1].start))
+    return null;
+  return splitMarkdownHeadings(text, preambleTitle, headings);
+}
+
+function splitMarkdownHeadings(text, preambleTitle, headings) {
+  const level = [1, 2, 3, 4, 5, 6].find(
+    (value) => headings.filter((heading) => heading.level === value).length >= 2,
+  );
+  if (!level) return null;
+  const chapters = headings.filter((heading) => heading.level === level);
+  if (
+    chapters.length > 100 ||
+    headings.some((heading) => heading.level < level && heading.start > chapters[0].start)
+  )
+    return null;
+  for (const [index, heading] of chapters.entries()) {
+    if (!/\p{L}/u.test(text.slice(heading.bodyStart, chapters[index + 1]?.start ?? text.length)))
+      return null;
+  }
+  const result = [];
+  if (text.slice(0, chapters[0].start).trim())
+    result.push({ title: preambleTitle, text: text.slice(0, chapters[0].start) });
+  for (const [index, heading] of chapters.entries())
+    result.push({
+      title: heading.title,
+      text: text.slice(
+        index === 0 && !result.length ? 0 : heading.start,
+        chapters[index + 1]?.start ?? text.length,
+      ),
+    });
   return result.length > 100 ? null : result;
 }

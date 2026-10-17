@@ -96,7 +96,22 @@ async function extract() {
   }
   if (text.includes('\0')) throw new Error('invalid_document');
   text = check(text);
-  return { text: check(format === 'md' ? markdown(marked.lexer(text)) : text) };
+  if (format !== 'md') return { text };
+  const plain = check(markdown(marked.lexer(text)));
+  // Suggestions only: preserve the existing plain-text output and expose root headings separately.
+  const outlineSource = text.replace(
+    /^\uFEFF?---[ \t]*\n[\s\S]*?\n(?:---|\.\.\.)[ \t]*(?:\n|$)/,
+    '',
+  );
+  const rootHeadings = marked.lexer(outlineSource).filter((token) => token.type === 'heading');
+  const headings =
+    rootHeadings.length <= 1000
+      ? rootHeadings.map((token) => ({
+          level: token.depth,
+          title: markdown(token.tokens).trim(),
+        }))
+      : [];
+  return { text: plain, headings };
 }
 try {
   const result = await extract();

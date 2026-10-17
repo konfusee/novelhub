@@ -117,7 +117,10 @@ export function ImportPdfPage() {
   }
   function suggest() {
     if (!current || busyRef.current) return;
-    const suggestions = suggestDocumentChapters(current.text, message('preamble'));
+    const suggestions = suggestDocumentChapters(current.text, message('preamble'), {
+      format: preview?.format,
+      headings: preview?.headings,
+    });
     if (!suggestions || chapters.length - 1 + suggestions.length > 100) {
       setError(message('noHeadings'));
       return;
