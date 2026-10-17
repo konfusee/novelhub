@@ -30,6 +30,7 @@ import { StoryCover } from '../../components/story/StoryCover';
 import { ChapterOrderDialog } from './ChapterOrderDialog';
 import { ChapterLifecycleDialog } from './ChapterLifecycleDialog';
 import { ChapterReleaseDialog, StoryReleaseDialog } from './StoryReleaseDialog';
+import { ChapterScheduleDialog } from './ChapterScheduleDialog';
 import { ROUTES } from '../../app/routes';
 import {
   Badge,
@@ -157,6 +158,7 @@ export function StoryManagerPage() {
   const [chapterAction, setChapterAction] = useState(null);
   const [releaseOpen, setReleaseOpen] = useState(false);
   const [releaseChapter, setReleaseChapter] = useState(null);
+  const [scheduleChapter, setScheduleChapter] = useState(null);
   const createChapter = async (event) => {
     event.preventDefault();
     if (newBusy || !newTitle.trim()) return;
@@ -303,6 +305,19 @@ export function StoryManagerPage() {
             onReleased={() => {
               setReleaseOpen(false);
               setNotice(t('storyRelease.success'));
+              workspace.retry();
+            }}
+          />
+        )}
+        {scheduleChapter && (
+          <ChapterScheduleDialog
+            key={scheduleChapter.id}
+            storyId={storyId}
+            chapterId={scheduleChapter.id}
+            onClose={() => setScheduleChapter(null)}
+            onSaved={(cancelled) => {
+              setScheduleChapter(null);
+              setNotice(t(cancelled ? 'chapterSchedule.cancelled' : 'chapterSchedule.saved'));
               workspace.retry();
             }}
           />
@@ -460,6 +475,7 @@ export function StoryManagerPage() {
                           chapter={chapter}
                           storyId={storyId}
                           onRelease={() => setReleaseChapter(chapter)}
+                          onSchedule={() => setScheduleChapter(chapter)}
                           onLifecycle={(action) => setChapterAction({ story, chapter, action })}
                         />
                       ))}
@@ -676,7 +692,7 @@ function ChapterRowSkeleton() {
   );
 }
 
-function ChapterRow({ chapter, storyId, onLifecycle, onRelease }) {
+function ChapterRow({ chapter, storyId, onLifecycle, onRelease, onSchedule }) {
   const { t, formatDate, formatNumber } = useLocale();
   const note =
     chapter.status === 'Scheduled' && chapter.requestedReleaseAt
@@ -737,6 +753,13 @@ function ChapterRow({ chapter, storyId, onLifecycle, onRelease }) {
               {t('chapterRelease.title')}
             </Button>
           )}
+          {chapter.canManageSchedule && (
+            <Button variant="secondary" size="sm" onClick={onSchedule}>
+              {t(
+                chapter.status === 'Scheduled' ? 'chapterSchedule.manage' : 'chapterSchedule.title',
+              )}
+            </Button>
+          )}
           <ButtonLink
             to={`/author/stories/${storyId}/chapters/${chapter.id}/edit`}
             variant={draft ? 'primary' : 'secondary'}
@@ -747,7 +770,7 @@ function ChapterRow({ chapter, storyId, onLifecycle, onRelease }) {
               : draft
                 ? 'Viết tiếp'
                 : chapter.status === 'Scheduled'
-                  ? 'Đổi lịch'
+                  ? t('chapterLifecycle.view')
                   : 'Chỉnh sửa'}
           </ButtonLink>
           {(chapter.canArchive || chapter.canRestore) && (

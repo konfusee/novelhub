@@ -838,3 +838,29 @@ it('rejects scheduling a chapter whose parent is archived', async () => {
   expect((await write(f.cookie, f.scheduleUrl, f.scheduleBody, 'put')).status).toBe(409);
   expect((await Chapter.findById(f.chapterId)).status).toBe('approved');
 });
+it('prepares owner-only schedule checks and versions while retaining parent/order waiting hints', async () => {
+  const f = await scheduleFixture({ preceding: true });
+  const response = await get(f.cookie, f.scheduleUrl);
+  expect(response.status).toBe(200);
+  expect(response.headers['cache-control']).toBe('private, no-store');
+  expect(response.body.ready).toBe(true);
+  expect(response.body.waiting).toContain('order');
+  expect(response.body.target.revisionId).toBe(f.body.revisionId);
+  expect(response.body.target.storyVersion).toBe(f.body.expectedStoryVersion);
+  const other = await authenticatedAccount('author');
+  expect((await get(other.cookie, f.scheduleUrl)).status).toBe(404);
+  expect((await request(app).get(f.scheduleUrl)).status).toBe(401);
+});
+it('prepares cancellation identities even for a corrupted scheduled package', async () => {
+  const f = await scheduleFixture();
+  await write(f.cookie, f.scheduleUrl, f.scheduleBody, 'put');
+  await ContentRevision.collection.updateOne(
+    { _id: f.revision._id },
+    { $set: { 'content.title': 'Changed fixture' } },
+  );
+  const response = await get(f.cookie, f.scheduleUrl);
+  expect(response.body.ready).toBe(false);
+  expect(response.body.canCancel).toBe(true);
+  expect(response.body.target.submissionId).toBe(f.body.submissionId);
+  expect(response.body.target.revisionId).toBe(f.body.revisionId);
+});

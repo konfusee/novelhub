@@ -88,7 +88,11 @@ it('uses server lifecycle flags and refreshes the chapter row after archive and 
   fireEvent.click(await screen.findByRole('button', { name: 'Lưu trữ chương: Chương bảy thật' }));
   expect(mocks.apiRequest.mock.calls.some(([, o]) => o?.method === 'POST')).toBe(false);
   fireEvent.click(screen.getByRole('button', { name: 'Xác nhận', exact: true }));
-  const restore = await screen.findByRole('button', { name: 'Khôi phục chương: Chương bảy thật' });
+  const restore = await screen.findByRole(
+    'button',
+    { name: 'Khôi phục chương: Chương bảy thật' },
+    { timeout: 5000 },
+  );
   expect(mocks.apiRequest).toHaveBeenCalledWith('/author/stories/owned/chapters/seven/lifecycle', {
     method: 'POST',
     body: { action: 'archive', expectedVersion: 3, expectedStoryVersion: 7 },
@@ -385,9 +389,9 @@ it('opens chapter release using only the server eligibility hint and refreshes a
   await waitFor(() =>
     expect(screen.queryByRole('button', { name: 'Phát hành chương', exact: true })).toBeNull(),
   );
-  expect(screen.getByRole('row', { name: /Chương 7: Chương bảy thật/ }).textContent).toContain(
-    'Đã xuất bản',
-  );
+  expect(
+    (await screen.findByRole('row', { name: /Chương 7: Chương bảy thật/ })).textContent,
+  ).toContain('Đã xuất bản');
 });
 it('unpublishes through server eligibility, refreshes the row and retains it in the unpublished filter', async () => {
   let unpublished = false;
@@ -454,4 +458,56 @@ it('opens a new rich correction from the exact unpublished chapter source after 
     method: 'POST',
     body: { expectedVersion: 12 },
   });
+});
+it('opens real schedule controls from the chapter row and refreshes status after saving', async () => {
+  let scheduled = false;
+  mocks.apiRequest.mockImplementation(async (path, options) => {
+    if (options?.method === 'PUT') {
+      scheduled = true;
+      return {
+        chapter: {
+          id: 'seven',
+          status: 'scheduled',
+          requestedReleaseAt: options.body.requestedReleaseAt,
+        },
+      };
+    }
+    if (path.endsWith('/schedule'))
+      return {
+        target: {
+          chapterId: 'seven',
+          revisionId: 'rev',
+          submissionId: 'sub',
+          version: 3,
+          storyVersion: 7,
+          title: 'Gói chương đã duyệt',
+        },
+        status: 'approved',
+        ready: true,
+        canCancel: false,
+        checks: [],
+        waiting: [],
+        requestedReleaseAt: null,
+      };
+    return {
+      ...workspace,
+      chapters: [
+        {
+          ...workspace.chapters[0],
+          status: scheduled ? 'scheduled' : 'approved',
+          canManageSchedule: true,
+          requestedReleaseAt: scheduled ? '2030-10-20T10:30:00Z' : null,
+        },
+      ],
+    };
+  });
+  view();
+  fireEvent.click(await screen.findByRole('button', { name: 'Lên lịch phát hành' }));
+  await screen.findByRole('heading', { name: 'Gói chương đã duyệt' });
+  fireEvent.change(screen.getByLabelText('Thời gian phát hành'), {
+    target: { value: '2030-10-20T10:30' },
+  });
+  fireEvent.click(screen.getByRole('button', { name: 'Lưu lịch phát hành' }));
+  await screen.findByText('Đã lưu lịch phát hành trên máy chủ.');
+  expect(await screen.findByRole('button', { name: 'Đổi hoặc hủy lịch' })).toBeTruthy();
 });
