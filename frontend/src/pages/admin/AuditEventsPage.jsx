@@ -1,4 +1,3 @@
-import { useState } from 'react';
 import { useSearchParams } from 'react-router';
 import { AdminLayout } from '../../layouts';
 import { Button, Card, EmptyState, Input } from '../../components/ui';
@@ -16,9 +15,6 @@ export function AuditEventsPage() {
   const { t, formatNumber } = useLocale();
   const m = (key) => t(`adminAudit.${key}`);
   const [search, setSearch] = useSearchParams();
-  const [draft, setDraft] = useState(() =>
-    Object.fromEntries(fields.map((key) => [key, search.get(key) ?? ''])),
-  );
   const query = new URLSearchParams(search);
   for (const key of ['from', 'to']) {
     const value = search.get(key);
@@ -43,8 +39,10 @@ export function AuditEventsPage() {
         <p className="mt-2 text-sm text-muted">{m('description')}</p>
         <Card className="mt-6">
           <form
+            key={search.toString()}
             onSubmit={(event) => {
               event.preventDefault();
+              const draft = Object.fromEntries(new FormData(event.currentTarget));
               setSearch(
                 Object.fromEntries(
                   fields.filter((key) => draft[key]?.trim()).map((key) => [key, draft[key].trim()]),
@@ -59,11 +57,9 @@ export function AuditEventsPage() {
                   <Input
                     className="mt-2"
                     type={['from', 'to'].includes(key) ? 'date' : 'text'}
-                    value={draft[key]}
+                    name={key}
+                    defaultValue={search.get(key) ?? ''}
                     maxLength={['actorId', 'targetId'].includes(key) ? 24 : 120}
-                    onChange={(event) =>
-                      setDraft((current) => ({ ...current, [key]: event.target.value }))
-                    }
                   />
                 </label>
               ))}
@@ -73,7 +69,6 @@ export function AuditEventsPage() {
               <Button
                 variant="secondary"
                 onClick={() => {
-                  setDraft(Object.fromEntries(fields.map((key) => [key, ''])));
                   setSearch({});
                 }}
               >

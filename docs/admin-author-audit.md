@@ -19,4 +19,6 @@ Hiển thị thời gian đến giây, chủ thể hệ thống/tài khoản, h�
 
 ## Các nhóm vẫn phải triển khai
 
+Bổ sung nghiệm thu 18/10/2026: bộ lọc hiển thị phục hồi đúng theo URL khi Back/Forward, không giữ giá trị của lần lọc sau. 3 test frontend audit đạt, browser thực đổi story.created → chapter.saved → Back và đối chiếu lại input cùng bảng MongoDB. Bộ kiểm tra author-access bổ sung cả tài khoản suspended và anonymized sau khi nộp đơn: không cấp quyền, không sửa quyết định hoặc tạo audit thành công giả. 15 test author-access và 2 test admin-audit đạt; 3 test trang xin quyền và 3 test audit đạt. Lint/build đạt. Các kiểm chứng UI sáng/tối trước đó tiếp tục áp dụng vì bố cục không thay đổi.
+
 Không đánh dấu toàn bộ phạm vi mới hoàn thiện chỉ từ việc tra cứu audit. Còn vòng đời tài khoản A-UC-01/02; quản trị nội dung A-UC-03; tích hợp policy với giao dịch A-UC-05; báo cáo/thống kê/chi trả/job A-UC-08–11; cùng quyền, early access và vòng kiểm duyệt/gửi lại Author UC-AUT-07–11. A-UC-06/07 và Author UC-AUT-02–05 giữ kết quả nghiệm thu trước đó trong phạm vi đã thống nhất.
