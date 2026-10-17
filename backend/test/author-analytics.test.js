@@ -58,6 +58,7 @@ it('counts actual daily events and distinct identities in the selected Vietnam c
   expect(result.daily).toEqual([0, 0, 0, 0, 0, 1, 2]);
   expect(result.reads).toBe(3);
   expect(result.readers).toBe(2);
+  expect(result.audience).toEqual({ accounts: 1, guestDevices: 1 });
   expect(result.returningReaders).toBe(1);
   expect(result.returnRate).toBe(50);
   expect(result.retention).toBeNull();

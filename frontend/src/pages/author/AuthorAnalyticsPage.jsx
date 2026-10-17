@@ -108,7 +108,20 @@ export function AuthorAnalyticsPage() {
     ? formatPercent(Math.round(completion.rate * 10) / 10)
     : t('analyticsData.unknown');
   const channels = [];
-  const devices = [];
+  const audience = analytics.data.audience;
+  const hasAudience =
+    Number.isSafeInteger(audience?.accounts) &&
+    audience.accounts >= 0 &&
+    Number.isSafeInteger(audience.guestDevices) &&
+    audience.guestDevices >= 0 &&
+    audience.accounts + audience.guestDevices === readers;
+  const audienceRows =
+    hasAudience && readers > 0
+      ? [
+          [t('analyticsData.accountIdentities'), audience.accounts, 'brand'],
+          [t('analyticsData.guestIdentities'), audience.guestDevices, 'orange'],
+        ]
+      : [];
   const storyLabel =
     analytics.data.stories.find((item) => item.id === story)?.title ??
     t('analyticsData.allStories');
@@ -183,6 +196,15 @@ export function AuthorAnalyticsPage() {
         hasCompletion ? completion.completed : t('analyticsData.unknown'),
       ],
       [t('analyticsData.completionScope')],
+      [
+        t('analyticsData.accountIdentities'),
+        hasAudience ? audience.accounts : t('analyticsData.unknown'),
+      ],
+      [
+        t('analyticsData.guestIdentities'),
+        hasAudience ? audience.guestDevices : t('analyticsData.unknown'),
+      ],
+      [t('analyticsData.audienceHint')],
       [],
       [t('analyticsData.date'), t('analyticsData.views')],
       ...labels.map((label, index) => [label, daily[index]]),
@@ -508,20 +530,18 @@ export function AuthorAnalyticsPage() {
               <Card className="min-w-0">
                 <div className="flex flex-wrap items-start justify-between gap-3">
                   <div className="min-w-0">
-                    <h2 className="text-h3">Hồ sơ độc giả và thiết bị</h2>
-                    <p className="mt-1 text-sm text-muted">
-                      Thiết bị, giao diện và hành vi đăng ký
-                    </p>
+                    <h2 className="text-h3">{t('analyticsData.audienceTitle')}</h2>
+                    <p className="mt-1 text-sm text-muted">{t('analyticsData.audienceHint')}</p>
                   </div>
                   <Badge tone="green">
                     <Check size={12} aria-hidden="true" />
-                    {t('analyticsData.unknown')}
+                    {t(hasAudience ? 'analyticsData.recorded' : 'analyticsData.unknown')}
                   </Badge>
                 </div>
                 {loading ? (
                   <div
                     aria-busy="true"
-                    aria-label="Đang tải hồ sơ thiết bị"
+                    aria-label={t('analyticsData.audienceLoading')}
                     className="mt-5 space-y-5"
                   >
                     {[0, 1, 2, 3].map((item) => (
@@ -536,17 +556,20 @@ export function AuthorAnalyticsPage() {
                   </div>
                 ) : (
                   <div className="nh-fade-enter mt-5 space-y-5">
-                    {!devices.length && (
-                      <p className="text-sm text-muted">{t('analyticsData.noDevices')}</p>
+                    {!audienceRows.length && (
+                      <p className="text-sm text-muted">{t('analyticsData.noAudience')}</p>
                     )}
-                    {devices.map(([label, value, tone]) => (
+                    {audienceRows.map(([label, count, tone]) => (
                       <div key={label}>
                         <div className="flex justify-between gap-3 text-sm">
                           <span>{label}</span>
-                          <strong className="tabular-nums">{formatPercent(value)}</strong>
+                          <strong className="tabular-nums">
+                            {count.toLocaleString('vi-VN')} (
+                            {formatPercent(Math.round((count / readers) * 1000) / 10)})
+                          </strong>
                         </div>
                         <ProgressBar
-                          value={value}
+                          value={(count / readers) * 100}
                           tone={tone}
                           size="sm"
                           label={label}

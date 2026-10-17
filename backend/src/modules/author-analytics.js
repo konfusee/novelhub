@@ -52,6 +52,8 @@ export async function authorAnalytics(
         $group: {
           _id: null,
           count: { $sum: 1 },
+          accounts: { $sum: { $cond: [{ $eq: ['$_id.type', 'account'] }, 1, 0] } },
+          guestDevices: { $sum: { $cond: [{ $eq: ['$_id.type', 'guest-device'] }, 1, 0] } },
           returning: { $sum: { $cond: [{ $gte: [{ $size: '$days' }, 2] }, 1, 0] } },
         },
       },
@@ -117,6 +119,7 @@ export async function authorAnalytics(
     labels,
     reads: counts.reduce((sum, count) => sum + count, 0),
     readers: readerCount,
+    audience: { accounts: readers[0]?.accounts ?? 0, guestDevices: readers[0]?.guestDevices ?? 0 },
     returningReaders,
     returnRate: readerCount ? (returningReaders / readerCount) * 100 : null,
     completionProgress: {

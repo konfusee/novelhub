@@ -27,3 +27,9 @@ API trả `completionProgress: { total, completed, rate }` từ ReadingProgress 
 Tử số là các tiến độ đạt position=1 và có completedAt hợp lệ trong kỳ, không ở tương lai. Không có mẫu số thì rate=null; có tiến độ nhưng chưa hoàn thành thì rate=0. UI và CSV nêu rõ đây là trạng thái tiến độ hiện tại, có thể thay đổi khi đọc lại; không phải lịch sử phiên, tỷ lệ hoàn thành của mọi lượt xem, khách hoặc âm thanh. Không trả accountId hoặc chi tiết tiến độ riêng của độc giả.
 
 5 kiểm thử backend analytics đã qua các lượt tập trung; 10 kiểm thử UI analytics đạt, gồm CSV, làm tròn, 0%, không có dữ liệu và phản hồi sai. Browser dùng MongoDB tạm xác minh 1/3=33,3%, lọc chương còn 0/1=0%; sáng/tối 390/768/1024/1536px không tràn ngang, console không có warn/error. AI của Author vẫn ngoài phạm vi. Còn cohort retention, nguồn/thiết bị và âm thanh; UC rộng chưa nghiệm thu.
+
+## Phân loại định danh độc giả
+
+`audience: { accounts, guestDevices }` được tính trong cùng aggregate định danh duy nhất hiện có: tài khoản/thiết bị xuất hiện nhiều ngày hoặc chương vẫn chỉ tính một lần trong bộ lọc. Hai loại định danh được đếm riêng, không ghép hoặc suy đoán cùng một con người. Không tăng số truy vấn, không đọc hồ sơ cá nhân, không trả viewerKey/accountId; không đổi schema hay ghi lại sự kiện nguồn.
+
+Card và CSV hiển thị số lượng/tỷ trọng tài khoản và thiết bị khách. Khi không có độc giả, không chia cho 0; tổng không khớp hoặc dữ liệu sai thì không vẽ tỷ trọng. Đây không phải thống kê hệ điều hành, nhân khẩu học hoặc số người thực tế. Backend kiểm thử dữ liệu lặp qua ngày và loại guest; 12 kiểm thử UI analytics đạt, có CSV và dữ liệu rỗng/sai. Các nguồn/thiết bị chi tiết chưa có dữ liệu vẫn ngoài phạm vi đã hoàn thiện.

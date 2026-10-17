@@ -26,6 +26,7 @@ const data = {
   ],
   reads: 3,
   readers: 2,
+  audience: { accounts: 1, guestDevices: 1 },
   returningReaders: 1,
   returnRate: 50,
   completionProgress: { total: 3, completed: 1, rate: 100 / 3 },
@@ -85,6 +86,8 @@ it('exports actual daily rows and treats formula-like story titles as literal te
   expect(report).toContain('"Tiến độ chương hoàn thành","33,3%"');
   expect(report).toContain('"Tiến độ đọc được ghi nhận","3"');
   expect(report).toContain('"Tiến độ đạt 100%","1"');
+  expect(report).toContain('"Định danh tài khoản","1"');
+  expect(report).toContain('"Định danh thiết bị khách","1"');
 });
 it('renders recorded daily counts and unknown unsupported metrics without sample claims', async () => {
   mocks.apiRequest.mockResolvedValue(data);
@@ -239,4 +242,29 @@ it('does not display malformed completion counts as a measured percentage', asyn
   view();
   await screen.findByText('Chưa có tiến độ đọc trong kỳ');
   expect(screen.queryByText('200%')).toBeNull();
+});
+
+it('shows only aggregated identity types with their counts and measured shares', async () => {
+  mocks.apiRequest.mockResolvedValue(data);
+  view();
+  expect(await screen.findByRole('heading', { name: 'Loại định danh độc giả' })).toBeTruthy();
+  expect(screen.getAllByText('1 (50%)')).toHaveLength(2);
+  expect(screen.getByText(/không phải số người thực tế/)).toBeTruthy();
+});
+it('does not divide by zero or chart inconsistent audience totals', async () => {
+  mocks.apiRequest.mockResolvedValue({
+    ...data,
+    readers: 0,
+    audience: { accounts: 0, guestDevices: 0 },
+  });
+  view();
+  expect(
+    await screen.findByText('Chưa có định danh độc giả hợp lệ trong bộ lọc này.'),
+  ).toBeTruthy();
+  expect(screen.queryByText(/NaN%/)).toBeNull();
+  cleanup();
+  mocks.apiRequest.mockResolvedValue({ ...data, audience: { accounts: 3, guestDevices: 1 } });
+  view();
+  await screen.findByText('Chưa có định danh độc giả hợp lệ trong bộ lọc này.');
+  expect(screen.queryByText('3 (150%)')).toBeNull();
 });
