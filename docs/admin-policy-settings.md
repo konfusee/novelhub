@@ -1,0 +1,9 @@
+# Admin effective policy view
+
+`GET /api/admin/policy` requires an active authenticated Admin and returns a private, non-cacheable view of the latest `effective` PolicyVersion whose effectiveAt is not in the future. Ordering is effectiveAt descending, then _id descending, matching Author early-access configuration. The DTO only exposes identity/version, effective date, price/duration bounds and default revenue shares. No policy returns `{ policy: null }`; no example defaults are substituted.
+
+The existing `/admin/settings` shell now opens the policy tab and loads this API. The former mock settings form and browser-only save were removed from that tab. Loading, error/retry, empty and persisted states are explicit. Author-specific revenue agreements retain precedence over default policy shares. Other service/audit tabs remain mock and are identified as such; this milestone does not implement external service administration or real audit browsing.
+
+This milestone is read-only. Creating/activating a new policy with concurrent Admin protection and an atomic audit entry is still required. No backend model/schema, stored policy, chapter, agreement or financial allocation is modified.
+
+Validation: 2 backend tests cover authentication/role boundaries, empty storage, future/draft/superseded exclusion and DTO allowlisting. 3 frontend tests cover persisted values, reload, empty storage and error recovery. Root lint, Vietnamese content validation and production build pass. Browser verification used a disposable MongoDB replica set and the real API at 390/768/1024/1536 in light/dark mode; reload retained actual stored bounds and no warning/error console entries were captured. Shared database data was not changed. Screenshots are outside the repository in `WDP301/outputs/author-progress-01a13e25/policy`.

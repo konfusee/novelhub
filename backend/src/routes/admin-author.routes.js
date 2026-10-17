@@ -1,4 +1,5 @@
 import { authorAgreement, saveAuthorAgreement } from '../modules/author-agreement.js';
+import { adminPolicy } from '../modules/admin-policy.js';
 import { Router } from 'express';
 import { z } from 'zod';
 import { requireAuth, requireRole } from '../middleware/auth.js';
@@ -32,6 +33,18 @@ const decisionSchema = z
 
 export function createAdminAuthorRouter(config) {
   const router = Router();
+  router.get(
+    '/admin/policy',
+    requireAuth(config),
+    requireRole('admin'),
+    async (_req, res, next) => {
+      try {
+        res.set('Cache-Control', 'private, no-store').json(await adminPolicy());
+      } catch (error) {
+        next(error);
+      }
+    },
+  );
   router.use('/admin/accounts', requireAuth(config), requireRole('admin'));
   router.get('/admin/accounts', async (req, res, next) => {
     try {

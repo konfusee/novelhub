@@ -1742,5 +1742,24 @@
     "failed": "Không xác nhận được thiết lập đọc sớm.",
     "disableOnly": "Chương đã duyệt chỉ có thể tắt đọc sớm trước lần phát hành đầu. Không thay đổi giá, thời hạn, nội dung duyệt hoặc lịch phát hành.",
     "enabledState": "Áp dụng đọc sớm"
+  },
+  "policy": {
+    "title": "Chính sách đọc sớm đang có hiệu lực",
+    "description": "Giới hạn được tải từ MongoDB, dùng khi tác giả cấu hình đọc sớm cho chương.",
+    "reload": "Tải lại chính sách",
+    "loading": "Đang tải chính sách",
+    "error": "Không tải được chính sách. Hãy thử tải lại.",
+    "empty": "Chưa có chính sách đang hiệu lực. Tác giả chưa thể bật cấu hình đọc sớm.",
+    "effective": "Hiệu lực từ",
+    "priceMinCoins": "Giá tối thiểu (xu)",
+    "priceMaxCoins": "Giá tối đa (xu)",
+    "durationMinDays": "Thời hạn tối thiểu (ngày)",
+    "durationMaxDays": "Thời hạn tối đa (ngày)",
+    "authorSharePercent": "Tỷ lệ mặc định của tác giả (%)",
+    "platformSharePercent": "Tỷ lệ mặc định của nền tảng (%)",
+    "agreement": "Thỏa thuận riêng của tác giả được ưu tiên trước tỷ lệ mặc định này.",
+    "readOnly": "Hiện hỗ trợ xem chính sách. Chức năng tạo và kích hoạt phiên bản chính sách mới chưa được triển khai.",
+    "live": "Chính sách hiện hành được đọc từ MongoDB",
+    "otherSections": "Các tab dịch vụ và nhật ký hiện vẫn là bản mẫu"
   }
 }
