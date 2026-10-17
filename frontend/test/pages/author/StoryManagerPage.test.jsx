@@ -90,6 +90,9 @@ it('uses server lifecycle flags and refreshes the chapter row after archive and 
       await screen.findByRole('link', { name: 'Xem phân tích chương 7: Chương bảy thật' })
     ).getAttribute('href'),
   ).toBe('/author/analytics?storyId=owned&chapterId=seven');
+  expect(screen.getByRole('link', { name: 'Xem phân tích truyện' }).getAttribute('href')).toBe(
+    '/author/analytics?storyId=owned',
+  );
   fireEvent.click(await screen.findByRole('button', { name: 'Lưu trữ chương: Chương bảy thật' }));
   expect(mocks.apiRequest.mock.calls.some(([, o]) => o?.method === 'POST')).toBe(false);
   fireEvent.click(screen.getByRole('button', { name: 'Xác nhận', exact: true }));

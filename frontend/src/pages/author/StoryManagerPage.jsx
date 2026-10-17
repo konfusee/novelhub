@@ -389,9 +389,11 @@ export function StoryManagerPage() {
               action={
                 <ButtonLink
                   to={
-                    ['reviews', 'media'].includes(tab)
-                      ? `${linked.to}?storyId=${storyId}`
-                      : linked.to
+                    tab === 'analytics'
+                      ? ROUTES.authorAnalytics(storyId)
+                      : ['reviews', 'media'].includes(tab)
+                        ? `${linked.to}?storyId=${storyId}`
+                        : linked.to
                   }
                   variant="secondary"
                   size="sm"
@@ -563,7 +565,7 @@ export function StoryManagerPage() {
                 )}
               </div>
             </Card>
-            <StoryHealth stats={workspace.data.stats} />
+            <StoryHealth storyId={storyId} stats={workspace.data.stats} />
           </div>
         )}
         {notice && (
@@ -1145,7 +1147,7 @@ function DraftLifecycle({ story, version, disabled, onBusy, onChanged }) {
   );
 }
 
-function StoryHealth({ stats }) {
+function StoryHealth({ storyId, stats }) {
   const { t } = useLocale();
   return (
     <aside className="min-w-0 space-y-6 xl:sticky xl:top-24" aria-label="Sức khỏe truyện">
@@ -1190,7 +1192,11 @@ function StoryHealth({ stats }) {
             </li>
           ))}
         </ul>
-        <ButtonLink to="/author/analytics" variant="secondary" className="mt-5 w-full">
+        <ButtonLink
+          to={ROUTES.authorAnalytics(storyId)}
+          variant="secondary"
+          className="mt-5 w-full"
+        >
           <BarChart3 size={16} aria-hidden="true" />
           Xem phân tích truyện
         </ButtonLink>
