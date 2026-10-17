@@ -2,6 +2,7 @@ import { Router } from 'express';
 import { z } from 'zod';
 import { requireAuth, requireRole } from '../middleware/auth.js';
 import { HttpError } from '../middleware/errors.js';
+import { authorRoleView, revokeAuthorRole } from '../modules/author-access/revocation.js';
 import {
   decideApplication,
   getApplication,
@@ -25,6 +26,40 @@ const decisionSchema = z
 
 export function createAdminAuthorRouter(config) {
   const router = Router();
+  router.use('/admin/authors', requireAuth(config), requireRole('admin'));
+  router.get('/admin/authors/:accountId/role', async (req, res, next) => {
+    try {
+      if (!/^[a-f\d]{24}$/i.test(req.params.accountId))
+        throw new HttpError(400, 'validation_error', 'Mã tài khoản không hợp lệ.');
+      res
+        .set('Cache-Control', 'private, no-store')
+        .json(await authorRoleView(req.params.accountId));
+    } catch (error) {
+      next(error);
+    }
+  });
+  router.post('/admin/authors/:accountId/revoke', async (req, res, next) => {
+    try {
+      const parsed = z
+        .object({
+          roleId: z.string().regex(/^[a-f\d]{24}$/i),
+          expectedRoleVersion: z.number().int().min(0),
+          expectedAccountVersion: z.number().int().min(0),
+          reason: z.string().trim().min(1).max(1000),
+        })
+        .strict()
+        .safeParse(req.body);
+      if (!parsed.success || !/^[a-f\d]{24}$/i.test(req.params.accountId))
+        throw new HttpError(
+          400,
+          'validation_error',
+          'Cần lý do, quyền và phiên bản tài khoản hợp lệ.',
+        );
+      res.json(await revokeAuthorRole(req.account, req.params.accountId, parsed.data));
+    } catch (error) {
+      next(error);
+    }
+  });
   router.use('/admin/author-applications', requireAuth(config), requireRole('admin'));
   router.get('/admin/author-applications', async (req, res, next) => {
     try {
