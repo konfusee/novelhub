@@ -11,6 +11,7 @@ import { z } from 'zod';
 import { requireAuth, requireRole } from '../middleware/auth.js';
 import { HttpError } from '../middleware/errors.js';
 import { adminUsers, adminUserDetail } from '../modules/admin-users.js';
+import { adminAudit, auditQuery } from '../modules/admin-audit.js';
 import {
   authorRoleView,
   revokeAuthorRole,
@@ -39,6 +40,23 @@ const decisionSchema = z
 
 export function createAdminAuthorRouter(config) {
   const router = Router();
+  router.get(
+    '/admin/audit-events',
+    requireAuth(config),
+    requireRole('admin'),
+    async (req, res, next) => {
+      try {
+        const parsed = auditQuery.safeParse(req.query);
+        if (!parsed.success)
+          throw new HttpError(400, 'validation_error', 'Bộ lọc nhật ký không hợp lệ.');
+        res
+          .set({ 'Cache-Control': 'private, no-store', Vary: 'Cookie' })
+          .json(await adminAudit(parsed.data));
+      } catch (error) {
+        next(error);
+      }
+    },
+  );
   router.post(
     '/admin/policy/:policyId/reschedule',
     requireAuth(config),

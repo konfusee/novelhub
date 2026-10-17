@@ -147,6 +147,9 @@ const CategoriesConfigurationPage = lazy(() =>
 const PlatformSettingsPage = lazy(() =>
   import('./pages/admin/PlatformSettingsPage').then((m) => ({ default: m.PlatformSettingsPage })),
 );
+const AuditEventsPage = lazy(() =>
+  import('./pages/admin/AuditEventsPage').then((m) => ({ default: m.AuditEventsPage })),
+);
 const AuthorApplyPage = lazy(() =>
   import('./pages/author/AuthorApplyPage').then((m) => ({ default: m.AuthorApplyPage })),
 );
@@ -578,18 +581,7 @@ function AppRoutes() {
               />,
             )}
           />
-          <Route
-            path="/admin/audit-logs"
-            element={role(
-              'admin',
-              <RoleUtilityPage
-                role="admin"
-                eyebrow="Bảo mật"
-                title="Nhật ký kiểm tra"
-                description="Tìm sự kiện quản trị, bản ghi xác thực, thay đổi cấu hình và thao tác được bảo vệ."
-              />,
-            )}
-          />
+          <Route path="/admin/audit-logs" element={role('admin', <AuditEventsPage />)} />
           <Route
             path="/admin/moderation"
             element={role(
