@@ -154,3 +154,45 @@ it('prevents duplicate requests while a save is pending', async () => {
   });
   await waitFor(() => expect(onSaved).toHaveBeenCalledOnce());
 });
+
+it('lets approved settings be disabled without allowing their price or duration to change', async () => {
+  const onSaved = view({
+    ...data,
+    canEdit: false,
+    canDisable: true,
+    settings: { enabled: true, coinPrice: 350, durationDays: 5 },
+  });
+  await screen.findByText('Chương thật');
+  expect(screen.getByLabelText('Giá đọc sớm (xu)').disabled).toBe(true);
+  expect(screen.getByLabelText('Thời hạn (ngày)').disabled).toBe(true);
+  expect(screen.getByRole('checkbox').disabled).toBe(false);
+  expect(screen.getByRole('button', { name: 'Lưu thiết lập' }).disabled).toBe(true);
+  fireEvent.click(screen.getByRole('checkbox'));
+  expect(screen.getByRole('button', { name: 'Lưu thiết lập' }).disabled).toBe(false);
+  mock.apiRequest.mockResolvedValueOnce({
+    chapterId: 'chapter',
+    version: 3,
+    storyVersion: 5,
+    settings: { enabled: false, coinPrice: null, durationDays: null },
+  });
+  fireEvent.click(screen.getByRole('button', { name: 'Lưu thiết lập' }));
+  await waitFor(() => expect(onSaved).toHaveBeenCalledOnce());
+  expect(mock.apiRequest.mock.calls[1][1].body).toEqual({
+    enabled: false,
+    expectedVersion: 2,
+    expectedStoryVersion: 4,
+  });
+});
+it('cannot submit a price change in disable-only mode even if a change event is forged', async () => {
+  const onSaved = view({
+    ...data,
+    canEdit: false,
+    canDisable: true,
+    settings: { enabled: true, coinPrice: 350, durationDays: 5 },
+  });
+  await screen.findByText('Chương thật');
+  fireEvent.change(screen.getByLabelText('Giá đọc sớm (xu)'), { target: { value: '400' } });
+  fireEvent.submit(screen.getByRole('checkbox').closest('form'));
+  expect(mock.apiRequest.mock.calls.filter(([, o]) => o?.method === 'PUT')).toHaveLength(0);
+  expect(onSaved).not.toHaveBeenCalled();
+});

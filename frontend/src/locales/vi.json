@@ -1723,7 +1723,7 @@
   "earlyAccess": {
     "releaseLimit": "Luồng phát hành hiện chỉ hỗ trợ chương miễn phí. Thiết lập này chưa mở bán chương hoặc tạo giao dịch; cần tắt đọc sớm trước khi phát hành bằng luồng hiện tại.",
     "retryHint": "Tải lại trước khi lưu tiếp.",
-    "hint": "Lưu giá và thời hạn cho chương nháp chưa từng phát hành. Chưa bắt đầu đếm thời gian đọc sớm.",
+    "hint": "Giá và thời hạn chỉ sửa được khi còn là nháp. Trước lần phát hành đầu, chương đã duyệt có thể chuyển về miễn phí.",
     "price": "Giá đọc sớm (xu)",
     "summary": "Đọc sớm dự kiến: {{price}} xu / {{days}} ngày",
     "bounds": "Policy hiện hành: {{priceMinCoins}}–{{priceMaxCoins}} xu, {{durationMinDays}}–{{durationMaxDays}} ngày.",
@@ -1739,6 +1739,8 @@
     "title": "Thiết lập đọc sớm",
     "reload": "Tải lại",
     "enable": "Bật thiết lập đọc sớm cho bản nháp",
-    "failed": "Không xác nhận được thiết lập đọc sớm."
+    "failed": "Không xác nhận được thiết lập đọc sớm.",
+    "disableOnly": "Chương đã duyệt chỉ có thể tắt đọc sớm trước lần phát hành đầu. Không thay đổi giá, thời hạn, nội dung duyệt hoặc lịch phát hành.",
+    "enabledState": "Áp dụng đọc sớm"
   }
 }

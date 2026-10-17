@@ -76,9 +76,11 @@ function EarlyAccessForm({ data, path, busy, setBusy, onClose, onSaved, onReload
     enabled !== data.settings.enabled ||
     (enabled &&
       (coinPrice !== data.settings.coinPrice || durationDays !== data.settings.durationDays));
+  const canManage = data.canEdit || data.canDisable;
+  const permitted = data.canEdit || (!enabled && data.canDisable);
   const save = async (event) => {
     event.preventDefault();
-    if (busyRef.current || stale || !data.canEdit || !dirty || !valid) return;
+    if (busyRef.current || stale || !permitted || !dirty || !valid) return;
     busyRef.current = true;
     setBusy(true);
     setError('');
@@ -121,17 +123,21 @@ function EarlyAccessForm({ data, path, busy, setBusy, onClose, onSaved, onReload
   return (
     <form onSubmit={save} aria-busy={busy}>
       <h3 className="break-words text-base font-semibold">{data.title}</h3>
-      <p className="mt-3 text-sm leading-6 text-muted">{t('earlyAccess.hint')}</p>
-      {!data.canEdit && <p className="mt-3 text-sm text-rose-strong">{t('earlyAccess.locked')}</p>}
+      {data.canEdit && <p className="mt-3 text-sm leading-6 text-muted">{t('earlyAccess.hint')}</p>}
+      {!data.canEdit && (
+        <p className="mt-3 text-sm text-muted">
+          {t(data.canDisable ? 'earlyAccess.disableOnly' : 'earlyAccess.locked')}
+        </p>
+      )}
       {!policy && <p className="mt-3 text-sm text-orange-strong">{t('earlyAccess.noPolicy')}</p>}
       <label className="mt-5 flex items-center gap-3 text-sm font-semibold">
         <input
           type="checkbox"
           checked={enabled}
-          disabled={busy || stale || !data.canEdit}
+          disabled={busy || stale || !canManage}
           onChange={(event) => setEnabled(event.target.checked)}
         />
-        {t('earlyAccess.enable')}
+        {t(data.canEdit ? 'earlyAccess.enable' : 'earlyAccess.enabledState')}
       </label>
       <div className="mt-5 grid gap-4 sm:grid-cols-2">
         <div>
@@ -184,8 +190,8 @@ function EarlyAccessForm({ data, path, busy, setBusy, onClose, onSaved, onReload
         <Button type="button" variant="secondary" disabled={busy} onClick={onReload}>
           {t('earlyAccess.reload')}
         </Button>
-        {data.canEdit && (
-          <Button type="submit" disabled={busy || stale || !dirty || !valid}>
+        {canManage && (
+          <Button type="submit" disabled={busy || stale || !permitted || !dirty || !valid}>
             {t(busy ? 'earlyAccess.saving' : 'earlyAccess.save')}
           </Button>
         )}
