@@ -3,6 +3,24 @@ import { extractDocument } from '../src/modules/document-extraction.js';
 import { pdfDocument, docxDocument } from './fixtures/documents.js';
 
 describe('real document extraction', () => {
+  it.each([
+    ['```text\nĐoạn mã cuối\n```', 'Đoạn mã cuối'],
+    ['    Đoạn mã thụt lề', 'Đoạn mã thụt lề'],
+    ['- Mục đầu\n- Mục cuối', 'Mục cuối'],
+    ['| Cột |\n| --- |\n| Ô cuối |', 'Ô cuối'],
+  ])('keeps the chapter after a Markdown block on its own line: %s', async (block, lastText) => {
+    const source = `## Mở đầu\nNội dung đầu.\n\n${block}\n## Kết thúc\nNội dung sau.`;
+    const result = await extractDocument(Buffer.from(source), 'md');
+    expect(result.headings).toEqual([
+      { level: 2, title: 'Mở đầu' },
+      { level: 2, title: 'Kết thúc' },
+    ]);
+    expect(result.text).toContain(lastText);
+    expect(result.text.slice(result.text.indexOf(lastText) + lastText.length)).toMatch(
+      /^\n{2,}Kết thúc\n\nNội dung sau\./,
+    );
+    expect(result.text.split('\n').filter((line) => line === 'Kết thúc')).toHaveLength(1);
+  });
   it('returns Markdown root heading metadata while keeping existing plain text and ignoring code/quotes', async () => {
     const source =
       '# Sách\nLời tựa.\n## Một\n**Văn bản** đầu.\n~~~md\n## Mã giả\n~~~\n> ## Trích dẫn\n### Cảnh nhỏ\nChi tiết.\n## Hai\nKết thúc.';
