@@ -30,6 +30,7 @@ import { prepareStoryRelease, publishStory } from '../modules/author-story-relea
 import { prepareChapterRelease, publishChapter } from '../modules/author-chapter-release.js';
 import { changeChapterSchedule, prepareChapterSchedule } from '../modules/chapter-scheduler.js';
 import { reorderDraftChapters } from '../modules/author-chapter-order.js';
+import { unpublishStory } from '../modules/author-story-unpublish.js';
 import { changeChapterDraftLifecycle } from '../modules/author-chapter-lifecycle.js';
 
 const objectId = z.string().regex(/^[a-f\d]{24}$/i);
@@ -59,6 +60,7 @@ function parse(schema, value) {
 function view(story) {
   return {
     id: String(story._id),
+    publishedRevisionId: story.publishedRevisionId ? String(story.publishedRevisionId) : null,
     title: story.title,
     description: story.description ?? '',
     categoryIds: story.categoryIds.map(String),
@@ -459,15 +461,30 @@ export function createAuthorContentRouter(config) {
     try {
       const id = parse(objectId, req.params.storyId);
       const input = parse(
-        z
-          .object({
-            action: z.enum(['archive', 'restore']),
-            expectedVersion: z.number().int().min(0),
-          })
-          .strict(),
+        z.union([
+          z
+            .object({
+              action: z.enum(['archive', 'restore']),
+              expectedVersion: z.number().int().min(0),
+            })
+            .strict(),
+          z
+            .object({
+              action: z.literal('unpublish'),
+              expectedVersion: z.number().int().min(0).max(Number.MAX_SAFE_INTEGER),
+              expectedPublishedRevisionId: objectId,
+              reason: z.string().trim().min(1).max(1000),
+            })
+            .strict(),
+        ]),
         req.body,
       );
-      res.json({ story: await changeDraftLifecycle(req.account, id, input) });
+      res.set('Cache-Control', 'private, no-store').json({
+        story:
+          input.action === 'unpublish'
+            ? await unpublishStory(req.account, id, input)
+            : await changeDraftLifecycle(req.account, id, input),
+      });
     } catch (error) {
       next(error);
     }

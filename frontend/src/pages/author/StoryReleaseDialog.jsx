@@ -57,8 +57,14 @@ function ReleaseDialog({ storyId, chapterId, onClose, onReleased }) {
     }
   };
   return (
-    <Modal open title={t(`${label}.title`)} onClose={() => !busy && onClose()}>
-      <p className="text-sm leading-6 text-muted">{t(`${label}.hint`)}</p>
+    <Modal
+      open
+      title={t(!chapter && data.target.restoring ? 'storyRelease.restoreTitle' : `${label}.title`)}
+      onClose={() => !busy && onClose()}
+    >
+      <p className="text-sm leading-6 text-muted">
+        {t(!chapter && data.target.restoring ? 'storyRelease.restoreHint' : `${label}.hint`)}
+      </p>
       {resource.status === 'loading' ? (
         <p role="status" className="mt-4 text-sm">
           {t('authorDraftActions.loading')}

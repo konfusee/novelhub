@@ -30,6 +30,7 @@ import { StoryCover } from '../../components/story/StoryCover';
 import { ChapterOrderDialog } from './ChapterOrderDialog';
 import { ChapterLifecycleDialog } from './ChapterLifecycleDialog';
 import { ChapterReleaseDialog, StoryReleaseDialog } from './StoryReleaseDialog';
+import { StoryUnpublishDialog } from './StoryUnpublishDialog';
 import { ChapterScheduleDialog } from './ChapterScheduleDialog';
 import { ChapterEarlyAccessDialog } from './ChapterEarlyAccessDialog';
 import { ROUTES } from '../../app/routes';
@@ -268,7 +269,11 @@ export function StoryManagerPage() {
                   disabled={workspace.status !== 'ready'}
                   onClick={() => setReleaseOpen(true)}
                 >
-                  {t('storyRelease.title')}
+                  {t(
+                    story.status === 'unpublished'
+                      ? 'storyRelease.restoreTitle'
+                      : 'storyRelease.title',
+                  )}
                 </Button>
               )}
               {story.status === 'published' && (
@@ -869,6 +874,7 @@ function StoryDetails({ story, onSaved, onLifecycle }) {
   const [synopsis, setSynopsis] = useState(story.description);
   const [status, setStatus] = useState('idle');
   const [lifecycleBusy, setLifecycleBusy] = useState(false);
+  const [unpublishOpen, setUnpublishOpen] = useState(false);
   const dirty = title !== story.title || synopsis !== story.description || categoriesChanged;
   const titleError = !title.trim();
   const synopsisError = synopsis.trim().length < 40;
@@ -1027,6 +1033,31 @@ function StoryDetails({ story, onSaved, onLifecycle }) {
           {status === 'saving' ? 'Đang lưu...' : 'Lưu thông tin'}
         </Button>
       </div>
+      {story.canUnpublish && (
+        <div className="mt-6 border-t border-line pt-5">
+          <Button
+            type="button"
+            variant="secondary"
+            disabled={dirty || status === 'saving' || lifecycleBusy}
+            onClick={() => setUnpublishOpen(true)}
+          >
+            {t('storyUnpublish.title')}
+          </Button>
+          {dirty && <p className="mt-2 text-xs text-muted">{t('storyUnpublish.dirty')}</p>}
+        </div>
+      )}
+      {unpublishOpen && (
+        <StoryUnpublishDialog
+          story={story}
+          version={version}
+          onBusy={setLifecycleBusy}
+          onClose={() => setUnpublishOpen(false)}
+          onChanged={() => {
+            setUnpublishOpen(false);
+            onLifecycle();
+          }}
+        />
+      )}
       <DraftLifecycle
         story={story}
         version={version}

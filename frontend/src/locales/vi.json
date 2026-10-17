@@ -1435,8 +1435,10 @@
       "rights": "Khai báo quyền vẫn có hiệu lực",
       "categories": "Thể loại đang hoạt động",
       "media": "Không có ảnh bìa hoặc banner chưa được hỗ trợ",
-      "editable": "Truyện không bị khóa và phiên bản này chưa phát hành"
-    }
+      "editable": "Truyện không bị khóa và phiên bản đủ điều kiện phát hành"
+    },
+    "restoreTitle": "Phát hành lại thông tin truyện",
+    "restoreHint": "Công khai lại đúng gói đã được duyệt sau khi kiểm tra quyền, bằng chứng và thể loại. Những chương đã phát hành sẽ hiển thị lại; lịch chương đến hạn có thể tiếp tục chạy."
   },
   "submissionPackage": {
     "title": "Xem gói đã gửi",
@@ -1846,5 +1848,15 @@
     "error": "Chưa xác nhận được kết quả hủy. Chính sách có thể đã thay đổi hoặc đến ngày hiệu lực. Hãy tải lại lịch sử trước khi tiếp tục.",
     "saved": "Đã hủy lịch chính sách. Lịch sử đã được yêu cầu tải lại.",
     "recordedReason": "Lý do hủy lịch: {{reason}}"
+  },
+  "storyUnpublish": {
+    "title": "Ngừng phát hành truyện",
+    "hint": "Truyện và các chương sẽ tạm ẩn khỏi độc giả. Nội dung, lịch sử và quyền mở khóa được giữ nguyên. Lịch chương chưa bị hủy; chương đến hạn chỉ có thể phát hành khi truyện được công khai lại. Phát hành lại vẫn phải qua kiểm tra gói đã duyệt.",
+    "reason": "Lý do ngừng phát hành",
+    "busy": "Đang ngừng phát hành…",
+    "failed": "Chưa xác nhận được kết quả ngừng phát hành.",
+    "reload": "Hãy tải lại trạng thái trước khi thực hiện tiếp.",
+    "refresh": "Tải lại trạng thái",
+    "dirty": "Lưu hoặc hoàn tác thông tin đang sửa trước khi ngừng phát hành."
   }
 }
