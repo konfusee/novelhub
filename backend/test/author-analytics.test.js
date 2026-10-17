@@ -71,3 +71,119 @@ it('counts actual daily events and distinct identities in the selected Vietnam c
   expect((await request(app).get('/api/author/analytics')).status).toBe(401);
   expect((await get('?days=7')).status).toBe(200);
 });
+it('filters actual views and distinct readers by an owned chapter without changing source events', async () => {
+  const author = await authenticatedAccount('author');
+  const category = await Category.create({
+    name: 'Phân tích',
+    normalizedName: 'phân tích',
+    createdBy: author.account._id,
+  });
+  const story = await Story.create({
+    title: 'Truyện có hai chương',
+    authorAccountId: author.account._id,
+    categoryIds: [category._id],
+  });
+  const [one, two, empty] = await Chapter.create(
+    [1, 2, 3].map((number) => ({
+      storyId: story._id,
+      title: `Nội dung ${number}`,
+      orderKey: number,
+    })),
+  );
+  const event = (key, chapter, viewerKey, viewerType = 'account', day = '2026-10-16') => ({
+    sourceEventKey: key,
+    eventType: 'view',
+    storyId: story._id,
+    chapterId: chapter._id,
+    viewerType,
+    viewerKey,
+    day,
+    occurredAt: new Date(`${day}T00:00:00Z`),
+  });
+  await Chapter.create({
+    storyId: story._id,
+    title: 'Nháp đã xóa',
+    orderKey: 4,
+    status: 'archived',
+    publicationTransition: { result: 'author-draft-deleted' },
+  });
+  await StatisticsEvent.create([
+    event('one-account', one, 'private-shared'),
+    event('one-guest', one, 'private-shared', 'guest-device'),
+    event('two-account', two, 'private-shared'),
+    event('two-other', two, 'private-other'),
+    event('old', one, 'old', 'account', '2026-10-01'),
+    event('future', one, 'future', 'account', '2026-10-18'),
+    {
+      sourceEventKey: 'earning',
+      eventType: 'earning',
+      storyId: story._id,
+      chapterId: one._id,
+      day: '2026-10-16',
+      occurredAt: new Date('2026-10-16'),
+    },
+  ]);
+  const now = new Date('2026-10-16T12:00:00Z');
+  const all = await authorAnalytics(author.account._id, { days: 7, storyId: story.id }, now);
+  expect(all).toMatchObject({ reads: 4, readers: 3 });
+  expect(all.chapters).toEqual(
+    [one, two, empty].map((c) => ({ id: c.id, title: c.title, number: c.orderKey })),
+  );
+  const filtered = await authorAnalytics(
+    author.account._id,
+    { days: 7, storyId: story.id, chapterId: one.id },
+    now,
+  );
+  expect(filtered).toMatchObject({
+    reads: 2,
+    readers: 2,
+    daily: [0, 0, 0, 0, 0, 0, 2],
+    retention: null,
+    earnings: null,
+  });
+  expect(JSON.stringify(filtered)).not.toContain('private-shared');
+  expect(
+    (
+      await authorAnalytics(
+        author.account._id,
+        { days: 7, storyId: story.id, chapterId: empty.id },
+        now,
+      )
+    ).daily,
+  ).toEqual([0, 0, 0, 0, 0, 0, 0]);
+  expect((await authorAnalytics(author.account._id, { days: 7 }, now)).chapters).toEqual([]);
+  expect(await StatisticsEvent.countDocuments()).toBe(7);
+});
+it('rejects cross-story and foreign chapters, malformed filters and chapter-only requests', async () => {
+  const author = await authenticatedAccount('author');
+  const other = await authenticatedAccount('author');
+  const category = await Category.create({
+    name: 'Kiểm tra',
+    normalizedName: 'kiểm tra',
+    createdBy: author.account._id,
+  });
+  const create = (owner, title) =>
+    Story.create({ title, authorAccountId: owner._id, categoryIds: [category._id] });
+  const a = await create(author.account, 'Truyện A'),
+    b = await create(author.account, 'Truyện B'),
+    foreign = await create(other.account, 'Truyện riêng');
+  const chapter = await Chapter.create({ storyId: b._id, title: 'Chương B', orderKey: 1 });
+  const hidden = await Chapter.create({
+    storyId: foreign._id,
+    title: 'Không được lộ',
+    orderKey: 1,
+  });
+  const get = (query) =>
+    request(app).get(`/api/author/analytics?${query}`).set('Cookie', author.cookie);
+  expect((await get(`chapterId=${chapter.id}`)).status).toBe(400);
+  expect((await get(`storyId=${a.id}&chapterId=bad`)).status).toBe(400);
+  expect((await get(`storyId=${a.id}&chapterId=${chapter.id}`)).status).toBe(404);
+  expect((await get(`storyId=${a.id}&chapterId=${hidden.id}`)).status).toBe(404);
+  expect((await get(`storyId=${foreign.id}&chapterId=${hidden.id}`)).status).toBe(404);
+  const response = await get(`storyId=${b.id}&chapterId=${chapter.id}&days=7`);
+  expect(response.status).toBe(200);
+  expect(response.headers['cache-control']).toBe('private, no-store');
+  expect(response.body.chapters.map((c) => c.title)).toEqual(['Chương B']);
+  expect(JSON.stringify(response.body)).not.toContain('Không được lộ');
+  expect(response.body.reads).toBe(0);
+});

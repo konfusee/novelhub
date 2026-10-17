@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useSearchParams } from 'react-router';
 import {
   AlertTriangle,
   ArrowUp,
@@ -26,7 +27,7 @@ import {
   Skeleton,
 } from '../../components/ui';
 
-const emptyAnalytics = { daily: [], labels: [], stories: [], reads: 0, readers: 0 };
+const emptyAnalytics = { daily: [], labels: [], stories: [], chapters: [], reads: 0, readers: 0 };
 const rangeLabels = {
   'Last 7 Days': '7 ngày gần nhất',
   'Last 30 Days': '30 ngày gần nhất',
@@ -51,14 +52,30 @@ const channelSkeletonNameWraps = [true, false, true, false];
 
 export function AuthorAnalyticsPage() {
   const { t } = useLocale();
-  const [story, setStory] = useState('');
+  const [searchParams, setSearchParams] = useSearchParams();
+  const story = searchParams.get('storyId') ?? '';
+  const chapter = story ? (searchParams.get('chapterId') ?? '') : '';
+  const changeFilter = (nextStory, nextChapter = '') => {
+    setSearchParams((current) => {
+      const next = new URLSearchParams(current);
+      for (const [key, value] of [
+        ['storyId', nextStory],
+        ['chapterId', nextChapter],
+      ])
+        if (value) next.set(key, value);
+        else next.delete(key);
+      return next;
+    });
+    setExported(false);
+    setDay(null);
+  };
   const [range, setRange] = useState('Last 30 Days');
   const [exported, setExported] = useState(false);
   // Per-day readout for touch: the bars are too thin to target, so the plot maps the pointer x to a day.
   const [day, setDay] = useState(null);
   const days = { 'Last 7 Days': 7, 'Last 30 Days': 30, 'Last 90 Days': 90 }[range];
   const analytics = useBackendDocument(
-    `/author/analytics?days=${days}${story ? `&storyId=${story}` : ''}`,
+    `/author/analytics?days=${days}${story ? `&storyId=${encodeURIComponent(story)}` : ''}${chapter ? `&chapterId=${encodeURIComponent(chapter)}` : ''}`,
     emptyAnalytics,
   );
   const loading = analytics.status === 'loading';
@@ -68,6 +85,13 @@ export function AuthorAnalyticsPage() {
   const storyLabel =
     analytics.data.stories.find((item) => item.id === story)?.title ??
     t('analyticsData.allStories');
+  const selectedChapter = analytics.data.chapters?.find((item) => item.id === chapter);
+  const chapterLabel = selectedChapter
+    ? t('analyticsData.chapterTitle', {
+        number: selectedChapter.number,
+        title: selectedChapter.title,
+      })
+    : t('analyticsData.allChapters');
   const kpis = [
     {
       icon: BookOpen,
@@ -100,7 +124,7 @@ export function AuthorAnalyticsPage() {
   const dailyPeak = Math.max(0, ...daily);
 
   const resetRange = () => {
-    setStory('');
+    changeFilter('');
     setRange('Last 30 Days');
     setExported(false);
   };
@@ -108,6 +132,7 @@ export function AuthorAnalyticsPage() {
   const exportReport = () => {
     const rows = [
       [t('analyticsData.story'), storyLabel],
+      [t('analyticsData.chapter'), chapterLabel],
       [t('analyticsData.range'), rangeLabels[range]],
       [t('analyticsData.views'), reads],
       [t('analyticsData.readers'), readers],
@@ -148,14 +173,28 @@ export function AuthorAnalyticsPage() {
               aria-label="Chọn truyện"
               value={story}
               onChange={(event) => {
-                setStory(event.target.value);
-                setExported(false);
+                changeFilter(event.target.value);
               }}
             >
               <option value="">{t('analyticsData.allStories')}</option>
               {analytics.data.stories.map((item) => (
                 <option key={item.id} value={item.id}>
                   {item.title}
+                </option>
+              ))}
+            </Select>
+            <Select
+              aria-label={t('analyticsData.chooseChapter')}
+              value={chapter}
+              disabled={!story || loading}
+              onChange={(event) => changeFilter(story, event.target.value)}
+            >
+              <option value="">
+                {t(story ? 'analyticsData.allChapters' : 'analyticsData.storyFirst')}
+              </option>
+              {(analytics.data.chapters ?? []).map((item) => (
+                <option key={item.id} value={item.id}>
+                  {t('analyticsData.chapterTitle', { number: item.number, title: item.title })}
                 </option>
               ))}
             </Select>
@@ -493,9 +532,9 @@ function Kpi({ icon: Icon, label, value, delta, trend = false, tone = 'brand' })
         </span>
       </div>
       <strong className="mt-3 block text-h3 tabular-nums sm:mt-4 sm:text-h2">{value}</strong>
-      <Badge tone={tone === 'brand' ? 'green' : tone} className="mt-3 flex w-fit">
+      <Badge tone={tone === 'brand' ? 'green' : tone} className="mt-3 flex w-fit max-w-full">
         {trend && <ArrowUp size={12} aria-hidden="true" />}
-        {delta}
+        <span className="min-w-0 whitespace-normal">{delta}</span>
       </Badge>
     </Card>
   );

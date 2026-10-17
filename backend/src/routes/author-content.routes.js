@@ -297,11 +297,15 @@ export function createAuthorContentRouter(config) {
                 .pipe(z.union([z.literal(7), z.literal(30), z.literal(90)]))
                 .default(30),
               storyId: objectId.optional(),
+              chapterId: objectId.optional(),
             })
-            .strict(),
+            .strict()
+            .refine((value) => !value.chapterId || Boolean(value.storyId)),
           req.query,
         );
-        res.json(await authorAnalytics(req.account._id, input));
+        res
+          .set('Cache-Control', 'private, no-store')
+          .json(await authorAnalytics(req.account._id, input));
       } catch (error) {
         next(error);
       }

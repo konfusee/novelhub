@@ -1129,6 +1129,11 @@
     "agreementUnavailable": "Chưa tải được thỏa thuận hiện tại. Không dùng tỷ lệ mẫu để thay thế."
   },
   "analyticsData": {
+    "chooseChapter": "Chọn chương",
+    "allChapters": "Tất cả chương",
+    "storyFirst": "Chọn truyện trước",
+    "chapter": "Chương",
+    "chapterTitle": "Chương {{number}}: {{title}}",
     "allStories": "Tất cả truyện",
     "views": "Lượt đọc đã ghi nhận",
     "readers": "Định danh độc giả duy nhất",

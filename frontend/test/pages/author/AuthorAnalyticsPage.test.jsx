@@ -20,12 +20,16 @@ const data = {
     '2026-10-16',
   ],
   stories: [{ id: 'real-owned', title: 'Truyện của tôi' }],
+  chapters: [
+    { id: 'chapter-one', title: 'Chương đầu', number: 1 },
+    { id: 'chapter-two', title: 'Chương tiếp', number: 2 },
+  ],
   reads: 3,
   readers: 2,
 };
-const view = () =>
+const view = (url = '/author/analytics') =>
   render(
-    <MemoryRouter>
+    <MemoryRouter initialEntries={[url]}>
       <LocaleProvider>
         <AuthorAnalyticsPage />
       </LocaleProvider>
@@ -65,9 +69,15 @@ it('exports actual daily rows and treats formula-like story titles as literal te
   await waitFor(() =>
     expect(screen.getByRole('button', { name: 'Xuất báo cáo', exact: true }).disabled).toBe(false),
   );
+  fireEvent.click(screen.getByRole('combobox', { name: 'Chọn chương' }));
+  fireEvent.click(screen.getByRole('option', { name: 'Chương 1: Chương đầu', exact: true }));
+  await waitFor(() =>
+    expect(screen.getByRole('button', { name: 'Xuất báo cáo', exact: true }).disabled).toBe(false),
+  );
   fireEvent.click(screen.getByRole('button', { name: 'Xuất báo cáo', exact: true }));
   expect(report).toContain('"\'=1+1"');
   expect(report).toContain('"2026-10-16","2"');
+  expect(report).toContain('"Chương","Chương 1: Chương đầu"');
 });
 it('renders recorded daily counts and unknown unsupported metrics without sample claims', async () => {
   mocks.apiRequest.mockResolvedValue(data);
@@ -107,4 +117,57 @@ it('shows retry on API failure and disables exporting fabricated data', async ()
   view();
   expect(await screen.findByText('Không tải được dữ liệu phân tích')).toBeTruthy();
   expect(screen.getByRole('button', { name: 'Xuất báo cáo', exact: true }).disabled).toBe(true);
+});
+it('opens a chapter deep link, keeps it across date ranges and clears it when the story changes', async () => {
+  mocks.apiRequest.mockResolvedValue(data);
+  view('/author/analytics?storyId=real-owned&chapterId=chapter-one');
+  await screen.findByText('3');
+  expect(mocks.apiRequest).toHaveBeenCalledWith(
+    '/author/analytics?days=30&storyId=real-owned&chapterId=chapter-one',
+    expect.any(Object),
+  );
+  fireEvent.click(screen.getByRole('combobox', { name: 'Khoảng thời gian' }));
+  fireEvent.click(screen.getByRole('option', { name: '7 ngày gần nhất', exact: true }));
+  await waitFor(() =>
+    expect(mocks.apiRequest).toHaveBeenCalledWith(
+      '/author/analytics?days=7&storyId=real-owned&chapterId=chapter-one',
+      expect.any(Object),
+    ),
+  );
+  fireEvent.click(screen.getByRole('combobox', { name: 'Chọn truyện' }));
+  fireEvent.click(screen.getByRole('option', { name: 'Tất cả truyện', exact: true }));
+  await waitFor(() =>
+    expect(mocks.apiRequest).toHaveBeenCalledWith('/author/analytics?days=7', expect.any(Object)),
+  );
+  expect(screen.getByRole('combobox', { name: 'Chọn chương' }).disabled).toBe(true);
+});
+it('requests the selected chapter and permits clearing a missing chapter without fake results', async () => {
+  mocks.apiRequest.mockResolvedValue(data);
+  view('/author/analytics?storyId=real-owned');
+  await screen.findByText('3');
+  fireEvent.click(screen.getByRole('combobox', { name: 'Chọn chương' }));
+  fireEvent.click(screen.getByRole('option', { name: 'Chương 2: Chương tiếp', exact: true }));
+  await waitFor(() =>
+    expect(mocks.apiRequest).toHaveBeenCalledWith(
+      '/author/analytics?days=30&storyId=real-owned&chapterId=chapter-two',
+      expect.any(Object),
+    ),
+  );
+  mocks.apiRequest.mockRejectedValue(Object.assign(new Error('not found'), { status: 404 }));
+  fireEvent.click(screen.getByRole('combobox', { name: 'Khoảng thời gian' }));
+  fireEvent.click(screen.getByRole('option', { name: '7 ngày gần nhất', exact: true }));
+  await waitFor(() =>
+    expect(screen.getByRole('button', { name: 'Xuất báo cáo', exact: true }).disabled).toBe(true),
+  );
+  await screen.findByText('Chưa có dữ liệu phân tích');
+  mocks.apiRequest.mockResolvedValue(data);
+  fireEvent.click(screen.getByRole('combobox', { name: 'Chọn chương' }));
+  fireEvent.click(screen.getByRole('option', { name: 'Tất cả chương', exact: true }));
+  await waitFor(() =>
+    expect(mocks.apiRequest).toHaveBeenCalledWith(
+      '/author/analytics?days=7&storyId=real-owned',
+      expect.any(Object),
+    ),
+  );
+  await screen.findByText('3');
 });

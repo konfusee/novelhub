@@ -1,0 +1,13 @@
+# Thống kê theo chương của tác giả
+
+`GET /api/author/analytics` giữ bộ lọc ngày 7/30/90 và truyện, bổ sung `chapterId` tùy chọn khi có `storyId`. Máy chủ kiểm tra truyện thuộc tác giả đang đăng nhập rồi đối chiếu chương trong chính truyện đó. Sai định dạng hoặc thiếu truyện trả 400; truyện/chương khác chủ sở hữu, sai truyện hoặc không còn khả dụng trả 404. Phản hồi private/no-store không lộ khóa định danh độc giả.
+
+Danh sách chương chỉ gồm ID, tiêu đề và số thứ tự, lấy từ MongoDB theo truyện đã chọn; không gồm tombstone nháp đã xóa. Truy vấn sự kiện thêm đúng chapterId sau khi xác minh sở hữu. Lượt đọc theo ngày và độc giả phân biệt `(viewerType, viewerKey)` đều dùng cùng điều kiện truyện/chương/ngày Việt Nam. Không đổi schema, sự kiện nguồn, dữ liệu tài chính hoặc hạn đọc. Chương không có sự kiện trả chuỗi ngày với giá trị 0; không dựng dữ liệu mẫu.
+
+Giao diện giữ shell, biểu đồ, KPI và trạng thái chưa có số liệu hỗ trợ. Bộ chọn chương dùng Select chung, chỉ mở khi đã chọn truyện. Bộ lọc truyện/chương lưu trong URL để mở từ nút thống kê ở từng chương và dùng Back/Forward. Đổi khoảng ngày giữ chương, đổi truyện xóa chương cũ. Khi chương không còn khả dụng, vẫn có thể chọn Tất cả chương để thoát bộ lọc lỗi. CSV ghi cả truyện/chương đã chọn và đúng dãy ngày đang hiển thị, tiếp tục bảo vệ ô văn bản có thể bị hiểu là công thức.
+
+Giữ chân, tỷ lệ đọc hoàn thành, âm thanh, nguồn/thiết bị độc giả và doanh thu phân bổ theo chương chưa có nguồn nghiệp vụ hoàn chỉnh, nên vẫn hiển thị chưa có dữ liệu. UC-AUT-12 tiếp tục ở mức Một phần.
+
+Kiểm thử tập trung bao gồm ownership, chương sai truyện, tham số nghiêm ngặt, số liệu và phân biệt độc giả, ngày Việt Nam, chương 0 lượt đọc, loại tombstone, link chương, đổi/xóa bộ lọc, phục hồi từ 404 và nội dung CSV. Kiểm chứng browser dùng API thật cùng MongoDB replica set tạm, không nạp sự kiện thử vào database nhóm. Ảnh kiểm chứng ngoài repository: WDP301/outputs/author-progress-01a13e25/chapter-analytics.
+
+Kết quả: 3 test backend và 22 test frontend (analytics + workspace truyện) đạt; lint hai workspace, i18n, build và target formatting đạt. Browser đối chiếu năm sự kiện: chương 1 có 2 lượt đọc/2 độc giả, chương 2 có 3/3, tổng có 5/4; Back khôi phục bộ lọc. Đã kiểm tra sáng/tối ở 390/768/1024/1536 px, sửa nhãn KPI dài tràn thẻ điện thoại. Console không có warn/error trong luồng đã kiểm tra. Không tuyên bố toàn bộ frontend suite đã đạt.

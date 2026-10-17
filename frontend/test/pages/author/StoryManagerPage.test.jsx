@@ -85,6 +85,11 @@ it('uses server lifecycle flags and refreshes the chapter row after archive and 
     };
   });
   view();
+  expect(
+    (
+      await screen.findByRole('link', { name: 'Xem phân tích chương 7: Chương bảy thật' })
+    ).getAttribute('href'),
+  ).toBe('/author/analytics?storyId=owned&chapterId=seven');
   fireEvent.click(await screen.findByRole('button', { name: 'Lưu trữ chương: Chương bảy thật' }));
   expect(mocks.apiRequest.mock.calls.some(([, o]) => o?.method === 'POST')).toBe(false);
   fireEvent.click(screen.getByRole('button', { name: 'Xác nhận', exact: true }));

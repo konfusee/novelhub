@@ -19,6 +19,8 @@ export const ROUTES = {
   read: (storyId, chapterId) => `/read/${storyId}/${chapterId}`,
   listen: (storyId, chapterId) => `/listen/${storyId}/${chapterId}`,
   authorStory: (id) => `/author/stories/${id}`,
+  authorAnalytics: (storyId, chapterId) =>
+    `/author/analytics${storyId ? `?storyId=${encodeURIComponent(storyId)}${chapterId ? `&chapterId=${encodeURIComponent(chapterId)}` : ''}` : ''}`,
   moderatorSubmission: (id) => `/moderator/submissions/${id}`,
   adminUser: (id) => `/admin/users/${id}`,
 };
