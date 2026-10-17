@@ -34,6 +34,16 @@ Giới hạn còn lại: gợi ý tách chỉ hỗ trợ mẫu Chương/Chapter 
 
 Parser tham chiếu: [unpdf](https://github.com/unjs/unpdf), [word-extractor](https://github.com/morungos/node-word-extractor), [Marked](https://github.com/markedjs/marked). Dependencies được khóa phiên bản trong package-lock.
 
+## Bổ sung ngày 18/10/2026: tiêu đề Markdown
+
+Parser MD tiếp tục trả văn bản thuần như trước và bổ sung `headings` (level/title) từ các heading gốc của lexer. Không lấy heading nằm trong code hoặc blockquote; chú thích YAML đầu tệp không dùng làm mốc chương. Metadata chỉ dùng gợi ý, không đổi schema, receipt hoặc quy trình lưu revision/quyền sở hữu.
+
+Khi tác giả bấm gợi ý, màn nhập tìm lại tiêu đề duy nhất trong **văn bản hiện tại đã chỉnh sửa**, chọn cấp nông nhất có ít nhất hai tiêu đề. Tên sách/lời tựa được giữ thành phần mở đầu; tiêu đề cấp sâu hơn giữ trong nội dung chương. Tiêu đề trùng, thay tên không còn đối chiếu được, cấu trúc không rõ hoặc vượt 100 phần không được tách tự động; tác giả vẫn tách/gộp tại con trỏ. Gợi ý Chương/Chapter đánh số liên tiếp tiếp tục hoạt động.
+
+Không thêm Markdown rendering hoặc rich-text import: giữ nguyên văn bản sau trích xuất, không hứa giữ ký hiệu/định dạng nguồn mà parser đã chuyển đổi. HTML/ảnh chưa hỗ trợ vẫn bị từ chối; không tải tài nguyên ngoài và không dùng AI. Gói gửi tới API vẫn là các chương đã được Author xem lại và xác nhận.
+
+27 kiểm thử backend parser/import và 36 kiểm thử frontend liên quan đạt. Browser tải tệp MD thật, gợi ý phần mở đầu + Bến đầu + Chân trời, không tách heading trong code, lưu ba chương nháp rồi đọc lại từ MongoDB tạm. Sáng/tối 390/768/1024/1536px không tràn ngang. Còn nhập rich text và các cấu trúc tài liệu phức tạp khác; UC rộng vẫn Một phần.
+
 ## Kiểm chứng ngày 16/10/2026
 
 - Kiểm thử parser dùng PDF/DOCX tự tạo, TXT/UTF-16/MD; từ chối tệp hỏng, sai mã hóa, PDF không có text, Markdown HTML/ảnh, quá dài, hủy và timeout.

@@ -3,6 +3,32 @@ import { extractDocument } from '../src/modules/document-extraction.js';
 import { pdfDocument, docxDocument } from './fixtures/documents.js';
 
 describe('real document extraction', () => {
+  it('returns Markdown root heading metadata while keeping existing plain text and ignoring code/quotes', async () => {
+    const source =
+      '# Sách\nLời tựa.\n## Một\n**Văn bản** đầu.\n~~~md\n## Mã giả\n~~~\n> ## Trích dẫn\n### Cảnh nhỏ\nChi tiết.\n## Hai\nKết thúc.';
+    const result = await extractDocument(Buffer.from(source), 'md');
+    expect(result.headings).toEqual([
+      { level: 1, title: 'Sách' },
+      { level: 2, title: 'Một' },
+      { level: 3, title: 'Cảnh nhỏ' },
+      { level: 2, title: 'Hai' },
+    ]);
+    expect(result.text).toContain('Văn bản đầu.');
+    expect(result.text).toContain('## Mã giả');
+    expect(result.text).not.toContain('**');
+  });
+  it('does not treat YAML frontmatter comments as Markdown chapter headings', async () => {
+    const result = await extractDocument(
+      Buffer.from(
+        '---\ntitle: Sách\n# Chú thích\n---\n## Một\nNội dung đầu.\n## Hai\nNội dung sau.',
+      ),
+      'md',
+    );
+    expect(result.headings).toEqual([
+      { level: 2, title: 'Một' },
+      { level: 2, title: 'Hai' },
+    ]);
+  });
   it.each([
     ['txt', Buffer.from('Chương một\r\nNội dung tiếng Việt.'), 'Chương một\nNội dung tiếng Việt.'],
     [

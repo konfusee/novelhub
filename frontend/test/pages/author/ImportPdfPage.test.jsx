@@ -9,12 +9,12 @@ vi.mock('../../../src/layouts', () => ({
   AuthorLayout: ({ children }) => <main>{children}</main>,
 }));
 const text = 'Đoạn đầu tiên.\n\nĐoạn tiếp theo.';
-function view({ saveError = false, previewText = text } = {}) {
+function view({ saveError = false, previewText = text, headings } = {}) {
   mocks.apiRequest.mockImplementation(async (path) => {
     if (path === '/author/imports/targets')
       return { items: [{ id: 'real-story', title: 'Truyện từ MongoDB', version: 3 }] };
     if (path.startsWith('/author/imports/preview'))
-      return { text: previewText, format: 'md', receipt: 'signed-receipt' };
+      return { text: previewText, format: 'md', receipt: 'signed-receipt', headings };
     if (saveError) throw new Error('Không lưu được MongoDB');
     return { storyId: 'real-story', chapterIds: ['chapter-one', 'chapter-two'] };
   });
@@ -39,6 +39,41 @@ async function destination() {
 afterEach(() => {
   cleanup();
   vi.resetAllMocks();
+});
+it('reviews Markdown headings explicitly and persists all sections through the existing API', async () => {
+  const source =
+    'Tên sách\n\nLời tựa của tác giả.\n\nMở đầu\n\nNội dung thứ nhất.\nCảnh nhỏ\nChi tiết.\nKết thúc\n\nNội dung thứ hai.';
+  const { container } = view({
+    previewText: source,
+    headings: [
+      { level: 1, title: 'Tên sách' },
+      { level: 2, title: 'Mở đầu' },
+      { level: 3, title: 'Cảnh nhỏ' },
+      { level: 2, title: 'Kết thúc' },
+    ],
+  });
+  await choose(container);
+  fireEvent.click(screen.getByRole('button', { name: 'Gợi ý tách theo tiêu đề' }));
+  expect(
+    screen.getAllByRole('textbox', { name: /Tiêu đề chương/ }).map((input) => input.value),
+  ).toEqual(['Phần mở đầu', 'Mở đầu', 'Kết thúc']);
+  expect(mocks.apiRequest.mock.calls.some(([path]) => path === '/author/imports')).toBe(false);
+  await destination();
+  fireEvent.click(screen.getByRole('button', { name: 'Nhập thành bản nháp' }));
+  await screen.findByText(/Đã lưu .* chương nháp/);
+  const body = mocks.apiRequest.mock.calls.find(([path]) => path === '/author/imports')[1].body;
+  expect(body.receipt).toBe('signed-receipt');
+  expect(body.chapters.map((chapter) => chapter.title)).toEqual([
+    'Phần mở đầu',
+    'Mở đầu',
+    'Kết thúc',
+  ]);
+  expect(
+    body.chapters
+      .flatMap((chapter) => chapter.paragraphs)
+      .join('')
+      .replace(/\s/g, ''),
+  ).toBe(source.replace(/\s/g, ''));
 });
 it('imports a long paragraph with its complete emoji instead of two broken surrogate halves', async () => {
   const source = 'a'.repeat(19999) + '🌸 Kết thúc.';
