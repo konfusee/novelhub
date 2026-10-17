@@ -1719,5 +1719,26 @@
     "save": "Lưu thỏa thuận",
     "saving": "Đang lưu…",
     "discard": "Hoàn tác"
+  },
+  "earlyAccess": {
+    "releaseLimit": "Luồng phát hành hiện chỉ hỗ trợ chương miễn phí. Thiết lập này chưa mở bán chương hoặc tạo giao dịch; cần tắt đọc sớm trước khi phát hành bằng luồng hiện tại.",
+    "retryHint": "Tải lại trước khi lưu tiếp.",
+    "hint": "Lưu giá và thời hạn cho chương nháp chưa từng phát hành. Chưa bắt đầu đếm thời gian đọc sớm.",
+    "price": "Giá đọc sớm (xu)",
+    "summary": "Đọc sớm dự kiến: {{price}} xu / {{days}} ngày",
+    "bounds": "Policy hiện hành: {{priceMinCoins}}–{{priceMaxCoins}} xu, {{durationMinDays}}–{{durationMaxDays}} ngày.",
+    "close": "Đóng",
+    "noPolicy": "Chưa có policy hợp lệ đang hiệu lực. Có thể tắt thiết lập cũ, chưa thể bật đọc sớm.",
+    "invalid": "Nhập số nguyên trong giới hạn policy hiện hành.",
+    "saving": "Đang lưu…",
+    "loading": "Đang tải thiết lập và policy…",
+    "save": "Lưu thiết lập",
+    "saved": "Đã lưu thiết lập đọc sớm vào MongoDB.",
+    "days": "Thời hạn (ngày)",
+    "locked": "Chương không còn là bản nháp riêng tư có thể thiết lập.",
+    "title": "Thiết lập đọc sớm",
+    "reload": "Tải lại",
+    "enable": "Bật thiết lập đọc sớm cho bản nháp",
+    "failed": "Không xác nhận được thiết lập đọc sớm."
   }
 }

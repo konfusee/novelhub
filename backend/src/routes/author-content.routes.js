@@ -9,6 +9,7 @@ import { authorStoryWorkspace } from '../modules/author-story-workspace.js';
 import { authorDrafts } from '../modules/author-drafts.js';
 import { authorAnalytics } from '../modules/author-analytics.js';
 import { authorEarnings } from '../modules/author-earnings.js';
+import { prepareEarlyAccess, changeEarlyAccess } from '../modules/author-early-access.js';
 import { authorTransactions, authorTransactionQuery } from '../modules/author-transactions.js';
 import {
   authorPayouts,
@@ -82,6 +83,58 @@ export function createAuthorContentRouter(config) {
     },
   );
   router.use('/author/stories', requireAuth(config), requireRole('author'));
+  router.get(
+    '/author/stories/:storyId/chapters/:chapterId/early-access',
+    async (req, res, next) => {
+      try {
+        res
+          .set('Cache-Control', 'private, no-store')
+          .json(await prepareEarlyAccess(req.account, req.params.storyId, req.params.chapterId));
+      } catch (error) {
+        next(error);
+      }
+    },
+  );
+  router.put(
+    '/author/stories/:storyId/chapters/:chapterId/early-access',
+    async (req, res, next) => {
+      try {
+        const common = {
+          expectedVersion: z.number().int().min(0),
+          expectedStoryVersion: z.number().int().min(0),
+        };
+        const parsed = z
+          .discriminatedUnion('enabled', [
+            z.object({ ...common, enabled: z.literal(false) }).strict(),
+            z
+              .object({
+                ...common,
+                enabled: z.literal(true),
+                coinPrice: z.number().int().min(0).max(Number.MAX_SAFE_INTEGER),
+                durationDays: z.number().int().min(1).max(Number.MAX_SAFE_INTEGER),
+                policyId: objectId,
+                expectedPolicyVersion: z.number().int().min(0),
+              })
+              .strict(),
+          ])
+          .safeParse(req.body);
+        if (!parsed.success)
+          throw new HttpError(400, 'validation_error', 'Thiết lập đọc sớm không hợp lệ.');
+        res
+          .set('Cache-Control', 'private, no-store')
+          .json(
+            await changeEarlyAccess(
+              req.account,
+              req.params.storyId,
+              req.params.chapterId,
+              parsed.data,
+            ),
+          );
+      } catch (error) {
+        next(error);
+      }
+    },
+  );
   router.get('/author/stories/:storyId/chapters/:chapterId/schedule', async (req, res, next) => {
     try {
       res
