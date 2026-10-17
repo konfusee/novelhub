@@ -19,6 +19,7 @@ import { useBackendDocument } from '../../api/useBackendResource';
 import { useLocale } from '../../context/LocaleContext';
 import { AuthorApplications } from '../../components/admin/AuthorApplications';
 import { AuthorRoleManagement } from '../../components/admin/AuthorRoleManagement';
+import { AuthorAccountStatusDialog } from '../../components/admin/AuthorAccountStatusDialog';
 import {
   Avatar,
   Badge,
@@ -43,6 +44,7 @@ const statusTone = {
 };
 const cell = 'px-4 py-4 first:pl-5 last:pr-5';
 export function UsersManagementPage() {
+  const [accountRevision, setAccountRevision] = useState(0);
   const { t, formatDate, formatNumber } = useLocale();
   const [filter, setFilter] = useState({
     query: '',
@@ -104,7 +106,7 @@ export function UsersManagementPage() {
           </div>
         </header>
         <AuthorApplications />
-        <AuthorRoleManagement onChanged={resource.retry} />
+        <AuthorRoleManagement key={accountRevision} onChanged={resource.retry} />
         <Card className="mt-6 p-4 sm:p-5">
           <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-[minmax(0,2fr)_minmax(0,1fr)_minmax(0,1fr)]">
             <Input
@@ -329,6 +331,11 @@ export function UsersManagementPage() {
               user={selected}
               titleRef={inspectorTitleRef}
               onClose={closeInspector}
+              onChanged={() => {
+                closeInspector();
+                resource.retry();
+                setAccountRevision((value) => value + 1);
+              }}
             />
           )}
         </div>
@@ -336,9 +343,10 @@ export function UsersManagementPage() {
     </AdminLayout>
   );
 }
-function UserInspector({ user, titleRef, onClose }) {
+function UserInspector({ user, titleRef, onClose, onChanged }) {
   const { t, formatDate, formatNumber } = useLocale();
   const detail = useBackendDocument(`/admin/accounts/${user.id}`, emptyDetail);
+  const [statusDialog, setStatusDialog] = useState(false);
   return (
     <aside
       aria-labelledby="user-inspector-title"
@@ -371,7 +379,7 @@ function UserInspector({ user, titleRef, onClose }) {
           </ButtonLink>
         )}
         <div className="mt-5 grid gap-2 sm:grid-cols-2">
-          {['editRole', 'adjust', 'warn', 'suspend'].map((action) => (
+          {['editRole', 'adjust', 'warn'].map((action) => (
             <Button
               key={action}
               variant="secondary"
@@ -385,8 +393,25 @@ function UserInspector({ user, titleRef, onClose }) {
               {t(`adminAccounts.${action}`)}
             </Button>
           ))}
+          {detail.status === 'ready' &&
+            detail.data.account.everAuthor &&
+            !user.roles.some((role) => ['admin', 'moderator'].includes(role)) &&
+            ['active', 'suspended'].includes(detail.data.account.status) && (
+              <Button variant="secondary" size="sm" onClick={() => setStatusDialog(true)}>
+                {t(
+                  `authorAccountStatus.${detail.data.account.status === 'active' ? 'suspend' : 'restore'}`,
+                )}
+              </Button>
+            )}
         </div>
       </Card>
+      {statusDialog && (
+        <AuthorAccountStatusDialog
+          account={detail.data.account}
+          onClose={() => setStatusDialog(false)}
+          onChanged={onChanged}
+        />
+      )}
       {detail.status !== 'ready' ? (
         <Card className="md:col-span-2 2xl:col-span-1">
           <p role={detail.status === 'loading' ? 'status' : 'alert'} className="text-sm text-muted">

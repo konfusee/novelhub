@@ -12,6 +12,7 @@ import { requireAuth, requireRole } from '../middleware/auth.js';
 import { HttpError } from '../middleware/errors.js';
 import { adminUsers, adminUserDetail } from '../modules/admin-users.js';
 import { adminAudit, auditQuery } from '../modules/admin-audit.js';
+import { changeAuthorAccount } from '../modules/admin-author-account.js';
 import {
   authorRoleView,
   revokeAuthorRole,
@@ -40,6 +41,32 @@ const decisionSchema = z
 
 export function createAdminAuthorRouter(config) {
   const router = Router();
+  router.post(
+    '/admin/accounts/:accountId/status',
+    requireAuth(config),
+    requireRole('admin'),
+    async (req, res, next) => {
+      try {
+        const parsed = z
+          .object({
+            action: z.enum(['suspend', 'restore']),
+            expectedVersion: z.number().int().min(0),
+            reason: z.string().trim().min(1).max(1000),
+          })
+          .strict()
+          .safeParse(req.body);
+        if (!parsed.success || !/^[a-f\d]{24}$/i.test(req.params.accountId))
+          throw new HttpError(400, 'validation_error', 'Cần tài khoản, phiên bản và lý do hợp lệ.');
+        res
+          .set('Cache-Control', 'private, no-store')
+          .json(
+            await changeAuthorAccount(req.account, req.params.accountId.toLowerCase(), parsed.data),
+          );
+      } catch (error) {
+        next(error);
+      }
+    },
+  );
   router.get(
     '/admin/audit-events',
     requireAuth(config),

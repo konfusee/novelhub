@@ -1,4 +1,15 @@
 {
+  "authorAccountStatus": {
+    "suspend": "Khóa tài khoản Author",
+    "restore": "Mở lại tài khoản Author",
+    "suspendHint": "Các phiên đăng nhập sẽ hết hiệu lực và truyện của tài khoản sẽ ẩn khỏi danh mục. Nội dung, quyền Author, số dư và các khoản chi trả đã lập được giữ nguyên.",
+    "restoreHint": "Tài khoản trở lại hoạt động và truyện đủ điều kiện được hiển thị lại. Người dùng cần đăng nhập mới; lịch phát hành đủ điều kiện có thể tiếp tục được xử lý.",
+    "reason": "Lý do",
+    "cancel": "Hủy",
+    "saving": "Đang lưu…",
+    "failed": "Chưa xác nhận được trạng thái tài khoản.",
+    "reload": "Đóng hộp thoại và tải lại tài khoản trước khi thao tác tiếp."
+  },
   "adminAudit": {
     "title": "Nhật ký kiểm tra",
     "description": "Tra cứu bản ghi thực từ cơ sở dữ liệu. Bộ lọc khớp chính xác; ngày tính theo giờ Việt Nam. Nhật ký chỉ đọc.",

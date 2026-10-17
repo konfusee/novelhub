@@ -108,7 +108,7 @@ export async function adminUsers({ page, pageSize, query, role, status, sort }) 
 
 export async function adminUserDetail(id) {
   const account = await Account.findById(id)
-    .select('displayName email status createdAt emailVerifiedAt')
+    .select('displayName email status createdAt emailVerifiedAt version everAuthor')
     .lean();
   if (!account) throw new HttpError(404, 'not_found', 'Không tìm thấy tài khoản.');
   const [wallets, stories, audit] = await Promise.all([
@@ -127,6 +127,9 @@ export async function adminUserDetail(id) {
   return {
     account: {
       id: String(account._id),
+      status: account.status,
+      version: account.version,
+      everAuthor: account.everAuthor,
       name: account.displayName,
       email: account.status === 'anonymized' ? null : (account.email ?? null),
       createdAt: account.createdAt,

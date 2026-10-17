@@ -19,6 +19,16 @@ const snapshotStages = (ids) => [
   },
   {
     $lookup: {
+      from: Account.collection.name,
+      localField: 'authorAccountId',
+      foreignField: '_id',
+      pipeline: [{ $project: { status: 1 } }],
+      as: 'authorState',
+    },
+  },
+  { $match: { 'authorState.status': { $ne: 'suspended' } } },
+  {
+    $lookup: {
       from: ContentRevision.collection.name,
       localField: 'publishedRevisionId',
       foreignField: '_id',
