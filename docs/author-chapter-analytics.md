@@ -11,3 +11,9 @@ Giữ chân, tỷ lệ đọc hoàn thành, âm thanh, nguồn/thiết bị đ�
 Kiểm thử tập trung bao gồm ownership, chương sai truyện, tham số nghiêm ngặt, số liệu và phân biệt độc giả, ngày Việt Nam, chương 0 lượt đọc, loại tombstone, link chương, đổi/xóa bộ lọc, phục hồi từ 404 và nội dung CSV. Kiểm chứng browser dùng API thật cùng MongoDB replica set tạm, không nạp sự kiện thử vào database nhóm. Ảnh kiểm chứng ngoài repository: WDP301/outputs/author-progress-01a13e25/chapter-analytics.
 
 Kết quả: 3 test backend và 22 test frontend (analytics + workspace truyện) đạt; lint hai workspace, i18n, build và target formatting đạt. Browser đối chiếu năm sự kiện: chương 1 có 2 lượt đọc/2 độc giả, chương 2 có 3/3, tổng có 5/4; Back khôi phục bộ lọc. Đã kiểm tra sáng/tối ở 390/768/1024/1536 px, sửa nhãn KPI dài tràn thẻ điện thoại. Console không có warn/error trong luồng đã kiểm tra. Không tuyên bố toàn bộ frontend suite đã đạt.
+
+## Định danh quay lại trong kỳ
+
+API bổ sung returningReaders và returnRate: một định danh (viewerType, viewerKey) quay lại khi có view ở ít nhất hai ngày Việt Nam khác nhau trong cùng bộ lọc. Nhiều chương trong cùng ngày không tạo thêm ngày; thay đổi bộ lọc chương tính lại cả tử và mẫu số. Khi mẫu số bằng 0, rate là null; khi có độc giả nhưng chưa ai quay lại, rate là 0. Không trả khóa độc giả và không thay đổi sự kiện nguồn.
+
+Card thay thế vùng biểu đồ giữ chân chưa có dữ liệu bằng tỷ lệ quay lại có định nghĩa, số định danh quay lại/tổng và giá trị làm tròn một chữ số. CSV ghi cùng chỉ số. Giữ chân theo cohort, hoàn thành chương, âm thanh và nguồn độc giả vẫn chưa được triển khai. 4 test backend và 7 test UI analytics đạt; browser dùng ba sự kiện qua hai ngày để đối chiếu 1/2 định danh và 50%. Không tuyên bố toàn bộ frontend suite đã đạt.

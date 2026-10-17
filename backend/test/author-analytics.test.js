@@ -57,6 +57,8 @@ it('counts actual daily events and distinct identities in the selected Vietnam c
   expect(result.daily).toEqual([0, 0, 0, 0, 0, 1, 2]);
   expect(result.reads).toBe(3);
   expect(result.readers).toBe(2);
+  expect(result.returningReaders).toBe(1);
+  expect(result.returnRate).toBe(50);
   expect(result.retention).toBeNull();
   expect(result.earnings).toBeNull();
   expect(JSON.stringify(result)).not.toContain('private-account-key');
@@ -186,4 +188,51 @@ it('rejects cross-story and foreign chapters, malformed filters and chapter-only
   expect(response.body.chapters.map((c) => c.title)).toEqual(['Chương B']);
   expect(JSON.stringify(response.body)).not.toContain('Không được lộ');
   expect(response.body.reads).toBe(0);
+});
+it('counts returners on distinct days, separates guest/account identities and respects chapter scope', async () => {
+  const author = await authenticatedAccount('author');
+  const category = await Category.create({
+    name: 'Quay lại',
+    normalizedName: 'quay lại',
+    createdBy: author.account._id,
+  });
+  const story = await Story.create({
+    title: 'Truyện',
+    authorAccountId: author.account._id,
+    categoryIds: [category._id],
+  });
+  const [one, two, empty] = await Chapter.create(
+    [1, 2, 3].map((orderKey) => ({ storyId: story._id, title: `Chương ${orderKey}`, orderKey })),
+  );
+  const event = (key, chapter, day, viewerKey, viewerType = 'account') => ({
+    sourceEventKey: key,
+    eventType: 'view',
+    storyId: story._id,
+    chapterId: chapter._id,
+    day,
+    viewerType,
+    viewerKey,
+    occurredAt: new Date(`${day}T00:00:00Z`),
+  });
+  await StatisticsEvent.create([
+    event('a1', one, '2026-10-15', 'private-a'),
+    event('a2', two, '2026-10-15', 'private-a'),
+    event('a3', two, '2026-10-16', 'private-a'),
+    event('g1', one, '2026-10-15', 'private-a', 'guest-device'),
+    event('g2', one, '2026-10-16', 'private-a', 'guest-device'),
+    event('b1', one, '2026-10-16', 'private-b'),
+    event('b-old', one, '2026-10-01', 'private-b'),
+    event('b-future', one, '2026-10-18', 'private-b'),
+  ]);
+  const now = new Date('2026-10-16T12:00:00Z');
+  const read = (chapterId) =>
+    authorAnalytics(author.account._id, { days: 7, storyId: story.id, chapterId }, now);
+  const all = await read();
+  expect(all).toMatchObject({ readers: 3, returningReaders: 2 });
+  expect(all.returnRate).toBeCloseTo(200 / 3);
+  expect((await read(one.id)).returnRate).toBeCloseTo(100 / 3);
+  expect(await read(two.id)).toMatchObject({ readers: 1, returningReaders: 1, returnRate: 100 });
+  expect(await read(empty.id)).toMatchObject({ readers: 0, returningReaders: 0, returnRate: null });
+  expect(JSON.stringify(all)).not.toContain('private-a');
+  expect(await StatisticsEvent.countDocuments()).toBe(8);
 });

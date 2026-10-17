@@ -46,11 +46,19 @@ export async function authorAnalytics(
     StatisticsEvent.aggregate([{ $match: match }, { $group: { _id: '$day', count: { $sum: 1 } } }]),
     StatisticsEvent.aggregate([
       { $match: match },
-      { $group: { _id: { type: '$viewerType', key: '$viewerKey' } } },
-      { $count: 'count' },
+      { $group: { _id: { type: '$viewerType', key: '$viewerKey' }, days: { $addToSet: '$day' } } },
+      {
+        $group: {
+          _id: null,
+          count: { $sum: 1 },
+          returning: { $sum: { $cond: [{ $gte: [{ $size: '$days' }, 2] }, 1, 0] } },
+        },
+      },
     ]),
   ]);
   const counts = labels.map((day) => daily.find((item) => item._id === day)?.count ?? 0);
+  const readerCount = readers[0]?.count ?? 0;
+  const returningReaders = readers[0]?.returning ?? 0;
   return {
     stories: stories.map((story) => ({ id: String(story._id), title: story.title })),
     chapters: chapters.map((chapter) => ({
@@ -61,7 +69,9 @@ export async function authorAnalytics(
     daily: counts,
     labels,
     reads: counts.reduce((sum, count) => sum + count, 0),
-    readers: readers[0]?.count ?? 0,
+    readers: readerCount,
+    returningReaders,
+    returnRate: readerCount ? (returningReaders / readerCount) * 100 : null,
     completion: null,
     earnings: null,
     formats: null,

@@ -1129,6 +1129,11 @@
     "agreementUnavailable": "Chưa tải được thỏa thuận hiện tại. Không dùng tỷ lệ mẫu để thay thế."
   },
   "analyticsData": {
+    "returningReaders": "Định danh độc giả quay lại trong kỳ",
+    "returnRate": "Tỷ lệ quay lại trong kỳ",
+    "returningHint": "Định danh tài khoản hoặc thiết bị khách có lượt đọc trên ít nhất hai ngày Việt Nam khác nhau trong bộ lọc hiện tại.",
+    "returningCount": "{{count}} / {{total}} định danh có lượt đọc trong kỳ",
+    "noReturning": "Chưa có lượt đọc để tính tỷ lệ quay lại trong bộ lọc này.",
     "chooseChapter": "Chọn chương",
     "allChapters": "Tất cả chương",
     "storyFirst": "Chọn truyện trước",

@@ -26,6 +26,8 @@ const data = {
   ],
   reads: 3,
   readers: 2,
+  returningReaders: 1,
+  returnRate: 50,
 };
 const view = (url = '/author/analytics') =>
   render(
@@ -78,6 +80,7 @@ it('exports actual daily rows and treats formula-like story titles as literal te
   expect(report).toContain('"\'=1+1"');
   expect(report).toContain('"2026-10-16","2"');
   expect(report).toContain('"Chương","Chương 1: Chương đầu"');
+  expect(report).toContain('"Tỷ lệ quay lại trong kỳ","50%"');
 });
 it('renders recorded daily counts and unknown unsupported metrics without sample claims', async () => {
   mocks.apiRequest.mockResolvedValue(data);
@@ -117,6 +120,34 @@ it('shows retry on API failure and disables exporting fabricated data', async ()
   view();
   expect(await screen.findByText('Không tải được dữ liệu phân tích')).toBeTruthy();
   expect(screen.getByRole('button', { name: 'Xuất báo cáo', exact: true }).disabled).toBe(true);
+});
+it('renders measured returners including a real zero rate and leaves an empty denominator unknown', async () => {
+  mocks.apiRequest.mockResolvedValue({
+    ...data,
+    returningReaders: 2,
+    readers: 3,
+    returnRate: 200 / 3,
+  });
+  view();
+  expect(await screen.findByText('66,7%')).toBeTruthy();
+  expect(screen.getByText('2 / 3 định danh có lượt đọc trong kỳ')).toBeTruthy();
+  cleanup();
+  mocks.apiRequest.mockResolvedValue({ ...data, returningReaders: 0, returnRate: 0 });
+  view();
+  expect(await screen.findByText('0%')).toBeTruthy();
+  cleanup();
+  mocks.apiRequest.mockResolvedValue({
+    ...data,
+    reads: 0,
+    readers: 0,
+    returningReaders: 0,
+    returnRate: null,
+  });
+  view();
+  expect(
+    await screen.findByText('Chưa có lượt đọc để tính tỷ lệ quay lại trong bộ lọc này.'),
+  ).toBeTruthy();
+  expect(screen.queryByText('0%')).toBeNull();
 });
 it('opens a chapter deep link, keeps it across date ranges and clears it when the story changes', async () => {
   mocks.apiRequest.mockResolvedValue(data);

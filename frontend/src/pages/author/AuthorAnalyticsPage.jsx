@@ -80,6 +80,20 @@ export function AuthorAnalyticsPage() {
   );
   const loading = analytics.status === 'loading';
   const { daily, labels, reads, readers } = analytics.data;
+  const returning = analytics.data.returningReaders;
+  const returnRate = analytics.data.returnRate;
+  const hasReturningData =
+    Number.isSafeInteger(returning) &&
+    returning >= 0 &&
+    Number.isSafeInteger(readers) &&
+    readers > 0 &&
+    returning <= readers &&
+    Number.isFinite(returnRate) &&
+    returnRate >= 0 &&
+    returnRate <= 100;
+  const returnRateLabel = hasReturningData
+    ? formatPercent(Math.round(returnRate * 10) / 10)
+    : t('analyticsData.unknown');
   const channels = [];
   const devices = [];
   const storyLabel =
@@ -136,6 +150,11 @@ export function AuthorAnalyticsPage() {
       [t('analyticsData.range'), rangeLabels[range]],
       [t('analyticsData.views'), reads],
       [t('analyticsData.readers'), readers],
+      [
+        t('analyticsData.returningReaders'),
+        Number.isSafeInteger(returning) ? returning : t('analyticsData.unknown'),
+      ],
+      [t('analyticsData.returnRate'), returnRateLabel],
       [],
       [t('analyticsData.date'), t('analyticsData.views')],
       ...labels.map((label, index) => [label, daily[index]]),
@@ -359,16 +378,21 @@ export function AuthorAnalyticsPage() {
             </div>
 
             <Card className="mt-6">
-              <h2 className="text-h3 md:text-h2">{t('analyticsData.retention')}</h2>
-              <p className="mt-2 text-sm text-muted">{t('analyticsData.noRetention')}</p>
+              <h2 className="text-h3 md:text-h2">{t('analyticsData.returningReaders')}</h2>
+              <p className="mt-2 text-sm text-muted">{t('analyticsData.returningHint')}</p>
               {loading ? (
                 <RetentionSkeleton />
               ) : (
                 <div className="relative mt-6 grid h-48 place-items-center">
                   <ChartGridLines />
-                  <span className="relative rounded-2xl bg-elevated p-4 text-sm text-muted">
-                    {t('analyticsData.unknown')}
-                  </span>
+                  <div className="relative rounded-2xl bg-elevated p-4 text-center" role="status">
+                    <p className="text-h2 font-semibold text-ink">{returnRateLabel}</p>
+                    <p className="mt-2 text-sm text-muted">
+                      {hasReturningData
+                        ? t('analyticsData.returningCount', { count: returning, total: readers })
+                        : t('analyticsData.noReturning')}
+                    </p>
+                  </div>
                 </div>
               )}
             </Card>
