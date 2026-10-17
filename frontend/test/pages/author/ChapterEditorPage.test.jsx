@@ -56,6 +56,7 @@ it('loads structured editing explicitly, keeps marks when saving and previews th
   );
   view('?mode=rich');
   const editor = await screen.findByRole('textbox', { name: 'Nội dung chương có định dạng' });
+  expect(screen.queryByText('Trợ lý AI', { exact: true })).toBeNull();
   await waitFor(() => expect(editor.querySelector('strong')?.textContent).toBe('Nội dung đậm'));
   expect(screen.getByRole('button', { name: 'In đậm', exact: true }).disabled).toBe(false);
   expect(screen.getByRole('button', { name: 'Hình ảnh', exact: true }).disabled).toBe(false);
