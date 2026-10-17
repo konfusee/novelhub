@@ -318,7 +318,7 @@ export function DraftsPage() {
             <EmptyState
               icon={BookOpen}
               title="Chưa có bản nháp nào"
-              description="Tạo bản nháp đầu tiên hoặc nhập bản thảo từ tệp PDF."
+              description={t('documentImport.draftsEmpty')}
               action={
                 <Button size="sm" onClick={openNew}>
                   <FilePlus2 size={14} aria-hidden="true" />
