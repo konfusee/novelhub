@@ -90,6 +90,11 @@ export async function authorStoryWorkspace(account, storyId) {
     return {
       ...chapterDraftLifecycle(chapter, revision, story, lifecycle),
       canUnpublish: chapterCanUnpublish(chapter, story),
+      canManageSchedule:
+        !story.authoringFrozen &&
+        story.publicationStatus !== 'archived' &&
+        ['approved', 'scheduled', 'due'].includes(chapter.status) &&
+        !chapter.publishedRevisionId,
       reviseSource:
         source && canReviseUnpublished(source, chapter, revision, story)
           ? { id: String(source._id), version: source.version }

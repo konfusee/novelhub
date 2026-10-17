@@ -27,7 +27,7 @@ import { pinChapterImages } from '../modules/author-chapter-media.js';
 import { changeDraftLifecycle } from '../modules/author-story-lifecycle.js';
 import { prepareStoryRelease, publishStory } from '../modules/author-story-release.js';
 import { prepareChapterRelease, publishChapter } from '../modules/author-chapter-release.js';
-import { changeChapterSchedule } from '../modules/chapter-scheduler.js';
+import { changeChapterSchedule, prepareChapterSchedule } from '../modules/chapter-scheduler.js';
 import { reorderDraftChapters } from '../modules/author-chapter-order.js';
 import { changeChapterDraftLifecycle } from '../modules/author-chapter-lifecycle.js';
 
@@ -82,6 +82,22 @@ export function createAuthorContentRouter(config) {
     },
   );
   router.use('/author/stories', requireAuth(config), requireRole('author'));
+  router.get('/author/stories/:storyId/chapters/:chapterId/schedule', async (req, res, next) => {
+    try {
+      res
+        .set('Cache-Control', 'private, no-store')
+        .json(
+          await prepareChapterSchedule(
+            req.account,
+            parse(objectId, req.params.storyId),
+            parse(objectId, req.params.chapterId),
+            config,
+          ),
+        );
+    } catch (error) {
+      next(error);
+    }
+  });
   router.put('/author/stories/:storyId/chapters/:chapterId/schedule', async (req, res, next) => {
     try {
       const input = parse(

@@ -1,4 +1,21 @@
 {
+  "chapterSchedule": {
+    "title": "Lên lịch phát hành",
+    "manage": "Đổi hoặc hủy lịch",
+    "hint": "Chọn thời gian phát hành chương miễn phí đã duyệt. Máy chủ kiểm tra điều kiện mỗi 30 giây; lịch chỉ phát hành đúng phiên bản đã duyệt.",
+    "time": "Thời gian phát hành",
+    "zone": "Múi giờ trên thiết bị: {{zone}}. Thời gian được lưu theo UTC.",
+    "waiting": "Truyện cha hoặc chương trước chưa sẵn sàng. Bạn vẫn có thể đặt lịch; chương sẽ chờ và tự phát hành khi đủ điều kiện.",
+    "due": "Đã đến giờ phát hành. Chương đang chờ máy chủ kiểm tra đủ điều kiện.",
+    "elapsed": "Thời gian này đã qua. Lưu lịch sẽ đưa chương vào hàng chờ phát hành ngay khi đủ điều kiện.",
+    "save": "Lưu lịch phát hành",
+    "saving": "Đang lưu…",
+    "cancel": "Hủy lịch phát hành",
+    "saved": "Đã lưu lịch phát hành trên máy chủ.",
+    "cancelled": "Đã hủy lịch. Chương vẫn đã duyệt và chưa phát hành.",
+    "failed": "Không cập nhật được lịch phát hành. Hãy kiểm tra lại.",
+    "stale": "Thông tin đã thay đổi. Kiểm tra lại điều kiện trước khi lưu hoặc hủy lịch."
+  },
   "richEditor": {
     "open": "Soạn thảo có định dạng",
     "body": "Nội dung chương có định dạng",
