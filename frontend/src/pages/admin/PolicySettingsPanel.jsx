@@ -67,7 +67,7 @@ export function PolicySettingsPanel() {
       )}
       {saved && (
         <p role="status" className="mt-4 text-brand-strong">
-          {t('policy.saved')}
+          {t(saved === 'scheduled' ? 'policy.scheduledSaved' : 'policy.saved')}
         </p>
       )}
       {resource.status === 'ready' && (
@@ -76,8 +76,8 @@ export function PolicySettingsPanel() {
             key={`${policy?.id ?? 'initial'}:${policy?.version ?? 0}`}
             policy={policy}
             onBusy={setBusy}
-            onSaved={() => {
-              setSaved(true);
+            onSaved={(result) => {
+              setSaved(result?.scheduled ? 'scheduled' : 'activated');
               resource.retry();
             }}
           />

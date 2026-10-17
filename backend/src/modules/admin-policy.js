@@ -108,6 +108,14 @@ export async function activatePolicy(admin, input) {
       if (!actor || !role)
         throw new HttpError(403, 'forbidden', 'Quyền quản trị không còn hiệu lực.');
       const now = new Date();
+      const scheduled = input.effectiveAt !== undefined;
+      const effectiveAt = scheduled ? new Date(input.effectiveAt) : now;
+      if (scheduled && (!Number.isFinite(effectiveAt.getTime()) || effectiveAt <= now))
+        throw new HttpError(
+          400,
+          'invalid_policy_schedule',
+          'Ngày hiệu lực phải nằm trong tương lai.',
+        );
       const future = await PolicyVersion.exists({
         status: 'effective',
         effectiveAt: { $gt: now },
@@ -129,6 +137,12 @@ export async function activatePolicy(admin, input) {
         (previous?.version ?? null) !== input.expectedPolicyVersion
       )
         throw new HttpError(409, 'policy_changed', 'Chính sách đã thay đổi. Hãy tải lại.');
+      if (scheduled && !previous)
+        throw new HttpError(
+          409,
+          'policy_required',
+          'Cần chính sách hiện hành trước khi đặt lịch phiên bản mới.',
+        );
       if (previous) {
         if (previous.effectiveAt >= now)
           throw new HttpError(
@@ -138,7 +152,7 @@ export async function activatePolicy(admin, input) {
           );
         const pinned = await PolicyVersion.findOneAndUpdate(
           { _id: previous._id, version: previous.version, status: 'effective' },
-          { $set: { status: 'superseded' }, $inc: { version: 1 } },
+          { ...(!scheduled ? { $set: { status: 'superseded' } } : {}), $inc: { version: 1 } },
           { session },
         );
         if (!pinned)
@@ -164,7 +178,7 @@ export async function activatePolicy(admin, input) {
                 }
               : {}),
             status: 'effective',
-            effectiveAt: now,
+            effectiveAt,
             actorAccountId: admin._id,
             priceMinCoins: input.priceMinCoins,
             priceMaxCoins: input.priceMaxCoins,
@@ -179,7 +193,7 @@ export async function activatePolicy(admin, input) {
           {
             actorType: 'account',
             actorId: admin._id,
-            action: 'policy.activated',
+            action: scheduled ? 'policy.scheduled' : 'policy.activated',
             targetType: 'policy',
             targetId: policy._id,
             targetVersion: policy.version,
@@ -194,7 +208,11 @@ export async function activatePolicy(admin, input) {
         ],
         { session },
       );
-      return { policyId: String(policy._id), version: policy.version };
+      return {
+        policyId: String(policy._id),
+        version: policy.version,
+        ...(scheduled ? { effectiveAt } : {}),
+      };
     });
   } catch (error) {
     if (error.code === 11000)
@@ -248,7 +266,7 @@ export async function adminPolicyHistory({ page, pageSize }, now = new Date()) {
     const audits = await AuditEvent.find({
       targetType: 'policy',
       targetId: { $in: rows.map((row) => row._id) },
-      action: { $in: ['policy.activated', 'policy.cancelled'] },
+      action: { $in: ['policy.activated', 'policy.scheduled', 'policy.cancelled'] },
       result: 'accepted',
     })
       .sort({ occurredAt: -1, _id: -1 })
@@ -279,7 +297,10 @@ export async function adminPolicyHistory({ page, pageSize }, now = new Date()) {
         withdrawalThresholdCoins: row.withdrawalThresholdCoins,
         orderExpiryHours: row.orderExpiryHours,
         claimExpiryHours: row.claimExpiryHours,
-        reason: reasons.get(`${row._id}:policy.activated`) ?? null,
+        reason:
+          reasons.get(`${row._id}:policy.activated`) ??
+          reasons.get(`${row._id}:policy.scheduled`) ??
+          null,
         cancelled: row.status === 'superseded' && reasons.has(`${row._id}:policy.cancelled`),
         cancellationReason: reasons.get(`${row._id}:policy.cancelled`) ?? null,
       })),

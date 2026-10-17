@@ -1762,10 +1762,10 @@
     "otherSections": "Các tab dịch vụ và nhật ký hiện vẫn là bản mẫu",
     "replace": "Tạo phiên bản chính sách mới",
     "initialize": "Khởi tạo chính sách đầu tiên",
-    "activationHint": "Phiên bản mới có hiệu lực ngay khi lưu. Cấu hình chương đã lưu và lịch sử tài chính được giữ nguyên.",
+    "activationHint": "Mặc định phiên bản mới có hiệu lực ngay. Bạn có thể hẹn ngày hiệu lực khi đã có chính sách hiện hành. Cấu hình chương và lịch sử tài chính đã lưu được giữ nguyên.",
     "initialTerms": "Chính sách đầu tiên giữ thời hạn đơn/yêu cầu 24 giờ theo cấu hình hệ thống. Hãy kiểm tra tỷ lệ chia và ngưỡng rút trước khi lưu.",
     "reason": "Lý do thay đổi (bắt buộc)",
-    "invalid": "Cần số nguyên hợp lệ, tối thiểu không lớn hơn tối đa; thời hạn ít nhất 1 ngày, tỷ lệ từ 0 đến 100 và ngưỡng rút không âm.",
+    "invalid": "Cần số nguyên hợp lệ, tối thiểu không lớn hơn tối đa; thời hạn ít nhất 1 ngày, tỷ lệ từ 0 đến 100, ngưỡng rút không âm và lịch hiệu lực phải ở tương lai.",
     "activate": "Lưu và kích hoạt chính sách",
     "saving": "Đang kích hoạt…",
     "saved": "Đã kích hoạt chính sách mới. Các giá trị hiển thị được tải lại từ máy chủ.",
@@ -1775,7 +1775,13 @@
     "orderExpiryHours": "Thời hạn đơn nạp (giờ)",
     "claimExpiryHours": "Thời hạn nhận xử lý (giờ)",
     "complement": "Tỷ lệ mặc định của nền tảng: {{value}}%. Tổng hai bên luôn bằng 100%.",
-    "financeScope": "Thỏa thuận riêng của tác giả vẫn được ưu tiên. Thay đổi ngưỡng chỉ cung cấp chính sách cho lần xét rút tiếp theo; luồng xét và thanh toán tự động chưa được triển khai."
+    "financeScope": "Thỏa thuận riêng của tác giả vẫn được ưu tiên. Thay đổi ngưỡng chỉ cung cấp chính sách cho lần xét rút tiếp theo; luồng xét và thanh toán tự động chưa được triển khai.",
+    "schedule": "Hẹn ngày hiệu lực cho phiên bản mới",
+    "scheduleDate": "Ngày và giờ hiệu lực",
+    "scheduleRequiresPolicy": "Cần khởi tạo chính sách hiện hành trước khi hẹn phiên bản mới.",
+    "scheduleZone": "Theo múi giờ trình duyệt: {{zone}}. Chính sách hiện hành tiếp tục được dùng đến thời điểm đã chọn.",
+    "saveSchedule": "Lưu lịch hiệu lực",
+    "scheduledSaved": "Đã lưu lịch hiệu lực. Chính sách hiện hành vẫn được áp dụng đến thời điểm đã hẹn."
   },
   "policyHistory": {
     "title": "Lịch sử chính sách",

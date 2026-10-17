@@ -5,7 +5,11 @@ import { useBackendDocument } from '../../api/useBackendResource';
 import { useLocale } from '../../context/LocaleContext';
 
 export function PolicyHistory() {
-  const { t, formatNumber, formatDate } = useLocale();
+  const { t, formatNumber, locale } = useLocale();
+  const dateFormatter = new Intl.DateTimeFormat(locale, {
+    dateStyle: 'medium',
+    timeStyle: 'short',
+  });
   const [page, setPage] = useState(1);
   const [cancelling, setCancelling] = useState(null);
   const [cancelled, setCancelled] = useState(false);
@@ -49,7 +53,9 @@ export function PolicyHistory() {
                 <li key={item.id} className="min-w-0 rounded-2xl border border-line p-4">
                   <div className="flex flex-wrap items-center justify-between gap-2">
                     <p className="text-caption font-semibold">
-                      {item.effectiveAt ? formatDate(item.effectiveAt) : t('policyHistory.noDate')}
+                      {item.effectiveAt
+                        ? dateFormatter.format(new Date(item.effectiveAt))
+                        : t('policyHistory.noDate')}
                     </p>
                     <Badge tone={item.current ? 'green' : undefined}>
                       {t(

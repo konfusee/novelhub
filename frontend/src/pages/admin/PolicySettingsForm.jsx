@@ -20,6 +20,8 @@ const initialValue = (policy, field) =>
           ? 100000
           : ''),
   );
+// Read the clock only for initialization and user actions, never while rendering.
+const actionTime = () => Date.now();
 export function PolicySettingsForm({ policy, onSaved, onBusy }) {
   const { t } = useLocale();
   const id = useId();
@@ -27,11 +29,23 @@ export function PolicySettingsForm({ policy, onSaved, onBusy }) {
     Object.fromEntries(fields.map((field) => [field, initialValue(policy, field)])),
   );
   const [reason, setReason] = useState('');
+  const [scheduled, setScheduled] = useState(false);
+  const [effectiveAt, setEffectiveAt] = useState('');
+  const [validationTime, setValidationTime] = useState(actionTime);
+  const effectiveDate = new Date(effectiveAt);
+  const validSchedule =
+    !scheduled ||
+    Boolean(
+      policy &&
+      effectiveAt &&
+      Number.isFinite(effectiveDate.getTime()) &&
+      effectiveDate.getTime() > validationTime,
+    );
   const [busy, setBusy] = useState(false);
   const busyRef = useRef(false);
   const [failed, setFailed] = useState(false);
   const [error, setError] = useState('');
-  const dirty = fields.some((field) => values[field] !== initialValue(policy, field));
+  const dirty = scheduled || fields.some((field) => values[field] !== initialValue(policy, field));
   const numbers = Object.fromEntries(fields.map((field) => [field, Number(values[field])]));
   const valid =
     fields.every(
@@ -45,7 +59,12 @@ export function PolicySettingsForm({ policy, onSaved, onBusy }) {
     numbers.durationMinDays <= numbers.durationMaxDays;
   async function submit(event) {
     event.preventDefault();
-    if (busyRef.current || failed || !dirty || !valid || !reason.trim()) return;
+    if (busyRef.current || failed || !dirty || !valid || !validSchedule || !reason.trim()) return;
+    const submittedAt = actionTime();
+    if (scheduled && effectiveDate.getTime() <= submittedAt) {
+      setValidationTime(submittedAt);
+      return;
+    }
     busyRef.current = true;
     setBusy(true);
     onBusy(true);
@@ -55,6 +74,7 @@ export function PolicySettingsForm({ policy, onSaved, onBusy }) {
         method: 'POST',
         body: {
           ...numbers,
+          ...(scheduled ? { effectiveAt: effectiveDate.toISOString() } : {}),
           reason: reason.trim(),
           expectedPolicyId: policy?.id ?? null,
           expectedPolicyVersion: policy?.version ?? null,
@@ -64,10 +84,11 @@ export function PolicySettingsForm({ policy, onSaved, onBusy }) {
         !/^[a-f\d]{24}$/i.test(result?.policyId ?? '') ||
         result.policyId === policy?.id ||
         !Number.isSafeInteger(result.version) ||
-        result.version < 0
+        result.version < 0 ||
+        (scheduled && result.effectiveAt !== effectiveDate.toISOString())
       )
         throw new Error('Invalid policy response');
-      onSaved();
+      onSaved(scheduled ? { scheduled: true } : undefined);
     } catch (error) {
       setFailed(true);
       setError(t(error.code === 'future_policy' ? 'policy.futureBlocked' : 'policy.saveError'));
@@ -115,6 +136,44 @@ export function PolicySettingsForm({ policy, onSaved, onBusy }) {
         })}
       </p>
       <p className="mt-2 text-caption text-muted">{t('policy.financeScope')}</p>
+      <fieldset disabled={busy || failed} className="mt-5">
+        <label className="flex items-start gap-3 text-sm font-semibold">
+          <input
+            type="checkbox"
+            className="mt-1 size-4 shrink-0 accent-brand"
+            checked={scheduled}
+            disabled={!policy}
+            onChange={(event) => setScheduled(event.target.checked)}
+          />
+          {t('policy.schedule')}
+        </label>
+        {!policy && (
+          <p className="mt-2 text-caption text-muted">{t('policy.scheduleRequiresPolicy')}</p>
+        )}
+        {scheduled && (
+          <div className="mt-4">
+            <label htmlFor={`${id}-effective`} className="text-caption font-semibold">
+              {t('policy.scheduleDate')}
+            </label>
+            <Input
+              id={`${id}-effective`}
+              type="datetime-local"
+              required
+              max="9999-12-31T23:59"
+              step="60"
+              className="mt-2"
+              value={effectiveAt}
+              onChange={(event) => {
+                setEffectiveAt(event.target.value);
+                setValidationTime(actionTime());
+              }}
+            />
+            <p className="mt-2 text-caption text-muted">
+              {t('policy.scheduleZone', { zone: Intl.DateTimeFormat().resolvedOptions().timeZone })}
+            </p>
+          </div>
+        )}
+      </fieldset>
       <label htmlFor={`${id}-reason`} className="mt-4 block text-caption font-semibold">
         {t('policy.reason')}
       </label>
@@ -127,7 +186,7 @@ export function PolicySettingsForm({ policy, onSaved, onBusy }) {
         onChange={(event) => setReason(event.target.value)}
         className="mt-2"
       />
-      {dirty && !valid && (
+      {dirty && (!valid || !validSchedule) && (
         <p role="alert" className="mt-3 text-caption text-rose-strong">
           {t('policy.invalid')}
         </p>
@@ -140,9 +199,9 @@ export function PolicySettingsForm({ policy, onSaved, onBusy }) {
       <Button
         type="submit"
         className="mt-4"
-        disabled={busy || failed || !dirty || !valid || !reason.trim()}
+        disabled={busy || failed || !dirty || !valid || !validSchedule || !reason.trim()}
       >
-        {t(busy ? 'policy.saving' : 'policy.activate')}
+        {t(busy ? 'policy.saving' : scheduled ? 'policy.saveSchedule' : 'policy.activate')}
       </Button>
     </form>
   );

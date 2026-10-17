@@ -149,3 +149,71 @@ it('blocks invalid percentages and negative or fractional withdrawal thresholds'
   }
   expect(mocks.apiRequest).not.toHaveBeenCalled();
 });
+it('schedules a future local time as UTC without changing current terms', async () => {
+  const local = '2099-01-01T07:00';
+  const utc = new Date(local).toISOString();
+  mocks.apiRequest.mockResolvedValue({
+    policyId: '444444444444444444444444',
+    version: 0,
+    effectiveAt: utc,
+  });
+  const callbacks = view();
+  fireEvent.click(screen.getByRole('checkbox', { name: 'Hẹn ngày hiệu lực cho phiên bản mới' }));
+  const save = screen.getByRole('button', { name: 'Lưu lịch hiệu lực' });
+  expect(save.disabled).toBe(true);
+  fill('Ngày và giờ hiệu lực', local);
+  fill('Lý do thay đổi (bắt buộc)', 'Hẹn thời điểm mới');
+  fireEvent.click(save);
+  await waitFor(() => expect(callbacks.onSaved).toHaveBeenCalledWith({ scheduled: true }));
+  expect(mocks.apiRequest.mock.calls[0][1].body).toMatchObject({
+    effectiveAt: utc,
+    expectedPolicyId: policy.id,
+    expectedPolicyVersion: 7,
+    priceMinCoins: 200,
+    authorSharePercent: 70,
+  });
+});
+it('blocks past/empty schedules and requires an existing current policy', () => {
+  view();
+  fireEvent.click(screen.getByRole('checkbox', { name: 'Hẹn ngày hiệu lực cho phiên bản mới' }));
+  fill('Lý do thay đổi (bắt buộc)', 'Lịch không hợp lệ');
+  expect(screen.getByRole('button', { name: 'Lưu lịch hiệu lực' }).disabled).toBe(true);
+  fill('Ngày và giờ hiệu lực', '2020-01-01T07:00');
+  expect(screen.getByRole('button', { name: 'Lưu lịch hiệu lực' }).disabled).toBe(true);
+  expect(mocks.apiRequest).not.toHaveBeenCalled();
+  cleanup();
+  view(null);
+  expect(
+    screen.getByRole('checkbox', { name: 'Hẹn ngày hiệu lực cho phiên bản mới' }).disabled,
+  ).toBe(true);
+});
+it('rejects a schedule success response that does not confirm the requested effective time', async () => {
+  mocks.apiRequest.mockResolvedValue({
+    policyId: '444444444444444444444444',
+    version: 0,
+    effectiveAt: '2099-02-01T00:00:00.000Z',
+  });
+  const callbacks = view();
+  fireEvent.click(screen.getByRole('checkbox', { name: 'Hẹn ngày hiệu lực cho phiên bản mới' }));
+  fill('Ngày và giờ hiệu lực', '2099-01-01T07:00');
+  fill('Lý do thay đổi (bắt buộc)', 'Hẹn lịch');
+  fireEvent.click(screen.getByRole('button', { name: 'Lưu lịch hiệu lực' }));
+  await screen.findByRole('alert');
+  expect(callbacks.onSaved).not.toHaveBeenCalled();
+  expect(screen.getByRole('button', { name: 'Lưu lịch hiệu lực' }).disabled).toBe(true);
+});
+it('rechecks the clock on submit if a previously future time has already passed', () => {
+  const clock = vi.spyOn(Date, 'now').mockReturnValue(new Date('2026-01-01T00:00:00Z').getTime());
+  try {
+    view();
+    fireEvent.click(screen.getByRole('checkbox', { name: 'Hẹn ngày hiệu lực cho phiên bản mới' }));
+    fill('Ngày và giờ hiệu lực', '2040-01-01T07:00');
+    fill('Lý do thay đổi (bắt buộc)', 'Thời gian đã qua');
+    clock.mockReturnValue(new Date('2041-01-01T00:00:00Z').getTime());
+    fireEvent.click(screen.getByRole('button', { name: 'Lưu lịch hiệu lực' }));
+    expect(mocks.apiRequest).not.toHaveBeenCalled();
+    expect(screen.getByRole('button', { name: 'Lưu lịch hiệu lực' }).disabled).toBe(true);
+  } finally {
+    clock.mockRestore();
+  }
+});
