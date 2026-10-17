@@ -1620,6 +1620,7 @@
     "untitled": "Phần mới chưa đặt tên",
     "splitHint": "Đặt con trỏ tại vị trí trong nội dung rồi bấm tách chương.",
     "success": "Đã lưu {{count}} chương nháp",
+    "invalidSaveResponse": "Chưa xác nhận được đầy đủ các chương đã lưu. Nội dung đang xem vẫn được giữ; hãy kiểm tra kho bản nháp trước khi thử lại.",
     "saved": "Nội dung đã được lưu vào cơ sở dữ liệu. Bạn có thể tiếp tục chỉnh sửa trước khi gửi duyệt.",
     "openDrafts": "Mở bản nháp",
     "another": "Chọn tệp khác",
