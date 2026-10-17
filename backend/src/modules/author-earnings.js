@@ -1,13 +1,15 @@
 import { LedgerEntry, Story, Wallet } from '../models/index.js';
 import { authorEarningsPeriod } from './author-earnings-period.js';
+import { currentAuthorAgreement } from './author-agreement.js';
 
 export async function authorEarnings(accountId, period = 'month', now = new Date()) {
   const { start, labels } = authorEarningsPeriod(period, now);
-  const [wallet, stories] = await Promise.all([
+  const [wallet, stories, agreement] = await Promise.all([
     Wallet.findOne({ ownerType: 'account', ownerId: accountId, purpose: 'author-earnings' })
       .select('availableBalance')
       .lean(),
     Story.find({ authorAccountId: accountId }).sort({ updatedAt: -1 }).select('title').lean(),
+    currentAuthorAgreement(accountId, now),
   ]);
   const credits = wallet
     ? await LedgerEntry.aggregate([
@@ -46,5 +48,6 @@ export async function authorEarnings(accountId, period = 'month', now = new Date
     payout: null,
     creatorShare: null,
     pricing: null,
+    agreement,
   };
 }

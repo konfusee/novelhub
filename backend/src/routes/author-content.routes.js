@@ -222,7 +222,9 @@ export function createAuthorContentRouter(config) {
           z.object({ period: z.enum(['day', 'week', 'month']).default('month') }).strict(),
           req.query,
         );
-        res.json(await authorEarnings(req.account._id, period));
+        res
+          .set('Cache-Control', 'private, no-store')
+          .json(await authorEarnings(req.account._id, period));
       } catch (error) {
         next(error);
       }

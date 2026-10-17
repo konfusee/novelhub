@@ -1122,7 +1122,11 @@
     "recorded": "Dữ liệu đã ghi nhận",
     "noSales": "Chưa có báo cáo doanh số chi tiết theo chương trong màn hình này.",
     "noPayout": "Chưa có khoản thanh toán được đối soát để hiển thị. Số dư ví không phải cam kết thanh toán cuối tháng.",
-    "noPricing": "Thiết lập giá chung và gói đăng ký chưa sẵn sàng. Giá truy cập sớm hiện có được hiển thị theo từng chương trong trang quản lý truyện."
+    "noPricing": "Thiết lập giá chung và gói đăng ký chưa sẵn sàng. Giá truy cập sớm hiện có được hiển thị theo từng chương trong trang quản lý truyện.",
+    "agreementTitle": "Thỏa thuận doanh thu hiện tại",
+    "agreementEffective": "Hiệu lực từ {{date}}",
+    "agreementHint": "Tỷ lệ hiện hành không dùng để tính lại các khoản xu đã ghi nhận trong kỳ. Thay đổi thỏa thuận do quản trị viên thực hiện.",
+    "agreementUnavailable": "Chưa tải được thỏa thuận hiện tại. Không dùng tỷ lệ mẫu để thay thế."
   },
   "analyticsData": {
     "allStories": "Tất cả truyện",

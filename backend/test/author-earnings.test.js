@@ -1,7 +1,7 @@
 import request from 'supertest';
 import { expect, it } from 'vitest';
 import { createApp } from '../src/app.js';
-import { LedgerEntry, Wallet } from '../src/models/index.js';
+import { LedgerEntry, Wallet, AuthorRevenueRate } from '../src/models/index.js';
 import { authorEarnings } from '../src/modules/author-earnings.js';
 import { authenticatedAccount } from './fixtures/accounts.js';
 import { testConfig } from './config.js';
@@ -85,4 +85,59 @@ it('reads author allocation credits and wallet balances independently without in
     403,
   );
   expect((await request(app).get('/api/author/earnings')).status).toBe(401);
+});
+
+it('shows only the authenticated author current terms and reflects Admin changes without exposing write tokens', async () => {
+  const admin = await authenticatedAccount('admin');
+  const author = await authenticatedAccount('author');
+  const other = await authenticatedAccount('author');
+  await AuthorRevenueRate.create({
+    authorAccountId: other.account._id,
+    percentage: 99,
+    effectiveAt: new Date('2020-01-01'),
+    actorAccountId: admin.account._id,
+  });
+  const own = () => request(app).get('/api/author/earnings').set('Cookie', author.cookie);
+  const initial = await own();
+  expect(initial.body.agreement).toEqual({
+    authorShare: 70,
+    platformShare: 30,
+    source: 'default',
+    effectiveAt: null,
+  });
+  const url = `/api/admin/authors/${author.account.id}/agreement`;
+  const prepared = (await request(app).get(url).set('Cookie', admin.cookie)).body;
+  const saved = await request(app)
+    .post(url)
+    .set('Cookie', admin.cookie)
+    .set('Origin', 'http://localhost:5173')
+    .send({
+      percentage: 79,
+      reason: 'Thỏa thuận mới',
+      expectedAccountVersion: prepared.accountVersion,
+      expectedLatestRateId: prepared.latestRateId,
+    });
+  expect(saved.status).toBe(201);
+  await AuthorRevenueRate.create({
+    authorAccountId: author.account._id,
+    percentage: 95,
+    effectiveAt: new Date('2030-01-01'),
+    actorAccountId: admin.account._id,
+  });
+  const response = await own();
+  expect(response.status).toBe(200);
+  expect(response.headers['cache-control']).toBe('private, no-store');
+  expect(response.body.agreement).toMatchObject({
+    authorShare: 79,
+    platformShare: 21,
+    source: 'agreement',
+  });
+  expect(Object.keys(response.body.agreement).sort()).toEqual([
+    'authorShare',
+    'effectiveAt',
+    'platformShare',
+    'source',
+  ]);
+  expect(response.body.creatorShare).toBe(null);
+  expect(response.body.allocationCredits).toBe(0);
 });

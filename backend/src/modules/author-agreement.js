@@ -9,6 +9,27 @@ import { HttpError } from '../middleware/errors.js';
 import { withTransaction } from '../db/connection.js';
 import { digest } from './submission-digests.js';
 
+/** Public-to-owner terms only; excludes Admin concurrency tokens and account history. */
+export async function currentAuthorAgreement(accountId, now = new Date()) {
+  const [rate, policy] = await Promise.all([
+    AuthorRevenueRate.findOne({ authorAccountId: accountId, effectiveAt: { $lte: now } })
+      .sort({ effectiveAt: -1, _id: -1 })
+      .select('percentage effectiveAt')
+      .lean(),
+    PolicyVersion.findOne({ status: 'effective', effectiveAt: { $lte: now } })
+      .sort({ effectiveAt: -1, _id: -1 })
+      .select('authorSharePercent effectiveAt')
+      .lean(),
+  ]);
+  const authorShare = rate?.percentage ?? policy?.authorSharePercent ?? 70;
+  return {
+    authorShare,
+    platformShare: 100 - authorShare,
+    source: rate ? 'agreement' : policy ? 'policy' : 'default',
+    effectiveAt: rate?.effectiveAt ?? policy?.effectiveAt ?? null,
+  };
+}
+
 /** A current view only: future rates never replace the rate effective today. */
 export async function authorAgreement(accountId, now = new Date()) {
   const account = await Account.findOne({
@@ -19,15 +40,8 @@ export async function authorAgreement(accountId, now = new Date()) {
     .select('displayName status version')
     .lean();
   if (!account) throw new HttpError(404, 'not_found', 'Không tìm thấy tác giả.');
-  const [rate, policy, history, role, latest] = await Promise.all([
-    AuthorRevenueRate.findOne({ authorAccountId: accountId, effectiveAt: { $lte: now } })
-      .sort({ effectiveAt: -1, _id: -1 })
-      .select('percentage effectiveAt')
-      .lean(),
-    PolicyVersion.findOne({ status: 'effective', effectiveAt: { $lte: now } })
-      .sort({ effectiveAt: -1, _id: -1 })
-      .select('authorSharePercent effectiveAt')
-      .lean(),
+  const [terms, history, role, latest] = await Promise.all([
+    currentAuthorAgreement(accountId, now),
     AuthorRevenueRate.find({ authorAccountId: accountId })
       .sort({ effectiveAt: -1, _id: -1 })
       .limit(20)
@@ -39,13 +53,9 @@ export async function authorAgreement(accountId, now = new Date()) {
       .select('_id')
       .lean(),
   ]);
-  const authorShare = rate?.percentage ?? policy?.authorSharePercent ?? 70;
   return {
     author: { id: String(account._id), name: account.displayName, status: account.status },
-    authorShare,
-    platformShare: 100 - authorShare,
-    source: rate ? 'agreement' : policy ? 'policy' : 'default',
-    effectiveAt: rate?.effectiveAt ?? policy?.effectiveAt ?? null,
+    ...terms,
     history: history.map((item) => ({
       id: String(item._id),
       percentage: item.percentage,

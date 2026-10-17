@@ -31,7 +31,7 @@ const emptyEarnings = { balance: '0', allocationCredits: 0, bars: [], labels: []
 const revenueSkeletonBars = [48, 66, 54, 78, 62, 88, 72];
 
 export function AuthorEarningsPage() {
-  const { t, formatNumber } = useLocale();
+  const { t, formatNumber, formatDate } = useLocale();
   const [period, setPeriod] = useState('month');
   const [story, setStory] = useState('');
   const earnings = useBackendDocument(`/author/earnings?period=${period}`, emptyEarnings);
@@ -248,6 +248,52 @@ export function AuthorEarningsPage() {
           </div>
 
           <aside className="min-w-0 space-y-6">
+            <Card>
+              <h2 className="text-h3">{t('earningsData.agreementTitle')}</h2>
+              {loading ? (
+                <Skeleton className="mt-4 h-8 w-40" />
+              ) : earnings.status === 'ready' && data.agreement ? (
+                <>
+                  <dl className="mt-4 space-y-3 text-sm">
+                    <div className="flex flex-wrap justify-between gap-2">
+                      <dt>{t('agreement.author')}</dt>
+                      <dd className="font-semibold">{formatNumber(data.agreement.authorShare)}%</dd>
+                    </div>
+                    <div className="flex flex-wrap justify-between gap-2">
+                      <dt>{t('agreement.platform')}</dt>
+                      <dd className="font-semibold">
+                        {formatNumber(data.agreement.platformShare)}%
+                      </dd>
+                    </div>
+                  </dl>
+                  <Badge className="mt-4" tone="green">
+                    {t(`agreement.source.${data.agreement.source}`)}
+                  </Badge>
+                  {data.agreement.effectiveAt && (
+                    <p className="mt-2 text-caption text-muted">
+                      {t('earningsData.agreementEffective', {
+                        date: formatDate(data.agreement.effectiveAt),
+                      })}
+                    </p>
+                  )}
+                  <p className="mt-3 text-xs leading-5 text-muted">
+                    {t('earningsData.agreementHint')}
+                  </p>
+                </>
+              ) : (
+                <p className="mt-3 text-sm text-muted">{t('earningsData.agreementUnavailable')}</p>
+              )}
+              <Button
+                variant="secondary"
+                size="sm"
+                className="mt-4"
+                disabled={loading}
+                onClick={earnings.retry}
+              >
+                <RefreshCw size={15} />
+                {t('agreement.reload')}
+              </Button>
+            </Card>
             {hasData && (
               <Card className="border-orange/40 bg-orange/10">
                 <span className="grid size-10 place-items-center rounded-2xl bg-orange/20 text-orange-strong">
