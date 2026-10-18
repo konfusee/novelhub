@@ -3,8 +3,21 @@ import { z } from 'zod';
 import { requireAuth, requireRole } from '../middleware/auth.js';
 import { HttpError } from '../middleware/errors.js';
 import { adminAuthorStatistics } from '../modules/admin-author-statistics.js';
+import { adminDashboard } from '../modules/admin-dashboard.js';
 export function createAdminAuthorStatisticsRouter(config) {
   const router = Router();
+  router.get(
+    '/admin/dashboard',
+    requireAuth(config),
+    requireRole('admin'),
+    async (req, res, next) => {
+      try {
+        res.set('Cache-Control', 'private, no-store').json(await adminDashboard());
+      } catch (error) {
+        next(error);
+      }
+    },
+  );
   router.get(
     '/admin/author-statistics',
     requireAuth(config),
