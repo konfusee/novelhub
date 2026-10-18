@@ -1,6 +1,7 @@
 import { Account } from '../models/index.js';
 import { HttpError } from '../middleware/errors.js';
 import { evaluateFinalPayout, monthlyCutoff } from './admin-final-payout.js';
+import { evaluateDueMonthlyAuthorPayouts } from './monthly-author-payouts.js';
 
 export async function evaluateDueFinalPayouts({ now = new Date(), logger } = {}) {
   const cutoff = monthlyCutoff(now);
@@ -49,6 +50,7 @@ export function startFinalPayoutScheduler(logger, { intervalMs = 60000 } = {}) {
   const tick = () => {
     if (stopped || running) return;
     running = evaluateDueFinalPayouts({ logger })
+      .then(() => evaluateDueMonthlyAuthorPayouts({ logger }))
       .catch((error) => logger?.error({ err: error }, 'Final payout scheduler failed'))
       .finally(() => {
         running = undefined;

@@ -23,7 +23,7 @@ export async function enqueuePayoutNotification(account, event, session, now) {
         payload: {
           title: event.title,
           body: event.body,
-          withdrawalRequestId: String(event.withdrawalId),
+          ...(event.withdrawalId ? { withdrawalRequestId: String(event.withdrawalId) } : {}),
           ...(email ? { emailRecipient: email } : {}),
         },
         deliveryState: 'pending',
