@@ -41,8 +41,9 @@ async function approve(sent) {
   await batch.save();
   const Model = submission.chapterId ? Chapter : Story;
   const entity = await Model.findById(submission.chapterId ?? submission.storyId);
-  if (submission.chapterId) entity.status = 'approved';
-  else {
+  if (submission.chapterId) {
+    if (entity.status !== 'published') entity.status = 'approved';
+  } else {
     entity.publicationStatus = 'approved';
     entity.authoringFrozen = false;
   }
@@ -567,18 +568,76 @@ it('creates one fresh private revision from unpublished approved content and pre
   expect((await f.prepare()).body.ready).toBe(false);
   expect((await PublicationSubmission.findById(sent.body.submission.id)).status).toBe('validated');
 });
-it('does not offer a fresh approved-source revision while the chapter is still published', async () => {
+it('keeps the published revision live while a private edit is saved, submitted and approved, then swaps only on release', async () => {
   const f = await publishedFixture();
   const sub = await PublicationSubmission.findById(f.submission._id);
   const feed = (await get(f.cookie, '/api/author/submissions')).body;
-  expect(feed.items.find((row) => row.id === String(sub._id)).canRevise).toBe(false);
+  expect(feed.items.find((row) => row.id === String(sub._id)).canRevise).toBe(true);
+  const source = await ContentRevision.findById(sub.revisionId).lean();
+  const url = `/api/author/submissions/${sub._id}/revise`;
+  const created = await write(f.cookie, url, { expectedVersion: sub.version });
+  expect(created.status).toBe(201);
+  expect((await write(f.cookie, url, { expectedVersion: sub.version })).body.revision.id).toBe(
+    created.body.revision.id,
+  );
+  const editorUrl = `/api/author/stories/${f.storyId}/chapters/${f.chapterId}`;
+  const editor = (await get(f.cookie, editorUrl)).body.chapter;
+  expect(editor.canEdit).toBe(true);
   expect(
     (
-      await write(f.cookie, `/api/author/submissions/${sub._id}/revise`, {
-        expectedVersion: sub.version,
+      await write(
+        f.cookie,
+        editorUrl,
+        {
+          expectedVersion: editor.version,
+          title: 'Tiêu đề bản sửa riêng',
+          paragraphs: ['Nội dung bản sửa riêng.'],
+        },
+        'put',
+      )
+    ).status,
+  ).toBe(200);
+  const publicUrl = `/api/catalog/stories/${f.storyId}/chapters/${f.chapterId}`;
+  const readOld = async () => {
+    const read = await request(app).get(publicUrl);
+    expect(read.status).toBe(200);
+    expect(read.body.chapter.revisionId).toBe(String(source._id));
+    expect(JSON.stringify(read.body)).not.toContain('bản sửa riêng');
+    expect((await Chapter.findById(f.chapterId)).status).toBe('published');
+  };
+  await readOld();
+  const prepared = (
+    await get(
+      f.cookie,
+      `/api/author/submissions/prepare?storyId=${f.storyId}&chapterId=${f.chapterId}`,
+    )
+  ).body;
+  const sent = await write(f.cookie, '/api/author/submissions', {
+    storyId: f.storyId,
+    chapterId: f.chapterId,
+    revisionId: prepared.target.revisionId,
+    expectedVersion: prepared.target.version,
+  });
+  expect(sent.status).toBe(201);
+  await readOld();
+  await approve(sent);
+  await readOld();
+  const release = (await f.prepare()).body;
+  expect(release.ready).toBe(true);
+  expect(
+    (
+      await write(f.cookie, f.endpoint, {
+        revisionId: release.target.revisionId,
+        submissionId: release.target.submissionId,
+        expectedVersion: release.target.version,
+        expectedStoryVersion: release.target.storyVersion,
       })
     ).status,
-  ).toBe(409);
+  ).toBe(201);
+  const updated = await request(app).get(publicUrl);
+  expect(updated.body.chapter.revisionId).toBe(release.target.revisionId);
+  expect(JSON.stringify(updated.body)).toContain('Nội dung bản sửa riêng.');
+  expect(await ContentRevision.findById(source._id).lean()).toEqual(source);
 });
 it('rejects stale or foreign unpublished revision requests and a corrupt immutable source', async () => {
   const f = await unpublishedFixture();

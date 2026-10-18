@@ -107,7 +107,7 @@ export async function authorStoryWorkspace(account, storyId) {
           : null,
       id: String(chapter._id),
       version: chapter.version,
-      title: chapter.title,
+      title: revision?.content.title ?? chapter.title,
       number: chapter.orderKey,
       status: chapter.status,
       canRelease: Boolean(

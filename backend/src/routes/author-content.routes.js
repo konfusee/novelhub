@@ -726,7 +726,7 @@ export function createAuthorContentRouter(config) {
           canCreate,
           canEdit:
             canCreate &&
-            chapter.status === 'draft' &&
+            ['draft', 'published'].includes(chapter.status) &&
             revision.status === 'editable' &&
             !revision.immutableAt,
           outline: outline.map((item) => ({
@@ -734,7 +734,7 @@ export function createAuthorContentRouter(config) {
             number: item.orderKey,
             title: item.title,
           })),
-          title: chapter.title,
+          title: revision.content.title,
           version: chapter.version,
           status: chapter.status,
           ...(document
@@ -773,7 +773,10 @@ export function createAuthorContentRouter(config) {
           storyId: story._id,
         }).session(session);
         if (!chapter) throw new HttpError(404, 'not_found', 'Không tìm thấy chương.');
-        if (chapter.version !== input.expectedVersion || chapter.status !== 'draft')
+        if (
+          chapter.version !== input.expectedVersion ||
+          !['draft', 'published'].includes(chapter.status)
+        )
           throw new HttpError(
             409,
             'stale_content',
@@ -814,7 +817,7 @@ export function createAuthorContentRouter(config) {
           ],
           { session },
         );
-        chapter.title = input.document?.title ?? input.title;
+        if (chapter.status !== 'published') chapter.title = input.document?.title ?? input.title;
         chapter.draftRevisionId = revision._id;
         chapter.currentRevisionId = revision._id;
         await chapter.save({ session });

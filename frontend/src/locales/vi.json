@@ -2022,7 +2022,7 @@
     },
     "checkAgain": "Kiểm tra lại bản nháp",
     "revise": "Tạo bản sửa từ phản hồi",
-    "reviseUnpublished": "Tạo bản sửa chương đã gỡ",
+    "reviseUnpublished": "Tạo bản sửa chương",
     "reviseHint": "Tạo bản nháp chỉnh sửa mới từ gói đã xét. Nội dung, quyền và lịch sử của gói cũ được giữ nguyên. Bạn cần chỉnh sửa, kiểm tra và xác nhận gửi lại ở vòng tiếp theo.",
     "createRevision": "Tạo bản nháp chỉnh sửa",
     "reviseError": "Chưa tạo được bản sửa. Hãy làm mới lịch sử và thử lại."
@@ -2033,7 +2033,7 @@
     "unpublishSaved": "Đã gỡ xuất bản chương. Nội dung và lịch sử vẫn được giữ lại.",
     "unpublishedFilter": "Đã gỡ xuất bản",
     "reviseUnpublished": "Tạo bản sửa chương",
-    "reviseUnpublishedHint": "Tạo một bản nháp mới từ phiên bản đã gỡ và mở trình soạn. Nội dung cùng lịch sử đã duyệt vẫn được giữ nguyên. Bạn cần sửa, gửi duyệt lại và được phê duyệt trước khi phát hành; thao tác này chưa công khai chương.",
+    "reviseUnpublishedHint": "Tạo bản nháp riêng và mở trình soạn. Bản đang công khai cùng lịch sử đã duyệt được giữ nguyên. Bạn cần gửi duyệt lại và phát hành bản được phê duyệt để thay thế nội dung độc giả đang đọc.",
     "delete": "Xóa bản nháp",
     "deleteHint": "Xóa chương này khỏi kho nháp và danh sách chương. Không thể tiếp tục chỉnh sửa hoặc khôi phục chương đã xóa trên giao diện. Lịch sử nội dung vẫn được giữ trong hệ thống.",
     "deleteSaved": "Đã xóa chương khỏi bản nháp.",

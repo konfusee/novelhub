@@ -234,6 +234,101 @@ it('admits, claims and approves a real submitted package without faking AI, then
   expect(
     (await request(app).get(`/api/catalog/stories/${f.storyId}/chapters/${chapter.id}`)).status,
   ).toBe(200);
+  const publicChapter = `/api/catalog/stories/${f.storyId}/chapters/${chapter.id}`;
+  const beforeEdit = (await request(app).get(publicChapter)).body;
+  const approvedSource = await PublicationSubmission.findById(chapterReady.target.submissionId);
+  expect(
+    (
+      await write(`/api/author/submissions/${approvedSource._id}/revise`, f.author.cookie, {
+        expectedVersion: approvedSource.version,
+      })
+    ).status,
+  ).toBe(201);
+  const editorPath = `/api/author/stories/${f.storyId}/chapters/${chapter.id}`;
+  const editor = (await request(app).get(editorPath).set('Cookie', f.author.cookie)).body.chapter;
+  expect(
+    (
+      await request(app)
+        .put(editorPath)
+        .set('Cookie', f.author.cookie)
+        .set('Origin', 'http://localhost:5173')
+        .send({
+          expectedVersion: editor.version,
+          title: 'Bản sửa đang duyệt',
+          paragraphs: ['Nội dung sửa cần duyệt lại.'],
+        })
+    ).status,
+  ).toBe(200);
+  const editPrep = (
+    await request(app)
+      .get(`/api/author/submissions/prepare?storyId=${f.storyId}&chapterId=${chapter.id}`)
+      .set('Cookie', f.author.cookie)
+  ).body;
+  const editSent = await write('/api/author/submissions', f.author.cookie, {
+    storyId: f.storyId,
+    chapterId: chapter.id,
+    revisionId: editPrep.target.revisionId,
+    expectedVersion: editPrep.target.version,
+  });
+  expect(editSent.status).toBe(201);
+  const editPath = `/api/moderator/manual-reviews/${editSent.body.submission.id}`;
+  const readEdit = async () => (await request(app).get(editPath).set('Cookie', f.mod.cookie)).body;
+  let edit = await readEdit();
+  expect(
+    (
+      await write(`${editPath}/admit`, f.mod.cookie, {
+        expectedVersion: edit.submission.version,
+        revisionId: edit.revision.id,
+        expectedEvidenceVersion: edit.evidence.version,
+        confirmedManualReview: true,
+        reason: input.reason,
+      })
+    ).status,
+  ).toBe(200);
+  edit = await readEdit();
+  expect(
+    (
+      await write(`/api/moderator/review-claims/${edit.submission.id}`, f.mod.cookie, {
+        expectedVersion: edit.submission.version,
+        expectedClaimVersion: edit.submission.claimVersion,
+      })
+    ).status,
+  ).toBe(200);
+  edit = await readEdit();
+  expect(
+    (
+      await write(`${editPath}/decision`, f.mod.cookie, {
+        expectedVersion: edit.submission.version,
+        expectedClaimVersion: edit.submission.claimVersion,
+        revisionId: edit.revision.id,
+        expectedRevisionVersion: edit.revision.version,
+        evidenceBatchId: edit.evidence.id,
+        expectedEvidenceVersion: edit.evidence.version,
+        confirmedManualReview: true,
+        reason: input.reason,
+        outcome: 'approved',
+      })
+    ).status,
+  ).toBe(200);
+  expect((await request(app).get(publicChapter)).body.chapter.revisionId).toBe(
+    beforeEdit.chapter.revisionId,
+  );
+  const replacement = (await request(app).get(chapterReleasePath).set('Cookie', f.author.cookie))
+    .body;
+  expect(replacement.ready).toBe(true);
+  expect(
+    (
+      await write(chapterReleasePath, f.author.cookie, {
+        revisionId: replacement.target.revisionId,
+        submissionId: replacement.target.submissionId,
+        expectedVersion: replacement.target.version,
+        expectedStoryVersion: replacement.target.storyVersion,
+      })
+    ).status,
+  ).toBe(201);
+  expect((await request(app).get(publicChapter)).body.chapter.revisionId).toBe(
+    replacement.target.revisionId,
+  );
   expect((await write(`${f.path}/decision`, f.mod.cookie, input)).status).toBe(409);
 });
 it('requires a live owned claim and exact revision/evidence versions, permitting only one concurrent decision', async () => {

@@ -268,14 +268,16 @@ export async function decideManualReview(moderator, submissionId, input) {
           ? 'rejected'
           : 'immutable';
     if (submission.chapterId) {
-      target.status =
-        input.outcome === 'approved'
-          ? target.requestedReleaseAt
-            ? target.requestedReleaseAt <= now
-              ? 'due'
-              : 'scheduled'
-            : 'approved'
-          : 'draft';
+      if (target.status === 'published') target.increment();
+      if (target.status !== 'published')
+        target.status =
+          input.outcome === 'approved'
+            ? target.requestedReleaseAt
+              ? target.requestedReleaseAt <= now
+                ? 'due'
+                : 'scheduled'
+              : 'approved'
+            : 'draft';
       await target.save({ session });
     } else {
       story.authoringFrozen = false;
