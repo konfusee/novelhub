@@ -136,6 +136,7 @@ export const workspaceNavigation = {
         ['navigation.moderation', '/admin/moderation', ShieldCheck],
         ['navigation.transactions', '/admin/transactions', WalletCards],
         ['accountClosures.title', ROUTES.adminAccountClosures, WalletCards],
+        ['bankReceipts.title', ROUTES.adminBankReceipts, WalletCards],
       ],
     },
   ],

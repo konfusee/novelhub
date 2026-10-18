@@ -153,6 +153,9 @@ const AuditEventsPage = lazy(() =>
 const AccountClosuresPage = lazy(() =>
   import('./pages/admin/AccountClosuresPage').then((m) => ({ default: m.AccountClosuresPage })),
 );
+const BankReceiptsPage = lazy(() =>
+  import('./pages/admin/BankReceiptsPage').then((m) => ({ default: m.BankReceiptsPage })),
+);
 const FormerAuthorStoriesPage = lazy(() =>
   import('./pages/admin/FormerAuthorStoriesPage').then((m) => ({
     default: m.FormerAuthorStoriesPage,
@@ -608,6 +611,7 @@ function AppRoutes() {
             element={role('admin', <AccountClosuresPage />)}
           />
           <Route path="/403" element={<ForbiddenPage />} />
+          <Route path={ROUTES.adminBankReceipts} element={role('admin', <BankReceiptsPage />)} />
           <Route path="/ui-preview" element={<UIPreviewPage />} />
           {pages.map((Page, index) => (
             <Route

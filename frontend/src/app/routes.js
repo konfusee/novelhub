@@ -15,6 +15,7 @@ export const ROUTES = {
   moderator: '/moderator',
   admin: '/admin',
   adminAccountClosures: '/admin/account-closures',
+  adminBankReceipts: '/admin/bank-receipts',
   forbidden: '/403',
   story: (id) => `/stories/${id}`,
   read: (storyId, chapterId) => `/read/${storyId}/${chapterId}`,
