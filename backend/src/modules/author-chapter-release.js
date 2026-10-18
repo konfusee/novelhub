@@ -2,6 +2,7 @@ import {
   AuditEvent,
   Chapter,
   EvidenceBatch,
+  PolicyVersion,
   PublicationSubmission,
   RightsDeclaration,
   Story,
@@ -12,6 +13,7 @@ import { lockAuthor, ownStory } from './author-ownership.js';
 import { loadSubmittedPackage } from './author-submitted-package.js';
 import { digest } from './submission-digests.js';
 import { inspectChapterImages, pinChapterImages } from './author-chapter-media.js';
+import { approvedReviewEvidence } from './review-evidence.js';
 
 async function packageFor(account, story, chapterId, revisionId, session) {
   const submission = revisionId
@@ -38,6 +40,42 @@ const approved = (snapshot) =>
     ['approved', 'immutable'].includes(snapshot.revision.status) &&
     snapshot.rights.status === 'asserted',
   );
+
+async function validAccessTerms(chapter, session) {
+  const terms = chapter.earlyAccess;
+  if (!terms?.enabled) return true;
+  const policy = terms.policyVersionId
+    ? await PolicyVersion.findById(terms.policyVersionId)
+        .session(session ?? null)
+        .lean()
+    : null;
+  if (
+    !policy ||
+    !['effective', 'superseded'].includes(policy.status) ||
+    !policy.effectiveAt ||
+    policy.effectiveAt > new Date() ||
+    ![
+      policy.priceMinCoins,
+      policy.priceMaxCoins,
+      policy.durationMinDays,
+      policy.durationMaxDays,
+    ].every(Number.isSafeInteger) ||
+    ![terms.coinPrice, terms.durationDays].every(Number.isSafeInteger) ||
+    terms.coinPrice <= 0 ||
+    terms.durationDays <= 0 ||
+    terms.coinPrice < policy.priceMinCoins ||
+    terms.coinPrice > policy.priceMaxCoins ||
+    terms.durationDays < policy.durationMinDays ||
+    terms.durationDays > policy.durationMaxDays
+  )
+    return false;
+  // Existing releases keep their original window, including after expiry or revision updates.
+  if (chapter.firstReleasedAt)
+    return terms.endsAt instanceof Date && Number.isFinite(terms.endsAt.getTime());
+  return (
+    !terms.endsAt && Number.isFinite(new Date(Date.now() + terms.durationDays * 86400000).getTime())
+  );
+}
 
 export async function chapterReleaseState(
   account,
@@ -84,12 +122,7 @@ export async function chapterReleaseState(
         .session(session ?? null)
         .lean()
     : null;
-  const evidenceReady = Boolean(
-    batch &&
-    ((batch.status === 'available-for-human-review' && batch.stage === 'llm') ||
-      (batch.status === 'failed' &&
-        ['embedding', 'comparison', 'llm'].includes(batch.failedStage))),
-  );
+  const evidenceReady = await approvedReviewEvidence(submission, batch, session);
   const previous = await Chapter.exists({
     storyId: story._id,
     orderKey: { $lt: chapter.orderKey },
@@ -102,7 +135,7 @@ export async function chapterReleaseState(
     { code: 'evidence', ok: evidenceReady },
     { code: 'parent', ok: story.publicationStatus === 'published' && approved(parent) },
     { code: 'order', ok: !previous },
-    { code: 'free', ok: !chapter.earlyAccess?.enabled },
+    { code: 'free', ok: await validAccessTerms(chapter, session) },
     {
       code: 'format',
       ok: Boolean(
@@ -246,6 +279,11 @@ async function commitChapterRelease(account, storyId, chapterId, input, config, 
     chapter.publishedRevisionId = snapshot.revision._id;
     chapter.currentRevisionId = snapshot.revision._id;
     chapter.draftRevisionId = undefined;
+    if (chapter.earlyAccess?.enabled && !chapter.firstReleasedAt) {
+      chapter.earlyAccess.endsAt = new Date(
+        now.getTime() + chapter.earlyAccess.durationDays * 86400000,
+      );
+    }
     chapter.firstReleasedAt = chapter.firstReleasedAt ?? now;
     chapter.publishedAt = chapter.publishedAt ?? now;
     chapter.publicationTransition = {
@@ -272,6 +310,7 @@ async function commitChapterRelease(account, storyId, chapterId, input, config, 
             submissionId: input.submissionId,
             packageDigest: snapshot.revision.packageDigest,
             previousPublishedRevisionId,
+            earlyAccess: chapter.earlyAccess?.toObject(),
           }),
         },
       ],

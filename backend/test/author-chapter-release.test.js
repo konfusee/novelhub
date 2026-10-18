@@ -8,6 +8,7 @@ import {
   Chapter,
   ContentRevision,
   EvidenceBatch,
+  PolicyVersion,
   PublicationSubmission,
   RightsDeclaration,
   RoleAssignment,
@@ -224,6 +225,35 @@ it('does not convert early-access content to free, including expired early acces
   expect((await f.prepare()).body.checks.find((c) => c.code === 'free').ok).toBe(false);
   expect((await write(f.cookie, f.endpoint, f.body)).status).toBe(409);
   expect((await Chapter.findById(f.chapterId)).earlyAccess.coinPrice).toBe(10);
+});
+it('publishes paid chapters with a fixed first-release window and preserves it on replay', async () => {
+  const f = await fixture();
+  const policy = await PolicyVersion.create({
+    status: 'effective',
+    effectiveAt: new Date('2020-01-01'),
+    actorAccountId: f.author.account._id,
+  });
+  f.entity.earlyAccess = {
+    enabled: true,
+    coinPrice: 250,
+    durationDays: 3,
+    policyVersionId: policy._id,
+  };
+  await f.entity.save();
+  f.body.expectedVersion = f.entity.version;
+  expect((await f.prepare()).body.ready).toBe(true);
+  expect((await write(f.cookie, f.endpoint, f.body)).status).toBe(201);
+  const chapter = await Chapter.findById(f.chapterId);
+  expect(chapter.earlyAccess.endsAt.getTime() - chapter.firstReleasedAt.getTime()).toBe(
+    3 * 86400000,
+  );
+  expect(chapter.earlyAccess.coinPrice).toBe(250);
+  const publicUrl = `/api/catalog/stories/${f.storyId}/chapters/${f.chapterId}`;
+  expect((await request(app).get(publicUrl)).body.error.code).toBe('chapter_locked');
+  expect((await write(f.cookie, f.endpoint, f.body)).body.chapter.replayed).toBe(true);
+  expect((await Chapter.findById(f.chapterId)).earlyAccess.endsAt).toEqual(
+    chapter.earlyAccess.endsAt,
+  );
 });
 it('rejects stale parent/chapter versions and client-supplied approval or price', async () => {
   const f = await fixture();

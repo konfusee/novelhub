@@ -88,6 +88,18 @@ describe('SMTP delivery', () => {
       expect.objectContaining({ secure: true, requireTLS: false }),
     );
   });
+  it('sends the financial message body without appending an authentication link', async () => {
+    transport.sendMail.mockResolvedValue({ accepted: ['reader@example.test'], rejected: [] });
+    await createSmtpEmailDelivery(smtp).send({
+      to: 'reader@example.test',
+      subject: 'Khoản chi trả',
+      text: 'Đã ghi nhận 137 xu.',
+    });
+    expect(transport.sendMail).toHaveBeenCalledWith(
+      expect.objectContaining({ text: 'Đã ghi nhận 137 xu.' }),
+    );
+    expect(transport.sendMail.mock.calls[0][0].text).not.toContain('undefined');
+  });
   it('retries failures up to three times and propagates rejection', async () => {
     transport.sendMail.mockResolvedValue({ accepted: [], rejected: ['reader@example.test'] });
     await expect(
