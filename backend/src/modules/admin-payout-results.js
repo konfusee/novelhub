@@ -12,7 +12,7 @@ import { lockPayoutAdmin } from './admin-final-payout.js';
 import { digest } from './submission-digests.js';
 import { enqueuePayoutNotification } from './payout-notifications.js';
 
-export async function recordPayoutResult(admin, accountId, withdrawalId, input) {
+export async function recordPayoutResult(admin, accountId, withdrawalId, input, regular = false) {
   if (input.result === 'Paid' && input.confirmedExternalTransfer !== true)
     throw new HttpError(
       400,
@@ -22,7 +22,11 @@ export async function recordPayoutResult(admin, accountId, withdrawalId, input) 
   return withTransaction(async (session) => {
     await lockPayoutAdmin(admin, session);
     const account = await Account.findOneAndUpdate(
-      { _id: accountId, status: 'anonymized', everAuthor: true },
+      {
+        _id: accountId,
+        status: regular ? { $in: ['active', 'suspended'] } : 'anonymized',
+        everAuthor: true,
+      },
       { $inc: { version: 1 } },
       { session, returnDocument: 'after' },
     ).select('+retainedPayoutEmail');
@@ -68,7 +72,13 @@ export async function recordPayoutResult(admin, accountId, withdrawalId, input) 
         'Khoản đã có bằng chứng Paid; không thể ghi thêm kết quả.',
       );
     const withdrawal = await WithdrawalRequest.findOneAndUpdate(
-      { _id: withdrawalId, accountId, status: 'pending', version: input.expectedWithdrawalVersion },
+      {
+        _id: withdrawalId,
+        accountId,
+        status: 'pending',
+        version: input.expectedWithdrawalVersion,
+        ...(regular ? { forcedByDeletion: false } : {}),
+      },
       { $inc: { version: 1 } },
       { session, returnDocument: 'after' },
     );
@@ -148,7 +158,12 @@ export async function recordPayoutResult(admin, accountId, withdrawalId, input) 
     const unpaid = await WithdrawalRequest.exists({ accountId, status: 'pending' }).session(
       session,
     );
-    if (account.finalPayoutEvaluatedAt && wallet?.availableBalance === 0 && !unpaid) {
+    if (
+      account.status === 'anonymized' &&
+      account.finalPayoutEvaluatedAt &&
+      wallet?.availableBalance === 0 &&
+      !unpaid
+    ) {
       account.financiallyClosedAt = now;
       account.retainedPayoutEmail = undefined;
       await account.save({ session });

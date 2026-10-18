@@ -1,5 +1,6 @@
 import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { afterEach, expect, it, vi } from 'vitest';
+import { MemoryRouter } from 'react-router';
 import { LocaleProvider } from '../../../src/context/LocaleContext';
 import { AccountClosuresPage } from '../../../src/pages/admin/AccountClosuresPage';
 const api = vi.hoisted(() => vi.fn());
@@ -17,7 +18,7 @@ const account = {
   canEvaluate: true,
   evaluatedAt: null,
 };
-function view({ item = account, fail = false } = {}) {
+function view({ item = account, fail = false, monthly = false } = {}) {
   let row = {
     id: 'withdrawal-id',
     version: 2,
@@ -53,11 +54,25 @@ function view({ item = account, fail = false } = {}) {
     return { items: [item], total: 1, pageSize: 20, period: '2026-10' };
   });
   render(
-    <LocaleProvider>
-      <AccountClosuresPage />
-    </LocaleProvider>,
+    <MemoryRouter>
+      <LocaleProvider>
+        <AccountClosuresPage monthly={monthly} />
+      </LocaleProvider>
+    </MemoryRouter>,
   );
 }
+it('shows the monthly queue without manual evaluation and sends results through its own endpoint', async () => {
+  view({ monthly: true, item: { ...account, canEvaluate: false, evaluatedAt: '2026-10-01' } });
+  expect(await screen.findByRole('heading', { name: 'Chi trả thu nhập tháng' })).toBeTruthy();
+  expect(screen.queryByRole('button', { name: 'Đánh giá cuối' })).toBeNull();
+  expect(api).toHaveBeenCalledWith('/admin/monthly-payouts?page=1', expect.anything());
+  fireEvent.click(await screen.findByRole('button', { name: 'Các khoản chờ chi trả' }));
+  await waitFor(() =>
+    expect(
+      api.mock.calls.some(([path]) => path === '/admin/monthly-payouts/account-id/payouts'),
+    ).toBe(true),
+  );
+});
 it('submits the displayed baseline and reason, then reloads the real queue', async () => {
   view();
   fireEvent.click(await screen.findByRole('button', { name: 'Đánh giá cuối' }));

@@ -1,4 +1,7 @@
 import { expect, it } from 'vitest';
+import request from 'supertest';
+import { createApp } from '../src/app.js';
+import { testConfig } from './config.js';
 import {
   Account,
   AuditEvent,
@@ -18,6 +21,7 @@ import { monthlyCutoff } from '../src/modules/admin-final-payout.js';
 import { authenticatedAccount } from './fixtures/accounts.js';
 import { useTestDatabase } from './db.js';
 useTestDatabase();
+const app = createApp(testConfig({ cookieName: 'novelhub_session' }));
 const now = new Date('2026-10-02T00:00:00Z');
 async function fixture({ balance = 120000, bank = true, status = 'active' } = {}) {
   const { account } = await authenticatedAccount('author', {
@@ -141,4 +145,56 @@ it('uses the Vietnam month boundary, skips new accounts and makes scheduled retr
     evaluated: 0,
     failed: 0,
   });
+});
+it('lets Admin settle ordinary payouts after suspension without closing the account or debiting again', async () => {
+  const f = await fixture();
+  const admin = await authenticatedAccount('admin');
+  const created = await evaluateMonthlyAuthorPayout(f.account._id, now);
+  await Account.updateOne({ _id: f.account._id }, { $set: { status: 'suspended' } });
+  const base = `/api/admin/monthly-payouts/${f.account._id}/payouts`;
+  expect(
+    (await request(app).get('/api/admin/monthly-payouts').set('Cookie', admin.cookie)).body.total,
+  ).toBe(1);
+  const list = await request(app).get(base).set('Cookie', admin.cookie);
+  expect(list.status).toBe(200);
+  const row = list.body.items[0];
+  expect(row.id).toBe(created.withdrawalId);
+  const input = {
+    expectedWithdrawalVersion: row.version,
+    expectedRowVersion: row.rowVersion,
+    resultEntryKey: 'monthly-paid',
+    result: 'Paid',
+    confirmedExternalTransfer: true,
+    reason: 'Đã đối chiếu ngân hàng',
+  };
+  const post = (body) =>
+    request(app)
+      .post(`${base}/${row.id}/results`)
+      .set('Cookie', admin.cookie)
+      .set('Origin', 'http://localhost:5173')
+      .send(body);
+  expect((await post({ ...input, confirmedExternalTransfer: undefined })).status).toBe(400);
+  expect(
+    (
+      await post({
+        ...input,
+        result: 'Failed',
+        resultEntryKey: 'monthly-failed',
+        confirmedExternalTransfer: undefined,
+      })
+    ).status,
+  ).toBe(200);
+  expect((await WithdrawalRequest.findById(row.id)).status).toBe('pending');
+  const refreshed = await request(app).get(base).set('Cookie', admin.cookie);
+  input.expectedWithdrawalVersion = refreshed.body.items[0].version;
+  const paid = await post(input);
+  expect(paid.status).toBe(200);
+  expect(paid.body.financiallyClosed).toBe(false);
+  expect((await post(input)).body.replayed).toBe(true);
+  expect((await WithdrawalRequest.findById(row.id)).status).toBe('paid');
+  expect((await Account.findById(f.account._id)).financiallyClosedAt).toBeUndefined();
+  expect(await LedgerEntry.countDocuments({ ledgerType: 'withdrawal-debit' })).toBe(1);
+  expect((await request(app).get(base)).status).toBe(401);
+  const reader = await authenticatedAccount('reader');
+  expect((await request(app).get(base).set('Cookie', reader.cookie)).status).toBe(403);
 });

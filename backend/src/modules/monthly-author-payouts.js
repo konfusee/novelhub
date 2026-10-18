@@ -233,3 +233,55 @@ export async function evaluateDueMonthlyAuthorPayouts({ now = new Date(), logger
   }
   return results;
 }
+
+export async function regularPayoutQueue(page, now = new Date()) {
+  const pending = await WithdrawalRequest.aggregate([
+    { $match: { status: 'pending', forcedByDeletion: false } },
+    {
+      $group: {
+        _id: '$accountId',
+        pendingWithdrawals: { $sum: 1 },
+        evaluatedAt: { $min: '$evaluatedAt' },
+      },
+    },
+    {
+      $lookup: {
+        from: Account.collection.name,
+        localField: '_id',
+        foreignField: '_id',
+        as: 'account',
+      },
+    },
+    { $unwind: '$account' },
+    { $match: { 'account.status': { $in: ['active', 'suspended'] }, 'account.everAuthor': true } },
+    { $sort: { evaluatedAt: 1, _id: 1 } },
+    {
+      $facet: { items: [{ $skip: (page - 1) * 20 }, { $limit: 20 }], count: [{ $count: 'total' }] },
+    },
+  ]);
+  const result = pending[0];
+  const items = [];
+  for (const row of result?.items ?? []) {
+    const wallet = await Wallet.findOne({
+      ownerType: 'account',
+      ownerId: row._id,
+      purpose: 'author-earnings',
+    })
+      .select('availableBalance')
+      .lean();
+    items.push({
+      id: String(row._id),
+      balance: wallet?.availableBalance ?? 0,
+      pendingWithdrawals: row.pendingWithdrawals,
+      evaluatedAt: row.evaluatedAt,
+      canEvaluate: false,
+    });
+  }
+  return {
+    items,
+    total: result?.count[0]?.total ?? 0,
+    page,
+    pageSize: 20,
+    period: monthlyCutoff(now).period,
+  };
+}

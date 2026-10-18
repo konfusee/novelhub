@@ -3,26 +3,35 @@ import { AdminLayout } from '../../layouts';
 import { useBackendDocument } from '../../api/useBackendResource';
 import { apiRequest } from '../../api/client';
 import { useLocale } from '../../context/LocaleContext';
-import { Button, Card, EmptyState, Input, Modal } from '../../components/ui';
+import { Button, ButtonLink, Card, EmptyState, Input, Modal } from '../../components/ui';
 const empty = { items: [], total: 0, pageSize: 20 };
-export function AccountClosuresPage() {
+export function AccountClosuresPage({ monthly = false }) {
   const { t, formatNumber } = useLocale();
   const m = (key) => t(`accountClosures.${key}`);
   const [page, setPage] = useState(1),
     [selected, setSelected] = useState(null);
   const [payoutAccount, setPayoutAccount] = useState(null);
-  const feed = useBackendDocument(`/admin/account-closures?page=${page}`, empty);
+  const base = monthly ? '/admin/monthly-payouts' : '/admin/account-closures';
+  const feed = useBackendDocument(`${base}?page=${page}`, empty);
   return (
     <AdminLayout>
       <div className="page-admin py-6">
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div>
-            <h1 className="text-h2 sm:text-h1">{m('title')}</h1>
-            <p className="mt-2 max-w-3xl text-sm text-muted">{m('description')}</p>
+            <h1 className="text-h2 sm:text-h1">{m(monthly ? 'monthlyTitle' : 'title')}</h1>
+            <p className="mt-2 max-w-3xl text-sm text-muted">
+              {m(monthly ? 'monthlyDescription' : 'description')}
+            </p>
           </div>
           <Button variant="secondary" disabled={feed.status === 'loading'} onClick={feed.retry}>
             {m('reload')}
           </Button>
+          <ButtonLink
+            variant="secondary"
+            to={monthly ? '/admin/account-closures' : '/admin/monthly-payouts'}
+          >
+            {m(monthly ? 'title' : 'monthlyTitle')}
+          </ButtonLink>
         </div>
         <Card className="mt-6 overflow-hidden p-0">
           {feed.status !== 'ready' ? (
@@ -35,7 +44,10 @@ export function AccountClosuresPage() {
                 {m('period')}: {feed.data.period} · {m('timezone')}
               </p>
               {!feed.data.items.length ? (
-                <EmptyState title={m('empty')} description={m('emptyHint')} />
+                <EmptyState
+                  title={m(monthly ? 'noPayouts' : 'empty')}
+                  description={m(monthly ? 'monthlyDescription' : 'emptyHint')}
+                />
               ) : (
                 <div className="overflow-x-auto">
                   <table className="w-full min-w-[700px] text-left text-sm">
@@ -68,14 +80,16 @@ export function AccountClosuresPage() {
                             )}
                           </td>
                           <td className="px-5 py-4">
-                            <Button
-                              size="sm"
-                              variant="secondary"
-                              disabled={!account.canEvaluate}
-                              onClick={() => setSelected(account)}
-                            >
-                              {m('evaluate')}
-                            </Button>
+                            {!monthly && (
+                              <Button
+                                size="sm"
+                                variant="secondary"
+                                disabled={!account.canEvaluate}
+                                onClick={() => setSelected(account)}
+                              >
+                                {m('evaluate')}
+                              </Button>
+                            )}
                             {account.pendingWithdrawals > 0 && (
                               <Button
                                 size="sm"
@@ -128,6 +142,7 @@ export function AccountClosuresPage() {
         )}
         {payoutAccount && (
           <PayoutsDialog
+            base={base}
             accountId={payoutAccount}
             onClose={() => setPayoutAccount(null)}
             onChanged={feed.retry}
@@ -137,10 +152,10 @@ export function AccountClosuresPage() {
     </AdminLayout>
   );
 }
-function PayoutsDialog({ accountId, onClose, onChanged }) {
+function PayoutsDialog({ accountId, onClose, onChanged, base = '/admin/account-closures' }) {
   const { t, formatNumber } = useLocale();
   const m = (key) => t(`accountClosures.${key}`);
-  const feed = useBackendDocument(`/admin/account-closures/${accountId}/payouts`, null);
+  const feed = useBackendDocument(`${base}/${accountId}/payouts`, null);
   const [selected, setSelected] = useState(null),
     [busy, setBusy] = useState(false),
     [error, setError] = useState('');
@@ -240,6 +255,7 @@ function PayoutsDialog({ accountId, onClose, onChanged }) {
         </>
       ) : selected.resultAction ? (
         <ResultForm
+          base={base}
           accountId={accountId}
           row={selected}
           onBack={() => setSelected(null)}
@@ -272,18 +288,15 @@ function PayoutsDialog({ accountId, onClose, onChanged }) {
             lock.current = true;
             setBusy(true);
             try {
-              const result = await apiRequest(
-                `/admin/account-closures/${accountId}/payouts/${selected.id}/bank`,
-                {
-                  method: 'POST',
-                  body: {
-                    expectedRowVersion: selected.rowVersion,
-                    expectedWithdrawalVersion: selected.version,
-                    reason,
-                    bank,
-                  },
+              const result = await apiRequest(`${base}/${accountId}/payouts/${selected.id}/bank`, {
+                method: 'POST',
+                body: {
+                  expectedRowVersion: selected.rowVersion,
+                  expectedWithdrawalVersion: selected.version,
+                  reason,
+                  bank,
                 },
-              );
+              });
               if (
                 result?.withdrawalId !== selected.id ||
                 !Number.isSafeInteger(result.rowVersion) ||
@@ -352,7 +365,7 @@ function PayoutsDialog({ accountId, onClose, onChanged }) {
     </Modal>
   );
 }
-function ResultForm({ accountId, row, onBack, onBusy, onChanged }) {
+function ResultForm({ accountId, row, onBack, onBusy, onChanged, base }) {
   const { t } = useLocale();
   const m = (key) => t(`accountClosures.${key}`);
   const [entryKey] = useState(() => crypto.randomUUID());
@@ -374,22 +387,19 @@ function ResultForm({ accountId, row, onBack, onBusy, onChanged }) {
         setBusy(true);
         onBusy(true);
         try {
-          const result = await apiRequest(
-            `/admin/account-closures/${accountId}/payouts/${row.id}/results`,
-            {
-              method: 'POST',
-              body: {
-                result: row.resultAction,
-                resultEntryKey: entryKey,
-                expectedWithdrawalVersion: row.version,
-                expectedRowVersion: row.rowVersion,
-                reason,
-                note: String(form.get('note') ?? '').trim(),
-                transferReference: String(form.get('reference') ?? '').trim(),
-                ...(paid ? { confirmedExternalTransfer: true } : {}),
-              },
+          const result = await apiRequest(`${base}/${accountId}/payouts/${row.id}/results`, {
+            method: 'POST',
+            body: {
+              result: row.resultAction,
+              resultEntryKey: entryKey,
+              expectedWithdrawalVersion: row.version,
+              expectedRowVersion: row.rowVersion,
+              reason,
+              note: String(form.get('note') ?? '').trim(),
+              transferReference: String(form.get('reference') ?? '').trim(),
+              ...(paid ? { confirmedExternalTransfer: true } : {}),
             },
-          );
+          });
           if (
             typeof result?.entryId !== 'string' ||
             !result.entryId ||

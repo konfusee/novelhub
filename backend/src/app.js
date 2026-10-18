@@ -66,6 +66,7 @@ export function createApp(config) {
   app.use('/api', createModeratorManualReviewsRouter(config));
   app.use('/api', createAdminFinanceReportRouter(config));
   app.use('/api', createAdminFinalPayoutRouter(config));
+  app.use('/api', createAdminFinalPayoutRouter(config, true));
   app.use('/api', createWorkspaceDataRouter(config));
   app.use('/api', createReaderDataRouter(config));
   app.use(notFound);

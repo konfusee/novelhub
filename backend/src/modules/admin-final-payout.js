@@ -247,10 +247,18 @@ const bankView = (bank) =>
         accountHolder: typeof bank.accountHolder === 'string' ? bank.accountHolder : '',
       }
     : null;
-export async function finalPayoutRows(accountId) {
-  const account = await Account.exists({ _id: accountId, status: 'anonymized', everAuthor: true });
+export async function finalPayoutRows(accountId, regular = false) {
+  const account = await Account.exists({
+    _id: accountId,
+    status: regular ? { $in: ['active', 'suspended'] } : 'anonymized',
+    everAuthor: true,
+  });
   if (!account) throw new HttpError(404, 'not_found', 'Không tìm thấy tài khoản đã đóng.');
-  const withdrawals = await WithdrawalRequest.find({ accountId, status: 'pending' })
+  const withdrawals = await WithdrawalRequest.find({
+    accountId,
+    status: 'pending',
+    ...(regular ? { forcedByDeletion: false } : {}),
+  })
     .sort({ evaluatedAt: 1, _id: 1 })
     .limit(50)
     .lean();
@@ -296,18 +304,35 @@ export async function finalPayoutRows(accountId) {
     limit: 50,
   };
 }
-export async function correctFinalPayoutBank(admin, accountId, withdrawalId, input) {
+export async function correctFinalPayoutBank(
+  admin,
+  accountId,
+  withdrawalId,
+  input,
+  regular = false,
+) {
   return withTransaction(async (session) => {
     await lockPayoutAdmin(admin, session);
     const account = await Account.findOneAndUpdate(
-      { _id: accountId, status: 'anonymized', everAuthor: true, financiallyClosedAt: null },
+      {
+        _id: accountId,
+        status: regular ? { $in: ['active', 'suspended'] } : 'anonymized',
+        everAuthor: true,
+        financiallyClosedAt: null,
+      },
       { $inc: { version: 1 } },
       { session },
     );
     if (!account)
       throw new HttpError(409, 'account_changed', 'Tài khoản không còn chờ quyết toán.');
     const withdrawal = await WithdrawalRequest.findOneAndUpdate(
-      { _id: withdrawalId, accountId, status: 'pending', version: input.expectedWithdrawalVersion },
+      {
+        _id: withdrawalId,
+        accountId,
+        status: 'pending',
+        version: input.expectedWithdrawalVersion,
+        ...(regular ? { forcedByDeletion: false } : {}),
+      },
       { $inc: { version: 1 } },
       { session, returnDocument: 'after' },
     );

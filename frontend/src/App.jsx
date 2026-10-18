@@ -594,6 +594,10 @@ function AppRoutes() {
           />
           <Route path="/admin/transactions" element={role('admin', <FinanceReportPage />)} />
           <Route
+            path="/admin/monthly-payouts"
+            element={role('admin', <AccountClosuresPage monthly />)}
+          />
+          <Route
             path={ROUTES.adminAccountClosures}
             element={role('admin', <AccountClosuresPage />)}
           />
