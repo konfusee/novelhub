@@ -150,6 +150,9 @@ const PlatformSettingsPage = lazy(() =>
 const AuditEventsPage = lazy(() =>
   import('./pages/admin/AuditEventsPage').then((m) => ({ default: m.AuditEventsPage })),
 );
+const AccountClosuresPage = lazy(() =>
+  import('./pages/admin/AccountClosuresPage').then((m) => ({ default: m.AccountClosuresPage })),
+);
 const FormerAuthorStoriesPage = lazy(() =>
   import('./pages/admin/FormerAuthorStoriesPage').then((m) => ({
     default: m.FormerAuthorStoriesPage,
@@ -599,6 +602,10 @@ function AppRoutes() {
                 description="Xem nạp xu, mua chương, hoàn tiền, điều chỉnh và giao dịch bất thường trên toàn nền tảng."
               />,
             )}
+          />
+          <Route
+            path={ROUTES.adminAccountClosures}
+            element={role('admin', <AccountClosuresPage />)}
           />
           <Route path="/403" element={<ForbiddenPage />} />
           <Route path="/ui-preview" element={<UIPreviewPage />} />

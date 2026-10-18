@@ -16,4 +16,4 @@ Admin chọn tài khoản trong danh bạ, bấm “Đóng và ẩn danh tài kh
 
 ## Còn lại để hoàn tất A-UC-01
 
-Luồng đánh giá cuối vào bảng chi trả tháng tiếp theo, sửa thông tin ngân hàng qua Admin và đóng tài chính sau khi tất cả khoản được ghi Paid chưa được triển khai trong nhánh này. Tài khoản còn nghĩa vụ được giữ ở trạng thái chưa đóng tài chính, không báo quyết toán thành công.
+Luồng đánh giá cuối vào bảng chi trả và sửa thông tin ngân hàng qua Admin đã được bổ sung trong `admin-final-payout.md`. Còn lịch chạy tự động, ghi Paid/Failed, giao email outbox và đóng tài chính sau khi trả hết. Tài khoản còn nghĩa vụ được giữ ở trạng thái chưa đóng tài chính, không báo quyết toán thành công.

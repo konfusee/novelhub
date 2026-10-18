@@ -135,6 +135,7 @@ export const workspaceNavigation = {
         ['navigation.auditLogs', '/admin/audit-logs', History],
         ['navigation.moderation', '/admin/moderation', ShieldCheck],
         ['navigation.transactions', '/admin/transactions', WalletCards],
+        ['accountClosures.title', ROUTES.adminAccountClosures, WalletCards],
       ],
     },
   ],

@@ -14,6 +14,7 @@ export const ROUTES = {
   authorAgreement: (type) => `/legal/author/${type}`,
   moderator: '/moderator',
   admin: '/admin',
+  adminAccountClosures: '/admin/account-closures',
   forbidden: '/403',
   story: (id) => `/stories/${id}`,
   read: (storyId, chapterId) => `/read/${storyId}/${chapterId}`,

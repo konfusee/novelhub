@@ -95,6 +95,9 @@ export function UsersManagementPage() {
             </p>
           </div>
           <div className="flex flex-wrap gap-2">
+            <ButtonLink to={ROUTES.adminAccountClosures} variant="secondary">
+              {t('accountClosures.title')}
+            </ButtonLink>
             <Button variant="secondary" disabled title={t('adminAccounts.unavailable')}>
               <Download size={16} />
               {t('adminAccounts.export')}
