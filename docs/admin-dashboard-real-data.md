@@ -6,4 +6,4 @@ The page no longer imports Admin mock datasets or the mock-resource hook. Refres
 
 Unsupported growth, uptime, latency and storage measurements remain unavailable, including removal of the sample TB totals, fake quarterly goals and percentage progress. The original cards, grid, skeletons and empty/error states remain. Maintenance/read-only switches are disabled because no server-control API backs them; they no longer simulate a successful platform change.
 
-This change is scoped to the overview. Detailed Author statistics, finance, monthly payouts and payout operations have their separate real-data routes. No backend schemas changed, no media/AI implementation and no deployment controls were added. Browser visual verification remains outstanding.
+This change is scoped to the overview. Detailed Author statistics, finance, monthly payouts and payout operations have their separate real-data routes. No backend schemas changed, no media/AI implementation and no deployment controls were added. Desktop browser checks against disposable MongoDB are recorded in [browser acceptance](admin-author-browser-acceptance.md); unsupported CDN purge is also disabled.

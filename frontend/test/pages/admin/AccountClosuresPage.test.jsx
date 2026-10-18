@@ -78,6 +78,8 @@ it('shows the monthly queue without manual evaluation and sends results through 
     ).toBe(true),
   );
   fireEvent.click(await screen.findByRole('button', { name: 'Lịch sử chi trả tài khoản' }));
+  expect(await screen.findByText(/ưu tiên khoản đang chờ; trong mỗi trạng thái/)).toBeTruthy();
+  expect(screen.queryByText('Hiển thị tối đa 50 khoản chờ chi trả, từ cũ đến mới.')).toBeNull();
   await waitFor(() =>
     expect(
       api.mock.calls.some(([path]) => path === '/admin/monthly-payouts/account-id/payouts'),

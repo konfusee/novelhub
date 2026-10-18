@@ -286,7 +286,9 @@ function PayoutsDialog({ accountId, onClose, onChanged, base = '/admin/account-c
                   </div>
                 </div>
               ))}
-              <p className="text-xs text-muted">{m('payoutLimit')}</p>
+              <p className="text-xs text-muted">
+                {m(base === '/admin/monthly-payouts' ? 'monthlyPayoutLimit' : 'payoutLimit')}
+              </p>
             </div>
           )}
         </>

@@ -344,6 +344,7 @@
     "missingBank": "Chưa có thông tin ngân hàng",
     "correctBank": "Hiệu chỉnh ngân hàng",
     "payoutLimit": "Hiển thị tối đa 50 khoản chờ chi trả, từ cũ đến mới.",
+    "monthlyPayoutLimit": "Hiển thị tối đa 50 khoản chi trả, ưu tiên khoản đang chờ; trong mỗi trạng thái, khoản mới nhất hiển thị trước.",
     "bankName": "Tên ngân hàng",
     "accountNumber": "Số tài khoản",
     "accountHolder": "Tên chủ tài khoản",

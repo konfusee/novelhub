@@ -673,9 +673,8 @@ export function AdminDashboardPage() {
               </div>
               <Button
                 variant="danger"
-                onClick={() =>
-                  setSafeguard({ label: 'Xóa bộ nhớ đệm CDN biên toàn cầu', confirm: () => {} })
-                }
+                disabled
+                title={m('safeguardsUnavailable')}
                 className="mt-4 w-full whitespace-normal"
               >
                 Xóa bộ nhớ đệm CDN biên toàn cầu

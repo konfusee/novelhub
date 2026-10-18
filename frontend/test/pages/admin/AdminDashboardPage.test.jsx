@@ -62,6 +62,9 @@ it('shows API KPI/audit and unavailable telemetry without sample totals or fake 
   expect(screen.queryByText('6,4 TB / 12 TB')).toBeNull();
   expect(screen.getByText('Chưa có dịch vụ được giám sát')).toBeTruthy();
   for (const control of screen.getAllByRole('switch')) expect(control.disabled).toBe(true);
+  expect(screen.getByRole('button', { name: 'Xóa bộ nhớ đệm CDN biên toàn cầu' }).disabled).toBe(
+    true,
+  );
   fireEvent.click(screen.getByRole('button', { name: 'Tải KPI hiện tại' }));
   expect(download).toHaveBeenCalledOnce();
   expect(exported).toContain('"123"');
