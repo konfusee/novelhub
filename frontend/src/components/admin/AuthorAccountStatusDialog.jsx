@@ -3,14 +3,19 @@ import { apiRequest } from '../../api/client';
 import { useLocale } from '../../context/LocaleContext';
 import { Button, Modal } from '../ui';
 
-export function AuthorAccountStatusDialog({ account, onClose, onChanged }) {
+export function AuthorAccountStatusDialog({ account, closeAccount = false, onClose, onChanged }) {
   const { t } = useLocale();
   const m = (key) => t(`authorAccountStatus.${key}`);
-  const action = account.status === 'active' ? 'suspend' : 'restore';
-  const expectedStatus = action === 'suspend' ? 'suspended' : 'active';
+  const action = closeAccount ? 'close' : account.status === 'active' ? 'suspend' : 'restore';
+  const expectedStatus = closeAccount
+    ? 'anonymized'
+    : action === 'suspend'
+      ? 'suspended'
+      : 'active';
   const [reason, setReason] = useState('');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
+  const [confirmed, setConfirmed] = useState(false);
   const lock = useRef(false);
   return (
     <Modal open title={m(action)} onClose={() => !lock.current && onClose()}>
@@ -18,7 +23,7 @@ export function AuthorAccountStatusDialog({ account, onClose, onChanged }) {
         onSubmit={async (event) => {
           event.preventDefault();
           event.stopPropagation();
-          if (lock.current || error || !reason.trim()) return;
+          if (lock.current || error || !reason.trim() || (closeAccount && !confirmed)) return;
           lock.current = true;
           setBusy(true);
           try {
@@ -44,6 +49,17 @@ export function AuthorAccountStatusDialog({ account, onClose, onChanged }) {
       >
         <p className="font-semibold break-words">{account.name}</p>
         <p className="mt-3 text-sm text-muted">{m(action + 'Hint')}</p>
+        {closeAccount && (
+          <label className="mt-4 flex items-start gap-2 text-sm">
+            <input
+              type="checkbox"
+              checked={confirmed}
+              disabled={busy || !!error}
+              onChange={(event) => setConfirmed(event.target.checked)}
+            />
+            {m('closeConfirm')}
+          </label>
+        )}
         <label htmlFor="author-account-reason" className="mt-4 block text-sm font-medium">
           {m('reason')}
         </label>
@@ -65,7 +81,11 @@ export function AuthorAccountStatusDialog({ account, onClose, onChanged }) {
           <Button variant="secondary" disabled={busy} onClick={onClose}>
             {m('cancel')}
           </Button>
-          <Button type="submit" disabled={busy || !!error || !reason.trim()}>
+          <Button
+            variant={closeAccount ? 'danger' : 'primary'}
+            type="submit"
+            disabled={busy || !!error || !reason.trim() || (closeAccount && !confirmed)}
+          >
             {m(busy ? 'saving' : action)}
           </Button>
         </div>
