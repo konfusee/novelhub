@@ -70,6 +70,9 @@
     "changeHint": "Đổi tên hoặc ngừng dùng không xóa thể loại khỏi truyện cũ. Nội dung chuẩn bị gửi hoặc phát hành cần thể loại đang hoạt động. Thứ tự nhỏ hơn được hiển thị trước."
   },
   "authorAccountStatus": {
+    "close": "Đóng và ẩn danh tài khoản",
+    "closeHint": "Thao tác không thể khôi phục. Hồ sơ được ẩn danh, phiên đăng nhập hết hiệu lực, truyện bị ngừng công khai và nội dung chưa phát hành bị hủy. Xu độc giả còn lại bị mất, không hoàn tiền. Thu nhập chưa chi trả, lịch sử giao dịch và thông tin ngân hàng được giữ để quyết toán; thao tác này không xác nhận đã chuyển tiền.",
+    "closeConfirm": "Tôi xác nhận đóng vĩnh viễn tài khoản và đã kiểm tra đúng người dùng cần xử lý.",
     "suspend": "Khóa tài khoản Author",
     "restore": "Mở lại tài khoản Author",
     "suspendHint": "Các phiên đăng nhập sẽ hết hiệu lực và truyện của tài khoản sẽ ẩn khỏi danh mục. Nội dung, quyền Author, số dư và các khoản chi trả đã lập được giữ nguyên.",

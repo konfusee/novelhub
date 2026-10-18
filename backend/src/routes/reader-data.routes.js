@@ -496,7 +496,11 @@ export function createReaderDataRouter(config) {
     })
     .strict();
   const authorName = (account) =>
-    account?.status === 'active' ? account.displayName : 'Tài khoản đã ngừng hoạt động';
+    account?.status === 'anonymized'
+      ? 'Deleted user'
+      : account?.status === 'active'
+        ? account.displayName
+        : 'Tài khoản đã ngừng hoạt động';
   router.get('/community/stories/:id/comments', async (req, res, next) => {
     try {
       const { page, parentId } = validate(communityPage, req.query);

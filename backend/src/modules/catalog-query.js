@@ -26,7 +26,7 @@ const snapshotStages = (ids) => [
       as: 'authorState',
     },
   },
-  { $match: { 'authorState.status': { $ne: 'suspended' } } },
+  { $match: { 'authorState.status': { $nin: ['suspended', 'anonymized'] } } },
   {
     $lookup: {
       from: ContentRevision.collection.name,

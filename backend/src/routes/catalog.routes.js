@@ -366,9 +366,11 @@ export function createCatalogRouter(config) {
           ),
           featuredReview: latestComment?.body ?? '',
           featuredReviewer:
-            latestComment?.authorAccountId?.status === 'active'
-              ? latestComment.authorAccountId.displayName
-              : '',
+            latestComment?.authorAccountId?.status === 'anonymized'
+              ? 'Deleted user'
+              : latestComment?.authorAccountId?.status === 'active'
+                ? latestComment.authorAccountId.displayName
+                : '',
         },
         chapters: chapters.flatMap((chapter) => {
           const revision = titles.get(String(chapter.publishedRevisionId));

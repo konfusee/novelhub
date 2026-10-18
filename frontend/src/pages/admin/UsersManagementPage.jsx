@@ -397,17 +397,23 @@ function UserInspector({ user, titleRef, onClose, onChanged }) {
             detail.data.account.everAuthor &&
             !user.roles.some((role) => ['admin', 'moderator'].includes(role)) &&
             ['active', 'suspended'].includes(detail.data.account.status) && (
-              <Button variant="secondary" size="sm" onClick={() => setStatusDialog(true)}>
-                {t(
-                  `authorAccountStatus.${detail.data.account.status === 'active' ? 'suspend' : 'restore'}`,
-                )}
-              </Button>
+              <>
+                <Button variant="secondary" size="sm" onClick={() => setStatusDialog('status')}>
+                  {t(
+                    `authorAccountStatus.${detail.data.account.status === 'active' ? 'suspend' : 'restore'}`,
+                  )}
+                </Button>
+                <Button variant="danger" size="sm" onClick={() => setStatusDialog('close')}>
+                  {t('authorAccountStatus.close')}
+                </Button>
+              </>
             )}
         </div>
       </Card>
       {statusDialog && (
         <AuthorAccountStatusDialog
           account={detail.data.account}
+          closeAccount={statusDialog === 'close'}
           onClose={() => setStatusDialog(false)}
           onChanged={onChanged}
         />

@@ -21,4 +21,4 @@ Hồ sơ trong danh bạ Admin cung cấp nút khóa/mở lại theo trạng th�
 - 7 test frontend dialog/danh bạ đạt; lint, i18n 1.728 khóa, build và Prettier đạt.
 - Browser trên MongoDB tạm thực hiện khóa → đọc trạng thái suspended → mở lại → đọc active và hai audit. Sáng/tối, 390/768/1024/1536px không tràn ngang; ảnh xác nhận và mobile đã kiểm tra. Không nạp fixture vào database nhóm.
 
-A-UC-01 vẫn Một phần vì còn vòng đóng tài khoản/ẩn danh và tài chính cuối cùng. Không đánh dấu toàn bộ nhóm Admin/Author hoàn tất từ riêng bước suspend/restore này.
+A-UC-01 có thêm đóng/ẩn danh tài khoản trong `admin-account-anonymization.md`. Vẫn Một phần vì còn đánh giá chi trả cuối, sửa ngân hàng và đóng tài chính sau khi trả hết. Không đánh dấu toàn bộ nhóm Admin/Author hoàn tất từ riêng bước suspend/restore này.

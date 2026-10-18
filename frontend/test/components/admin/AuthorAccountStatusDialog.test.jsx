@@ -47,3 +47,29 @@ it('keeps the reason and requires reload on an inconsistent response', async () 
   expect(screen.getByLabelText('Lý do').value).toBe('Lý do giữ nguyên');
   expect(screen.getByRole('button', { name: 'Khóa tài khoản Author' }).disabled).toBe(true);
 });
+it('requires explicit acknowledgement and a reason before closing permanently', async () => {
+  api.mockResolvedValue({ account: { id: account.id, status: 'anonymized', version: 4 } });
+  const onChanged = vi.fn();
+  render(
+    <LocaleProvider>
+      <AuthorAccountStatusDialog
+        account={account}
+        closeAccount
+        onClose={vi.fn()}
+        onChanged={onChanged}
+      />
+    </LocaleProvider>,
+  );
+  const submit = screen.getByRole('button', { name: 'Đóng và ẩn danh tài khoản' });
+  fireEvent.change(screen.getByLabelText('Lý do'), {
+    target: { value: 'Theo yêu cầu người dùng' },
+  });
+  expect(submit.disabled).toBe(true);
+  fireEvent.click(screen.getByRole('checkbox'));
+  fireEvent.click(submit);
+  await waitFor(() => expect(onChanged).toHaveBeenCalledOnce());
+  expect(api).toHaveBeenCalledWith('/admin/accounts/author-id/status', {
+    method: 'POST',
+    body: { action: 'close', expectedVersion: 3, reason: 'Theo yêu cầu người dùng' },
+  });
+});

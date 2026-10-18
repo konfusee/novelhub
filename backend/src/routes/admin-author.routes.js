@@ -13,6 +13,7 @@ import { HttpError } from '../middleware/errors.js';
 import { adminUsers, adminUserDetail } from '../modules/admin-users.js';
 import { adminAudit, auditQuery } from '../modules/admin-audit.js';
 import { changeAuthorAccount } from '../modules/admin-author-account.js';
+import { closeAuthorAccount } from '../modules/admin-close-author-account.js';
 import {
   authorRoleView,
   revokeAuthorRole,
@@ -49,7 +50,7 @@ export function createAdminAuthorRouter(config) {
       try {
         const parsed = z
           .object({
-            action: z.enum(['suspend', 'restore']),
+            action: z.enum(['suspend', 'restore', 'close']),
             expectedVersion: z.number().int().min(0),
             reason: z.string().trim().min(1).max(1000),
           })
@@ -60,7 +61,11 @@ export function createAdminAuthorRouter(config) {
         res
           .set('Cache-Control', 'private, no-store')
           .json(
-            await changeAuthorAccount(req.account, req.params.accountId.toLowerCase(), parsed.data),
+            await (parsed.data.action === 'close' ? closeAuthorAccount : changeAuthorAccount)(
+              req.account,
+              req.params.accountId.toLowerCase(),
+              parsed.data,
+            ),
           );
       } catch (error) {
         next(error);
