@@ -148,7 +148,9 @@ function PayoutsDialog({ accountId, onClose, onChanged }) {
   return (
     <Modal open title={m('payouts')} onClose={() => !lock.current && onClose()}>
       <p className="text-sm break-all">{accountId}</p>
-      <p className="mt-2 text-sm text-muted">{m('bankHint')}</p>
+      <p className="mt-2 text-sm text-muted">
+        {m(selected?.resultAction ? 'resultHint' : 'bankHint')}
+      </p>
       {!selected ? (
         <>
           {feed.status !== 'ready' ? (
@@ -168,6 +170,11 @@ function PayoutsDialog({ accountId, onClose, onChanged }) {
                   <p className="font-semibold">
                     {row.period} · {formatNumber(row.amountCoins)} {m('coins')}
                   </p>
+                  {row.lastResult && (
+                    <p className="mt-2 text-sm text-muted">
+                      {m('lastResult')}: {m(row.lastResult === 'Paid' ? 'paid' : 'failedResult')}
+                    </p>
+                  )}
                   <p className="mt-2 text-sm text-muted">
                     {m('originalBank')}:{' '}
                     {row.originalBank
@@ -197,12 +204,55 @@ function PayoutsDialog({ accountId, onClose, onChanged }) {
                   >
                     {m('correctBank')}
                   </Button>
+                  <div className="mt-3 flex flex-wrap gap-2">
+                    <Button
+                      size="sm"
+                      variant="secondary"
+                      disabled={!row.canCorrect}
+                      onClick={() => {
+                        setError('');
+                        setSelected({ ...row, resultAction: 'Failed' });
+                      }}
+                    >
+                      {m('recordFailed')}
+                    </Button>
+                    <Button
+                      size="sm"
+                      disabled={
+                        !row.canCorrect ||
+                        !['bankName', 'accountNumber', 'accountHolder'].every((key) =>
+                          (row.correctedBank ?? row.originalBank)?.[key]?.trim(),
+                        )
+                      }
+                      onClick={() => {
+                        setError('');
+                        setSelected({ ...row, resultAction: 'Paid' });
+                      }}
+                    >
+                      {m('recordPaid')}
+                    </Button>
+                  </div>
                 </div>
               ))}
               <p className="text-xs text-muted">{m('payoutLimit')}</p>
             </div>
           )}
         </>
+      ) : selected.resultAction ? (
+        <ResultForm
+          accountId={accountId}
+          row={selected}
+          onBack={() => setSelected(null)}
+          onBusy={(value) => {
+            lock.current = value;
+            setBusy(value);
+          }}
+          onChanged={() => {
+            setSelected(null);
+            feed.retry();
+            onChanged();
+          }}
+        />
       ) : (
         <form
           key={`${selected.id}:${selected.rowVersion}`}
@@ -300,6 +350,106 @@ function PayoutsDialog({ accountId, onClose, onChanged }) {
         </form>
       )}
     </Modal>
+  );
+}
+function ResultForm({ accountId, row, onBack, onBusy, onChanged }) {
+  const { t } = useLocale();
+  const m = (key) => t(`accountClosures.${key}`);
+  const [entryKey] = useState(() => crypto.randomUUID());
+  const [confirmed, setConfirmed] = useState(false),
+    [busy, setBusy] = useState(false),
+    [error, setError] = useState('');
+  const lock = useRef(false);
+  const paid = row.resultAction === 'Paid';
+  return (
+    <form
+      className="mt-4"
+      onSubmit={async (event) => {
+        event.preventDefault();
+        if (lock.current || error || (paid && !confirmed)) return;
+        const form = new FormData(event.currentTarget);
+        const reason = String(form.get('reason') ?? '').trim();
+        if (!reason) return;
+        lock.current = true;
+        setBusy(true);
+        onBusy(true);
+        try {
+          const result = await apiRequest(
+            `/admin/account-closures/${accountId}/payouts/${row.id}/results`,
+            {
+              method: 'POST',
+              body: {
+                result: row.resultAction,
+                resultEntryKey: entryKey,
+                expectedWithdrawalVersion: row.version,
+                expectedRowVersion: row.rowVersion,
+                reason,
+                note: String(form.get('note') ?? '').trim(),
+                transferReference: String(form.get('reference') ?? '').trim(),
+                ...(paid ? { confirmedExternalTransfer: true } : {}),
+              },
+            },
+          );
+          if (
+            typeof result?.entryId !== 'string' ||
+            !result.entryId ||
+            result.result !== row.resultAction ||
+            typeof result.financiallyClosed !== 'boolean' ||
+            typeof result.replayed !== 'boolean'
+          )
+            throw new Error(m('failed'));
+          onChanged();
+        } catch (failure) {
+          setError(failure.message || m('failed'));
+        } finally {
+          lock.current = false;
+          setBusy(false);
+          onBusy(false);
+        }
+      }}
+    >
+      <h3 className="font-semibold">{m(paid ? 'recordPaid' : 'recordFailed')}</h3>
+      {paid && (
+        <label className="mt-4 flex items-start gap-2 text-sm">
+          <input
+            type="checkbox"
+            checked={confirmed}
+            disabled={busy || !!error}
+            onChange={(event) => setConfirmed(event.target.checked)}
+          />
+          {m('paidConfirm')}
+        </label>
+      )}
+      {[
+        ['reason', 'resultReason', 1000],
+        ['reference', 'reference', 200],
+        ['note', 'note', 1000],
+      ].map(([name, label, max]) => (
+        <label key={name} className="mt-3 block text-sm font-medium">
+          {m(label)}
+          <Input
+            className="mt-2"
+            name={name}
+            maxLength={max}
+            required={name === 'reason'}
+            disabled={busy || !!error}
+          />
+        </label>
+      ))}
+      {error && (
+        <p role="alert" className="mt-3 text-sm text-rose-strong">
+          {error} {m('reloadHint')}
+        </p>
+      )}
+      <div className="mt-5 flex flex-wrap justify-end gap-3">
+        <Button variant="secondary" disabled={busy} onClick={onBack}>
+          {m('back')}
+        </Button>
+        <Button type="submit" disabled={busy || !!error || (paid && !confirmed)}>
+          {m(busy ? 'saving' : 'saveResult')}
+        </Button>
+      </div>
+    </form>
   );
 }
 function EvaluationDialog({ account, onClose, onChanged }) {

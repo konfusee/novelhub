@@ -2,9 +2,8 @@ import {
   Account,
   AuditEvent,
   LedgerEntry,
-  Notification,
-  NotificationOutbox,
   PayoutSheetRow,
+  PayoutResultEntry,
   RoleAssignment,
   Wallet,
   WithdrawalRequest,
@@ -12,6 +11,7 @@ import {
 import { withTransaction } from '../db/connection.js';
 import { HttpError } from '../middleware/errors.js';
 import { digest } from './submission-digests.js';
+import { enqueuePayoutNotification } from './payout-notifications.js';
 
 export function monthlyCutoff(now) {
   const local = new Date(now.getTime() + 7 * 3600000);
@@ -22,7 +22,7 @@ export function monthlyCutoff(now) {
     at: new Date(Date.UTC(year, month, 1) - 7 * 3600000),
   };
 }
-async function lockAdmin(admin, session) {
+export async function lockPayoutAdmin(admin, session) {
   const actor = await Account.findOneAndUpdate(
     {
       _id: admin._id,
@@ -44,7 +44,7 @@ async function lockAdmin(admin, session) {
 // One account per transaction keeps retries bounded and prevents a partly committed payout sheet.
 export async function evaluateFinalPayout(admin, accountId, input, now = new Date()) {
   return withTransaction(async (session) => {
-    if (admin) await lockAdmin(admin, session);
+    if (admin) await lockPayoutAdmin(admin, session);
     const account = await Account.findOneAndUpdate(
       {
         _id: accountId,
@@ -153,34 +153,17 @@ export async function evaluateFinalPayout(admin, accountId, input, now = new Dat
         { session },
       );
       const sourceEventKey = `withdrawal-created:${withdrawal._id}`;
-      const [notification] = await Notification.create(
-        [
-          {
-            recipientAccountId: account._id,
-            eventType: 'withdrawal.created',
-            sourceEventKey,
-            payload: {
-              title: 'Khoản chi trả cuối đã được lập',
-              body: `Khoản ${amount} xu đang chờ chi trả.`,
-              withdrawalRequestId: String(withdrawal._id),
-            },
-            deliveryState: 'pending',
-          },
-        ],
-        { session },
-      );
-      await NotificationOutbox.create(
-        [
-          {
-            sourceEventKey,
-            notificationId: notification._id,
-            channel: 'email',
-            status: 'pending',
-            attemptCount: 0,
-            nextAttemptAt: now,
-          },
-        ],
-        { session },
+      await enqueuePayoutNotification(
+        account,
+        {
+          key: sourceEventKey,
+          type: 'withdrawal.created',
+          title: 'Khoản chi trả cuối đã được lập',
+          body: `Khoản ${amount} xu đang chờ chi trả.`,
+          withdrawalId: withdrawal._id,
+        },
+        session,
+        now,
       );
     }
     account.finalPayoutEvaluatedAt = now;
@@ -276,11 +259,27 @@ export async function finalPayoutRows(accountId) {
   })
     .select('+bankDetailsSnapshot +correctedBankDetailsSnapshot')
     .lean();
+  const latest = await PayoutResultEntry.aggregate([
+    { $match: { withdrawalRequestId: { $in: withdrawals.map((w) => w._id) } } },
+    { $sort: { occurredAt: -1, _id: -1 } },
+    {
+      $group: {
+        _id: '$withdrawalRequestId',
+        result: { $first: '$result' },
+        occurredAt: { $first: '$occurredAt' },
+        hasPaid: { $max: { $cond: [{ $eq: ['$result', 'Paid'] }, 1, 0] } },
+      },
+    },
+  ]);
   return {
     items: withdrawals.map((withdrawal) => {
       const row = rows.find((r) => String(r.withdrawalRequestId) === String(withdrawal._id));
+      const last = latest.find((entry) => String(entry._id) === String(withdrawal._id));
       const consistent =
-        row && row.amountCoins === withdrawal.amountCoins && row.periodId === withdrawal.periodId;
+        row &&
+        row.amountCoins === withdrawal.amountCoins &&
+        row.periodId === withdrawal.periodId &&
+        !last?.hasPaid;
       return {
         id: String(withdrawal._id),
         version: withdrawal.version,
@@ -291,6 +290,7 @@ export async function finalPayoutRows(accountId) {
         originalBank: bankView(row?.bankDetailsSnapshot),
         correctedBank: bankView(row?.correctedBankDetailsSnapshot),
         correctionReason: row?.correctionReason ?? null,
+        lastResult: last?.result ?? null,
       };
     }),
     limit: 50,
@@ -298,7 +298,7 @@ export async function finalPayoutRows(accountId) {
 }
 export async function correctFinalPayoutBank(admin, accountId, withdrawalId, input) {
   return withTransaction(async (session) => {
-    await lockAdmin(admin, session);
+    await lockPayoutAdmin(admin, session);
     const account = await Account.findOneAndUpdate(
       { _id: accountId, status: 'anonymized', everAuthor: true, financiallyClosedAt: null },
       { $inc: { version: 1 } },
@@ -316,6 +316,17 @@ export async function correctFinalPayoutBank(admin, accountId, withdrawalId, inp
         409,
         'withdrawal_changed',
         'Khoản chi trả đã thay đổi hoặc đã trả. Hãy tải lại.',
+      );
+    if (
+      await PayoutResultEntry.exists({
+        withdrawalRequestId: withdrawal._id,
+        result: 'Paid',
+      }).session(session)
+    )
+      throw new HttpError(
+        409,
+        'payout_inconsistent',
+        'Khoản đã có bằng chứng Paid. Cần kiểm tra trạng thái trước khi sửa.',
       );
     const row = await PayoutSheetRow.findOne({
       withdrawalRequestId: withdrawal._id,

@@ -46,16 +46,18 @@ export function createSmtpEmailDelivery(config) {
   });
   return {
     verify: () => transport.verify(),
-    async send({ to, subject, actionUrl, otp, expiresInMinutes, purpose }) {
+    async send({ to, subject, actionUrl, otp, expiresInMinutes, purpose, text }) {
       const result = await transport.sendMail({
         from: config.from,
         to,
         subject,
-        ...(otp
-          ? renderOtpEmail({ otp, expiresInMinutes, purpose })
-          : {
-              text: `${subject}\n\nOpen this link to continue:\n${actionUrl}\n\nIf you did not request this email, you can ignore it.`,
-            }),
+        ...(typeof text === 'string'
+          ? { text }
+          : otp
+            ? renderOtpEmail({ otp, expiresInMinutes, purpose })
+            : {
+                text: `${subject}\n\nOpen this link to continue:\n${actionUrl}\n\nIf you did not request this email, you can ignore it.`,
+              }),
       });
       if (!result.accepted?.length || result.rejected?.length) {
         throw new Error('SMTP server did not accept the recipient');

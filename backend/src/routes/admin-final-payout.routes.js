@@ -2,6 +2,7 @@ import { Router } from 'express';
 import { z } from 'zod';
 import { requireAuth, requireRole } from '../middleware/auth.js';
 import { HttpError } from '../middleware/errors.js';
+import { recordPayoutResult } from '../modules/admin-payout-results.js';
 import {
   correctFinalPayoutBank,
   evaluateFinalPayout,
@@ -11,6 +12,51 @@ import {
 export function createAdminFinalPayoutRouter(config) {
   const router = Router();
   router.use('/admin/account-closures', requireAuth(config), requireRole('admin'));
+  router.post(
+    '/admin/account-closures/:id/payouts/:withdrawalId/results',
+    async (req, res, next) => {
+      try {
+        const fields = {
+          expectedWithdrawalVersion: z.number().int().min(0),
+          expectedRowVersion: z.number().int().min(0),
+          resultEntryKey: z.string().regex(/^[a-zA-Z0-9_-]{1,128}$/),
+          reason: z.string().trim().min(1).max(1000),
+          note: z.string().trim().max(1000).optional(),
+          transferReference: z.string().trim().max(200).optional(),
+        };
+        const parsed = z
+          .discriminatedUnion('result', [
+            z
+              .object({
+                ...fields,
+                result: z.literal('Paid'),
+                confirmedExternalTransfer: z.literal(true),
+              })
+              .strict(),
+            z.object({ ...fields, result: z.literal('Failed') }).strict(),
+          ])
+          .safeParse(req.body);
+        if (!parsed.success || !/^[a-f\d]{24}$/i.test(req.params.withdrawalId))
+          throw new HttpError(
+            400,
+            'validation_error',
+            'Kết quả, phiên bản, lý do hoặc xác nhận không hợp lệ.',
+          );
+        res
+          .set('Cache-Control', 'private, no-store')
+          .json(
+            await recordPayoutResult(
+              req.account,
+              req.params.id,
+              req.params.withdrawalId,
+              parsed.data,
+            ),
+          );
+      } catch (error) {
+        next(error);
+      }
+    },
+  );
   router.param('id', (req, res, next, id) =>
     /^[a-f\d]{24}$/i.test(id)
       ? next()

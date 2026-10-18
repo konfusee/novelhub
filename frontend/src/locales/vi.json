@@ -70,6 +70,17 @@
     "changeHint": "Đổi tên hoặc ngừng dùng không xóa thể loại khỏi truyện cũ. Nội dung chuẩn bị gửi hoặc phát hành cần thể loại đang hoạt động. Thứ tự nhỏ hơn được hiển thị trước."
   },
   "accountClosures": {
+    "lastResult": "Kết quả gần nhất",
+    "paid": "Đã chi trả",
+    "failedResult": "Chưa thành công, vẫn chờ chi trả",
+    "recordPaid": "Ghi nhận đã chi trả",
+    "recordFailed": "Ghi nhận chưa thành công",
+    "resultHint": "Ghi nhận kết quả chuyển tiền đã thực hiện bên ngoài hệ thống. Ví không bị trừ thêm. Kết quả chưa thành công vẫn giữ khoản chờ trả; email được xếp hàng riêng.",
+    "paidConfirm": "Tôi đã đối chiếu và xác nhận khoản chuyển tiền bên ngoài hệ thống đã thành công.",
+    "resultReason": "Lý do ghi nhận",
+    "reference": "Mã tham chiếu chuyển tiền (không bắt buộc)",
+    "note": "Ghi chú (không bắt buộc)",
+    "saveResult": "Lưu kết quả chi trả",
     "payouts": "Các khoản chờ chi trả",
     "bankHint": "Thông tin ngân hàng chỉ dành cho Admin. Chỉ nhập bản sửa theo thông tin người dùng cung cấp qua hỗ trợ; bản gốc được giữ nguyên. Sửa ngân hàng không ghi nhận đã trả tiền.",
     "noPayouts": "Không còn khoản chờ chi trả.",
@@ -111,7 +122,7 @@
     "failed": "Chưa xác nhận được kết quả đánh giá.",
     "reloadHint": "Đóng hộp thoại và tải lại trước khi thử tiếp.",
     "cancel": "Hủy",
-    "saving": "Đang đánh giá…"
+    "saving": "Đang lưu…"
   },
   "authorAccountStatus": {
     "close": "Đóng và ẩn danh tài khoản",

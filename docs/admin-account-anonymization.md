@@ -14,6 +14,6 @@ Admin chọn tài khoản trong danh bạ, bấm “Đóng và ẩn danh tài kh
 
 4 kiểm thử backend chuyên biệt và 29 kiểm thử hồi quy tài khoản/quyền/danh mục/cộng đồng/workspace đạt. 8 kiểm thử UI danh bạ/hộp thoại đạt, bao gồm bắt buộc xác nhận và lý do. Lint, Prettier, i18n và build đạt. Trình duyệt kiểm tra hiển thị cảnh báo và nút bị khóa khi chưa xác nhận, sáng/tối ở 390/768/1024/1536. Không thực hiện đóng tài khoản bằng trình duyệt; giao dịch đóng được kiểm thử trên MongoDB tạm.
 
-## Còn lại để hoàn tất A-UC-01
+## Quyết toán sau khi ẩn danh
 
-Luồng đánh giá cuối vào bảng chi trả và sửa thông tin ngân hàng qua Admin đã được bổ sung trong `admin-final-payout.md`. Còn lịch chạy tự động, ghi Paid/Failed, giao email outbox và đóng tài chính sau khi trả hết. Tài khoản còn nghĩa vụ được giữ ở trạng thái chưa đóng tài chính, không báo quyết toán thành công.
+Luồng đánh giá cuối tự động, hiệu chỉnh ngân hàng, ghi Paid/Failed, giao email qua outbox và đóng tài chính sau khi trả hết đã có trong `admin-final-payout.md`. Tài khoản còn nghĩa vụ tiếp tục giữ trạng thái chưa đóng tài chính; chỉ hoàn tất sau khi mọi điều kiện thực tế đạt. A-UC-01 hoàn thiện trong phạm vi ngoài media/AI.

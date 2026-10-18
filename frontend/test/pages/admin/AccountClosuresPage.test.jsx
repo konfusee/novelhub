@@ -30,6 +30,16 @@ function view({ item = account, fail = false } = {}) {
   api.mockImplementation(async (path, options) => {
     if (options?.method) {
       if (fail) throw new Error('Tài khoản đã thay đổi');
+      if (path.endsWith('/results')) {
+        const result = options.body.result;
+        row = result === 'Paid' ? null : { ...row, version: row.version + 1, lastResult: 'Failed' };
+        return {
+          entryId: 'entry-id',
+          result,
+          financiallyClosed: result === 'Paid',
+          replayed: false,
+        };
+      }
       if (path.endsWith('/bank')) {
         row = { ...row, version: 3, rowVersion: 4, correctedBank: options.body.bank };
         return { withdrawalId: row.id, withdrawalVersion: 3, rowVersion: 4 };
@@ -39,7 +49,7 @@ function view({ item = account, fail = false } = {}) {
         withdrawalId: 'withdrawal-id',
       };
     }
-    if (path.endsWith('/payouts')) return { items: [row], limit: 50 };
+    if (path.endsWith('/payouts')) return { items: row ? [row] : [], limit: 50 };
     return { items: [item], total: 1, pageSize: 20, period: '2026-10' };
   });
   render(
@@ -122,4 +132,45 @@ it('retains bank inputs when correction fails and requires a fresh baseline', as
   expect((await screen.findByRole('alert')).textContent).toContain('Tài khoản đã thay đổi');
   expect(screen.getByLabelText('Số tài khoản').value).toBe('987654');
   expect(screen.getByRole('button', { name: 'Lưu thông tin hiệu chỉnh' }).disabled).toBe(true);
+});
+it('requires external-transfer acknowledgement for Paid and sends a unique entry key with both versions', async () => {
+  view();
+  fireEvent.click(await screen.findByRole('button', { name: 'Các khoản chờ chi trả' }));
+  fireEvent.click(await screen.findByRole('button', { name: 'Ghi nhận đã chi trả' }));
+  fireEvent.change(screen.getByLabelText('Lý do ghi nhận'), {
+    target: { value: 'Đã đối chiếu ngân hàng' },
+  });
+  expect(screen.getByRole('button', { name: 'Lưu kết quả chi trả' }).disabled).toBe(true);
+  fireEvent.click(screen.getByRole('checkbox'));
+  fireEvent.click(screen.getByRole('button', { name: 'Lưu kết quả chi trả' }));
+  await waitFor(() =>
+    expect(api).toHaveBeenCalledWith(
+      '/admin/account-closures/account-id/payouts/withdrawal-id/results',
+      expect.objectContaining({
+        method: 'POST',
+        body: expect.objectContaining({
+          result: 'Paid',
+          confirmedExternalTransfer: true,
+          expectedWithdrawalVersion: 2,
+          expectedRowVersion: 3,
+          resultEntryKey: expect.any(String),
+          reason: 'Đã đối chiếu ngân hàng',
+        }),
+      }),
+    ),
+  );
+  expect(await screen.findByText('Không còn khoản chờ chi trả.')).toBeTruthy();
+});
+it('records Failed and keeps the pending row visible with its latest result', async () => {
+  view();
+  fireEvent.click(await screen.findByRole('button', { name: 'Các khoản chờ chi trả' }));
+  fireEvent.click(await screen.findByRole('button', { name: 'Ghi nhận chưa thành công' }));
+  fireEvent.change(screen.getByLabelText('Lý do ghi nhận'), {
+    target: { value: 'Chuyển tiền chưa thành công' },
+  });
+  fireEvent.click(screen.getByRole('button', { name: 'Lưu kết quả chi trả' }));
+  expect(
+    await screen.findByText(/Kết quả gần nhất: Chưa thành công, vẫn chờ chi trả/),
+  ).toBeTruthy();
+  expect(screen.getByRole('button', { name: 'Ghi nhận đã chi trả' })).toBeTruthy();
 });

@@ -7,6 +7,7 @@ import { connectDatabase, disconnectDatabase } from './db/connection.js';
 import './models/index.js';
 import { startChapterScheduler } from './modules/chapter-scheduler.js';
 import { startFinalPayoutScheduler } from './modules/final-payout-scheduler.js';
+import { startPayoutEmailWorker } from './modules/payout-email-worker.js';
 
 loadDotenv();
 const env = loadEnv();
@@ -38,6 +39,7 @@ const config = {
 };
 const stopScheduler = startChapterScheduler(config, logger);
 const stopFinalPayoutScheduler = startFinalPayoutScheduler(logger);
+const stopPayoutEmailWorker = startPayoutEmailWorker(emailDelivery, logger);
 const server = createApp(config).listen(env.PORT, () => {
   logger.info(`NovelHub API listening on port ${env.PORT}`);
 });
@@ -47,6 +49,7 @@ async function shutdown(signal) {
   server.close();
   await stopScheduler();
   await stopFinalPayoutScheduler();
+  await stopPayoutEmailWorker();
   await disconnectDatabase();
   process.exit(0);
 }

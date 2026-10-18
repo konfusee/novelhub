@@ -19,4 +19,4 @@ Mỗi ghi chạy trong transaction với khóa account/quyền Admin, version v�
 
 ## Phạm vi A-UC-01–05 còn lại
 
-A-UC-01 có danh bạ, khóa/mở và đóng/ẩn danh Author, còn quyết toán cuối và sửa ngân hàng. A-UC-02 đã có cấp, thu hồi và xin cấp lại. A-UC-03 có thêm ngoại lệ Admin hiệu chỉnh/ẩn/công khai lại truyện cựu Author, ghi tại `admin-former-author-stories.md`; phạm vi ngoài media/AI đã nghiệm thu. A-UC-04 có tra cứu audit thật. A-UC-05 có cấu hình/lịch sử policy, tỷ lệ và API đơn nạp lưu snapshot/thời hạn; còn nối UI/thanh toán, claim và settlement. Media và AI đều tạm hoãn, không làm giảm mức độ của phần ngoài media/AI.
+A-UC-01 có đủ vòng đời tài khoản Author và quyết toán cuối, ghi tại `admin-final-payout.md`. A-UC-02 đã có cấp, thu hồi và xin cấp lại. A-UC-03 có thêm ngoại lệ Admin hiệu chỉnh/ẩn/công khai lại truyện cựu Author, ghi tại `admin-former-author-stories.md`; phạm vi ngoài media/AI đã nghiệm thu. A-UC-04 có tra cứu audit thật. A-UC-05 có cấu hình/lịch sử policy, tỷ lệ và API đơn nạp lưu snapshot/thời hạn; còn nối UI/thanh toán, claim và settlement. Media và AI đều tạm hoãn, không làm giảm mức độ của phần ngoài media/AI.
