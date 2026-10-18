@@ -11,6 +11,7 @@ import {
   WithdrawalRequest,
 } from '../src/models/index.js';
 import { evaluateFinalPayout, monthlyCutoff } from '../src/modules/admin-final-payout.js';
+import { evaluateDueFinalPayouts } from '../src/modules/final-payout-scheduler.js';
 import { authenticatedAccount } from './fixtures/accounts.js';
 import { testConfig } from './config.js';
 import { useTestDatabase } from './db.js';
@@ -281,4 +282,28 @@ it('rejects stale bank corrections and rolls back corrections if the audit canno
   expect(
     (await write({ bank: { bankName: '', accountNumber: '', accountHolder: '' } })).status,
   ).toBe(400);
+});
+it('runs due final evaluations as system work and handles overlapping workers exactly once', async () => {
+  const f = await fixture();
+  const results = await Promise.all([evaluateDueFinalPayouts(), evaluateDueFinalPayouts()]);
+  expect(results.reduce((sum, r) => sum + r.evaluated, 0)).toBe(1);
+  expect(results.reduce((sum, r) => sum + r.failed, 0)).toBe(0);
+  expect(await WithdrawalRequest.countDocuments({ accountId: f.account._id })).toBe(1);
+  expect(await LedgerEntry.countDocuments({ walletId: f.wallet._id })).toBe(1);
+  const audit = await AuditEvent.findOne({ action: 'account.final-payout.evaluated' }).lean();
+  expect(audit.actorType).toBe('system');
+  expect(audit.actorId).toBeUndefined();
+  expect(await evaluateDueFinalPayouts()).toEqual({ evaluated: 0, changed: 0, failed: 0 });
+});
+it('keeps accounts closed in the current month out of automatic evaluation until the next Vietnam cutoff', async () => {
+  const f = await fixture();
+  const closedAt = new Date('2026-10-18T12:00:00Z');
+  await Account.updateOne({ _id: f.account._id }, { $set: { closedAt } });
+  expect((await evaluateDueFinalPayouts({ now: new Date('2026-10-31T16:59:59Z') })).evaluated).toBe(
+    0,
+  );
+  expect((await evaluateDueFinalPayouts({ now: new Date('2026-10-31T17:00:00Z') })).evaluated).toBe(
+    1,
+  );
+  expect((await WithdrawalRequest.findOne({ accountId: f.account._id })).periodId).toBe('2026-11');
 });

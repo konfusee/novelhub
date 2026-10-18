@@ -44,7 +44,7 @@ async function lockAdmin(admin, session) {
 // One account per transaction keeps retries bounded and prevents a partly committed payout sheet.
 export async function evaluateFinalPayout(admin, accountId, input, now = new Date()) {
   return withTransaction(async (session) => {
-    await lockAdmin(admin, session);
+    if (admin) await lockAdmin(admin, session);
     const account = await Account.findOneAndUpdate(
       {
         _id: accountId,
@@ -141,7 +141,7 @@ export async function evaluateFinalPayout(admin, accountId, input, now = new Dat
             amount,
             sourceType: 'WithdrawalRequest',
             sourceId: withdrawal._id,
-            actorAccountId: admin._id,
+            actorAccountId: admin?._id,
             idempotencyScope: {
               operation: 'final-deletion-evaluation',
               ownerId: account._id,
@@ -195,8 +195,8 @@ export async function evaluateFinalPayout(admin, accountId, input, now = new Dat
     await AuditEvent.create(
       [
         {
-          actorType: 'account',
-          actorId: admin._id,
+          actorType: admin ? 'account' : 'system',
+          actorId: admin?._id,
           action: 'account.final-payout.evaluated',
           targetType: 'Account',
           targetId: account._id,

@@ -20,4 +20,6 @@ Admin xem tối đa 50 khoản pending của một tài khoản đã ẩn danh v
 
 11 kiểm thử backend mới cùng 14 kiểm thử đóng tài khoản/lịch sử payout đạt; 5 kiểm thử trang mới và 4 kiểm thử danh bạ đạt. Lint, Prettier, i18n và build đạt. Trình duyệt dùng MongoDB tạm: ba trạng thái đúng dữ liệu, biểu mẫu sửa ngân hàng đủ trường, sáng/tối không tràn trang ở 390/768/1024/1536, không có lỗi console. Giao dịch tài chính được kiểm thử bằng dữ liệu giả trong test, không ghi nhận chuyển tiền qua trình duyệt.
 
-Chưa có lịch chạy tự động ngày 1, ghi kết quả Paid/Failed, giao email outbox hoặc đóng tài chính sau khi khoản pending cuối được ghi Paid. Vì vậy A-UC-01 vẫn Một phần. Không đánh dấu khoản chờ trả là hoàn tất hoặc báo email đã gửi.
+Đã nối scheduler vào backend: kiểm tra mỗi 60 giây và khi khởi động, chỉ lấy tài khoản đã đóng trước cutoff ngày 1 tại Việt Nam và chưa được đánh giá cuối. Backend chạy lại sau gián đoạn sẽ xử lý bù. Giao dịch hệ thống dùng audit `actorType: system`; không mượn phiên Admin. Hai worker hoặc thao tác Admin cùng xử lý một tài khoản vẫn chỉ ghi nợ/lập khoản một lần. Một tài khoản lỗi không chặn các tài khoản khác; shutdown chờ tác vụ đang chạy hoàn tất trước khi ngắt MongoDB. Hai kiểm thử scheduler bổ sung đạt, tổng 13 kiểm thử chuyên biệt.
+
+Chưa có ghi kết quả Paid/Failed, giao email outbox hoặc đóng tài chính sau khi khoản pending cuối được ghi Paid. Vì vậy A-UC-01 vẫn Một phần. Không đánh dấu khoản chờ trả là hoàn tất hoặc báo email đã gửi.
