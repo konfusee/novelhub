@@ -3,7 +3,7 @@ import { AdminLayout } from '../../layouts';
 import { useBackendDocument } from '../../api/useBackendResource';
 import { apiRequest } from '../../api/client';
 import { useLocale } from '../../context/LocaleContext';
-import { Button, ButtonLink, Card, EmptyState, Input, Modal } from '../../components/ui';
+import { Button, ButtonLink, Card, EmptyState, Input, Modal, Select } from '../../components/ui';
 const empty = { items: [], total: 0, pageSize: 20 };
 export function AccountClosuresPage({ monthly = false }) {
   const { t, formatNumber } = useLocale();
@@ -11,8 +11,13 @@ export function AccountClosuresPage({ monthly = false }) {
   const [page, setPage] = useState(1),
     [selected, setSelected] = useState(null);
   const [payoutAccount, setPayoutAccount] = useState(null);
+  const [period, setPeriod] = useState(''),
+    [status, setStatus] = useState('pending');
   const base = monthly ? '/admin/monthly-payouts' : '/admin/account-closures';
-  const feed = useBackendDocument(`${base}?page=${page}`, empty);
+  const feed = useBackendDocument(
+    `${base}?page=${page}${monthly && period ? `&period=${encodeURIComponent(period)}` : ''}${monthly && status !== 'pending' ? `&status=${status}` : ''}`,
+    empty,
+  );
   return (
     <AdminLayout>
       <div className="page-admin py-6">
@@ -33,6 +38,34 @@ export function AccountClosuresPage({ monthly = false }) {
             {m(monthly ? 'title' : 'monthlyTitle')}
           </ButtonLink>
         </div>
+        {monthly && (
+          <Card className="mt-6">
+            <form
+              className="flex flex-wrap items-end gap-3"
+              onSubmit={(event) => {
+                event.preventDefault();
+                const data = new FormData(event.currentTarget);
+                setPeriod(String(data.get('period') ?? ''));
+                setStatus(String(data.get('status') ?? 'pending'));
+                setPage(1);
+              }}
+            >
+              <label className="text-sm font-medium">
+                {m('filterPeriod')}
+                <Input className="mt-1" type="month" name="period" defaultValue={period} />
+              </label>
+              <label className="text-sm font-medium">
+                {m('filterStatus')}
+                <Select className="mt-1" name="status" defaultValue={status}>
+                  <option value="pending">{m('pendingOnly')}</option>
+                  <option value="paid">{m('paidOnly')}</option>
+                  <option value="all">{m('allStatuses')}</option>
+                </Select>
+              </label>
+              <Button type="submit">{m('applyFilters')}</Button>
+            </form>
+          </Card>
+        )}
         <Card className="mt-6 overflow-hidden p-0">
           {feed.status !== 'ready' ? (
             <p role={feed.status === 'loading' ? 'status' : 'alert'} className="p-5">
@@ -90,13 +123,13 @@ export function AccountClosuresPage({ monthly = false }) {
                                 {m('evaluate')}
                               </Button>
                             )}
-                            {account.pendingWithdrawals > 0 && (
+                            {(monthly || account.pendingWithdrawals > 0) && (
                               <Button
                                 size="sm"
                                 variant="ghost"
                                 onClick={() => setPayoutAccount(account.id)}
                               >
-                                {m('payouts')}
+                                {m(monthly ? 'monthlyHistory' : 'payouts')}
                               </Button>
                             )}
                           </td>
@@ -161,7 +194,11 @@ function PayoutsDialog({ accountId, onClose, onChanged, base = '/admin/account-c
     [error, setError] = useState('');
   const lock = useRef(false);
   return (
-    <Modal open title={m('payouts')} onClose={() => !lock.current && onClose()}>
+    <Modal
+      open
+      title={m(base === '/admin/monthly-payouts' ? 'monthlyHistory' : 'payouts')}
+      onClose={() => !lock.current && onClose()}
+    >
       <p className="text-sm break-all">{accountId}</p>
       <p className="mt-2 text-sm text-muted">
         {m(selected?.resultAction ? 'resultHint' : 'bankHint')}

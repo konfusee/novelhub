@@ -316,8 +316,15 @@
     "changeHint": "Đổi tên hoặc ngừng dùng không xóa thể loại khỏi truyện cũ. Nội dung chuẩn bị gửi hoặc phát hành cần thể loại đang hoạt động. Thứ tự nhỏ hơn được hiển thị trước."
   },
   "accountClosures": {
+    "monthlyHistory": "Lịch sử chi trả tài khoản",
+    "filterPeriod": "Tháng chi trả",
+    "filterStatus": "Trạng thái khoản chi trả",
+    "pendingOnly": "Đang chờ",
+    "paidOnly": "Đã trả",
+    "allStatuses": "Mọi trạng thái",
+    "applyFilters": "Lọc chi trả",
     "monthlyTitle": "Chi trả thu nhập tháng",
-    "monthlyDescription": "Các khoản chi trả tháng đã được lập tự động đang chờ xử lý. Chỉ ghi Paid sau khi đối chiếu chuyển tiền bên ngoài; Failed giữ khoản chi trả ở trạng thái chờ.",
+    "monthlyDescription": "Tra cứu khoản chi trả tự động theo tháng và trạng thái. Hồ sơ mỗi tài khoản hiển thị tối đa 50 khoản, ưu tiên khoản đang chờ. Khoản đã trả chỉ được xem. Chỉ ghi Paid sau khi đối chiếu chuyển tiền bên ngoài; Failed vẫn chờ xử lý.",
     "lastResult": "Kết quả gần nhất",
     "paid": "Đã chi trả",
     "failedResult": "Chưa thành công, vẫn chờ chi trả",

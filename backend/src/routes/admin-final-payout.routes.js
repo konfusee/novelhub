@@ -107,7 +107,20 @@ export function createAdminFinalPayoutRouter(config, regular = false) {
   router.get(base, async (req, res, next) => {
     try {
       const parsed = z
-        .object({ page: z.coerce.number().int().min(1).max(100000).default(1) })
+        .object({
+          page: z.coerce.number().int().min(1).max(100000).default(1),
+          ...(regular
+            ? {
+                status: z.enum(['pending', 'paid', 'all']).default('pending'),
+                period: z
+                  .union([
+                    z.literal('all'),
+                    z.string().regex(/^(?:19|20|21)\d{2}-(?:0[1-9]|1[0-2])$/),
+                  ])
+                  .default('all'),
+              }
+            : {}),
+        })
         .strict()
         .safeParse(req.query);
       if (!parsed.success) throw new HttpError(400, 'validation_error', 'Phân trang không hợp lệ.');
@@ -115,7 +128,7 @@ export function createAdminFinalPayoutRouter(config, regular = false) {
         .set('Cache-Control', 'private, no-store')
         .json(
           await (regular
-            ? regularPayoutQueue(parsed.data.page)
+            ? regularPayoutQueue(parsed.data.page, new Date(), parsed.data)
             : finalPayoutQueue(parsed.data.page)),
         );
     } catch (error) {

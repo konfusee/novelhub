@@ -192,6 +192,22 @@ it('lets Admin settle ordinary payouts after suspension without closing the acco
   expect(paid.body.financiallyClosed).toBe(false);
   expect((await post(input)).body.replayed).toBe(true);
   expect((await WithdrawalRequest.findById(row.id)).status).toBe('paid');
+  const paidQueue = await request(app)
+    .get('/api/admin/monthly-payouts?period=2026-10&status=paid')
+    .set('Cookie', admin.cookie);
+  expect(paidQueue.body.total).toBe(1);
+  expect(paidQueue.body.items[0].pendingWithdrawals).toBe(0);
+  expect(
+    (
+      await request(app)
+        .get('/api/admin/monthly-payouts?period=2026-09&status=paid')
+        .set('Cookie', admin.cookie)
+    ).body.total,
+  ).toBe(0);
+  const paidRows = await request(app).get(base).set('Cookie', admin.cookie);
+  expect(paidRows.body.items[0].id).toBe(row.id);
+  expect(paidRows.body.items[0].canCorrect).toBe(false);
+  expect(paidRows.body.items[0].lastResult).toBe('Paid');
   expect((await Account.findById(f.account._id)).financiallyClosedAt).toBeUndefined();
   expect(await LedgerEntry.countDocuments({ ledgerType: 'withdrawal-debit' })).toBe(1);
   expect((await request(app).get(base)).status).toBe(401);

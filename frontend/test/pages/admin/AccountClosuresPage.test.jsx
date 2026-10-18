@@ -66,7 +66,18 @@ it('shows the monthly queue without manual evaluation and sends results through 
   expect(await screen.findByRole('heading', { name: 'Chi trả thu nhập tháng' })).toBeTruthy();
   expect(screen.queryByRole('button', { name: 'Đánh giá cuối' })).toBeNull();
   expect(api).toHaveBeenCalledWith('/admin/monthly-payouts?page=1', expect.anything());
-  fireEvent.click(await screen.findByRole('button', { name: 'Các khoản chờ chi trả' }));
+  fireEvent.change(screen.getByLabelText('Tháng chi trả'), { target: { value: '2026-10' } });
+  fireEvent.click(screen.getByLabelText('Trạng thái khoản chi trả'));
+  fireEvent.click(screen.getByRole('option', { name: 'Đã trả' }));
+  fireEvent.click(screen.getByRole('button', { name: 'Lọc chi trả' }));
+  await waitFor(() =>
+    expect(
+      api.mock.calls.some(
+        ([path]) => path === '/admin/monthly-payouts?page=1&period=2026-10&status=paid',
+      ),
+    ).toBe(true),
+  );
+  fireEvent.click(await screen.findByRole('button', { name: 'Lịch sử chi trả tài khoản' }));
   await waitFor(() =>
     expect(
       api.mock.calls.some(([path]) => path === '/admin/monthly-payouts/account-id/payouts'),

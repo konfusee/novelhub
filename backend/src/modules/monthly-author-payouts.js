@@ -234,13 +234,19 @@ export async function evaluateDueMonthlyAuthorPayouts({ now = new Date(), logger
   return results;
 }
 
-export async function regularPayoutQueue(page, now = new Date()) {
+export async function regularPayoutQueue(page, now = new Date(), input = {}) {
   const pending = await WithdrawalRequest.aggregate([
-    { $match: { status: 'pending', forcedByDeletion: false } },
+    {
+      $match: {
+        ...(input.status === 'all' ? {} : { status: input.status ?? 'pending' }),
+        ...(input.period && input.period !== 'all' ? { periodId: input.period } : {}),
+        forcedByDeletion: false,
+      },
+    },
     {
       $group: {
         _id: '$accountId',
-        pendingWithdrawals: { $sum: 1 },
+        pendingWithdrawals: { $sum: { $cond: [{ $eq: ['$status', 'pending'] }, 1, 0] } },
         evaluatedAt: { $min: '$evaluatedAt' },
       },
     },

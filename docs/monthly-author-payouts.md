@@ -11,3 +11,9 @@ Regular author payouts now run in the existing server payout scheduler, after fi
 - The Author payout history reads the created records through the existing endpoint. Admins can open `/admin/monthly-payouts` from the finance report, inspect the private bank snapshot, correct bank details with a reason, and record Failed or externally confirmed Paid. Suspended accounts retain their pending payment rights. Paid never closes an active/suspended account or debits its wallet again. Final-account settlement remains separate.
 
 The scheduler does not backfill missed historical months. On recovery it evaluates the current month using its cutoff and policy. No backend schema changes.
+
+## Monthly sheet history
+
+Admin queue supports `period=all|YYYY-MM` and `status=pending|paid|all`, defaulting to pending/all periods. Grouped pending counts respect the selected filter. Account detail shows up to 50 ordinary payout records, prioritizing pending records and then recent history. Paid records remain read-only even if their stored evidence needs investigation; mutation endpoints still require a pending withdrawal and reject already-paid evidence. Deletion-final queues retain their existing pending-only behavior.
+
+Validation for history/filtering: 26 backend tests across monthly evaluation, final payout and result recording; eight Admin UI tests; targeted lint/format, locale validation and build passed.

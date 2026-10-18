@@ -256,10 +256,10 @@ export async function finalPayoutRows(accountId, regular = false) {
   if (!account) throw new HttpError(404, 'not_found', 'Không tìm thấy tài khoản đã đóng.');
   const withdrawals = await WithdrawalRequest.find({
     accountId,
-    status: 'pending',
+    status: regular ? { $in: ['pending', 'paid'] } : 'pending',
     ...(regular ? { forcedByDeletion: false } : {}),
   })
-    .sort({ evaluatedAt: 1, _id: 1 })
+    .sort(regular ? { status: -1, evaluatedAt: -1, _id: -1 } : { evaluatedAt: 1, _id: 1 })
     .limit(50)
     .lean();
   const rows = await PayoutSheetRow.find({
@@ -285,6 +285,7 @@ export async function finalPayoutRows(accountId, regular = false) {
       const last = latest.find((entry) => String(entry._id) === String(withdrawal._id));
       const consistent =
         row &&
+        withdrawal.status === 'pending' &&
         row.amountCoins === withdrawal.amountCoins &&
         row.periodId === withdrawal.periodId &&
         !last?.hasPaid;
