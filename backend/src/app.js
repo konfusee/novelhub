@@ -13,6 +13,7 @@ import { createCatalogRouter } from './routes/catalog.routes.js';
 import { createAuthorContentRouter } from './routes/author-content.routes.js';
 import { createAdminCategoryRouter } from './routes/admin-category.routes.js';
 import { createAdminTaxonomyRouter } from './routes/admin-taxonomy.routes.js';
+import { createAdminFormerAuthorRouter } from './routes/admin-former-author.routes.js';
 import { createWorkspaceDataRouter } from './routes/workspace-data.routes.js';
 import { createReaderDataRouter } from './routes/reader-data.routes.js';
 import { createAuthorSubmissionsRouter } from './routes/author-submissions.routes.js';
@@ -48,6 +49,7 @@ export function createApp(config) {
   app.use('/api', createAuthorMediaRouter(config));
   app.use('/api', createAdminCategoryRouter(config));
   app.use('/api', createAdminTaxonomyRouter(config));
+  app.use('/api', createAdminFormerAuthorRouter(config));
   app.use('/api', createWorkspaceDataRouter(config));
   app.use('/api', createReaderDataRouter(config));
   app.use(notFound);

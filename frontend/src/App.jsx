@@ -150,6 +150,11 @@ const PlatformSettingsPage = lazy(() =>
 const AuditEventsPage = lazy(() =>
   import('./pages/admin/AuditEventsPage').then((m) => ({ default: m.AuditEventsPage })),
 );
+const FormerAuthorStoriesPage = lazy(() =>
+  import('./pages/admin/FormerAuthorStoriesPage').then((m) => ({
+    default: m.FormerAuthorStoriesPage,
+  })),
+);
 const AuthorApplyPage = lazy(() =>
   import('./pages/author/AuthorApplyPage').then((m) => ({ default: m.AuthorApplyPage })),
 );
@@ -557,18 +562,7 @@ function AppRoutes() {
               />,
             )}
           />
-          <Route
-            path="/admin/content"
-            element={role(
-              'admin',
-              <RoleUtilityPage
-                role="admin"
-                eyebrow="Quản trị nội dung"
-                title="Cấu hình nội dung"
-                description="Quản lý quy tắc xuất bản, siêu dữ liệu khám phá, xếp hạng nội dung và mặc định toàn nền tảng."
-              />,
-            )}
-          />
+          <Route path="/admin/content" element={role('admin', <FormerAuthorStoriesPage />)} />
           <Route
             path="/admin/services"
             element={role(
