@@ -113,8 +113,8 @@ it('links financial notifications to the bank form and payout history without ex
   );
   const response = await request(app).get('/api/reader/notifications').set('Cookie', author.cookie);
   expect(response.body.items.map((row) => row.href).sort()).toEqual([
-    '/author/earnings',
-    '/author/earnings#payout-bank',
+    '/reader/author-payouts',
+    '/reader/author-payouts#payout-bank',
   ]);
   expect(JSON.stringify(response.body)).not.toContain('secret@example.test');
   expect(JSON.stringify(response.body)).not.toContain('invalid.example');

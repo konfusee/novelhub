@@ -386,6 +386,10 @@
     "saved": "Đã lưu thông tin ngân hàng cho kỳ chi trả tiếp theo.",
     "saveFailed": "Không lưu được thông tin ngân hàng."
   },
+  "authorFinanceAccess": {
+    "title": "Chi trả thu nhập tác giả",
+    "hint": "Theo dõi khoản chi trả và cập nhật ngân hàng cho kỳ sau. Tài khoản đã từng là tác giả vẫn được tra cứu thu nhập ngay cả khi vai trò tác giả đã bị thu hồi."
+  },
   "authorAccountStatus": {
     "close": "Đóng và ẩn danh tài khoản",
     "closeHint": "Thao tác không thể khôi phục. Hồ sơ được ẩn danh, phiên đăng nhập hết hiệu lực, truyện bị ngừng công khai và nội dung chưa phát hành bị hủy. Xu độc giả còn lại bị mất, không hoàn tiền. Thu nhập chưa chi trả, lịch sử giao dịch và thông tin ngân hàng được giữ để quyết toán; thao tác này không xác nhận đã chuyển tiền.",

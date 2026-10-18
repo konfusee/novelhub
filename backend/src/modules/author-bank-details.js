@@ -1,7 +1,6 @@
 import { Account, AuditEvent } from '../models/index.js';
 import { withTransaction } from '../db/connection.js';
 import { HttpError } from '../middleware/errors.js';
-import { lockAuthor } from './author-ownership.js';
 import { digest } from './submission-digests.js';
 
 const view = (account) => ({
@@ -21,7 +20,19 @@ export async function authorBankDetails(accountId) {
 }
 export async function saveAuthorBankDetails(actor, input) {
   return withTransaction(async (session) => {
-    await lockAuthor(actor, session);
+    const locked = await Account.findOneAndUpdate(
+      {
+        _id: actor._id,
+        status: 'active',
+        everAuthor: true,
+        authorizationEpoch: actor.authorizationEpoch,
+        credentialVersion: actor.credentialVersion,
+      },
+      { $inc: { version: 1 } },
+      { session },
+    );
+    if (!locked)
+      throw new HttpError(403, 'forbidden', 'Quyền cập nhật thông tin chi trả không còn hiệu lực.');
     const account = await Account.findOne({ _id: actor._id, version: input.expectedVersion + 1 })
       .select('+bankDetails')
       .session(session);

@@ -72,9 +72,9 @@ function notificationView(item) {
   };
   const href =
     item.eventType === 'withdrawal.bank-required'
-      ? '/author/earnings#payout-bank'
+      ? '/reader/author-payouts#payout-bank'
       : ['withdrawal.created', 'withdrawal.paid', 'withdrawal.failed'].includes(item.eventType)
-        ? '/author/earnings'
+        ? '/reader/author-payouts'
         : item.eventType === 'publication.decided'
           ? '/author/submissions'
           : decided
@@ -106,7 +106,7 @@ function notificationView(item) {
       ? 'Xem kết quả'
       : item.eventType === 'withdrawal.bank-required'
         ? 'Bổ sung ngân hàng'
-        : href.startsWith('/author/earnings')
+        : href.startsWith('/reader/author-payouts')
           ? 'Xem chi trả'
           : href.startsWith('/stories/')
             ? 'Xem truyện'

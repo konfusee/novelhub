@@ -153,6 +153,9 @@ const AuditEventsPage = lazy(() =>
 const AccountClosuresPage = lazy(() =>
   import('./pages/admin/AccountClosuresPage').then((m) => ({ default: m.AccountClosuresPage })),
 );
+const AuthorPayoutsPage = lazy(() =>
+  import('./pages/reader/AuthorPayoutsPage').then((m) => ({ default: m.AuthorPayoutsPage })),
+);
 const BankReceiptsPage = lazy(() =>
   import('./pages/admin/BankReceiptsPage').then((m) => ({ default: m.BankReceiptsPage })),
 );
@@ -353,6 +356,7 @@ function AppRoutes() {
             path="/reader/account"
             element={role('reader', <Navigate to="/reader/profile?tab=account" replace />)}
           />
+          <Route path="/reader/author-payouts" element={role('reader', <AuthorPayoutsPage />)} />
           <Route
             path="/reader/support"
             element={role(

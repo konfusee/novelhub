@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useBackendResource } from '../../api/useBackendResource';
 import { apiRequest } from '../../api/client';
 import { useLocale } from '../../context/LocaleContext';
@@ -15,10 +15,14 @@ const validate = (value) => {
     throw new Error('Invalid bank details response');
   return value;
 };
-export function AuthorBankDetails() {
+export function AuthorBankDetails({ apiBase = '/author' }) {
   const { t } = useLocale(),
     m = (key) => t(`authorBank.${key}`);
-  const feed = useBackendResource('/author/bank-details', empty, validate);
+  const feed = useBackendResource(`${apiBase}/bank-details`, empty, validate);
+  useEffect(() => {
+    if (feed.status === 'ready' && window.location.hash === '#payout-bank')
+      document.getElementById('payout-bank')?.scrollIntoView?.({ block: 'start' });
+  }, [feed.status]);
   const [busy, setBusy] = useState(false),
     [error, setError] = useState(''),
     [saved, setSaved] = useState(false);
@@ -54,7 +58,7 @@ export function AuthorBankDetails() {
             setSaved(false);
             try {
               const result = validate(
-                await apiRequest('/author/bank-details', {
+                await apiRequest(`${apiBase}/bank-details`, {
                   method: 'PUT',
                   body: { expectedVersion: feed.data.version, bank },
                 }),

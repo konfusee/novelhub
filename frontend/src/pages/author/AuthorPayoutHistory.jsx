@@ -32,7 +32,7 @@ function State({ value }) {
     </Badge>
   );
 }
-export function AuthorPayoutHistory() {
+export function AuthorPayoutHistory({ apiBase = '/author' }) {
   const { t, formatNumber } = useLocale();
   const [period, setPeriod] = useState('');
   const [cursors, setCursors] = useState(['']);
@@ -44,7 +44,7 @@ export function AuthorPayoutHistory() {
   const query = new URLSearchParams({ limit: '20' });
   if (period) query.set('period', period);
   if (cursors.at(-1)) query.set('cursor', cursors.at(-1));
-  const history = useBackendResource(`/author/payouts?${query}`, empty, readHistory);
+  const history = useBackendResource(`${apiBase}/payouts?${query}`, empty, readHistory);
   const loading = history.status === 'loading';
   return (
     <Card className="overflow-hidden p-0">
@@ -199,13 +199,15 @@ export function AuthorPayoutHistory() {
           </Button>
         </div>
       </div>
-      {selected && <PayoutDetail id={selected} onClose={() => setSelected(null)} />}
+      {selected && (
+        <PayoutDetail apiBase={apiBase} id={selected} onClose={() => setSelected(null)} />
+      )}
     </Card>
   );
 }
-function PayoutDetail({ id, onClose }) {
+function PayoutDetail({ id, onClose, apiBase }) {
   const { t, formatNumber } = useLocale();
-  const detail = useBackendDocument(`/author/payouts/${id}`, emptyDetail);
+  const detail = useBackendDocument(`${apiBase}/payouts/${id}`, emptyDetail);
   const item = detail.data.item;
   const ready = detail.status === 'ready' && item?.id === id;
   const slip =
