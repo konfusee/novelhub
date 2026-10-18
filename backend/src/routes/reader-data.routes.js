@@ -71,15 +71,19 @@ function notificationView(item) {
     system: 'Hệ thống',
   };
   const href =
-    item.eventType === 'publication.decided'
-      ? '/author/submissions'
-      : decided
-        ? '/author/apply'
-        : /^[a-f\d]{24}$/i.test(item.payload?.storyId ?? '')
-          ? `/stories/${item.payload.storyId}`
-          : type === 'system'
-            ? '/reader/wallet'
-            : '/reader/library';
+    item.eventType === 'withdrawal.bank-required'
+      ? '/author/earnings#payout-bank'
+      : ['withdrawal.created', 'withdrawal.paid', 'withdrawal.failed'].includes(item.eventType)
+        ? '/author/earnings'
+        : item.eventType === 'publication.decided'
+          ? '/author/submissions'
+          : decided
+            ? '/author/apply'
+            : /^[a-f\d]{24}$/i.test(item.payload?.storyId ?? '')
+              ? `/stories/${item.payload.storyId}`
+              : type === 'system'
+                ? '/reader/wallet'
+                : '/reader/library';
   const title = decided
     ? item.payload?.status === 'approved'
       ? 'Đơn đăng ký tác giả đã được duyệt'
@@ -100,11 +104,15 @@ function notificationView(item) {
     href,
     action: decided
       ? 'Xem kết quả'
-      : href.startsWith('/stories/')
-        ? 'Xem truyện'
-        : type === 'system'
-          ? 'Xem ví'
-          : 'Xem thư viện',
+      : item.eventType === 'withdrawal.bank-required'
+        ? 'Bổ sung ngân hàng'
+        : href.startsWith('/author/earnings')
+          ? 'Xem chi trả'
+          : href.startsWith('/stories/')
+            ? 'Xem truyện'
+            : type === 'system'
+              ? 'Xem ví'
+              : 'Xem thư viện',
   };
 }
 export function createReaderDataRouter(config) {

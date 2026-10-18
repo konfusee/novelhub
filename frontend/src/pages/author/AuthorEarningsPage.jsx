@@ -25,6 +25,7 @@ import {
 import { useLocale } from '../../context/LocaleContext';
 import { AuthorTransactionHistory } from './AuthorTransactionHistory';
 import { AuthorPayoutHistory } from './AuthorPayoutHistory';
+import { AuthorBankDetails } from './AuthorBankDetails';
 
 const emptyEarnings = { balance: '0', allocationCredits: 0, bars: [], labels: [], stories: [] };
 /* Fixed, varied bar heights (%) for the revenue chart skeleton, one per weekday. */
@@ -258,6 +259,7 @@ export function AuthorEarningsPage() {
           </div>
 
           <aside className="min-w-0 space-y-6">
+            <AuthorBankDetails />
             <Card>
               <h2 className="text-h3">{t('earningsData.agreementTitle')}</h2>
               {loading ? (

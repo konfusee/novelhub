@@ -9,6 +9,7 @@ import { authorStoryWorkspace } from '../modules/author-story-workspace.js';
 import { authorDrafts } from '../modules/author-drafts.js';
 import { authorAnalytics } from '../modules/author-analytics.js';
 import { authorEarnings } from '../modules/author-earnings.js';
+import { authorBankDetails, saveAuthorBankDetails } from '../modules/author-bank-details.js';
 import { prepareEarlyAccess, changeEarlyAccess } from '../modules/author-early-access.js';
 import { authorTransactions, authorTransactionQuery } from '../modules/author-transactions.js';
 import {
@@ -72,6 +73,57 @@ function view(story) {
 
 export function createAuthorContentRouter(config) {
   const router = Router();
+  router.get(
+    '/author/bank-details',
+    requireAuth(config),
+    requireRole('author'),
+    async (req, res, next) => {
+      try {
+        res
+          .set('Cache-Control', 'private, no-store')
+          .json(await authorBankDetails(req.account._id));
+      } catch (error) {
+        next(error);
+      }
+    },
+  );
+  router.put(
+    '/author/bank-details',
+    requireAuth(config),
+    requireRole('author'),
+    async (req, res, next) => {
+      try {
+        const text = z
+          .string()
+          .trim()
+          .min(1)
+          .max(200)
+          .regex(/^[^\p{Cc}\p{Cf}]+$/u);
+        const parsed = z
+          .object({
+            expectedVersion: z
+              .number()
+              .int()
+              .min(0)
+              .max(Number.MAX_SAFE_INTEGER - 2),
+            bank: z.object({ bankName: text, accountNumber: text, accountHolder: text }).strict(),
+          })
+          .strict()
+          .safeParse(req.body);
+        if (!parsed.success)
+          throw new HttpError(
+            400,
+            'validation_error',
+            'Cần nhập đầy đủ thông tin ngân hàng hợp lệ.',
+          );
+        res
+          .set('Cache-Control', 'private, no-store')
+          .json(await saveAuthorBankDetails(req.account, parsed.data));
+      } catch (error) {
+        next(error);
+      }
+    },
+  );
   router.get(
     '/author/dashboard',
     requireAuth(config),
