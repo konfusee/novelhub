@@ -24,6 +24,7 @@ import { createAdminFinanceReportRouter } from './routes/admin-finance-report.ro
 import { createAdminFinalPayoutRouter } from './routes/admin-final-payout.routes.js';
 import { createReaderAuthorFinanceRouter } from './routes/reader-author-finance.routes.js';
 import { createAdminAuthorStatisticsRouter } from './routes/admin-author-statistics.routes.js';
+import { createAdminPayoutOperationsRouter } from './routes/admin-payout-operations.routes.js';
 import { createWorkspaceDataRouter } from './routes/workspace-data.routes.js';
 import { createReaderDataRouter } from './routes/reader-data.routes.js';
 import { createAuthorSubmissionsRouter } from './routes/author-submissions.routes.js';
@@ -70,6 +71,7 @@ export function createApp(config) {
   app.use('/api', createAdminFinalPayoutRouter(config));
   app.use('/api', createReaderAuthorFinanceRouter(config));
   app.use('/api', createAdminAuthorStatisticsRouter(config));
+  app.use('/api', createAdminPayoutOperationsRouter(config));
   app.use('/api', createAdminFinalPayoutRouter(config, true));
   app.use('/api', createWorkspaceDataRouter(config));
   app.use('/api', createReaderDataRouter(config));
