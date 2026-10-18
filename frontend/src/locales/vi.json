@@ -1,4 +1,25 @@
 {
+  "reviewHistory": {
+    "title": "Lịch sử quyết định của tôi",
+    "description": "Các quyết định kiểm duyệt bạn đã lưu. Nội dung phản hồi và phiên bản được giữ trong lịch sử bất biến.",
+    "reload": "Tải lại",
+    "all": "Tất cả",
+    "approved": "Đã phê duyệt",
+    "rejected": "Từ chối",
+    "revision-requested": "Yêu cầu chỉnh sửa",
+    "loading": "Đang tải lịch sử…",
+    "error": "Không tải được lịch sử. Vui lòng tải lại.",
+    "empty": "Chưa có quyết định trong nhóm này.",
+    "time": "Thời gian",
+    "submission": "Hồ sơ",
+    "revision": "Phiên bản",
+    "result": "Kết quả",
+    "reason": "Lý do và phản hồi",
+    "action": "Thao tác",
+    "open": "Xem gói duyệt",
+    "previous": "Trang trước",
+    "next": "Trang sau"
+  },
   "manualReview": {
     "title": "Kiểm duyệt nội dung thủ công",
     "description": "Đọc đúng gói nội dung và khai báo quyền đã gửi. Mỗi quyết định được lưu lịch sử, gắn với claim còn hạn và đúng phiên bản.",

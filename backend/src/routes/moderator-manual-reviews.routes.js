@@ -2,7 +2,7 @@ import { Router } from 'express';
 import { z } from 'zod';
 import { requireAuth, requireRole } from '../middleware/auth.js';
 import { HttpError } from '../middleware/errors.js';
-import { PublicationSubmission } from '../models/index.js';
+import { ModerationHistory, PublicationSubmission } from '../models/index.js';
 import {
   admitManualReview,
   decideManualReview,
@@ -49,6 +49,41 @@ export function createModeratorManualReviewsRouter(config) {
           submittedAt: s.submittedAt,
         })),
         hasMore: items.length > 20,
+      });
+    } catch (error) {
+      next(error);
+    }
+  });
+  router.get('/moderator/manual-reviews/history', async (req, res, next) => {
+    try {
+      const parsed = z
+        .object({
+          page: z.coerce.number().int().min(1).max(100000).default(1),
+          outcome: z.enum(['all', 'approved', 'rejected', 'revision-requested']).default('all'),
+        })
+        .strict()
+        .safeParse(req.query);
+      if (!parsed.success)
+        throw new HttpError(400, 'validation_error', 'Bộ lọc lịch sử không hợp lệ.');
+      const rows = await ModerationHistory.find({
+        actorAccountId: req.account._id,
+        action: 'manual-review.decided',
+        ...(parsed.data.outcome === 'all' ? {} : { outcome: parsed.data.outcome }),
+      })
+        .sort({ occurredAt: -1, _id: -1 })
+        .skip((parsed.data.page - 1) * 20)
+        .limit(21)
+        .lean();
+      res.json({
+        items: rows.slice(0, 20).map((h) => ({
+          id: String(h._id),
+          submissionId: String(h.submissionId),
+          revisionId: String(h.revisionId),
+          outcome: h.outcome,
+          reason: h.reason ?? '',
+          occurredAt: h.occurredAt,
+        })),
+        hasMore: rows.length > 20,
       });
     } catch (error) {
       next(error);

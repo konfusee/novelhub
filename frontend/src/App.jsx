@@ -162,6 +162,9 @@ const ReviewClaimsPage = lazy(() =>
 const ManualReviewPage = lazy(() =>
   import('./pages/moderator/ManualReviewPage').then((m) => ({ default: m.ManualReviewPage })),
 );
+const ReviewHistoryPage = lazy(() =>
+  import('./pages/moderator/ReviewHistoryPage').then((m) => ({ default: m.ReviewHistoryPage })),
+);
 const FormerAuthorStoriesPage = lazy(() =>
   import('./pages/admin/FormerAuthorStoriesPage').then((m) => ({
     default: m.FormerAuthorStoriesPage,
@@ -466,18 +469,7 @@ function AppRoutes() {
               />,
             )}
           />
-          <Route
-            path="/moderator/decisions"
-            element={role(
-              'moderator',
-              <RoleUtilityPage
-                role="moderator"
-                eyebrow="Lịch sử kiểm duyệt"
-                title="Quyết định"
-                description="Xem quyết định kiểm duyệt đã hoàn tất, lý do, chính sách tham chiếu và trạng thái khiếu nại."
-              />,
-            )}
-          />
+          <Route path="/moderator/decisions" element={role('moderator', <ReviewHistoryPage />)} />
           <Route
             path="/moderator/escalations"
             element={role(

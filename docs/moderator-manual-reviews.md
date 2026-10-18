@@ -19,6 +19,8 @@ Release vẫn chấp nhận gate AI terminal hiện có. Với AI pending, chỉ
 
 Giao diện sử dụng shell/primitives/tokens hiện có. Các đường dẫn `/moderator/submissions`, `/moderator/reviews` và chi tiết submission trỏ vào luồng thật (tiếp nhận, claim đang giữ, gói duyệt) để không báo kết quả mô phỏng. Màn tham khảo cũ chỉ còn trong UI preview; luồng media không thay đổi. Lỗi ghi giữ lý do và yêu cầu tải lại baseline; không báo thành công trước phản hồi hợp lệ. Lịch sử terminal đọc được khi Author đã tạo bản sửa mới. Browser visual/responsive còn cần nghiệm thu; hiện có component tests/build.
 
+`/moderator/decisions` đọc lịch sử quyết định của chính Moderator từ `/api/moderator/manual-reviews/history`. Có lọc approved/rejected/revision-requested, phân trang 20 dòng, thời gian, feedback gốc và liên kết đúng submission. API private/no-store, không trả lịch sử của Moderator khác, không có sửa/xóa hoặc chạy lại phân tích. Bản ghi lịch sử vẫn còn khi gói nguồn không còn đủ điều kiện mở (ví dụ Author đã đóng tài khoản); lỗi truy cập gói không biến lịch sử thành dữ liệu mô phỏng.
+
 ## Kiểm tra
 
 MongoDB replica set tạm kiểm chứng gửi → tiếp nhận → claim → approve → Author release, revision feedback → draft mới, tranh quyết định, expired/stale versions, quyền/Origin/xác nhận và audit rollback. Các test phát hành truyện/chương hiện có chạy hồi quy. Frontend kiểm tra payload đầy đủ các version, xác nhận thủ công, đọc đúng gói, chuyển trạng thái server và lỗi claim. Không gửi ngân hàng/email hay gọi AI thật.

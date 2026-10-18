@@ -108,6 +108,39 @@ it('admits, claims and approves a real submitted package without faking AI, then
     }),
   ).toBe(1);
   expect(await Notification.countDocuments({ eventType: 'publication.decided' })).toBe(1);
+  const history = await request(app)
+    .get('/api/moderator/manual-reviews/history')
+    .set('Cookie', f.mod.cookie);
+  expect(history.status).toBe(200);
+  expect(history.headers['cache-control']).toBe('private, no-store');
+  expect(history.body.items[0]).toMatchObject({
+    submissionId: f.id,
+    revisionId: input.revisionId,
+    outcome: 'approved',
+    reason: input.reason,
+  });
+  const otherModerator = await authenticatedAccount('moderator');
+  expect(
+    (
+      await request(app)
+        .get('/api/moderator/manual-reviews/history')
+        .set('Cookie', otherModerator.cookie)
+    ).body.items,
+  ).toEqual([]);
+  expect(
+    (
+      await request(app)
+        .get('/api/moderator/manual-reviews/history?outcome=rejected')
+        .set('Cookie', f.mod.cookie)
+    ).body.items,
+  ).toEqual([]);
+  expect(
+    (
+      await request(app)
+        .get('/api/moderator/manual-reviews/history?outcome=unknown')
+        .set('Cookie', f.mod.cookie)
+    ).status,
+  ).toBe(400);
   const releasePath = `/api/author/stories/${f.storyId}/release`;
   const ready = (await request(app).get(releasePath).set('Cookie', f.author.cookie)).body;
   expect(ready.ready).toBe(true);
