@@ -42,6 +42,11 @@ const envSchema = z.object({
       'MEDIA_STORAGE_DIR must be an absolute directory path',
     )
     .optional(),
+  SEPAY_WEBHOOK_API_KEY: z.string().min(32).max(256).optional(),
+  SEPAY_ACCOUNT_NUMBER: z
+    .string()
+    .regex(/^[0-9]{6,30}$/)
+    .optional(),
   HTTP_JSON_LIMIT_KB: z.coerce.number().int().positive().max(1000000),
   DB_SERVER_SELECTION_TIMEOUT_MS: z.coerce.number().int().min(1).max(120000),
   SMTP_CONNECTION_TIMEOUT_MS: z.coerce.number().int().min(1).max(120000),
@@ -86,6 +91,8 @@ export function loadEnv(source = process.env) {
     'SMTP_PASSWORD',
     'SMTP_FROM',
     'MEDIA_STORAGE_DIR',
+    'SEPAY_WEBHOOK_API_KEY',
+    'SEPAY_ACCOUNT_NUMBER',
   ]) {
     if (normalized[key] === '') delete normalized[key];
   }
@@ -95,6 +102,8 @@ export function loadEnv(source = process.env) {
     throw new Error(`Invalid environment configuration: ${issues}`);
   }
   const env = result.data;
+  if (Boolean(env.SEPAY_WEBHOOK_API_KEY) !== Boolean(env.SEPAY_ACCOUNT_NUMBER))
+    throw new Error('Invalid environment configuration: SePay requires API key and account number');
   const smtpEnabled = ['SMTP_HOST', 'SMTP_USER', 'SMTP_PASSWORD', 'SMTP_FROM'].some(
     (key) => env[key],
   );
@@ -125,6 +134,9 @@ export function toAppConfig(env) {
     passwordResetTtlMinutes: env.PASSWORD_RESET_TTL_MINUTES,
     httpJsonLimitKb: env.HTTP_JSON_LIMIT_KB,
     mediaStorageDir: env.MEDIA_STORAGE_DIR,
+    sepay: env.SEPAY_WEBHOOK_API_KEY
+      ? { apiKey: env.SEPAY_WEBHOOK_API_KEY, accountNumber: env.SEPAY_ACCOUNT_NUMBER }
+      : undefined,
     securityConfig: {
       emailSendAttempts: env.EMAIL_SEND_ATTEMPTS,
       windowMs: env.AUTH_RATE_LIMIT_WINDOW_MINUTES * 60000,
