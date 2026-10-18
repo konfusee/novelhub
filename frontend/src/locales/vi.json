@@ -1838,7 +1838,7 @@
   },
   "chapterRelease": {
     "title": "Phát hành chương",
-    "hint": "Công khai đúng nội dung và ảnh trong gói chương đã được duyệt để độc giả đọc miễn phí. Các chương trước phải đã từng phát hành. Chương đọc sớm cần luồng phát hành riêng.",
+    "hint": "Phát hành đúng gói chương đã được duyệt. Các chương trước phải đã từng phát hành. Với chương đọc sớm, giá được giữ cố định và thời hạn bắt đầu từ lần phát hành đầu tiên; hết hạn, độc giả đọc miễn phí.",
     "success": "Đã phát hành chương. Độc giả có thể đọc phiên bản đã duyệt.",
     "checks": {
       "approval": "Gói chương và quyền đã được duyệt hợp lệ",
@@ -1846,7 +1846,7 @@
       "evidence": "Bằng chứng đã kết thúc xử lý để con người xem xét",
       "parent": "Truyện cha đã công khai với gói và quyền hợp lệ",
       "order": "Các chương đứng trước đã từng phát hành",
-      "free": "Chương miễn phí, không thuộc đọc sớm",
+      "free": "Chương miễn phí hoặc có cấu hình đọc sớm hợp lệ",
       "format": "Định dạng nội dung được trình đọc hỗ trợ",
       "media": "Ảnh còn đầy đủ và khớp bản đã duyệt",
       "editable": "Truyện không bị khóa và có phiên bản mới được duyệt"
