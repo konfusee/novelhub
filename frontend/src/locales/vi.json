@@ -397,6 +397,28 @@
     "title": "Chi trả thu nhập tác giả",
     "hint": "Theo dõi khoản chi trả và cập nhật ngân hàng cho kỳ sau. Tài khoản đã từng là tác giả vẫn được tra cứu thu nhập ngay cả khi vai trò tác giả đã bị thu hồi."
   },
+  "dashboardData": {
+    "safeguardsUnavailable": "Chưa có API điều khiển bảo trì hoặc khóa chỉ đọc. Các công tắc được vô hiệu hóa để tránh báo thành công giả.",
+    "activeAccounts": "Tài khoản đang hoạt động",
+    "activeAuthors": "Tác giả đang hoạt động",
+    "publishedStories": "Truyện đang công khai",
+    "pendingApplications": "Đơn Author đang chờ",
+    "reviewQueue": "Gói đang chờ kiểm duyệt",
+    "pendingPayouts": "Khoản chi trả đang chờ",
+    "current": "Số liệu hiện tại",
+    "source": "Đọc từ MongoDB; chưa cấu hình chỉ tiêu để so sánh.",
+    "system": "Hệ thống",
+    "metric": "Chỉ số",
+    "value": "Giá trị",
+    "reload": "Tải lại từ máy chủ",
+    "export": "Tải KPI hiện tại",
+    "exported": "Đã tải KPI",
+    "database": "MongoDB chính",
+    "noGrowth": "Chưa tổng hợp chuỗi số liệu tăng trưởng. Các báo cáo tác giả, mở khóa và tài chính hiện dùng dữ liệu thật.",
+    "noTelemetry": "Chưa tích hợp nguồn đo độ trễ và thời gian hoạt động dịch vụ.",
+    "noCapacity": "Chưa có nguồn đo dung lượng.",
+    "unavailable": "Chưa có dữ liệu"
+  },
   "payoutOperations": {
     "title": "Vận hành chi trả tác giả",
     "hint": "Theo dõi các lần đánh giá đã ghi nhận và khoản chi trả theo kỳ. Hàng đợi email là trạng thái hiện tại toàn hệ thống. Tài khoản chưa đánh giá chỉ tính cho kỳ hiện tại. Đây không phải kiểm tra worker đang chạy; lỗi rollback cần xem log máy chủ.",

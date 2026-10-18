@@ -12,8 +12,8 @@ import {
   UserRoundCheck,
 } from '../../components/icons';
 import { AdminLayout } from '../../layouts';
-import { adminAudit, adminStats, serviceHealth } from '../../data/mock/admin';
-import { useMockResource } from '../../context/MockDataContext';
+import { useBackendResource } from '../../api/useBackendResource';
+import { useLocale } from '../../context/LocaleContext';
 import {
   Badge,
   Button,
@@ -40,42 +40,40 @@ const iconTones = [
   'bg-rose/12 text-rose-strong',
   'bg-brand/10 text-brand-strong',
 ];
-/* Progress of each KPI against its operating target: [percent, caption, tone]. */
-const statTargets = [
-  [92, 'Đạt 92% mục tiêu quý (2 triệu)', 'brand'],
-  [88, 'Chiếm 88% tổng số tài khoản', 'orange'],
-  [95, 'Đạt 95% mục tiêu 30.000 tác giả', 'brand'],
-  [83, 'Đạt 83% mục tiêu 500.000 truyện', 'purple'],
-  [26, 'Dùng 26% công suất hàng đợi', 'rose'],
-  [100, 'Vượt cam kết SLA 99,9%', 'brand'],
+const emptyDashboard = { kpis: [], actions: [] };
+const dashboardKeys = [
+  'activeAccounts',
+  'activeAuthors',
+  'publishedStories',
+  'pendingApplications',
+  'reviewQueue',
+  'pendingPayouts',
 ];
-const bars = [
-  [55, 35],
-  [69, 46],
-  [91, 66],
-  [78, 52],
-];
+const validateDashboard = (value) => {
+  if (
+    !value ||
+    !Number.isFinite(Date.parse(value.asOf)) ||
+    !Array.isArray(value.kpis) ||
+    value.kpis.length !== 6 ||
+    value.kpis.some(
+      ([key, count], index) =>
+        key !== dashboardKeys[index] || !Number.isSafeInteger(count) || count < 0,
+    ) ||
+    !Array.isArray(value.actions) ||
+    value.actions.some(
+      (row) =>
+        !Array.isArray(row) || row.length !== 4 || row.some((cell) => typeof cell !== 'string'),
+    )
+  )
+    throw new Error('Invalid Admin dashboard');
+  return value;
+};
 const metricSeries = {
   signups: ['Độc giả mới', 'Tác giả mới'],
   stories: ['Truyện mới', 'Chương cập nhật'],
   royalty: ['Xu đã chi', 'Nhuận bút đã trả'],
 };
-const statLabels = {
-  'Active Users (MAU)': 'Người dùng hoạt động (MAU)',
-  'Registered Readers': 'Độc giả đã đăng ký',
-  'Active Authors': 'Tác giả hoạt động',
-  'Published Stories': 'Truyện đã xuất bản',
-  'Moderation Queue': 'Hàng đợi kiểm duyệt',
-  'Platform Uptime': 'Thời gian hoạt động nền tảng',
-};
-const statNotes = {
-  '+14.2%': '↑ 14,2%',
-  '+8.5%': '↑ 8,5%',
-  '88% total': '88% tổng số',
-  '14,200 active': '14.200 đang hoạt động',
-  Healthy: 'Ổn định',
-  '30d': '30 ngày',
-};
+const statNotes = {};
 const statusLabels = {
   Success: 'Thành công',
   'Policy Violation': 'Vi phạm chính sách',
@@ -94,19 +92,51 @@ const statusTone = (status) =>
   status === 'Success' ? 'green' : status.includes('High') ? 'red' : 'orange';
 
 export function AdminDashboardPage() {
-  const kpis = useMockResource('admin:kpis', adminStats);
-  const growth = useMockResource('admin:growth', bars);
-  const actions = useMockResource('admin:recent-actions', adminAudit);
-  const services = useMockResource('admin:service-health', serviceHealth);
+  const { t, formatNumber } = useLocale(),
+    m = (key) => t(`dashboardData.${key}`);
+  const dashboard = useBackendResource('/admin/dashboard', emptyDashboard, validateDashboard);
+  const resource = (data) => ({
+    ...dashboard,
+    data,
+    status: dashboard.status === 'ready' && !data.length ? 'empty' : dashboard.status,
+  });
+  const kpis = resource(
+    dashboard.data.kpis.map(([key, value]) => [key, formatNumber(value), m('current')]),
+  );
+  const actions = resource(
+    dashboard.data.actions.map(([time, actor, action, result]) => [
+      new Date(time).toLocaleString('vi-VN', { timeZone: 'Asia/Ho_Chi_Minh' }),
+      actor === 'system' ? m('system') : actor,
+      action,
+      result,
+    ]),
+  );
+  const growth = resource([]);
+  const services = resource([]);
   const [metric, setMetric] = useState('signups');
   const [range, setRange] = useState('30d');
-  const [live, setLive] = useState(true);
   const [exported, setExported] = useState(false);
   const [maintenance, setMaintenance] = useState(false);
   const [readOnly, setReadOnly] = useState(false);
   const [safeguard, setSafeguard] = useState(null);
   const [auditEntry, setAuditEntry] = useState(null);
   const [firstSeries, secondSeries] = metricSeries[metric];
+  const exportKpis = () => {
+    const rows = [
+      [m('metric'), m('value')],
+      ...dashboard.data.kpis.map(([key, value]) => [m(key), value]),
+    ];
+    const csv = rows
+      .map((row) => row.map((value) => `"${String(value).replaceAll('"', '""')}"`).join(','))
+      .join('\r\n');
+    const url = URL.createObjectURL(new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8' }));
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = 'novelhub-admin-kpi.csv';
+    link.click();
+    URL.revokeObjectURL(url);
+    setExported(true);
+  };
 
   /* Turning a safeguard on needs confirmation; turning it off is immediate. */
   const requestToggle = (label, value, setValue) => {
@@ -130,20 +160,23 @@ export function AdminDashboardPage() {
           <div className="flex flex-wrap gap-2">
             <Button
               variant="secondary"
-              aria-pressed={live}
-              onClick={() => setLive((value) => !value)}
+              disabled={dashboard.status === 'loading'}
+              onClick={dashboard.retry}
             >
-              <span
-                aria-hidden="true"
-                className={`size-2 rounded-full ${live ? 'bg-brand' : 'bg-ink/30'}`}
-              />
-              Luồng trực tiếp
-              <Badge tone={live ? 'green' : 'neutral'}>{live ? 'BẬT' : 'TẮT'}</Badge>
+              <span aria-hidden="true" className="size-2 rounded-full bg-brand" />
+              {m('reload')}
             </Button>
-            <Button variant="secondary" onClick={() => setExported(true)}>
+            <Button
+              variant="secondary"
+              disabled={dashboard.status !== 'ready'}
+              onClick={exportKpis}
+            >
               <Download size={16} />
-              {exported ? 'KPI đã sẵn sàng' : 'Xuất KPI tuần'}
+              {m(exported ? 'exported' : 'export')}
             </Button>
+            <ButtonLink to="/admin/author-statistics" variant="secondary">
+              {t('adminAuthorStats.title')}
+            </ButtonLink>
           </div>
         </header>
 
@@ -199,13 +232,10 @@ export function AdminDashboardPage() {
                 ))
               : kpis.data.map(([label, value, note], index) => {
                   const Icon = icons[index];
-                  const [percent, caption, tone] = statTargets[index];
                   return (
                     <Card key={label} as="article" className="nh-fade-enter flex flex-col p-5">
                       <div className="flex items-start justify-between gap-3">
-                        <h2 className="text-caption font-medium text-muted">
-                          {statLabels[label] ?? label}
-                        </h2>
+                        <h2 className="text-caption font-medium text-muted">{m(label)}</h2>
                         <span
                           className={`grid size-9 shrink-0 place-items-center rounded-xl ${iconTones[index]}`}
                         >
@@ -225,8 +255,7 @@ export function AdminDashboardPage() {
                         )}
                       </div>
                       <div className="mt-auto pt-4">
-                        <ProgressBar value={percent} tone={tone} size="sm" label={caption} />
-                        <p className="mt-2 text-xs text-muted">{caption}</p>
+                        <p className="mt-2 text-xs text-muted">{m('source')}</p>
                       </div>
                     </Card>
                   );
@@ -288,7 +317,7 @@ export function AdminDashboardPage() {
                   icon={Activity}
                   headingAs="h3"
                   title="Chưa đủ dữ liệu để vẽ xu hướng"
-                  description="Biểu đồ cần ít nhất một tuần hoạt động. Thử khoảng 90 ngày gần nhất."
+                  description={m('noGrowth')}
                   action={
                     <Button variant="secondary" size="sm" onClick={() => setRange('90d')}>
                       Xem 90 ngày gần nhất
@@ -392,19 +421,11 @@ export function AdminDashboardPage() {
                   <div className="nh-grid-12 mt-6 grid gap-4 rounded-3xl bg-elevated p-5 nh-sm-cols-3">
                     <Metric
                       label="Người dùng hoạt động hằng ngày"
-                      value="245.600"
-                      note="Tăng 4,1% mỗi tuần"
+                      value="—"
+                      note={m('unavailable')}
                     />
-                    <Metric
-                      label="Phiên đọc trung bình"
-                      value="38,5 phút"
-                      note="Trên 6,2 chương/ngày"
-                    />
-                    <Metric
-                      label="Dòng lưu thông xu"
-                      value="184.200 USD"
-                      note="99,4% đối soát hoàn tất"
-                    />
+                    <Metric label="Phiên đọc trung bình" value="—" note={m('unavailable')} />
+                    <Metric label="Dòng lưu thông xu" value="—" note={m('unavailable')} />
                   </div>
                 </div>
               )}
@@ -503,7 +524,7 @@ export function AdminDashboardPage() {
                           : actions.data.map((entry) => {
                               const [time, operator, event, status] = entry;
                               return (
-                                <tr key={time}>
+                                <tr key={`${time}:${operator}:${event}`}>
                                   <td className="py-4 pr-4 font-mono text-xs text-muted">{time}</td>
                                   <td className="whitespace-nowrap py-4 pr-4 font-semibold">
                                     {operator}
@@ -566,7 +587,7 @@ export function AdminDashboardPage() {
                   icon={Gauge}
                   headingAs="h3"
                   title="Chưa có dịch vụ được giám sát"
-                  description="Kết nối dịch vụ trong Cài đặt nền tảng để theo dõi độ trễ."
+                  description={m('noTelemetry')}
                   className="px-0 py-10"
                   action={
                     <ButtonLink to="/admin/settings" variant="secondary" size="sm">
@@ -622,11 +643,11 @@ export function AdminDashboardPage() {
             </Card>
             <Card>
               <h2 className="text-h3">Lưu trữ và dung lượng</h2>
-              <Capacity label="Cụm PostgreSQL chính" value="6,4 TB / 12 TB" percent={53} />
+              <Capacity label={m('database')} value="—" percent={null} />
               <Capacity
                 label="Kho đối tượng media và âm thanh"
-                value="84,2 TB / 150 TB"
-                percent={56}
+                value="—"
+                percent={null}
                 tone="orange"
               />
             </Card>
@@ -635,9 +656,7 @@ export function AdminDashboardPage() {
                 <ShieldAlert size={20} aria-hidden="true" />
                 Biện pháp bảo vệ nền tảng
               </h2>
-              <p className="mt-1 text-caption text-muted">
-                Cơ chế ứng phó sự cố khẩn cấp và kích hoạt an toàn
-              </p>
+              <p className="mt-1 text-caption text-muted">{m('safeguardsUnavailable')}</p>
               <div className="mt-4 space-y-2">
                 <Toggle
                   label="Chế độ bảo trì"
@@ -758,14 +777,17 @@ function Metric({ label, value, note }) {
   );
 }
 function Capacity({ label, value, percent, tone = 'brand' }) {
+  const { t } = useLocale();
   return (
     <div className="mt-5">
       <div className="flex flex-wrap justify-between gap-x-3 text-sm">
         <span className="font-medium">{label}</span>
         <span className="text-muted">{value}</span>
       </div>
-      <ProgressBar value={percent} tone={tone} label={label} className="mt-2" />
-      <p className="mt-1.5 text-xs text-muted">Đã dùng {percent}% · các bản sao cân bằng</p>
+      {Number.isFinite(percent) && (
+        <ProgressBar value={percent} tone={tone} label={label} className="mt-2" />
+      )}
+      <p className="mt-1.5 text-xs text-muted">{t('dashboardData.noCapacity')}</p>
     </div>
   );
 }
@@ -774,6 +796,7 @@ function Toggle({ label, note, value, onToggle }) {
     <button
       type="button"
       role="switch"
+      disabled
       aria-checked={value}
       onClick={onToggle}
       className="flex w-full items-center gap-3 rounded-2xl border border-hairline bg-elevated p-3 text-left transition-colors hover:border-line"
