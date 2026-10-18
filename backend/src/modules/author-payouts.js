@@ -67,11 +67,14 @@ async function summaries(requests, now) {
     const failure = failed.find((item) => item._id.equals(request._id));
     const consistent =
       row &&
+      Number.isSafeInteger(request.amountCoins) &&
+      request.amountCoins > 0 &&
       row.periodId === request.periodId &&
       row.amountCoins === request.amountCoins &&
       request.payoutSlipAmountVnd === request.amountCoins;
-    const state =
-      request.status === 'paid'
+    const state = !consistent
+      ? 'unavailable'
+      : request.status === 'paid'
         ? consistent && result
           ? 'paid'
           : 'unavailable'

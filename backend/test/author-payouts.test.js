@@ -108,6 +108,24 @@ it('keeps failed payouts pending with no slip or balance refund', async () => {
   expect((await WithdrawalRequest.findById(withdrawal._id)).status).toBe('pending');
   expect((await Wallet.findById(f.wallet._id)).availableBalance).toBe(500);
 });
+it.each(['missing-sheet', 'wrong-amount', 'wrong-period', 'failed-missing-sheet'])(
+  'marks incomplete pending payout %s unavailable in both list and detail',
+  async (kind) => {
+    const f = await fixture();
+    const withdrawal = await f.withdrawal();
+    if (kind === 'wrong-amount') await f.row(withdrawal, { amountCoins: 100001 });
+    if (kind === 'wrong-period') await f.row(withdrawal, { periodId: '2026-09' });
+    if (kind === 'failed-missing-sheet') await f.result(withdrawal, 'Failed');
+    expect(await authorPayoutDetail(f.author.account._id, withdrawal._id, now)).toMatchObject({
+      item: { state: 'unavailable', paidAt: null },
+      slip: null,
+    });
+    expect((await authorPayouts(f.author.account._id, query(), now)).items[0].state).toBe(
+      'unavailable',
+    );
+    expect((await Wallet.findById(f.wallet._id)).availableBalance).toBe(500);
+  },
+);
 it.each([
   'missing-paid',
   'missing-sheet',
@@ -172,8 +190,11 @@ it('checks account and wallet ownership, role and IDs on list and detail', async
 it('paginates tied timestamps, filters months and rejects invalid or mismatched cursors', async () => {
   const f = await fixture();
   const withdrawals = [];
-  for (const period of ['2026-08', '2026-09', '2026-10'])
-    withdrawals.push(await f.withdrawal(period));
+  for (const period of ['2026-08', '2026-09', '2026-10']) {
+    const withdrawal = await f.withdrawal(period);
+    await f.row(withdrawal);
+    withdrawals.push(withdrawal);
+  }
   const first = await authorPayouts(f.author.account._id, query({ limit: 1 }), now);
   const second = await authorPayouts(
     f.author.account._id,
