@@ -1546,6 +1546,9 @@
     "agreementUnavailable": "Chưa tải được thỏa thuận hiện tại. Không dùng tỷ lệ mẫu để thay thế."
   },
   "analyticsData": {
+    "verifiedIncome": "Thu nhập mở khóa đã đối soát (xu)",
+    "verifiedIncomeHint": "Xu thực nhận từ các lượt mở khóa đã đối soát, theo kỳ và bộ lọc hiện tại; không gồm khoản điều chỉnh hoặc ghi có chưa liên kết được giao dịch.",
+    "incomeCoins": "{{coins}} xu",
     "returningReaders": "Định danh độc giả quay lại trong kỳ",
     "returnRate": "Tỷ lệ quay lại trong kỳ",
     "returningHint": "Định danh tài khoản hoặc thiết bị khách có lượt đọc trên ít nhất hai ngày Việt Nam khác nhau trong bộ lọc hiện tại.",

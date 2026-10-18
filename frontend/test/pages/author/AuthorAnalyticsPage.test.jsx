@@ -39,6 +39,21 @@ const view = (url = '/author/analytics') =>
       </LocaleProvider>
     </MemoryRouter>,
   );
+it('shows verified unlock income including real zero and leaves invalid income unknown', async () => {
+  mocks.apiRequest.mockResolvedValue({ ...data, verifiedUnlockIncome: 270 });
+  view();
+  expect(await screen.findByText('270 xu')).toBeTruthy();
+  expect(screen.getByText(/Xu thực nhận từ các lượt mở khóa đã đối soát/)).toBeTruthy();
+  cleanup();
+  mocks.apiRequest.mockResolvedValue({ ...data, verifiedUnlockIncome: 0 });
+  view();
+  expect(await screen.findByText('0 xu')).toBeTruthy();
+  cleanup();
+  mocks.apiRequest.mockResolvedValue({ ...data, verifiedUnlockIncome: -1 });
+  view();
+  await screen.findByText('Truyện của tôi');
+  expect(screen.queryByText('-1 xu')).toBeNull();
+});
 afterEach(() => {
   cleanup();
   vi.unstubAllGlobals();

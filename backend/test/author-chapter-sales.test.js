@@ -9,6 +9,8 @@ import {
   Wallet,
 } from '../src/models/index.js';
 import { authorEarnings } from '../src/modules/author-earnings.js';
+import { authorChapterSales } from '../src/modules/author-chapter-sales.js';
+import { authorAnalytics } from '../src/modules/author-analytics.js';
 import { authenticatedAccount } from './fixtures/accounts.js';
 import { useTestDatabase } from './db.js';
 useTestDatabase();
@@ -94,6 +96,15 @@ it('reports distinct buyers and actual credited coins per chapter/price without 
     }
   }
   const report = await authorEarnings(author.account._id, 'day', new Date('2026-10-16T01:00:00Z'));
+  expect(
+    (
+      await authorAnalytics(
+        author.account._id,
+        { days: 7, storyId: story.id },
+        new Date('2026-10-16T01:00:00Z'),
+      )
+    ).verifiedUnlockIncome,
+  ).toBe(470);
   expect(report.balance).toBe('999');
   expect(report.allocationCredits).toBe(470);
   expect(report.buyers).toBe(2);
@@ -112,6 +123,29 @@ it('reports distinct buyers and actual credited coins per chapter/price without 
     buyers: 1,
     coins: 200,
   });
+  const scope = { storyId: story._id, chapterId: chapterIds[0] };
+  expect(
+    (
+      await authorChapterSales(
+        author.account._id,
+        wallet._id,
+        date,
+        new Date('2026-10-16T01:00:00Z'),
+        scope,
+      )
+    ).linkedCoins,
+  ).toBe(270);
+  expect(
+    (
+      await authorChapterSales(
+        author.account._id,
+        wallet._id,
+        date,
+        new Date('2026-10-16T01:00:00Z'),
+        { storyId: buyer.account._id },
+      )
+    ).linkedCoins,
+  ).toBe(0);
   expect(
     (await authorEarnings(author.account._id, 'day', new Date('2026-10-17T01:00:00Z'))).sales,
   ).toEqual([]);

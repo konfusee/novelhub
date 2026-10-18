@@ -80,6 +80,8 @@ export function AuthorAnalyticsPage() {
   );
   const loading = analytics.status === 'loading';
   const { daily, labels, reads, readers } = analytics.data;
+  const income = analytics.data.verifiedUnlockIncome;
+  const hasIncome = Number.isSafeInteger(income) && income >= 0;
   const returning = analytics.data.returningReaders;
   const returnRate = analytics.data.returnRate;
   const hasReturningData =
@@ -185,8 +187,10 @@ export function AuthorAnalyticsPage() {
     {
       icon: Coins,
       label: t('analyticsData.revenue'),
-      value: '—',
-      delta: t('analyticsData.noRevenue'),
+      value: hasIncome
+        ? t('analyticsData.incomeCoins', { coins: income.toLocaleString('vi-VN') })
+        : '—',
+      delta: t(hasIncome ? 'analyticsData.verifiedIncomeHint' : 'analyticsData.noRevenue'),
       tone: 'orange',
     },
   ];
@@ -205,6 +209,8 @@ export function AuthorAnalyticsPage() {
       [t('analyticsData.range'), rangeLabels[range]],
       [t('analyticsData.views'), reads],
       [t('analyticsData.readers'), readers],
+      [t('analyticsData.verifiedIncome'), hasIncome ? income : t('analyticsData.unknown')],
+      [t('analyticsData.verifiedIncomeHint')],
       [
         t('analyticsData.returningReaders'),
         Number.isSafeInteger(returning) ? returning : t('analyticsData.unknown'),

@@ -63,6 +63,7 @@ it('counts actual daily events and distinct identities in the selected Vietnam c
   expect(result.returnRate).toBe(50);
   expect(result.retention).toBeNull();
   expect(result.earnings).toBeNull();
+  expect(result.verifiedUnlockIncome).toBe(0);
   expect(JSON.stringify(result)).not.toContain('private-account-key');
   const get = (query) =>
     request(app).get(`/api/author/analytics${query}`).set('Cookie', author.cookie);

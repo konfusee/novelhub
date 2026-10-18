@@ -9,7 +9,7 @@ import {
 import { HttpError } from '../middleware/errors.js';
 
 // Only committed purchases linked to this Author's actual credit leg count as sales.
-export async function authorChapterSales(accountId, walletId, start, now) {
+export async function authorChapterSales(accountId, walletId, start, now, scope = {}) {
   if (!walletId) return { sales: [], buyers: 0, linkedCoins: 0, salesHasMore: false };
   const results = await LedgerEntry.aggregate([
     {
@@ -85,6 +85,8 @@ export async function authorChapterSales(accountId, walletId, start, now) {
     },
     { $unwind: '$story' },
     { $match: { 'story.authorAccountId': accountId } },
+    ...(scope.storyId ? [{ $match: { 'story._id': scope.storyId } }] : []),
+    ...(scope.chapterId ? [{ $match: { 'unlock.chapterId': scope.chapterId } }] : []),
     {
       $lookup: {
         from: ContentRevision.collection.name,

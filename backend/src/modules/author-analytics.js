@@ -1,6 +1,7 @@
-import { Chapter, Story, StatisticsEvent, ReadingProgress } from '../models/index.js';
+import { Chapter, Story, StatisticsEvent, ReadingProgress, Wallet } from '../models/index.js';
 import { HttpError } from '../middleware/errors.js';
 import { authorCohortRetention } from './author-cohort-retention.js';
+import { authorChapterSales } from './author-chapter-sales.js';
 
 export async function authorAnalytics(
   accountId,
@@ -108,6 +109,17 @@ export async function authorAnalytics(
     ]),
   ]);
   const counts = labels.map((day) => daily.find((item) => item._id === day)?.count ?? 0);
+  const wallet = await Wallet.findOne({
+    ownerType: 'account',
+    ownerId: accountId,
+    purpose: 'author-earnings',
+  })
+    .select('_id')
+    .lean();
+  const sales = await authorChapterSales(accountId, wallet?._id, progressStart, now, {
+    ...(storyId ? { storyId: selected[0] } : {}),
+    ...(selectedChapter ? { chapterId: selectedChapter._id } : {}),
+  });
   const readerCount = readers[0]?.count ?? 0;
   const returningReaders = readers[0]?.returning ?? 0;
   return {
@@ -132,6 +144,7 @@ export async function authorAnalytics(
     },
     completion: null,
     earnings: null,
+    verifiedUnlockIncome: sales.linkedCoins,
     formats: null,
     retention: null,
     channels: null,
