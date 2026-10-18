@@ -390,6 +390,26 @@
     "title": "Chi trả thu nhập tác giả",
     "hint": "Theo dõi khoản chi trả và cập nhật ngân hàng cho kỳ sau. Tài khoản đã từng là tác giả vẫn được tra cứu thu nhập ngay cả khi vai trò tác giả đã bị thu hồi."
   },
+  "adminAuthorStats": {
+    "title": "Thống kê tác giả và mở khóa",
+    "hint": "Đơn mới tính theo ngày gửi; quyết định theo ngày duyệt trong kỳ Việt Nam. Tác giả hoạt động và đơn đang chờ là số hiện tại toàn hệ thống. Chỉ tính mở khóa đã cam kết có debit ví độc giả khớp giá; không gồm quyền miễn phí hay lượt thử thất bại.",
+    "finance": "Báo cáo tài chính",
+    "period": "Tháng thống kê",
+    "apply": "Áp dụng",
+    "all": "Tất cả thời gian",
+    "reload": "Tải lại",
+    "asOf": "Dữ liệu tại",
+    "applications": "Đơn mới trong kỳ",
+    "approvedApplications": "Đơn được duyệt trong kỳ",
+    "rejectedApplications": "Đơn bị từ chối trong kỳ",
+    "pendingApplications": "Đơn đang chờ hiện tại",
+    "activeAuthors": "Tác giả hoạt động hiện tại",
+    "unlocks": "Giao dịch mở khóa trong kỳ",
+    "unlockCoins": "Xu mở khóa đã ghi nợ",
+    "buyers": "Tài khoản mua riêng biệt",
+    "loading": "Đang tải thống kê…",
+    "error": "Không tải được thống kê. Hãy kiểm tra bộ lọc và tải lại."
+  },
   "payoutReadiness": {
     "title": "Điều kiện chi trả kỳ sau",
     "eligible": "Hiện đủ điều kiện xét chi trả",

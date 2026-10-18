@@ -82,6 +82,9 @@ export function FinanceReportPage() {
             <p className="mt-2 max-w-3xl text-sm text-muted">{m('description')}</p>
           </div>
           <div className="flex flex-wrap gap-3">
+            <ButtonLink to="/admin/author-statistics" variant="secondary">
+              {t('adminAuthorStats.title')}
+            </ButtonLink>
             <ButtonLink to="/admin/monthly-payouts" variant="secondary">
               {t('accountClosures.monthlyTitle')}
             </ButtonLink>
