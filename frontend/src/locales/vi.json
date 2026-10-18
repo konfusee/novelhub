@@ -1,4 +1,26 @@
 {
+  "chapterUnlock": {
+    "title": "Đọc sớm chương này",
+    "loading": "Đang kiểm tra quyền đọc và giá…",
+    "error": "Không tải được thông tin mở khóa.",
+    "login": "Đăng nhập",
+    "reload": "Tải lại",
+    "alreadyAvailable": "Bạn đã có quyền đọc hoặc chương đã hết thời gian đọc sớm.",
+    "continue": "Tiếp tục đọc",
+    "balance": "Số dư khả dụng",
+    "price": "Giá mở khóa",
+    "unavailable": "Chưa có giá hoặc thời hạn mở khóa hợp lệ.",
+    "note": "Xác nhận sẽ trừ xu để đọc sớm đúng phiên bản chương đang công khai. Giao dịch đã hoàn tất không hoàn xu.",
+    "unlock": "Mở khóa bằng xu",
+    "wallet": "Đến ví xu",
+    "insufficient": "Số dư chưa đủ. Nạp xu hoặc chờ chương được mở miễn phí.",
+    "confirmTitle": "Xác nhận mở khóa chương",
+    "confirm": "Xác nhận trừ xu",
+    "saving": "Đang mở khóa…",
+    "close": "Đóng",
+    "invalidResponse": "Không xác minh được quyền đọc từ máy chủ.",
+    "reloadRequired": "Đóng và tải lại thông tin quyền đọc trước khi thao tác tiếp. Hệ thống không tự thu phí thêm."
+  },
   "reviewClaims": {
     "title": "Nhận hồ sơ kiểm duyệt",
     "description": "Nhận hoặc trả hồ sơ đã vào hàng đợi kiểm duyệt. Thời hạn áp dụng theo chính sách tại lúc nhận; hồ sơ hết hạn có thể được nhận lại. Tải lại để xem trạng thái mới nhất.",

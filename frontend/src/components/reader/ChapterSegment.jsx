@@ -3,6 +3,7 @@ import { AlertTriangle, BookOpen } from '../icons';
 import { Button, EmptyState, ProgressBar, Skeleton } from '../ui';
 import { useBackendDocument } from '../../api/useBackendResource';
 import { PublishedChapterImage } from '../story/PrivateChapterImage';
+import { UnlockChapterCard } from './UnlockChapterCard';
 
 /* Prose column of one chapter; the skeleton and error states reuse it so nothing shifts. */
 const ARTICLE_CLASS =
@@ -176,18 +177,22 @@ export function ChapterSegment({
       {status === 'loading' && <ChapterSkeleton number={number} settings={settings} />}
       {status === 'error' && (
         <div className={ARTICLE_CLASS}>
-          <EmptyState
-            tone="rose"
-            icon={AlertTriangle}
-            headingAs="h3"
-            title={`Không tải được chương ${number}`}
-            description={resource.error?.message || 'Kết nối đang chập chờn. Hãy thử tải lại.'}
-            action={
-              <Button variant="secondary" onClick={retry}>
-                Thử lại
-              </Button>
-            }
-          />
+          {resource.error?.code === 'chapter_locked' ? (
+            <UnlockChapterCard storyId={storyId} chapterId={chapter.id} onUnlocked={retry} />
+          ) : (
+            <EmptyState
+              tone="rose"
+              icon={AlertTriangle}
+              headingAs="h3"
+              title={`Không tải được chương ${number}`}
+              description={resource.error?.message || 'Kết nối đang chập chờn. Hãy thử tải lại.'}
+              action={
+                <Button variant="secondary" onClick={retry}>
+                  Thử lại
+                </Button>
+              }
+            />
+          )}
         </div>
       )}
       {status === 'empty' && (
