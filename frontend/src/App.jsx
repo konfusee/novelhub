@@ -165,6 +165,9 @@ const ManualReviewPage = lazy(() =>
 const ReviewHistoryPage = lazy(() =>
   import('./pages/moderator/ReviewHistoryPage').then((m) => ({ default: m.ReviewHistoryPage })),
 );
+const FinanceReportPage = lazy(() =>
+  import('./pages/admin/FinanceReportPage').then((m) => ({ default: m.FinanceReportPage })),
+);
 const FormerAuthorStoriesPage = lazy(() =>
   import('./pages/admin/FormerAuthorStoriesPage').then((m) => ({
     default: m.FormerAuthorStoriesPage,
@@ -589,18 +592,7 @@ function AppRoutes() {
               />,
             )}
           />
-          <Route
-            path="/admin/transactions"
-            element={role(
-              'admin',
-              <RoleUtilityPage
-                role="admin"
-                eyebrow="Tài chính nền tảng"
-                title="Giao dịch ví"
-                description="Xem nạp xu, mua chương, hoàn tiền, điều chỉnh và giao dịch bất thường trên toàn nền tảng."
-              />,
-            )}
-          />
+          <Route path="/admin/transactions" element={role('admin', <FinanceReportPage />)} />
           <Route
             path={ROUTES.adminAccountClosures}
             element={role('admin', <AccountClosuresPage />)}
