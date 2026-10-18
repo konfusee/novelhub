@@ -18,7 +18,7 @@ export const reviewClaimView = (submission) => ({
   ownerAccountId: submission.claimOwnerAccountId ? String(submission.claimOwnerAccountId) : null,
   expiresAt: submission.claimExpiresAt ?? null,
 });
-async function lockModerator(moderator, session) {
+export async function lockModerator(moderator, session) {
   const account = await Account.findOneAndUpdate(
     {
       _id: moderator._id,
@@ -94,7 +94,6 @@ export async function changeReviewClaim(
       const story = await Story.findOne({
         _id: submission.storyId,
         authorAccountId: submission.authorAccountId,
-        authoringFrozen: false,
       }).session(session);
       const revision = await ContentRevision.findOne({
         _id: submission.revisionId,
@@ -106,6 +105,10 @@ export async function changeReviewClaim(
         !author ||
         !role ||
         !story ||
+        (story.authoringFrozen &&
+          (submission.chapterId ||
+            String(story.draftRevisionId ?? story.currentRevisionId) !==
+              String(submission.revisionId))) ||
         !revision ||
         String(revision.chapterId) !== String(submission.chapterId) ||
         revision.contentType !== (submission.chapterId ? 'chapter' : 'story') ||

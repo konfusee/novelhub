@@ -12,6 +12,7 @@ import { lockAuthor, ownStory } from './author-ownership.js';
 import { loadSubmittedPackage } from './author-submitted-package.js';
 import { digest } from './submission-digests.js';
 import { inspectChapterImages, pinChapterImages } from './author-chapter-media.js';
+import { approvedReviewEvidence } from './review-evidence.js';
 
 async function packageFor(account, story, chapterId, revisionId, session) {
   const submission = revisionId
@@ -84,12 +85,7 @@ export async function chapterReleaseState(
         .session(session ?? null)
         .lean()
     : null;
-  const evidenceReady = Boolean(
-    batch &&
-    ((batch.status === 'available-for-human-review' && batch.stage === 'llm') ||
-      (batch.status === 'failed' &&
-        ['embedding', 'comparison', 'llm'].includes(batch.failedStage))),
-  );
+  const evidenceReady = await approvedReviewEvidence(submission, batch, session);
   const previous = await Chapter.exists({
     storyId: story._id,
     orderKey: { $lt: chapter.orderKey },

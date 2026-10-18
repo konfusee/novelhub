@@ -14,6 +14,7 @@ export const ROUTES = {
   authorAgreement: (type) => `/legal/author/${type}`,
   moderator: '/moderator',
   moderatorClaims: '/moderator/claims',
+  moderatorManualReview: (id) => `/moderator/manual-reviews/${id}`,
   admin: '/admin',
   adminAccountClosures: '/admin/account-closures',
   adminBankReceipts: '/admin/bank-receipts',

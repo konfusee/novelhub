@@ -4,15 +4,22 @@ import { apiRequest } from '../../api/client';
 import { useBackendDocument } from '../../api/useBackendResource';
 import { useLocale } from '../../context/LocaleContext';
 import { ModeratorLayout } from '../../layouts';
-import { Button, Card, Modal, Tabs } from '../../components/ui';
+import { Button, ButtonLink, Card, Modal, Tabs } from '../../components/ui';
+import { ROUTES } from '../../app/routes';
 const empty = { items: [], hasMore: false };
-export function ReviewClaimsPage() {
+export function ReviewClaimsPage({ initialView = 'available' }) {
   const { t } = useLocale();
   const m = (key) => t(`reviewClaims.${key}`);
   const [params, setParams] = useSearchParams();
   const page = Math.floor(Math.max(1, Math.min(100000, Number(params.get('page')) || 1)));
-  const view = params.get('view') === 'mine' ? 'mine' : 'available';
-  const feed = useBackendDocument(`/moderator/review-claims?page=${page}&view=${view}`, empty);
+  const requestedView = params.get('view') ?? initialView;
+  const view = ['mine', 'intake'].includes(requestedView) ? requestedView : 'available';
+  const feed = useBackendDocument(
+    view === 'intake'
+      ? `/moderator/manual-reviews?page=${page}`
+      : `/moderator/review-claims?page=${page}&view=${view}`,
+    empty,
+  );
   const [selected, setSelected] = useState(null),
     [busy, setBusy] = useState(false),
     [error, setError] = useState('');
@@ -54,7 +61,9 @@ export function ReviewClaimsPage() {
       <div className="page-moderator py-6">
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div>
-            <h1 className="text-h2 sm:text-h1">{m('title')}</h1>
+            <h1 className="text-h2 sm:text-h1">
+              {m(view === 'intake' ? 'titleIntake' : view === 'mine' ? 'titleMine' : 'title')}
+            </h1>
             <p className="mt-2 max-w-3xl text-sm text-muted">{m('description')}</p>
           </div>
           <Button variant="secondary" disabled={feed.status === 'loading'} onClick={feed.retry}>
@@ -65,7 +74,7 @@ export function ReviewClaimsPage() {
           className="mt-6"
           value={view}
           onChange={(value) => navigate(1, value)}
-          items={['available', 'mine'].map((value) => ({ value, label: m(value) }))}
+          items={['intake', 'available', 'mine'].map((value) => ({ value, label: m(value) }))}
         />
         <Card className="mt-5 overflow-hidden p-0">
           {feed.status !== 'ready' ? (
@@ -107,16 +116,27 @@ export function ReviewClaimsPage() {
                         {row.expiresAt ? new Date(row.expiresAt).toLocaleString('vi-VN') : '—'}
                       </td>
                       <td className="p-4">
-                        <Button
-                          variant="secondary"
-                          size="sm"
-                          onClick={() => {
-                            setError('');
-                            setSelected({ row, release: view === 'mine' });
-                          }}
-                        >
-                          {m(view === 'mine' ? 'release' : 'acquire')}
-                        </Button>
+                        <div className="flex flex-wrap gap-2">
+                          <ButtonLink
+                            size="sm"
+                            variant="secondary"
+                            to={ROUTES.moderatorManualReview(row.id)}
+                          >
+                            {m('openReview')}
+                          </ButtonLink>
+                          {view !== 'intake' && (
+                            <Button
+                              variant="secondary"
+                              size="sm"
+                              onClick={() => {
+                                setError('');
+                                setSelected({ row, release: view === 'mine' });
+                              }}
+                            >
+                              {m(view === 'mine' ? 'release' : 'acquire')}
+                            </Button>
+                          )}
+                        </div>
                       </td>
                     </tr>
                   ))}

@@ -10,6 +10,7 @@ import { HttpError } from '../middleware/errors.js';
 import { lockAuthor, ownStory } from './author-ownership.js';
 import { loadSubmittedPackage } from './author-submitted-package.js';
 import { digest } from './submission-digests.js';
+import { approvedReviewEvidence } from './review-evidence.js';
 
 export function canReleaseStoryVersion(story, revisionId) {
   const unpublished = story.publicationStatus === 'unpublished';
@@ -59,11 +60,7 @@ async function releaseState(account, storyId, session) {
         .session(session ?? null)
         .lean()
     : null;
-  const evidenceReady =
-    batch &&
-    ((batch.status === 'available-for-human-review' && batch.stage === 'llm') ||
-      (batch.status === 'failed' &&
-        ['embedding', 'comparison', 'llm'].includes(batch.failedStage)));
+  const evidenceReady = await approvedReviewEvidence(submission, batch, session);
   const ids = snapshot?.revision.content.categoryIds ?? [];
   const active = ids.length
     ? await Category.countDocuments({ _id: { $in: ids }, status: 'active' }).session(

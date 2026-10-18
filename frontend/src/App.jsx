@@ -159,6 +159,9 @@ const BankReceiptsPage = lazy(() =>
 const ReviewClaimsPage = lazy(() =>
   import('./pages/moderator/ReviewClaimsPage').then((m) => ({ default: m.ReviewClaimsPage })),
 );
+const ManualReviewPage = lazy(() =>
+  import('./pages/moderator/ManualReviewPage').then((m) => ({ default: m.ManualReviewPage })),
+);
 const FormerAuthorStoriesPage = lazy(() =>
   import('./pages/admin/FormerAuthorStoriesPage').then((m) => ({
     default: m.FormerAuthorStoriesPage,
@@ -435,25 +438,21 @@ function AppRoutes() {
           <Route path="/moderator" element={role('moderator', <ModeratorOverviewPage />)} />
           <Route path={ROUTES.moderatorClaims} element={role('moderator', <ReviewClaimsPage />)} />
           <Route
+            path="/moderator/manual-reviews/:submissionId"
+            element={role('moderator', <ManualReviewPage />)}
+          />
+          <Route
             path="/moderator/submissions"
-            element={role('moderator', <SubmissionQueuePage />)}
+            element={role('moderator', <ReviewClaimsPage initialView="intake" />)}
           />
           <Route
             path="/moderator/submissions/:submissionId"
-            element={role('moderator', <ContentReviewDetailPage />)}
+            element={role('moderator', <ManualReviewPage />)}
           />
           <Route path="/moderator/reports" element={role('moderator', <ReportsQueuePage />)} />
           <Route
             path="/moderator/reviews"
-            element={role(
-              'moderator',
-              <RoleUtilityPage
-                role="moderator"
-                eyebrow="An toàn nội dung"
-                title="Đánh giá nội dung"
-                description="Đánh giá bản thảo được giao, tín hiệu chính sách, xếp hạng độ tuổi và mức sẵn sàng xuất bản."
-              />,
-            )}
+            element={role('moderator', <ReviewClaimsPage initialView="mine" />)}
           />
           <Route
             path="/moderator/similarity-flags"

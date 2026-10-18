@@ -58,24 +58,28 @@ function notificationView(item) {
   const text = (value, max = 4000) => (typeof value === 'string' ? value.slice(0, max) : '');
   const decided = item.eventType === 'author-application.decided';
   const candidate = item.eventType.replace(/^reference\./, '').split('.')[0];
-  const type = decided
-    ? 'author'
-    : ['story', 'author', 'comment', 'system'].includes(candidate)
-      ? candidate
-      : 'system';
+  const type =
+    decided || item.eventType === 'publication.decided'
+      ? 'author'
+      : ['story', 'author', 'comment', 'system'].includes(candidate)
+        ? candidate
+        : 'system';
   const labels = {
     story: 'Cập nhật truyện',
     author: 'Tác giả',
     comment: 'Bình luận & phản hồi',
     system: 'Hệ thống',
   };
-  const href = decided
-    ? '/author/apply'
-    : /^[a-f\d]{24}$/i.test(item.payload?.storyId ?? '')
-      ? `/stories/${item.payload.storyId}`
-      : type === 'system'
-        ? '/reader/wallet'
-        : '/reader/library';
+  const href =
+    item.eventType === 'publication.decided'
+      ? '/author/submissions'
+      : decided
+        ? '/author/apply'
+        : /^[a-f\d]{24}$/i.test(item.payload?.storyId ?? '')
+          ? `/stories/${item.payload.storyId}`
+          : type === 'system'
+            ? '/reader/wallet'
+            : '/reader/library';
   const title = decided
     ? item.payload?.status === 'approved'
       ? 'Đơn đăng ký tác giả đã được duyệt'
