@@ -40,7 +40,7 @@ export function canReviseUnpublished(submission, target, revision, story) {
     submission.status === 'approved' &&
     !story.authoringFrozen &&
     ['published', 'unpublished'].includes(story.publicationStatus) &&
-    target?.status === 'unpublished' &&
+    ['published', 'unpublished'].includes(target?.status) &&
     String(target.storyId) === String(submission.storyId) &&
     String(revision?._id) === String(submission.revisionId) &&
     revision?.immutableAt &&
@@ -151,7 +151,12 @@ async function packageState(account, input, session, config) {
   const editable =
     !story.authoringFrozen &&
     !['submitted', 'under-review', 'archived'].includes(story.publicationStatus) &&
-    (!input.chapterId || target.status === 'draft') &&
+    (!input.chapterId ||
+      target.status === 'draft' ||
+      (target.status === 'published' &&
+        target.publishedRevisionId &&
+        target.draftRevisionId &&
+        String(target.draftRevisionId) !== String(target.publishedRevisionId))) &&
     revision.status === 'editable' &&
     !revision.immutableAt;
   return {
@@ -358,7 +363,7 @@ export async function submitContent(account, input, config) {
     submission.currentEvidenceBatchId = batch._id;
     await submission.save({ session });
     if (input.chapterId) {
-      state.target.status = 'submitted';
+      if (state.target.status !== 'published') state.target.status = 'submitted';
       await state.target.save({ session });
     } else {
       state.story.authoringFrozen = true;
@@ -501,7 +506,7 @@ export async function reviseSubmission(account, submissionId, expectedVersion) {
     if (!target) throw new HttpError(404, 'not_found', 'Không tìm thấy nội dung.');
     if (submission.chapterId && story.authoringFrozen)
       throw new HttpError(409, 'content_frozen', 'Truyện đang có gói thông tin chờ xử lý.');
-    if (['archived', 'cancelled', 'published', 'scheduled', 'due'].includes(target.status))
+    if (['archived', 'cancelled', 'scheduled', 'due'].includes(target.status))
       throw new HttpError(409, 'content_frozen', 'Nội dung không còn ở vòng chỉnh sửa này.');
     const currentId = target.draftRevisionId ?? target.currentRevisionId;
     const current = await ContentRevision.findOne({
@@ -517,7 +522,7 @@ export async function reviseSubmission(account, submissionId, expectedVersion) {
     const unpublishedReplay =
       submission.chapterId &&
       submission.status === 'approved' &&
-      target.status === 'draft' &&
+      ['draft', 'published'].includes(target.status) &&
       String(target.publishedRevisionId) === String(submission.revisionId) &&
       current.parentRevisionId?.equals(submission.revisionId) &&
       current.status === 'editable' &&
@@ -578,8 +583,9 @@ export async function reviseSubmission(account, submissionId, expectedVersion) {
     );
     target.draftRevisionId = revision._id;
     target.currentRevisionId = revision._id;
-    if (submission.chapterId) target.status = 'draft';
-    else {
+    if (submission.chapterId) {
+      if (target.status !== 'published') target.status = 'draft';
+    } else {
       story.authoringFrozen = false;
       if (!['published', 'unpublished'].includes(story.publicationStatus))
         story.publicationStatus = story.publishedRevisionId ? 'unpublished' : 'draft';

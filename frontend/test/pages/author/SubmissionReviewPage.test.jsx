@@ -361,7 +361,7 @@ it.each([false, true])(
     );
     view('');
     await screen.findByText('Chương đã gỡ');
-    const action = screen.queryByRole('button', { name: 'Tạo bản sửa chương đã gỡ', exact: true });
+    const action = screen.queryByRole('button', { name: 'Tạo bản sửa chương', exact: true });
     expect(Boolean(action)).toBe(canRevise);
     if (canRevise) {
       fireEvent.click(action);
