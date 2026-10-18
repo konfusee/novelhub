@@ -52,7 +52,15 @@ POST /api/admin/policy now accepts optional orderExpiryHours and claimExpiryHour
 
 The existing settings form exposes both durations, proposes 24 hours only for initial creation, and allows expiry-only changes with a reason. It rejects empty, fractional, negative and unsafe values. The policy history now displays the two stored durations as well as the current-policy panel. A common saving label accurately covers both immediate activation and future scheduling.
 
-This milestone stores and exposes policy configuration. It does not implement top-up creation, moderator claim acquisition or deadline calculation in those separate flows. Existing TopUpOrder.expiresAt, PublicationSubmission.claimExpiresAt, leases, financial records and previous policy terms are never recalculated by this command. Zero is an explicit stored duration permitted by the existing schema, not an invented unlimited-duration flag.
+This settings command stores and exposes policy configuration. Existing TopUpOrder.expiresAt, PublicationSubmission.claimExpiresAt, leases, financial records and previous policy terms are never recalculated by this command. Zero is an explicit stored duration permitted by the existing schema, not an invented unlimited-duration flag.
+
+## Policy-bound top-up invoices (18 October 2026)
+
+`POST /api/reader/top-up-orders` accepts only an active fixed package ID. It creates a pending MongoDB invoice with a cryptographically random unique `NH` + eight-digit code, a package/current effective policy snapshot, and `expiresAt` computed from that policy's `orderExpiryHours`. Future policies are ignored until effective. Missing, zero or invalid expiry blocks new invoices rather than inventing an unlimited deadline. Policy/package edits never recalculate an existing invoice.
+
+Account-serialized duplicate requests reuse the same unexpired invoice for that package. Creation normalizes that owner's expired pending invoices; owner-only GET reports expiry even before the next creation. Audit failure rolls back invoice/wallet creation. Four isolated MongoDB tests verify snapshots, concurrency/reuse, expiry/new terms, access guards and rollback. No wallet credit or ledger credit occurs at invoice creation.
+
+This endpoint is not yet wired into the existing wallet payment UI. Bank transfer instructions/VietQR, SePay receipt matching, moderator claim acquisition and financial settlement remain separate unfinished flows. A-UC-05 is still partial; no payment completion is inferred from a pending invoice.
 
 Verification: all 35 backend policy tests and 26 frontend settings/history/cancellation tests pass in focused runs. Four expiry tests cover initial explicit values, zero, invalid input, inheritance, historical deadlines and exact scheduled boundaries. UI tests cover initial proposals, expiry-only requests, validation and history values. Root lint, Vietnamese content checks and production build pass. Full frontend-suite success is not claimed. Browser verification uses disposable MongoDB and real APIs; proof images are outside the repository under WDP301/outputs/author-progress-01a13e25/policy-expiry.
 
