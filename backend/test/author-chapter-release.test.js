@@ -633,6 +633,43 @@ it('persists an approved schedule without early visibility, then publishes once 
   await releaseDueChapters(schedulerConfig, { now: f.releaseAt });
   expect(await AuditEvent.countDocuments({ action: 'chapter.published' })).toBe(1);
 });
+it('starts paid access at the actual scheduled publication, rolls back failed release and becomes free at expiry', async () => {
+  const f = await scheduleFixture();
+  const policy = await PolicyVersion.create({
+    status: 'effective',
+    effectiveAt: new Date('2020-01-01'),
+    actorAccountId: f.author.account._id,
+  });
+  f.entity.earlyAccess = {
+    enabled: true,
+    coinPrice: 250,
+    durationDays: 3,
+    policyVersionId: policy._id,
+  };
+  await f.entity.save();
+  f.scheduleBody.expectedVersion = f.entity.version;
+  expect((await write(f.cookie, f.scheduleUrl, f.scheduleBody, 'put')).status).toBe(200);
+  vi.spyOn(AuditEvent, 'create').mockRejectedValueOnce(new Error('Injected publication failure'));
+  expect((await releaseDueChapters(schedulerConfig, { now: f.releaseAt })).published).toBe(0);
+  const rolledBack = await Chapter.findById(f.chapterId);
+  expect(rolledBack.firstReleasedAt).toBeUndefined();
+  expect(rolledBack.earlyAccess.endsAt).toBeUndefined();
+  const actual = new Date(f.releaseAt.getTime() + 600000);
+  expect((await releaseDueChapters(schedulerConfig, { now: actual })).published).toBe(1);
+  const chapter = await Chapter.findById(f.chapterId);
+  expect(chapter.firstReleasedAt).toEqual(actual);
+  expect(chapter.earlyAccess.endsAt.getTime()).toBe(actual.getTime() + 3 * 86400000);
+  const url = `/api/catalog/stories/${f.storyId}/chapters/${f.chapterId}`;
+  expect((await request(app).get(url)).body.error.code).toBe('chapter_locked');
+  vi.useFakeTimers({ toFake: ['Date'] });
+  try {
+    vi.setSystemTime(chapter.earlyAccess.endsAt);
+    expect((await request(app).get(url)).status).toBe(200);
+  } finally {
+    vi.useRealTimers();
+  }
+  expect(await AuditEvent.countDocuments({ action: 'chapter.published' })).toBe(1);
+});
 it('keeps due chapters private while blocked and automatically retries when order permits', async () => {
   const f = await scheduleFixture({ preceding: true });
   expect((await write(f.cookie, f.scheduleUrl, f.scheduleBody, 'put')).status).toBe(200);
