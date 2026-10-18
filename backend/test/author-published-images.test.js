@@ -240,15 +240,18 @@ it.each(['chapter', 'story'])(
     expect((await request(app).get(f.imageUrl)).status).toBe(404);
   },
 );
-it('follows existing catalog visibility after account suspension without exposing owner identity', async () => {
+it('hides all published resources during account suspension and restores them when active', async () => {
   const f = await fixture();
   expect((await write(f.cookie, f.endpoint, f.body)).status).toBe(201);
   const account = await Account.findById(f.author.account._id);
   account.status = 'suspended';
   await account.save();
-  expect((await request(app).get(`/api/catalog/stories/${f.storyId}`)).body.story.author).toBe(
-    'Tác giả',
-  );
+  expect((await request(app).get(`/api/catalog/stories/${f.storyId}`)).status).toBe(404);
+  expect((await request(app).get(f.publicUrl)).status).toBe(404);
+  expect((await request(app).get(f.imageUrl)).status).toBe(404);
+  account.status = 'active';
+  await account.save();
+  expect((await request(app).get(`/api/catalog/stories/${f.storyId}`)).status).toBe(200);
   expect((await request(app).get(f.publicUrl)).status).toBe(200);
   expect((await request(app).get(f.imageUrl)).status).toBe(200);
 });
