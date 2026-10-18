@@ -99,3 +99,32 @@ it('does not invent a percentage when the terms cannot be loaded', async () => {
   expect(screen.queryByText('70%')).toBeNull();
   expect(screen.queryByText('80%')).toBeNull();
 });
+it('shows verified per-chapter sales and warns when legacy credits lack purchase links', async () => {
+  mocks.apiRequest.mockImplementation(async (path) =>
+    path.startsWith('/author/transactions') || path.startsWith('/author/payouts')
+      ? { items: [], nextCursor: null }
+      : {
+          ...data,
+          buyers: 2,
+          sales: [
+            {
+              id: 'chapter:201',
+              title: 'Truyện doanh số thật',
+              chapter: 'Chương snapshot đã mua',
+              price: 201,
+              buyers: 2,
+              coins: 270,
+            },
+          ],
+          salesCoverageIncomplete: true,
+        },
+  );
+  view();
+  await screen.findByText('Chương snapshot đã mua');
+  expect(screen.getByText('Truyện doanh số thật')).toBeTruthy();
+  expect(screen.getByText('+270')).toBeTruthy();
+  expect(screen.getByText(/Một số bút toán cũ chưa liên kết đủ/)).toBeTruthy();
+  expect(
+    screen.queryByText('Chưa có giao dịch mở khóa đã hoàn tất phù hợp trong kỳ này.'),
+  ).toBeNull();
+});

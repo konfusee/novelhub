@@ -1,6 +1,7 @@
 import { LedgerEntry, Story, Wallet } from '../models/index.js';
 import { authorEarningsPeriod } from './author-earnings-period.js';
 import { currentAuthorAgreement } from './author-agreement.js';
+import { authorChapterSales } from './author-chapter-sales.js';
 
 export async function authorEarnings(accountId, period = 'month', now = new Date()) {
   const { start, labels } = authorEarningsPeriod(period, now);
@@ -36,15 +37,20 @@ export async function authorEarnings(accountId, period = 'month', now = new Date
       ])
     : [];
   const bars = labels.map((day) => credits.find((item) => item._id === day)?.amount ?? 0);
+  const allocationCredits = bars.reduce((sum, value) => sum + value, 0);
+  const sales = await authorChapterSales(accountId, wallet?._id, start, now);
+  const salesCoverageIncomplete = sales.linkedCoins !== allocationCredits;
   return {
     balance: String(wallet?.availableBalance ?? 0),
-    allocationCredits: bars.reduce((sum, value) => sum + value, 0),
+    allocationCredits,
     bars,
     labels,
     stories: stories.map((story) => ({ id: String(story._id), title: story.title })),
-    buyers: null,
+    buyers: salesCoverageIncomplete ? null : sales.buyers,
     subscriptions: null,
-    sales: null,
+    sales: sales.sales,
+    salesHasMore: sales.salesHasMore,
+    salesCoverageIncomplete,
     payout: null,
     creatorShare: null,
     pricing: null,

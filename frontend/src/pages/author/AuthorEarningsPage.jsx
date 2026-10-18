@@ -38,10 +38,14 @@ export function AuthorEarningsPage() {
   const loading = earnings.status === 'loading';
   const hasData = loading || earnings.status === 'ready';
   const data = earnings.data;
-  const sales = [];
+  const sales = data.sales ?? [];
   const peak = Math.max(0, ...data.bars);
   const metrics = [
-    { icon: BookOpen, label: t('authorFinance.chapterBuyers'), value: '—' },
+    {
+      icon: BookOpen,
+      label: t('authorFinance.chapterBuyers'),
+      value: Number.isSafeInteger(data.buyers) ? formatNumber(data.buyers) : '—',
+    },
     { icon: UsersRound, label: t('authorFinance.newSubscribers'), value: '—', tone: 'purple' },
     {
       icon: Coins,
@@ -177,7 +181,13 @@ export function AuthorEarningsPage() {
                 <Card className="overflow-hidden p-0">
                   <div className="p-6 pb-4">
                     <h2 className="text-h3">{t('authorFinance.salesByChapter')}</h2>
-                    <p className="mt-1 text-sm text-muted">{t('earningsData.noSales')}</p>
+                    <p className="mt-1 text-sm text-muted">{t('earningsData.salesDescription')}</p>
+                    {data.salesCoverageIncomplete && (
+                      <p className="mt-2 text-xs text-muted">{t('earningsData.partialSales')}</p>
+                    )}
+                    {data.salesHasMore && (
+                      <p className="mt-2 text-xs text-muted">{t('earningsData.salesLimit')}</p>
+                    )}
                   </div>
                   <div className="overflow-x-auto">
                     <table className="w-full min-w-[560px] text-left text-sm">
@@ -219,14 +229,14 @@ export function AuthorEarningsPage() {
                               </td>
                             </tr>
                           )}
-                          {sales.map(([title, chapter, price, buyers, coins]) => (
-                            <tr key={`${title}-${chapter}`}>
+                          {sales.map(({ id, title, chapter, price, buyers, coins }) => (
+                            <tr key={id}>
                               <th scope="row" className="px-6 py-4 text-left font-semibold">
                                 {title}
                               </th>
                               <td className="px-3 py-4 text-muted">{chapter}</td>
                               <td className="px-3 py-4 text-right tabular-nums">
-                                {price} {t('wallet.coinUnit')}
+                                {formatNumber(price)} {t('wallet.coinUnit')}
                               </td>
                               <td className="px-3 py-4 text-right tabular-nums">
                                 {formatNumber(buyers)}
