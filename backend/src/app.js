@@ -17,6 +17,7 @@ import { createAdminFormerAuthorRouter } from './routes/admin-former-author.rout
 import { createReaderTopUpOrdersRouter } from './routes/reader-top-up-orders.routes.js';
 import { createSepayRouter } from './routes/sepay.routes.js';
 import { createAdminBankReceiptsRouter } from './routes/admin-bank-receipts.routes.js';
+import { createModeratorReviewClaimsRouter } from './routes/moderator-review-claims.routes.js';
 import { createAdminFinalPayoutRouter } from './routes/admin-final-payout.routes.js';
 import { createWorkspaceDataRouter } from './routes/workspace-data.routes.js';
 import { createReaderDataRouter } from './routes/reader-data.routes.js';
@@ -57,6 +58,7 @@ export function createApp(config) {
   app.use('/api', createReaderTopUpOrdersRouter(config));
   app.use('/api', createSepayRouter(config));
   app.use('/api', createAdminBankReceiptsRouter(config));
+  app.use('/api', createModeratorReviewClaimsRouter(config));
   app.use('/api', createAdminFinalPayoutRouter(config));
   app.use('/api', createWorkspaceDataRouter(config));
   app.use('/api', createReaderDataRouter(config));

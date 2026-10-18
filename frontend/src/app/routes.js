@@ -13,6 +13,7 @@ export const ROUTES = {
   authorApply: '/author/apply',
   authorAgreement: (type) => `/legal/author/${type}`,
   moderator: '/moderator',
+  moderatorClaims: '/moderator/claims',
   admin: '/admin',
   adminAccountClosures: '/admin/account-closures',
   adminBankReceipts: '/admin/bank-receipts',

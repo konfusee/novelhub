@@ -156,6 +156,9 @@ const AccountClosuresPage = lazy(() =>
 const BankReceiptsPage = lazy(() =>
   import('./pages/admin/BankReceiptsPage').then((m) => ({ default: m.BankReceiptsPage })),
 );
+const ReviewClaimsPage = lazy(() =>
+  import('./pages/moderator/ReviewClaimsPage').then((m) => ({ default: m.ReviewClaimsPage })),
+);
 const FormerAuthorStoriesPage = lazy(() =>
   import('./pages/admin/FormerAuthorStoriesPage').then((m) => ({
     default: m.FormerAuthorStoriesPage,
@@ -430,6 +433,7 @@ function AppRoutes() {
             )}
           />
           <Route path="/moderator" element={role('moderator', <ModeratorOverviewPage />)} />
+          <Route path={ROUTES.moderatorClaims} element={role('moderator', <ReviewClaimsPage />)} />
           <Route
             path="/moderator/submissions"
             element={role('moderator', <SubmissionQueuePage />)}

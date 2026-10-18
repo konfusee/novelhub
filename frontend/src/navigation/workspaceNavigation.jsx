@@ -99,6 +99,7 @@ export const workspaceNavigation = {
       items: [
         ['navigation.dashboard', '/moderator', Gauge, true],
         ['navigation.pendingReviews', '/moderator/submissions', ClipboardCheck],
+        ['reviewClaims.title', ROUTES.moderatorClaims, ClipboardCheck],
         ['navigation.contentReviews', '/moderator/reviews', FileSearch],
         ['navigation.reports', '/moderator/reports', Flag],
         ['navigation.similarityFlags', '/moderator/similarity-flags', ShieldAlert],
