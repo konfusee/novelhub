@@ -14,4 +14,4 @@ Kiểm chứng 18/10/2026. Nhánh ngoại lệ của A-UC-03, ngoài media và A
 
 ## Phần còn lại
 
-A-UC-01 còn đóng/ẩn danh tài khoản gắn nghĩa vụ tài chính. A-UC-05 còn áp dụng snapshot/thời hạn policy vào luồng giao dịch thực tế. Không đánh dấu hai use case này hoàn thiện từ nhánh quản trị nội dung.
+A-UC-01 đã bổ sung đóng/ẩn danh và quyết toán cuối trong [ẩn danh tài khoản](admin-account-anonymization.md) và [quyết toán cuối](admin-final-payout.md). A-UC-05 đã áp dụng snapshot/thời hạn policy vào giao dịch; xem [nghiệm thu Admin](admin-remaining-acceptance.md). Các kết quả này thuộc các đợt triển khai sau phần quản trị nội dung tại đây; media/AI vẫn tạm hoãn.

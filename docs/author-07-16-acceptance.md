@@ -33,4 +33,4 @@ Explicit limits:
 - Income excludes unlinked legacy credits from verified chapter-sale metrics and explains that coverage; ledger history retains those actual entries. Refund processing is not invented from missing source events.
 - The monthly recovery job evaluates the current month, not missed historical months. The bank snapshot is taken when evaluation commits; the existing schema does not store historical bank changes.
 - External bank transfer remains an Admin-confirmed action outside this application. SMTP requires real deployment configuration; outbox and delivery behavior were tested with isolated fixtures.
-- New browser checks remain outstanding for the latest UI additions. Earlier browser evidence is not relabeled as validation of these additions.
+- Desktop checks for earnings, bank configuration, pending payout history and payout details are recorded in [browser acceptance](admin-author-browser-acceptance.md). These checks do not certify every Author flow or the full responsive matrix.

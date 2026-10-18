@@ -7,6 +7,13 @@ it does not require access to the external source directory.
 
 ## Start here
 
+- [Final Author/Admin validation](author-admin-final-validation.md) — current scope and full automated regression results.
+- Current Author/Admin implementation status: [Author 02–06](author-02-06-acceptance.md),
+  [Author 07–16](author-07-16-acceptance.md), [remaining Admin acceptance](admin-remaining-acceptance.md)
+  and [desktop browser acceptance](admin-author-browser-acceptance.md). These records use the
+  progress workbook IDs and exclude deferred media/AI; they do not certify production banking/SMTP.
+  Feature documents describe individual increments; earlier "remaining" statements must be read
+  alongside these later acceptance records.
 - [Requirements baseline](./requirements-baseline.md) — the implementation-facing
   product boundary, lifecycle constraints, traceability, and deferred
   technical/process-gate pointers.
