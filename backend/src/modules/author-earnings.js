@@ -2,6 +2,7 @@ import { LedgerEntry, Story, Wallet } from '../models/index.js';
 import { authorEarningsPeriod } from './author-earnings-period.js';
 import { currentAuthorAgreement } from './author-agreement.js';
 import { authorChapterSales } from './author-chapter-sales.js';
+import { authorPayoutReadiness } from './author-payout-readiness.js';
 
 export async function authorEarnings(accountId, period = 'month', now = new Date()) {
   const { start, labels } = authorEarningsPeriod(period, now);
@@ -52,6 +53,7 @@ export async function authorEarnings(accountId, period = 'month', now = new Date
     salesHasMore: sales.salesHasMore,
     salesCoverageIncomplete,
     payout: null,
+    payoutReadiness: await authorPayoutReadiness(accountId, wallet?.availableBalance ?? 0, now),
     creatorShare: null,
     pricing: null,
     agreement,

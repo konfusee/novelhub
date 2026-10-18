@@ -39,6 +39,14 @@ export function AuthorEarningsPage() {
   const loading = earnings.status === 'loading';
   const hasData = loading || earnings.status === 'ready';
   const data = earnings.data;
+  const readiness = data.payoutReadiness;
+  const hasReadiness =
+    ['eligible', 'bank-required', 'below-threshold'].includes(readiness?.state) &&
+    Number.isSafeInteger(readiness.thresholdCoins) &&
+    readiness.thresholdCoins >= 0 &&
+    Number.isSafeInteger(readiness.shortfallCoins) &&
+    readiness.shortfallCoins >= 0 &&
+    Number.isFinite(Date.parse(readiness.nextEvaluationAt));
   const sales = data.sales ?? [];
   const peak = Math.max(0, ...data.bars);
   const metrics = [
@@ -311,7 +319,7 @@ export function AuthorEarningsPage() {
                 <span className="grid size-10 place-items-center rounded-2xl bg-orange/20 text-orange-strong">
                   <CalendarDays size={18} aria-hidden="true" />
                 </span>
-                <p className="mt-4 text-sm text-ink/80">{t('authorFinance.estimatedPayout')}</p>
+                <p className="mt-4 text-sm text-ink/80">{t('payoutReadiness.title')}</p>
                 {loading ? (
                   <span
                     aria-busy="true"
@@ -321,9 +329,29 @@ export function AuthorEarningsPage() {
                     <Skeleton className="h-8 w-36 rounded-lg" />
                   </span>
                 ) : (
-                  <strong className="nh-fade-enter mt-1 block text-h1 tabular-nums">—</strong>
+                  <strong className="nh-fade-enter mt-1 block text-lg">
+                    {hasReadiness ? t(`payoutReadiness.${readiness.state}`) : '—'}
+                  </strong>
                 )}
-                <p className="mt-2 text-xs leading-5 text-ink/70">{t('earningsData.noPayout')}</p>
+                {hasReadiness && (
+                  <p className="mt-2 text-sm">
+                    {t('payoutReadiness.details', {
+                      threshold: formatNumber(readiness.thresholdCoins),
+                      date: formatDate(readiness.nextEvaluationAt),
+                    })}
+                  </p>
+                )}
+                <p className="mt-2 text-xs leading-5 text-ink/70">{t('payoutReadiness.hint')}</p>
+                {hasReadiness && readiness.state === 'bank-required' && (
+                  <ButtonLink
+                    className="mt-3"
+                    size="sm"
+                    variant="secondary"
+                    to="/reader/author-payouts#payout-bank"
+                  >
+                    {t('payoutReadiness.bankLink')}
+                  </ButtonLink>
+                )}
               </Card>
             )}
 

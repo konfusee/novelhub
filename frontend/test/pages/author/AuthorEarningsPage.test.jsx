@@ -27,6 +27,23 @@ afterEach(() => {
   cleanup();
   vi.resetAllMocks();
 });
+it('shows payout readiness and a bank completion link without claiming a committed transfer', async () => {
+  mocks.apiRequest.mockResolvedValue({
+    ...data,
+    payoutReadiness: {
+      state: 'bank-required',
+      thresholdCoins: 100000,
+      shortfallCoins: 0,
+      nextEvaluationAt: '2026-10-31T17:00:00Z',
+    },
+  });
+  view();
+  expect(await screen.findByText('Cần bổ sung ngân hàng')).toBeTruthy();
+  expect(screen.getByRole('link', { name: 'Bổ sung ngân hàng' }).getAttribute('href')).toBe(
+    '/reader/author-payouts#payout-bank',
+  );
+  expect(screen.getByText(/không phải cam kết chuyển tiền/)).toBeTruthy();
+});
 it('shows recorded credits separately from the real wallet without fabricated USD or prices', async () => {
   mocks.apiRequest.mockImplementation(async (path) =>
     path.startsWith('/author/transactions') || path.startsWith('/author/payouts')

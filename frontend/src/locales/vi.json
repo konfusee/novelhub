@@ -390,6 +390,15 @@
     "title": "Chi trả thu nhập tác giả",
     "hint": "Theo dõi khoản chi trả và cập nhật ngân hàng cho kỳ sau. Tài khoản đã từng là tác giả vẫn được tra cứu thu nhập ngay cả khi vai trò tác giả đã bị thu hồi."
   },
+  "payoutReadiness": {
+    "title": "Điều kiện chi trả kỳ sau",
+    "eligible": "Hiện đủ điều kiện xét chi trả",
+    "bank-required": "Cần bổ sung ngân hàng",
+    "below-threshold": "Chưa đủ số dư xét chi trả",
+    "details": "Ngưỡng hiện hành: {{threshold}} xu · Kỳ xét tiếp theo: {{date}} (giờ Việt Nam).",
+    "hint": "Trạng thái dựa trên số dư và chính sách hiện tại. Khoản thực tế chỉ được lập tại kỳ chốt, sau khi kiểm tra lại tài khoản, ngân hàng và chính sách; không phải cam kết chuyển tiền.",
+    "bankLink": "Bổ sung ngân hàng"
+  },
   "authorAccountStatus": {
     "close": "Đóng và ẩn danh tài khoản",
     "closeHint": "Thao tác không thể khôi phục. Hồ sơ được ẩn danh, phiên đăng nhập hết hiệu lực, truyện bị ngừng công khai và nội dung chưa phát hành bị hủy. Xu độc giả còn lại bị mất, không hoàn tiền. Thu nhập chưa chi trả, lịch sử giao dịch và thông tin ngân hàng được giữ để quyết toán; thao tác này không xác nhận đã chuyển tiền.",
