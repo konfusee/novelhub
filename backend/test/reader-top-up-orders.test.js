@@ -34,6 +34,53 @@ async function fixture() {
       .send({ packageId: String(pack._id) });
   return { owner, policy, pack, create };
 }
+it('reads only the owner wallet and ledger with live packages and pending invoices, without exposing keys', async () => {
+  const f = await fixture();
+  await f.create();
+  const wallet = await Wallet.findOne({ ownerId: f.owner.account._id });
+  await Wallet.updateOne({ _id: wallet._id }, { $set: { availableBalance: 25 } });
+  await LedgerEntry.create({
+    walletId: wallet._id,
+    ledgerType: 'topup-credit',
+    direction: 'credit',
+    amount: 25,
+    sourceType: 'TopUpOrder',
+    sourceId: wallet._id,
+    idempotencyScope: { operation: 'test', ownerId: f.owner.account._id, key: 'wallet' },
+  });
+  const other = await authenticatedAccount('reader');
+  await Wallet.create({
+    ownerType: 'account',
+    ownerId: other.account._id,
+    purpose: 'reader-coins',
+    availableBalance: 900,
+  });
+  const configured = createApp(
+    testConfig({
+      sepay: { apiKey: 'private-test-key', accountNumber: '1234567890', bankName: 'Test bank' },
+    }),
+  );
+  const response = await request(configured)
+    .get('/api/reader/wallet')
+    .set('Cookie', f.owner.cookie);
+  expect(response.status).toBe(200);
+  expect(response.headers['cache-control']).toBe('private, no-store');
+  expect(response.body.balance).toBe(25);
+  expect(response.body.packages).toEqual([
+    { id: String(f.pack._id), coinAmount: 20000, priceVnd: 20000 },
+  ]);
+  expect(response.body.entries).toHaveLength(1);
+  expect(response.body.entries[0].amount).toBe(25);
+  expect(response.body.orders).toHaveLength(1);
+  expect(response.body.payment).toEqual({ accountNumber: '1234567890', bankName: 'Test bank' });
+  expect(JSON.stringify(response.body)).not.toContain('private-test-key');
+  expect(response.body.authorRatePercent).toBe(70);
+  const fresh = await request(app).get('/api/reader/wallet').set('Cookie', other.cookie);
+  expect(fresh.body.balance).toBe(900);
+  expect(fresh.body.entries).toEqual([]);
+  expect(fresh.body.orders).toEqual([]);
+  expect((await request(app).get('/api/reader/wallet')).status).toBe(401);
+});
 it('snapshots the effective policy and fixed package, reuses concurrent invoices without crediting coins', async () => {
   const f = await fixture();
   await PolicyVersion.create({

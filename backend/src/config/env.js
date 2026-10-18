@@ -43,6 +43,7 @@ const envSchema = z.object({
     )
     .optional(),
   SEPAY_WEBHOOK_API_KEY: z.string().min(32).max(256).optional(),
+  SEPAY_BANK_NAME: z.string().trim().min(1).max(100).optional(),
   SEPAY_ACCOUNT_NUMBER: z
     .string()
     .regex(/^[0-9]{6,30}$/)
@@ -93,6 +94,7 @@ export function loadEnv(source = process.env) {
     'MEDIA_STORAGE_DIR',
     'SEPAY_WEBHOOK_API_KEY',
     'SEPAY_ACCOUNT_NUMBER',
+    'SEPAY_BANK_NAME',
   ]) {
     if (normalized[key] === '') delete normalized[key];
   }
@@ -135,7 +137,11 @@ export function toAppConfig(env) {
     httpJsonLimitKb: env.HTTP_JSON_LIMIT_KB,
     mediaStorageDir: env.MEDIA_STORAGE_DIR,
     sepay: env.SEPAY_WEBHOOK_API_KEY
-      ? { apiKey: env.SEPAY_WEBHOOK_API_KEY, accountNumber: env.SEPAY_ACCOUNT_NUMBER }
+      ? {
+          apiKey: env.SEPAY_WEBHOOK_API_KEY,
+          accountNumber: env.SEPAY_ACCOUNT_NUMBER,
+          ...(env.SEPAY_BANK_NAME ? { bankName: env.SEPAY_BANK_NAME } : {}),
+        }
       : undefined,
     securityConfig: {
       emailSendAttempts: env.EMAIL_SEND_ATTEMPTS,

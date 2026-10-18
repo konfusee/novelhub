@@ -24,4 +24,8 @@ Mã thanh toán lấy từ nội dung gốc: đúng một mã `NH` + 8 số, có
 
 Kiểm thử dùng MongoDB replica set tạm: concurrent replay, hai receipt tranh một hóa đơn, mismatch/ambiguous code, expiry/inactive account, audit rollback, auth/config và số tiền không hợp lệ. Không gọi ngân hàng hoặc cộng xu vào database dùng chung.
 
-A-UC-05 vẫn chưa hoàn thiện toàn bộ: còn nối giao diện ví vào hóa đơn/xác nhận thực, giao diện Admin xử lý receipt ngoại lệ, policy thời hạn claim và phân bổ doanh thu khi mở khóa. Media/AI nằm ngoài phạm vi nghiệm thu.
+Ví đọc `/api/reader/wallet` bằng snapshot transaction: số dư của chủ tài khoản, gói đang hoạt động, tối đa 50 ledger gần nhất, tối đa 20 hóa đơn còn hạn và tỷ lệ mặc định của policy hiện hành. API không trả API key; chỉ trả số tài khoản và tên ngân hàng cấu hình bằng `SEPAY_BANK_NAME`. Khi chưa đủ thông tin ngân hàng, giao diện yêu cầu liên hệ hỗ trợ, không tự dựng hướng dẫn chuyển tiền.
+
+Giao diện giữ bố cục ví/gói/lịch sử/sidebar, bỏ mock và luồng cộng xu cục bộ. Có tạo hóa đơn, mở lại hóa đơn pending và kiểm tra trạng thái bằng API. Trạng thái paid tải lại số dư máy chủ. Tự động mở khóa chưa được kích hoạt nên switch được vô hiệu hóa rõ ràng. Bỏ số liệu phần thưởng/doanh thu quảng cáo không có nguồn. Không dựng lại số dư lịch sử vì ledger chưa lưu snapshot này; ô hiển thị dấu gạch cùng giải thích. CSV chỉ xuất các dòng hiện trên trang.
+
+A-UC-05 vẫn chưa hoàn thiện toàn bộ: còn giao diện Admin xử lý receipt ngoại lệ, policy thời hạn claim và phân bổ doanh thu khi mở khóa. Media/AI nằm ngoài phạm vi nghiệm thu. Chưa kích hoạt webhook/ngân hàng thật; kiểm thử giao diện dùng API giả lập và kiểm thử backend dùng MongoDB tạm. Kiểm tra browser bị timeout kết nối nên chưa xác nhận trực quan sáng/tối/responsive cho nhóm thay đổi này.

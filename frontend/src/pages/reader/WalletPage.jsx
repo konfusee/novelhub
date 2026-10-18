@@ -7,12 +7,9 @@ import {
   ChevronDown,
   Coins,
   Download,
-  Heart,
   LockKeyhole,
   Plus,
   RefreshCw,
-  ShieldCheck,
-  Sparkles,
   WalletCards,
 } from '../../components/icons';
 import { ReaderLayout } from '../../layouts';
@@ -22,13 +19,13 @@ import {
   ButtonLink,
   Card,
   EmptyState,
-  Modal,
   Reveal,
   Skeleton,
   Tabs,
 } from '../../components/ui';
-import { useMockResource } from '../../context/MockDataContext';
-import { coinPackages, transactions } from '../../data/mock/wallet';
+import { useBackendResource } from '../../api/useBackendResource';
+import { useLocale } from '../../context/LocaleContext';
+import { TopUpDialog } from './TopUpDialog';
 
 const filters = [
   ['all', 'Tất cả giao dịch'],
@@ -44,8 +41,36 @@ const faqs = [
 ];
 const typeTone = { added: 'text-brand-strong', tip: 'text-purple-strong', unlock: 'text-ink' };
 const formatCoins = (value) => value.toLocaleString('vi-VN');
-const STARTING_BALANCE = 1420;
-const never = () => false;
+const emptyWallet = { balance: 0, packages: [], entries: [], orders: [], payment: null };
+const selectWallet = (value) => {
+  if (
+    !value ||
+    !Number.isSafeInteger(value.balance) ||
+    value.balance < 0 ||
+    !Array.isArray(value.packages) ||
+    !Array.isArray(value.entries) ||
+    !Array.isArray(value.orders) ||
+    value.packages.some(
+      (p) =>
+        !p ||
+        typeof p.id !== 'string' ||
+        !Number.isSafeInteger(p.coinAmount) ||
+        p.coinAmount <= 0 ||
+        !Number.isSafeInteger(p.priceVnd) ||
+        p.priceVnd <= 0,
+    ) ||
+    value.entries.some(
+      (e) =>
+        !e ||
+        typeof e.id !== 'string' ||
+        !Number.isSafeInteger(e.amount) ||
+        !Number.isFinite(Date.parse(e.occurredAt)),
+    ) ||
+    value.orders.some((o) => !o || typeof o.id !== 'string' || typeof o.paymentCode !== 'string')
+  )
+    throw new Error('Invalid wallet response');
+  return value;
+};
 const TABLE_COLUMNS = 6;
 
 function RetryButton({ onClick }) {
@@ -85,13 +110,24 @@ function PackageSkeleton() {
 
 export function WalletPage() {
   const ids = useId();
-  const wallet = useMockResource('reader:wallet:balance', STARTING_BALANCE, { isEmpty: never });
-  const packs = useMockResource('reader:wallet:packages', coinPackages);
-  const ledger = useMockResource('reader:wallet:transactions', transactions);
-  const [credited, setCredited] = useState(0);
-  const [purchases, setPurchases] = useState([]);
-  const balance = (wallet.status === 'empty' ? 0 : wallet.data) + credited;
-  const [autoUnlock, setAutoUnlock] = useState(true);
+  const { t } = useLocale();
+  const m = (key) => t(`walletLive.${key}`);
+  const wallet = useBackendResource('/reader/wallet', emptyWallet, selectWallet);
+  const balance = wallet.data.balance;
+  const packs = {
+    ...wallet,
+    data: wallet.data.packages.map((p) => ({
+      id: p.id,
+      coins: p.coinAmount,
+      total: p.coinAmount,
+      label: `${formatCoins(p.coinAmount)} xu`,
+      price: `${formatCoins(p.priceVnd)} VND`,
+      note: m('fixedRate'),
+    })),
+  };
+  if (packs.status === 'ready' && !packs.data.length) packs.status = 'empty';
+  const ledger = wallet;
+  const autoUnlock = false;
   const [filter, setFilter] = useState('all');
   const [selected, setSelected] = useState(null);
   const [faq, setFaq] = useState(0);
@@ -102,34 +138,25 @@ export function WalletPage() {
     return () => clearTimeout(timer);
   }, [notice]);
   const records = useMemo(
-    () => (ledger.status === 'ready' ? [...purchases, ...ledger.data] : purchases),
-    [ledger.status, ledger.data, purchases],
+    () =>
+      wallet.data.entries.map((e) => ({
+        id: e.id,
+        date: new Date(e.occurredAt).toLocaleString('vi-VN'),
+        type: e.type === 'topup-credit' ? 'added' : e.type === 'unlock-debit' ? 'unlock' : 'other',
+        label: t(`walletLive.ledgerTypes.${e.type}`),
+        item: e.id,
+        amount: e.amount,
+      })),
+    [wallet.data.entries, t],
   );
   const shown = useMemo(
     () => (filter === 'all' ? records : records.filter((item) => item.type === filter)),
     [filter, records],
   );
-  const purchase = () => {
-    if (!selected) return;
-    setCredited((current) => current + selected.total);
-    setPurchases((current) => [
-      {
-        date: 'Vừa xong',
-        type: 'added',
-        label: 'Nạp xu',
-        item: `${selected.label} (${selected.price})`,
-        amount: selected.total,
-        balance: balance + selected.total,
-      },
-      ...current,
-    ]);
-    setNotice(`Đã cộng ${formatCoins(selected.total)} xu vào ví của bạn.`);
-    setSelected(null);
-  };
   const exportCsv = () => {
     const rows = [
-      ['Ngày & giờ', 'Loại', 'Chi tiết', 'Số xu', 'Số dư'],
-      ...shown.map((item) => [item.date, item.label, item.item, item.amount, item.balance]),
+      ['Ngày & giờ', 'Loại', 'Chi tiết', 'Số xu'],
+      ...shown.map((item) => [item.date, item.label, item.item, item.amount]),
     ];
     const csv = rows
       .map((row) => row.map((cell) => `"${String(cell).replaceAll('"', '""')}"`).join(','))
@@ -145,7 +172,7 @@ export function WalletPage() {
     <ReaderLayout>
       <div className="page-reader py-7">
         <p className="text-[11px] font-semibold uppercase tracking-[.16em] text-brand-strong">
-          Sổ giao dịch · Tài khoản độc giả #NH-94821
+          {m('ledgerTitle')}
         </p>
         <h1 className="mt-2 text-h2 sm:text-h1">Ví &amp; Xu</h1>
         <p className="mt-2 max-w-prose text-sm text-ink/70">
@@ -202,22 +229,19 @@ export function WalletPage() {
                         Xu
                       </span>
                     </p>
-                    <p className="mt-3 text-caption text-muted">
-                      Quy đổi: <strong className="text-ink">100 xu ≈ 0,99 USD</strong> · Xu không
-                      hết hạn
-                    </p>
+                    <p className="mt-3 text-caption text-muted">{m('fixedRate')}</p>
                   </div>
                   <div className="sm:shrink-0 sm:text-right">
                     <Button
-                      onClick={() => setSelected(coinPackages[1])}
-                      disabled={wallet.status === 'loading'}
+                      onClick={() => setSelected(packs.data[0])}
+                      disabled={packs.status !== 'ready' || !packs.data.length}
                     >
                       <Plus size={16} aria-hidden="true" />
                       Nạp thêm xu
                     </Button>
                     <p className="mt-2 flex items-center gap-1.5 text-caption text-brand-strong sm:justify-end sm:whitespace-nowrap">
                       <LockKeyhole size={13} aria-hidden="true" className="shrink-0" />
-                      Thanh toán mô phỏng bảo mật 256-bit
+                      {m('verifiedPayment')}
                     </p>
                   </div>
                 </div>
@@ -227,7 +251,7 @@ export function WalletPage() {
                       Tự động mở khóa chương mới khi phát hành
                     </strong>
                     <p id={`${ids}-auto-note`} className="mt-0.5 text-caption text-muted">
-                      Tự động dùng xu trong ví cho các truyện đã đánh dấu.
+                      {m('autoUnlockDeferred')}
                     </p>
                   </div>
                   <button
@@ -236,7 +260,7 @@ export function WalletPage() {
                     aria-checked={autoUnlock}
                     aria-labelledby={`${ids}-auto`}
                     aria-describedby={`${ids}-auto-note`}
-                    onClick={() => setAutoUnlock(!autoUnlock)}
+                    disabled
                     className={`relative flex h-7 w-12 shrink-0 items-center rounded-full p-1 transition-colors after:absolute after:-inset-2 ${autoUnlock ? 'bg-brand' : 'bg-ink/15'}`}
                   >
                     <span
@@ -251,17 +275,15 @@ export function WalletPage() {
               <h2 id={`${ids}-packs`} className="text-h3 md:text-h2">
                 Các gói nạp xu
               </h2>
-              <p className="mt-1 text-sm text-ink/70">
-                Xu được cộng ngay vào tài khoản đọc của bạn.
-              </p>
+              <p className="mt-1 text-sm text-ink/70">{m('creditAfterVerification')}</p>
               {packs.status === 'loading' ? (
                 <div
                   aria-busy="true"
                   aria-label="Đang tải các gói nạp xu"
                   className="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-2 2xl:grid-cols-4"
                 >
-                  {coinPackages.map((pack) => (
-                    <PackageSkeleton key={pack.id} />
+                  {Array.from({ length: 4 }, (_, index) => (
+                    <PackageSkeleton key={index} />
                   ))}
                 </div>
               ) : packs.status === 'error' ? (
@@ -376,8 +398,8 @@ export function WalletPage() {
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-hairline">
-                        {transactions.map((item) => (
-                          <tr key={`${item.date}-${item.item}`}>
+                        {Array.from({ length: 4 }, (_, index) => (
+                          <tr key={index}>
                             {Array.from({ length: TABLE_COLUMNS }, (_, column) => (
                               <td
                                 key={column}
@@ -439,7 +461,7 @@ export function WalletPage() {
                       </thead>
                       <tbody className="divide-y divide-hairline">
                         {shown.map((item) => (
-                          <tr key={`${item.date}-${item.item}`}>
+                          <tr key={item.id}>
                             <td className="whitespace-nowrap py-4 pl-6 pr-3 text-caption text-muted">
                               {item.date}
                             </td>
@@ -455,8 +477,11 @@ export function WalletPage() {
                               {item.amount > 0 ? '+' : ''}
                               {formatCoins(item.amount)} xu
                             </td>
-                            <td className="px-3 text-right tabular-nums text-muted">
-                              {formatCoins(item.balance)}
+                            <td
+                              title={m('historicalBalanceUnavailable')}
+                              className="px-3 text-right tabular-nums text-muted"
+                            >
+                              —
                             </td>
                             <td className="whitespace-nowrap pl-3 pr-6">
                               <Badge tone="green">Hoàn tất</Badge>
@@ -482,7 +507,11 @@ export function WalletPage() {
                           Xem tất cả giao dịch
                         </Button>
                       ) : (
-                        <Button size="sm" onClick={() => setSelected(coinPackages[1])}>
+                        <Button
+                          size="sm"
+                          disabled={!packs.data.length}
+                          onClick={() => setSelected(packs.data[0])}
+                        >
                           <Plus size={14} aria-hidden="true" />
                           Nạp thêm xu
                         </Button>
@@ -509,24 +538,13 @@ export function WalletPage() {
                 trực tiếp hỗ trợ các tác giả.
               </p>
               <div className="mt-4 rounded-2xl bg-elevated p-4">
-                <div className="flex justify-between gap-3 text-sm">
-                  <span>Phần chia sẻ cho tác giả độc lập</span>
-                  <strong className="text-brand-strong">70%</strong>
-                </div>
-                <div
-                  role="img"
-                  aria-label="Tác giả độc lập nhận 70% giá trị xu"
-                  className="mt-3 flex h-2 gap-0.5 overflow-hidden rounded-full"
-                >
-                  <span className="w-[70%] rounded-full bg-brand" />
-                  <span className="w-[20%] rounded-full bg-orange" />
-                  <span className="w-[10%] rounded-full bg-ink/20" />
-                </div>
+                <p className="text-sm text-muted">{m('policyShare')}</p>
+                <strong className="text-brand-strong">
+                  {wallet.status === 'ready' && wallet.data.authorRatePercent != null
+                    ? `${wallet.data.authorRatePercent}%`
+                    : '—'}
+                </strong>
               </div>
-              <p className="mt-4 flex gap-2 rounded-2xl bg-orange/12 p-3 text-caption text-orange-strong">
-                <Heart size={15} aria-hidden="true" className="mt-0.5 shrink-0" />
-                Hơn 1,4 triệu USD tiền bản quyền nhỏ đã được trả cho các tác giả độc lập.
-              </p>
             </Card>
             <Card>
               <h2 className="text-h3">Câu hỏi về Xu &amp; Ví</h2>
@@ -565,44 +583,44 @@ export function WalletPage() {
                 })}
               </div>
             </Card>
-            <Card className="flex gap-3 border-purple/20 bg-purple/8">
-              <span className="grid size-10 shrink-0 place-items-center rounded-2xl bg-orange/16 text-orange-strong">
-                <Sparkles size={18} aria-hidden="true" />
-              </span>
-              <div>
-                <strong className="text-sm">Thưởng đọc hằng ngày</strong>
-                <p className="mt-1 text-caption text-ink/70">
-                  Đọc 20 phút hôm nay để nhận 5 xu miễn phí cho chương tiếp theo.
-                </p>
-              </div>
+            <Card>
+              <h2 className="text-h3">{m('pendingOrders')}</h2>
+              {wallet.data.orders.map((order) => (
+                <Button
+                  key={order.id}
+                  variant="secondary"
+                  className="mt-3 w-full"
+                  onClick={() => setSelected({ order })}
+                >
+                  {order.paymentCode}
+                </Button>
+              ))}
+              {wallet.status === 'ready' && !wallet.data.orders.length && (
+                <p className="mt-2 text-sm text-muted">{m('noPendingOrders')}</p>
+              )}
+              <Button
+                variant="secondary"
+                className="mt-4"
+                disabled={wallet.status === 'loading'}
+                onClick={wallet.retry}
+              >
+                {m('refresh')}
+              </Button>
+              {wallet.data.hasMore && (
+                <p className="mt-3 text-caption text-muted">{m('latestEntries')}</p>
+              )}
             </Card>
           </aside>
         </div>
-        <Modal
-          open={Boolean(selected)}
-          title="Xác nhận giao dịch mô phỏng"
-          onClose={() => setSelected(null)}
-        >
-          {selected && (
-            <div>
-              <div className="flex items-center justify-between gap-4 rounded-2xl border border-hairline bg-surface p-4">
-                <div>
-                  <strong>{selected.label}</strong>
-                  <p className="text-caption text-muted">{formatCoins(selected.total)} xu</p>
-                </div>
-                <strong className="text-xl tabular-nums">{selected.price}</strong>
-              </div>
-              <p className="mt-4 flex items-center gap-2 text-caption text-ink/70">
-                <ShieldCheck size={18} aria-hidden="true" className="shrink-0 text-brand-strong" />
-                Đây chỉ là giao diện mô phỏng — không có thanh toán thật.
-              </p>
-              <Button onClick={purchase} className="mt-5 w-full">
-                <Check size={16} aria-hidden="true" />
-                Hoàn tất giao dịch mô phỏng
-              </Button>
-            </div>
-          )}
-        </Modal>
+        {selected && (
+          <TopUpDialog
+            key={selected.order?.id ?? selected.id}
+            selected={selected}
+            payment={wallet.data.payment}
+            onClose={() => setSelected(null)}
+            onRefresh={wallet.retry}
+          />
+        )}
       </div>
     </ReaderLayout>
   );
