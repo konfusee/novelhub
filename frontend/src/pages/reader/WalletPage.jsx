@@ -1,4 +1,4 @@
-import { useEffect, useId, useMemo, useState } from 'react';
+import { useEffect, useId, useMemo, useState } from 'react'
 import {
   AlertTriangle,
   BadgeDollarSign,
@@ -14,8 +14,8 @@ import {
   ShieldCheck,
   Sparkles,
   WalletCards,
-} from '../../components/icons';
-import { ReaderLayout } from '../../layouts';
+} from '../../components/icons'
+import { ReaderLayout } from '../../layouts'
 import {
   Badge,
   Button,
@@ -26,27 +26,27 @@ import {
   Reveal,
   Skeleton,
   Tabs,
-} from '../../components/ui';
-import { useMockResource } from '../../context/MockDataContext';
-import { coinPackages, transactions } from '../../data/mock/wallet';
+} from '../../components/ui'
+import { useMockResource } from '../../context/MockDataContext'
+import { coinPackages, transactions } from '../../data/mock/wallet'
 
 const filters = [
   ['all', 'Tất cả giao dịch'],
   ['added', 'Xu đã nạp'],
   ['unlock', 'Chương đã mở khóa'],
   ['tip', 'Ủng hộ tác giả'],
-];
+]
 const faqs = [
   'Xu đã mua có hết hạn không?',
   'Giá mở khóa chương là bao nhiêu?',
   'Tôi có thể yêu cầu hoàn xu không?',
   'Xu thưởng là gì?',
-];
-const typeTone = { added: 'text-brand-strong', tip: 'text-purple-strong', unlock: 'text-ink' };
-const formatCoins = (value) => value.toLocaleString('vi-VN');
-const STARTING_BALANCE = 1420;
-const never = () => false;
-const TABLE_COLUMNS = 6;
+]
+const typeTone = { added: 'text-brand-strong', tip: 'text-purple-strong', unlock: 'text-ink' }
+const formatCoins = value => value.toLocaleString('vi-VN')
+const STARTING_BALANCE = 1420
+const never = () => false
+const TABLE_COLUMNS = 6
 
 function RetryButton({ onClick }) {
   return (
@@ -54,7 +54,7 @@ function RetryButton({ onClick }) {
       <RefreshCw size={14} aria-hidden="true" />
       Thử lại
     </Button>
-  );
+  )
 }
 
 /* Coin package card frame: label row, coin total, bonus line, note, price footer. */
@@ -80,39 +80,39 @@ function PackageSkeleton() {
         <Skeleton className="h-9 w-24" />
       </div>
     </Card>
-  );
+  )
 }
 
 export function WalletPage() {
-  const ids = useId();
-  const wallet = useMockResource('reader:wallet:balance', STARTING_BALANCE, { isEmpty: never });
-  const packs = useMockResource('reader:wallet:packages', coinPackages);
-  const ledger = useMockResource('reader:wallet:transactions', transactions);
-  const [credited, setCredited] = useState(0);
-  const [purchases, setPurchases] = useState([]);
-  const balance = (wallet.status === 'empty' ? 0 : wallet.data) + credited;
-  const [autoUnlock, setAutoUnlock] = useState(true);
-  const [filter, setFilter] = useState('all');
-  const [selected, setSelected] = useState(null);
-  const [faq, setFaq] = useState(0);
-  const [notice, setNotice] = useState('');
+  const ids = useId()
+  const wallet = useMockResource('reader:wallet:balance', STARTING_BALANCE, { isEmpty: never })
+  const packs = useMockResource('reader:wallet:packages', coinPackages)
+  const ledger = useMockResource('reader:wallet:transactions', transactions)
+  const [credited, setCredited] = useState(0)
+  const [purchases, setPurchases] = useState([])
+  const balance = (wallet.status === 'empty' ? 0 : wallet.data) + credited
+  const [autoUnlock, setAutoUnlock] = useState(true)
+  const [filter, setFilter] = useState('all')
+  const [selected, setSelected] = useState(null)
+  const [faq, setFaq] = useState(0)
+  const [notice, setNotice] = useState('')
   useEffect(() => {
-    if (!notice) return undefined;
-    const timer = setTimeout(() => setNotice(''), 5000);
-    return () => clearTimeout(timer);
-  }, [notice]);
+    if (!notice) return undefined
+    const timer = setTimeout(() => setNotice(''), 5000)
+    return () => clearTimeout(timer)
+  }, [notice])
   const records = useMemo(
     () => (ledger.status === 'ready' ? [...purchases, ...ledger.data] : purchases),
     [ledger.status, ledger.data, purchases],
-  );
+  )
   const shown = useMemo(
-    () => (filter === 'all' ? records : records.filter((item) => item.type === filter)),
+    () => (filter === 'all' ? records : records.filter(item => item.type === filter)),
     [filter, records],
-  );
+  )
   const purchase = () => {
-    if (!selected) return;
-    setCredited((current) => current + selected.total);
-    setPurchases((current) => [
+    if (!selected) return
+    setCredited(current => current + selected.total)
+    setPurchases(current => [
       {
         date: 'Vừa xong',
         type: 'added',
@@ -122,25 +122,25 @@ export function WalletPage() {
         balance: balance + selected.total,
       },
       ...current,
-    ]);
-    setNotice(`Đã cộng ${formatCoins(selected.total)} xu vào ví của bạn.`);
-    setSelected(null);
-  };
+    ])
+    setNotice(`Đã cộng ${formatCoins(selected.total)} xu vào ví của bạn.`)
+    setSelected(null)
+  }
   const exportCsv = () => {
     const rows = [
       ['Ngày & giờ', 'Loại', 'Chi tiết', 'Số xu', 'Số dư'],
-      ...shown.map((item) => [item.date, item.label, item.item, item.amount, item.balance]),
-    ];
+      ...shown.map(item => [item.date, item.label, item.item, item.amount, item.balance]),
+    ]
     const csv = rows
-      .map((row) => row.map((cell) => `"${String(cell).replaceAll('"', '""')}"`).join(','))
-      .join('\n');
-    const link = document.createElement('a');
-    link.href = URL.createObjectURL(new Blob([`\ufeff${csv}`], { type: 'text/csv' }));
-    link.download = 'novelhub-giao-dich.csv';
-    link.click();
-    URL.revokeObjectURL(link.href);
-    setNotice('Đã xuất CSV giao dịch.');
-  };
+      .map(row => row.map(cell => `"${String(cell).replaceAll('"', '""')}"`).join(','))
+      .join('\n')
+    const link = document.createElement('a')
+    link.href = URL.createObjectURL(new Blob([`\ufeff${csv}`], { type: 'text/csv' }))
+    link.download = 'novelhub-giao-dich.csv'
+    link.click()
+    URL.revokeObjectURL(link.href)
+    setNotice('Đã xuất CSV giao dịch.')
+  }
   return (
     <ReaderLayout>
       <div className="page-reader py-7">
@@ -260,7 +260,7 @@ export function WalletPage() {
                   aria-label="Đang tải các gói nạp xu"
                   className="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-2 2xl:grid-cols-4"
                 >
-                  {coinPackages.map((pack) => (
+                  {coinPackages.map(pack => (
                     <PackageSkeleton key={pack.id} />
                   ))}
                 </div>
@@ -292,7 +292,7 @@ export function WalletPage() {
                 </Card>
               ) : (
                 <div className="nh-fade-enter mt-6 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-2 2xl:grid-cols-4">
-                  {packs.data.map((pack) => (
+                  {packs.data.map(pack => (
                     <Card
                       as="article"
                       key={pack.id}
@@ -376,7 +376,7 @@ export function WalletPage() {
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-hairline">
-                        {transactions.map((item) => (
+                        {transactions.map(item => (
                           <tr key={`${item.date}-${item.item}`}>
                             {Array.from({ length: TABLE_COLUMNS }, (_, column) => (
                               <td
@@ -438,7 +438,7 @@ export function WalletPage() {
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-hairline">
-                        {shown.map((item) => (
+                        {shown.map(item => (
                           <tr key={`${item.date}-${item.item}`}>
                             <td className="whitespace-nowrap py-4 pl-6 pr-3 text-caption text-muted">
                               {item.date}
@@ -532,7 +532,7 @@ export function WalletPage() {
               <h2 className="text-h3">Câu hỏi về Xu &amp; Ví</h2>
               <div className="mt-3 divide-y divide-hairline">
                 {faqs.map((question, index) => {
-                  const open = faq === index;
+                  const open = faq === index
                   return (
                     <div key={question}>
                       <h3>
@@ -561,7 +561,7 @@ export function WalletPage() {
                         </p>
                       )}
                     </div>
-                  );
+                  )
                 })}
               </div>
             </Card>
@@ -605,5 +605,5 @@ export function WalletPage() {
         </Modal>
       </div>
     </ReaderLayout>
-  );
+  )
 }

@@ -911,7 +911,8 @@ export function Modal({ open, title, onClose, className, children }) {
         aria-labelledby={titleId}
         tabIndex={-1}
         className={cn(
-          'nh-dialog-enter max-h-[calc(100dvh-2rem)] w-full max-w-lg overflow-y-auto rounded-3xl border border-line bg-elevated p-6 shadow-float outline-none',
+          'nh-dialog-enter max-h-[calc(100dvh-2rem)] w-full overflow-y-auto rounded-3xl border border-line bg-elevated p-6 shadow-float outline-none',
+          unless(className, /(^|\s)max-w-/, 'max-w-lg'),
           className,
         )}
       >
@@ -931,15 +932,15 @@ export function Modal({ open, title, onClose, className, children }) {
   );
 }
 
-export function Drawer({ open, title, onClose, children }) {
+export function Drawer({ open, title, onClose, children, docked = false }) {
   const { t } = useLocale();
   const panelRef = useRef(null);
   const titleId = useId();
   useOverlayFocus(open, onClose, panelRef);
-  useScrollLock(open);
+  useScrollLock(open && !docked);
   return createPortal(
     <>
-      {open && (
+      {open && !docked && (
         // The drawer owns its backdrop so it always dims the whole app, header included.
         <button
           type="button"
@@ -952,16 +953,18 @@ export function Drawer({ open, title, onClose, children }) {
       <aside
         ref={panelRef}
         role="dialog"
-        aria-modal={open || undefined}
+        aria-modal={open && !docked ? true : undefined}
         tabIndex={-1}
         aria-labelledby={titleId}
         className={cn(
-          // Phones: bottom sheet. From sm: right-side panel.
-          'fixed inset-x-0 bottom-0 z-50 max-h-[82dvh] overflow-y-auto rounded-t-3xl border-t border-line bg-elevated p-6 pb-[max(1.5rem,env(safe-area-inset-bottom))] shadow-float outline-none transition-transform duration-[420ms] ease-spring',
-          'sm:inset-y-0 sm:left-auto sm:right-0 sm:max-h-none sm:w-full sm:max-w-sm sm:rounded-tr-none sm:rounded-l-3xl sm:border-l sm:border-t-0',
+          docked
+            ? 'fixed right-0 top-[var(--app-header-h)] bottom-0 z-40 w-96 max-w-[calc(100vw-1rem)] overflow-y-auto rounded-l-2xl border-l border-line bg-surface p-6 shadow-float outline-none transition-transform duration-[420ms] ease-spring motion-reduce:transition-none'
+            : 'fixed inset-x-0 bottom-0 z-50 max-h-[82dvh] overflow-y-auto rounded-t-3xl border-t border-line bg-elevated p-6 pb-[max(1.5rem,env(safe-area-inset-bottom))] shadow-float outline-none transition-transform duration-[420ms] ease-spring sm:inset-y-0 sm:left-auto sm:right-0 sm:max-h-none sm:w-full sm:max-w-sm sm:rounded-tr-none sm:rounded-l-3xl sm:border-l sm:border-t-0',
           open
             ? 'translate-x-0 translate-y-0'
-            : 'translate-y-full sm:translate-x-full sm:translate-y-0',
+            : docked
+              ? 'translate-x-full'
+              : 'translate-y-full sm:translate-x-full sm:translate-y-0',
         )}
         aria-hidden={!open}
         inert={!open}

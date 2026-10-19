@@ -1,9 +1,9 @@
-import { ArrowRight } from '../icons';
-import { Link } from 'react-router';
-import { useLocale } from '../../context/LocaleContext';
+import { ArrowRight } from '../icons'
+import { Link } from 'react-router'
+import { useLocale } from '../../context/LocaleContext'
 
 export function SectionTitle({ children, to = '/search', actionLabel }) {
-  const { t } = useLocale();
+  const { t } = useLocale()
   return (
     <div className="mb-5 flex flex-wrap items-end justify-between gap-3">
       <h2 className="text-h3 md:text-h2">{children}</h2>
@@ -20,5 +20,5 @@ export function SectionTitle({ children, to = '/search', actionLabel }) {
         </Link>
       )}
     </div>
-  );
+  )
 }

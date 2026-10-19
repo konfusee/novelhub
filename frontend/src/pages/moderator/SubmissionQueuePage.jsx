@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useMemo, useState } from 'react'
 import {
   AlertTriangle,
   ChevronLeft,
@@ -9,12 +9,12 @@ import {
   Search,
   ShieldCheck,
   UserPlus,
-} from '../../components/icons';
-import { ModeratorLayout } from '../../layouts';
-import { ROUTES } from '../../app/routes';
-import { submissionQueue } from '../../data/mock/moderation';
-import { StoryCover } from '../../components/story/StoryCover';
-import { useMockResource } from '../../context/MockDataContext';
+} from '../../components/icons'
+import { ModeratorLayout } from '../../layouts'
+import { ROUTES } from '../../app/routes'
+import { submissionQueue } from '../../data/mock/moderation'
+import { StoryCover } from '../../components/story/StoryCover'
+import { useMockResource } from '../../context/MockDataContext'
 import {
   Badge,
   Button,
@@ -26,72 +26,72 @@ import {
   Select,
   Skeleton,
   Tabs,
-} from '../../components/ui';
+} from '../../components/ui'
 
 const tabs = [
   { value: 'All', label: 'Tất cả', count: 24 },
   { value: 'Unassigned', label: 'Chưa phân công', count: 14 },
   { value: 'Assigned to Me', label: 'Đã phân công cho tôi', count: 6 },
   { value: 'Urgent / SLA Warning', label: 'Khẩn cấp / Cảnh báo SLA', count: 4 },
-];
-const PAGE_COUNT = 3;
+]
+const PAGE_COUNT = 3
 const priorityLabels = {
   'High Priority': 'Ưu tiên cao',
   Normal: 'Bình thường',
   'Urgent Alert': 'Cảnh báo khẩn',
   'Similarity Alert': 'Cảnh báo tương đồng',
-};
+}
 const genreLabels = {
   'Fantasy & Mythic': 'Kỳ ảo và Thần thoại',
   'Sci-Fi & Cyberpunk': 'Khoa học viễn tưởng và Cyberpunk',
   'Cyberpunk Thriller': 'Giật gân Cyberpunk',
   'Romance & Drama': 'Lãng mạn và Chính kịch',
   'High Fantasy': 'Kỳ ảo cao cấp',
-};
+}
 const riskLabels = {
   '98% Clean Verifiable': '98% sạch, có thể xác minh',
   '100% Passed Syntax & NLP': '100% đạt kiểm tra cú pháp và NLP',
   'Rating Mismatch Flag': 'Cảnh báo sai phân loại',
   '100% Clean': '100% sạch',
   '42% Lore Overlap': '42% trùng lặp thế giới truyện',
-};
+}
 const toneText = {
   green: 'text-brand-strong',
   red: 'text-rose-strong',
   orange: 'text-orange-strong',
   purple: 'text-purple-strong',
-};
+}
 const toneBorder = {
   green: 'border-line',
   red: 'border-rose/45',
   orange: 'border-orange/45',
   purple: 'border-purple/40',
-};
+}
 const toneCover = {
   green: 'var(--primary)',
   red: 'var(--accent-rose)',
   orange: 'var(--accent-orange)',
   purple: 'var(--accent-purple)',
-};
-const formatAge = (value) => value.replace('h ago', ' giờ trước');
-const formatSla = (value) => value.replace('h', ' giờ').replace('m', ' phút');
-const formatPayload = (value) => value.replace(' chapters', ' chương').replace(' words', ' từ');
+}
+const formatAge = value => value.replace('h ago', ' giờ trước')
+const formatSla = value => value.replace('h', ' giờ').replace('m', ' phút')
+const formatPayload = value => value.replace(' chapters', ' chương').replace(' words', ' từ')
 
 export function SubmissionQueuePage() {
-  const [tab, setTab] = useState('All');
-  const [query, setQuery] = useState('');
-  const [genre, setGenre] = useState('All Genres');
-  const [risk, setRisk] = useState('All Verification Levels');
-  const [selected, setSelected] = useState([]);
-  const [assignOpen, setAssignOpen] = useState(false);
-  const [assignee, setAssignee] = useState('Sarah Jenkins');
-  const [page, setPage] = useState(1);
-  const [assignments, setAssignments] = useState({});
-  const queue = useMockResource('moderator:submissions', submissionQueue);
+  const [tab, setTab] = useState('All')
+  const [query, setQuery] = useState('')
+  const [genre, setGenre] = useState('All Genres')
+  const [risk, setRisk] = useState('All Verification Levels')
+  const [selected, setSelected] = useState([])
+  const [assignOpen, setAssignOpen] = useState(false)
+  const [assignee, setAssignee] = useState('Sarah Jenkins')
+  const [page, setPage] = useState(1)
+  const [assignments, setAssignments] = useState({})
+  const queue = useMockResource('moderator:submissions', submissionQueue)
   const rows = useMemo(
     () =>
       queue.data.filter(
-        (row) =>
+        row =>
           (tab === 'All' ||
             (tab === 'Unassigned' && (assignments[row.id] || row.assigned) === 'Unassigned') ||
             (tab === 'Assigned to Me' && (assignments[row.id] || row.assigned).includes('Sarah')) ||
@@ -103,25 +103,25 @@ export function SubmissionQueuePage() {
           `${row.title} ${row.id} ${row.author}`.toLowerCase().includes(query.toLowerCase()),
       ),
     [queue.data, tab, genre, risk, query, assignments],
-  );
-  const toggle = (id) =>
-    setSelected((current) =>
-      current.includes(id) ? current.filter((item) => item !== id) : [...current, id],
-    );
+  )
+  const toggle = id =>
+    setSelected(current =>
+      current.includes(id) ? current.filter(item => item !== id) : [...current, id],
+    )
   const assign = () => {
-    setAssignments((current) => ({
+    setAssignments(current => ({
       ...current,
-      ...Object.fromEntries(selected.map((id) => [id, assignee])),
-    }));
-    setSelected([]);
-    setAssignOpen(false);
-  };
+      ...Object.fromEntries(selected.map(id => [id, assignee])),
+    }))
+    setSelected([])
+    setAssignOpen(false)
+  }
   const resetFilters = () => {
-    setTab('All');
-    setGenre('All Genres');
-    setRisk('All Verification Levels');
-    setQuery('');
-  };
+    setTab('All')
+    setGenre('All Genres')
+    setRisk('All Verification Levels')
+    setQuery('')
+  }
   return (
     <ModeratorLayout>
       <div className="page-moderator py-6">
@@ -150,7 +150,7 @@ export function SubmissionQueuePage() {
               type="search"
               enterKeyHint="search"
               value={query}
-              onChange={(event) => setQuery(event.target.value)}
+              onChange={event => setQuery(event.target.value)}
               placeholder="Tìm truyện, mã, tác giả..."
               aria-label="Lọc theo truyện, mã bản thảo, tác giả"
               className="w-full xl:w-80 xl:shrink-0"
@@ -161,7 +161,7 @@ export function SubmissionQueuePage() {
                 singleRow
                 value={tab}
                 onChange={setTab}
-                items={tabs.map((item) => ({
+                items={tabs.map(item => ({
                   value: item.value,
                   label: (
                     <>
@@ -177,11 +177,7 @@ export function SubmissionQueuePage() {
             <label className="sr-only" htmlFor="queue-genre">
               Thể loại
             </label>
-            <Select
-              id="queue-genre"
-              value={genre}
-              onChange={(event) => setGenre(event.target.value)}
-            >
+            <Select id="queue-genre" value={genre} onChange={event => setGenre(event.target.value)}>
               <option value="All Genres">Tất cả thể loại</option>
               <option value="Fantasy & Mythic">Kỳ ảo và Thần thoại</option>
               <option value="Sci-Fi & Cyberpunk">Khoa học viễn tưởng và Cyberpunk</option>
@@ -192,7 +188,7 @@ export function SubmissionQueuePage() {
             <label className="sr-only" htmlFor="queue-risk">
               Mức xác minh
             </label>
-            <Select id="queue-risk" value={risk} onChange={(event) => setRisk(event.target.value)}>
+            <Select id="queue-risk" value={risk} onChange={event => setRisk(event.target.value)}>
               <option value="All Verification Levels">Tất cả mức xác minh</option>
               <option value="High AI / Plagiarism Risk">Rủi ro AI / đạo văn cao</option>
             </Select>
@@ -269,14 +265,14 @@ export function SubmissionQueuePage() {
             aria-label="Danh sách bản thảo chờ xét duyệt"
             className="nh-fade-enter mt-3 min-w-0 space-y-3"
           >
-            {rows.map((row) => (
+            {rows.map(row => (
               <QueueRow
                 key={row.id}
                 row={{ ...row, assigned: assignments[row.id] || row.assigned }}
                 checked={selected.includes(row.id)}
                 onCheck={() => toggle(row.id)}
                 onClaim={() =>
-                  setAssignments((current) => ({ ...current, [row.id]: 'Sarah Jenkins' }))
+                  setAssignments(current => ({ ...current, [row.id]: 'Sarah Jenkins' }))
                 }
               />
             ))}
@@ -311,12 +307,12 @@ export function SubmissionQueuePage() {
               variant="secondary"
               size="sm"
               disabled={page === 1}
-              onClick={() => setPage((value) => Math.max(1, value - 1))}
+              onClick={() => setPage(value => Math.max(1, value - 1))}
             >
               <ChevronLeft size={14} />
               Trước
             </Button>
-            {Array.from({ length: PAGE_COUNT }, (_, index) => index + 1).map((value) => (
+            {Array.from({ length: PAGE_COUNT }, (_, index) => index + 1).map(value => (
               <button
                 key={value}
                 type="button"
@@ -332,7 +328,7 @@ export function SubmissionQueuePage() {
               variant="secondary"
               size="sm"
               disabled={page === PAGE_COUNT}
-              onClick={() => setPage((value) => Math.min(PAGE_COUNT, value + 1))}
+              onClick={() => setPage(value => Math.min(PAGE_COUNT, value + 1))}
             >
               Sau
               <ChevronRight size={14} />
@@ -350,7 +346,7 @@ export function SubmissionQueuePage() {
           <Select
             id="queue-assignee"
             value={assignee}
-            onChange={(event) => setAssignee(event.target.value)}
+            onChange={event => setAssignee(event.target.value)}
             className="mt-2 w-full"
           >
             <option>Sarah Jenkins</option>
@@ -369,7 +365,7 @@ export function SubmissionQueuePage() {
         </Modal>
       </div>
     </ModeratorLayout>
-  );
+  )
 }
 
 function QueueStat({ dot, value, label }) {
@@ -391,12 +387,12 @@ function QueueStat({ dot, value, label }) {
         </>
       )}
     </div>
-  );
+  )
 }
 
 function QueueRow({ row, checked, onCheck, onClaim }) {
-  const checkboxId = `queue-select-${row.id}`;
-  const flagged = row.tone === 'red' || row.tone === 'purple';
+  const checkboxId = `queue-select-${row.id}`
+  const flagged = row.tone === 'red' || row.tone === 'purple'
   return (
     <li>
       <Card
@@ -494,7 +490,7 @@ function QueueRow({ row, checked, onCheck, onClaim }) {
         </div>
       </Card>
     </li>
-  );
+  )
 }
 
 /* Mirrors QueueRow: same grid tracks, 56×80 cover, badge/text stacks and the action column. */
@@ -562,5 +558,5 @@ function QueueRowSkeleton() {
         </div>
       </Card>
     </li>
-  );
+  )
 }

@@ -81,7 +81,7 @@ Primary reuse locations:
 - Application shell: `src/components/shell/AppShell.jsx`
 - Global workspace header/account behavior: `src/components/shared/RoleNavigation.jsx`
 - Public header: `src/components/public/PublicHeader.jsx`
-- Landing footer/back-to-top: `src/components/shared/SiteFooter.jsx` (rendered by `App.jsx` on the guest landing route only)
+- Landing footer/back-to-top: `src/components/shared/SiteFooter.jsx` (rendered by `App.jsx` on public landing, authentication, author application and legal routes)
 - Story cover: `src/components/story/StoryCover.jsx`
 - Public story/content cards: `src/components/public/`
 - Reader library cards and settings: `src/components/reader/`
@@ -136,7 +136,7 @@ The shared shell owns:
 
 Pages MUST NOT render another authenticated Header, Sidebar, or Footer. Workspace changes should replace only navigation, workspace label, tabs, and central content.
 
-The public surface uses `src/components/public/PublicHeader.jsx`. `SiteFooter` appears only on the guest landing page (`/`, `/discover`), coordinated in `src/App.jsx`; no other page renders it.
+The public surface uses `src/components/public/PublicHeader.jsx`. `SiteFooter` appears on guest landing (`/`, `/discover`), authentication (`/login`, `/register`, `/join`), author application (`/author/apply`), and public legal pages, coordinated in `src/App.jsx`. Workspace pages do not render it.
 
 ## 9. Header Rules
 
@@ -413,11 +413,23 @@ Affected: `App.jsx`, `MockDataContext`, `ui/index.jsx`, shell/header components,
 
 Status: Accepted through the user's explicit review requests.
 
+### 2026-10-13 — Authentication footer and reading panels
+
+Context: The user requested a four-column footer on sign-in/sign-up, readable author agreements, quiet scrollbars, and settings that do not dim the reading canvas.
+
+Decision: Public authentication, author application and legal routes share the footer through App.jsx. Legal reading modals use approximately two-thirds desktop width; author registration presents a document pane beside its checklist. Drawer supports an opt-in docked variant without backdrop or scroll lock for reader settings. Reader toolbar orientation is persisted with reading preferences. All scrollable surfaces use the shared quiet scrollbar rules.
+
+Reason: Keep documents readable and let readers preview setting changes while continuing to read.
+
+Affected: App.jsx, JoinPage, AuthorApplyPage, SiteFooter, ui/index.jsx, ReaderSettings, FullChapterReaderPage, styles.css.
+
+Status: Accepted through the user's explicit requests.
+
 ## 25. Deprecated Patterns
 
 - **DOM-wide translation via `MutationObserver` — DEPRECATED.** Use keyed dictionaries through `useLocale()`.
 - **Role-specific duplicated application shells — DEPRECATED.** Use `AppShell` plus workspace navigation configuration.
-- **Footers outside the guest landing — REMOVED.** Neither `AppShell` nor pages render `SiteFooter`.
+- **Page-local footers — DEPRECATED.** `App.jsx` owns `SiteFooter` on public landing and authentication routes. Workspace pages have no footer.
 
 ## 26. What NOT To Do
 

@@ -51,6 +51,16 @@ export function MockDataProvider({ children }) {
       },
     });
   };
+  const saveCommunityPost = (storyId, post) => {
+    const current = data.community?.[storyId] || [];
+    const posts =
+      post.kind === 'review'
+        ? current.filter((item) => item.kind !== 'review' || item.accountId !== post.accountId)
+        : current;
+    const next = { ...data, community: { ...data.community, [storyId]: [post, ...posts] } };
+    localStorage.setItem(KEY, JSON.stringify(next));
+    setData(next);
+  };
   const beginRequest = useCallback(() => {
     setPending((count) => count + 1);
     return () => setPending((count) => Math.max(0, count - 1));
@@ -60,6 +70,7 @@ export function MockDataProvider({ children }) {
     pending,
     beginRequest,
     saveAgreement,
+    saveCommunityPost,
     setSimulation: (simulation) => update({ ...data, simulation }),
     setLatency: (latency) => update({ ...data, latency: Number(latency) }),
     reset: () => update(initial),

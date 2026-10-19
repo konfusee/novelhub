@@ -4,23 +4,23 @@ NovelHub's development database runs on the group VPS in Docker as a
 single-node replica set (`rs0`). It is a replica set because the finance and
 moderation code depends on multi-document transactions.
 
-> Private class project: the database credentials are recorded here on purpose
-> so every teammate can connect. The VPS login itself is **not** in this repo.
+Credentials are distributed to authorized teammates out of band and belong only
+in the ignored `backend/.env` file. Never commit database passwords.
 
 ## Connection
 
-|             | Value                                                                                         |
-| ----------- | --------------------------------------------------------------------------------------------- |
-| Host        | `129.150.37.207:27017`                                                                        |
-| Replica set | `rs0` (connect with `directConnection=true`)                                                  |
-| Databases   | `novelhub` (app), `novelhub_test` (scratch)                                                   |
-| App user    | `novelhub_app` / `BOgX68CYu9dOxT7pz9X5oUYbxGHj` (readWrite + dbAdmin on both databases)       |
-| Admin user  | `novelhub_admin` / `7qOZl2774GvrqwKwOpVQTvMwI8Dh` (root; use only for user/replica-set admin) |
+|             | Value                                                                        |
+| ----------- | ---------------------------------------------------------------------------- |
+| Host        | `129.150.37.207:27017`                                                       |
+| Replica set | `rs0` (connect with `directConnection=true`)                                 |
+| Databases   | `novelhub` (app), `novelhub_test` (scratch)                                  |
+| App user    | Request the `readWrite` application credential from the project owner        |
+| Admin user  | Restricted to infrastructure administration; never use it in the application |
 
 Application connection string (already in `backend/.env.example`):
 
 ```
-mongodb://novelhub_app:BOgX68CYu9dOxT7pz9X5oUYbxGHj@129.150.37.207:27017/novelhub?authSource=admin&directConnection=true
+mongodb://USERNAME:PASSWORD@129.150.37.207:27017/novelhub?authSource=admin&directConnection=true
 ```
 
 `directConnection=true` is required: the replica-set member is registered as
@@ -30,7 +30,7 @@ other members.
 Quick check:
 
 ```bash
-mongosh "mongodb://novelhub_app:BOgX68CYu9dOxT7pz9X5oUYbxGHj@129.150.37.207:27017/novelhub?authSource=admin&directConnection=true" --eval 'db.hello().setName'
+mongosh "$env:MONGODB_URI" --eval 'db.hello().setName'
 # prints: rs0
 ```
 

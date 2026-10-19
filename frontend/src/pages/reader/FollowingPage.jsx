@@ -1,5 +1,5 @@
-import { useMemo, useState } from 'react';
-import { Link } from 'react-router';
+import { useMemo, useState } from 'react'
+import { Link } from 'react-router'
 import {
   AlertTriangle,
   ArrowRight,
@@ -12,10 +12,10 @@ import {
   Sparkles,
   Target,
   UsersRound,
-} from '../../components/icons';
-import { ReaderLayout } from '../../layouts';
-import { SavedStoryCard, SavedStoryCardSkeleton } from '../../components/reader/SavedStoryCard';
-import { StoryCover } from '../../components/story/StoryCover';
+} from '../../components/icons'
+import { ReaderLayout } from '../../layouts'
+import { SavedStoryCard, SavedStoryCardSkeleton } from '../../components/reader/SavedStoryCard'
+import { StoryCover } from '../../components/story/StoryCover'
 import {
   Button,
   ButtonLink,
@@ -27,26 +27,26 @@ import {
   Select,
   Skeleton,
   Tabs,
-} from '../../components/ui';
-import { followingData } from '../../data/mock/reader';
-import { useLocale } from '../../context/LocaleContext';
-import { useMockResource } from '../../context/MockDataContext';
+} from '../../components/ui'
+import { followingData } from '../../data/mock/reader'
+import { useLocale } from '../../context/LocaleContext'
+import { useMockResource } from '../../context/MockDataContext'
 
 const tabs = [
   ['saved', 'following.savedStories', 18],
   ['authors', 'following.followedAuthors', 12],
   ['favorites', 'following.favorites', 9],
   ['collections', 'following.collections', 4],
-];
+]
 
-const PAGE_SIZE = 4;
+const PAGE_SIZE = 4
 
-const initials = (name) =>
+const initials = name =>
   name
     .split(' ')
-    .map((part) => part[0])
-    .join('');
-const isFollowingEmpty = (value) => !value.savedStories.length && !value.collections.length;
+    .map(part => part[0])
+    .join('')
+const isFollowingEmpty = value => !value.savedStories.length && !value.collections.length
 
 function CollectionCardSkeleton() {
   return (
@@ -66,41 +66,41 @@ function CollectionCardSkeleton() {
       </div>
       <Skeleton className="aspect-[2/3] w-24 shrink-0 -rotate-3 rounded-2xl" />
     </Card>
-  );
+  )
 }
 
 export function FollowingPage() {
-  const { t } = useLocale();
-  const [tab, setTab] = useState('saved');
-  const [query, setQuery] = useState('');
-  const [sort, setSort] = useState('latest');
-  const [page, setPage] = useState(1);
-  const [following, setFollowing] = useState([]);
-  const feed = useMockResource('reader:following', followingData, { isEmpty: isFollowingEmpty });
-  const loading = feed.status === 'loading';
-  const ready = feed.status === 'ready';
+  const { t } = useLocale()
+  const [tab, setTab] = useState('saved')
+  const [query, setQuery] = useState('')
+  const [sort, setSort] = useState('latest')
+  const [page, setPage] = useState(1)
+  const [following, setFollowing] = useState([])
+  const feed = useMockResource('reader:following', followingData, { isEmpty: isFollowingEmpty })
+  const loading = feed.status === 'loading'
+  const ready = feed.status === 'ready'
   const stories = useMemo(
     () =>
       feed.data.savedStories
         .filter(
-          (story) =>
+          story =>
             (tab !== 'favorites' || story.favorite) &&
             `${story.title} ${story.author}`.toLowerCase().includes(query.toLowerCase()),
         )
         .sort((a, b) => (sort === 'title' ? a.title.localeCompare(b.title) : 0)),
     [feed.data, query, sort, tab],
-  );
-  const pageCount = Math.max(1, Math.ceil(stories.length / PAGE_SIZE));
-  const currentPage = Math.min(page, pageCount);
-  const pageStories = stories.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE);
-  const changeTab = (value) => {
-    setTab(value);
-    setPage(1);
-  };
-  const toggleFollow = (name) =>
-    setFollowing((current) =>
-      current.includes(name) ? current.filter((item) => item !== name) : [...current, name],
-    );
+  )
+  const pageCount = Math.max(1, Math.ceil(stories.length / PAGE_SIZE))
+  const currentPage = Math.min(page, pageCount)
+  const pageStories = stories.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE)
+  const changeTab = value => {
+    setTab(value)
+    setPage(1)
+  }
+  const toggleFollow = name =>
+    setFollowing(current =>
+      current.includes(name) ? current.filter(item => item !== name) : [...current, name],
+    )
   return (
     <ReaderLayout>
       <div className="page-reader py-7">
@@ -157,13 +157,13 @@ export function FollowingPage() {
                     aria-label="Đang tải bộ sưu tập"
                     className="nh-grid-12 mt-4 grid gap-4 nh-md-cols-2"
                   >
-                    {followingData.collections.map((item) => (
+                    {followingData.collections.map(item => (
                       <CollectionCardSkeleton key={item.title} />
                     ))}
                   </div>
                 ) : (
                   <div className="nh-fade-enter nh-grid-12 mt-4 grid gap-4 nh-md-cols-2">
-                    {feed.data.collections.map((item) => (
+                    {feed.data.collections.map(item => (
                       <Card as="article" key={item.title} className="flex items-center gap-4 p-5">
                         <div className="min-w-0 flex-1">
                           <p className="text-[11px] font-semibold uppercase tracking-[.16em] text-brand-strong">
@@ -195,7 +195,7 @@ export function FollowingPage() {
                   <Select
                     aria-label={t('following.sortStories')}
                     value={sort}
-                    onChange={(e) => setSort(e.target.value)}
+                    onChange={e => setSort(e.target.value)}
                     className="shrink-0"
                   >
                     <option value="latest">{t('following.latestUpdated')}</option>
@@ -212,9 +212,9 @@ export function FollowingPage() {
                 <Input
                   icon={Search}
                   value={query}
-                  onChange={(e) => {
-                    setQuery(e.target.value);
-                    setPage(1);
+                  onChange={e => {
+                    setQuery(e.target.value)
+                    setPage(1)
                   }}
                   placeholder={t('following.searchSaved')}
                   aria-label={t('following.searchSaved')}
@@ -274,7 +274,7 @@ export function FollowingPage() {
                 </Card>
               ) : tab === 'collections' ? (
                 <div className="nh-grid-12 mt-4 grid gap-4 nh-md-cols-2">
-                  {feed.data.collections.map((item) => (
+                  {feed.data.collections.map(item => (
                     <Card as="article" key={item.title}>
                       <span className="grid size-10 place-items-center rounded-2xl bg-brand/12 text-brand-strong">
                         <FolderHeart size={18} />
@@ -286,7 +286,7 @@ export function FollowingPage() {
                 </div>
               ) : pageStories.length ? (
                 <div className="nh-fade-enter nh-grid-12 mt-4 grid gap-4 nh-md-cols-2">
-                  {pageStories.map((story) => (
+                  {pageStories.map(story => (
                     <SavedStoryCard key={story.id} story={story} />
                   ))}
                 </div>
@@ -307,7 +307,7 @@ export function FollowingPage() {
                   >
                     <ChevronLeft size={16} />
                   </IconButton>
-                  {Array.from({ length: pageCount }, (_, index) => index + 1).map((number) => (
+                  {Array.from({ length: pageCount }, (_, index) => index + 1).map(number => (
                     <button
                       key={number}
                       type="button"
@@ -352,7 +352,7 @@ export function FollowingPage() {
                   aria-label="Đang tải tác giả gợi ý"
                   className="mt-4 divide-y divide-hairline"
                 >
-                  {followingData.authors.map((author) => (
+                  {followingData.authors.map(author => (
                     <li
                       key={author.name}
                       aria-hidden="true"
@@ -369,8 +369,8 @@ export function FollowingPage() {
                 </ul>
               ) : ready ? (
                 <ul className="nh-fade-enter mt-4 divide-y divide-hairline">
-                  {feed.data.authors.map((author) => {
-                    const followed = following.includes(author.name);
+                  {feed.data.authors.map(author => {
+                    const followed = following.includes(author.name)
                     return (
                       <li key={author.name} className="flex items-center gap-3 py-3.5">
                         <span
@@ -398,7 +398,7 @@ export function FollowingPage() {
                           {t(followed ? 'following.following' : 'following.follow')}
                         </Button>
                       </li>
-                    );
+                    )
                   })}
                 </ul>
               ) : (
@@ -433,5 +433,5 @@ export function FollowingPage() {
         </div>
       </div>
     </ReaderLayout>
-  );
+  )
 }

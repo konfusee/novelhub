@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react'
 import {
   AlertTriangle,
   AlignJustify,
@@ -12,10 +12,10 @@ import {
   MessageCircle,
   Moon,
   Sun,
-} from '../../components/icons';
-import { Link, useNavigate, useParams } from 'react-router';
-import { useTheme } from '../../context/ThemeContext';
-import { useMockResource } from '../../context/MockDataContext';
+} from '../../components/icons'
+import { Link, useNavigate, useParams } from 'react-router'
+import { useTheme } from '../../context/ThemeContext'
+import { useMockResource } from '../../context/MockDataContext'
 import {
   Badge,
   Button,
@@ -25,59 +25,59 @@ import {
   IconButton,
   Select,
   Skeleton,
-} from '../../components/ui';
-import { chapterPreview, previewParagraphs } from '../../data/mock/reader';
+} from '../../components/ui'
+import { chapterPreview, previewParagraphs } from '../../data/mock/reader'
 
 const segment =
-  'inline-flex min-h-8 items-center justify-center rounded-full px-2.5 text-xs font-semibold transition-[background-color,color] duration-200 ease-spring hover:bg-surface disabled:opacity-40';
+  'inline-flex min-h-8 items-center justify-center rounded-full px-2.5 text-xs font-semibold transition-[background-color,color] duration-200 ease-spring hover:bg-surface disabled:opacity-40'
 const chromeLink =
-  'grid size-11 shrink-0 place-items-center rounded-full transition-[background-color,color,transform] duration-200 ease-spring hover:bg-elevated active:scale-[0.96]';
+  'grid size-11 shrink-0 place-items-center rounded-full transition-[background-color,color,transform] duration-200 ease-spring hover:bg-elevated active:scale-[0.96]'
 /* Guests may read the free chapters only; any other chapter id falls back to chapter 1. */
-const previewNumberFrom = (chapterId) => {
-  const parsed = Number(chapterId?.match(/\d+/)?.[0]);
-  return chapterPreview.some((item) => item.number === parsed && item.free) ? parsed : 1;
-};
-const SKELETON_LINES = [4, 4, 4, 1, 4];
+const previewNumberFrom = chapterId => {
+  const parsed = Number(chapterId?.match(/\d+/)?.[0])
+  return chapterPreview.some(item => item.number === parsed && item.free) ? parsed : 1
+}
+const SKELETON_LINES = [4, 4, 4, 1, 4]
 
 export function GuestReaderPreviewPage() {
-  const navigate = useNavigate();
-  const { storyId = 'demo', chapterId } = useParams();
-  const number = previewNumberFrom(chapterId);
-  const chapter = chapterPreview.find((item) => item.number === number);
-  const nextChapter = chapterPreview.find((item) => item.number === number + 1);
-  const { resolvedTheme, setTheme } = useTheme();
-  const [fontSize, setFontSize] = useState(18);
-  const [lineHeight, setLineHeight] = useState(2);
-  const [contentWidth, setContentWidth] = useState(760);
-  const [bookmarked, setBookmarked] = useState(false);
-  const [atEnd, setAtEnd] = useState(false);
+  const navigate = useNavigate()
+  const { storyId = 'demo', chapterId } = useParams()
+  const number = previewNumberFrom(chapterId)
+  const chapter = chapterPreview.find(item => item.number === number)
+  const nextChapter = chapterPreview.find(item => item.number === number + 1)
+  const { resolvedTheme, setTheme } = useTheme()
+  const [fontSize, setFontSize] = useState(18)
+  const [lineHeight, setLineHeight] = useState(2)
+  const [contentWidth, setContentWidth] = useState(760)
+  const [bookmarked, setBookmarked] = useState(false)
+  const [atEnd, setAtEnd] = useState(false)
   /* Direction of the last chapter switch drives the enter animation. */
-  const [shown, setShown] = useState({ number, direction: null });
+  const [shown, setShown] = useState({ number, direction: null })
   if (shown.number !== number) {
-    setShown({ number, direction: number > shown.number ? 'next' : 'prev' });
+    setShown({ number, direction: number > shown.number ? 'next' : 'prev' })
   }
   const {
     status,
     data: paragraphs,
     retry,
-  } = useMockResource(`preview:${storyId}:${number}`, previewParagraphs);
-  const endRef = useRef(null);
+  } = useMockResource(`preview:${storyId}:${number}`, previewParagraphs)
+  const endRef = useRef(null)
   useEffect(() => {
-    const node = endRef.current;
-    if (!node || typeof IntersectionObserver === 'undefined') return undefined;
-    const observer = new IntersectionObserver(([entry]) => setAtEnd(entry.isIntersecting));
-    observer.observe(node);
-    return () => observer.disconnect();
-  }, []);
-  const previewHref = (target) => `/stories/${storyId}/preview/chapter-${target}`;
-  const readHref = (target) => `/read/${storyId}/chapter-${target}`;
-  const openChapter = (value) => {
-    const target = chapterPreview.find((item) => item.number === Number(value));
-    if (!target || target.number === number) return;
-    if (target.free) navigate(previewHref(target.number));
-    else navigate('/login', { state: { from: readHref(target.number) } });
-  };
-  const enter = shown.direction ? `nh-chapter-enter-${shown.direction}` : undefined;
+    const node = endRef.current
+    if (!node || typeof IntersectionObserver === 'undefined') return undefined
+    const observer = new IntersectionObserver(([entry]) => setAtEnd(entry.isIntersecting))
+    observer.observe(node)
+    return () => observer.disconnect()
+  }, [])
+  const previewHref = target => `/stories/${storyId}/preview/chapter-${target}`
+  const readHref = target => `/read/${storyId}/chapter-${target}`
+  const openChapter = value => {
+    const target = chapterPreview.find(item => item.number === Number(value))
+    if (!target || target.number === number) return
+    if (target.free) navigate(previewHref(target.number))
+    else navigate('/login', { state: { from: readHref(target.number) } })
+  }
+  const enter = shown.direction ? `nh-chapter-enter-${shown.direction}` : undefined
   return (
     <div className="min-h-screen bg-reader text-ink">
       <div className="fixed inset-x-0 top-0 z-40 h-1 bg-orange" />
@@ -95,10 +95,10 @@ export function GuestReaderPreviewPage() {
             <Select
               aria-label="Chọn chương"
               value={String(number)}
-              onChange={(event) => openChapter(event.target.value)}
+              onChange={event => openChapter(event.target.value)}
               className="w-full text-sm"
             >
-              {chapterPreview.map((item) => (
+              {chapterPreview.map(item => (
                 <option key={item.number} value={item.number}>
                   Chương {item.number}: {item.title}
                   {item.free ? '' : ' (đã khóa)'}
@@ -138,7 +138,7 @@ export function GuestReaderPreviewPage() {
               max="960"
               step="20"
               value={contentWidth}
-              onChange={(event) => setContentWidth(Number(event.target.value))}
+              onChange={event => setContentWidth(Number(event.target.value))}
               className="w-24 accent-[var(--primary)]"
             />
             <span className="w-8 text-right text-xs font-semibold tabular-nums text-brand-strong">
@@ -273,7 +273,7 @@ export function GuestReaderPreviewPage() {
             </div>
           </div>
           <ul className="nh-grid-12 grid gap-3 p-5 text-sm sm:px-8 nh-sm-cols-3">
-            {['Đồng bộ tiến độ đọc', 'Đánh dấu yêu thích', 'Tham gia thảo luận'].map((item) => (
+            {['Đồng bộ tiến độ đọc', 'Đánh dấu yêu thích', 'Tham gia thảo luận'].map(item => (
               <li key={item} className="flex items-center gap-2">
                 <span className="grid size-5 shrink-0 place-items-center rounded-full bg-brand/12 text-brand-strong">
                   <Check size={12} aria-hidden="true" />
@@ -345,5 +345,5 @@ export function GuestReaderPreviewPage() {
         )}
       </nav>
     </div>
-  );
+  )
 }

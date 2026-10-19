@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { Link, useParams } from 'react-router';
+import { useState } from 'react'
+import { Link, useParams } from 'react-router'
 import {
   AlertTriangle,
   ArrowRight,
@@ -11,10 +11,12 @@ import {
   Search,
   Share2,
   Star,
-} from '../../components/icons';
-import { PublicHeader } from '../../components/public/PublicHeader';
-import { ChapterList, ChapterListSkeleton } from '../../components/public/ChapterList';
-import { StoryCover } from '../../components/story/StoryCover';
+} from '../../components/icons'
+import { PublicHeader } from '../../components/public/PublicHeader'
+import { ChapterList, ChapterListSkeleton } from '../../components/public/ChapterList'
+import { Pagination } from '../../components/ui/Pagination'
+import { StoryCommunity } from '../../components/story/StoryCommunity'
+import { StoryCover } from '../../components/story/StoryCover'
 import {
   Badge,
   Button,
@@ -27,27 +29,27 @@ import {
   Skeleton,
   SkeletonText,
   Tabs,
-} from '../../components/ui';
-import { chapterPreview, storyDetail } from '../../data/mock/reader';
-import { stories } from '../../data/mock/stories';
-import { useAuth } from '../../context/AuthContext';
-import { useLocale } from '../../context/LocaleContext';
-import { useMockResource } from '../../context/MockDataContext';
+} from '../../components/ui'
+import { chapterPreview, storyChapterList, storyDetail } from '../../data/mock/reader'
+import { stories } from '../../data/mock/stories'
+import { useAuth } from '../../context/AuthContext'
+import { useLocale } from '../../context/LocaleContext'
+import { useMockResource } from '../../context/MockDataContext'
 
 const tabs = [
   ['chapters', 'storyDetail.chapters'],
   ['synopsis', 'storyDetail.synopsis'],
   ['reviews', 'storyDetail.reviews'],
   ['audiobooks', 'storyDetail.relatedAudiobooks'],
-];
-const genreTones = ['green', 'orange', 'purple'];
-const ratingBreakdown = [82, 12, 4, 1, 1];
+]
+const genreTones = ['green', 'orange', 'purple']
+const ratingBreakdown = [82, 12, 4, 1, 1]
 /* Detail mock has no cover; reuse the catalogue entry so StoryCover renders the real artwork. */
-const coverStory = stories.find((story) => story.title === storyDetail.title) ?? storyDetail;
+const coverStory = stories.find(story => story.title === storyDetail.title) ?? storyDetail
 const featuredReview =
-  '“Văn phong ở chương 2 khiến tôi nổi da gà. Thế giới truyện rất sống động và mạch căng thẳng không hề ngắt quãng.”';
+  '“Văn phong ở chương 2 khiến tôi nổi da gà. Thế giới truyện rất sống động và mạch căng thẳng không hề ngắt quãng.”'
 
-const isMissing = (value) => !value;
+const isMissing = value => !value
 
 function RetryButton({ onClick }) {
   return (
@@ -55,7 +57,7 @@ function RetryButton({ onClick }) {
       <RefreshCw size={14} aria-hidden="true" />
       Thử lại
     </Button>
-  );
+  )
 }
 
 /* Hero placeholder on the same bezel grid: 2:3 cover, display title, meta strip, actions. */
@@ -111,7 +113,7 @@ function StoryHeroSkeleton({ note }) {
         {note}
       </div>
     </Card>
-  );
+  )
 }
 
 /* Author + community rating cards at their final heights. */
@@ -132,7 +134,7 @@ function StoryAsideSkeleton() {
           <Skeleton className="h-3 w-1/2" />
         </span>
         <div className="mt-4 grid grid-cols-3 border-y border-hairline py-3">
-          {[0, 1, 2].map((item) => (
+          {[0, 1, 2].map(item => (
             <span key={item} className="flex flex-col items-center gap-2 py-0.5">
               <Skeleton className="h-4 w-10" />
               <Skeleton className="h-3 w-14" />
@@ -153,7 +155,7 @@ function StoryAsideSkeleton() {
             <Skeleton className="h-3 w-20" />
           </div>
           <div className="flex-1 space-y-2">
-            {ratingBreakdown.map((value) => (
+            {ratingBreakdown.map(value => (
               <span key={value} className="flex h-4 items-center gap-2">
                 <Skeleton className="h-2.5 w-6" />
                 <Skeleton className="h-2 flex-1" />
@@ -168,32 +170,33 @@ function StoryAsideSkeleton() {
         </div>
       </Card>
     </aside>
-  );
+  )
 }
 export function StoryDetailPage({ embedded = false }) {
-  const { t } = useLocale();
-  const { isAuthenticated } = useAuth();
-  const { storyId = 'demo' } = useParams();
-  const [tab, setTab] = useState('chapters');
-  const [bookmarked, setBookmarked] = useState(false);
-  const [following, setFollowing] = useState(false);
-  const [oldestFirst, setOldestFirst] = useState(true);
-  const [notice, setNotice] = useState('');
-  const [synopsisOpen, setSynopsisOpen] = useState(false);
-  const story = useMockResource(`story:${storyId}`, storyDetail, { isEmpty: isMissing });
-  const chapterFeed = useMockResource(`story:${storyId}:chapters`, chapterPreview);
-  const storyLoading = story.status === 'loading';
-  const storyReady = story.status === 'ready';
-  const chapters = oldestFirst ? chapterFeed.data : [...chapterFeed.data].reverse();
+  const { t } = useLocale()
+  const { isAuthenticated } = useAuth()
+  const { storyId = 'demo' } = useParams()
+  const [chapterPage, setChapterPage] = useState(1)
+  const [tab, setTab] = useState('chapters')
+  const [bookmarked, setBookmarked] = useState(false)
+  const [following, setFollowing] = useState(false)
+  const [oldestFirst, setOldestFirst] = useState(true)
+  const [notice, setNotice] = useState('')
+  const [synopsisOpen, setSynopsisOpen] = useState(false)
+  const story = useMockResource(`story:${storyId}`, storyDetail, { isEmpty: isMissing })
+  const chapterFeed = useMockResource(`story:${storyId}:chapters`, storyChapterList)
+  const storyLoading = story.status === 'loading'
+  const storyReady = story.status === 'ready'
+  const chapters = oldestFirst ? chapterFeed.data : [...chapterFeed.data].reverse()
   const share = async () => {
     try {
-      await navigator.clipboard.writeText(window.location.href);
-      setNotice('Đã sao chép liên kết truyện để chia sẻ.');
+      await navigator.clipboard.writeText(window.location.href)
+      setNotice('Đã sao chép liên kết truyện để chia sẻ.')
     } catch {
-      setNotice('Không thể sao chép liên kết. Hãy sao chép địa chỉ trang trong trình duyệt.');
+      setNotice('Không thể sao chép liên kết. Hãy sao chép địa chỉ trang trong trình duyệt.')
     }
-  };
-  const Root = embedded ? 'div' : 'main';
+  }
+  const Root = embedded ? 'div' : 'main'
   return (
     <div className="min-h-screen bg-page text-ink">
       {!embedded && <PublicHeader />}
@@ -331,7 +334,7 @@ export function StoryDetailPage({ embedded = false }) {
                 type="button"
                 aria-expanded={synopsisOpen}
                 aria-controls="story-synopsis"
-                onClick={() => setSynopsisOpen((open) => !open)}
+                onClick={() => setSynopsisOpen(open => !open)}
                 className="-ml-2 mt-1 inline-flex min-h-11 items-center rounded-full px-2 text-sm font-semibold text-brand-strong hover:bg-brand/8 lg:hidden"
               >
                 {t(synopsisOpen ? 'storyDetail.synopsisLess' : 'storyDetail.synopsisMore')}
@@ -403,10 +406,19 @@ export function StoryDetailPage({ embedded = false }) {
                 {tab === 'chapters' && (
                   <>
                     <div className="mb-4 flex flex-wrap items-center justify-between gap-2 text-sm text-muted">
-                      <span>{t('storyDetail.displayingChapters', { count: 148 })}</span>
+                      <span>
+                        {t('pagination.chapterRange', {
+                          start: (chapterPage - 1) * 5 + 1,
+                          end: Math.min(chapterPage * 5, chapters.length),
+                          count: chapters.length,
+                        })}
+                      </span>
                       <button
                         type="button"
-                        onClick={() => setOldestFirst((value) => !value)}
+                        onClick={() => {
+                          setOldestFirst(value => !value)
+                          setChapterPage(1)
+                        }}
                         className="inline-flex min-h-9 items-center gap-1.5 rounded-full px-3 font-semibold text-brand-strong transition-colors duration-200 hover:bg-brand/8 pointer-coarse:min-h-11"
                       >
                         {t(oldestFirst ? 'storyDetail.oldestFirst' : 'storyDetail.newestFirst')}
@@ -457,7 +469,15 @@ export function StoryDetailPage({ embedded = false }) {
                       />
                     ) : (
                       <div className="nh-fade-enter">
-                        <ChapterList chapters={chapters} storyId={storyId} />
+                        <ChapterList
+                          chapters={chapters.slice((chapterPage - 1) * 5, chapterPage * 5)}
+                          storyId={storyId}
+                        />
+                        <Pagination
+                          page={chapterPage}
+                          pageCount={Math.ceil(chapters.length / 5)}
+                          onChange={setChapterPage}
+                        />
                       </div>
                     )}
                   </>
@@ -467,14 +487,7 @@ export function StoryDetailPage({ embedded = false }) {
                     {storyDetail.synopsis}
                   </div>
                 )}
-                {tab === 'reviews' && (
-                  <figure className="rounded-2xl bg-reader p-6">
-                    <blockquote className="text-base italic leading-8 text-ink/80">
-                      {featuredReview}
-                    </blockquote>
-                    <figcaption className="mt-3 text-sm font-semibold">Kaelen_Reader</figcaption>
-                  </figure>
-                )}
+                {tab === 'reviews' && <StoryCommunity key={storyId} storyId={storyId} />}
                 {tab === 'audiobooks' && (
                   <div className="flex flex-col items-start gap-4 rounded-2xl bg-reader p-6 sm:flex-row sm:items-center sm:justify-between">
                     <div>
@@ -560,7 +573,7 @@ export function StoryDetailPage({ embedded = false }) {
                           className="mt-1 flex justify-center gap-0.5 text-orange"
                           aria-label="4.8 / 5"
                         >
-                          {[0, 1, 2, 3, 4].map((index) => (
+                          {[0, 1, 2, 3, 4].map(index => (
                             <Star
                               key={index}
                               size={13}
@@ -612,5 +625,5 @@ export function StoryDetailPage({ embedded = false }) {
         )}
       </Root>
     </div>
-  );
+  )
 }

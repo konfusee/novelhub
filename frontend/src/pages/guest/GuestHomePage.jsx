@@ -1,5 +1,5 @@
-import { useEffect, useState } from 'react';
-import { Link } from 'react-router';
+import { useEffect, useState } from 'react'
+import { Link } from 'react-router'
 import {
   AlertTriangle,
   ArrowRight,
@@ -17,14 +17,14 @@ import {
   RotateCcw,
   RotateCw,
   Star,
-} from '../../components/icons';
-import * as icons from '../../components/icons';
-import { categories } from '../../data/mock/categories';
-import { featuredStories, stories } from '../../data/mock/stories';
-import { PublicHeader } from '../../components/public/PublicHeader';
-import { StoryCard, StoryCardSkeleton } from '../../components/public/StoryCard';
-import { StoryCover } from '../../components/story/StoryCover';
-import { SectionTitle } from '../../components/public/SectionTitle';
+} from '../../components/icons'
+import * as icons from '../../components/icons'
+import { categories } from '../../data/mock/categories'
+import { featuredStories, stories } from '../../data/mock/stories'
+import { PublicHeader } from '../../components/public/PublicHeader'
+import { StoryCard, StoryCardSkeleton } from '../../components/public/StoryCard'
+import { StoryCover } from '../../components/story/StoryCover'
+import { SectionTitle } from '../../components/public/SectionTitle'
 import {
   Button,
   ButtonLink,
@@ -34,11 +34,11 @@ import {
   ProgressBar,
   Reveal,
   Skeleton,
-} from '../../components/ui';
-import { useLocale } from '../../context/LocaleContext';
-import { useMockResource } from '../../context/MockDataContext';
+} from '../../components/ui'
+import { useLocale } from '../../context/LocaleContext'
+import { useMockResource } from '../../context/MockDataContext'
 
-const stagger = (index) => Math.min(index, 5) * 80;
+const stagger = index => Math.min(index, 5) * 80
 
 /* Error / empty panel for one home data band; spans the full 12-column band. */
 function BandState({ resource, errorTitle, emptyTitle, emptyDescription, emptyAction }) {
@@ -68,7 +68,7 @@ function BandState({ resource, errorTitle, emptyTitle, emptyDescription, emptyAc
         />
       )}
     </Card>
-  );
+  )
 }
 
 /*
@@ -77,30 +77,30 @@ function BandState({ resource, errorTitle, emptyTitle, emptyDescription, emptyAc
  * Spans respond to the page's own width (container queries: @2xl 672px, @4xl 896px, @5xl
  * 1024px), so the layout also fits when the page is embedded beside the reader sidebar.
  */
-const band = 'col-span-12 grid grid-cols-subgrid';
+const band = 'col-span-12 grid grid-cols-subgrid'
 
 /* Hero slides: each artwork fills the whole art panel; object position keeps the subject in frame. */
 const heroSlides = [
   { story: stories[2], focus: '[&_img]:object-[50%_58%]' },
   { story: stories[1], focus: '[&_img]:object-[50%_42%]' },
   { story: stories[0], focus: '[&_img]:object-[55%_62%]' },
-];
+]
 
 /* Stat cells: 2 × 2 until the wide layout, then one row of four; hairline column separators. */
-const statEdges = ['', 'border-l', '@4xl:border-l', 'border-l'];
+const statEdges = ['', 'border-l', '@4xl:border-l', 'border-l']
 
 function Hero() {
-  const { t } = useLocale();
-  const [slide, setSlide] = useState(0);
-  const featured = heroSlides[slide].story;
-  const changeSlide = (direction) =>
-    setSlide((current) => (current + direction + heroSlides.length) % heroSlides.length);
+  const { t } = useLocale()
+  const [slide, setSlide] = useState(0)
+  const featured = heroSlides[slide].story
+  const changeSlide = direction =>
+    setSlide(current => (current + direction + heroSlides.length) % heroSlides.length)
   const stats = [
     ['3M+', t('home.readers')],
     ['100K+', t('home.stories')],
     ['15K+', t('home.authors')],
     ['4.8', t('home.userRating'), true],
-  ];
+  ]
   return (
     <section
       aria-label={t('home.featured')}
@@ -240,7 +240,7 @@ function Hero() {
         </dl>
       </div>
     </section>
-  );
+  )
 }
 
 const categoryTones = {
@@ -250,26 +250,26 @@ const categoryTones = {
   green: 'bg-brand/12 text-brand-strong',
   blue: 'bg-ink/6 text-ink/80',
   neutral: 'bg-ink/6 text-ink/80',
-};
+}
 
 const tile =
-  'group relative flex h-full overflow-hidden whitespace-normal rounded-3xl border border-line bg-surface shadow-whisper transition-[transform,border-color,box-shadow] duration-[420ms] ease-spring hover:-translate-y-0.5 hover:border-brand/60 hover:shadow-lift';
+  'group relative flex h-full overflow-hidden whitespace-normal rounded-3xl border border-line bg-surface shadow-whisper transition-[transform,border-color,box-shadow] duration-[420ms] ease-spring hover:-translate-y-0.5 hover:border-brand/60 hover:shadow-lift'
 
 /* Static tile frame (no hover) for loading placeholders. */
 const tileFrame =
-  'relative flex h-full overflow-hidden rounded-3xl border border-line bg-surface shadow-whisper';
+  'relative flex h-full overflow-hidden rounded-3xl border border-line bg-surface shadow-whisper'
 
-const categoryLink = (name) => `/categories?genre=${encodeURIComponent(name)}`;
+const categoryLink = name => `/categories?genre=${encodeURIComponent(name)}`
 
 function Categories() {
-  const { t } = useLocale();
-  const resource = useMockResource('home:categories', categories);
-  const storiesLabel = t('home.stories').toLocaleLowerCase('vi');
+  const { t } = useLocale()
+  const resource = useMockResource('home:categories', categories)
+  const storiesLabel = t('home.stories').toLocaleLowerCase('vi')
   const title = (
     <div className="col-span-12">
       <SectionTitle to="/categories">{t('home.browseCategory')}</SectionTitle>
     </div>
-  );
+  )
   if (resource.status === 'loading') {
     return (
       <section className={band}>
@@ -299,7 +299,7 @@ function Categories() {
               </span>
             </div>
           </div>
-          {categories.slice(1).map((category) => (
+          {categories.slice(1).map(category => (
             <div key={category.name} aria-hidden="true" className="col-span-6 @2xl:col-span-3">
               <div className={`${tileFrame} flex-col gap-5 p-5`}>
                 <Skeleton className="size-11 rounded-2xl" />
@@ -317,7 +317,7 @@ function Categories() {
           ))}
         </div>
       </section>
-    );
+    )
   }
   if (resource.status !== 'ready') {
     return (
@@ -335,10 +335,10 @@ function Categories() {
           }
         />
       </section>
-    );
+    )
   }
-  const [lead, ...rest] = resource.data;
-  const LeadIcon = icons[lead.icon] || BookOpen;
+  const [lead, ...rest] = resource.data
+  const LeadIcon = icons[lead.icon] || BookOpen
   return (
     <section className={band}>
       {title}
@@ -378,7 +378,7 @@ function Categories() {
           </Link>
         </Reveal>
         {rest.map((category, index) => {
-          const Icon = icons[category.icon] || BookOpen;
+          const Icon = icons[category.icon] || BookOpen
           return (
             <Reveal
               key={category.name}
@@ -408,18 +408,18 @@ function Categories() {
                 </span>
               </Link>
             </Reveal>
-          );
+          )
         })}
       </div>
     </section>
-  );
+  )
 }
 
 function ContinueCard({ audio = false }) {
-  const { t } = useLocale();
-  const [bookmarked, setBookmarked] = useState(false);
-  const story = audio ? stories[1] : stories[0];
-  const progress = audio ? 32 : 68;
+  const { t } = useLocale()
+  const [bookmarked, setBookmarked] = useState(false)
+  const story = audio ? stories[1] : stories[0]
+  const progress = audio ? 32 : 68
   return (
     <Card className="flex h-full gap-5 p-4 sm:p-5">
       <StoryCover
@@ -463,23 +463,23 @@ function ContinueCard({ audio = false }) {
             tone="purple"
             size="sm"
             aria-pressed={bookmarked}
-            onClick={() => setBookmarked((value) => !value)}
+            onClick={() => setBookmarked(value => !value)}
           >
             <Bookmark size={15} className={bookmarked ? 'fill-current' : ''} />
           </IconButton>
         </div>
       </div>
     </Card>
-  );
+  )
 }
 
 const segment =
-  'inline-flex min-h-10 items-center justify-center rounded-full px-3 text-xs font-semibold transition-[background-color,color] duration-200 ease-spring pointer-coarse:min-h-11';
+  'inline-flex min-h-10 items-center justify-center rounded-full px-3 text-xs font-semibold transition-[background-color,color] duration-200 ease-spring pointer-coarse:min-h-11'
 
 function ReaderPreview() {
-  const { t } = useLocale();
-  const [fontSize, setFontSize] = useState(16);
-  const [spacing, setSpacing] = useState(1.8);
+  const { t } = useLocale()
+  const [fontSize, setFontSize] = useState(16)
+  const [spacing, setSpacing] = useState(1.8)
   return (
     <Card className="nh-audio-motif flex h-full flex-col overflow-hidden p-6 sm:p-8">
       <h2 className="text-h3">{t('home.readerPreview')}</h2>
@@ -535,7 +535,7 @@ function ReaderPreview() {
             aria-label={t('settings.reading.lineSpacing')}
             className="inline-flex items-center rounded-full border border-hairline bg-elevated p-1"
           >
-            {[1.5, 1.8, 2.1].map((value) => (
+            {[1.5, 1.8, 2.1].map(value => (
               <button
                 key={value}
                 type="button"
@@ -550,31 +550,30 @@ function ReaderPreview() {
         </div>
       </div>
     </Card>
-  );
+  )
 }
 
-const AUDIO_LENGTH = 624;
-const formatTime = (seconds) =>
-  `${String(Math.floor(seconds / 60)).padStart(2, '0')}:${String(seconds % 60).padStart(2, '0')}`;
+const AUDIO_LENGTH = 624
+const formatTime = seconds =>
+  `${String(Math.floor(seconds / 60)).padStart(2, '0')}:${String(seconds % 60).padStart(2, '0')}`
 
 function AudioPreview() {
-  const { t } = useLocale();
-  const [playing, setPlaying] = useState(false);
-  const [liked, setLiked] = useState(false);
-  const [position, setPosition] = useState(138);
-  const seek = (delta) =>
-    setPosition((value) => Math.min(AUDIO_LENGTH, Math.max(0, value + delta)));
+  const { t } = useLocale()
+  const [playing, setPlaying] = useState(false)
+  const [liked, setLiked] = useState(false)
+  const [position, setPosition] = useState(138)
+  const seek = delta => setPosition(value => Math.min(AUDIO_LENGTH, Math.max(0, value + delta)))
   useEffect(() => {
-    if (!playing) return undefined;
+    if (!playing) return undefined
     const timer = setInterval(() => {
-      setPosition((value) => {
-        if (value + 1 < AUDIO_LENGTH) return value + 1;
-        setPlaying(false);
-        return AUDIO_LENGTH;
-      });
-    }, 1000);
-    return () => clearInterval(timer);
-  }, [playing]);
+      setPosition(value => {
+        if (value + 1 < AUDIO_LENGTH) return value + 1
+        setPlaying(false)
+        return AUDIO_LENGTH
+      })
+    }, 1000)
+    return () => clearInterval(timer)
+  }, [playing])
   return (
     <Card className="flex h-full flex-col p-6 sm:p-8">
       <h2 className="text-h3">{t('home.audioPreview')}</h2>
@@ -634,19 +633,19 @@ function AudioPreview() {
         </div>
       </div>
     </Card>
-  );
+  )
 }
 
 const featureTones = {
   rose: ['text-rose-strong', 'bg-rose/14 text-rose-strong', Castle],
   orange: ['text-orange-strong', 'bg-orange/16 text-orange-strong', BookOpen],
   green: ['text-brand-strong', 'bg-brand/12 text-brand-strong', Headphones],
-};
+}
 
 /* Featured bento: the editor's pick takes 6 columns with its picks, the other two take 3 each. */
 function Featured() {
-  const { t } = useLocale();
-  const resource = useMockResource('home:featured', featuredStories);
+  const { t } = useLocale()
+  const resource = useMockResource('home:featured', featuredStories)
   return (
     <section className={band}>
       <div className="col-span-12">
@@ -689,7 +688,7 @@ function Featured() {
                 </div>
                 {index === 0 && (
                   <div className="hidden w-[42%] max-w-64 shrink-0 grid-cols-3 items-end gap-2 sm:grid">
-                    {[0, 1, 2].map((cover) => (
+                    {[0, 1, 2].map(cover => (
                       <Skeleton
                         key={cover}
                         className={`aspect-[2/3] w-full rounded-2xl ${cover === 1 ? '-translate-y-4' : ''}`}
@@ -716,8 +715,8 @@ function Featured() {
       ) : (
         <div className={`${band} gap-y-4 lg:gap-y-6`}>
           {resource.data.map((item, index) => {
-            const [labelTone, tileTone, Icon] = featureTones[item.tone] || featureTones.green;
-            const lead = index === 0;
+            const [labelTone, tileTone, Icon] = featureTones[item.tone] || featureTones.green
+            const lead = index === 0
             return (
               <Reveal
                 key={item.title}
@@ -780,16 +779,16 @@ function Featured() {
                   )}
                 </Card>
               </Reveal>
-            );
+            )
           })}
         </div>
       )}
     </section>
-  );
+  )
 }
 
 function JoinCta() {
-  const { t } = useLocale();
+  const { t } = useLocale()
   return (
     <Reveal className={band}>
       <Card
@@ -822,12 +821,12 @@ function JoinCta() {
         </div>
       </Card>
     </Reveal>
-  );
+  )
 }
 
 function Trending() {
-  const { t } = useLocale();
-  const resource = useMockResource('home:trending', stories);
+  const { t } = useLocale()
+  const resource = useMockResource('home:trending', stories)
   return (
     <section className={band}>
       <div className="col-span-12">
@@ -835,7 +834,7 @@ function Trending() {
       </div>
       {resource.status === 'loading' ? (
         <div aria-busy="true" aria-label="Đang tải truyện thịnh hành" className={`${band} gap-y-8`}>
-          {stories.map((story) => (
+          {stories.map(story => (
             <div key={story.id} className="col-span-6 @2xl:col-span-4 @5xl:col-span-2">
               <StoryCardSkeleton />
             </div>
@@ -867,11 +866,11 @@ function Trending() {
         </div>
       )}
     </section>
-  );
+  )
 }
 
 export function GuestHomePage({ embedded = false }) {
-  const Root = embedded ? 'div' : 'main';
+  const Root = embedded ? 'div' : 'main'
   return (
     <div className="@container min-h-screen bg-page text-ink">
       {!embedded && <PublicHeader />}
@@ -910,5 +909,5 @@ export function GuestHomePage({ embedded = false }) {
         {!embedded && <JoinCta />}
       </Root>
     </div>
-  );
+  )
 }

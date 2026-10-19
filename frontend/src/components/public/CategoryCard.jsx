@@ -1,5 +1,5 @@
-import * as icons from '../icons';
-import { Skeleton } from '../ui';
+import * as icons from '../icons'
+import { Skeleton } from '../ui'
 
 const toneClasses = {
   purple: 'bg-purple/12 text-purple-strong',
@@ -8,9 +8,9 @@ const toneClasses = {
   green: 'bg-brand/12 text-brand-strong',
   orange: 'bg-orange/16 text-orange-strong',
   neutral: 'bg-ink/5 text-ink/75',
-};
+}
 export function CategoryCard({ category, selected = false, onSelect }) {
-  const Icon = icons[category.icon] || icons.BookOpen;
+  const Icon = icons[category.icon] || icons.BookOpen
   return (
     <button
       type="button"
@@ -35,7 +35,7 @@ export function CategoryCard({ category, selected = false, onSelect }) {
         </span>
       </span>
     </button>
-  );
+  )
 }
 
 /* Placeholder with CategoryCard's padding, icon tile and two-line description. */
@@ -57,5 +57,5 @@ export function CategoryCardSkeleton() {
         </span>
       </span>
     </div>
-  );
+  )
 }

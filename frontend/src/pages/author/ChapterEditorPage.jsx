@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { Link, useParams } from 'react-router';
+import { Link, useParams, useNavigate, useSearchParams } from 'react-router';
 import {
   AlertTriangle,
   AlignLeft,
@@ -7,16 +7,13 @@ import {
   Bold,
   BookOpen,
   Check,
-  CheckCircle2,
   ChevronDown,
   ChevronRight,
   Eye,
   Heading2,
   Heading3,
   Image,
-  Info,
   Italic,
-  ListTree,
   MessageSquare,
   PanelLeft,
   PanelRight,
@@ -26,12 +23,20 @@ import {
   RefreshCw,
   Save,
   Send,
-  Sparkles,
   Underline,
   X,
 } from '../../components/icons';
 import { AuthorLayout } from '../../layouts';
-import { useMockResource } from '../../context/MockDataContext';
+import { useBackendDocument } from '../../api/useBackendResource';
+import { apiRequest } from '../../api/client';
+import { useLocale } from '../../context/LocaleContext';
+import { chapterParagraphs, ChapterTextError } from './chapterParagraphs';
+import { ChapterConflictDialog } from './ChapterConflictDialog';
+import { DraftReadingCanvas } from './DraftReadingCanvas';
+import { RichChapterInput } from './RichChapterInput';
+import { ChapterImagePicker } from './ChapterImagePicker';
+import { ChapterImageControls } from './ChapterImageControls';
+import { richChapterBody } from './richChapterDom';
 import {
   Badge,
   Button,
@@ -46,72 +51,28 @@ import {
   Tabs,
 } from '../../components/ui';
 
-const STORY_ROUTE = '/author/stories/demo';
-const EDITOR_ROUTE = `${STORY_ROUTE}/chapters/chapter-1/edit`;
-const chapterRoute = (number) => `${STORY_ROUTE}/chapters/chapter-${number}/edit`;
-const TARGET_WORDS = 2500;
+const TARGET_WORDS = 2500; // Local reference for the self-check panel, not a publishing policy or saved goal.
 const WORDS_PER_MINUTE = 250;
 const SCENE_BREAK = '*     *     *';
-const SUGGESTION =
-  'Before the third ring could collapse, a sudden silence fell over the canopy—not even the wind dared disturb the surface.';
-
-const initialText = `The mist clung to the forest floor like cold wool, muffling the sound of Kaelen’s boots against the moss-encrusted roots. Overhead, the Ironwood canopy arched into an unbroken cathedral of black bark and silver veins, filtering the late afternoon light into razor-thin shafts of emerald dust. He reached into his coat, his fingertips brushing against the cool, etched brass of the astrolabe. Its inner dials ticked with an irregular, organic rhythm—a cadence that matched the pulse of the ancient wood itself.
-
-“You’re walking too fast,” Vrena murmured from behind him, her voice low enough to stay beneath the hum of the canopy spirits. She held her shortbow slack at her hip, her gaze tracking the twisting branches forty cubits up. “The wood doesn’t like to be hurried, Kaelen. Especially not now. Not when the sap has started to run blue.”
-
-${SCENE_BREAK}
-
-Kaelen halted before the clearing. Here, at the geographic fulcrum of the grove, stood the Mother Oak. Her trunk was broader than five galleons moored abreast, scarred with ancient carvings from civilizations that predated the Fall. Deep within the hollow formed by two converging roots, a pool of memory-clear water reflected stars that did not belong to the daylight sky above them.`;
-
-const initialGroups = [
-  {
-    act: 'ACT I: ROOTS',
-    count: 12,
-    chapters: [
-      [1, 'Ch. 1: The Whispering Grove'],
-      [2, 'Ch. 2: Silver Sap'],
-    ],
-  },
-  {
-    act: 'ACT II: THE WHISPERING CANOPY',
-    count: 4,
-    chapters: [
-      [14, 'Ch. 14: Elder Roots'],
-      [15, 'Ch. 15: The Silent Forest'],
-      [16, 'Ch. 16: Heart of the Ironwood'],
-    ],
-  },
-];
-/* The chapter document the editor loads: story context, chapter text and the story outline. */
-const chapterDocument = {
-  storyTitle: 'The Silent Forest',
-  storyMeta: 'Kỳ ảo · Dài kỳ',
-  title: 'Chapter 16: Heart of the Ironwood',
-  body: initialText,
-  groups: initialGroups,
-  activeChapter: 16,
-  nextChapter: 17,
-};
-const isBlankChapter = (chapter) => !chapter.body.trim();
+const emptyChapter = { chapter: null };
 const utilityTabs = [
   { value: 'outline', label: 'Dàn ý' },
   { value: 'notes', label: 'Ghi chú' },
-  { value: 'ai', label: 'Trợ lý AI' },
   { value: 'checklist', label: 'Danh sách kiểm tra' },
 ];
 
-/* [icon, label, edit] — edit(selectedText) returns [before, inner, after] markers. */
+// Plain mode exposes only paragraph-safe tools. Rich mode uses the AST surface.
 const tools = [
-  [Bold, 'In đậm', (text) => ['**', text || 'chữ đậm', '**']],
-  [Italic, 'In nghiêng', (text) => ['_', text || 'chữ nghiêng', '_']],
-  [Underline, 'Gạch chân', (text) => ['<u>', text || 'gạch chân', '</u>']],
-  [Heading2, 'Tiêu đề 2', (text) => ['\n## ', text || 'Tiêu đề', '\n']],
-  [Heading3, 'Tiêu đề 3', (text) => ['\n### ', text || 'Tiêu đề nhỏ', '\n']],
-  [Quote, 'Trích dẫn', (text) => ['\n> ', text || 'Trích dẫn', '\n']],
-  [AlignLeft, 'Đường phân cách cảnh', () => [`\n\n${SCENE_BREAK}\n\n`, '', '']],
-  [MessageSquare, 'Hội thoại', (text) => ['“', text || 'Lời thoại', '”']],
-  [AtSign, 'Đề cập', (text) => ['@', text || 'nhân vật', '']],
-  [Image, 'Hình ảnh', (text) => ['\n![', text || 'Mô tả hình ảnh', '](duong-dan-anh)\n']],
+  [Bold, 'bold', null],
+  [Italic, 'italic', null],
+  [Underline, 'underline', null],
+  [Heading2, 'heading2', null],
+  [Heading3, 'heading3', null],
+  [Quote, 'quote', null],
+  [AlignLeft, 'sceneBreak', () => [`\n\n${SCENE_BREAK}\n\n`, '', '']],
+  [MessageSquare, 'dialogue', (text) => ['“', text, '”']],
+  [AtSign, 'mention', (text) => ['@', text, '']],
+  [Image, 'image', null],
 ];
 
 const countWords = (text) => text.trim().split(/\s+/).filter(Boolean).length;
@@ -122,20 +83,45 @@ const paragraphsOf = (text) =>
     .filter(Boolean);
 
 export function ChapterEditorPage() {
-  const { storyId = 'demo', chapterId = 'chapter-1' } = useParams();
-  const resourceKey = `chapter:${storyId}:${chapterId}`;
-  const chapter = useMockResource(resourceKey, chapterDocument, { isEmpty: isBlankChapter });
-  const [blankKey, setBlankKey] = useState(null);
-  const writingBlank = chapter.status === 'empty' && blankKey === resourceKey;
-  const loading = chapter.status === 'loading';
-
+  const [search] = useSearchParams();
+  const rich = search.get('mode') === 'rich';
+  const { storyId, chapterId } = useParams();
+  const { t } = useLocale();
+  const resourceKey = `${storyId}:${chapterId}:${rich}`;
+  const resource = useBackendDocument(
+    `/author/stories/${storyId}/chapters/${chapterId}${rich ? '?format=rich' : ''}`,
+    emptyChapter,
+  );
+  const loading = resource.status === 'loading';
+  const value = resource.data.chapter;
+  const chapter = {
+    ...resource,
+    data: value
+      ? {
+          ...value,
+          body: value.document ? richChapterBody(value.document) : value.paragraphs.join('\n\n'),
+          storyMeta: t('editorData.chapterCount', { count: value.outline.length }),
+          activeChapter: value.number,
+          nextChapter: value.outline.find((item) => item.number > value.number),
+          groups: [
+            {
+              act: t('editorData.chapterList'),
+              count: value.outline.length,
+              chapters: value.outline.map((item) => [
+                item.number,
+                `Chương ${item.number}: ${item.title}`,
+                item.id,
+              ]),
+            },
+          ],
+        }
+      : null,
+  };
+  const STORY_ROUTE = `/author/stories/${storyId}`;
   return (
     <AuthorLayout>
-      {chapter.status === 'ready' || writingBlank ? (
-        <ChapterEditor
-          key={writingBlank ? `${resourceKey}:blank` : resourceKey}
-          chapter={writingBlank ? { ...chapter.data, title: '', body: '' } : chapter.data}
-        />
+      {chapter.status === 'ready' && chapter.data ? (
+        <ChapterEditor key={resourceKey} chapter={chapter.data} />
       ) : (
         <div className="flex min-h-[calc(100dvh-4rem)] flex-col bg-reader">
           <EditorHeader
@@ -175,21 +161,40 @@ export function ChapterEditorPage() {
                   <EmptyState
                     tone="rose"
                     icon={AlertTriangle}
-                    title="Không tải được chương"
-                    description="Kết nối tới máy chủ bị gián đoạn. Hãy thử tải lại sau ít phút."
-                    action={<RetryButton onClick={chapter.retry} />}
+                    title={
+                      chapter.error?.code === 'unsupported_editor_format'
+                        ? t('editorData.unsupportedTitle')
+                        : t('editorData.loadErrorTitle')
+                    }
+                    description={
+                      chapter.error?.code === 'unsupported_editor_format'
+                        ? t('editorData.unsupportedFormat')
+                        : t('editorData.loadError')
+                    }
+                    action={
+                      <>
+                        <RetryButton onClick={chapter.retry} />
+                        <ButtonLink to={STORY_ROUTE} variant="secondary" size="sm">
+                          {t('editorData.backToManager')}
+                        </ButtonLink>
+                        {!rich && (
+                          <ButtonLink
+                            to={`${STORY_ROUTE}/chapters/${chapterId}/edit?mode=rich`}
+                            size="sm"
+                          >
+                            {t('richEditor.open')}
+                          </ButtonLink>
+                        )}
+                      </>
+                    }
                   />
                 ) : (
                   <EmptyState
                     icon={PenLine}
-                    title="Chương chưa có nội dung"
-                    description="Chương này chưa có tiêu đề hay đoạn văn nào. Bắt đầu viết ngay hoặc quay lại trang quản lý truyện."
+                    title={t('editorData.notFound')}
+                    description={t('editorData.notFoundHint')}
                     action={
                       <>
-                        <Button size="sm" onClick={() => setBlankKey(resourceKey)}>
-                          <PenLine size={14} aria-hidden="true" />
-                          Bắt đầu viết
-                        </Button>
                         <ButtonLink to={STORY_ROUTE} variant="secondary" size="sm">
                           Về trang quản lý truyện
                         </ButtonLink>
@@ -207,19 +212,32 @@ export function ChapterEditorPage() {
 }
 
 function ChapterEditor({ chapter }) {
+  const { t } = useLocale();
+  const navigate = useNavigate();
+  const STORY_ROUTE = `/author/stories/${chapter.storyId}`;
+  const chapterRoute = (id) =>
+    `${STORY_ROUTE}/chapters/${id}/edit${chapter.document ? '?mode=rich' : ''}`;
+  const [version, setVersion] = useState(chapter.version);
+  const [saveBusy, setSaveBusy] = useState(false);
+  const busyRef = useRef(false);
+  const [saveError, setSaveError] = useState('');
+  const [conflict, setConflict] = useState(false);
+  const [compareOpen, setCompareOpen] = useState(false);
   const bodyRef = useRef(null);
+  const rich = Boolean(chapter.document);
+  const [richDocument, setRichDocument] = useState(chapter.document);
   const [title, setTitle] = useState(chapter.title);
   const [body, setBody] = useState(chapter.body);
   const [saved, setSaved] = useState(true);
   const [caret, setCaret] = useState(0);
-  const [utility, setUtility] = useState('ai');
+  const [utility, setUtility] = useState('outline');
   const [notes, setNotes] = useState('');
-  const [groups, setGroups] = useState(chapter.groups);
+  const groups = chapter.groups;
   const [leftOpen, setLeftOpen] = useState(false);
   const [rightOpen, setRightOpen] = useState(false);
   const [previewOpen, setPreviewOpen] = useState(false);
+  const [imagePicker, setImagePicker] = useState(false);
   const [submit, setSubmit] = useState('idle');
-  const [suggested, setSuggested] = useState(false);
   const words = useMemo(() => countWords(body), [body]);
   const minutes = Math.max(1, Math.round(words / WORDS_PER_MINUTE));
   const paragraph = paragraphsOf(body.slice(0, caret)).length || 1;
@@ -229,7 +247,17 @@ function ChapterEditor({ chapter }) {
     setBody(value);
     setSaved(false);
   };
-  const applyTool = (edit) => {
+  const applyTool = (edit, key) => {
+    if (rich) {
+      if (saveBusy || !chapter.canEdit) return;
+      if (key === 'image') {
+        setImagePicker(true);
+        return;
+      }
+      if (!bodyRef.current?.format(key)) setSaveError(t('richEditor.selectText'));
+      return;
+    }
+    if (!edit || busyRef.current || !chapter.canEdit) return;
     const field = bodyRef.current;
     if (!field) return;
     const { selectionStart: start, selectionEnd: end } = field;
@@ -241,27 +269,79 @@ function ChapterEditor({ chapter }) {
       setCaret(start + before.length + inner.length);
     });
   };
-  const addChapter = () =>
-    setGroups((current) => {
-      const last = current[current.length - 1];
-      const number = Math.max(...last.chapters.map(([value]) => value)) + 1;
-      return [
-        ...current.slice(0, -1),
-        {
-          ...last,
-          count: last.count + 1,
-          chapters: [...last.chapters, [number, `Ch. ${number}: Chương chưa đặt tên`]],
+  const saveChapter = async () => {
+    if (busyRef.current) return false;
+    if (conflict) return false;
+    if (saved) return true;
+    if (!chapter.canEdit) return false;
+    if (!title.trim()) {
+      setSaveError(t('editorData.titleRequired'));
+      return false;
+    }
+    busyRef.current = true;
+    setSaveBusy(true);
+    setSaveError('');
+    try {
+      const paragraphs = rich ? [] : chapterParagraphs(body);
+      const result = await apiRequest(`/author/stories/${chapter.storyId}/chapters/${chapter.id}`, {
+        method: 'PUT',
+        body: {
+          ...(rich
+            ? { document: { ...richDocument, title: title.trim() } }
+            : { title: title.trim(), paragraphs: paragraphs.length ? paragraphs : [''] }),
+          expectedVersion: version,
         },
-      ];
-    });
-  const sendForReview = () => {
-    setSubmit('sending');
-    window.setTimeout(() => {
-      setSubmit('sent');
+      });
+      setVersion(result.chapter.version);
       setSaved(true);
-    }, 900);
+      return true;
+    } catch (error) {
+      if (error.status === 409 && error.code === 'stale_content') {
+        setConflict(true);
+        setSubmit('idle');
+      }
+      setSaveError(
+        error instanceof ChapterTextError
+          ? t(`chapterText.${error.code}`)
+          : error.message || t('editorData.saveError'),
+      );
+      return false;
+    } finally {
+      busyRef.current = false;
+      setSaveBusy(false);
+    }
   };
-
+  const addChapter = async () => {
+    if (!chapter.canCreate || busyRef.current) return;
+    if (!saved && !(await saveChapter())) return;
+    busyRef.current = true;
+    setSaveBusy(true);
+    setSaveError('');
+    try {
+      const result = await apiRequest(`/author/stories/${chapter.storyId}/chapters`, {
+        method: 'POST',
+        body: { title: t('editorData.untitled'), paragraphs: [''] },
+      });
+      navigate(chapterRoute(result.chapter.id));
+    } catch (error) {
+      setSaveError(error.message || t('editorData.saveError'));
+    } finally {
+      busyRef.current = false;
+      setSaveBusy(false);
+    }
+  };
+  const leave = (event) => {
+    if (!saved && !window.confirm(t('editorData.discard'))) event.preventDefault();
+  };
+  useEffect(() => {
+    if (saved) return;
+    const warn = (event) => {
+      event.preventDefault();
+      event.returnValue = '';
+    };
+    window.addEventListener('beforeunload', warn);
+    return () => window.removeEventListener('beforeunload', warn);
+  }, [saved]);
   const tree = (
     <ChapterTree
       storyTitle={chapter.storyTitle}
@@ -269,6 +349,10 @@ function ChapterEditor({ chapter }) {
       active={chapter.activeChapter}
       groups={groups}
       onAdd={addChapter}
+      storyId={chapter.storyId}
+      addDisabled={saveBusy || conflict || !chapter.canCreate}
+      onLeave={leave}
+      rich={rich}
     />
   );
   const utilityPanel = (
@@ -281,12 +365,6 @@ function ChapterEditor({ chapter }) {
       saved={saved}
       notes={notes}
       setNotes={setNotes}
-      suggested={suggested}
-      onSuggest={() => setSuggested(true)}
-      onInsert={() => {
-        updateBody(`${body}\n\n${SUGGESTION}`);
-        setSuggested(false);
-      }}
     />
   );
 
@@ -294,7 +372,7 @@ function ChapterEditor({ chapter }) {
     <div className="flex min-h-[calc(100dvh-var(--app-header-h))] flex-col bg-reader">
       <EditorHeader
         story={
-          <Link to={STORY_ROUTE} className="hover:text-brand-strong">
+          <Link to={STORY_ROUTE} onClick={leave} className="hover:text-brand-strong">
             {chapter.storyTitle}
           </Link>
         }
@@ -305,7 +383,7 @@ function ChapterEditor({ chapter }) {
               {submit === 'sent'
                 ? 'Đã gửi xét duyệt'
                 : saved
-                  ? 'Đã lưu cục bộ'
+                  ? t(chapter.canEdit ? 'editorData.saved' : 'editorData.readOnly')
                   : 'Có thay đổi chưa lưu'}
             </Badge>
             <Badge className="tabular-nums">{words.toLocaleString('vi-VN')} từ</Badge>
@@ -315,8 +393,11 @@ function ChapterEditor({ chapter }) {
         onOpenLeft={() => setLeftOpen(true)}
         onOpenRight={() => setRightOpen(true)}
         onPreview={() => setPreviewOpen(true)}
+        importTo={chapter.canEdit ? `/author/import?storyId=${chapter.storyId}` : null}
+        onLeave={leave}
+        richTo={!rich ? `${chapterRoute(chapter.id)}?mode=rich` : null}
         onSubmit={() => setSubmit('confirm')}
-        submitDisabled={submit === 'sent'}
+        submitDisabled={saveBusy || conflict || !chapter.canEdit}
       />
 
       <div className="nh-grid-12 nh-fade-enter grid min-h-0 flex-1 nh-layout-xl-3-6-3">
@@ -333,34 +414,66 @@ function ChapterEditor({ chapter }) {
             className="sticky top-[var(--app-header-h)] z-20 flex items-center gap-2 border-b border-hairline bg-surface/90 px-3 py-2 backdrop-blur"
           >
             <div className="nh-tab-rail flex min-w-0 flex-1 gap-0.5 overflow-x-auto pr-6 [mask-image:linear-gradient(to_right,black_calc(100%-2rem),transparent)] lg:pr-0 lg:[mask-image:none]">
-              {tools.map(([Icon, label, edit]) => (
+              {tools.map(([Icon, key, edit]) => (
                 <button
-                  key={label}
+                  key={key}
                   type="button"
-                  aria-label={label}
-                  title={label}
+                  aria-label={t(`editorTools.${key}`)}
+                  aria-describedby={!edit && !rich ? 'editor-format-support' : undefined}
+                  title={
+                    edit || rich
+                      ? t(`editorTools.${key}`)
+                      : t('editorTools.unavailable', { tool: t(`editorTools.${key}`) })
+                  }
                   onMouseDown={(event) => event.preventDefault()}
-                  onClick={() => applyTool(edit)}
-                  className="grid size-9 shrink-0 place-items-center rounded-full text-ink/75 transition-[background-color,color,transform] duration-200 hover:bg-elevated hover:text-brand-strong active:scale-[0.96] pointer-coarse:size-11"
+                  onClick={() => applyTool(edit, key)}
+                  disabled={(!edit && !rich) || saveBusy || !chapter.canEdit}
+                  className="grid size-9 shrink-0 place-items-center rounded-full text-ink/75 transition-[background-color,color,transform] duration-200 hover:bg-elevated hover:text-brand-strong active:scale-[0.96] disabled:cursor-not-allowed disabled:opacity-40 pointer-coarse:size-11"
                 >
                   <Icon size={16} />
                 </button>
               ))}
             </div>
-            <span className="hidden shrink-0 text-xs text-ink/70 tabular-nums lg:inline">
-              Đoạn {paragraph} · Dòng {line}
-            </span>
+            {!rich && (
+              <span className="hidden shrink-0 text-xs text-ink/70 tabular-nums lg:inline">
+                Đoạn {paragraph} · Dòng {line}
+              </span>
+            )}
             <Button
               variant="secondary"
               size="sm"
-              onClick={() => setSaved(true)}
-              disabled={saved}
+              onClick={saveChapter}
+              disabled={saved || saveBusy || conflict || !chapter.canEdit}
               className="shrink-0"
             >
               <Save size={14} aria-hidden="true" />
               Lưu
             </Button>
           </div>
+          <p
+            id="editor-format-support"
+            className="border-b border-hairline px-5 py-3 text-xs leading-5 text-muted"
+          >
+            {t(rich ? 'richEditor.hint' : 'editorTools.plainTextHint')}
+          </p>
+          {saveError && (
+            <p role="alert" className="px-5 pt-4 text-sm text-rose-strong">
+              {saveError}
+            </p>
+          )}
+          {conflict && (
+            <div className="px-5 pt-3">
+              <p className="text-sm leading-6 text-muted">{t('chapterConflict.notice')}</p>
+              <Button
+                variant="secondary"
+                size="sm"
+                className="mt-2"
+                onClick={() => setCompareOpen(true)}
+              >
+                {t('chapterConflict.open')}
+              </Button>
+            </div>
+          )}
           <article className="mx-auto max-w-[760px] px-5 py-10 sm:px-10 lg:py-14">
             <label htmlFor="chapter-title" className="sr-only">
               Tiêu đề chương
@@ -369,7 +482,8 @@ function ChapterEditor({ chapter }) {
               id="chapter-title"
               rows={1}
               value={title}
-              maxLength={140}
+              disabled={saveBusy || !chapter.canEdit}
+              maxLength={200}
               onChange={(event) => {
                 setTitle(event.target.value.replace(/\n/g, ' '));
                 setSaved(false);
@@ -380,37 +494,67 @@ function ChapterEditor({ chapter }) {
             <label htmlFor="chapter-body" className="sr-only">
               Nội dung chương
             </label>
-            <textarea
-              id="chapter-body"
-              ref={bodyRef}
-              value={body}
-              onChange={(event) => {
-                updateBody(event.target.value);
-                setCaret(event.target.selectionStart);
-              }}
-              onSelect={(event) => setCaret(event.currentTarget.selectionStart)}
-              onKeyDown={(event) => {
-                if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 's') {
-                  event.preventDefault();
-                  setSaved(true);
-                }
-              }}
-              placeholder="Bắt đầu viết chương của bạn…"
-              className="mt-6 min-h-[60dvh] w-full resize-none rounded-2xl bg-transparent text-base leading-8 text-ink outline-none [field-sizing:content] placeholder:text-muted sm:text-lg sm:leading-9"
-            />
+            {rich ? (
+              <RichChapterInput
+                ref={bodyRef}
+                initialDocument={chapter.document}
+                disabled={saveBusy || !chapter.canEdit}
+                label={t('richEditor.body')}
+                onChange={(document) => {
+                  setRichDocument(document);
+                  updateBody(richChapterBody(document));
+                }}
+                onSave={saveChapter}
+                onError={() => setSaveError(t('richEditor.pasteHint'))}
+              />
+            ) : (
+              <textarea
+                id="chapter-body"
+                ref={bodyRef}
+                value={body}
+                disabled={saveBusy || !chapter.canEdit}
+                onChange={(event) => {
+                  updateBody(event.target.value);
+                  setCaret(event.target.selectionStart);
+                }}
+                onSelect={(event) => setCaret(event.currentTarget.selectionStart)}
+                onKeyDown={(event) => {
+                  if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 's') {
+                    event.preventDefault();
+                    void saveChapter();
+                  }
+                }}
+                placeholder="Bắt đầu viết chương của bạn…"
+                className="mt-6 min-h-[60dvh] w-full resize-none rounded-2xl bg-transparent text-base leading-8 text-ink outline-none [field-sizing:content] placeholder:text-muted sm:text-lg sm:leading-9"
+              />
+            )}
+            {rich && (
+              <ChapterImageControls
+                document={richDocument}
+                disabled={saveBusy || !chapter.canEdit}
+                onChange={(index, changes) => bodyRef.current?.changeImage(index, changes)}
+              />
+            )}
             <div className="mt-6 flex flex-wrap items-center justify-between gap-3 border-t border-hairline pt-5 text-sm text-muted">
               <span role="status" className="flex items-center gap-2">
                 <Save size={14} aria-hidden="true" />
-                {saved ? 'Bản nháp đã được lưu cục bộ và đồng bộ.' : 'Các thay đổi đang chờ lưu.'}
+                {saveBusy
+                  ? t('editorData.saving')
+                  : saved
+                    ? t(chapter.canEdit ? 'editorData.saved' : 'editorData.readOnly')
+                    : t('editorData.unsaved')}
               </span>
               <ButtonLink
-                to={chapterRoute(chapter.nextChapter)}
+                to={chapter.nextChapter ? chapterRoute(chapter.nextChapter.id) : STORY_ROUTE}
+                onClick={leave}
                 variant="ghost"
                 size="sm"
                 trailingIcon={ChevronRight}
                 className="text-brand-strong"
               >
-                Tiếp tục đến Chương {chapter.nextChapter}
+                {chapter.nextChapter
+                  ? t('editorData.next', { count: chapter.nextChapter.number })
+                  : t('editorData.back')}
               </ButtonLink>
             </div>
           </article>
@@ -440,26 +584,61 @@ function ChapterEditor({ chapter }) {
         {utilityPanel}
       </EditorSheet>
 
+      {compareOpen && (
+        <ChapterConflictDialog
+          chapter={chapter}
+          title={title}
+          body={body}
+          richDocument={richDocument}
+          onClose={() => setCompareOpen(false)}
+          onApply={(merged) => {
+            setTitle(merged.title);
+            setBody(merged.body);
+            if (merged.document) {
+              setRichDocument(merged.document);
+              bodyRef.current?.replace(merged.document);
+            }
+            setVersion(merged.version);
+            setSaved(false);
+            setConflict(false);
+            setSaveError('');
+            setCompareOpen(false);
+          }}
+        />
+      )}
+      {imagePicker && (
+        <ChapterImagePicker
+          storyId={chapter.storyId}
+          onClose={() => setImagePicker(false)}
+          onAdd={(block) => {
+            const added = bodyRef.current?.changeImage(null, block);
+            if (added) setImagePicker(false);
+            return added;
+          }}
+        />
+      )}
       <Modal
         open={previewOpen}
         title="Xem trước cho độc giả"
         onClose={() => setPreviewOpen(false)}
-        className="max-w-2xl"
+        className="max-w-5xl"
       >
-        <article className="sm:rounded-2xl sm:bg-reader sm:p-8">
-          <h3 className="text-h2">{title.trim() || 'Chương chưa đặt tên'}</h3>
-          <div className="mt-5 space-y-5 text-base leading-8 text-ink">
-            {paragraphsOf(body).map((part, index) =>
-              part === SCENE_BREAK ? (
-                <p key={index} aria-hidden="true" className="text-center tracking-[1em] text-muted">
-                  ***
-                </p>
-              ) : (
-                <p key={index}>{part}</p>
-              ),
-            )}
-          </div>
-        </article>
+        <p className="mb-4 text-sm text-muted">{t('authorDraftActions.localPreview')}</p>
+        <DraftReadingCanvas
+          storyTitle={chapter.storyTitle}
+          document={
+            rich
+              ? { ...richDocument, title: title.trim() || t('editorData.untitled') }
+              : {
+                  title: title.trim() || t('editorData.untitled'),
+                  blocks: paragraphsOf(body).map((text) =>
+                    text === SCENE_BREAK
+                      ? { type: 'scene-break' }
+                      : { type: 'paragraph', inlines: [{ text, marks: [] }] },
+                  ),
+                }
+          }
+        />
       </Modal>
 
       <Modal
@@ -467,34 +646,26 @@ function ChapterEditor({ chapter }) {
         title="Gửi chương"
         onClose={() => submit !== 'sending' && setSubmit('idle')}
       >
-        <p className="text-sm leading-6 text-muted">
-          <strong className="text-ink">{title.trim() || 'Chương chưa đặt tên'}</strong> (
-          {words.toLocaleString('vi-VN')} từ) sẽ được thêm vào hàng đợi biên tập. Đây là bản xem
-          trước giao diện; không có dữ liệu nào được gửi đi.
-        </p>
-        {words < TARGET_WORDS && (
-          <p className="mt-3 flex items-start gap-2 rounded-2xl bg-orange/12 p-3 text-xs leading-5 text-ink">
-            <Info size={14} aria-hidden="true" className="mt-0.5 shrink-0 text-orange-strong" />
-            Chương mới có {words.toLocaleString('vi-VN')} / {TARGET_WORDS.toLocaleString('vi-VN')}{' '}
-            từ mục tiêu. Bạn vẫn có thể gửi để nhận góp ý sớm.
-          </p>
-        )}
+        <p className="text-sm leading-6 text-muted">{t('submissionData.editorHint')}</p>
         <div className="mt-6 flex flex-col-reverse gap-2 sm:flex-row sm:flex-wrap sm:justify-end">
           <Button
             variant="secondary"
             onClick={() => setSubmit('idle')}
-            disabled={submit === 'sending'}
+
             className="w-full sm:w-auto"
           >
             Tiếp tục chỉnh sửa
           </Button>
           <Button
-            onClick={sendForReview}
-            disabled={submit === 'sending' || !title.trim()}
+            disabled={saveBusy}
             className="w-full sm:w-auto"
+            onClick={async () => {
+              if (!saved && !(await saveChapter())) return;
+              navigate(`/author/submissions?storyId=${chapter.storyId}&chapterId=${chapter.id}`);
+            }}
           >
             <Check size={16} aria-hidden="true" />
-            {submit === 'sending' ? 'Đang gửi...' : 'Gửi xét duyệt'}
+            {t('submissionData.editorContinue')}
           </Button>
         </div>
       </Modal>
@@ -511,7 +682,11 @@ function EditorHeader({
   onPreview,
   onSubmit,
   submitDisabled = !onSubmit,
+  importTo,
+  onLeave,
+  richTo,
 }) {
+  const { t } = useLocale();
   return (
     <div className="flex flex-wrap items-center gap-x-3 gap-y-2 border-b border-hairline bg-surface px-4 py-3">
       <IconButton
@@ -550,7 +725,17 @@ function EditorHeader({
       </IconButton>
       <div className="flex w-full flex-wrap items-center gap-2 xl:w-auto">
         {badges}
-        <div className="ml-auto flex items-center gap-2">
+        <div className="ml-auto flex flex-wrap items-center justify-end gap-2">
+          {richTo && (
+            <ButtonLink to={richTo} variant="secondary" size="sm" onClick={onLeave}>
+              {t('richEditor.open')}
+            </ButtonLink>
+          )}
+          {importTo && (
+            <ButtonLink to={importTo} variant="secondary" size="sm" onClick={onLeave}>
+              {t('authorDraftActions.import')}
+            </ButtonLink>
+          )}
           <Button variant="secondary" size="sm" onClick={onPreview} disabled={!onPreview}>
             <Eye size={14} aria-hidden="true" />
             Xem trước
@@ -679,7 +864,7 @@ function WriterUtilitySkeleton() {
     <div className="space-y-5 p-5">
       {/* The tab rail is chrome: render it inert so its wrapped rows keep their real height. */}
       <div inert>
-        <Tabs label="Tiện ích sáng tác" value="ai" onChange={() => {}} items={utilityTabs} />
+        <Tabs label="Tiện ích sáng tác" value="outline" onChange={() => {}} items={utilityTabs} />
       </div>
       <Card as="div" aria-hidden="true" className="bg-elevated p-4">
         <div className="flex flex-wrap items-center justify-between gap-2">
@@ -760,7 +945,17 @@ function EditorSheet({ open, side, title, onClose, children }) {
   );
 }
 
-function ChapterTree({ storyTitle, storyMeta, active: activeChapter, groups, onAdd }) {
+function ChapterTree({
+  storyTitle,
+  storyMeta,
+  active: activeChapter,
+  groups,
+  onAdd,
+  storyId,
+  addDisabled,
+  onLeave,
+  rich,
+}) {
   return (
     <>
       <div className="border-b border-hairline pb-4">
@@ -778,12 +973,13 @@ function ChapterTree({ storyTitle, storyMeta, active: activeChapter, groups, onA
               <span className="shrink-0 text-xs text-muted">{group.count} chương</span>
             </div>
             <ul className="mt-2 space-y-1 border-l border-hairline pl-3">
-              {group.chapters.map(([number, label]) => {
+              {group.chapters.map(([number, label, id]) => {
                 const active = number === activeChapter;
                 return (
                   <li key={number}>
                     <Link
-                      to={active ? EDITOR_ROUTE : chapterRoute(number)}
+                      to={`/author/stories/${storyId}/chapters/${id}/edit${rich ? '?mode=rich' : ''}`}
+                      onClick={onLeave}
                       aria-current={active ? 'page' : undefined}
                       className={`flex w-full items-center gap-2 rounded-full px-3 py-2 text-sm transition-colors duration-200 pointer-coarse:min-h-11 ${active ? 'bg-brand/12 font-semibold text-brand-strong' : 'text-ink/70 hover:bg-elevated hover:text-ink'}`}
                     >
@@ -801,7 +997,7 @@ function ChapterTree({ storyTitle, storyMeta, active: activeChapter, groups, onA
           </section>
         ))}
       </div>
-      <Button variant="outline" onClick={onAdd} className="mt-8 w-full">
+      <Button variant="outline" disabled={addDisabled} onClick={onAdd} className="mt-8 w-full">
         <Plus size={16} aria-hidden="true" />
         Thêm chương
       </Button>
@@ -809,84 +1005,11 @@ function ChapterTree({ storyTitle, storyMeta, active: activeChapter, groups, onA
   );
 }
 
-function WriterUtility({
-  tab,
-  setTab,
-  body,
-  title,
-  words,
-  saved,
-  notes,
-  setNotes,
-  suggested,
-  onSuggest,
-  onInsert,
-}) {
+function WriterUtility({ tab, setTab, body, title, words, saved, notes, setNotes }) {
+  const { t } = useLocale();
   return (
     <div className="space-y-5 p-5">
       <Tabs label="Tiện ích sáng tác" value={tab} onChange={setTab} items={utilityTabs} />
-      {tab === 'ai' && (
-        <>
-          <Card className="bg-elevated p-4">
-            <div className="flex flex-wrap items-center justify-between gap-2">
-              <strong className="flex items-center gap-2 text-sm">
-                <ListTree size={16} aria-hidden="true" className="text-purple" />
-                Phân tích nhịp độ
-              </strong>
-              <Badge tone="green">Cân bằng tốt</Badge>
-            </div>
-            <p className="mt-2 text-sm leading-6 text-ink/70">
-              Hình ảnh cảm giác (62%) và hội thoại (38%) được cân bằng tốt. Sức căng của cảnh tăng
-              đều về phía thời điểm phát hiện dòng suối.
-            </p>
-          </Card>
-          <Card className="border-purple/40 bg-purple/8 p-4">
-            <strong className="flex items-center gap-2 text-sm text-purple-strong">
-              <Sparkles size={16} aria-hidden="true" />
-              Chuyển đoạn tiếp theo theo ngữ cảnh
-            </strong>
-            <p className="mt-2 text-sm leading-6 text-ink/70">
-              Gợi ý một nhịp nối không khí liền mạch khi Kaelen chuẩn bị giải mã các ký tự nước đang
-              co lại.
-            </p>
-            <Button variant="tertiary" onClick={onSuggest} className="mt-4 w-full">
-              <Sparkles size={16} aria-hidden="true" />
-              Gợi ý đoạn tiếp theo
-            </Button>
-            {suggested && (
-              <div className="nh-dialog-enter mt-4 rounded-2xl bg-surface p-4" role="status">
-                <p className="text-xs text-muted">Phương án gợi ý:</p>
-                <p className="mt-1 text-sm italic leading-6">“{SUGGESTION}”</p>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={onInsert}
-                  className="-ml-3 mt-2 px-3 text-purple-strong"
-                >
-                  <Plus size={14} aria-hidden="true" />
-                  Chèn vào trình soạn thảo
-                </Button>
-              </div>
-            )}
-          </Card>
-          <Card className="p-4">
-            <strong className="text-sm">Theo dõi tính nhất quán</strong>
-            <p className="mt-3 flex items-baseline justify-between gap-2 text-sm font-semibold">
-              Kaelen <span className="text-xs font-normal text-muted">Nhân vật chính</span>
-            </p>
-            <ul className="mt-2 space-y-2 text-xs leading-5 text-muted">
-              <li className="flex gap-2">
-                <CheckCircle2 size={14} aria-hidden="true" className="mt-0.5 shrink-0 text-brand" />
-                Vật phẩm hiện tại: la bàn thiên văn bằng đồng được theo dõi chính xác từ Chương 15.
-              </li>
-              <li className="flex gap-2">
-                <Info size={14} aria-hidden="true" className="mt-0.5 shrink-0 text-orange-strong" />
-                Tay phải bị thương ở Chương 12; hiện đang cầm dụng cụ.
-              </li>
-            </ul>
-          </Card>
-        </>
-      )}
       {tab === 'outline' && <Outline body={body} />}
       {tab === 'notes' && (
         <div>
@@ -896,13 +1019,12 @@ function WriterUtility({
           <textarea
             id="chapter-notes"
             value={notes}
+            disabled
             onChange={(event) => setNotes(event.target.value)}
             placeholder="Ý tưởng, chi tiết cần nhớ, câu thoại muốn giữ lại..."
             className="mt-2 min-h-48 w-full resize-y rounded-3xl border border-line bg-surface p-4 text-base leading-6 text-ink outline-none transition-colors placeholder:text-muted focus:border-brand sm:text-sm"
           />
-          <p className="mt-2 text-xs text-muted">
-            Ghi chú chỉ hiển thị với bạn và được lưu cùng bản nháp.
-          </p>
+          <p className="mt-2 text-xs text-muted">{t('editorData.noNotes')}</p>
         </div>
       )}
       {tab === 'checklist' && <Checklist title={title} body={body} words={words} saved={saved} />}
@@ -934,13 +1056,13 @@ function Checklist({ title, body, words, saved }) {
   const checks = [
     ['Có tiêu đề chương', Boolean(title.trim())],
     ['Có ít nhất một dấu ngắt cảnh', body.includes(SCENE_BREAK)],
-    [`Đạt ${TARGET_WORDS.toLocaleString('vi-VN')} từ mục tiêu`, words >= TARGET_WORDS],
+    [`Mốc tham khảo ${TARGET_WORDS.toLocaleString('vi-VN')} từ`, words >= TARGET_WORDS],
     ['Mọi thay đổi đã được lưu', saved],
   ];
   return (
     <div>
       <p className="flex justify-between text-sm">
-        <span>Tiến độ số từ</span>
+        <span>Mốc tham khảo số từ</span>
         <strong className="tabular-nums">
           {words.toLocaleString('vi-VN')} / {TARGET_WORDS.toLocaleString('vi-VN')}
         </strong>

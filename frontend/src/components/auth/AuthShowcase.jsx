@@ -102,7 +102,7 @@ const variants = {
  * Presentational visual panel for the auth surfaces (/login, /register, /author/apply).
  * variant: 'login' | 'register' | 'author'. authorShare/authorName feed the author variant.
  */
-export function AuthShowcase({ variant, authorShare = 80, authorName, className = '' }) {
+export function AuthShowcase({ variant, authorShare, authorName, className = '' }) {
   const { t } = useLocale();
   const config = variants[variant] || variants.register;
   const [EyebrowIcon, eyebrow] = config.eyebrow(t);
@@ -124,8 +124,8 @@ export function AuthShowcase({ variant, authorShare = 80, authorName, className 
         <p className="nh-eyebrow">
           <EyebrowIcon size={13} /> {eyebrow}
         </p>
-        <p className="flex items-center gap-2.5 text-xs text-ink/70">
-          <span aria-hidden="true" className="flex -space-x-2">
+        <div className="flex items-center gap-2.5 text-xs text-ink/70">
+          <div aria-hidden="true" className="flex -space-x-2">
             {socialCovers.map((id) => (
               <StoryCover
                 key={id}
@@ -134,11 +134,11 @@ export function AuthShowcase({ variant, authorShare = 80, authorName, className 
                 className="size-7 rounded-full ring-2 ring-surface"
               />
             ))}
-          </span>
+          </div>
           <span>
             <strong className="font-bold text-ink">{proofValue}</strong> {proofLabel}
           </span>
-        </p>
+        </div>
       </div>
 
       <div
@@ -252,14 +252,16 @@ function RoleCards({ t }) {
   );
 }
 
-function AuthorCards({ authorShare }) {
+function AuthorCards({ authorShare, t }) {
   return (
     <>
       <FloatingCard
         icon={BadgeDollarSign}
         tone="bg-orange text-on-orange"
-        title={`${authorShare}% doanh thu`}
-        text="Phần của tác giả từ chương trả phí"
+        title={authorShare == null ? t('authorAccess.revenueTitle') : `${authorShare}% doanh thu`}
+        text={
+          authorShare == null ? t('authorAccess.revenueHint') : 'Phần của tác giả từ chương trả phí'
+        }
         className="left-0 top-0"
       />
       <FloatingCard

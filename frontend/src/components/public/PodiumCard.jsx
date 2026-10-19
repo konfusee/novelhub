@@ -1,8 +1,8 @@
-import { ArrowRight, Crown, Star } from '../icons';
-import { Badge, ButtonLink, Card, Skeleton, Trend } from '../ui';
-import { StoryCover } from '../story/StoryCover';
+import { ArrowRight, Crown, Star } from '../icons'
+import { Badge, ButtonLink, Card, Skeleton, Trend } from '../ui'
+import { StoryCover } from '../story/StoryCover'
 export function PodiumCard({ story }) {
-  const champion = story.rank === 1;
+  const champion = story.rank === 1
   return (
     <Card
       as="article"
@@ -54,7 +54,7 @@ export function PodiumCard({ story }) {
         {champion ? 'Bắt đầu đọc' : 'Đọc thử'}
       </ButtonLink>
     </Card>
-  );
+  )
 }
 
 /* Same card min-heights, cover cap and rows as PodiumCard; `champion` adds the blurb lines. */
@@ -90,5 +90,5 @@ export function PodiumCardSkeleton({ champion = false }) {
       </div>
       <Skeleton className="mt-auto h-9 w-full" />
     </Card>
-  );
+  )
 }

@@ -27,22 +27,72 @@ export function serializeError(err) {
   return serialized;
 }
 
-export const logSerializers = { err: serializeError };
+export const logSerializers = {
+  err: serializeError,
+  req: (req) => ({ id: req.id, method: req.method, path: String(req.url || '').split('?')[0] }),
+  res: (res) => ({ statusCode: res.statusCode }),
+};
+export const httpLogOptions = {
+  serializers: logSerializers,
+  quietReqLogger: true,
+  customLogLevel: (req, res, err) => {
+    if (err || res.statusCode >= 500) return 'error';
+    if (['/api/health', '/api/ready'].includes(req.url?.split('?')[0]) && res.statusCode < 400)
+      return 'silent';
+    if (req.url?.split('?')[0] === '/api/auth/me' && res.statusCode === 401) return 'debug';
+    return res.statusCode >= 400 ? 'warn' : 'info';
+  },
+  customSuccessMessage: (req, res) =>
+    req.method + ' ' + String(req.url).split('?')[0] + ' -> ' + res.statusCode,
+  customErrorMessage: (req, res) =>
+    req.method + ' ' + String(req.url).split('?')[0] + ' -> ' + res.statusCode,
+};
 
-export function createLogger(level = 'info') {
-  return pino({
-    level,
-    serializers: logSerializers,
-    redact: {
-      paths: [
-        'req.headers.authorization',
-        'req.headers.cookie',
-        'res.headers["set-cookie"]',
-        '*.password',
-        '*.hash',
-        '*.token',
-      ],
-      censor: '[redacted]',
+export function createLogger(level, { nodeEnv }, destination) {
+  return pino(
+    {
+      level,
+      serializers: logSerializers,
+      ...(nodeEnv === 'development'
+        ? {
+            transport: {
+              target: 'pino-pretty',
+              options: {
+                colorize: Boolean(process.stdout.isTTY),
+                translateTime: 'SYS:HH:MM:ss',
+                singleLine: true,
+                ignore: 'pid,hostname,req,res,reqId',
+              },
+            },
+          }
+        : {}),
+      redact: {
+        paths: [
+          'req.headers.authorization',
+          'req.headers.cookie',
+          'res.headers["set-cookie"]',
+          'password',
+          'token',
+          'otp',
+          'challenge',
+          'clientSecret',
+          'SMTP_PASSWORD',
+          'GOOGLE_CLIENT_SECRET',
+          'SEPAY_WEBHOOK_API_KEY',
+          '*.SEPAY_WEBHOOK_API_KEY',
+          '*.apiKey',
+          '*.otp',
+          '*.challenge',
+          '*.clientSecret',
+          '*.SMTP_PASSWORD',
+          '*.GOOGLE_CLIENT_SECRET',
+          '*.password',
+          '*.hash',
+          '*.token',
+        ],
+        censor: '[redacted]',
+      },
     },
-  });
+    destination,
+  );
 }

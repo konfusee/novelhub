@@ -8,7 +8,9 @@ import '../src/models/index.js';
 
 loadDotenv();
 const env = loadEnv();
-await connectDatabase(env.MONGODB_URI);
+await connectDatabase(env.MONGODB_URI, {
+  serverSelectionTimeoutMS: env.DB_SERVER_SELECTION_TIMEOUT_MS,
+});
 try {
   for (const name of mongoose.modelNames().sort()) {
     const model = mongoose.model(name);

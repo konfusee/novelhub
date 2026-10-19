@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useMemo, useState } from 'react'
 import {
   AlertTriangle,
   BookOpen,
@@ -12,9 +12,9 @@ import {
   RotateCcw,
   Smartphone,
   Trash2,
-} from '../../components/icons';
-import { ReaderLayout } from '../../layouts';
-import { StoryCover } from '../../components/story/StoryCover';
+} from '../../components/icons'
+import { ReaderLayout } from '../../layouts'
+import { StoryCover } from '../../components/story/StoryCover'
 import {
   Badge,
   Button,
@@ -25,50 +25,50 @@ import {
   ProgressBar,
   Skeleton,
   Tabs,
-} from '../../components/ui';
-import { libraryItems } from '../../data/mock/reader';
-import { useLocale } from '../../context/LocaleContext';
-import { useMockResource } from '../../context/MockDataContext';
+} from '../../components/ui'
+import { libraryItems } from '../../data/mock/reader'
+import { useLocale } from '../../context/LocaleContext'
+import { useMockResource } from '../../context/MockDataContext'
 
 const metrics = [
   ['history.storiesProgress', '6', 'history.activeStories', BookOpen],
   ['history.chaptersMonth', '84', 'history.vsLastMonth', BookOpen],
   ['history.audioHours', '26.5', 'history.hours', Headphones],
   ['history.streak', '18', 'history.consecutiveDays', Flame],
-];
+]
 const weekly = {
   week: [32, 48, 24, 51, 41, 49, 46],
   last: [25, 37, 19, 40, 32, 38, 36],
-};
-const weekdays = ['T2', 'T3', 'T4', 'T5', 'T6', 'T7', 'CN'];
+}
+const weekdays = ['T2', 'T3', 'T4', 'T5', 'T6', 'T7', 'CN']
 const genres = [
   ['Kỳ ảo và thần thoại', 45, 'bg-brand'],
   ['Lãng mạn và chính kịch', 25, 'bg-orange'],
   ['Bí ẩn và giật gân', 18, 'bg-purple'],
   ['Khoa học viễn tưởng và Cyberpunk', 12, 'bg-rose'],
-];
+]
 const devices = [
   ['Trình đọc MacBook Pro', 'Đang hoạt động', Laptop],
   ['iPhone 15 Pro', 'Đồng bộ 2 giờ trước', Smartphone],
   ['Kindle PaperWhite', 'Hôm qua', BookOpen],
-];
+]
 const historyItems = [
   { ...libraryItems[0], when: 'Đọc 20 phút trước', duration: '35 phút đọc' },
   { ...libraryItems[1], when: 'Phiên nghe · 2 giờ trước', duration: '20 phút nghe' },
   { ...libraryItems[2], when: 'Đọc hôm qua lúc 21:15', duration: '42 phút đọc' },
   { ...libraryItems[4], when: 'Đọc hôm qua lúc 14:30', duration: '28 phút đọc' },
   { ...libraryItems[3], when: 'Hoàn tất thứ Năm', duration: 'Phiên 1 giờ 15 phút' },
-];
+]
 
-const readingStats = { metrics, weekly, genres };
-const isStatsEmpty = (value) => !value.metrics.length;
+const readingStats = { metrics, weekly, genres }
+const isStatsEmpty = value => !value.metrics.length
 /* Sessions shown under each history tab; the loading list uses it too so row counts match. */
 const sessionsForTab = (items, tab) =>
   tab === 'listening'
-    ? items.filter((i) => i.type === 'audio')
+    ? items.filter(i => i.type === 'audio')
     : tab === 'completed'
-      ? items.filter((i) => i.progress === 100)
-      : items.filter((i) => i.type !== 'audio');
+      ? items.filter(i => i.progress === 100)
+      : items.filter(i => i.type !== 'audio')
 
 function RetryButton({ onClick }) {
   return (
@@ -76,7 +76,7 @@ function RetryButton({ onClick }) {
       <RefreshCw size={14} aria-hidden="true" />
       Thử lại
     </Button>
-  );
+  )
 }
 
 function SessionSkeleton() {
@@ -110,15 +110,15 @@ function SessionSkeleton() {
         </div>
       </Card>
     </li>
-  );
+  )
 }
 
-const csvCell = (value) => `"${String(value).replace(/"/g, '""')}"`;
+const csvCell = value => `"${String(value).replace(/"/g, '""')}"`
 
 function exportHistory(items) {
   const rows = [
     ['Tác phẩm', 'Tác giả', 'Định dạng', 'Tiến độ (%)', 'Thời điểm', 'Thời lượng'],
-    ...items.map((item) => [
+    ...items.map(item => [
       item.title,
       item.author,
       item.type === 'audio' ? 'Âm thanh' : 'Truyện',
@@ -126,33 +126,33 @@ function exportHistory(items) {
       item.when,
       item.duration,
     ]),
-  ];
-  const csv = `\uFEFF${rows.map((row) => row.map(csvCell).join(',')).join('\n')}`;
-  const url = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8' }));
-  const link = document.createElement('a');
-  link.href = url;
-  link.download = 'novelhub-lich-su-doc.csv';
-  link.click();
-  URL.revokeObjectURL(url);
+  ]
+  const csv = `\uFEFF${rows.map(row => row.map(csvCell).join(',')).join('\n')}`
+  const url = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8' }))
+  const link = document.createElement('a')
+  link.href = url
+  link.download = 'novelhub-lich-su-doc.csv'
+  link.click()
+  URL.revokeObjectURL(url)
 }
 
 export function ReadingHistoryPage() {
-  const { t } = useLocale();
-  const [tab, setTab] = useState('reading');
-  const [period, setPeriod] = useState('week');
-  const [cleared, setCleared] = useState(false);
-  const [confirmClear, setConfirmClear] = useState(false);
-  const stats = useMockResource('reader:history:stats', readingStats, { isEmpty: isStatsEmpty });
-  const sessions = useMockResource('reader:history:sessions', historyItems);
-  const sessionsReady = sessions.status === 'ready';
+  const { t } = useLocale()
+  const [tab, setTab] = useState('reading')
+  const [period, setPeriod] = useState('week')
+  const [cleared, setCleared] = useState(false)
+  const [confirmClear, setConfirmClear] = useState(false)
+  const stats = useMockResource('reader:history:stats', readingStats, { isEmpty: isStatsEmpty })
+  const sessions = useMockResource('reader:history:sessions', historyItems)
+  const sessionsReady = sessions.status === 'ready'
   const items = useMemo(
     () => (cleared || !sessionsReady ? [] : sessions.data),
     [cleared, sessions.data, sessionsReady],
-  );
-  const visible = useMemo(() => sessionsForTab(items, tab), [items, tab]);
-  const maxMinutes = Math.max(...weekly.week, ...weekly.last);
-  const statsLoading = stats.status === 'loading';
-  const statsReady = stats.status === 'ready';
+  )
+  const visible = useMemo(() => sessionsForTab(items, tab), [items, tab])
+  const maxMinutes = Math.max(...weekly.week, ...weekly.last)
+  const statsLoading = stats.status === 'loading'
+  const statsReady = stats.status === 'ready'
   return (
     <ReaderLayout>
       <div className="page-reader py-7">
@@ -337,7 +337,7 @@ export function ReadingHistoryPage() {
               </div>
               {sessions.status === 'loading' ? (
                 <ul aria-busy="true" aria-label="Đang tải phiên đọc gần đây" className="space-y-3">
-                  {sessionsForTab(historyItems, tab).map((item) => (
+                  {sessionsForTab(historyItems, tab).map(item => (
                     <SessionSkeleton key={`${item.id}-${item.when}`} />
                   ))}
                 </ul>
@@ -354,12 +354,12 @@ export function ReadingHistoryPage() {
                 </Card>
               ) : visible.length ? (
                 <ul className="nh-fade-enter space-y-3">
-                  {visible.map((item) => {
-                    const audio = item.type === 'audio';
-                    const done = item.progress === 100;
+                  {visible.map(item => {
+                    const audio = item.type === 'audio'
+                    const done = item.progress === 100
                     const href = audio
                       ? `/listen/${item.id}/chapter-1`
-                      : `/read/${item.id}/chapter-1`;
+                      : `/read/${item.id}/chapter-1`
                     return (
                       <li key={`${item.id}-${item.when}`}>
                         <Card className="group flex gap-4 p-4">
@@ -409,7 +409,7 @@ export function ReadingHistoryPage() {
                           </div>
                         </Card>
                       </li>
-                    );
+                    )
                   })}
                 </ul>
               ) : (
@@ -526,8 +526,8 @@ export function ReadingHistoryPage() {
             <Button
               variant="danger"
               onClick={() => {
-                setCleared(true);
-                setConfirmClear(false);
+                setCleared(true)
+                setConfirmClear(false)
               }}
             >
               <Trash2 size={15} />
@@ -537,5 +537,5 @@ export function ReadingHistoryPage() {
         </Modal>
       </div>
     </ReaderLayout>
-  );
+  )
 }

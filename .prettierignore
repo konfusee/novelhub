@@ -5,3 +5,8 @@ package-lock.json
 # Docs are hand-wrapped prose; keep their formatting stable.
 docs
 plans
+
+build
+backend/uploads
+image
+*.min.js

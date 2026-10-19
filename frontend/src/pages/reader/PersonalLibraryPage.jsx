@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useMemo, useState } from 'react'
 import {
   AlertTriangle,
   ArrowRight,
@@ -10,9 +10,9 @@ import {
   RefreshCw,
   Search,
   Trophy,
-} from '../../components/icons';
-import { ReaderLayout } from '../../layouts';
-import { LibraryCard, LibraryCardSkeleton } from '../../components/reader/LibraryCard';
+} from '../../components/icons'
+import { ReaderLayout } from '../../layouts'
+import { LibraryCard, LibraryCardSkeleton } from '../../components/reader/LibraryCard'
 import {
   Badge,
   Button,
@@ -24,9 +24,9 @@ import {
   Select,
   Skeleton,
   Tabs,
-} from '../../components/ui';
-import { useMockResource } from '../../context/MockDataContext';
-import { libraryItems } from '../../data/mock/reader';
+} from '../../components/ui'
+import { useMockResource } from '../../context/MockDataContext'
+import { libraryItems } from '../../data/mock/reader'
 
 const tabs = [
   ['all', 'Tất cả'],
@@ -34,38 +34,37 @@ const tabs = [
   ['listening', 'Đang nghe'],
   ['completed', 'Đã hoàn thành'],
   ['offline', 'Đã lưu ngoại tuyến'],
-];
+]
 
 const views = [
   ['grid', 'Dạng lưới', Grid2X2],
   ['list', 'Dạng danh sách', List],
-];
+]
 
 export function PersonalLibraryPage() {
-  const library = useMockResource('reader:library', libraryItems);
-  const loading = library.status === 'loading';
-  const [removed, setRemoved] = useState([]);
+  const library = useMockResource('reader:library', libraryItems)
+  const loading = library.status === 'loading'
+  const [removed, setRemoved] = useState([])
   const items = useMemo(
-    () => library.data.filter((item) => !removed.includes(item.id)),
+    () => library.data.filter(item => !removed.includes(item.id)),
     [library.data, removed],
-  );
-  const [tab, setTab] = useState('all');
-  const [query, setQuery] = useState('');
-  const [type, setType] = useState('all');
-  const [sort, setSort] = useState('recent');
-  const [view, setView] = useState('grid');
+  )
+  const [tab, setTab] = useState('all')
+  const [query, setQuery] = useState('')
+  const [type, setType] = useState('all')
+  const [sort, setSort] = useState('recent')
+  const [view, setView] = useState('grid')
   const filtered = useMemo(
     () =>
       items
-        .filter((item) => {
-          const tabMatch =
-            tab === 'all' || (tab === 'offline' ? item.offline : item.status === tab);
-          const typeMatch = type === 'all' || item.type === type;
+        .filter(item => {
+          const tabMatch = tab === 'all' || (tab === 'offline' ? item.offline : item.status === tab)
+          const typeMatch = type === 'all' || item.type === type
           return (
             tabMatch &&
             typeMatch &&
             `${item.title} ${item.author}`.toLowerCase().includes(query.toLowerCase())
-          );
+          )
         })
         .sort((a, b) =>
           sort === 'title'
@@ -75,19 +74,19 @@ export function PersonalLibraryPage() {
               : 0,
         ),
     [items, query, sort, tab, type],
-  );
-  const countFor = (key) =>
+  )
+  const countFor = key =>
     key === 'all'
       ? items.length
       : key === 'offline'
-        ? items.filter((i) => i.offline).length
-        : items.filter((i) => i.status === key).length;
-  const offlineCount = items.filter((i) => i.offline).length;
+        ? items.filter(i => i.offline).length
+        : items.filter(i => i.status === key).length
+  const offlineCount = items.filter(i => i.offline).length
   const resetFilters = () => {
-    setTab('all');
-    setType('all');
-    setQuery('');
-  };
+    setTab('all')
+    setType('all')
+    setQuery('')
+  }
   return (
     <ReaderLayout>
       <div className="page-reader py-6">
@@ -110,9 +109,9 @@ export function PersonalLibraryPage() {
               </span>
             ) : (
               <p className="mt-2 flex flex-wrap items-center gap-x-2 gap-y-1 text-sm text-muted">
-                <span>{items.filter((i) => i.type === 'story').length} truyện chữ</span>
+                <span>{items.filter(i => i.type === 'story').length} truyện chữ</span>
                 <span aria-hidden="true">•</span>
-                <span>{items.filter((i) => i.type === 'audio').length} truyện âm thanh</span>
+                <span>{items.filter(i => i.type === 'audio').length} truyện âm thanh</span>
                 <span aria-hidden="true" className="hidden sm:inline">
                   •
                 </span>
@@ -159,7 +158,7 @@ export function PersonalLibraryPage() {
             <Input
               icon={Search}
               value={query}
-              onChange={(e) => setQuery(e.target.value)}
+              onChange={e => setQuery(e.target.value)}
               placeholder="Lọc thư viện..."
               aria-label="Lọc thư viện"
               className="sm:min-w-56 sm:flex-1 lg:max-w-sm"
@@ -185,7 +184,7 @@ export function PersonalLibraryPage() {
             <div className="col-span-2 grid grid-cols-2 gap-2 sm:contents">
               <Select
                 value={type}
-                onChange={(e) => setType(e.target.value)}
+                onChange={e => setType(e.target.value)}
                 aria-label="Lọc theo định dạng"
               >
                 <option value="all">Mọi định dạng</option>
@@ -194,7 +193,7 @@ export function PersonalLibraryPage() {
               </Select>
               <Select
                 value={sort}
-                onChange={(e) => setSort(e.target.value)}
+                onChange={e => setSort(e.target.value)}
                 aria-label="Sắp xếp thư viện"
               >
                 <option value="recent">Mở gần đây</option>
@@ -211,7 +210,7 @@ export function PersonalLibraryPage() {
             aria-label="Đang tải thư viện"
             className={`mt-6 ${view === 'grid' ? 'nh-grid-12 grid nh-cols-2 gap-3 nh-md-cols-3 nh-xl-cols-4' : 'space-y-3'}`}
           >
-            {libraryItems.map((item) => (
+            {libraryItems.map(item => (
               <LibraryCardSkeleton key={item.id} view={view} />
             ))}
           </section>
@@ -248,12 +247,12 @@ export function PersonalLibraryPage() {
             aria-label="Tác phẩm trong thư viện"
             className={`nh-fade-enter mt-6 ${view === 'grid' ? 'nh-grid-12 grid nh-cols-2 gap-3 nh-md-cols-3 nh-xl-cols-4' : 'space-y-3'}`}
           >
-            {filtered.map((item) => (
+            {filtered.map(item => (
               <LibraryCard
                 key={item.id}
                 item={item}
                 view={view}
-                onRemove={(id) => setRemoved((current) => [...current, id])}
+                onRemove={id => setRemoved(current => [...current, id])}
               />
             ))}
           </section>
@@ -296,5 +295,5 @@ export function PersonalLibraryPage() {
         </Card>
       </div>
     </ReaderLayout>
-  );
+  )
 }

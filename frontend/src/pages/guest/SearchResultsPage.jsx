@@ -1,5 +1,5 @@
-import { useMemo, useState } from 'react';
-import { Link, useSearchParams } from 'react-router';
+import { useMemo, useState } from 'react'
+import { Link, useSearchParams } from 'react-router'
 import {
   AlertTriangle,
   ArrowRight,
@@ -9,14 +9,14 @@ import {
   RefreshCw,
   Search,
   Star,
-} from '../../components/icons';
-import { PublicHeader } from '../../components/public/PublicHeader';
-import { SearchFilters } from '../../components/public/SearchFilters';
+} from '../../components/icons'
+import { PublicHeader } from '../../components/public/PublicHeader'
+import { SearchFilters } from '../../components/public/SearchFilters'
 import {
   SearchResultItem,
   SearchResultItemSkeleton,
-} from '../../components/public/SearchResultItem';
-import { StoryCover } from '../../components/story/StoryCover';
+} from '../../components/public/SearchResultItem'
+import { StoryCover } from '../../components/story/StoryCover'
 import {
   Avatar,
   Button,
@@ -28,14 +28,14 @@ import {
   Select,
   Skeleton,
   Tabs,
-} from '../../components/ui';
-import { searchResults, trendingSearches } from '../../data/mock/search';
-import { stories } from '../../data/mock/stories';
-import { useLocale } from '../../context/LocaleContext';
-import { useMockResource } from '../../context/MockDataContext';
+} from '../../components/ui'
+import { searchResults, trendingSearches } from '../../data/mock/search'
+import { stories } from '../../data/mock/stories'
+import { useLocale } from '../../context/LocaleContext'
+import { useMockResource } from '../../context/MockDataContext'
 
-const resultTabs = ['all', 'stories', 'audiobooks', 'authors'];
-const PAGE_SIZE = 2;
+const resultTabs = ['all', 'stories', 'audiobooks', 'authors']
+const PAGE_SIZE = 2
 const INITIAL_FILTERS = [
   'Stories',
   'Audiobooks',
@@ -44,112 +44,112 @@ const INITIAL_FILTERS = [
   'Romance',
   'Text Story',
   'Audiobook Edition',
-];
+]
 const filterGenres = {
   Fantasy: ['Fantasy'],
   Romance: ['Romance'],
   'Mystery & Thriller': ['Mystery'],
   'Sci-Fi': ['Sci-Fi'],
   Adventure: ['Adventure'],
-};
-const featuredStory = stories[0];
+}
+const featuredStory = stories[0]
 
 /* Applies the sidebar filters (content type/format, genre, publication status) to mock results. */
 function matchesFilters(result, { checked, status }) {
-  const formats = new Set();
-  if (checked.includes('Stories') || checked.includes('Text Story')) formats.add('Story');
-  if (checked.includes('Audiobooks') || checked.includes('Audiobook Edition')) formats.add('Audio');
-  if (formats.size && !formats.has(result.format)) return false;
+  const formats = new Set()
+  if (checked.includes('Stories') || checked.includes('Text Story')) formats.add('Story')
+  if (checked.includes('Audiobooks') || checked.includes('Audiobook Edition')) formats.add('Audio')
+  if (formats.size && !formats.has(result.format)) return false
   const genres = Object.keys(filterGenres)
-    .filter((key) => checked.includes(key))
-    .flatMap((key) => filterGenres[key]);
-  if (genres.length && !result.genres.some((genre) => genres.includes(genre))) return false;
-  if (status === 'ongoing') return result.status === 'Ongoing';
-  if (status === 'completedOnly') return result.status === 'Completed';
-  return true;
+    .filter(key => checked.includes(key))
+    .flatMap(key => filterGenres[key])
+  if (genres.length && !result.genres.some(genre => genres.includes(genre))) return false
+  if (status === 'ongoing') return result.status === 'Ongoing'
+  if (status === 'completedOnly') return result.status === 'Completed'
+  return true
 }
 
 export function SearchResultsPage({ embedded = false }) {
-  const { t } = useLocale();
-  const [params] = useSearchParams();
-  const [query, setQuery] = useState(() => params.get('q') ?? (params.has('format') ? '' : 'moon'));
-  const [sort, setSort] = useState('Relevance');
-  const [tab, setTab] = useState(() => (params.get('format') === 'audio' ? 'audiobooks' : 'all'));
-  const [checked, setChecked] = useState(INITIAL_FILTERS);
-  const [status, setStatus] = useState('allStatuses');
-  const [applied, setApplied] = useState({ checked: INITIAL_FILTERS, status: 'allStatuses' });
-  const [filtersOpen, setFiltersOpen] = useState(false);
-  const [page, setPage] = useState(1);
-  const appliedCount = applied.checked.length + (applied.status === 'allStatuses' ? 0 : 1);
-  const catalog = useMockResource('search:results', searchResults);
-  const loading = catalog.status === 'loading';
+  const { t } = useLocale()
+  const [params] = useSearchParams()
+  const [query, setQuery] = useState(() => params.get('q') ?? (params.has('format') ? '' : 'moon'))
+  const [sort, setSort] = useState('Relevance')
+  const [tab, setTab] = useState(() => (params.get('format') === 'audio' ? 'audiobooks' : 'all'))
+  const [checked, setChecked] = useState(INITIAL_FILTERS)
+  const [status, setStatus] = useState('allStatuses')
+  const [applied, setApplied] = useState({ checked: INITIAL_FILTERS, status: 'allStatuses' })
+  const [filtersOpen, setFiltersOpen] = useState(false)
+  const [page, setPage] = useState(1)
+  const appliedCount = applied.checked.length + (applied.status === 'allStatuses' ? 0 : 1)
+  const catalog = useMockResource('search:results', searchResults)
+  const loading = catalog.status === 'loading'
   const results = useMemo(
     () =>
       catalog.data.filter(
-        (result) =>
+        result =>
           `${result.title} ${result.author} ${result.genres.join(' ')}`
             .toLowerCase()
             .includes(query.toLowerCase()) && matchesFilters(result, applied),
       ),
     [catalog.data, query, applied],
-  );
+  )
   const visibleResults = useMemo(() => {
-    const filtered = results.filter((result) =>
+    const filtered = results.filter(result =>
       tab === 'stories'
         ? result.format === 'Story'
         : tab === 'audiobooks'
           ? result.format === 'Audio'
           : true,
-    );
-    if (sort === 'Top Rated') filtered.sort((a, b) => Number(b.rating) - Number(a.rating));
-    if (sort === 'Most Popular') filtered.sort((a, b) => parseFloat(b.reads) - parseFloat(a.reads));
+    )
+    if (sort === 'Top Rated') filtered.sort((a, b) => Number(b.rating) - Number(a.rating))
+    if (sort === 'Most Popular') filtered.sort((a, b) => parseFloat(b.reads) - parseFloat(a.reads))
     return tab === 'authors'
-      ? [...new Map(filtered.map((result) => [result.author, result])).values()]
-      : filtered;
-  }, [results, tab, sort]);
-  const pageCount = Math.max(1, Math.ceil(visibleResults.length / PAGE_SIZE));
-  const currentPage = Math.min(page, pageCount);
-  const pageResults = visibleResults.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE);
-  const updateQuery = (value) => {
-    setQuery(value);
-    setPage(1);
-  };
-  const updateTab = (value) => {
-    setTab(value);
-    setPage(1);
-  };
-  const changePage = (value) => {
-    setPage(value);
+      ? [...new Map(filtered.map(result => [result.author, result])).values()]
+      : filtered
+  }, [results, tab, sort])
+  const pageCount = Math.max(1, Math.ceil(visibleResults.length / PAGE_SIZE))
+  const currentPage = Math.min(page, pageCount)
+  const pageResults = visibleResults.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE)
+  const updateQuery = value => {
+    setQuery(value)
+    setPage(1)
+  }
+  const updateTab = value => {
+    setTab(value)
+    setPage(1)
+  }
+  const changePage = value => {
+    setPage(value)
     document
       .querySelector('[data-search-tabs]')
-      ?.scrollIntoView({ block: 'start', behavior: 'instant' });
-  };
-  const toggle = (item) =>
-    setChecked((current) =>
-      current.includes(item) ? current.filter((value) => value !== item) : [...current, item],
-    );
+      ?.scrollIntoView({ block: 'start', behavior: 'instant' })
+  }
+  const toggle = item =>
+    setChecked(current =>
+      current.includes(item) ? current.filter(value => value !== item) : [...current, item],
+    )
   const apply = () => {
-    setApplied({ checked, status });
-    setPage(1);
-  };
+    setApplied({ checked, status })
+    setPage(1)
+  }
   const reset = () => {
-    setChecked([]);
-    setStatus('allStatuses');
-    setApplied({ checked: [], status: 'allStatuses' });
-    setPage(1);
-  };
+    setChecked([])
+    setStatus('allStatuses')
+    setApplied({ checked: [], status: 'allStatuses' })
+    setPage(1)
+  }
   const filterProps = {
     checked,
     status,
     onToggle: toggle,
     onStatusChange: setStatus,
     onReset: reset,
-  };
-  const Root = embedded ? 'div' : 'main';
+  }
+  const Root = embedded ? 'div' : 'main'
   return (
     <div className="min-h-screen bg-page text-ink">
       {!embedded && <PublicHeader />}
-      <section className="mt-4 border-y border-hairline bg-surface">
+      <section className="mt-4 bg-transparent">
         <div className="mx-auto grid max-w-[1360px] gap-6 px-5 py-8 md:px-8 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-end lg:px-12">
           <div className="min-w-0">
             <nav aria-label="Breadcrumb" className="text-xs text-muted">
@@ -182,7 +182,7 @@ export function SearchResultsPage({ embedded = false }) {
               icon={Search}
               type="search"
               value={query}
-              onChange={(event) => updateQuery(event.target.value)}
+              onChange={event => updateQuery(event.target.value)}
               aria-label={t('common.searchStoriesAuthorsTags')}
               placeholder={t('common.searchStoriesAuthorsTags')}
               className="w-full sm:w-72"
@@ -190,9 +190,9 @@ export function SearchResultsPage({ embedded = false }) {
             <div className="flex gap-2">
               <Select
                 value={sort}
-                onChange={(event) => {
-                  setSort(event.target.value);
-                  setPage(1);
+                onChange={event => {
+                  setSort(event.target.value)
+                  setPage(1)
                 }}
                 aria-label={t('search.sortResults')}
                 className="min-w-0 flex-1"
@@ -234,7 +234,7 @@ export function SearchResultsPage({ embedded = false }) {
               singleRow
               value={tab}
               onChange={updateTab}
-              items={resultTabs.map((item) => ({
+              items={resultTabs.map(item => ({
                 value: item,
                 label: `${t(`search.tabs.${item}`)}${item === 'all' && catalog.status === 'ready' ? ` (${results.length})` : ''}`,
               }))}
@@ -304,7 +304,7 @@ export function SearchResultsPage({ embedded = false }) {
             <div className="nh-fade-enter">
               <div className="space-y-4">
                 {tab === 'authors'
-                  ? pageResults.map((result) => (
+                  ? pageResults.map(result => (
                       <Card
                         as="article"
                         key={result.author}
@@ -324,17 +324,15 @@ export function SearchResultsPage({ embedded = false }) {
                           variant="outline"
                           size="sm"
                           onClick={() => {
-                            updateQuery(result.author);
-                            updateTab('all');
+                            updateQuery(result.author)
+                            updateTab('all')
                           }}
                         >
                           {t('search.viewStories')}
                         </Button>
                       </Card>
                     ))
-                  : pageResults.map((result) => (
-                      <SearchResultItem result={result} key={result.id} />
-                    ))}
+                  : pageResults.map(result => <SearchResultItem result={result} key={result.id} />)}
               </div>
               <div className="mt-6 flex flex-col items-center justify-between gap-4 sm:flex-row">
                 <p className="text-sm text-muted">
@@ -350,7 +348,7 @@ export function SearchResultsPage({ embedded = false }) {
                     aria-label="Trang kết quả tìm kiếm"
                     className="flex gap-2 rounded-full border border-hairline bg-elevated p-1"
                   >
-                    {Array.from({ length: pageCount }, (_, index) => index + 1).map((item) => (
+                    {Array.from({ length: pageCount }, (_, index) => index + 1).map(item => (
                       <button
                         type="button"
                         onClick={() => changePage(item)}
@@ -388,7 +386,7 @@ export function SearchResultsPage({ embedded = false }) {
               {t('search.trending')}
             </h2>
             <div className="mt-4 flex flex-wrap gap-2">
-              {trendingSearches.map((item) => (
+              {trendingSearches.map(item => (
                 <button
                   type="button"
                   onClick={() => updateQuery(item.slice(1))}
@@ -448,11 +446,11 @@ export function SearchResultsPage({ embedded = false }) {
           {...filterProps}
           showHeading={false}
           onApply={() => {
-            apply();
-            setFiltersOpen(false);
+            apply()
+            setFiltersOpen(false)
           }}
         />
       </Drawer>
     </div>
-  );
+  )
 }

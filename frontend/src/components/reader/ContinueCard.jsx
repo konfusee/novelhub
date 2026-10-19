@@ -1,20 +1,20 @@
-import { useState } from 'react';
-import { BookOpen, Bookmark, Headphones } from '../icons';
-import { ButtonLink, Card, IconButton, ProgressBar, Skeleton } from '../ui';
-import { StoryCover } from '../story/StoryCover';
-import { useLocale } from '../../context/LocaleContext';
+import { useState } from 'react'
+import { BookOpen, Bookmark, Headphones } from '../icons'
+import { ButtonLink, Card, IconButton, ProgressBar, Skeleton } from '../ui'
+import { StoryCover } from '../story/StoryCover'
+import { useLocale } from '../../context/LocaleContext'
 
 const slugify = (value = '') =>
   value
     .toLowerCase()
     .replace(/[^a-z0-9]+/g, '-')
-    .replace(/(^-|-$)/g, '');
+    .replace(/(^-|-$)/g, '')
 
 export function ContinueCard({ item, audio = false }) {
-  const { t } = useLocale();
-  const [saved, setSaved] = useState(false);
-  const storyId = item.id || slugify(item.title);
-  const label = t(audio ? 'readerHome.continueListening' : 'readerHome.continueReading');
+  const { t } = useLocale()
+  const [saved, setSaved] = useState(false)
+  const storyId = item.id || slugify(item.title)
+  const label = t(audio ? 'readerHome.continueListening' : 'readerHome.continueReading')
   return (
     <Card as="article" className="flex flex-col p-4 sm:p-5">
       <div className="flex gap-4">
@@ -71,7 +71,7 @@ export function ContinueCard({ item, audio = false }) {
         {label}
       </ButtonLink>
     </Card>
-  );
+  )
 }
 
 /* ContinueCard geometry: w-24 2:3 cover, label/title/author, chapter + progress, full button. */
@@ -104,5 +104,5 @@ export function ContinueCardSkeleton() {
       </div>
       <Skeleton className="mt-4 h-9 w-full" />
     </Card>
-  );
+  )
 }

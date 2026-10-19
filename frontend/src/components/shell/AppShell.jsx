@@ -1,10 +1,12 @@
 import { useEffect, useId, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { Link, useLocation } from 'react-router';
-import { NovelHubMark, Menu, Settings, HelpCircle, ShieldCheck, UserRound, X } from '../icons';
+import { NovelHubMark, Menu, Settings, HelpCircle, UserRound, X } from '../icons';
 import { IconButton } from '../ui';
 import { SharedWorkspaceHeader, WorkspaceSwitcher } from '../shared/RoleNavigation';
 import { workspaceMeta, workspaceNavigation } from '../../navigation/workspaceNavigation';
+import { useAuth } from '../../context/AuthContext';
+import { ROUTES } from '../../app/routes';
 import { useLocale } from '../../context/LocaleContext';
 
 const SIDEBAR_KEY = 'novelhub.sidebar.collapsed';
@@ -97,9 +99,8 @@ function commonNavigation(workspace) {
   return {
     labelKey: 'navigation.account',
     items: [
-      ['navigation.profile', `${base}/profile`, UserRound],
+      ['account.combinedTitle', `${base}/profile`, UserRound],
       ['navigation.settings', settingsPath, Settings],
-      ['navigation.account', `${base}/account`, ShieldCheck],
       ['common.helpSupport', `${base}/support`, HelpCircle],
     ],
   };
@@ -121,7 +122,11 @@ function AppSidebar({ workspace, collapsed, mobile = false, onCollapse, onNaviga
     };
   }, [collapsed, tooltip]);
   const meta = workspaceMeta[workspace];
-  const groups = [...workspaceNavigation[workspace], commonNavigation(workspace)];
+  const { hasRole } = useAuth();
+  const groups = [...workspaceNavigation[workspace], commonNavigation(workspace)].map((group) => ({
+    ...group,
+    items: group.items.filter(([, path]) => path !== ROUTES.authorApply || !hasRole('author')),
+  }));
   const activePath = groups
     .flatMap((group) => group.items)
     .filter(([, path, , exact]) =>

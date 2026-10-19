@@ -7,8 +7,8 @@ mongoose.set('strictQuery', true);
  * transactions (replica set), which NovelHub's finance and moderation
  * invariants depend on. Fails fast rather than silently running without them.
  */
-export async function connectDatabase(uri, { autoIndex = false } = {}) {
-  await mongoose.connect(uri, { autoIndex, serverSelectionTimeoutMS: 10_000 });
+export async function connectDatabase(uri, { autoIndex = false, serverSelectionTimeoutMS }) {
+  await mongoose.connect(uri, { autoIndex, serverSelectionTimeoutMS });
   const hello = await mongoose.connection.db.admin().command({ hello: 1 });
   if (!hello.setName) {
     await mongoose.disconnect();

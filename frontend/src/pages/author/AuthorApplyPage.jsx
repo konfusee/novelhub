@@ -1,34 +1,75 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
+import { apiRequest } from '../../api/client';
+import { authorAgreements } from '../../data/authorAgreements';
+import { ROUTES } from '../../app/routes';
+import { LegalContent } from '../system/LegalPage';
+import { useLocale } from '../../context/LocaleContext';
 import { ArrowRight, Check, Feather, ShieldCheck } from '../../components/icons';
-import { useNavigate } from 'react-router';
 import { AuthShowcase } from '../../components/auth/AuthShowcase';
 import { PublicHeader } from '../../components/public/PublicHeader';
-import { Button, ButtonLink, Card, ProgressBar } from '../../components/ui';
+import { Button, ButtonLink, Card, Modal } from '../../components/ui';
 import { useAuth } from '../../context/AuthContext';
-import { useMockData } from '../../context/MockDataContext';
-
-const labels = [
-  'Tôi đồng ý với Hướng dẫn dành cho tác giả.',
-  'Tôi đồng ý với Quy định xuất bản của NovelHub.',
-  'Tôi xác nhận mình sở hữu hoặc có quyền xuất bản nội dung.',
-  'Tôi chấp nhận thỏa thuận chia sẻ doanh thu hiện tại.',
-];
 
 export function AuthorApplyPage() {
+  const { t } = useLocale();
+  const labels = authorAgreements.map(({ title }) => t('legal.author.agree', { title: t(title) }));
+  const [legalDocument, setLegalDocument] = useState(null);
+  const [applicationState, setApplicationState] = useState('loading');
+  const [decisionReason, setDecisionReason] = useState('');
+  const [refresh, setRefresh] = useState(0);
+  const [checking, setChecking] = useState(false);
+  const [checkedAt, setCheckedAt] = useState('');
   const [checks, setChecks] = useState(() => labels.map(() => false));
-  const { becomeAuthor, currentUser } = useAuth();
-  const { data } = useMockData();
-  const navigate = useNavigate();
-  const agreement = data.agreements['user-author'] || { authorShare: 80, platformShare: 20 };
+  const { applyForAuthor, currentUser } = useAuth();
+  const [submission, setSubmission] = useState({ status: 'idle', message: '' });
   const confirmed = checks.filter(Boolean).length;
   const ready = confirmed === labels.length;
   const alreadyAuthor = currentUser?.roles?.includes('author');
 
-  const finish = (event) => {
+  useEffect(() => {
+    const controller = new AbortController();
+    apiRequest('/auth/author-application', { signal: controller.signal })
+      .then(({ application, access }) => {
+        if (controller.signal.aborted) return;
+        setApplicationState(
+          application?.status === 'approved' &&
+            access?.canApply === true &&
+            access?.activeAuthor === false
+            ? 'revoked'
+            : application?.status || 'none',
+        );
+        setDecisionReason(application?.decisionReason || '');
+        setSubmission({ status: 'idle', message: '' });
+        setCheckedAt(new Date().toLocaleTimeString('vi-VN'));
+      })
+      .catch((error) => {
+        if (error.name === 'AbortError' || controller.signal.aborted) return;
+        if (error.status === 401) setApplicationState('expired');
+        else if (refresh > 0)
+          setSubmission({ status: 'error', message: t('authorAccess.statusFailed') });
+        else setApplicationState('unavailable');
+      })
+      .finally(() => {
+        if (!controller.signal.aborted) setChecking(false);
+      });
+    return () => controller.abort();
+  }, [refresh, t]);
+
+  const finish = async (event) => {
     event.preventDefault();
     if (!ready) return;
-    becomeAuthor();
-    navigate('/author', { replace: true });
+    setSubmission({ status: 'submitting', message: '' });
+    try {
+      await applyForAuthor();
+      setApplicationState('submitted');
+      setSubmission({
+        status: 'submitted',
+        message:
+          'Đơn đăng ký đã được gửi. Quyền Tác giả chỉ được kích hoạt sau khi Admin phê duyệt.',
+      });
+    } catch (error) {
+      setSubmission({ status: 'error', message: error.message });
+    }
   };
 
   return (
@@ -78,11 +119,106 @@ export function AuthorApplyPage() {
                     Mở Studio tác giả
                   </ButtonLink>
                 </div>
+              ) : applicationState === 'expired' ? (
+                <div className="mt-6" role="status">
+                  <p>{t('authorAccess.signInAgain')}</p>
+                  <ButtonLink to={ROUTES.login} className="mt-4">
+                    {t('auth.logIn')}
+                  </ButtonLink>
+                </div>
+              ) : applicationState === 'submitted' || applicationState === 'approved' ? (
+                <div
+                  role="status"
+                  className="mt-6 rounded-2xl border border-brand/25 bg-brand-soft p-5"
+                >
+                  <h2 className="text-h3">
+                    {t(
+                      applicationState === 'approved'
+                        ? 'legal.author.applicationApprovedTitle'
+                        : 'legal.author.applicationPendingTitle',
+                    )}
+                  </h2>
+                  <p className="mt-2 text-sm leading-6 text-muted">
+                    {t(
+                      applicationState === 'approved'
+                        ? 'legal.author.applicationApprovedBody'
+                        : 'legal.author.applicationPendingBody',
+                    )}
+                  </p>
+                  <Button
+                    variant="secondary"
+                    className="mt-4 mr-2"
+                    disabled={checking}
+                    aria-busy={checking}
+                    onClick={() => {
+                      setChecking(true);
+                      setSubmission({ status: 'idle', message: '' });
+                      setRefresh((value) => value + 1);
+                    }}
+                  >
+                    {t(checking ? 'authorAccess.checking' : 'authorAccess.refresh')}
+                  </Button>
+                  <ButtonLink to={ROUTES.library} variant="secondary" className="mt-4">
+                    {t('navigation.library')}
+                  </ButtonLink>
+                  {refresh > 0 && !checking && submission.status !== 'error' && (
+                    <p role="status" className="mt-3 text-sm text-muted">
+                      {t('authorAccess.statusChecked', { time: checkedAt })}
+                    </p>
+                  )}
+                  {submission.status === 'error' && (
+                    <p role="alert" className="mt-3 text-sm text-rose-strong">
+                      {submission.message}
+                    </p>
+                  )}
+                </div>
               ) : (
                 <form
                   onSubmit={finish}
                   className="mt-5 border-t border-hairline pt-5 lg:[@media(max-height:820px)]:mt-4 lg:[@media(max-height:820px)]:pt-4"
                 >
+                  {applicationState === 'revoked' && (
+                    <p
+                      role="status"
+                      className="mb-4 rounded-2xl bg-brand-soft p-3 text-sm text-ink"
+                    >
+                      {t('authorAccess.reapplyAfterRevocation')}
+                    </p>
+                  )}
+                  {applicationState === 'rejected' && (
+                    <p
+                      role="status"
+                      className="mb-4 rounded-2xl bg-rose/10 p-3 text-sm text-rose-strong"
+                    >
+                      {t('legal.author.applicationRejected')}
+                      {decisionReason && (
+                        <span className="mt-2 block whitespace-pre-wrap">{decisionReason}</span>
+                      )}
+                    </p>
+                  )}
+                  {applicationState === 'unavailable' && (
+                    <div className="mb-4">
+                      <p role="alert" className="text-sm text-rose-strong">
+                        {t('legal.author.applicationLoadError')}
+                      </p>
+                      <Button
+                        type="button"
+                        variant="secondary"
+                        className="mt-3"
+                        onClick={() => {
+                          setApplicationState('loading');
+                          setRefresh((value) => value + 1);
+                        }}
+                      >
+                        {t('authorAccess.refresh')}
+                      </Button>
+                    </div>
+                  )}
+                  {applicationState === 'loading' && (
+                    <p role="status" className="mb-4 text-sm text-muted">
+                      {t('legal.author.applicationLoading')}
+                    </p>
+                  )}
                   <h2 className="text-h3">Thỏa thuận tác giả</h2>
                   <p className="mt-1 text-sm leading-5 text-muted">
                     Truyện phải được gửi cho Kiểm duyệt viên xét duyệt trước khi xuất bản. Việc phê
@@ -90,26 +226,7 @@ export function AuthorApplyPage() {
                   </p>
 
                   <div className="mt-4 rounded-3xl border border-hairline bg-elevated px-4 py-3 lg:[@media(max-height:820px)]:mt-3 lg:[@media(max-height:820px)]:py-2">
-                    <div className="flex items-baseline justify-between gap-4 text-xs font-medium text-ink/70">
-                      <span>
-                        Tác giả nhận{' '}
-                        <strong className="ml-1 text-2xl font-bold tracking-[-0.03em] text-brand-strong tabular-nums">
-                          {agreement.authorShare}%
-                        </strong>
-                      </span>
-                      <span>
-                        NovelHub nhận{' '}
-                        <strong className="ml-1 text-2xl font-bold tracking-[-0.03em] text-ink tabular-nums">
-                          {agreement.platformShare}%
-                        </strong>
-                      </span>
-                    </div>
-                    <ProgressBar
-                      value={agreement.authorShare}
-                      size="md"
-                      className="mt-2.5"
-                      label={`Tác giả nhận ${agreement.authorShare}%, NovelHub nhận ${agreement.platformShare}%`}
-                    />
+                    <p className="text-sm text-muted">{t('authorAccess.revenuePolicy')}</p>
                   </div>
 
                   <fieldset className="mt-4 lg:[@media(max-height:820px)]:mt-3">
@@ -124,35 +241,45 @@ export function AuthorApplyPage() {
                     </legend>
                     <div className="mt-2 grid gap-2 sm:grid-cols-2">
                       {labels.map((label, index) => (
-                        <label
-                          key={label}
-                          className={`flex cursor-pointer items-start gap-2.5 rounded-2xl border px-3 py-2.5 text-sm leading-5 lg:[@media(max-height:820px)]:py-2 transition-[background-color,border-color] duration-200 ${
-                            checks[index]
-                              ? 'border-brand/50 bg-brand-soft'
-                              : 'border-line bg-surface hover:border-brand/40'
-                          }`}
-                        >
-                          <input
-                            type="checkbox"
-                            className="mt-0.5 size-4 shrink-0 accent-[var(--primary)]"
-                            checked={checks[index]}
-                            onChange={(event) =>
-                              setChecks((values) =>
-                                values.map((value, i) =>
-                                  i === index ? event.target.checked : value,
-                                ),
-                              )
-                            }
-                          />
-                          <span className="min-w-0 flex-1">{label}</span>
-                          {checks[index] && (
-                            <Check
-                              size={15}
-                              aria-hidden="true"
-                              className="mt-0.5 shrink-0 text-brand-strong"
+                        <div key={authorAgreements[index].type} className="min-w-0">
+                          <label
+                            className={`flex cursor-pointer items-start gap-2.5 rounded-2xl border px-3 py-2.5 text-sm leading-5 lg:[@media(max-height:820px)]:py-2 transition-[background-color,border-color] duration-200 ${
+                              checks[index]
+                                ? 'border-brand/50 bg-brand-soft'
+                                : 'border-line bg-surface hover:border-brand/40'
+                            }`}
+                          >
+                            <input
+                              type="checkbox"
+                              className="mt-0.5 size-4 shrink-0 accent-[var(--primary)]"
+                              checked={checks[index]}
+                              onChange={(event) =>
+                                setChecks((values) =>
+                                  values.map((value, i) =>
+                                    i === index ? event.target.checked : value,
+                                  ),
+                                )
+                              }
                             />
-                          )}
-                        </label>
+                            <span className="min-w-0 flex-1">{label}</span>
+                            {checks[index] && (
+                              <Check
+                                size={15}
+                                aria-hidden="true"
+                                className="mt-0.5 shrink-0 text-brand-strong"
+                              />
+                            )}
+                          </label>
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            className="mt-1 w-full text-brand-strong"
+                            onClick={() => setLegalDocument(authorAgreements[index].type)}
+                          >
+                            {t('legal.author.readModal')}
+                          </Button>
+                        </div>
                       ))}
                     </div>
                   </fieldset>
@@ -160,16 +287,27 @@ export function AuthorApplyPage() {
                   <Button
                     type="submit"
                     size="lg"
-                    disabled={!ready}
+                    disabled={
+                      !ready ||
+                      applicationState === 'loading' ||
+                      applicationState === 'unavailable' ||
+                      submission.status === 'submitting' ||
+                      submission.status === 'submitted'
+                    }
                     trailingIcon={ArrowRight}
                     className="mt-4 w-full lg:[@media(max-height:820px)]:mt-3"
                   >
-                    Kích hoạt quyền Tác giả
+                    {submission.status === 'submitting'
+                      ? 'Đang gửi đơn...'
+                      : submission.status === 'submitted'
+                        ? 'Đã gửi đơn đăng ký'
+                        : 'Gửi đơn đăng ký Tác giả'}
                   </Button>
                   <p className="mt-2 min-h-4 text-center text-xs leading-4 text-muted">
-                    {ready
-                      ? 'Đã sẵn sàng kích hoạt.'
-                      : `Xác nhận đủ ${labels.length} mục để kích hoạt.`}
+                    {submission.message ||
+                      (ready
+                        ? 'Đã sẵn sàng gửi đơn để Admin xét duyệt.'
+                        : `Xác nhận đủ ${labels.length} mục để gửi đơn.`)}
                   </p>
                 </form>
               )}
@@ -178,12 +316,37 @@ export function AuthorApplyPage() {
 
           <AuthShowcase
             variant="author"
-            authorShare={agreement.authorShare}
             authorName={currentUser?.name}
             className="col-span-12 lg:order-first lg:col-span-6 xl:col-span-7"
           />
         </div>
       </main>
+      <Modal
+        open={Boolean(legalDocument)}
+        title={t(
+          authorAgreements.find(({ type }) => type === legalDocument)?.title ||
+            'legal.author.agreementTitle',
+        )}
+        onClose={() => setLegalDocument(null)}
+        className="max-w-none lg:w-2/3"
+      >
+        {legalDocument && <LegalContent type={legalDocument} compact />}
+        <div className="mt-6 flex flex-wrap justify-end gap-3 border-t border-line pt-4">
+          {legalDocument && (
+            <ButtonLink
+              to={ROUTES.authorAgreement(legalDocument)}
+              target="_blank"
+              rel="noopener noreferrer"
+              variant="secondary"
+            >
+              {t('legal.author.openPage')}
+            </ButtonLink>
+          )}
+          <Button type="button" onClick={() => setLegalDocument(null)}>
+            {t('legal.author.done')}
+          </Button>
+        </div>
+      </Modal>
     </div>
   );
 }

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState } from 'react'
 import {
   AlertTriangle,
   ArrowRight,
@@ -14,10 +14,10 @@ import {
   RotateCcw,
   Scale,
   ShieldCheck,
-} from '../../components/icons';
-import { ModeratorLayout } from '../../layouts';
-import { moderationStats, urgentModerationItems } from '../../data/mock/moderation';
-import { useMockResource } from '../../context/MockDataContext';
+} from '../../components/icons'
+import { ModeratorLayout } from '../../layouts'
+import { moderationStats, urgentModerationItems } from '../../data/mock/moderation'
+import { useMockResource } from '../../context/MockDataContext'
 import {
   Badge,
   Button,
@@ -28,73 +28,73 @@ import {
   ProgressBar,
   Skeleton,
   Tabs,
-} from '../../components/ui';
+} from '../../components/ui'
 
-const metricIcons = [BookOpenCheck, Flag, Bot, Scale, Gavel];
+const metricIcons = [BookOpenCheck, Flag, Bot, Scale, Gavel]
 const toneTile = {
   green: 'bg-brand/12 text-brand-strong',
   red: 'bg-rose/14 text-rose-strong',
   orange: 'bg-orange/16 text-orange-strong',
   purple: 'bg-purple/12 text-purple-strong',
-};
+}
 const toneBorder = {
   green: 'border-hairline',
   red: 'border-rose/40',
   orange: 'border-orange/45',
   purple: 'border-purple/40',
-};
-const toneDot = { green: 'bg-brand', red: 'bg-rose', orange: 'bg-orange', purple: 'bg-purple' };
+}
+const toneDot = { green: 'bg-brand', red: 'bg-rose', orange: 'bg-orange', purple: 'bg-purple' }
 const priorityTabs = [
   { value: 'All', label: 'Tất cả mức ưu tiên' },
   { value: 'Green', tone: 'green', label: 'Xanh lá' },
   { value: 'Orange', tone: 'orange', label: 'Cam' },
   { value: 'Red', tone: 'red', label: 'Đỏ' },
   { value: 'Purple', tone: 'purple', label: 'Tím' },
-];
+]
 const workload = [
   ['Kỳ ảo và Thần thoại', 42, 'còn 2 giờ 15 phút', 'brand'],
   ['Lãng mạn và Chính kịch đương đại', 28, 'còn 3 giờ 40 phút', 'rose'],
   ['Khoa học viễn tưởng và Cyberpunk', 18, 'còn 4 giờ 05 phút', 'purple'],
   ['Bí ẩn và Giật gân', 12, 'còn 5 giờ 20 phút', 'orange'],
-];
+]
 const audit = [
   ['14:22', 'Đã phê duyệt Chương 15 của “A Dragon’s Wish”', 'Đã xác minh đạt', 'green'],
   ['14:05', 'Đã yêu cầu chỉnh sửa “Echoes of Void”', 'Cần hành động', 'orange'],
   ['13:40', 'Đã bác bỏ báo cáo sai về “The Last Kingdom”', 'Đã bác bỏ', 'neutral'],
   ['12:55', 'Đã chuyển hồ sơ SHTT #IP-4402 tới Bộ phận Pháp lý Cấp cao', 'Chuyển cấp 2', 'purple'],
-];
+]
 const escalationDesks = [
   ['Bộ phận Pháp lý Cấp cao', 'LD', 'green'],
   ['Trưởng nhóm Kiểm duyệt', 'LM', 'orange'],
-];
+]
 const statLabels = {
   'Pending Queue': 'Hàng đợi đang chờ',
   'User Reports': 'Báo cáo người dùng',
   'AI Signals': 'Tín hiệu AI',
   Escalations: 'Chuyển cấp',
   'Decisions Today': 'Quyết định hôm nay',
-};
+}
 const statNotes = {
   '+6 this hr': '+6 trong giờ này',
   '4 Urgent': '4 khẩn cấp',
   '3 Copyright': '3 bản quyền',
   'Tier-2 Legal': 'Pháp lý cấp 2',
   '34 Approvals': '34 phê duyệt',
-};
+}
 const kindLabels = {
   Manuscript: 'Bản thảo',
   Report: 'Báo cáo',
   'Similarity Flag': 'Cảnh báo tương đồng',
-};
+}
 const actionLabels = {
   'Quick Review': 'Xét duyệt nhanh',
   'Open Dossier': 'Mở hồ sơ',
   Inspect: 'Kiểm tra',
   Compare: 'So sánh',
-};
+}
 const fieldClass =
-  'w-full rounded-2xl border border-line bg-surface p-3 text-base leading-6 text-ink outline-none transition-colors placeholder:text-muted focus:border-brand sm:text-sm';
-const formatItemText = (value) =>
+  'w-full rounded-2xl border border-line bg-surface p-3 text-base leading-6 text-ink outline-none transition-colors placeholder:text-muted focus:border-brand sm:text-sm'
+const formatItemText = value =>
   value
     .replace('Submitted ', 'Đã gửi ')
     .replace('Reported ', 'Đã báo cáo ')
@@ -120,32 +120,32 @@ const formatItemText = (value) =>
     .replace('1h 35m', '1 giờ 35 phút')
     .replace('Graphic violence keyword density', 'Mật độ từ khóa bạo lực trực diện')
     .replace('Plagiarism claim on Scene 4 dialogue', 'Khiếu nại đạo văn trong lời thoại Cảnh 4')
-    .replace('words', 'từ');
+    .replace('words', 'từ')
 
 export function ModeratorOverviewPage() {
-  const [priority, setPriority] = useState('All');
-  const [selected, setSelected] = useState(null);
-  const [decision, setDecision] = useState('');
-  const [handled, setHandled] = useState([]);
-  const [signaled, setSignaled] = useState([]);
-  const [freezeOpen, setFreezeOpen] = useState(false);
-  const [frozen, setFrozen] = useState(false);
-  const stats = useMockResource('moderator:stats', moderationStats);
-  const urgent = useMockResource('moderator:urgent', urgentModerationItems);
+  const [priority, setPriority] = useState('All')
+  const [selected, setSelected] = useState(null)
+  const [decision, setDecision] = useState('')
+  const [handled, setHandled] = useState([])
+  const [signaled, setSignaled] = useState([])
+  const [freezeOpen, setFreezeOpen] = useState(false)
+  const [frozen, setFrozen] = useState(false)
+  const stats = useMockResource('moderator:stats', moderationStats)
+  const urgent = useMockResource('moderator:urgent', urgentModerationItems)
   const activity = useMockResource(
     'moderator:activity',
     { workload, audit },
     {
-      isEmpty: (value) => !value.workload.length && !value.audit.length,
+      isEmpty: value => !value.workload.length && !value.audit.length,
     },
-  );
+  )
   const items = urgent.data.filter(
-    (item) => priority === 'All' || item.tone === priority.toLowerCase(),
-  );
+    item => priority === 'All' || item.tone === priority.toLowerCase(),
+  )
   const closeDecision = () => {
-    setSelected(null);
-    setDecision('');
-  };
+    setSelected(null)
+    setDecision('')
+  }
   return (
     <ModeratorLayout>
       <div className="page-moderator py-6">
@@ -162,7 +162,7 @@ export function ModeratorOverviewPage() {
             singleRow
             value={priority}
             onChange={setPriority}
-            items={priorityTabs.map((item) => ({
+            items={priorityTabs.map(item => ({
               value: item.value,
               label: item.tone ? (
                 <>
@@ -232,7 +232,7 @@ export function ModeratorOverviewPage() {
                   </Card>
                 ))
               : stats.data.map(([label, value, note, tone], index) => {
-                  const Icon = metricIcons[index];
+                  const Icon = metricIcons[index]
                   return (
                     <Card
                       key={label}
@@ -256,7 +256,7 @@ export function ModeratorOverviewPage() {
                         {statNotes[note] ?? note}
                       </Badge>
                     </Card>
-                  );
+                  )
                 })}
           </section>
         )}
@@ -306,7 +306,7 @@ export function ModeratorOverviewPage() {
                 />
               ) : items.length ? (
                 <ul className="nh-fade-enter mt-5 space-y-3">
-                  {items.map((item) => (
+                  {items.map(item => (
                     <UrgentItem
                       key={item.id}
                       item={item}
@@ -496,7 +496,7 @@ export function ModeratorOverviewPage() {
               <h2 className="text-h3">Bộ phận chuyển cấp</h2>
               <ul className="mt-4 space-y-2.5">
                 {escalationDesks.map(([name, initials, tone]) => {
-                  const done = signaled.includes(name);
+                  const done = signaled.includes(name)
                   return (
                     <li
                       key={name}
@@ -517,8 +517,8 @@ export function ModeratorOverviewPage() {
                         size="sm"
                         aria-pressed={done}
                         onClick={() =>
-                          setSignaled((current) =>
-                            done ? current.filter((item) => item !== name) : [...current, name],
+                          setSignaled(current =>
+                            done ? current.filter(item => item !== name) : [...current, name],
                           )
                         }
                         className="ml-auto shrink-0 px-3 text-xs"
@@ -527,7 +527,7 @@ export function ModeratorOverviewPage() {
                         {done ? 'Đã báo hiệu' : 'Báo hiệu'}
                       </Button>
                     </li>
-                  );
+                  )
                 })}
               </ul>
               {frozen ? (
@@ -569,7 +569,7 @@ export function ModeratorOverviewPage() {
           <textarea
             id="overview-decision"
             value={decision}
-            onChange={(event) => setDecision(event.target.value)}
+            onChange={event => setDecision(event.target.value)}
             className={`${fieldClass} mt-2 min-h-24`}
             placeholder="Thêm ghi chú quyết định nội bộ..."
           />
@@ -579,8 +579,8 @@ export function ModeratorOverviewPage() {
             </Button>
             <Button
               onClick={() => {
-                setHandled((current) => [...current, selected.id]);
-                closeDecision();
+                setHandled(current => [...current, selected.id])
+                closeDecision()
               }}
             >
               <CheckCircle2 size={16} />
@@ -608,8 +608,8 @@ export function ModeratorOverviewPage() {
             <Button
               variant="danger"
               onClick={() => {
-                setFrozen(true);
-                setFreezeOpen(false);
+                setFrozen(true)
+                setFreezeOpen(false)
               }}
             >
               <Lock size={15} />
@@ -619,7 +619,7 @@ export function ModeratorOverviewPage() {
         </Modal>
       </div>
     </ModeratorLayout>
-  );
+  )
 }
 
 function UrgentItem({ item, handled, onOpen }) {
@@ -628,7 +628,7 @@ function UrgentItem({ item, handled, onOpen }) {
       ? FileWarning
       : item.kind === 'Similarity Flag'
         ? ShieldCheck
-        : BookOpenCheck;
+        : BookOpenCheck
   return (
     <li
       className={`flex flex-col gap-4 rounded-2xl border bg-surface p-4 sm:flex-row sm:items-center ${toneBorder[item.tone]}`}
@@ -667,7 +667,7 @@ function UrgentItem({ item, handled, onOpen }) {
         {actionLabels[item.action] ?? item.action}
       </Button>
     </li>
-  );
+  )
 }
 
 function Sla({ label, value }) {
@@ -679,7 +679,7 @@ function Sla({ label, value }) {
       </div>
       <ProgressBar value={value} size="sm" className="mt-2" label={`${label}: đạt ${value}%`} />
     </div>
-  );
+  )
 }
 
 /* Same card, 48px icon tile, text stack and trailing button as UrgentItem. */
@@ -703,7 +703,7 @@ function UrgentItemSkeleton() {
       </div>
       <Skeleton className="h-9 w-32 shrink-0 self-end sm:self-auto" />
     </li>
-  );
+  )
 }
 
 function LoadError({ title, description, onRetry, className }) {
@@ -722,5 +722,5 @@ function LoadError({ title, description, onRetry, className }) {
         </Button>
       }
     />
-  );
+  )
 }

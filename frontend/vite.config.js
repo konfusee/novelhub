@@ -10,6 +10,7 @@ export default defineConfig({
     proxy: { '/api': 'http://localhost:4000' },
   },
   test: {
+    include: ['test/**/*.{test,spec}.{js,jsx}'],
     environment: 'jsdom',
   },
 });

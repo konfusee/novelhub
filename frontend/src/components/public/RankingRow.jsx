@@ -1,6 +1,6 @@
-import { ArrowRight, Star } from '../icons';
-import { ButtonLink, Skeleton, Trend } from '../ui';
-import { StoryCover } from '../story/StoryCover';
+import { ArrowRight, Star } from '../icons'
+import { ButtonLink, Skeleton, Trend } from '../ui'
+import { StoryCover } from '../story/StoryCover'
 export function RankingRow({ item }) {
   return (
     <div className="grid grid-cols-[1.5rem_2.5rem_minmax(0,1fr)_auto] items-center gap-2.5 px-4 py-3 transition-colors duration-200 hover:bg-elevated/60 sm:grid-cols-[2.5rem_3rem_minmax(0,1fr)_5.5rem_4.5rem_auto] sm:gap-4 sm:px-5">
@@ -37,7 +37,7 @@ export function RankingRow({ item }) {
         <span className="hidden sm:inline">Xem thử</span>
       </ButtonLink>
     </div>
-  );
+  )
 }
 
 /* Uses RankingRow's column template so rows keep their height when data arrives. */
@@ -62,5 +62,5 @@ export function RankingRowSkeleton() {
       </span>
       <Skeleton className="size-11 sm:h-9 sm:w-[5.25rem]" />
     </div>
-  );
+  )
 }

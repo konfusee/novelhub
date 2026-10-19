@@ -1,6 +1,6 @@
-import { StoryCard, StoryCardSkeleton } from './StoryCard';
-import { SectionTitle } from './SectionTitle';
-import { Reveal } from '../ui';
+import { StoryCard, StoryCardSkeleton } from './StoryCard'
+import { SectionTitle } from './SectionTitle'
+import { Reveal } from '../ui'
 
 /* `loading` keeps the title and grid and swaps the cards for same-size placeholders. */
 export function StoryShelf({ title, stories, to, loading = false, placeholders = 4 }) {
@@ -27,5 +27,5 @@ export function StoryShelf({ title, stories, to, loading = false, placeholders =
         </div>
       )}
     </section>
-  );
+  )
 }

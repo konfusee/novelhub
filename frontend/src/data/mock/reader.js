@@ -314,3 +314,16 @@ export const audioPlayerData = {
     ['Maya Chen', 'Người kể · Nhật ký của Clara'],
   ],
 };
+
+/* Full demo index; unpublished sample titles are numbered instead of repeating another chapter's title. */
+export const storyChapterList = Array.from({ length: storyDetail.chapters }, (_, index) => {
+  const number = index + 1;
+  return (
+    chapterPreview.find((chapter) => chapter.number === number) || {
+      number,
+      title: 'Chương ' + number,
+      meta: 'Nội dung chương mẫu',
+      free: false,
+    }
+  );
+});

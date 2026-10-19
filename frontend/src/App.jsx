@@ -1,165 +1,274 @@
-import { Navigate, Route, Routes, useLocation } from 'react-router';
-import { lazy, Suspense, useEffect } from 'react';
-import { ThemeProvider } from './context/ThemeContext';
-import { AuthProvider, useAuth } from './context/AuthContext';
-import { LocaleProvider } from './context/LocaleContext';
-import { MockDataProvider } from './context/MockDataContext';
-import { RoleRoute } from './app/RouteGuards';
-import { DevPanel } from './components/dev/DevPanel';
-import { SiteFooter } from './components/shared/SiteFooter';
-import { RouteFallback } from './components/shared/RouteFallback';
-import { TopProgress } from './components/shared/TopProgress';
-import { AdminLayout, AuthorLayout, ModeratorLayout, ReaderLayout } from './layouts';
+import { Navigate, Route, Routes, useLocation, useNavigate } from 'react-router'
+import { lazy, Suspense, useEffect, useState } from 'react'
+import { ThemeProvider } from './context/ThemeContext'
+import { AuthProvider, canAccessPath, getAccountHome, useAuth } from './context/AuthContext'
+import { LocaleProvider } from './context/LocaleContext'
+import { MockDataProvider } from './context/MockDataContext'
+import { authorAgreements } from './data/authorAgreements'
+import { ROUTES } from './app/routes'
+import { RoleRoute } from './app/RouteGuards'
+import { DevPanel } from './components/dev/DevPanel'
+import { SiteFooter } from './components/shared/SiteFooter'
+import { RouteFallback } from './components/shared/RouteFallback'
+import { TopProgress } from './components/shared/TopProgress'
+import { AdminLayout, AuthorLayout, ModeratorLayout, ReaderLayout } from './layouts'
 
 // Route pages load on demand; RouteFallback shows a shell skeleton meanwhile.
 const UIPreviewPage = lazy(() =>
-  import('./pages/system/UIPreviewPage').then((m) => ({ default: m.UIPreviewPage })),
-);
+  import('./pages/system/UIPreviewPage').then(m => ({
+    default: m.UIPreviewPage,
+  })),
+)
 const GuestHomePage = lazy(() =>
-  import('./pages/guest/GuestHomePage').then((m) => ({ default: m.GuestHomePage })),
-);
+  import('./pages/guest/GuestHomePage').then(m => ({
+    default: m.GuestHomePage,
+  })),
+)
 const CategoriesPage = lazy(() =>
-  import('./pages/guest/CategoriesPage').then((m) => ({ default: m.CategoriesPage })),
-);
+  import('./pages/guest/CategoriesPage').then(m => ({
+    default: m.CategoriesPage,
+  })),
+)
 const SearchResultsPage = lazy(() =>
-  import('./pages/guest/SearchResultsPage').then((m) => ({ default: m.SearchResultsPage })),
-);
+  import('./pages/guest/SearchResultsPage').then(m => ({
+    default: m.SearchResultsPage,
+  })),
+)
 const RankingsPage = lazy(() =>
-  import('./pages/guest/RankingsPage').then((m) => ({ default: m.RankingsPage })),
-);
+  import('./pages/guest/RankingsPage').then(m => ({
+    default: m.RankingsPage,
+  })),
+)
 const StoryDetailPage = lazy(() =>
-  import('./pages/guest/StoryDetailPage').then((m) => ({ default: m.StoryDetailPage })),
-);
+  import('./pages/guest/StoryDetailPage').then(m => ({
+    default: m.StoryDetailPage,
+  })),
+)
 const GuestReaderPreviewPage = lazy(() =>
-  import('./pages/guest/GuestReaderPreviewPage').then((m) => ({
+  import('./pages/guest/GuestReaderPreviewPage').then(m => ({
     default: m.GuestReaderPreviewPage,
   })),
-);
-const JoinPage = lazy(() => import('./pages/auth/JoinPage').then((m) => ({ default: m.JoinPage })));
+)
+const JoinPage = lazy(() =>
+  import('./pages/auth/JoinPage').then(m => ({
+    default: m.JoinPage,
+  })),
+)
+const AuthRecoveryPage = lazy(() =>
+  import('./pages/auth/AuthRecoveryPage').then(m => ({
+    default: m.AuthRecoveryPage,
+  })),
+)
 const ReaderHomePage = lazy(() =>
-  import('./pages/reader/ReaderHomePage').then((m) => ({ default: m.ReaderHomePage })),
-);
+  import('./pages/reader/ReaderHomePage').then(m => ({
+    default: m.ReaderHomePage,
+  })),
+)
 const PersonalLibraryPage = lazy(() =>
-  import('./pages/reader/PersonalLibraryPage').then((m) => ({ default: m.PersonalLibraryPage })),
-);
+  import('./pages/reader/PersonalLibraryPage').then(m => ({
+    default: m.PersonalLibraryPage,
+  })),
+)
 const FollowingPage = lazy(() =>
-  import('./pages/reader/FollowingPage').then((m) => ({ default: m.FollowingPage })),
-);
+  import('./pages/reader/FollowingPage').then(m => ({
+    default: m.FollowingPage,
+  })),
+)
 const FullChapterReaderPage = lazy(() =>
-  import('./pages/reader/FullChapterReaderPage').then((m) => ({
+  import('./pages/reader/FullChapterReaderPage').then(m => ({
     default: m.FullChapterReaderPage,
   })),
-);
+)
 const FullAudioPlayerPage = lazy(() =>
-  import('./pages/reader/FullAudioPlayerPage').then((m) => ({ default: m.FullAudioPlayerPage })),
-);
-const ReadingHistoryPage = lazy(() =>
-  import('./pages/reader/ReadingHistoryPage').then((m) => ({ default: m.ReadingHistoryPage })),
-);
-const NotificationsPage = lazy(() =>
-  import('./pages/reader/NotificationsPage').then((m) => ({ default: m.NotificationsPage })),
-);
-const ReaderProfilePage = lazy(() =>
-  import('./pages/reader/ReaderProfilePage').then((m) => ({ default: m.ReaderProfilePage })),
-);
-const WalletPage = lazy(() =>
-  import('./pages/reader/WalletPage').then((m) => ({ default: m.WalletPage })),
-);
-const AuthorDashboardPage = lazy(() =>
-  import('./pages/author/AuthorDashboardPage').then((m) => ({ default: m.AuthorDashboardPage })),
-);
-const CreateStoryPage = lazy(() =>
-  import('./pages/author/CreateStoryPage').then((m) => ({ default: m.CreateStoryPage })),
-);
-const StoryManagerPage = lazy(() =>
-  import('./pages/author/StoryManagerPage').then((m) => ({ default: m.StoryManagerPage })),
-);
-const ChapterEditorPage = lazy(() =>
-  import('./pages/author/ChapterEditorPage').then((m) => ({ default: m.ChapterEditorPage })),
-);
-const DraftsPage = lazy(() =>
-  import('./pages/author/DraftsPage').then((m) => ({ default: m.DraftsPage })),
-);
-const ImportPdfPage = lazy(() =>
-  import('./pages/author/ImportPdfPage').then((m) => ({ default: m.ImportPdfPage })),
-);
-const MediaLibraryPage = lazy(() =>
-  import('./pages/author/MediaLibraryPage').then((m) => ({ default: m.MediaLibraryPage })),
-);
-const AiWritingAssistantPage = lazy(() =>
-  import('./pages/author/AiWritingAssistantPage').then((m) => ({
-    default: m.AiWritingAssistantPage,
+  import('./pages/reader/FullAudioPlayerPage').then(m => ({
+    default: m.FullAudioPlayerPage,
   })),
-);
+)
+const ReadingHistoryPage = lazy(() =>
+  import('./pages/reader/ReadingHistoryPage').then(m => ({
+    default: m.ReadingHistoryPage,
+  })),
+)
+const NotificationsPage = lazy(() =>
+  import('./pages/reader/NotificationsPage').then(m => ({
+    default: m.NotificationsPage,
+  })),
+)
+const ReaderProfilePage = lazy(() =>
+  import('./pages/reader/ReaderProfilePage').then(m => ({
+    default: m.ReaderProfilePage,
+  })),
+)
+const WalletPage = lazy(() =>
+  import('./pages/reader/WalletPage').then(m => ({
+    default: m.WalletPage,
+  })),
+)
+const AuthorDashboardPage = lazy(() =>
+  import('./pages/author/AuthorDashboardPage').then(m => ({
+    default: m.AuthorDashboardPage,
+  })),
+)
+const CreateStoryPage = lazy(() =>
+  import('./pages/author/CreateStoryPage').then(m => ({
+    default: m.CreateStoryPage,
+  })),
+)
+const AuthorWorksPage = lazy(() =>
+  import('./pages/author/AuthorWorksPage').then(m => ({
+    default: m.AuthorWorksPage,
+  })),
+)
+const StoryManagerPage = lazy(() =>
+  import('./pages/author/StoryManagerPage').then(m => ({
+    default: m.StoryManagerPage,
+  })),
+)
+const ChapterEditorPage = lazy(() =>
+  import('./pages/author/ChapterEditorPage').then(m => ({
+    default: m.ChapterEditorPage,
+  })),
+)
+const AuthorPreviewPage = lazy(() =>
+  import('./pages/author/AuthorPreviewPage').then(m => ({
+    default: m.AuthorPreviewPage,
+  })),
+)
+const SubmittedPackagePage = lazy(() =>
+  import('./pages/author/SubmittedPackagePage').then(m => ({
+    default: m.SubmittedPackagePage,
+  })),
+)
+const DraftsPage = lazy(() =>
+  import('./pages/author/DraftsPage').then(m => ({
+    default: m.DraftsPage,
+  })),
+)
+const ImportPdfPage = lazy(() =>
+  import('./pages/author/ImportPdfPage').then(m => ({
+    default: m.ImportPdfPage,
+  })),
+)
+const MediaLibraryPage = lazy(() =>
+  import('./pages/author/MediaLibraryPage').then(m => ({
+    default: m.MediaLibraryPage,
+  })),
+)
 const SubmissionReviewPage = lazy(() =>
-  import('./pages/author/SubmissionReviewPage').then((m) => ({ default: m.SubmissionReviewPage })),
-);
+  import('./pages/author/SubmissionReviewPage').then(m => ({
+    default: m.SubmissionReviewPage,
+  })),
+)
 const AuthorAnalyticsPage = lazy(() =>
-  import('./pages/author/AuthorAnalyticsPage').then((m) => ({ default: m.AuthorAnalyticsPage })),
-);
+  import('./pages/author/AuthorAnalyticsPage').then(m => ({
+    default: m.AuthorAnalyticsPage,
+  })),
+)
 const AuthorEarningsPage = lazy(() =>
-  import('./pages/author/AuthorEarningsPage').then((m) => ({ default: m.AuthorEarningsPage })),
-);
+  import('./pages/author/AuthorEarningsPage').then(m => ({
+    default: m.AuthorEarningsPage,
+  })),
+)
 const ModeratorOverviewPage = lazy(() =>
-  import('./pages/moderator/ModeratorOverviewPage').then((m) => ({
+  import('./pages/moderator/ModeratorOverviewPage').then(m => ({
     default: m.ModeratorOverviewPage,
   })),
-);
+)
 const SubmissionQueuePage = lazy(() =>
-  import('./pages/moderator/SubmissionQueuePage').then((m) => ({ default: m.SubmissionQueuePage })),
-);
+  import('./pages/moderator/SubmissionQueuePage').then(m => ({
+    default: m.SubmissionQueuePage,
+  })),
+)
 const ContentReviewDetailPage = lazy(() =>
-  import('./pages/moderator/ContentReviewDetailPage').then((m) => ({
+  import('./pages/moderator/ContentReviewDetailPage').then(m => ({
     default: m.ContentReviewDetailPage,
   })),
-);
+)
 const ReportsQueuePage = lazy(() =>
-  import('./pages/moderator/ReportsQueuePage').then((m) => ({ default: m.ReportsQueuePage })),
-);
+  import('./pages/moderator/ReportsQueuePage').then(m => ({
+    default: m.ReportsQueuePage,
+  })),
+)
 const SimilarityRiskReviewPage = lazy(() =>
-  import('./pages/moderator/SimilarityRiskReviewPage').then((m) => ({
+  import('./pages/moderator/SimilarityRiskReviewPage').then(m => ({
     default: m.SimilarityRiskReviewPage,
   })),
-);
+)
 const AdminDashboardPage = lazy(() =>
-  import('./pages/admin/AdminDashboardPage').then((m) => ({ default: m.AdminDashboardPage })),
-);
+  import('./pages/admin/AdminDashboardPage').then(m => ({
+    default: m.AdminDashboardPage,
+  })),
+)
 const UsersManagementPage = lazy(() =>
-  import('./pages/admin/UsersManagementPage').then((m) => ({ default: m.UsersManagementPage })),
-);
+  import('./pages/admin/UsersManagementPage').then(m => ({
+    default: m.UsersManagementPage,
+  })),
+)
 const RolesPermissionsPage = lazy(() =>
-  import('./pages/admin/RolesPermissionsPage').then((m) => ({ default: m.RolesPermissionsPage })),
-);
+  import('./pages/admin/RolesPermissionsPage').then(m => ({
+    default: m.RolesPermissionsPage,
+  })),
+)
 const CategoriesConfigurationPage = lazy(() =>
-  import('./pages/admin/CategoriesConfigurationPage').then((m) => ({
+  import('./pages/admin/CategoriesConfigurationPage').then(m => ({
     default: m.CategoriesConfigurationPage,
   })),
-);
+)
 const PlatformSettingsPage = lazy(() =>
-  import('./pages/admin/PlatformSettingsPage').then((m) => ({ default: m.PlatformSettingsPage })),
-);
+  import('./pages/admin/PlatformSettingsPage').then(m => ({
+    default: m.PlatformSettingsPage,
+  })),
+)
+const AuditEventsPage = lazy(() =>
+  import('./pages/admin/AuditEventsPage').then(m => ({
+    default: m.AuditEventsPage,
+  })),
+)
+const AuthorStatisticsPage = lazy(() =>
+  import('./pages/admin/AuthorStatisticsPage').then(m => ({
+    default: m.AuthorStatisticsPage,
+  })),
+)
+const FormerAuthorStoriesPage = lazy(() =>
+  import('./pages/admin/FormerAuthorStoriesPage').then(m => ({
+    default: m.FormerAuthorStoriesPage,
+  })),
+)
 const AuthorApplyPage = lazy(() =>
-  import('./pages/author/AuthorApplyPage').then((m) => ({ default: m.AuthorApplyPage })),
-);
+  import('./pages/author/AuthorApplyPage').then(m => ({
+    default: m.AuthorApplyPage,
+  })),
+)
 const AuthorAgreementPage = lazy(() =>
-  import('./pages/admin/AuthorAgreementPage').then((m) => ({ default: m.AuthorAgreementPage })),
-);
+  import('./pages/admin/AuthorAgreementPage').then(m => ({
+    default: m.AuthorAgreementPage,
+  })),
+)
 const ForbiddenPage = lazy(() =>
-  import('./pages/system/SystemPages').then((m) => ({ default: m.ForbiddenPage })),
-);
+  import('./pages/system/SystemPages').then(m => ({
+    default: m.ForbiddenPage,
+  })),
+)
 const NotFoundPage = lazy(() =>
-  import('./pages/system/SystemPages').then((m) => ({ default: m.NotFoundPage })),
-);
+  import('./pages/system/SystemPages').then(m => ({
+    default: m.NotFoundPage,
+  })),
+)
 const LegalPage = lazy(() =>
-  import('./pages/system/LegalPage').then((m) => ({ default: m.LegalPage })),
-);
+  import('./pages/system/LegalPage').then(m => ({
+    default: m.LegalPage,
+  })),
+)
 const RoleUtilityPage = lazy(() =>
-  import('./pages/system/RoleUtilityPage').then((m) => ({ default: m.RoleUtilityPage })),
-);
-const AccountPage = lazy(() =>
-  import('./pages/system/AccountPage').then((m) => ({ default: m.AccountPage })),
-);
-
+  import('./pages/system/RoleUtilityPage').then(m => ({
+    default: m.RoleUtilityPage,
+  })),
+)
+const ProfileAccountPage = lazy(() =>
+  import('./pages/system/ProfileAccountPage').then(m => ({
+    default: m.ProfileAccountPage,
+  })),
+)
 const pages = [
   GuestHomePage,
   CategoriesPage,
@@ -184,7 +293,6 @@ const pages = [
   DraftsPage,
   ImportPdfPage,
   MediaLibraryPage,
-  AiWritingAssistantPage,
   SubmissionReviewPage,
   AuthorAnalyticsPage,
   ModeratorOverviewPage,
@@ -197,30 +305,51 @@ const pages = [
   RolesPermissionsPage,
   CategoriesConfigurationPage,
   PlatformSettingsPage,
-];
+]
 const role = (name, element, onboard = false) => (
   <RoleRoute role={name} authorOnboarding={onboard}>
     {element}
   </RoleRoute>
-);
+)
 function ScrollManager() {
-  const { pathname } = useLocation();
+  const { pathname } = useLocation()
   useEffect(() => {
-    if (!pathname.startsWith('/read/')) window.scrollTo({ top: 0, behavior: 'instant' });
-  }, [pathname]);
-  return null;
+    if (!pathname.startsWith('/read/'))
+      window.scrollTo({
+        top: 0,
+        behavior: 'instant',
+      })
+  }, [pathname])
+  return null
 }
 function AppRoutes() {
-  const { pathname } = useLocation();
-  const { isAuthenticated } = useAuth();
-  // The site footer belongs to the guest landing page only; app screens end with their content.
-  const showPublicFooter = !isAuthenticated && (pathname === '/' || pathname === '/discover');
+  const { pathname, search } = useLocation()
+  const { isAuthenticated } = useAuth()
+  // Public discovery and authentication pages share the footer; workspace pages end with their content.
+  const showPublicFooter =
+    ['/login', '/register', '/join', '/author/apply', '/terms', '/privacy'].includes(pathname) ||
+    (['/categories', '/rankings'].includes(pathname) &&
+      !new URLSearchParams(search).has('workspace')) ||
+    authorAgreements.some(({ type }) => pathname === ROUTES.authorAgreement(type)) ||
+    (!isAuthenticated && ['/', '/discover', '/search'].includes(pathname))
   return (
     <>
       <ScrollManager />
       <TopProgress />
       <Suspense fallback={<RouteFallback />}>
         <Routes>
+          <Route
+            path="/admin/transactions"
+            element={role(
+              'admin',
+              <RoleUtilityPage
+                role="admin"
+                eyebrow="Tài chính nền tảng"
+                title="Giao dịch ví"
+                description="Xem nạp xu, mua chương, hoàn tiền, điều chỉnh và giao dịch bất thường trên toàn nền tảng."
+              />,
+            )}
+          />
           <Route path="/" element={<AdaptivePublicPage page="home" />} />
           <Route path="/discover" element={<AdaptivePublicPage page="home" />} />
           <Route path="/browse" element={<AdaptivePublicPage page="categories" />} />
@@ -233,8 +362,19 @@ function AppRoutes() {
           <Route path="/join" element={<JoinPage />} />
           <Route path="/login" element={<JoinPage initialMode="login" />} />
           <Route path="/register" element={<JoinPage initialMode="register" />} />
-          <Route path="/terms" element={<AdaptiveLegalPage type="terms" />} />
-          <Route path="/privacy" element={<AdaptiveLegalPage type="privacy" />} />
+          <Route path="/verify-email" element={<AuthRecoveryPage mode="verify" />} />
+          <Route path="/forgot-password" element={<AuthRecoveryPage mode="forgot" />} />
+          <Route path="/reset-password" element={<AuthRecoveryPage mode="reset" />} />
+          <Route path="/auth/google-complete" element={<GoogleAuthComplete />} />
+          {authorAgreements.map(({ type }) => (
+            <Route
+              key={type}
+              path={ROUTES.authorAgreement(type)}
+              element={<LegalPage type={type} />}
+            />
+          ))}
+          <Route path="/terms" element={<LegalPage type="terms" />} />
+          <Route path="/privacy" element={<LegalPage type="privacy" />} />
           <Route path="/reader" element={role('reader', <ReaderHomePage />)} />
           <Route path="/reader/explore" element={role('reader', <ReaderExplorePage />)} />
           <Route path="/library" element={role('reader', <PersonalLibraryPage />)} />
@@ -242,7 +382,10 @@ function AppRoutes() {
           <Route path="/reader/following" element={role('reader', <FollowingPage />)} />
           <Route path="/reader/history" element={role('reader', <ReadingHistoryPage />)} />
           <Route path="/reader/notifications" element={role('reader', <NotificationsPage />)} />
-          <Route path="/reader/profile" element={role('reader', <ReaderProfilePage />)} />
+          <Route
+            path="/reader/profile"
+            element={role('reader', <ProfileAccountPage workspace="reader" />)}
+          />
           <Route
             path="/reader/profile/reading"
             element={<Navigate to="/reader/settings/reading" replace />}
@@ -298,8 +441,9 @@ function AppRoutes() {
           <Route path="/reader/settings/security" element={role('reader', <ReaderProfilePage />)} />
           <Route
             path="/reader/account"
-            element={role('reader', <AccountPage workspace="reader" />)}
+            element={role('reader', <Navigate to="/reader/profile?tab=account" replace />)}
           />
+
           <Route
             path="/reader/support"
             element={role(
@@ -323,6 +467,8 @@ function AppRoutes() {
           <Route path="/author/apply" element={role('reader', <AuthorApplyPage />)} />
           <Route path="/author" element={role('author', <AuthorDashboardPage />, true)} />
           <Route path="/author/stories/new" element={role('author', <CreateStoryPage />, true)} />
+          <Route path="/author/stories" element={role('author', <AuthorWorksPage />, true)} />
+          <Route path="/author/editor" element={role('author', <AuthorWorksPage editor />, true)} />
           <Route
             path="/author/stories/:storyId"
             element={role('author', <StoryManagerPage />, true)}
@@ -332,27 +478,33 @@ function AppRoutes() {
             element={role('author', <ChapterEditorPage />, true)}
           />
           <Route path="/author/drafts" element={role('author', <DraftsPage />, true)} />
+          <Route
+            path="/author/stories/:storyId/preview"
+            element={role('author', <AuthorPreviewPage />, true)}
+          />
+          <Route
+            path="/author/stories/:storyId/chapters/:chapterId/preview"
+            element={role('author', <AuthorPreviewPage />, true)}
+          />
           <Route path="/author/import" element={role('author', <ImportPdfPage />, true)} />
           <Route path="/author/media" element={role('author', <MediaLibraryPage />, true)} />
-          <Route path="/author/ai" element={role('author', <AiWritingAssistantPage />, true)} />
+          <Route
+            path="/author/ai"
+            element={role('author', <Navigate to="/author" replace />, true)}
+          />
           <Route
             path="/author/submissions"
             element={role('author', <SubmissionReviewPage />, true)}
           />
           <Route path="/author/analytics" element={role('author', <AuthorAnalyticsPage />, true)} />
+          <Route
+            path="/author/submissions/:submissionId/preview"
+            element={role('author', <SubmittedPackagePage />, true)}
+          />
           <Route path="/author/earnings" element={role('author', <AuthorEarningsPage />, true)} />
           <Route
             path="/author/profile"
-            element={role(
-              'author',
-              <RoleUtilityPage
-                role="author"
-                eyebrow="Tài khoản tác giả"
-                title="Hồ sơ tác giả"
-                description="Quản lý bút danh công khai, tiểu sử, thông tin xác minh và trang tác giả."
-              />,
-              true,
-            )}
+            element={role('author', <ProfileAccountPage workspace="author" />, true)}
           />
           <Route path="/author/wallet" element={role('author', <AuthorEarningsPage />, true)} />
           <Route
@@ -365,7 +517,7 @@ function AppRoutes() {
           />
           <Route
             path="/author/account"
-            element={role('author', <AccountPage workspace="author" />, true)}
+            element={role('author', <Navigate to="/author/profile?tab=account" replace />, true)}
           />
           <Route
             path="/author/support"
@@ -460,19 +612,11 @@ function AppRoutes() {
           />
           <Route
             path="/moderator/profile"
-            element={role(
-              'moderator',
-              <RoleUtilityPage
-                role="moderator"
-                eyebrow="Hồ sơ dùng chung"
-                title="Hồ sơ"
-                description="Quản lý danh tính hiển thị và thông tin hồ sơ NovelHub dùng chung."
-              />,
-            )}
+            element={role('moderator', <ProfileAccountPage workspace="moderator" />)}
           />
           <Route
             path="/moderator/account"
-            element={role('moderator', <AccountPage workspace="moderator" />)}
+            element={role('moderator', <Navigate to="/moderator/profile?tab=account" replace />)}
           />
           <Route
             path="/moderator/support"
@@ -509,17 +653,12 @@ function AppRoutes() {
           />
           <Route
             path="/admin/profile"
-            element={role(
-              'admin',
-              <RoleUtilityPage
-                role="admin"
-                eyebrow="Hồ sơ dùng chung"
-                title="Hồ sơ"
-                description="Quản lý danh tính hiển thị và thông tin hồ sơ NovelHub dùng chung."
-              />,
-            )}
+            element={role('admin', <ProfileAccountPage workspace="admin" />)}
           />
-          <Route path="/admin/account" element={role('admin', <AccountPage workspace="admin" />)} />
+          <Route
+            path="/admin/account"
+            element={role('admin', <Navigate to="/admin/profile?tab=account" replace />)}
+          />
           <Route
             path="/admin/support"
             element={role(
@@ -532,18 +671,7 @@ function AppRoutes() {
               />,
             )}
           />
-          <Route
-            path="/admin/content"
-            element={role(
-              'admin',
-              <RoleUtilityPage
-                role="admin"
-                eyebrow="Quản trị nội dung"
-                title="Cấu hình nội dung"
-                description="Quản lý quy tắc xuất bản, siêu dữ liệu khám phá, xếp hạng nội dung và mặc định toàn nền tảng."
-              />,
-            )}
-          />
+          <Route path="/admin/content" element={role('admin', <FormerAuthorStoriesPage />)} />
           <Route
             path="/admin/services"
             element={role(
@@ -556,18 +684,7 @@ function AppRoutes() {
               />,
             )}
           />
-          <Route
-            path="/admin/audit-logs"
-            element={role(
-              'admin',
-              <RoleUtilityPage
-                role="admin"
-                eyebrow="Bảo mật"
-                title="Nhật ký kiểm tra"
-                description="Tìm sự kiện quản trị, bản ghi xác thực, thay đổi cấu hình và thao tác được bảo vệ."
-              />,
-            )}
-          />
+          <Route path="/admin/audit-logs" element={role('admin', <AuditEventsPage />)} />
           <Route
             path="/admin/moderation"
             element={role(
@@ -580,19 +697,14 @@ function AppRoutes() {
               />,
             )}
           />
+
           <Route
-            path="/admin/transactions"
-            element={role(
-              'admin',
-              <RoleUtilityPage
-                role="admin"
-                eyebrow="Tài chính nền tảng"
-                title="Giao dịch ví"
-                description="Xem nạp xu, mua chương, hoàn tiền, điều chỉnh và giao dịch bất thường trên toàn nền tảng."
-              />,
-            )}
+            path="/admin/author-statistics"
+            element={role('admin', <AuthorStatisticsPage />)}
           />
+
           <Route path="/403" element={<ForbiddenPage />} />
+
           <Route path="/ui-preview" element={<UIPreviewPage />} />
           {pages.map((Page, index) => (
             <Route
@@ -607,66 +719,76 @@ function AppRoutes() {
       {showPublicFooter && <SiteFooter />}
       <DevPanel />
     </>
-  );
+  )
 }
-
+function GoogleAuthComplete() {
+  const [requestedPath] = useState(() => sessionStorage.getItem('novelhub.google.returnTo'))
+  const { authLoading, currentUser } = useAuth()
+  const navigate = useNavigate()
+  useEffect(() => {
+    if (!authLoading) {
+      sessionStorage.removeItem('novelhub.google.returnTo')
+      const safePath =
+        requestedPath?.startsWith('/') &&
+        !requestedPath.startsWith('//') &&
+        canAccessPath(currentUser, requestedPath)
+      navigate(
+        currentUser
+          ? safePath
+            ? requestedPath
+            : getAccountHome(currentUser)
+          : '/login?googleError=failed',
+        {
+          replace: true,
+        },
+      )
+    }
+  }, [authLoading, currentUser, navigate, requestedPath])
+  return <RouteFallback />
+}
 function ReaderExplorePage() {
   return (
     <ReaderLayout>
       <SearchResultsPage embedded />
     </ReaderLayout>
-  );
+  )
 }
-
 function AdaptivePublicPage({ page }) {
-  const { isAuthenticated, hasRole } = useAuth();
-  const { search } = useLocation();
+  const { isAuthenticated, hasRole } = useAuth()
+  const { search } = useLocation()
   const pagesByName = {
     home: GuestHomePage,
     categories: CategoriesPage,
     search: SearchResultsPage,
     rankings: RankingsPage,
-  };
-  const Page = pagesByName[page];
-
-  if (!isAuthenticated) return <Page />;
-
-  const requestedWorkspace = new URLSearchParams(search).get('workspace');
+  }
+  const Page = pagesByName[page]
+  if (!isAuthenticated) return <Page />
+  const requestedWorkspace = new URLSearchParams(search).get('workspace')
   const workspace =
     ['admin', 'moderator', 'author', 'reader'].find(
-      (roleName) => roleName === requestedWorkspace && hasRole(roleName),
-    ) || 'reader';
+      roleName => roleName === requestedWorkspace && hasRole(roleName),
+    ) || 'reader'
   const Layout = {
     reader: ReaderLayout,
     author: AuthorLayout,
     moderator: ModeratorLayout,
     admin: AdminLayout,
-  }[workspace];
+  }[workspace]
   return (
     <Layout>
       <Page embedded />
     </Layout>
-  );
+  )
 }
-
-function AdaptiveLegalPage({ type }) {
-  const { isAuthenticated } = useAuth();
-  if (!isAuthenticated) return <LegalPage type={type} />;
-  return (
-    <ReaderLayout>
-      <LegalPage type={type} embedded />
-    </ReaderLayout>
-  );
-}
-
 function AdaptiveStoryPage() {
-  const { isAuthenticated } = useAuth();
-  if (!isAuthenticated) return <StoryDetailPage />;
+  const { isAuthenticated } = useAuth()
+  if (!isAuthenticated) return <StoryDetailPage />
   return (
     <ReaderLayout>
       <StoryDetailPage embedded />
     </ReaderLayout>
-  );
+  )
 }
 export function App() {
   return (
@@ -679,5 +801,5 @@ export function App() {
         </AuthProvider>
       </LocaleProvider>
     </ThemeProvider>
-  );
+  )
 }

@@ -9,3 +9,8 @@ coverage/
 .vscode/*
 !.vscode/extensions.json
 .idea/
+
+# Local uploads and Windows metadata
+backend/uploads/*
+!backend/uploads/.gitkeep
+Thumbs.db

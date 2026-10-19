@@ -1,5 +1,5 @@
-import { Fragment, useMemo, useState } from 'react';
-import { Link, useSearchParams } from 'react-router';
+import { Fragment, useMemo, useState } from 'react'
+import { Link, useSearchParams } from 'react-router'
 import {
   AlertTriangle,
   ArrowRight,
@@ -7,10 +7,10 @@ import {
   RefreshCw,
   Search,
   Sparkles,
-} from '../../components/icons';
-import { PublicHeader } from '../../components/public/PublicHeader';
-import { CategoryCard, CategoryCardSkeleton } from '../../components/public/CategoryCard';
-import { StoryShelf } from '../../components/public/StoryShelf';
+} from '../../components/icons'
+import { PublicHeader } from '../../components/public/PublicHeader'
+import { CategoryCard, CategoryCardSkeleton } from '../../components/public/CategoryCard'
+import { StoryShelf } from '../../components/public/StoryShelf'
 import {
   Badge,
   Button,
@@ -21,10 +21,10 @@ import {
   Reveal,
   Skeleton,
   Tabs,
-} from '../../components/ui';
-import { useMockResource } from '../../context/MockDataContext';
-import { categories, popularTags } from '../../data/mock/categories';
-import { extendedStories, hiddenGems } from '../../data/mock/stories';
+} from '../../components/ui'
+import { useMockResource } from '../../context/MockDataContext'
+import { categories, popularTags } from '../../data/mock/categories'
+import { extendedStories, hiddenGems } from '../../data/mock/stories'
 
 const filters = [
   ['All', 'Tất cả'],
@@ -32,30 +32,30 @@ const filters = [
   ['New', 'Mới'],
   ['Trending', 'Thịnh hành'],
   ['Completed', 'Đã hoàn thành'],
-];
+]
 
 /* Mock ordering derived from the catalogue counts until the API exposes category stats. */
-const storyCount = (category) => parseFloat(category.count) || 0;
+const storyCount = category => parseFloat(category.count) || 0
 const orderings = {
-  Popular: (list) => [...list].sort((a, b) => storyCount(b) - storyCount(a)),
-  New: (list) => [...list].reverse(),
-  Trending: (list) =>
-    list.filter((item) => storyCount(item) >= 10).sort((a, b) => storyCount(b) - storyCount(a)),
-};
+  Popular: list => [...list].sort((a, b) => storyCount(b) - storyCount(a)),
+  New: list => [...list].reverse(),
+  Trending: list =>
+    list.filter(item => storyCount(item) >= 10).sort((a, b) => storyCount(b) - storyCount(a)),
+}
 
-const gemTones = { Adventure: 'orange', Mystery: 'purple' };
-const stagger = (index) => Math.min(index, 5) * 80;
+const gemTones = { Adventure: 'orange', Mystery: 'purple' }
+const stagger = index => Math.min(index, 5) * 80
 
 /* Genre shelves and editor picks load as one curated-collections payload. */
 const collections = {
-  fantasy: extendedStories.filter((story) => story.genre === 'Fantasy').slice(0, 4),
+  fantasy: extendedStories.filter(story => story.genre === 'Fantasy').slice(0, 4),
   romance: extendedStories
-    .filter((story) => story.genre === 'Romance' || story.genre === 'Drama')
+    .filter(story => story.genre === 'Romance' || story.genre === 'Drama')
     .slice(0, 4),
-  scifi: extendedStories.filter((story) => story.genre === 'Sci-Fi').slice(0, 4),
+  scifi: extendedStories.filter(story => story.genre === 'Sci-Fi').slice(0, 4),
   gems: hiddenGems,
-};
-const isCollectionsEmpty = (value) => Object.values(value).every((list) => !list.length);
+}
+const isCollectionsEmpty = value => Object.values(value).every(list => !list.length)
 
 function RetryButton({ onClick }) {
   return (
@@ -63,7 +63,7 @@ function RetryButton({ onClick }) {
       <RefreshCw size={14} aria-hidden="true" />
       Thử lại
     </Button>
-  );
+  )
 }
 
 function GemCardSkeleton() {
@@ -82,7 +82,7 @@ function GemCardSkeleton() {
         <Skeleton className="h-3 w-14" />
       </div>
     </Card>
-  );
+  )
 }
 
 /* Gem blurbs run ~6 lines on phones (full-width card) and ~3 in the desktop three-up grid. */
@@ -96,27 +96,27 @@ function SkeletonLines() {
         />
       ))}
     </span>
-  );
+  )
 }
 
 export function CategoriesPage({ embedded = false }) {
-  const [params] = useSearchParams();
-  const [query, setQuery] = useState('');
-  const [filter, setFilter] = useState('All');
-  const [selectedGenre, setSelectedGenre] = useState(() => params.get('genre') ?? '');
-  const catalog = useMockResource('catalog:categories', categories);
+  const [params] = useSearchParams()
+  const [query, setQuery] = useState('')
+  const [filter, setFilter] = useState('All')
+  const [selectedGenre, setSelectedGenre] = useState(() => params.get('genre') ?? '')
+  const catalog = useMockResource('catalog:categories', categories)
   const curated = useMockResource('catalog:collections', collections, {
     isEmpty: isCollectionsEmpty,
-  });
+  })
   const visibleCategories = useMemo(() => {
-    const matches = catalog.data.filter((category) =>
+    const matches = catalog.data.filter(category =>
       `${category.name} ${category.description}`.toLowerCase().includes(query.toLowerCase()),
-    );
-    return orderings[filter]?.(matches) ?? matches;
-  }, [catalog.data, query, filter]);
-  const collectionsLoading = curated.status === 'loading';
-  const { fantasy, romance, scifi, gems } = curated.data;
-  const Root = embedded ? 'div' : 'main';
+    )
+    return orderings[filter]?.(matches) ?? matches
+  }, [catalog.data, query, filter])
+  const collectionsLoading = curated.status === 'loading'
+  const { fantasy, romance, scifi, gems } = curated.data
+  const Root = embedded ? 'div' : 'main'
   return (
     <div className="min-h-screen bg-page text-ink">
       {!embedded && <PublicHeader />}
@@ -134,7 +134,7 @@ export function CategoriesPage({ embedded = false }) {
             placeholder="Tìm thể loại..."
             aria-label="Lọc theo từ khóa hoặc thể loại phụ"
             value={query}
-            onChange={(event) => setQuery(event.target.value)}
+            onChange={event => setQuery(event.target.value)}
             className="md:w-80 md:shrink-0"
           />
           <div className="min-w-0">
@@ -181,7 +181,7 @@ export function CategoriesPage({ embedded = false }) {
               aria-label="Đang tải thể loại"
               className="nh-grid-12 grid gap-4 nh-sm-cols-2 nh-lg-cols-3"
             >
-              {categories.map((category) => (
+              {categories.map(category => (
                 <CategoryCardSkeleton key={category.name} />
               ))}
             </div>
@@ -210,12 +210,12 @@ export function CategoriesPage({ embedded = false }) {
             </Card>
           ) : visibleCategories.length ? (
             <div className="nh-fade-enter nh-grid-12 grid gap-4 nh-sm-cols-2 nh-lg-cols-3">
-              {visibleCategories.map((category) => (
+              {visibleCategories.map(category => (
                 <CategoryCard
                   key={category.name}
                   category={category}
                   selected={selectedGenre === category.name}
-                  onSelect={(name) => setSelectedGenre((current) => (current === name ? '' : name))}
+                  onSelect={name => setSelectedGenre(current => (current === name ? '' : name))}
                 />
               ))}
             </div>
@@ -249,7 +249,7 @@ export function CategoriesPage({ embedded = false }) {
                   aria-label="Đang tải thẻ phổ biến"
                   className="nh-grid-12 mt-6 grid nh-cols-2 gap-3 nh-sm-cols-3 nh-lg-cols-6"
                 >
-                  {popularTags.map((tag) => (
+                  {popularTags.map(tag => (
                     <span
                       key={tag}
                       aria-hidden="true"
@@ -352,7 +352,7 @@ export function CategoriesPage({ embedded = false }) {
                 aria-label="Đang tải viên ngọc ẩn"
                 className="nh-grid-12 mt-6 grid gap-4 nh-md-cols-3"
               >
-                {hiddenGems.map((item) => (
+                {hiddenGems.map(item => (
                   <GemCardSkeleton key={item.title} />
                 ))}
               </div>
@@ -419,5 +419,5 @@ export function CategoriesPage({ embedded = false }) {
         )}
       </Root>
     </div>
-  );
+  )
 }

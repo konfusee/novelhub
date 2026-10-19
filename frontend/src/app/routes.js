@@ -11,13 +11,16 @@ export const ROUTES = {
   profile: '/reader/profile',
   author: '/author',
   authorApply: '/author/apply',
+  authorAgreement: type => `/legal/author/${type}`,
   moderator: '/moderator',
   admin: '/admin',
   forbidden: '/403',
-  story: (id) => `/stories/${id}`,
+  story: id => `/stories/${id}`,
   read: (storyId, chapterId) => `/read/${storyId}/${chapterId}`,
   listen: (storyId, chapterId) => `/listen/${storyId}/${chapterId}`,
-  authorStory: (id) => `/author/stories/${id}`,
-  moderatorSubmission: (id) => `/moderator/submissions/${id}`,
-  adminUser: (id) => `/admin/users/${id}`,
-};
+  authorStory: id => `/author/stories/${id}`,
+  authorAnalytics: (storyId, chapterId) =>
+    `/author/analytics${storyId ? `?storyId=${encodeURIComponent(storyId)}${chapterId ? `&chapterId=${encodeURIComponent(chapterId)}` : ''}` : ''}`,
+  moderatorSubmission: id => `/moderator/submissions/${id}`,
+  adminUser: id => `/admin/users/${id}`,
+}

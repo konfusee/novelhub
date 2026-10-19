@@ -1,8 +1,8 @@
-import { useId, useState } from 'react';
-import { useParams } from 'react-router';
-import { AlertTriangle, ArrowLeft, FileText, RotateCcw, Save } from '../../components/icons';
-import { AdminLayout } from '../../layouts';
-import { adminUsers } from '../../data/mock/admin';
+import { useId, useState } from 'react'
+import { useParams } from 'react-router'
+import { AlertTriangle, ArrowLeft, FileText, RotateCcw, Save } from '../../components/icons'
+import { AdminLayout } from '../../layouts'
+import { adminUsers } from '../../data/mock/admin'
 import {
   Badge,
   Button,
@@ -12,37 +12,36 @@ import {
   Input,
   ProgressBar,
   Skeleton,
-} from '../../components/ui';
-import { useMockData, useMockResource } from '../../context/MockDataContext';
+} from '../../components/ui'
+import { useMockData, useMockResource } from '../../context/MockDataContext'
 
-const DEFAULT_SHARE = 80;
+const DEFAULT_SHARE = 80
 
 export function AuthorAgreementPage() {
-  const { userId } = useParams();
-  const { data, saveAgreement } = useMockData();
-  const fieldId = useId();
+  const { userId } = useParams()
+  const { data, saveAgreement } = useMockData()
+  const fieldId = useId()
   const author =
-    adminUsers.find((user) => user.id === userId) ??
-    adminUsers.find((user) => user.role === 'Author');
+    adminUsers.find(user => user.id === userId) ?? adminUsers.find(user => user.role === 'Author')
   const agreement = useMockResource(`user:${userId}`, data.agreements['user-author'], {
-    isEmpty: (value) => !value,
-  });
-  const current = agreement.status === 'ready' ? agreement.data : null;
-  const savedShare = current?.authorShare ?? DEFAULT_SHARE;
+    isEmpty: value => !value,
+  })
+  const current = agreement.status === 'ready' ? agreement.data : null
+  const savedShare = current?.authorShare ?? DEFAULT_SHARE
   /* Unsaved edit on top of the loaded agreement; null = showing the saved value. */
-  const [draft, setDraft] = useState(null);
-  const [message, setMessage] = useState('');
-  const share = draft ?? String(savedShare);
-  const value = Number(share);
-  const valid = share.trim() !== '' && Number.isInteger(value) && value >= 0 && value <= 100;
-  const platform = valid ? 100 - value : null;
-  const dirty = share.trim() !== String(savedShare);
+  const [draft, setDraft] = useState(null)
+  const [message, setMessage] = useState('')
+  const share = draft ?? String(savedShare)
+  const value = Number(share)
+  const valid = share.trim() !== '' && Number.isInteger(value) && value >= 0 && value <= 100
+  const platform = valid ? 100 - value : null
+  const dirty = share.trim() !== String(savedShare)
   const save = () => {
-    if (!valid) return;
-    saveAgreement('user-author', value);
-    setDraft(null);
-    setMessage('Đã lưu thỏa thuận vào kho dữ liệu mẫu. Khu vực tác giả hiện dùng tỷ lệ này.');
-  };
+    if (!valid) return
+    saveAgreement('user-author', value)
+    setDraft(null)
+    setMessage('Đã lưu thỏa thuận vào kho dữ liệu mẫu. Khu vực tác giả hiện dùng tỷ lệ này.')
+  }
   return (
     <AdminLayout>
       <div className="mx-auto max-w-3xl px-5 py-6">
@@ -129,9 +128,9 @@ export function AuthorAgreementPage() {
                       value={share}
                       aria-invalid={!valid}
                       aria-describedby={`${fieldId}-hint`}
-                      onChange={(event) => {
-                        setDraft(event.target.value);
-                        setMessage('');
+                      onChange={event => {
+                        setDraft(event.target.value)
+                        setMessage('')
                       }}
                       className="mt-2"
                     />
@@ -182,8 +181,8 @@ export function AuthorAgreementPage() {
                     <Button
                       variant="secondary"
                       onClick={() => {
-                        setDraft(null);
-                        setMessage('');
+                        setDraft(null)
+                        setMessage('')
                       }}
                     >
                       <RotateCcw size={16} />
@@ -201,7 +200,7 @@ export function AuthorAgreementPage() {
         )}
       </div>
     </AdminLayout>
-  );
+  )
 }
 
 /* Field geometry of the agreement form: two labelled 44px fields, split bar, hint line. */
@@ -210,7 +209,7 @@ function AgreementFormSkeleton() {
     <div>
       <span className="sr-only">Đang tải thỏa thuận doanh thu…</span>
       <div className="nh-grid-12 mt-5 grid gap-5 nh-sm-cols-2">
-        {['w-36', 'w-40'].map((width) => (
+        {['w-36', 'w-40'].map(width => (
           <div key={width}>
             <span className="flex h-[1.625rem] items-center">
               <Skeleton className={`h-3.5 ${width}`} />
@@ -230,5 +229,5 @@ function AgreementFormSkeleton() {
         <Skeleton className="h-3 w-80 max-w-full" />
       </span>
     </div>
-  );
+  )
 }

@@ -1,22 +1,22 @@
-import { useState } from 'react';
-import { Link } from 'react-router';
-import { ArrowRight, Bell, BellOff, Heart } from '../icons';
-import { Badge, ButtonLink, Card, IconButton, Skeleton } from '../ui';
-import { StoryCover } from '../story/StoryCover';
-import { useLocale } from '../../context/LocaleContext';
+import { useState } from 'react'
+import { Link } from 'react-router'
+import { ArrowRight, Bell, BellOff, Heart } from '../icons'
+import { Badge, ButtonLink, Card, IconButton, Skeleton } from '../ui'
+import { StoryCover } from '../story/StoryCover'
+import { useLocale } from '../../context/LocaleContext'
 
 const genreTones = {
   'Kỳ ảo': 'orange',
   'Lãng mạn': 'rose',
   'Khoa học viễn tưởng': 'purple',
   'Phiêu lưu': 'green',
-};
+}
 
 export function SavedStoryCard({ story }) {
-  const { t } = useLocale();
-  const [favorite, setFavorite] = useState(story.favorite);
-  const [alerts, setAlerts] = useState(story.alerts);
-  const href = `/stories/${story.id || 'demo'}`;
+  const { t } = useLocale()
+  const [favorite, setFavorite] = useState(story.favorite)
+  const [alerts, setAlerts] = useState(story.alerts)
+  const href = `/stories/${story.id || 'demo'}`
   return (
     <Card as="article" className="group flex gap-4 p-4">
       <Link to={href} tabIndex={-1} aria-hidden="true" className="shrink-0 self-start">
@@ -66,7 +66,7 @@ export function SavedStoryCard({ story }) {
         </div>
       </div>
     </Card>
-  );
+  )
 }
 
 /* SavedStoryCard frame: w-24 cover, title/author + heart, genre badge, update note, footer. */
@@ -98,5 +98,5 @@ export function SavedStoryCardSkeleton() {
         </div>
       </div>
     </Card>
-  );
+  )
 }

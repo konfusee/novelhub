@@ -1,7 +1,7 @@
-import { Eye, Star } from '../icons';
-import { Link } from 'react-router';
-import { StoryCover } from '../story/StoryCover';
-import { Skeleton } from '../ui';
+import { Eye, Star } from '../icons'
+import { Link } from 'react-router'
+import { StoryCover } from '../story/StoryCover'
+import { Skeleton } from '../ui'
 
 /* Same box model as StoryCard: 2:3 cover, title, author and stat rows. */
 export function StoryCardSkeleton() {
@@ -19,7 +19,7 @@ export function StoryCardSkeleton() {
         <Skeleton className="h-2.5 w-10" />
       </span>
     </div>
-  );
+  )
 }
 
 export function StoryCard({ story }) {
@@ -54,5 +54,5 @@ export function StoryCard({ story }) {
         </span>
       </div>
     </Link>
-  );
+  )
 }

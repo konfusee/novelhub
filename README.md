@@ -28,15 +28,19 @@ npm run dev:frontend                   # app on http://localhost:5173 (proxies /
 Check the API: `curl http://localhost:4000/api/ready` should return
 `{"status":"ready","database":"connected"}`.
 
+See [Login setup and integration](docs/login.md) for secure development-account
+creation, authentication endpoints, role handling, testing, and troubleshooting.
+
 ## Common commands
 
-| Command                                       | What it does                                                                                                                                                          |
-| --------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `npm test`                                    | Backend and frontend tests. Backend tests start a throwaway in-memory MongoDB replica set (first run downloads MongoDB ~80 MB); they never touch the shared database. |
-| `npm run lint`                                | ESLint for both workspaces                                                                                                                                            |
-| `npm run format` / `npm run format:check`     | Prettier                                                                                                                                                              |
-| `npm run build`                               | Production build of the frontend                                                                                                                                      |
-| `npm run db:sync-indexes --workspace backend` | Create collections and sync indexes on the database in `backend/.env`                                                                                                 |
+| Command                                           | What it does                                                                                                                                                          |
+| ------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `npm test`                                        | Backend and frontend tests. Backend tests start a throwaway in-memory MongoDB replica set (first run downloads MongoDB ~80 MB); they never touch the shared database. |
+| `npm run lint`                                    | ESLint for both workspaces                                                                                                                                            |
+| `npm run format` / `npm run format:check`         | Prettier                                                                                                                                                              |
+| `npm run build`                                   | Production build of the frontend                                                                                                                                      |
+| `npm run db:sync-indexes --workspace backend`     | Create collections and sync indexes on the database in `backend/.env`                                                                                                 |
+| `npm run db:seed-dev-account --workspace backend` | Idempotently create a local-development Reader account from environment variables                                                                                     |
 
 ## Conventions
 

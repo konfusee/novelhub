@@ -1,4 +1,4 @@
-import { useMemo, useRef, useState } from 'react';
+import { useMemo, useRef, useState } from 'react'
 import {
   AlertTriangle,
   BookOpen,
@@ -15,10 +15,10 @@ import {
   ShieldCheck,
   UserRoundCheck,
   X,
-} from '../../components/icons';
-import { ModeratorLayout } from '../../layouts';
-import { communityReports } from '../../data/mock/moderation';
-import { useMockResource } from '../../context/MockDataContext';
+} from '../../components/icons'
+import { ModeratorLayout } from '../../layouts'
+import { communityReports } from '../../data/mock/moderation'
+import { useMockResource } from '../../context/MockDataContext'
 import {
   Badge,
   Button,
@@ -30,35 +30,35 @@ import {
   Select,
   Skeleton,
   Tabs,
-} from '../../components/ui';
+} from '../../components/ui'
 
 const statusTabs = [
   { value: 'Open', label: 'Đang mở', count: 15 },
   { value: 'In Review', label: 'Đang xét duyệt', count: 8 },
   { value: 'Resolved', label: 'Đã giải quyết', count: 142 },
   { value: 'Escalated', label: 'Đã chuyển cấp', count: 3 },
-];
-const severityLabels = { High: 'Cao', Medium: 'Trung bình', Low: 'Thấp' };
-const severityTone = { High: 'red', Medium: 'orange', Low: 'neutral' };
+]
+const severityLabels = { High: 'Cao', Medium: 'Trung bình', Low: 'Thấp' }
+const severityTone = { High: 'red', Medium: 'orange', Low: 'neutral' }
 const severityTile = {
   High: 'bg-rose/14 text-rose-strong',
   Medium: 'bg-orange/16 text-orange-strong',
   Low: 'bg-ink/5 text-ink/75',
-};
+}
 const statusLabels = {
   Open: 'Đang mở',
   'In Review': 'Đang xét duyệt',
   Resolved: 'Đã giải quyết',
   Escalated: 'Đã chuyển cấp',
-};
-const statusTone = { Open: 'blue', 'In Review': 'orange', Resolved: 'green', Escalated: 'purple' };
+}
+const statusTone = { Open: 'blue', 'In Review': 'orange', Resolved: 'green', Escalated: 'purple' }
 const titleLabels = {
   'Copyright & Plagiarism Claim': 'Khiếu nại bản quyền và đạo văn',
   'Comment Harassment / Toxic Behavior': 'Bình luận quấy rối / hành vi độc hại',
   'Unrated Mature Content (Missing 18+ Gate)':
     'Nội dung trưởng thành chưa phân loại (thiếu cổng 18+)',
   'Misleading Story Metadata': 'Thông tin truyện gây hiểu nhầm',
-};
+}
 const resolutions = {
   dismiss: {
     label: 'Bác bỏ do không có căn cứ',
@@ -78,13 +78,13 @@ const resolutions = {
     confirm: 'Xác nhận chuyển cấp',
     status: 'Escalated',
   },
-};
+}
 const fieldClass =
-  'w-full rounded-2xl border border-line bg-surface p-3 text-base leading-6 text-ink outline-none transition-colors placeholder:text-muted focus:border-brand sm:text-sm';
-const formatAge = (value) => value.replace('m ago', ' phút trước').replace('h ago', ' giờ trước');
-const formatTarget = (value) =>
-  value.replace('Reader comment on ', 'Bình luận độc giả về ').replace('(Ch. ', '(Chương ');
-const formatReportMeta = (value) =>
+  'w-full rounded-2xl border border-line bg-surface p-3 text-base leading-6 text-ink outline-none transition-colors placeholder:text-muted focus:border-brand sm:text-sm'
+const formatAge = value => value.replace('m ago', ' phút trước').replace('h ago', ' giờ trước')
+const formatTarget = value =>
+  value.replace('Reader comment on ', 'Bình luận độc giả về ').replace('(Ch. ', '(Chương ')
+const formatReportMeta = value =>
   value
     .replace('Similarity Index', 'chỉ số tương đồng')
     .replace('Trust & Safety review', 'Xét duyệt Tin cậy và An toàn')
@@ -92,33 +92,33 @@ const formatReportMeta = (value) =>
     .replace('Metadata check', 'Kiểm tra thông tin')
     .replace(' readers flagged', ' độc giả báo cáo')
     .replace(' users flagged', ' người dùng báo cáo')
-    .replace(' reader flagged', ' độc giả báo cáo');
-const assignedLabel = (value) => (value === 'Unassigned' ? 'Chưa phân công' : value);
+    .replace(' reader flagged', ' độc giả báo cáo')
+const assignedLabel = value => (value === 'Unassigned' ? 'Chưa phân công' : value)
 
 export function ReportsQueuePage() {
-  const inspectorRef = useRef(null);
-  const [status, setStatus] = useState('Open');
-  const [severity, setSeverity] = useState('All');
-  const [reason, setReason] = useState('All Infraction Types');
-  const [query, setQuery] = useState('');
+  const inspectorRef = useRef(null)
+  const [status, setStatus] = useState('Open')
+  const [severity, setSeverity] = useState('All')
+  const [reason, setReason] = useState('All Infraction Types')
+  const [query, setQuery] = useState('')
   /* undefined = nothing chosen yet (inspect the first report); null = explicitly cleared. */
-  const [selectedId, setSelectedId] = useState(undefined);
-  const [resolution, setResolution] = useState(null);
-  const [note, setNote] = useState('');
-  const [dismissed, setDismissed] = useState([]);
-  const [statusOverrides, setStatusOverrides] = useState({});
-  const queue = useMockResource('moderator:reports', communityReports);
+  const [selectedId, setSelectedId] = useState(undefined)
+  const [resolution, setResolution] = useState(null)
+  const [note, setNote] = useState('')
+  const [dismissed, setDismissed] = useState([])
+  const [statusOverrides, setStatusOverrides] = useState({})
+  const queue = useMockResource('moderator:reports', communityReports)
   const reports = useMemo(
     () =>
       queue.data
-        .filter((report) => !dismissed.includes(report.id))
-        .map((report) => ({ ...report, status: statusOverrides[report.id] ?? report.status })),
+        .filter(report => !dismissed.includes(report.id))
+        .map(report => ({ ...report, status: statusOverrides[report.id] ?? report.status })),
     [queue.data, dismissed, statusOverrides],
-  );
+  )
   const rows = useMemo(
     () =>
       reports.filter(
-        (report) =>
+        report =>
           (status === 'Open'
             ? ['Open', 'In Review'].includes(report.status)
             : report.status === status) &&
@@ -129,41 +129,41 @@ export function ReportsQueuePage() {
             .includes(query.toLowerCase()),
       ),
     [reports, status, severity, reason, query],
-  );
+  )
   const selected =
     selectedId === undefined
       ? (reports[0] ?? null)
-      : (reports.find((report) => report.id === selectedId) ?? null);
-  const pending = resolution ? resolutions[resolution] : null;
-  const select = (id) => {
-    setSelectedId(id);
+      : (reports.find(report => report.id === selectedId) ?? null)
+  const pending = resolution ? resolutions[resolution] : null
+  const select = id => {
+    setSelectedId(id)
     if (window.matchMedia('(max-width: 1279px)').matches) {
-      const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+      const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches
       inspectorRef.current?.scrollIntoView({
         behavior: reduce ? 'auto' : 'smooth',
         block: 'start',
-      });
+      })
     }
-  };
-  const openResolution = (key) => {
-    setNote('');
-    setResolution(key);
-  };
+  }
+  const openResolution = key => {
+    setNote('')
+    setResolution(key)
+  }
   const confirm = () => {
     if (resolution === 'dismiss') {
-      setDismissed((current) => [...current, selected.id]);
-      setSelectedId(rows.find((report) => report.id !== selected.id)?.id ?? null);
+      setDismissed(current => [...current, selected.id])
+      setSelectedId(rows.find(report => report.id !== selected.id)?.id ?? null)
     } else {
-      setStatusOverrides((current) => ({ ...current, [selected.id]: pending.status }));
+      setStatusOverrides(current => ({ ...current, [selected.id]: pending.status }))
     }
-    setResolution(null);
-  };
+    setResolution(null)
+  }
   const resetFilters = () => {
-    setStatus('Open');
-    setSeverity('All');
-    setReason('All Infraction Types');
-    setQuery('');
-  };
+    setStatus('Open')
+    setSeverity('All')
+    setReason('All Infraction Types')
+    setQuery('')
+  }
   return (
     <ModeratorLayout>
       <div className="page-moderator py-6">
@@ -191,7 +191,7 @@ export function ReportsQueuePage() {
                 singleRow
                 value={status}
                 onChange={setStatus}
-                items={statusTabs.map((item) => ({
+                items={statusTabs.map(item => ({
                   value: item.value,
                   label: (
                     <>
@@ -207,7 +207,7 @@ export function ReportsQueuePage() {
               type="search"
               enterKeyHint="search"
               value={query}
-              onChange={(event) => setQuery(event.target.value)}
+              onChange={event => setQuery(event.target.value)}
               placeholder="Tìm mã báo cáo, người dùng..."
               aria-label="Tìm mã báo cáo, người dùng, đoạn trích"
               className="w-full xl:ml-auto xl:w-72"
@@ -220,7 +220,7 @@ export function ReportsQueuePage() {
             <Select
               id="report-severity"
               value={severity}
-              onChange={(event) => setSeverity(event.target.value)}
+              onChange={event => setSeverity(event.target.value)}
             >
               <option value="All">Tất cả mức độ</option>
               <option value="High">Cao</option>
@@ -233,7 +233,7 @@ export function ReportsQueuePage() {
             <Select
               id="report-reason"
               value={reason}
-              onChange={(event) => setReason(event.target.value)}
+              onChange={event => setReason(event.target.value)}
             >
               <option value="All Infraction Types">Tất cả loại vi phạm</option>
               <option value="Copyright / Plagiarism">Bản quyền / Đạo văn</option>
@@ -301,7 +301,7 @@ export function ReportsQueuePage() {
                 </ul>
               ) : rows.length ? (
                 <ul className="nh-fade-enter space-y-3">
-                  {rows.map((report) => (
+                  {rows.map(report => (
                     <ReportCard
                       key={report.id}
                       report={report}
@@ -368,7 +368,7 @@ export function ReportsQueuePage() {
               <textarea
                 id="report-resolution"
                 value={note}
-                onChange={(event) => setNote(event.target.value)}
+                onChange={event => setNote(event.target.value)}
                 className={`${fieldClass} mt-2 min-h-24`}
                 placeholder="Lý do giải quyết..."
               />
@@ -389,11 +389,11 @@ export function ReportsQueuePage() {
         </Modal>
       </div>
     </ModeratorLayout>
-  );
+  )
 }
 
 function ReportCard({ report, active, onSelect }) {
-  const Icon = report.title.includes('Harassment') ? MessageSquareWarning : FileWarning;
+  const Icon = report.title.includes('Harassment') ? MessageSquareWarning : FileWarning
   return (
     <li>
       <article
@@ -450,7 +450,7 @@ function ReportCard({ report, active, onSelect }) {
         </div>
       </article>
     </li>
-  );
+  )
 }
 
 function IncidentInspector({ report, onResolution }) {
@@ -463,7 +463,7 @@ function IncidentInspector({ report, onResolution }) {
           description="Chọn một báo cáo để kiểm tra."
         />
       </Card>
-    );
+    )
   return (
     <aside aria-label="Kiểm tra sự cố" className="nh-fade-enter">
       <Card className="p-5">
@@ -572,7 +572,7 @@ function IncidentInspector({ report, onResolution }) {
         </div>
       </Card>
     </aside>
-  );
+  )
 }
 
 /* Mirrors ReportCard: 48px tile, badge row, title, target line, quoted excerpt and meta footer. */
@@ -607,7 +607,7 @@ function ReportCardSkeleton() {
         </div>
       </div>
     </li>
-  );
+  )
 }
 
 /* Mirrors the incident inspector card: same header, boxes, two-column stats and action stack. */
@@ -661,7 +661,7 @@ function InspectorSkeleton() {
         </span>
       </div>
       <div className="mt-4 grid gap-3 sm:grid-cols-2">
-        {[0, 1].map((item) => (
+        {[0, 1].map(item => (
           <div key={item} className="rounded-2xl border border-hairline bg-elevated p-4">
             <span className="flex h-8 flex-col justify-center gap-2">
               <Skeleton className="h-2.5 w-full" />
@@ -687,5 +687,5 @@ function InspectorSkeleton() {
         </div>
       </div>
     </Card>
-  );
+  )
 }

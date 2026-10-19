@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useMemo, useState } from 'react'
 import {
   AlertTriangle,
   Bell,
@@ -11,8 +11,8 @@ import {
   Trash2,
   UserRound,
   WalletCards,
-} from '../../components/icons';
-import { ReaderLayout } from '../../layouts';
+} from '../../components/icons'
+import { ReaderLayout } from '../../layouts'
 import {
   Badge,
   Button,
@@ -22,9 +22,9 @@ import {
   IconButton,
   Skeleton,
   Tabs,
-} from '../../components/ui';
-import { useMockResource } from '../../context/MockDataContext';
-import { notifications as initialNotifications } from '../../data/mock/notifications';
+} from '../../components/ui'
+import { useMockResource } from '../../context/MockDataContext'
+import { notifications as initialNotifications } from '../../data/mock/notifications'
 
 const filters = [
   ['all', 'Tất cả', Bell],
@@ -32,24 +32,24 @@ const filters = [
   ['author', 'Tác giả', UserRound],
   ['comment', 'Bình luận & phản hồi', MessageCircle],
   ['system', 'Hệ thống & xu', WalletCards],
-];
+]
 
 const typeStyles = {
   story: { tone: 'green', tile: 'bg-brand/12 text-brand-strong', icon: BookOpen },
   author: { tone: 'purple', tile: 'bg-purple/12 text-purple-strong', icon: UserRound },
   comment: { tone: 'green', tile: 'bg-brand/12 text-brand-strong', icon: MessageCircle },
   system: { tone: 'orange', tile: 'bg-orange/16 text-orange-strong', icon: WalletCards },
-};
+}
 
 /* Destination of each notification's primary action (derived from the mock entry). */
-const actionTarget = (item) => {
-  if (item.type === 'system') return '/reader/wallet';
-  if (item.type === 'author') return '/stories/silent-forest';
-  if (item.type === 'comment') return '/read/silent-forest/chapter-14';
+const actionTarget = item => {
+  if (item.type === 'system') return '/reader/wallet'
+  if (item.type === 'author') return '/stories/silent-forest'
+  if (item.type === 'comment') return '/read/silent-forest/chapter-14'
   return /âm thanh/i.test(item.label)
     ? '/listen/whispers-of-you/chapter-7'
-    : '/read/silent-forest/chapter-15';
-};
+    : '/read/silent-forest/chapter-15'
+}
 
 /* Notification card frame: icon tile, badge row, title, body, action footer (wraps on phones). */
 function NotificationSkeleton() {
@@ -84,42 +84,42 @@ function NotificationSkeleton() {
         </div>
       </div>
     </Card>
-  );
+  )
 }
 
 export function NotificationsPage() {
-  const feed = useMockResource('reader:notifications', initialNotifications);
-  const loading = feed.status === 'loading';
-  const [local, setLocal] = useState(null);
+  const feed = useMockResource('reader:notifications', initialNotifications)
+  const loading = feed.status === 'loading'
+  const [local, setLocal] = useState(null)
   const items = useMemo(
     () => (feed.status === 'ready' ? (local ?? feed.data) : []),
     [feed.status, feed.data, local],
-  );
-  const setItems = (change) => setLocal((current) => change(current ?? feed.data));
-  const [filter, setFilter] = useState('all');
-  const [settings, setSettings] = useState(false);
-  const [removed, setRemoved] = useState(null);
-  const [olderChecked, setOlderChecked] = useState(false);
+  )
+  const setItems = change => setLocal(current => change(current ?? feed.data))
+  const [filter, setFilter] = useState('all')
+  const [settings, setSettings] = useState(false)
+  const [removed, setRemoved] = useState(null)
+  const [olderChecked, setOlderChecked] = useState(false)
   const shown = useMemo(
-    () => (filter === 'all' ? items : items.filter((item) => item.type === filter)),
+    () => (filter === 'all' ? items : items.filter(item => item.type === filter)),
     [filter, items],
-  );
-  const unreadCount = items.filter((i) => i.unread).length;
-  const markAll = () => setItems((current) => current.map((item) => ({ ...item, unread: false })));
+  )
+  const unreadCount = items.filter(i => i.unread).length
+  const markAll = () => setItems(current => current.map(item => ({ ...item, unread: false })))
   const setRead = (id, unread) =>
-    setItems((current) => current.map((item) => (item.id === id ? { ...item, unread } : item)));
-  const remove = (item) => {
-    setRemoved({ item, index: items.indexOf(item) });
-    setItems((current) => current.filter((entry) => entry.id !== item.id));
-  };
+    setItems(current => current.map(item => (item.id === id ? { ...item, unread } : item)))
+  const remove = item => {
+    setRemoved({ item, index: items.indexOf(item) })
+    setItems(current => current.filter(entry => entry.id !== item.id))
+  }
   const undoRemove = () => {
-    setItems((current) => {
-      const next = [...current];
-      next.splice(Math.min(removed.index, next.length), 0, removed.item);
-      return next;
-    });
-    setRemoved(null);
-  };
+    setItems(current => {
+      const next = [...current]
+      next.splice(Math.min(removed.index, next.length), 0, removed.item)
+      return next
+    })
+    setRemoved(null)
+  }
   return (
     <ReaderLayout>
       <div className="page-reader py-7">
@@ -175,7 +175,7 @@ export function NotificationsPage() {
               icon: Icon,
               label:
                 feed.status === 'ready'
-                  ? `${label} (${value === 'all' ? items.length : items.filter((i) => i.type === value).length})`
+                  ? `${label} (${value === 'all' ? items.length : items.filter(i => i.type === value).length})`
                   : label,
             }))}
           />
@@ -227,7 +227,7 @@ export function NotificationsPage() {
         )}
         {loading ? (
           <section aria-busy="true" aria-label="Đang tải thông báo" className="mt-5 space-y-3">
-            {initialNotifications.map((item) => (
+            {initialNotifications.map(item => (
               <NotificationSkeleton key={item.id} />
             ))}
           </section>
@@ -248,9 +248,9 @@ export function NotificationsPage() {
           </Card>
         ) : (
           <section aria-label="Danh sách thông báo" className="nh-fade-enter mt-5 space-y-3">
-            {shown.map((item) => {
-              const style = typeStyles[item.type] || typeStyles.story;
-              const Icon = /âm thanh/i.test(item.label) ? Headphones : style.icon;
+            {shown.map(item => {
+              const style = typeStyles[item.type] || typeStyles.story
+              const Icon = /âm thanh/i.test(item.label) ? Headphones : style.icon
               return (
                 <Card
                   as="article"
@@ -308,7 +308,7 @@ export function NotificationsPage() {
                     </div>
                   </div>
                 </Card>
-              );
+              )
             })}
             {shown.length === 0 && (
               <Card className="p-0">
@@ -356,5 +356,5 @@ export function NotificationsPage() {
         </div>
       </div>
     </ReaderLayout>
-  );
+  )
 }
