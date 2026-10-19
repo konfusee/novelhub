@@ -1,9 +1,9 @@
 export const authorStats = [
-  ['Total Story Reads', '1.2M', '↑ 14%'],
-  ['Audiobook Listens', '340K', '↑ 8.2%'],
-  ['Active Followers', '15.2K', '↑ 420'],
-  ['Royalties & Coins', '48,250', '≈ $477 USD'],
-]
+  ['Tổng lượt đọc truyện', '1.2M', '↑ 14%'],
+  ['Lượt nghe sách nói', '340K', '↑ 8.2%'],
+  ['Người theo dõi đang hoạt động', '15.2K', '↑ 420'],
+  ['Nhuận bút và xu', '48,250', '≈ 477 USD'],
+];
 export const authorStories = [
   {
     title: 'The Silent Forest',
@@ -29,7 +29,7 @@ export const authorStories = [
     reads: '18.2K words',
     color: '#70485f',
   },
-]
+];
 
 export const managedChapters = [
   {
@@ -95,7 +95,7 @@ export const managedChapters = [
     reads: '142.8K reads',
     price: 'Free',
   },
-]
+];
 
 export const authorDrafts = [
   {
@@ -150,7 +150,7 @@ export const authorDrafts = [
     edited: 'Oct 18',
     progress: 100,
   },
-]
+];
 
 export const mediaAssets = [
   {
@@ -225,4 +225,4 @@ export const mediaAssets = [
     status: 'Draft',
     icon: 'NH',
   },
-]
+];

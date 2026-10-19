@@ -1,332 +1,631 @@
-import { useState } from 'react'
+import { useRef, useState } from 'react'
+import { useParams } from 'react-router'
 import {
   AlertTriangle,
-  Check,
+  ArrowRight,
   ClipboardCheck,
   Download,
   FileSearch,
   Gavel,
   Link2,
+  RotateCcw,
   Scale,
   Search,
   ShieldCheck,
   Sparkles,
   X,
-} from 'lucide-react'
+} from '../../components/icons'
 import { ModeratorLayout } from '../../layouts'
-import { Badge, Button, Card, Input, Modal } from '../../components/ui'
+import { useMockResource } from '../../context/MockDataContext'
+import {
+  Badge,
+  Button,
+  ButtonLink,
+  Card,
+  EmptyState,
+  Input,
+  Modal,
+  ProgressBar,
+  Skeleton,
+  Tabs,
+} from '../../components/ui'
 
+const FLAG_ID = 'SIM-3012'
+const SUBMISSION_ID = 'MS-88402'
 const metrics = [
-  ['Semantic Overlap', '68.4%', 'Vector Cosine', 'Moderate Risk', 'orange'],
-  ['Verbatim Prose Match', '14.2%', 'Exact phrase sequence', 'Threshold Exceeded', 'red'],
-  ['Structural Chapter Rhythm', '78.0%', 'Scene beats rhythm', 'High Archetype', 'purple'],
-  ['Model Confidence', 'High', '1.4M indexed titles', 'Verified Index', 'green'],
+  ['Trùng lặp ngữ nghĩa', '68,4%', 68.4, 'Cosine vector', 'Rủi ro trung bình', 'orange'],
+  ['Trùng văn bản nguyên câu', '14,2%', 14.2, 'Chuỗi cụm từ chính xác', 'Vượt ngưỡng', 'red'],
+  ['Nhịp cấu trúc chương', '78,0%', 78, 'Nhịp điểm cảnh', 'Mô-típ cao', 'purple'],
+  ['Độ tin cậy mô hình', 'Cao', 91, '1,4M tiêu đề đã lập chỉ mục', 'Chỉ mục đã xác minh', 'green'],
 ]
+const metricText = {
+  orange: 'text-orange-strong',
+  red: 'text-rose-strong',
+  purple: 'text-purple-strong',
+  green: 'text-brand-strong',
+}
+const metricBar = { orange: 'orange', red: 'rose', purple: 'purple', green: 'brand' }
 const passages = [
   {
-    match: '92% match · 64 words',
+    match: '92% trùng · 64 từ',
     target:
       'The wardens of elder days do not slumber lightly, wanderer. They wait within the grain of ancient saplings where no sunlight penetrates, listening with hollow ears to the trespass of mortals who carry blood on their hands. If you draw their breath into your lungs, memory turns to ash before twilight falls upon the ridge.',
     reference:
       'The wardens of elder days do not slumber lightly, wanderer. They sleep within the heartwood of ancient saplings where sun never shines, listening with hollow ears to the feet of travelers who bear unresolved slaughter upon their hands. If you draw their breath into your lungs, memory turns to ash before twilight falls upon the valley.',
   },
   {
-    match: '74% match · 48 words',
+    match: '74% trùng · 48 từ',
     target:
       'The iron bell spoke once beneath the drowned sanctuary, and every lantern along the northern causeway answered with a blue flame.',
     reference:
       'The bronze bell sounded beneath the flooded sanctuary, while lanterns on the northern road answered in pale blue fire.',
   },
   {
-    match: '61% match · 35 words',
+    match: '61% trùng · 35 từ',
     target:
       'No crown forged by mortal hands could command the root-bound king, whose oath belonged only to winter and stone.',
     reference:
       'No human crown could command the forest king; his covenant was sworn to winter, root and stone.',
   },
 ]
+const actions = {
+  dismiss: { label: 'Bác bỏ cảnh báo', icon: X, variant: 'secondary' },
+  attach: { label: `Đính kèm vào bản xét duyệt #${SUBMISSION_ID}`, icon: Link2, variant: 'ghost' },
+  escalate: {
+    label: 'Chuyển Bộ phận Pháp lý Bản quyền',
+    icon: Scale,
+    variant: 'danger',
+    destructive: true,
+  },
+  clarify: {
+    label: 'Yêu cầu tác giả giải trình và cung cấp bằng chứng',
+    icon: ClipboardCheck,
+    variant: 'primary',
+  },
+}
+const fieldClass =
+  'w-full rounded-2xl border border-line p-3 text-base leading-6 text-ink outline-none transition-colors placeholder:text-muted focus:border-brand sm:text-sm'
+
+const highlight = (text, query) => {
+  const needle = query.trim()
+  if (!needle) return text
+  const parts = text.split(new RegExp(`(${needle.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})`, 'gi'))
+  return parts.map((part, index) =>
+    index % 2 ? (
+      <span key={index} className="rounded-sm bg-purple/25 px-0.5 font-semibold">
+        {part}
+      </span>
+    ) : (
+      part
+    ),
+  )
+}
 
 export function SimilarityRiskReviewPage() {
+  const { reviewId = FLAG_ID } = useParams()
+  const evidence = useMockResource(
+    `similarity:${reviewId}`,
+    { metrics, passages },
+    {
+      isEmpty: value => !value.passages.length,
+    },
+  )
+  const ready = evidence.status === 'ready'
+  const loading = evidence.status === 'loading'
   const [passage, setPassage] = useState(0)
+  const [query, setQuery] = useState('')
   const [sync, setSync] = useState(true)
   const [findings, setFindings] = useState(
-    'Common fantasy folklore tropes present, but Chapter 2 opening sentence exhibits direct structural derivation. Requesting clarification.',
+    'Có các mô-típ dân gian kỳ ảo phổ biến, nhưng câu mở đầu Chương 2 cho thấy sự phái sinh cấu trúc trực tiếp. Cần yêu cầu làm rõ.',
   )
   const [softHold, setSoftHold] = useState(true)
   const [notify, setNotify] = useState(true)
   const [action, setAction] = useState(null)
-  const [recorded, setRecorded] = useState('')
-  const selected = passages[passage]
+  const [actionNote, setActionNote] = useState('')
+  const [recorded, setRecorded] = useState(null)
+  const submittedPanelRef = useRef(null)
+  const referencePanelRef = useRef(null)
+  const syncing = useRef(false)
+  const selected = evidence.data.passages[passage] ?? evidence.data.passages[0]
+  const needle = query.trim().toLowerCase()
+  const matches =
+    ready && needle
+      ? evidence.data.passages.filter(item =>
+          `${item.target} ${item.reference}`.toLowerCase().includes(needle),
+        ).length
+      : null
+  const pending = action ? actions[action] : null
+
+  const onPanelScroll = index => {
+    if (!sync || syncing.current) {
+      syncing.current = false
+      return
+    }
+    const panels = [submittedPanelRef.current, referencePanelRef.current]
+    const source = panels[index]
+    const target = panels[1 - index]
+    if (!source || !target) return
+    const range = source.scrollHeight - source.clientHeight
+    const next =
+      range > 0 ? (source.scrollTop / range) * (target.scrollHeight - target.clientHeight) : 0
+    if (Math.abs(target.scrollTop - next) < 1) return
+    syncing.current = true
+    target.scrollTop = next
+  }
+  const exportReport = () => {
+    const blob = new Blob(
+      [
+        JSON.stringify(
+          {
+            flag: FLAG_ID,
+            submission: SUBMISSION_ID,
+            metrics: evidence.data.metrics.map(([label, value, , note, status]) => ({
+              label,
+              value,
+              note,
+              status,
+            })),
+            passages: evidence.data.passages,
+            findings,
+            softHold,
+            requestClarification: notify,
+          },
+          null,
+          2,
+        ),
+      ],
+      { type: 'application/json' },
+    )
+    const url = URL.createObjectURL(blob)
+    const link = document.createElement('a')
+    link.href = url
+    link.download = `${FLAG_ID.toLowerCase()}-kiem-tra.json`
+    link.click()
+    URL.revokeObjectURL(url)
+  }
+  const openAction = key => {
+    setActionNote(findings)
+    setAction(key)
+  }
+
   return (
     <ModeratorLayout>
-      <main className="page-moderator py-5">
-        <div className="flex flex-col justify-between gap-3 border-b border-line pb-4 lg:flex-row lg:items-center">
-          <div>
-            <p className="text-xs text-muted">
-              Moderator Console / Similarity Flags &amp; IP Risk Inspection
+      <div className="page-moderator py-6">
+        <div className="flex flex-col justify-between gap-4 border-b border-hairline pb-5 xl:flex-row xl:items-end">
+          <div className="min-w-0">
+            <p className="text-caption text-muted">
+              Bảng điều khiển kiểm duyệt / Cảnh báo tương đồng và kiểm tra rủi ro SHTT
             </p>
-            <h1 className="mt-1 text-xl font-bold">
-              Flag #SIM-3012: Chronicles of Eldor vs Registered Work
+            <h1 className="mt-1 text-h2 lg:text-h1">
+              Cảnh báo #{FLAG_ID}: Chronicles of Eldor so với tác phẩm đã đăng ký
             </h1>
           </div>
-          <div className="flex flex-wrap gap-2">
-            <Badge tone="orange">Requires Inspection</Badge>
-            <Input icon={Search} placeholder="Search flagged text..." className="w-full sm:w-56" />
-            <Button onClick={() => window.alert('Similarity report exported (mock).')} variant="secondary">
-              <Download size={14} />
-              Export Audit JSON
+          <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center">
+            <Badge tone="orange" className="self-start sm:self-auto">
+              Cần kiểm tra
+            </Badge>
+            <Input
+              icon={Search}
+              type="search"
+              enterKeyHint="search"
+              value={query}
+              onChange={event => setQuery(event.target.value)}
+              placeholder="Tìm trong văn bản bị cảnh báo..."
+              aria-label="Tìm trong văn bản bị cảnh báo"
+              className="w-full sm:w-64"
+            />
+            <Button onClick={exportReport} variant="secondary" disabled={!ready}>
+              <Download size={15} />
+              Xuất JSON kiểm tra
             </Button>
           </div>
         </div>
-        <div className="mt-4 flex gap-3 rounded-2xl bg-orange/10 p-4 text-xs leading-5">
-          <AlertTriangle size={18} className="shrink-0 text-orange" />
+
+        <div
+          role="note"
+          className="mt-5 flex gap-3 rounded-2xl border border-orange/40 bg-orange/10 p-4 text-sm leading-6"
+        >
+          <AlertTriangle size={18} className="mt-0.5 shrink-0 text-orange-strong" />
           <p>
-            <strong>Notice: AI and Vector Similarity metrics are supporting evidence</strong>, not
-            conclusive proof of copyright infringement. Evaluate contextual parody, canonized
-            folklore archetypes, and stylistic intentionality.
+            <strong className="font-semibold">
+              Lưu ý: Chỉ số tương đồng AI và vector chỉ là bằng chứng hỗ trợ
+            </strong>
+            , không phải kết luận vi phạm bản quyền. Cần đánh giá ngữ cảnh châm biếm, mô-típ dân
+            gian phổ biến và chủ ý phong cách.
           </p>
         </div>
-        <Card className="mt-6">
-          <div className="flex justify-between">
-            <h2 className="flex items-center gap-2 font-semibold">
-              <FileSearch size={16} className="text-brand" />
-              Automated Vector Analysis &amp; Plagiarism Heuristics
-            </h2>
-            <p className="text-[9px] text-muted">
-              Algorithm: Sentence-BERT Multilingual v3.2 · Cosine 0.316
-            </p>
-          </div>
-          <div className="mt-5 grid grid-cols-2 gap-3 xl:grid-cols-4">
-            {metrics.map(([label, value, note, status, tone]) => (
-              <div key={label} className="rounded-3xl border border-line bg-elevated p-4">
-                <div className="flex flex-wrap justify-between gap-2">
-                  <span className="text-[10px] text-muted">{label}</span>
-                  <Badge tone={tone}>{status}</Badge>
-                </div>
-                <strong
-                  className={`mt-5 block text-3xl ${tone === 'orange' ? 'text-orange' : tone === 'red' ? 'text-rose' : tone === 'purple' ? 'text-purple' : 'text-brand'}`}
-                >
-                  {value}
-                </strong>
-                <p className="mt-2 text-[9px] text-muted">{note}</p>
-                <div className="mt-4 h-1.5 rounded-full bg-surface">
-                  <div
-                    className={`h-full rounded-full ${tone === 'orange' ? 'bg-orange' : tone === 'red' ? 'bg-rose' : tone === 'purple' ? 'bg-purple' : 'bg-brand'}`}
-                    style={{ width: value === 'High' ? '91%' : value }}
-                  />
-                </div>
-              </div>
-            ))}
-          </div>
-        </Card>
-        <div className="mt-5 flex flex-col gap-3 rounded-3xl border border-line bg-surface p-4 lg:flex-row lg:items-center">
-          <strong className="text-xs">Matched Passages:</strong>
-          <div className="flex gap-2 overflow-x-auto">
-            {passages.map((item, index) => (
-              <button
-                key={item.match}
-                onClick={() => setPassage(index)}
-                className={`shrink-0 rounded-full border px-4 py-2 text-[10px] ${passage === index ? 'border-brand bg-brand text-white' : 'border-line'}`}
-              >
-                Passage {index + 1} of 3 · {item.match}
-              </button>
-            ))}
-          </div>
-          <button
-            onClick={() => setSync(value => !value)}
-            className="ml-auto flex shrink-0 items-center gap-2 text-[10px] text-brand"
-          >
-            <span
-              className={`grid size-5 place-items-center rounded-full border ${sync ? 'border-brand bg-brand text-white' : 'border-line'}`}
-            >
-              {sync && <Check size={11} />}
-            </span>
-            Synchronize dual scroll
-          </button>
-        </div>
-        <section className="mt-5 grid gap-5 lg:grid-cols-2">
-          <ComparisonPanel
-            label="Submitted Manuscript"
-            title="Target Manuscript: Chronicles of Eldor (Ch. 2)"
-            meta="Author: Dorian Reed · Submitted Oct 2026 · 4,120 words"
-            tone="orange"
-            text={selected.target}
-          />
-          <ComparisonPanel
-            label="Published Canonical"
-            title="Reference Prior Work: Ancient Echoes of Eldoria (Ch. 5)"
-            meta="Author: Elena J. Park · Published Mar 2024 · 145,000 reads"
-            tone="green"
-            text={selected.reference}
-          />
-        </section>
-        <Card className="mt-5">
-          <h2 className="flex items-center gap-2 font-semibold">
-            <Sparkles size={16} className="text-purple" />
-            Synthesized Linguistic Diff &amp; Morphological Breakdown
-          </h2>
-          <div className="mt-4 grid gap-3 md:grid-cols-3">
-            <Diagnostic title="Direct Lexical Substitution">
-              “sleep within heartwood” → “wait within the grain” preserves rhythmic cadence and
-              dependent clause structure.
-            </Diagnostic>
-            <Diagnostic title="Identical Dependent Clauses">
-              “where no sunlight penetrates” and “memory turns to ash before twilight falls” are
-              highly aligned.
-            </Diagnostic>
-            <Diagnostic title="Folklore Worldbuilding Lexicon">
-              Realm and entity names vary, while wardens, ancient days and ash are exact or
-              near-exact.
-            </Diagnostic>
-          </div>
-        </Card>
-        <Card className="mt-5">
-          <div className="flex flex-col justify-between gap-3 border-b border-line pb-4 sm:flex-row sm:items-center">
-            <div>
-              <h2 className="flex items-center gap-2 text-lg font-semibold">
-                <Gavel className="text-brand" />
-                Moderator Evaluation &amp; Final Disposition
-              </h2>
-              <p className="text-[10px] text-muted">
-                Actions append to the immutable moderation ledger and notify creator relations in
-                this UI mock.
-              </p>
-            </div>
-            <Badge tone="green">Reviewer Assigned: M. Rayne</Badge>
-          </div>
-          <div className="mt-5 grid gap-5 lg:grid-cols-[270px_minmax(0,1fr)]">
-            <div className="rounded-3xl bg-elevated p-5">
-              <strong className="text-xs text-orange">
-                Policy Standard #IP-04: Homage vs Infringement
-              </strong>
-              <p className="mt-3 text-[10px] leading-5 text-muted">
-                Fair use and homage allow thematic tropes; verbatim phrase sequences exceeding 50
-                words require author clarification.
-              </p>
-              <div className="mt-4 border-t border-line pt-4 text-[10px] leading-5">
-                <p>
-                  • <strong>Dismiss:</strong> standard canon or genre convention.
-                </p>
-                <p>
-                  • <strong>Clarify:</strong> phrasing derivative but author may hold co-authorship.
-                </p>
-                <p>
-                  • <strong>Escalate:</strong> verified monetization without license.
-                </p>
-              </div>
-            </div>
-            <div>
-              <label className="text-xs font-semibold">
-                Moderator Internal Findings &amp; Author Notice Draft
-              </label>
-              <textarea
-                value={findings}
-                onChange={event => setFindings(event.target.value)}
-                className="mt-2 min-h-36 w-full rounded-3xl border border-line bg-elevated p-4 text-sm leading-6 outline-none focus:border-brand"
+
+        {evidence.status === 'error' || evidence.status === 'empty' ? (
+          <Card className="mt-6 p-0">
+            {evidence.status === 'error' ? (
+              <EmptyState
+                tone="rose"
+                icon={AlertTriangle}
+                title="Không tải được bằng chứng tương đồng"
+                description="Dịch vụ phân tích vector chưa phản hồi. Cảnh báo vẫn được giữ trong hàng đợi."
+                action={
+                  <Button variant="secondary" size="sm" onClick={evidence.retry}>
+                    <RotateCcw size={14} />
+                    Thử lại
+                  </Button>
+                }
               />
-              <div className="mt-4 flex flex-col gap-3 sm:flex-row">
-                <Toggle
-                  checked={softHold}
-                  onChange={setSoftHold}
-                  label="Place chapter in temporary soft-hold"
-                />
-                <Toggle
-                  checked={notify}
-                  onChange={setNotify}
-                  label="Send pre-templated lore clarification request"
-                />
+            ) : (
+              <EmptyState
+                icon={ShieldCheck}
+                title="Chưa có đoạn trùng khớp để so sánh"
+                description="Bộ máy tương đồng chưa ghi nhận đoạn nào vượt ngưỡng cho cảnh báo này."
+                action={
+                  <ButtonLink to="/moderator/reports" variant="secondary" size="sm">
+                    Quay lại hàng đợi báo cáo
+                  </ButtonLink>
+                }
+              />
+            )}
+          </Card>
+        ) : (
+          <>
+            <Card className="mt-6" aria-busy={loading}>
+              <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
+                <h2 className="flex items-center gap-2 text-h3">
+                  <FileSearch size={20} className="shrink-0 text-brand" />
+                  Phân tích vector tự động và suy đoán đạo văn
+                </h2>
+                <p className="text-xs text-muted">
+                  Thuật toán: Sentence-BERT Đa ngôn ngữ v3.2 · Cosine 0,316
+                </p>
               </div>
+              {loading ? (
+                <div aria-hidden="true" className="mt-5 grid grid-cols-2 gap-3 xl:grid-cols-4">
+                  {Array.from({ length: 4 }, (_, index) => (
+                    <MetricSkeleton key={index} />
+                  ))}
+                </div>
+              ) : (
+                <div className="nh-fade-enter mt-5 grid grid-cols-2 gap-3 xl:grid-cols-4">
+                  {evidence.data.metrics.map(([label, value, percent, note, status, tone]) => (
+                    <div
+                      key={label}
+                      className="flex flex-col rounded-2xl border border-hairline bg-elevated p-4"
+                    >
+                      <div className="flex flex-wrap items-start justify-between gap-2">
+                        <span className="text-sm text-ink/75">{label}</span>
+                        <Badge tone={tone}>{status}</Badge>
+                      </div>
+                      <strong
+                        className={`mt-4 block text-3xl font-bold tabular-nums tracking-tight ${metricText[tone]}`}
+                      >
+                        {value}
+                      </strong>
+                      <p className="mt-1 text-xs text-ink/70">{note}</p>
+                      <ProgressBar
+                        value={percent}
+                        tone={metricBar[tone]}
+                        size="sm"
+                        className="mt-4"
+                        label={`${label}: ${value}`}
+                      />
+                    </div>
+                  ))}
+                </div>
+              )}
+            </Card>
+
+            <div className="mt-5 flex flex-col gap-3 rounded-3xl border border-line bg-surface p-4 shadow-whisper lg:flex-row lg:items-center">
+              <strong className="shrink-0 text-sm">Các đoạn trùng khớp:</strong>
+              <div className="min-w-0">
+                {loading ? (
+                  <span
+                    aria-hidden="true"
+                    className="flex h-12 items-center gap-1 overflow-hidden rounded-full border border-hairline bg-elevated p-1"
+                  >
+                    {[0, 1, 2].map(index => (
+                      <Skeleton key={index} className="h-10 w-56 shrink-0" />
+                    ))}
+                  </span>
+                ) : (
+                  <Tabs
+                    label="Chọn đoạn trùng khớp"
+                    singleRow
+                    value={passage}
+                    onChange={setPassage}
+                    items={evidence.data.passages.map((item, index) => ({
+                      value: index,
+                      label: `Đoạn ${index + 1} / ${evidence.data.passages.length} · ${item.match}`,
+                    }))}
+                  />
+                )}
+              </div>
+              {matches !== null && (
+                <span role="status" className="text-xs text-muted">
+                  {matches ? `${matches} đoạn chứa “${query.trim()}”` : 'Không tìm thấy đoạn khớp'}
+                </span>
+              )}
+              <button
+                type="button"
+                role="switch"
+                aria-checked={sync}
+                onClick={() => setSync(value => !value)}
+                className="hidden shrink-0 items-center gap-2.5 rounded-full py-1 text-sm font-medium lg:ml-auto lg:flex"
+              >
+                <span
+                  aria-hidden="true"
+                  className={`relative h-6 w-10 rounded-full transition-colors duration-200 ${sync ? 'bg-brand' : 'bg-ink/15'}`}
+                >
+                  <span
+                    className={`absolute left-0.5 top-0.5 size-5 rounded-full bg-surface shadow-whisper transition-transform duration-200 ${sync ? 'translate-x-4' : ''}`}
+                  />
+                </span>
+                Đồng bộ cuộn hai bên
+              </button>
             </div>
-          </div>
-          {recorded && (
-            <Badge tone="green" className="mt-5">
-              Recorded: {recorded}
-            </Badge>
-          )}
-          <div className="mt-5 flex flex-wrap gap-2 border-t border-line pt-4">
-            <Button onClick={() => setAction('Dismiss Flag')} variant="secondary">
-              <X size={14} />
-              Dismiss Flag
-            </Button>
-            <Button onClick={() => setAction('Attach to Submission Review')} variant="secondary">
-              <Link2 size={14} />
-              Attach to Submission #MS-88402
-            </Button>
-            <Button
-              onClick={() => setAction('Escalate to Legal Copyright Desk')}
-              className="border-rose bg-rose"
+
+            <section
+              aria-label={loading ? 'Đang tải so sánh song song' : 'So sánh song song'}
+              aria-busy={loading}
+              className="nh-grid-12 mt-5 grid gap-5 nh-lg-cols-2"
             >
-              <Scale size={14} />
-              Escalate to Legal
-            </Button>
-            <Button onClick={() => setAction('Request Author Clarification & Proof of Lore')}>
-              <ClipboardCheck size={14} />
-              Request Author Clarification
-            </Button>
-          </div>
-        </Card>
+              {loading ? (
+                <>
+                  <ComparisonPanelSkeleton titleLines={1} />
+                  <ComparisonPanelSkeleton titleLines={2} />
+                </>
+              ) : (
+                <>
+                  <ComparisonPanel
+                    label="Bản thảo đã gửi"
+                    title="Bản thảo mục tiêu: Chronicles of Eldor (Chương 2)"
+                    meta="Tác giả: Dorian Reed · Gửi tháng 10/2026 · 4.120 từ"
+                    tone="orange"
+                    text={selected.target}
+                    query={query}
+                    scrollRef={submittedPanelRef}
+                    onScroll={() => onPanelScroll(0)}
+                  />
+                  <ComparisonPanel
+                    label="Tác phẩm gốc đã xuất bản"
+                    title="Tác phẩm tham chiếu trước đó: Ancient Echoes of Eldoria (Chương 5)"
+                    meta="Tác giả: Elena J. Park · Xuất bản tháng 03/2024 · 145.000 lượt đọc"
+                    tone="green"
+                    text={selected.reference}
+                    query={query}
+                    scrollRef={referencePanelRef}
+                    onScroll={() => onPanelScroll(1)}
+                  />
+                </>
+              )}
+            </section>
+
+            <Card className="mt-5" aria-busy={loading}>
+              <h2 className="flex items-center gap-2 text-h3">
+                <Sparkles size={20} className="shrink-0 text-purple" />
+                Tổng hợp khác biệt ngôn ngữ và phân tích hình thái
+              </h2>
+              {loading ? (
+                <div aria-hidden="true" className="mt-4 grid gap-3 md:grid-cols-3">
+                  {Array.from({ length: 3 }, (_, index) => (
+                    <div key={index} className="rounded-2xl border border-hairline bg-elevated p-4">
+                      <span className="flex h-5 items-center">
+                        <Skeleton className="h-3.5 w-3/4" />
+                      </span>
+                      <div className="mt-1.5 pb-1.5">
+                        {['w-full', 'w-full', 'w-1/2'].map((width, line) => (
+                          <span key={line} className="flex h-6 items-center">
+                            <Skeleton className={`h-3 ${width}`} />
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="nh-fade-enter mt-4 grid gap-3 md:grid-cols-3">
+                  <Diagnostic title="Thay thế từ vựng trực tiếp">
+                    “sleep within heartwood”{' '}
+                    <ArrowRight size={14} className="inline-block align-[-2px] text-ink/60" />
+                    <span className="sr-only">thành</span> “wait within the grain” vẫn giữ nhịp điệu
+                    và cấu trúc mệnh đề phụ thuộc.
+                  </Diagnostic>
+                  <Diagnostic title="Mệnh đề phụ thuộc giống nhau">
+                    “where no sunlight penetrates” và “memory turns to ash before twilight falls” có
+                    mức tương đồng cao.
+                  </Diagnostic>
+                  <Diagnostic title="Từ vựng xây dựng thế giới dân gian">
+                    Tên vùng đất và thực thể khác nhau, trong khi hộ vệ, thời cổ đại và tro gần như
+                    hoặc hoàn toàn giống nhau.
+                  </Diagnostic>
+                </div>
+              )}
+            </Card>
+
+            <Card className="mt-5">
+              <div className="flex flex-col justify-between gap-3 border-b border-hairline pb-4 sm:flex-row sm:items-start">
+                <div className="min-w-0">
+                  <h2 className="flex items-center gap-2 text-h3">
+                    <Gavel size={20} className="shrink-0 text-brand" />
+                    Đánh giá của kiểm duyệt viên và quyết định cuối cùng
+                  </h2>
+                  <p className="mt-1 max-w-prose text-sm text-muted">
+                    Thao tác được thêm vào sổ kiểm duyệt bất biến và thông báo cho bộ phận quan hệ
+                    tác giả trong bản mẫu giao diện này.
+                  </p>
+                </div>
+                <Badge tone="green" className="shrink-0 self-start">
+                  Người xét duyệt: M. Rayne
+                </Badge>
+              </div>
+              <div className="nh-grid-12 mt-5 grid gap-5 nh-layout-lg-4-8">
+                <div className="rounded-2xl border border-hairline bg-elevated p-5">
+                  <strong className="text-sm font-semibold text-orange-strong">
+                    Tiêu chuẩn Chính sách #IP-04: Tri ân và Vi phạm
+                  </strong>
+                  <p className="mt-2 text-sm leading-6 text-ink/75">
+                    Sử dụng hợp lý và tri ân cho phép mô-típ chủ đề; chuỗi cụm từ nguyên văn vượt 50
+                    từ cần tác giả giải trình.
+                  </p>
+                  <ul className="mt-4 list-disc space-y-1.5 border-t border-hairline pl-4 pt-4 text-sm leading-6 marker:text-muted">
+                    <li>
+                      <strong>Bác bỏ:</strong> thiết lập hoặc quy ước thể loại tiêu chuẩn.
+                    </li>
+                    <li>
+                      <strong>Làm rõ:</strong> cách diễn đạt phái sinh nhưng tác giả có thể đồng sở
+                      hữu.
+                    </li>
+                    <li>
+                      <strong>Chuyển cấp:</strong> xác minh có kiếm tiền nhưng không có giấy phép.
+                    </li>
+                  </ul>
+                </div>
+                <div className="min-w-0">
+                  <label htmlFor="similarity-findings" className="text-sm font-semibold">
+                    Kết luận nội bộ và bản nháp thông báo cho tác giả
+                  </label>
+                  <textarea
+                    id="similarity-findings"
+                    value={findings}
+                    onChange={event => setFindings(event.target.value)}
+                    className={`${fieldClass} mt-2 min-h-36 bg-elevated`}
+                  />
+                  <div className="mt-4 flex flex-col gap-3 sm:flex-row sm:gap-6">
+                    <Toggle checked={softHold} onChange={setSoftHold} label="Tạm giữ chương" />
+                    <Toggle
+                      checked={notify}
+                      onChange={setNotify}
+                      label="Yêu cầu làm rõ thế giới truyện"
+                    />
+                  </div>
+                </div>
+              </div>
+              {recorded && (
+                <p
+                  role="status"
+                  className="mt-5 flex items-center gap-2 rounded-2xl bg-brand/12 px-4 py-2.5 text-sm font-semibold text-brand-strong"
+                >
+                  <ShieldCheck size={16} className="shrink-0" />
+                  Đã ghi nhận: {actions[recorded].label}
+                </p>
+              )}
+              <div className="mt-5 flex flex-col gap-2 border-t border-hairline pt-4 sm:flex-row sm:flex-wrap">
+                {['dismiss', 'attach'].map(key => (
+                  <ActionButton key={key} id={key} onClick={openAction} />
+                ))}
+                <div className="flex flex-col gap-2 sm:ml-auto sm:flex-row sm:flex-wrap">
+                  {['escalate', 'clarify'].map(key => (
+                    <ActionButton key={key} id={key} onClick={openAction} />
+                  ))}
+                </div>
+              </div>
+            </Card>
+          </>
+        )}
+
         <Modal
-          open={Boolean(action)}
-          title="Confirm Similarity Verdict"
+          open={Boolean(pending)}
+          title={
+            pending?.destructive ? 'Chuyển hồ sơ sang pháp lý?' : 'Xác nhận kết luận tương đồng'
+          }
           onClose={() => setAction(null)}
         >
-          <div className="rounded-2xl bg-elevated p-4">
-            <strong>{action}</strong>
-            <p className="mt-2 text-xs leading-5 text-muted">
-              Risk score, selected evidence and moderator findings will be included in the local
-              audit record.
-            </p>
-          </div>
-          <textarea
-            defaultValue={findings}
-            className="mt-4 min-h-24 w-full rounded-2xl border border-line bg-surface p-3 text-sm outline-none"
-          />
-          <div className="mt-5 flex justify-end gap-2">
-            <Button variant="secondary" onClick={() => setAction(null)}>
-              Cancel
-            </Button>
-            <Button
-              onClick={() => {
-                setRecorded(action)
-                setAction(null)
-              }}
-            >
-              <ShieldCheck size={14} />
-              Record Verdict
-            </Button>
-          </div>
+          {pending && (
+            <>
+              <div
+                className={`rounded-2xl p-4 ${pending.destructive ? 'border border-rose/30 bg-rose/10' : 'bg-surface'}`}
+              >
+                <strong className="text-sm">{pending.label}</strong>
+                <p className="mt-1.5 text-sm leading-6 text-ink/75">
+                  Cảnh báo <strong>#{FLAG_ID}</strong> · Chronicles of Eldor (Dorian Reed). Điểm rủi
+                  ro, bằng chứng được chọn và kết luận của kiểm duyệt viên sẽ được đưa vào hồ sơ
+                  kiểm tra cục bộ.
+                </p>
+              </div>
+              <label htmlFor="similarity-action-note" className="mt-4 block text-sm font-semibold">
+                Kết luận gửi kèm
+              </label>
+              <textarea
+                id="similarity-action-note"
+                value={actionNote}
+                onChange={event => setActionNote(event.target.value)}
+                className={`${fieldClass} mt-2 min-h-24 bg-surface`}
+              />
+              <div className="mt-5 flex flex-wrap justify-end gap-2">
+                <Button variant="secondary" onClick={() => setAction(null)}>
+                  Hủy
+                </Button>
+                <Button
+                  variant={pending.destructive ? 'danger' : 'primary'}
+                  disabled={!actionNote.trim()}
+                  onClick={() => {
+                    setRecorded(action)
+                    setAction(null)
+                  }}
+                >
+                  <ShieldCheck size={15} />
+                  {pending.destructive ? 'Xác nhận chuyển cấp' : 'Ghi nhận kết luận'}
+                </Button>
+              </div>
+            </>
+          )}
         </Modal>
-      </main>
+      </div>
     </ModeratorLayout>
   )
 }
 
-function ComparisonPanel({ label, title, meta, tone, text }) {
+const shortActionLabels = {
+  dismiss: 'Bác bỏ cảnh báo',
+  attach: `Đính kèm #${SUBMISSION_ID}`,
+  escalate: 'Chuyển bộ phận pháp lý',
+  clarify: 'Yêu cầu tác giả giải trình',
+}
+
+function ActionButton({ id, onClick }) {
+  const { icon: Icon, variant } = actions[id]
   return (
-    <Card className="overflow-hidden p-0">
-      <div className="border-b border-line bg-elevated p-5">
+    <Button variant={variant} onClick={() => onClick(id)}>
+      <Icon size={15} />
+      {shortActionLabels[id]}
+    </Button>
+  )
+}
+
+function ComparisonPanel({ label, title, meta, tone, text, query, scrollRef, onScroll }) {
+  const flagged = tone === 'orange'
+  return (
+    <Card as="article" className="flex min-w-0 flex-col overflow-hidden p-0">
+      <header className="border-b border-hairline bg-elevated p-5">
         <Badge tone={tone}>{label}</Badge>
-        <h2 className="mt-3 text-lg font-semibold">{title}</h2>
-        <p className="mt-1 text-[10px] text-muted">{meta}</p>
-      </div>
-      <div className="p-5">
+        <h3 className="mt-3 text-base font-semibold leading-snug">{title}</h3>
+        <p className="mt-1 text-xs text-ink/70">{meta}</p>
+      </header>
+      <div
+        ref={scrollRef}
+        onScroll={onScroll}
+        tabIndex={0}
+        aria-label={`Nội dung ${label}`}
+        role="region"
+        className="p-5 lg:max-h-[32rem] lg:overflow-y-auto"
+      >
         <p className="text-sm leading-7 text-muted">
           The mountain pass opened into a valley choked by grey mists. Keir gripped the hilt of his
           father&apos;s rusted shortsword, watching the crown of ironwood trees shudder against the
           incoming gale.
         </p>
         <div
-          className={`my-5 rounded-3xl border p-4 ${tone === 'orange' ? 'border-orange/50 bg-orange/10' : 'border-brand/50 bg-brand/10'}`}
+          className={`my-5 rounded-2xl border p-4 ${flagged ? 'border-orange/50 bg-orange/10' : 'border-brand/40 bg-brand/8'}`}
         >
-          <div className="flex justify-between text-[9px]">
-            <strong className={tone === 'orange' ? 'text-orange' : 'text-brand'}>
-              {tone === 'orange' ? 'FLAGGED PASSAGE' : 'CANONICAL ORIGINAL SOURCE'}
+          <div className="flex flex-wrap justify-between gap-2 text-xs">
+            <strong
+              className={`font-semibold uppercase tracking-[.12em] ${flagged ? 'text-orange-strong' : 'text-brand-strong'}`}
+            >
+              {flagged ? 'Đoạn bị cảnh báo' : 'Nguồn gốc chính thức'}
             </strong>
-            <span>Lines 42–48</span>
+            <span className="text-ink/70">Dòng 42–48</span>
           </div>
-          <p className="mt-3 text-sm leading-7">
-            <mark className={`${tone === 'orange' ? 'bg-orange/30' : 'bg-brand/20'} text-ink`}>
-              {text}
+          <p className="mt-3 text-sm leading-7 sm:text-base sm:leading-8">
+            <mark
+              className={`rounded-sm px-0.5 text-ink [box-decoration-break:clone] ${flagged ? 'bg-orange/30' : 'bg-brand/18'}`}
+            >
+              {highlight(text, query)}
             </mark>
           </p>
         </div>
@@ -338,26 +637,99 @@ function ComparisonPanel({ label, title, meta, tone, text }) {
     </Card>
   )
 }
+
 function Diagnostic({ title, children }) {
   return (
-    <div className="rounded-3xl bg-elevated p-4">
-      <strong className="text-xs">{title}</strong>
-      <p className="mt-2 text-[10px] leading-5 text-muted">{children}</p>
+    <div className="rounded-2xl border border-hairline bg-elevated p-4">
+      <strong className="text-sm font-semibold">{title}</strong>
+      <p className="mt-1.5 text-sm leading-6 text-ink/75">{children}</p>
     </div>
   )
 }
+
 function Toggle({ checked, onChange, label }) {
   return (
     <button
+      type="button"
+      role="switch"
+      aria-checked={checked}
       onClick={() => onChange(!checked)}
-      className="flex items-center gap-2 text-left text-[10px]"
+      className="flex min-h-11 items-center gap-2.5 whitespace-normal text-left text-sm font-medium"
     >
       <span
-        className={`grid size-5 shrink-0 place-items-center rounded-full border ${checked ? 'border-brand bg-brand text-white' : 'border-line'}`}
+        aria-hidden="true"
+        className={`relative h-6 w-10 shrink-0 rounded-full transition-colors duration-200 ${checked ? 'bg-brand' : 'bg-ink/15'}`}
       >
-        {checked && <Check size={11} />}
+        <span
+          className={`absolute left-0.5 top-0.5 size-5 rounded-full bg-surface shadow-whisper transition-transform duration-200 ${checked ? 'translate-x-4' : ''}`}
+        />
       </span>
       {label}
     </button>
+  )
+}
+
+/* Metric tile: label + badge row, 36px value, note, small progress track. */
+function MetricSkeleton() {
+  return (
+    <div className="flex flex-col rounded-2xl border border-hairline bg-elevated p-4">
+      <div className="flex items-start justify-between gap-2 xl:flex-col xl:justify-start">
+        <span className="flex h-5 w-full items-center">
+          <Skeleton className="h-3.5 w-3/4" />
+        </span>
+        <Skeleton className="h-6 w-20 shrink-0" />
+      </div>
+      <Skeleton className="mt-4 h-9 w-24 rounded-2xl" />
+      <span className="mt-1 flex h-4 items-center">
+        <Skeleton className="h-3 w-28" />
+      </span>
+      <Skeleton className="mt-4 h-1.5 w-full" />
+    </div>
+  )
+}
+
+/* Same header band and scroll body (lead-in, highlighted excerpt box, lead-out) as ComparisonPanel. */
+function ComparisonPanelSkeleton({ titleLines }) {
+  return (
+    <Card as="div" aria-hidden="true" className="flex min-w-0 flex-col overflow-hidden p-0">
+      <div className="border-b border-hairline bg-elevated p-5">
+        <Skeleton className="h-6 w-32" />
+        <SkeletonLines
+          lines={titleLines}
+          extra={2 - titleLines}
+          pitch="h-[1.375rem]"
+          className="mt-3"
+        />
+        <SkeletonLines lines={1} extra={titleLines - 1} pitch="h-4" className="mt-1" />
+      </div>
+      <div className="p-5">
+        <SkeletonLines lines={3} extra={2} pitch="h-7" />
+        <div className="my-5 rounded-2xl border border-hairline p-4">
+          <div className="flex h-4 items-center justify-between gap-2">
+            <Skeleton className="h-2.5 w-28" />
+            <Skeleton className="h-2.5 w-16" />
+          </div>
+          <SkeletonLines lines={6} extra={3} pitch="h-7 sm:h-8" className="mt-3" />
+        </div>
+        <SkeletonLines lines={2} extra={2} pitch="h-7" />
+      </div>
+    </Card>
+  )
+}
+
+/* `extra` lines render only below `sm`, where the narrow column wraps the text further. */
+function SkeletonLines({ lines, extra = 0, pitch, className = '' }) {
+  const total = lines + extra
+  return (
+    <div className={className}>
+      {Array.from({ length: total }, (_, line) => (
+        <span
+          key={line}
+          className={`items-center ${pitch} ${line < lines ? 'flex' : 'flex sm:hidden'}`}
+        >
+          <Skeleton className={`h-3 ${line === total - 1 ? 'w-2/3' : 'w-full'}`} />
+        </span>
+      ))}
+    </div>
   )
 }

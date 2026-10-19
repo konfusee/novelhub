@@ -1,91 +1,285 @@
-import { Headphones, Moon, Sun } from 'lucide-react'
+import { useId } from 'react'
+import { AlignJustify, AlignLeft, Check, ChevronDown, SkipForward, Smartphone } from '../icons'
+import { Badge, Button, Select } from '../ui'
+import {
+  DEFAULT_CHAPTER_MODE,
+  READER_CHAPTER_MODES,
+  READER_FONTS,
+  READER_FONT_SIZES,
+  READER_LINE_HEIGHTS,
+  READER_PARAGRAPH_GAPS,
+  READER_WIDTH,
+} from './readerOptions'
 
-const OptionGroup = ({ label, values, value, onChange }) => (
-  <div className="flex items-center gap-1">
-    <span className="mr-1 text-[10px] text-muted">{label}</span>
-    {values.map(item => (
-      <button
-        key={item.value}
-        onClick={() => onChange(item.value)}
-        className={`rounded-full px-2 py-1 text-[10px] font-semibold ${value === item.value ? 'bg-surface text-brand shadow-sm' : 'text-muted hover:text-ink'}`}
-      >
-        {item.label}
-      </button>
-    ))}
-  </div>
-)
+const chapterModeIcons = { continuous: ChevronDown, swipe: Smartphone, button: SkipForward }
 
-export function ReaderSettings({
-  fontSize,
-  setFontSize,
-  lineHeight,
-  setLineHeight,
-  width,
-  setWidth,
-  tone,
-  setTone,
-  ambient,
-  setAmbient,
+const rangeFills = { brand: 'bg-brand', orange: 'bg-orange', purple: 'bg-purple', rose: 'bg-rose' }
+const rangeRings = {
+  brand: 'group-has-[:focus-visible]:ring-brand/30',
+  orange: 'group-has-[:focus-visible]:ring-orange/35',
+  purple: 'group-has-[:focus-visible]:ring-purple/30',
+  rose: 'group-has-[:focus-visible]:ring-rose/30',
+}
+
+/*
+ * Token-styled slider shared by the reading canvas, the audio player and reading preferences.
+ * The native range input stays on top (transparent) so keyboard, pointer and screen-reader
+ * behaviour are untouched; the painted track/thumb only mirror its value.
+ */
+export function ReaderRange({
+  value,
+  min = 0,
+  max = 100,
+  step = 1,
+  onChange,
+  label,
+  valueText,
+  tone = 'brand',
+  className = '',
+  ...props
 }) {
+  const ratio = max > min ? Math.min(1, Math.max(0, (value - min) / (max - min))) : 0
+  const fill = rangeFills[tone] || rangeFills.brand
   return (
-    <div className="flex flex-wrap items-center justify-center gap-x-3 gap-y-2 rounded-2xl border border-line bg-elevated p-2 shadow-sm">
-      <strong className="text-[10px] text-brand">Aa Poppins</strong>
-      <span className="hidden h-4 w-px bg-line sm:block" />
-      <OptionGroup
-        label="Size"
-        value={fontSize}
-        onChange={setFontSize}
-        values={[
-          { value: 16, label: 'Aa−' },
-          { value: 18, label: 'Aa' },
-          { value: 21, label: 'Aa+' },
-        ]}
-      />
-      <OptionGroup
-        label="Spacing"
-        value={lineHeight}
-        onChange={setLineHeight}
-        values={[
-          { value: 1.6, label: '1.5' },
-          { value: 1.8, label: '1.8' },
-          { value: 2, label: '2.0' },
-        ]}
-      />
-      <OptionGroup
-        label="Width"
-        value={width}
-        onChange={setWidth}
-        values={[
-          { value: 680, label: 'Narrow' },
-          { value: 740, label: 'Standard' },
-          { value: 760, label: 'Wide' },
-        ]}
-      />
-      <div className="flex items-center gap-1.5">
-        <button
-          aria-label="Parchment tone"
-          onClick={() => setTone('parchment')}
-          className={`size-6 rounded-full bg-[#fcf8f2] ${tone === 'parchment' ? 'ring-2 ring-brand' : 'border border-line'}`}
-        />
-        <button
-          aria-label="Cream tone"
-          onClick={() => setTone('cream')}
-          className={`size-6 rounded-full bg-[#fffdf9] ${tone === 'cream' ? 'ring-2 ring-brand' : 'border border-line'}`}
-        />
-        <button
-          aria-label="Midnight tone"
-          onClick={() => setTone('midnight')}
-          className={`grid size-6 place-items-center rounded-full bg-[#081321] text-white ${tone === 'midnight' ? 'ring-2 ring-brand' : 'border border-line'}`}
-        >
-          {tone === 'midnight' ? <Moon size={11} /> : <Sun size={11} />}
-        </button>
-      </div>
-      <button
-        onClick={() => setAmbient(!ambient)}
-        className={`flex items-center gap-1 rounded-full px-2 py-1 text-[10px] ${ambient ? 'bg-brand text-white' : 'text-muted'}`}
+    <span
+      className={`group relative flex h-7 min-w-0 items-center ${/(^|\s)w-/.test(className) ? '' : 'w-full'} ${className}`}
+    >
+      <span
+        aria-hidden="true"
+        className="pointer-events-none absolute inset-x-2 h-1.5 overflow-hidden rounded-full bg-ink/10"
       >
-        <Headphones size={13} /> Forest
-      </button>
+        <span
+          className={`block h-full w-full origin-left rounded-full ${fill}`}
+          style={{ transform: `scaleX(${ratio})` }}
+        />
+      </span>
+      <span
+        aria-hidden="true"
+        className={`pointer-events-none absolute top-1/2 size-4 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-surface shadow-whisper ring-0 transition-[transform,box-shadow] duration-200 group-hover:scale-110 group-has-[:focus-visible]:ring-4 ${fill} ${rangeRings[tone] || rangeRings.brand}`}
+        style={{ left: `calc(0.5rem + (100% - 1rem) * ${ratio})` }}
+      />
+      <input
+        type="range"
+        aria-label={label}
+        aria-valuetext={valueText}
+        min={min}
+        max={max}
+        step={step}
+        value={value}
+        onChange={event => onChange(Number(event.target.value))}
+        className="absolute inset-0 m-0 h-full w-full cursor-pointer opacity-0"
+        {...props}
+      />
+    </span>
+  )
+}
+
+function SettingLabel({ id, children, value }) {
+  return (
+    <div className="mb-2 flex items-baseline justify-between gap-3">
+      <span id={id} className="text-sm font-semibold text-ink">
+        {children}
+      </span>
+      {value !== undefined && (
+        <span className="text-caption font-semibold tabular-nums text-brand-strong">{value}</span>
+      )}
+    </div>
+  )
+}
+
+function Segmented({ labelledBy, columns, children }) {
+  return (
+    <div
+      role="group"
+      aria-labelledby={labelledBy}
+      className={`grid gap-2 ${columns === 4 ? 'grid-cols-4' : columns === 3 ? 'grid-cols-3' : 'grid-cols-2'}`}
+    >
+      {children}
+    </div>
+  )
+}
+
+/* Radio cards for how the reader moves between chapters (native radios: arrow keys work). */
+function ChapterModePicker({ value, onChange }) {
+  const id = useId()
+  const current = value || DEFAULT_CHAPTER_MODE
+  return (
+    <div>
+      <SettingLabel id={`${id}-label`}>Cách chuyển chương</SettingLabel>
+      <div role="radiogroup" aria-labelledby={`${id}-label`} className="space-y-2">
+        {READER_CHAPTER_MODES.map(mode => {
+          const Icon = chapterModeIcons[mode.value]
+          const checked = current === mode.value
+          return (
+            <label
+              key={mode.value}
+              className={`flex cursor-pointer items-start gap-3 rounded-2xl border p-3 transition-[background-color,border-color,box-shadow] duration-200 ease-spring has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-brand/35 ${checked ? 'border-brand bg-brand-soft' : 'border-line bg-surface hover:border-brand/50'}`}
+            >
+              <input
+                type="radio"
+                name={`${id}-mode`}
+                value={mode.value}
+                checked={checked}
+                onChange={() => onChange(mode.value)}
+                aria-describedby={`${id}-${mode.value}`}
+                className="sr-only"
+              />
+              <span
+                aria-hidden="true"
+                className={`grid size-10 shrink-0 place-items-center rounded-2xl transition-colors duration-200 ${checked ? 'bg-brand text-on-brand' : 'bg-elevated text-ink/70'}`}
+              >
+                <Icon size={18} />
+              </span>
+              <span className="min-w-0 flex-1">
+                <span className="flex flex-wrap items-center gap-x-2 gap-y-1">
+                  <span className="text-sm font-semibold text-ink">{mode.label}</span>
+                  {mode.recommended && <Badge tone="green">Khuyên dùng</Badge>}
+                </span>
+                <span id={`${id}-${mode.value}`} className="mt-1 block text-caption text-ink/70">
+                  {mode.description}
+                </span>
+              </span>
+              <span
+                aria-hidden="true"
+                className={`mt-0.5 grid size-5 shrink-0 place-items-center rounded-full border transition-colors duration-200 ${checked ? 'border-brand bg-brand text-on-brand' : 'border-line bg-surface'}`}
+              >
+                {checked && <Check size={12} />}
+              </span>
+            </label>
+          )
+        })}
+      </div>
+    </div>
+  )
+}
+
+/* Reading-canvas preferences rendered inside the full chapter reader's settings drawer. */
+export function ReaderSettings({ settings, update, t }) {
+  const id = useId()
+  return (
+    <div className="space-y-6">
+      <div>
+        <SettingLabel id={`${id}-toolbar`}>{t('reader.toolbarLayout')}</SettingLabel>
+        <Segmented labelledBy={`${id}-toolbar`} columns={2}>
+          {['horizontal', 'vertical'].map(layout => (
+            <Button
+              key={layout}
+              aria-pressed={(settings.toolbarLayout || 'horizontal') === layout}
+              variant={
+                (settings.toolbarLayout || 'horizontal') === layout ? 'primary' : 'secondary'
+              }
+              onClick={() => update('toolbarLayout', layout)}
+            >
+              {t('reader.toolbar' + layout)}
+            </Button>
+          ))}
+        </Segmented>
+      </div>
+      <ChapterModePicker
+        value={settings.chapterMode}
+        onChange={value => update('chapterMode', value)}
+      />
+      <div>
+        <SettingLabel id={`${id}-size`} value={`${settings.fontSize}px`}>
+          {t('reader.fontSize')}
+        </SettingLabel>
+        <ReaderRange
+          aria-labelledby={`${id}-size`}
+          min={READER_FONT_SIZES[0]}
+          max={READER_FONT_SIZES.at(-1)}
+          step={2}
+          value={settings.fontSize}
+          valueText={`${settings.fontSize}px`}
+          onChange={value => update('fontSize', value)}
+        />
+      </div>
+      {/* Below sm the column already fills the screen, so the width control has no effect. */}
+      <div className="hidden sm:block">
+        <SettingLabel id={`${id}-width`} value={`${settings.width}px`}>
+          {t('reader.contentWidth')}
+        </SettingLabel>
+        <ReaderRange
+          aria-labelledby={`${id}-width`}
+          min={READER_WIDTH.min}
+          max={READER_WIDTH.max}
+          step={READER_WIDTH.step}
+          value={settings.width}
+          valueText={`${settings.width}px`}
+          onChange={value => update('width', value)}
+        />
+      </div>
+      <div>
+        <SettingLabel id={`${id}-line`}>{t('reader.lineHeight')}</SettingLabel>
+        <Segmented labelledBy={`${id}-line`} columns={4}>
+          {READER_LINE_HEIGHTS.map(value => (
+            <Button
+              key={value}
+              size="sm"
+              aria-pressed={settings.lineHeight === value}
+              variant={settings.lineHeight === value ? 'primary' : 'secondary'}
+              className="min-h-11 px-2 tabular-nums sm:min-h-9"
+              onClick={() => update('lineHeight', value)}
+            >
+              {value}
+            </Button>
+          ))}
+        </Segmented>
+      </div>
+      <div>
+        <SettingLabel id={`${id}-gap`}>{t('reader.paragraphSpacing')}</SettingLabel>
+        <Segmented labelledBy={`${id}-gap`} columns={3}>
+          {READER_PARAGRAPH_GAPS.map(([key, value]) => (
+            <Button
+              key={key}
+              size="sm"
+              aria-pressed={settings.paragraphGap === value}
+              variant={settings.paragraphGap === value ? 'primary' : 'secondary'}
+              className="min-h-11 px-2 sm:min-h-9"
+              onClick={() => update('paragraphGap', value)}
+            >
+              {t(`reader.${key}`)}
+            </Button>
+          ))}
+        </Segmented>
+      </div>
+      <div>
+        <SettingLabel id={`${id}-align`}>{t('reader.alignment')}</SettingLabel>
+        <Segmented labelledBy={`${id}-align`} columns={2}>
+          {[
+            ['left', AlignLeft],
+            ['justify', AlignJustify],
+          ].map(([value, Icon]) => (
+            <Button
+              key={value}
+              size="sm"
+              aria-pressed={settings.align === value}
+              variant={settings.align === value ? 'primary' : 'secondary'}
+              className="min-h-11 sm:min-h-9"
+              onClick={() => update('align', value)}
+            >
+              <Icon size={15} aria-hidden="true" />
+              {t(`reader.${value}`)}
+            </Button>
+          ))}
+        </Segmented>
+      </div>
+      <div>
+        <label htmlFor={`${id}-font`} className="mb-2 block text-sm font-semibold text-ink">
+          Phông chữ
+        </label>
+        <Select
+          id={`${id}-font`}
+          value={settings.fontFamily}
+          onChange={event => update('fontFamily', event.target.value)}
+          className="w-full"
+        >
+          {READER_FONTS.map(([label, value]) => (
+            <option value={value} key={label}>
+              {label}
+            </option>
+          ))}
+        </Select>
+      </div>
     </div>
   )
 }

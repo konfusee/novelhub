@@ -3,10 +3,10 @@ export const podium = [
     rank: 1,
     title: 'The Silent Forest',
     author: 'Mira Lane',
-    genre: 'Fantasy',
+    genre: 'Kỳ ảo',
     rating: '4.9',
     reads: '340,510',
-    change: 'Stable #1',
+    change: 'Ổn định #1',
     color: '#173b3f',
     icon: '🌲',
   },
@@ -14,10 +14,10 @@ export const podium = [
     rank: 2,
     title: 'Whispers of You',
     author: 'Elena J. Park',
-    genre: 'Romance',
+    genre: 'Lãng mạn',
     rating: '4.8',
     reads: '290K',
-    change: '↑ 1 pos',
+    change: '↑ 1 hạng',
     color: '#df8b79',
     icon: '🌅',
   },
@@ -25,14 +25,14 @@ export const podium = [
     rank: 3,
     title: 'Neon Hearts',
     author: 'Kaito Min',
-    genre: 'Sci-Fi',
+    genre: 'Khoa học viễn tưởng',
     rating: '4.7',
     reads: '250K',
-    change: '↓ 1 pos',
+    change: '↓ 1 hạng',
     color: '#34336f',
     icon: '🌃',
   },
-]
+];
 const titles = [
   "A Dragon's Wish",
   'The Last Kingdom',
@@ -46,21 +46,21 @@ const titles = [
   'Night Watcher of Oakhaven',
   'Harbor Lights and Heartstrings',
   'Tales of the Far Prairie',
-]
+];
 const genres = [
-  'Adventure',
-  'Mystery',
-  'Drama',
-  'Historical',
-  'Adventure',
-  'Slice of Life',
+  'Phiêu lưu',
+  'Bí ẩn',
+  'Chính kịch',
+  'Lịch sử',
+  'Phiêu lưu',
+  'Đời thường',
   'Steampunk',
-  'Mystery',
-  'Sci-Fi',
-  'Horror',
-  'Romance',
-  'Adventure',
-]
+  'Bí ẩn',
+  'Khoa học viễn tưởng',
+  'Kinh dị',
+  'Lãng mạn',
+  'Phiêu lưu',
+];
 export const rankings = titles.map((title, index) => ({
   rank: index + 4,
   title,
@@ -81,13 +81,13 @@ export const rankings = titles.map((title, index) => ({
   genre: genres[index],
   reads: `${143 - index * 9}K`,
   rating: (4.8 - (index % 7) * 0.1).toFixed(1),
-  change: index % 4 === 0 ? 'NEW' : index % 3 === 0 ? '↑ 4' : index % 3 === 1 ? '↓ 1' : '—',
-}))
+  change: index % 4 === 0 ? 'MỚI' : index % 3 === 0 ? '↑ 4' : index % 3 === 1 ? '↓ 1' : '—',
+}));
 export const rankingCategories = [
-  'Trending',
-  'Most Read',
-  'Most Listened',
-  'Rising Authors',
-  'New Releases',
-]
-export const rankingPeriods = ['Today', 'This Week', 'This Month', 'All Time']
+  'Thịnh hành',
+  'Đọc nhiều nhất',
+  'Nghe nhiều nhất',
+  'Tác giả nổi bật',
+  'Mới phát hành',
+];
+export const rankingPeriods = ['Hôm nay', 'Tuần này', 'Tháng này', 'Mọi thời điểm'];

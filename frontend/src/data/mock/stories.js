@@ -59,31 +59,31 @@ export const stories = [
     color: '#77a9b3',
     icon: '🌊',
   },
-]
+];
 
 export const featuredStories = [
   {
-    label: "EDITOR'S PICK",
-    title: 'A World of Possibilities',
-    description: 'Discover stories handpicked by our editorial team.',
+    label: 'BIÊN TẬP VIÊN ĐỀ XUẤT',
+    title: 'Thế giới muôn vàn khả năng',
+    description: 'Khám phá những câu chuyện được đội ngũ biên tập tuyển chọn.',
     icon: '🏰',
     tone: 'rose',
   },
   {
-    label: 'NEW AUTHORS',
-    title: 'Fresh Voices Bright Ideas',
-    description: 'Meet talented creators and their newest stories.',
+    label: 'TÁC GIẢ MỚI',
+    title: 'Giọng kể mới, ý tưởng sáng tạo',
+    description: 'Gặp gỡ những cây bút tài năng và các truyện mới nhất của họ.',
     icon: '📚',
     tone: 'orange',
   },
   {
-    label: 'LISTEN ANYWHERE',
-    title: 'Stories On the Go',
-    description: 'Enjoy immersive audio with warm narration.',
+    label: 'NGHE MỌI NƠI',
+    title: 'Truyện đồng hành mọi hành trình',
+    description: 'Thưởng thức âm thanh sống động với giọng kể ấm áp.',
     icon: '🎧',
     tone: 'green',
   },
-]
+];
 
 const variants = [
   ['Crown of Starlight', 'Valerie Adams', 'Fantasy', '#91785f', '✨'],
@@ -92,7 +92,7 @@ const variants = [
   ['Echoes in the Void', 'Sora Yane', 'Sci-Fi', '#394b70', '🚀'],
   ['Synapse Terminal 9', 'Dahlia Chen', 'Sci-Fi', '#4a3a71', '🧠'],
   ['Orbit Beyond Sol', 'D. J. Martinez', 'Sci-Fi', '#45677e', '🪐'],
-]
+];
 export const extendedStories = [
   ...stories,
   ...variants.map(([title, author, genre, color, icon], index) => ({
@@ -105,7 +105,7 @@ export const extendedStories = [
     color,
     icon,
   })),
-]
+];
 
 export const hiddenGems = [
   {
@@ -132,4 +132,4 @@ export const hiddenGems = [
       'A locked cabinet in the royal library holds correspondence of three monarchs who never officially existed in historical records.',
     author: 'Arthur Pendleton',
   },
-]
+];

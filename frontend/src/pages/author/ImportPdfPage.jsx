@@ -1,411 +1,491 @@
-import { useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react';
+import { useSearchParams } from 'react-router';
+import { ArrowLeft, CheckCircle2, FileText, ShieldCheck, Upload } from '../../components/icons';
+import { AuthorLayout } from '../../layouts';
 import {
-  ArrowLeft,
-  Check,
-  CheckCircle2,
-  FileText,
-  GitMerge,
-  Import,
-  Plus,
-  RefreshCw,
-  Scissors,
-  ShieldCheck,
-  Upload,
-} from 'lucide-react'
-import { AuthorLayout } from '../../layouts'
-import { Badge, Button, Card } from '../../components/ui'
+  Badge,
+  Button,
+  ButtonLink,
+  Card,
+  EmptyState,
+  Input,
+  ProgressBar,
+  Select,
+  Skeleton,
+} from '../../components/ui';
+import { apiRequest } from '../../api/client';
+import { useBackendResource } from '../../api/useBackendResource';
+import { useLocale } from '../../context/LocaleContext';
+import { suggestDocumentChapters } from './documentChapters';
+import { chapterParagraphs, ChapterTextError } from './chapterParagraphs';
 
-const initialChapters = [
-  ['Chapter 1: The Harbor Gate', 'pp. 4–18 · 3,400 words'],
-  ["Chapter 2: The Alchemist's Lantern", 'pp. 19–35 · 4,120 words'],
-  ['Chapter 3: Beneath the Obsidian Arch', 'pp. 36–51 · 3,890 words'],
-  ['Chapter 4: The Whispering Keel', 'pp. 52–68 · 4,450 words'],
-  ['Chapter 5: Songs of the Low Tide', 'pp. 69–84 · 4,030 words'],
-]
-const steps = [
-  'Upload PDF',
-  'Structure & Chapter Detection',
-  'Review Chapter Splits',
-  'Import as Drafts',
-]
-
+const formats = ['pdf', 'doc', 'docx', 'txt', 'md'];
+const wordCount = (text) => text.trim().split(/\s+/u).filter(Boolean).length;
 export function ImportPdfPage() {
-  const fileRef = useRef(null)
-  const [step, setStep] = useState(2)
-  const [fileName, setFileName] = useState('Chronicles of the Sunken Spire.pdf')
-  const [chapters, setChapters] = useState(
-    initialChapters.map(([title, meta], index) => ({ id: index + 1, title, meta, selected: true })),
-  )
-  const [active, setActive] = useState(1)
-  const [destination, setDestination] = useState('new')
-  const [splitView, setSplitView] = useState(true)
-  const [imported, setImported] = useState(false)
-  const selected = chapters.filter(chapter => chapter.selected).length
-  const chooseFile = event => {
-    const file = event.target.files?.[0]
-    if (file) {
-      setFileName(file.name)
-      setStep(2)
-      setImported(false)
+  const [search] = useSearchParams();
+  const { t, formatNumber } = useLocale();
+  const message = (key, values) => t(`documentImport.${key}`, values);
+  const picker = useRef(null);
+  const pending = useRef(null);
+  const busyRef = useRef(false);
+  const cursor = useRef(0);
+  const targets = useBackendResource('/author/imports/targets');
+  const [busy, setBusy] = useState('');
+  const [error, setError] = useState('');
+  const [preview, setPreview] = useState(null);
+  const [chapters, setChapters] = useState([]);
+  const [active, setActive] = useState('');
+  const [destination, setDestination] = useState(() => search.get('storyId') ?? '');
+  const [result, setResult] = useState(null);
+  useEffect(() => () => pending.current?.abort(), []);
+  const selected = chapters.filter((chapter) => chapter.selected);
+  const current = chapters.find((chapter) => chapter.id === active);
+  const target = targets.data.find((story) => story.id === destination);
+  const step = result ? 4 : preview ? 3 : busy ? 2 : 1;
+  const update = (id, patch) =>
+    setChapters((items) => items.map((item) => (item.id === id ? { ...item, ...patch } : item)));
+  async function choose(file) {
+    if (!file || busyRef.current) return;
+    const format = file.name.split('.').pop().toLowerCase();
+    if (!formats.includes(format) || !file.size || file.size > 10 * 1024 * 1024) {
+      setError(message('invalidFile'));
+      return;
+    }
+    busyRef.current = true;
+    const controller = new AbortController();
+    pending.current = controller;
+    setBusy('extract');
+    setError('');
+    setPreview(null);
+    setChapters([]);
+    setResult(null);
+    try {
+      const response = await apiRequest(`/author/imports/preview?format=${format}`, {
+        method: 'POST',
+        body: file,
+        binary: true,
+        signal: controller.signal,
+      });
+      if (controller.signal.aborted) return;
+      const first = {
+        id: crypto.randomUUID(),
+        title: file.name.replace(/\.[^.]+$/, '').slice(0, 200),
+        text: response.text,
+        selected: true,
+      };
+      setPreview({ ...response, name: file.name });
+      setChapters([first]);
+      setActive(first.id);
+    } catch (failure) {
+      if (!controller.signal.aborted) setError(failure.message);
+    } finally {
+      if (pending.current === controller) {
+        pending.current = null;
+        busyRef.current = false;
+        setBusy('');
+      }
     }
   }
-  const addSplit = () =>
-    setChapters(current => [
-      ...current,
-      {
-        id: Date.now(),
-        title: `Chapter ${current.length + 1}: Untitled Section`,
-        meta: 'Manual split · Pending analysis',
-        selected: true,
-      },
-    ])
+  function split() {
+    const at = cursor.current;
+    if (
+      !current ||
+      at <= 0 ||
+      at >= current.text.length ||
+      !current.text.slice(0, at).trim() ||
+      !current.text.slice(at).trim()
+    ) {
+      setError(message('splitHint'));
+      return;
+    }
+    const index = chapters.findIndex((chapter) => chapter.id === active);
+    const next = {
+      id: crypto.randomUUID(),
+      title: message('untitled'),
+      text: current.text.slice(at),
+      selected: true,
+    };
+    setChapters([
+      ...chapters.slice(0, index),
+      { ...current, text: current.text.slice(0, at) },
+      next,
+      ...chapters.slice(index + 1),
+    ]);
+    setActive(next.id);
+    cursor.current = 0;
+    setError('');
+  }
+  function suggest() {
+    if (!current || busyRef.current) return;
+    const suggestions = suggestDocumentChapters(current.text, message('preamble'), {
+      format: preview?.format,
+      headings: preview?.headings,
+      numberedHeadings: preview?.numberedHeadings,
+    });
+    if (!suggestions || chapters.length - 1 + suggestions.length > 100) {
+      setError(message('noHeadings'));
+      return;
+    }
+    const index = chapters.findIndex((chapter) => chapter.id === active);
+    const replacements = suggestions.map((chapter) => ({
+      ...chapter,
+      id: crypto.randomUUID(),
+      selected: current.selected,
+    }));
+    setChapters([...chapters.slice(0, index), ...replacements, ...chapters.slice(index + 1)]);
+    setActive(replacements[0].id);
+    cursor.current = 0;
+    setError('');
+  }
+  function merge(index) {
+    const following = chapters[index + 1];
+    if (!following) return;
+    const merged = { ...chapters[index], text: `${chapters[index].text}\n\n${following.text}` };
+    setChapters([...chapters.slice(0, index), merged, ...chapters.slice(index + 2)]);
+    setActive(merged.id);
+  }
+  async function save() {
+    if (busyRef.current || !target || !selected.length) return;
+    busyRef.current = true;
+    setBusy('save');
+    setError('');
+    const controller = new AbortController();
+    pending.current = controller;
+    try {
+      const response = await apiRequest('/author/imports', {
+        method: 'POST',
+        signal: controller.signal,
+        body: {
+          receipt: preview.receipt,
+          storyId: target.id,
+          expectedVersion: target.version,
+          chapters: selected.map((chapter) => ({
+            title: chapter.title,
+            paragraphs: chapterParagraphs(chapter.text),
+          })),
+        },
+      });
+      if (controller.signal.aborted) return;
+      if (
+        response?.storyId !== target.id ||
+        !Array.isArray(response.chapterIds) ||
+        response.chapterIds.length !== selected.length ||
+        response.chapterIds.some((id) => typeof id !== 'string' || !id.trim()) ||
+        new Set(response.chapterIds).size !== response.chapterIds.length
+      )
+        throw new Error(message('invalidSaveResponse'));
+      setResult(response);
+    } catch (failure) {
+      if (!controller.signal.aborted)
+        setError(
+          failure instanceof ChapterTextError ? t(`chapterText.${failure.code}`) : failure.message,
+        );
+    } finally {
+      if (pending.current === controller) {
+        pending.current = null;
+        busyRef.current = false;
+        setBusy('');
+      }
+    }
+  }
   return (
     <AuthorLayout>
-      <main className="page-author py-6">
-        <Card className="rounded-2xl">
-          <div className="flex flex-col justify-between gap-4 lg:flex-row lg:items-center">
-            <div>
-              <h1 className="flex items-center gap-3 text-2xl font-bold">
-                <ArrowLeft size={20} />
-                Import Manuscript from PDF
-              </h1>
-              <p className="mt-2 text-sm text-muted">
-                Transform formatted PDFs into structured, editable digital chapters ready for
-                serialization.
-              </p>
+      <div className="page-author py-6 lg:py-8">
+        <Card className="p-4 sm:p-6">
+          <div className="flex flex-col justify-between gap-4 lg:flex-row lg:items-start">
+            <div className="flex min-w-0 items-start gap-3">
+              <ButtonLink
+                to="/author/drafts"
+                variant="secondary"
+                size="sm"
+                aria-label={message('back')}
+              >
+                <ArrowLeft size={16} />
+              </ButtonLink>
+              <div className="min-w-0">
+                <h1 className="text-h2 sm:text-h1">{message('title')}</h1>
+                <p className="mt-1 max-w-[65ch] text-sm text-muted">{message('description')}</p>
+              </div>
             </div>
-            <Badge className="gap-2 px-4 py-2">
-              <ShieldCheck size={15} className="text-brand" />
-              Your manuscript stays local in this UI preview
+            <Badge className="self-start whitespace-normal">
+              <ShieldCheck size={14} />
+              {message('temporary')}
             </Badge>
           </div>
-          <div className="mt-6 grid gap-3 border-t border-line pt-5 sm:grid-cols-2 xl:grid-cols-4">
-            {steps.map((label, index) => {
-              const number = index + 1
-              return (
-                <button
-                  key={label}
-                  onClick={() => setStep(number)}
-                  className="flex items-center gap-3 text-left"
+          <ol className="nh-grid-12 mt-6 grid gap-4 border-t border-hairline pt-5 nh-sm-cols-2 nh-xl-cols-4">
+            {['upload', 'extract', 'review', 'draft'].map((key, index) => (
+              <li
+                key={key}
+                aria-current={step === index + 1 ? 'step' : undefined}
+                className="flex items-center gap-3"
+              >
+                <span
+                  className={`grid size-9 shrink-0 place-items-center rounded-full border text-sm font-semibold ${step >= index + 1 ? 'border-brand bg-brand/12 text-brand-strong' : 'border-line text-muted'}`}
                 >
-                  <span
-                    className={`grid size-9 shrink-0 place-items-center rounded-full border ${number < step ? 'border-brand bg-brand/15 text-brand' : number === step ? 'border-brand bg-brand text-white' : 'border-line text-muted'}`}
-                  >
-                    {number < step ? <Check size={16} /> : number}
-                  </span>
-                  <span>
-                    <small className="block text-[10px] text-muted">
-                      Step {number}
-                      {number === step ? ' (Active)' : ''}
-                    </small>
-                    <strong className={`text-xs ${number === step ? 'text-brand' : ''}`}>
-                      {label}
-                    </strong>
-                  </span>
-                </button>
-              )
-            })}
-          </div>
-          <div className="mt-5 h-1.5 rounded-full bg-elevated">
-            <div
-              className="h-full rounded-full bg-brand transition-all"
-              style={{ width: `${step * 25}%` }}
-            />
-          </div>
+                  {index + 1}
+                </span>
+                <strong className="text-sm">{message(key)}</strong>
+              </li>
+            ))}
+          </ol>
+          <ProgressBar
+            value={result ? 4 : step - 1}
+            max={4}
+            size="sm"
+            label={message('progress')}
+            className="mt-5"
+          />
         </Card>
-        {step === 1 ? (
-          <UploadStage fileRef={fileRef} chooseFile={chooseFile} />
+        <input
+          ref={picker}
+          type="file"
+          className="sr-only"
+          tabIndex={-1}
+          aria-hidden="true"
+          accept=".pdf,.doc,.docx,.txt,.md"
+          onChange={(event) => {
+            choose(event.target.files?.[0]);
+            event.target.value = '';
+          }}
+        />
+        {error && (
+          <Card className="mt-6 border-rose/40 text-rose-strong" role="alert">
+            {error}
+          </Card>
+        )}
+        {result ? (
+          <Card className="mt-6">
+            <EmptyState
+              icon={CheckCircle2}
+              title={message('success', { count: result.chapterIds.length })}
+              description={message('saved')}
+              action={
+                <>
+                  <ButtonLink to="/author/drafts">{message('openDrafts')}</ButtonLink>
+                  <Button
+                    variant="secondary"
+                    onClick={() => {
+                      setResult(null);
+                      setPreview(null);
+                      setChapters([]);
+                      targets.retry();
+                    }}
+                  >
+                    {message('another')}
+                  </Button>
+                </>
+              }
+            />
+          </Card>
         ) : (
           <>
-            <div className="mt-6 grid items-start gap-6 xl:grid-cols-[minmax(0,1.15fr)_minmax(360px,.85fr)]">
-              <section>
-                <Card>
-                  <div className="flex flex-col gap-3 bg-elevated p-4 sm:flex-row sm:items-center">
-                    <span className="grid size-12 place-items-center rounded-xl bg-brand/15 text-brand">
-                      <FileText />
-                    </span>
-                    <div className="min-w-0 flex-1">
-                      <strong className="block truncate text-sm">{fileName}</strong>
-                      <p className="text-[11px] text-muted">
-                        184 pages · 62,400 words · OCR Quality: 99.4%
-                      </p>
-                    </div>
-                    <input
-                      ref={fileRef}
-                      onChange={chooseFile}
-                      className="hidden"
-                      type="file"
-                      accept="application/pdf"
-                    />
-                    <Button
-                      variant="secondary"
-                      onClick={() => fileRef.current?.click()}
-                      className="min-h-9 px-3 py-1 text-xs"
-                    >
-                      <RefreshCw size={14} />
-                      Reparse File
-                    </Button>
-                  </div>
-                  <div className="mt-6 flex flex-wrap items-end justify-between gap-3">
-                    <div>
-                      <h2 className="text-xl font-semibold">Detected Chapters &amp; Hierarchy</h2>
-                      <p className="text-xs text-muted">
-                        12 chapters identified using heading heuristic &amp; roman numeral parser.
-                      </p>
-                    </div>
-                    <div className="flex gap-2 text-xs">
-                      <button
-                        onClick={() =>
-                          setChapters(current => current.map(item => ({ ...item, selected: true })))
-                        }
-                        className="text-brand"
-                      >
-                        Select All (12)
-                      </button>
-                      <span className="text-line">|</span>
-                      <button
-                        onClick={() =>
-                          setChapters(current =>
-                            current.map(item => ({ ...item, selected: false })),
-                          )
-                        }
-                      >
-                        Deselect
-                      </button>
-                    </div>
-                  </div>
-                  <div className="mt-5 max-h-[690px] space-y-3 overflow-y-auto pr-1">
-                    {chapters.map(chapter => (
-                      <ChapterDetection
-                        key={chapter.id}
-                        chapter={chapter}
-                        active={active === chapter.id}
-                        onActive={() => setActive(chapter.id)}
-                        onToggle={() =>
-                          setChapters(current =>
-                            current.map(item =>
-                              item.id === chapter.id ? { ...item, selected: !item.selected } : item,
-                            ),
-                          )
-                        }
-                        onTitle={title =>
-                          setChapters(current =>
-                            current.map(item =>
-                              item.id === chapter.id ? { ...item, title } : item,
-                            ),
-                          )
-                        }
-                      />
-                    ))}
-                  </div>
-                  <button
-                    onClick={addSplit}
-                    className="mt-4 flex w-full items-center justify-center gap-2 rounded-2xl border border-dashed border-brand p-4 text-xs font-semibold text-brand"
-                  >
-                    <Plus size={15} />
-                    Add Manual Chapter Split Marker
-                  </button>
-                </Card>
-              </section>
-              <ExtractionInspector
-                splitView={splitView}
-                setSplitView={setSplitView}
-                title={chapters.find(item => item.id === active)?.title || 'No chapter selected'}
-              />
-            </div>
-            <Card className="mt-6">
-              <div className="flex flex-col justify-between gap-4 lg:flex-row lg:items-center">
-                <div>
-                  <h2 className="text-xl font-semibold">Target Destination</h2>
-                  <p className="mt-1 text-xs text-muted">
-                    Choose how parsed chapters should be placed into your NovelHub catalog.
-                  </p>
-                </div>
-                <div className="grid gap-3 sm:grid-cols-2 lg:w-3/5">
-                  {[
-                    ['new', 'Create New Story', 'Chronicles of the Sunken Spire (New Book)'],
-                    ['existing', 'Append to Existing Story', 'The Silent Forest (Serial)'],
-                  ].map(([value, label, note]) => (
-                    <button
-                      key={value}
-                      onClick={() => setDestination(value)}
-                      className={`rounded-2xl border p-4 text-left ${destination === value ? 'border-brand bg-brand/10' : 'border-line'}`}
-                    >
-                      <strong className="text-xs">{label}</strong>
-                      <p className="mt-1 text-[11px] text-muted">
-                        {destination === value ? '●' : '○'} {note}
-                      </p>
-                    </button>
-                  ))}
-                </div>
-              </div>
-            </Card>
-            <div className="mt-5 flex flex-col gap-3 rounded-3xl border border-line bg-surface p-4 sm:flex-row sm:items-center">
-              <Button variant="secondary" onClick={() => setStep(1)}>
-                <ArrowLeft size={14} />
-                Back to Upload
-              </Button>
-              <Button variant="secondary" onClick={() => setStep(2)}>
-                <RefreshCw size={14} />
-                Reparse Document
-              </Button>
-              <span className="ml-auto text-xs text-muted">
-                {selected} chapters selected (62,400 words)
-              </span>
-              <Button
-                disabled={!selected}
-                onClick={() => {
-                  setImported(true)
-                  setStep(4)
+            {!preview && (
+              <Card
+                className="mt-6 p-6 sm:p-10"
+                onDragOver={(event) => event.preventDefault()}
+                onDrop={(event) => {
+                  event.preventDefault();
+                  choose(event.dataTransfer.files?.[0]);
                 }}
               >
-                <Import size={15} />
-                {imported ? 'Imported to Drafts' : `Import ${selected} Chapters to Drafts`}
-              </Button>
-            </div>
+                <div className="flex flex-col items-center gap-4 rounded-2xl border border-dashed border-line p-6 text-center">
+                  <Upload size={32} className="text-brand" />
+                  <h2 className="text-h3">{message(busy ? 'extracting' : 'pickTitle')}</h2>
+                  <p className="text-sm text-muted">{message('formats')}</p>
+                  <Button disabled={!!busy} onClick={() => picker.current?.click()}>
+                    {message('pick')}
+                  </Button>
+                  {busy === 'extract' && (
+                    <Button variant="secondary" onClick={() => pending.current?.abort()}>
+                      {message('cancel')}
+                    </Button>
+                  )}
+                </div>
+              </Card>
+            )}
+            {preview && (
+              <>
+                <div className="nh-grid-12 mt-6 grid items-start gap-6 nh-layout-xl-7-5">
+                  <Card className="min-w-0 p-4 sm:p-6">
+                    <div className="flex flex-wrap items-center gap-3 rounded-2xl bg-elevated p-4">
+                      <FileText size={24} className="shrink-0 text-brand" />
+                      <div className="min-w-0 flex-1">
+                        <strong className="block truncate text-sm">{preview.name}</strong>
+                        <p className="text-xs text-muted">
+                          {message('words', {
+                            count: formatNumber(
+                              wordCount(chapters.map((chapter) => chapter.text).join(' ')),
+                            ),
+                          })}
+                          {preview.pageCount
+                            ? ` · ${message('pages', { count: preview.pageCount })}`
+                            : ''}
+                        </p>
+                      </div>
+                      <Button
+                        size="sm"
+                        variant="secondary"
+                        disabled={!!busy}
+                        onClick={() => picker.current?.click()}
+                      >
+                        {message('another')}
+                      </Button>
+                    </div>
+                    <h2 className="mt-6 text-h3">{message('chapters')}</h2>
+                    <p className="mt-1 text-sm text-muted">{message('reviewHint')}</p>
+                    <ul className="mt-5 max-h-[690px] space-y-3 overflow-y-auto pr-1">
+                      {chapters.map((chapter, index) => (
+                        <li
+                          key={chapter.id}
+                          className={`rounded-2xl border p-4 ${active === chapter.id ? 'border-brand bg-brand/5' : 'border-line'}`}
+                        >
+                          <div className="flex items-center gap-3">
+                            <input
+                              type="checkbox"
+                              checked={chapter.selected}
+                              disabled={!!busy}
+                              aria-label={message('selectChapter', { number: index + 1 })}
+                              onChange={(event) =>
+                                update(chapter.id, { selected: event.target.checked })
+                              }
+                            />
+                            <Input
+                              aria-label={message('chapterTitle', { number: index + 1 })}
+                              value={chapter.title}
+                              maxLength={200}
+                              disabled={!!busy}
+                              onChange={(event) =>
+                                update(chapter.id, { title: event.target.value })
+                              }
+                              className="min-w-0 flex-1"
+                            />
+                          </div>
+                          <div className="mt-3 flex flex-wrap gap-2">
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              disabled={!!busy}
+                              onClick={() => {
+                                setActive(chapter.id);
+                                cursor.current = 0;
+                              }}
+                            >
+                              {message('edit')}
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              disabled={!!busy || index === chapters.length - 1}
+                              onClick={() => merge(index)}
+                            >
+                              {message('merge')}
+                            </Button>
+                            <span className="self-center text-xs text-muted">
+                              {message('words', { count: formatNumber(wordCount(chapter.text)) })}
+                            </span>
+                          </div>
+                        </li>
+                      ))}
+                    </ul>
+                  </Card>
+                  <Card className="min-w-0 p-4 sm:p-6">
+                    <h2 className="text-h3">{message('text')}</h2>
+                    <p className="mt-2 text-sm text-muted">{message('plainText')}</p>
+                    {current && (
+                      <>
+                        <label className="mt-5 block text-sm font-semibold" htmlFor="import-text">
+                          {current.title || message('untitled')}
+                        </label>
+                        <textarea
+                          id="import-text"
+                          className="mt-2 min-h-96 w-full resize-y rounded-2xl border border-line bg-surface p-4 text-sm leading-7 text-ink"
+                          value={current.text}
+                          disabled={!!busy}
+                          onSelect={(event) => {
+                            cursor.current = event.target.selectionStart;
+                          }}
+                          onChange={(event) => update(current.id, { text: event.target.value })}
+                        />
+                        <Button
+                          className="mt-3"
+                          variant="secondary"
+                          disabled={!!busy || chapters.length >= 100}
+                          onClick={split}
+                        >
+                          {message('split')}
+                        </Button>
+                        <Button
+                          className="mt-3 sm:ml-2"
+                          variant="secondary"
+                          disabled={!!busy}
+                          onClick={suggest}
+                        >
+                          {message('suggest')}
+                        </Button>
+                        <p className="mt-2 text-xs text-muted">{message('splitHint')}</p>
+                      </>
+                    )}
+                  </Card>
+                </div>
+                <Card className="mt-6 p-4 sm:p-6">
+                  <h2 className="text-h3">{message('destination')}</h2>
+                  <div className="mt-4 flex flex-wrap items-center gap-3">
+                    {targets.status === 'loading' ? (
+                      <Skeleton className="h-11 w-full" />
+                    ) : targets.status === 'error' ? (
+                      <p role="alert">{message('targetError')}</p>
+                    ) : targets.status === 'empty' ? (
+                      <p className="text-sm text-muted">{message('noTargets')}</p>
+                    ) : (
+                      <Select
+                        aria-label={message('destination')}
+                        value={destination}
+                        onChange={(event) => setDestination(event.target.value)}
+                        disabled={!!busy}
+                      >
+                        <option value="">{message('chooseStory')}</option>
+                        {targets.data.map((story) => (
+                          <option key={story.id} value={story.id}>
+                            {story.title}
+                          </option>
+                        ))}
+                      </Select>
+                    )}
+                    <Button variant="secondary" disabled={!!busy} onClick={targets.retry}>
+                      {message('refresh')}
+                    </Button>
+                    <ButtonLink
+                      to="/author/stories/new"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      variant="ghost"
+                    >
+                      {message('newStory')}
+                    </ButtonLink>
+                  </div>
+                  <p className="mt-3 text-xs text-muted">{message('destinationHint')}</p>
+                </Card>
+                <div className="mt-6 flex flex-wrap items-center justify-between gap-4">
+                  <p className="text-sm text-muted">
+                    {message('selected', { count: selected.length })}
+                  </p>
+                  <Button
+                    disabled={
+                      !!busy ||
+                      !target ||
+                      !selected.length ||
+                      selected.some((chapter) => !chapter.title.trim() || !chapter.text.trim())
+                    }
+                    onClick={save}
+                  >
+                    {message(busy === 'save' ? 'saving' : 'save')}
+                  </Button>
+                </div>
+              </>
+            )}
           </>
         )}
-      </main>
+      </div>
     </AuthorLayout>
-  )
-}
-
-function UploadStage({ fileRef, chooseFile }) {
-  return (
-    <Card className="mt-6 grid min-h-[430px] place-items-center border-dashed text-center">
-      <div>
-        <span className="mx-auto grid size-20 place-items-center rounded-full bg-brand/15 text-brand">
-          <Upload size={34} />
-        </span>
-        <h2 className="mt-5 text-2xl font-semibold">Drop your manuscript PDF here</h2>
-        <p className="mx-auto mt-2 max-w-md text-sm leading-6 text-muted">
-          Upload a PDF up to 50 MB. NovelHub will detect headings, scene breaks, paragraph
-          formatting and chapter boundaries.
-        </p>
-        <input
-          ref={fileRef}
-          onChange={chooseFile}
-          className="hidden"
-          type="file"
-          accept="application/pdf"
-        />
-        <Button onClick={() => fileRef.current?.click()} className="mt-5">
-          <Upload size={16} />
-          Choose PDF File
-        </Button>
-        <p className="mt-4 text-[10px] text-muted">
-          UI-only local preview · no file is transmitted
-        </p>
-      </div>
-    </Card>
-  )
-}
-function ChapterDetection({ chapter, active, onActive, onToggle, onTitle }) {
-  return (
-    <div
-      onClick={onActive}
-      className={`rounded-2xl border p-4 ${active ? 'border-brand bg-brand/5' : 'border-line'}`}
-    >
-      <div className="flex flex-wrap items-center gap-3">
-        <button
-          onClick={event => {
-            event.stopPropagation()
-            onToggle()
-          }}
-          className={`grid size-5 place-items-center rounded-full border ${chapter.selected ? 'border-brand bg-brand text-white' : 'border-line'}`}
-        >
-          {chapter.selected && <Check size={12} />}
-        </button>
-        <strong className="text-[10px] uppercase tracking-[.14em] text-brand">
-          Chapter {String(chapter.id).padStart(2, '0')} · Head 1
-        </strong>
-        <Badge className="ml-auto">{chapter.meta}</Badge>
-      </div>
-      <input
-        value={chapter.title}
-        onChange={event => onTitle(event.target.value)}
-        className="mt-3 w-full rounded-xl border border-line bg-elevated px-3 py-2 text-sm outline-none focus:border-brand"
-      />
-      <div className="mt-3 flex justify-end gap-4 text-[10px]">
-        <button onClick={() => window.alert('Split point added (mock).')} className="flex items-center gap-1">
-          <Scissors size={12} />
-          Split at Page
-        </button>
-        <button onClick={() => window.alert('Chapter merged with the next section (mock).')} className="flex items-center gap-1">
-          <GitMerge size={12} />
-          Merge Below
-        </button>
-      </div>
-    </div>
-  )
-}
-function ExtractionInspector({ splitView, setSplitView, title }) {
-  return (
-    <Card className="xl:sticky xl:top-24">
-      <div className="flex items-center justify-between border-b border-line pb-4">
-        <div>
-          <h2 className="text-xl font-semibold">Extraction Inspector</h2>
-          <p className="text-xs text-muted">Source PDF vs extracted clean Markdown</p>
-        </div>
-        <div className="rounded-xl border border-line p-1">
-          <button
-            onClick={() => setSplitView(true)}
-            className={`rounded-lg px-3 py-2 text-[10px] ${splitView ? 'bg-elevated text-brand' : ''}`}
-          >
-            Split View
-          </button>
-          <button
-            onClick={() => setSplitView(false)}
-            className={`rounded-lg px-3 py-2 text-[10px] ${!splitView ? 'bg-elevated text-brand' : ''}`}
-          >
-            Markdown Only
-          </button>
-        </div>
-      </div>
-      <div className={`mt-4 grid gap-3 ${splitView ? 'sm:grid-cols-2' : ''}`}>
-        {splitView && (
-          <div className="min-h-[520px] rounded-2xl border border-line bg-[#fffdf9] p-5 text-[#172033]">
-            <p className="text-center text-[9px] uppercase tracking-[.18em] text-[#9ca3af]">
-              Chronicles of the Sunken Spire
-            </p>
-            <h3 className="mt-12 border-y border-dashed border-brand py-4 text-center text-lg font-bold">
-              CHAPTER I<br />
-              THE HARBOR GATE
-            </h3>
-            <p className="mt-5 text-sm leading-7">
-              The mist rolled across the brackish quay before sunrise, clinging to the
-              salt-encrusted timbers of the northern breakwater. By the time Kael arrived with his
-              copper lantern, the tide had already begun its retreat.
-            </p>
-          </div>
-        )}
-        <div className="min-h-[520px] rounded-2xl border border-line bg-elevated p-5">
-          <div className="flex items-center justify-between text-[10px] text-brand">
-            <span>Extracted Poppins Markdown</span>
-            <span>Auto-formatted</span>
-          </div>
-          <Badge tone="green" className="mt-5">
-            H1 TAG DETECTED
-          </Badge>
-          <h3 className="mt-3 text-xl font-semibold text-brand">{title}</h3>
-          <Badge className="mt-5">PARAGRAPH 01</Badge>
-          <p className="mt-3 text-sm leading-7">
-            The mist rolled across the brackish quay before sunrise, clinging to the salt-encrusted
-            timbers of the northern breakwater. By the time Kael arrived with his copper lantern,
-            the tide had already begun its retreat, exposing the green slick of drowned masonry.
-          </p>
-        </div>
-      </div>
-      <div className="mt-4 rounded-2xl bg-brand/10 p-4 text-xs">
-        <p className="flex items-center gap-2">
-          <CheckCircle2 size={14} className="text-brand" />
-          Strip running headers &amp; page numbers
-        </p>
-        <p className="mt-2 flex items-center gap-2">
-          <CheckCircle2 size={14} className="text-brand" />
-          Preserve author scene breaks (* * *)
-        </p>
-      </div>
-    </Card>
-  )
+  );
 }

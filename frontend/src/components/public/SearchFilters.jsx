@@ -1,96 +1,109 @@
+import { Button } from '../ui'
+import { useLocale } from '../../context/LocaleContext'
+
+const SEARCH_STATUSES = ['allStatuses', 'ongoing', 'completedOnly']
+
 const groups = [
   {
-    title: 'Content Type',
+    title: 'search.contentType',
     items: [
-      ['Stories', '124'],
-      ['Audiobooks', '42'],
-      ['Authors', '18'],
+      ['Stories', 'search.stories', '124'],
+      ['Audiobooks', 'search.audiobooks', '42'],
+      ['Authors', 'search.authors', '18'],
     ],
   },
   {
-    title: 'Genres',
+    title: 'search.genres',
     items: [
-      ['Fantasy', '82'],
-      ['Romance', '54'],
-      ['Mystery & Thriller', '29'],
-      ['Sci-Fi', '21'],
-      ['Adventure', '18'],
+      ['Fantasy', 'genres.fantasy', '82'],
+      ['Romance', 'genres.romance', '54'],
+      ['Mystery & Thriller', 'genres.mysterythriller', '29'],
+      ['Sci-Fi', 'genres.scifi', '21'],
+      ['Adventure', 'genres.adventure', '18'],
     ],
   },
   {
-    title: 'Format',
+    title: 'search.format',
     items: [
-      ['Text Story', ''],
-      ['Audiobook Edition', ''],
-      ['Illustrated Chapters', ''],
+      ['Text Story', 'search.textStory', ''],
+      ['Audiobook Edition', 'search.audiobookEdition', ''],
+      ['Illustrated Chapters', 'search.illustratedChapters', ''],
     ],
   },
 ]
-export function SearchFilters({ checked, onToggle, onApply, onReset }) {
+
+const legendClass = 'mb-3 text-[11px] font-semibold uppercase tracking-[.14em] text-muted'
+const optionClass =
+  'flex min-h-8 cursor-pointer items-center gap-2.5 rounded-xl text-sm transition-colors duration-200 hover:text-brand-strong pointer-coarse:min-h-11'
+
+export function SearchFilters({
+  checked,
+  status = 'allStatuses',
+  onToggle,
+  onStatusChange,
+  onApply,
+  onReset,
+  showHeading = true,
+}) {
+  const { t } = useLocale()
   return (
     <div className="space-y-5">
-      <div className="flex items-center justify-between border-b border-line pb-4">
-        <h2 className="font-bold">Filters</h2>
-        <button onClick={onReset} className="text-xs font-semibold text-orange">
-          Reset
-        </button>
-      </div>
+      {showHeading && (
+        <div className="flex items-center justify-between border-b border-hairline pb-4">
+          <h2 className="text-base font-semibold">{t('search.filters')}</h2>
+          <button
+            type="button"
+            onClick={onReset}
+            className="min-h-9 rounded-full px-3 text-xs font-semibold text-orange-strong hover:bg-orange/12"
+          >
+            {t('common.reset')}
+          </button>
+        </div>
+      )}
       {groups.map(group => (
-        <fieldset key={group.title} className="border-b border-line pb-5">
-          <legend className="mb-3 text-[11px] font-bold uppercase tracking-[.14em] text-muted">
-            {group.title}
-          </legend>
-          <div className="space-y-2.5">
-            {group.items.map(([label, count]) => (
-              <label className="flex cursor-pointer items-center gap-2 text-xs" key={label}>
+        <fieldset key={group.title} className="border-b border-hairline pb-5">
+          <legend className={legendClass}>{t(group.title)}</legend>
+          <div className="space-y-1">
+            {group.items.map(([value, labelKey, count]) => (
+              <label className={optionClass} key={value}>
                 <input
                   type="checkbox"
-                  checked={checked.includes(label)}
-                  onChange={() => onToggle(label)}
-                  className="size-4 accent-[var(--primary)]"
+                  checked={checked.includes(value)}
+                  onChange={() => onToggle(value)}
+                  className="size-4 shrink-0 accent-[var(--primary)]"
                 />
-                <span className="flex-1">{label}</span>
-                {count && <span className="text-muted">{count}</span>}
+                <span className="flex-1">{t(labelKey)}</span>
+                {count && <span className="text-xs tabular-nums text-muted">{count}</span>}
               </label>
             ))}
           </div>
         </fieldset>
       ))}
       <fieldset>
-        <legend className="mb-3 text-[11px] font-bold uppercase tracking-[.14em] text-muted">
-          Publication Status
-        </legend>
-        {['All Statuses', 'Ongoing', 'Completed Only'].map((label, index) => (
-          <label className="mb-2 flex items-center gap-2 text-xs" key={label}>
-            <input
-              name="status"
-              type="radio"
-              defaultChecked={index === 0}
-              className="size-4 accent-[var(--primary)]"
-            />
-            {label}
-          </label>
-        ))}
+        <legend className={legendClass}>{t('search.publicationStatus')}</legend>
+        <div className="space-y-1">
+          {SEARCH_STATUSES.map(key => (
+            <label className={optionClass} key={key}>
+              <input
+                name="status"
+                type="radio"
+                checked={status === key}
+                onChange={() => onStatusChange?.(key)}
+                className="size-4 shrink-0 accent-[var(--primary)]"
+              />
+              {t(`search.${key}`)}
+            </label>
+          ))}
+        </div>
       </fieldset>
-      <ButtonPair onApply={onApply} onReset={onReset} />
-    </div>
-  )
-}
-function ButtonPair({ onApply, onReset }) {
-  return (
-    <div className="grid gap-2 pt-2">
-      <button
-        onClick={onApply}
-        className="rounded-xl bg-brand px-4 py-3 text-xs font-semibold text-white"
-      >
-        Apply Filters
-      </button>
-      <button
-        onClick={onReset}
-        className="rounded-xl border border-line px-4 py-3 text-xs font-semibold"
-      >
-        Reset Filters
-      </button>
+      <div className="grid gap-2 pt-2">
+        <Button type="button" onClick={onApply} className="w-full">
+          {t('search.applyFilters')}
+        </Button>
+        <Button type="button" variant="ghost" onClick={onReset} className="w-full">
+          {t('search.resetFilters')}
+        </Button>
+      </div>
     </div>
   )
 }

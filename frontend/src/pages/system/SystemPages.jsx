@@ -1,52 +1,60 @@
-import { ArrowLeft, Home, ShieldX } from 'lucide-react'
-import { Link, useLocation, useNavigate } from 'react-router-dom'
-import { Button, Card } from '../../components/ui'
-import { PublicHeader } from '../../components/public/PublicHeader'
-function StatePage({ code, title, text }) {
-  const navigate = useNavigate()
+import { ArrowLeft, FileSearch, Home, ShieldX } from '../../components/icons';
+import { useLocation, useNavigate } from 'react-router';
+import { Button, ButtonLink, Card } from '../../components/ui';
+import { PublicHeader } from '../../components/public/PublicHeader';
+
+function StatePage({ code, icon: Icon, title, children }) {
+  const navigate = useNavigate();
+  const location = useLocation();
+  // A directly opened URL has no in-app history entry to return to.
+  const goBack = () => (location.key === 'default' ? navigate('/') : navigate(-1));
   return (
-    <div className="min-h-screen bg-page text-ink">
+    <div className="flex min-h-screen flex-col bg-page text-ink">
       <PublicHeader />
-      <main className="mx-auto grid min-h-[70vh] max-w-2xl place-items-center px-5">
-        <Card className="w-full text-center">
-          <span className="mx-auto grid size-16 place-items-center rounded-2xl bg-brand/10 text-brand">
-            <ShieldX size={30} />
+      <main className="mx-auto grid w-full max-w-xl flex-1 place-items-center px-4 pb-20 pt-8 sm:px-6">
+        <Card bezel className="w-full" innerClassName="px-6 py-10 text-center sm:px-12 sm:py-14">
+          <span className="mx-auto grid size-16 place-items-center rounded-2xl bg-brand/12 text-brand-strong">
+            <Icon size={28} />
           </span>
-          <p className="mt-5 text-sm font-semibold text-brand">{code}</p>
-          <h1 className="mt-2 text-3xl font-bold">{title}</h1>
-          <p className="mx-auto mt-3 max-w-md text-sm leading-6 text-muted">{text}</p>
-          <div className="mt-6 flex justify-center gap-3">
-            <Button variant="secondary" onClick={() => navigate(-1)}>
+          <p className="mt-6 text-[3.5rem] font-bold leading-none tracking-[-0.04em] text-brand-strong tabular-nums sm:text-[4.5rem]">
+            {code}
+          </p>
+          <h1 className="mt-4 text-h2 sm:text-h1">{title}</h1>
+          <p className="mx-auto mt-3 max-w-[42ch] text-base leading-7 text-muted">{children}</p>
+          <div className="mt-8 flex flex-col-reverse justify-center gap-3 sm:flex-row">
+            <Button variant="secondary" onClick={goBack}>
               <ArrowLeft size={16} />
-              Go back
+              Quay lại
             </Button>
-            <Link
-              className="inline-flex min-h-11 items-center gap-2 rounded-2xl bg-brand px-5 py-2.5 text-sm font-semibold text-white"
-              to="/"
-            >
+            <ButtonLink to="/">
               <Home size={16} />
-              Home
-            </Link>
+              Trang chủ
+            </ButtonLink>
           </div>
         </Card>
       </main>
     </div>
-  )
+  );
 }
+
 export const ForbiddenPage = () => {
-  const location = useLocation()
+  const location = useLocation();
+  const from = location.state?.from;
   return (
-    <StatePage
-      code="403"
-      title="This shelf is restricted"
-      text={`Your account cannot open ${location.state?.from || 'this page'}. Switch to an account with the required capability.`}
-    />
-  )
-}
+    <StatePage code="403" icon={ShieldX} title="Khu vực này bị giới hạn">
+      Tài khoản của bạn không thể mở{' '}
+      {from ? (
+        <code className="rounded-full bg-elevated px-2 py-0.5 text-sm text-ink">{from}</code>
+      ) : (
+        'trang này'
+      )}
+      . Hãy chuyển sang tài khoản có quyền phù hợp.
+    </StatePage>
+  );
+};
+
 export const NotFoundPage = () => (
-  <StatePage
-    code="404"
-    title="That chapter was not found"
-    text="The link may be outdated or the page may have moved. Return home and continue exploring NovelHub."
-  />
-)
+  <StatePage code="404" icon={FileSearch} title="Không tìm thấy chương này">
+    Liên kết có thể đã cũ hoặc trang đã được chuyển. Hãy về trang chủ và tiếp tục khám phá NovelHub.
+  </StatePage>
+);

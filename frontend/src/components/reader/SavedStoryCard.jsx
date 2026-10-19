@@ -1,43 +1,100 @@
 import { useState } from 'react'
-import { ArrowRight, Bell, BellOff, Heart } from 'lucide-react'
-import { Badge, Button, Card } from '../ui'
+import { Link } from 'react-router'
+import { ArrowRight, Bell, BellOff, Heart } from '../icons'
+import { Badge, ButtonLink, Card, IconButton, Skeleton } from '../ui'
+import { StoryCover } from '../story/StoryCover'
+import { useLocale } from '../../context/LocaleContext'
+
+const genreTones = {
+  'Kỳ ảo': 'orange',
+  'Lãng mạn': 'rose',
+  'Khoa học viễn tưởng': 'purple',
+  'Phiêu lưu': 'green',
+}
 
 export function SavedStoryCard({ story }) {
+  const { t } = useLocale()
   const [favorite, setFavorite] = useState(story.favorite)
   const [alerts, setAlerts] = useState(story.alerts)
+  const href = `/stories/${story.id || 'demo'}`
   return (
-    <Card className="flex gap-4 p-4">
-      <div
-        className="relative grid h-40 w-24 shrink-0 place-items-center rounded-2xl text-xl font-bold text-white"
-        style={{ backgroundColor: story.color }}
-      >
-        <span className="opacity-30">NH</span>
-        <Badge className="absolute left-2 top-2 bg-surface/90 text-ink">{story.genre}</Badge>
-      </div>
-      <div className="min-w-0 flex flex-1 flex-col">
+    <Card as="article" className="group flex gap-4 p-4">
+      <Link to={href} tabIndex={-1} aria-hidden="true" className="shrink-0 self-start">
+        <StoryCover story={story} className="aspect-[2/3] w-24 rounded-2xl" />
+      </Link>
+      <div className="flex min-w-0 flex-1 flex-col">
         <div className="flex items-start justify-between gap-2">
-          <div>
-            <h3 className="truncate text-lg font-semibold">{story.title}</h3>
-            <p className="mt-1 text-xs text-muted">{story.author}</p>
+          <div className="min-w-0">
+            <h3 className="line-clamp-2 text-base font-semibold sm:text-lg">
+              <Link to={href} className="whitespace-normal transition-colors hover:text-brand">
+                {story.title}
+              </Link>
+            </h3>
+            <p className="mt-0.5 truncate text-xs text-muted">{story.author}</p>
           </div>
-          <button aria-label="Toggle favorite" onClick={() => setFavorite(!favorite)}>
-            <Heart size={20} className={favorite ? 'fill-rose text-rose' : 'text-muted'} />
-          </button>
-        </div>
-        <p className="mt-4 rounded-xl bg-elevated px-3 py-2 text-xs text-brand">
-          ● &nbsp;{story.update}
-        </p>
-        <div className="mt-auto flex items-center justify-between border-t border-line pt-3">
-          <button
-            onClick={() => setAlerts(!alerts)}
-            className="flex items-center gap-1.5 text-xs text-muted"
+          <IconButton
+            label={t('following.toggleFavorite')}
+            aria-pressed={favorite}
+            tone="rose"
+            shape="circle"
+            size="md"
+            onClick={() => setFavorite(!favorite)}
           >
-            {alerts ? <Bell size={16} className="text-brand" /> : <BellOff size={16} />}{' '}
-            {alerts ? 'Alerts On' : 'Muted'}
+            <Heart size={17} className={favorite ? 'fill-current' : ''} />
+          </IconButton>
+        </div>
+        <div className="mt-2">
+          <Badge tone={genreTones[story.genre] || 'neutral'}>{story.genre}</Badge>
+        </div>
+        <p className="mb-4 mt-3 flex items-start gap-2 rounded-2xl bg-brand-soft px-3 py-2 text-xs leading-5 text-brand-strong">
+          <span aria-hidden="true" className="mt-2 size-1.5 shrink-0 rounded-full bg-brand" />
+          {story.update}
+        </p>
+        <div className="mt-auto flex flex-wrap items-center justify-between gap-x-3 gap-y-2 border-t border-hairline pt-3">
+          <button
+            type="button"
+            aria-pressed={alerts}
+            onClick={() => setAlerts(!alerts)}
+            className="flex min-h-9 items-center gap-1.5 rounded-full text-xs text-muted transition-colors hover:text-ink pointer-coarse:min-h-11"
+          >
+            {alerts ? <Bell size={16} className="text-brand" /> : <BellOff size={16} />}
+            {t(alerts ? 'following.alertsOn' : 'following.muted')}
           </button>
-      <Button onClick={() => window.location.assign(`/stories/${story.id || 'demo'}`)} className="min-h-9 px-3 py-1.5 text-xs">
-            Read Next <ArrowRight size={14} />
-          </Button>
+          <ButtonLink to={href} size="sm" trailingIcon={ArrowRight}>
+            {t('following.readNext')}
+          </ButtonLink>
+        </div>
+      </div>
+    </Card>
+  )
+}
+
+/* SavedStoryCard frame: w-24 cover, title/author + heart, genre badge, update note, footer. */
+export function SavedStoryCardSkeleton() {
+  return (
+    <Card as="div" aria-hidden="true" className="flex gap-4 p-4">
+      <Skeleton className="aspect-[2/3] w-24 shrink-0 self-start rounded-2xl" />
+      <div className="flex min-w-0 flex-1 flex-col">
+        <div className="flex items-start justify-between gap-2">
+          <div className="min-w-0 flex-1">
+            <span className="flex h-6 items-center sm:h-7">
+              <Skeleton className="h-4 w-3/4 sm:h-5" />
+            </span>
+            <span className="mt-0.5 flex h-4 items-center">
+              <Skeleton className="h-2.5 w-1/3" />
+            </span>
+          </div>
+          <Skeleton className="size-11 shrink-0" />
+        </div>
+        <span className="mt-2 flex h-[26px] items-center">
+          <Skeleton className="h-6 w-20" />
+        </span>
+        <Skeleton className="mb-4 mt-3 h-14 w-full rounded-2xl" />
+        <div className="mt-auto flex flex-wrap items-center justify-between gap-x-3 gap-y-2 border-t border-hairline pt-3">
+          <span className="flex h-9 items-center pointer-coarse:h-11">
+            <Skeleton className="h-3 w-32" />
+          </span>
+          <Skeleton className="h-9 w-28" />
         </div>
       </div>
     </Card>

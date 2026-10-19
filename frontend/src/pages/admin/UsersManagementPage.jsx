@@ -1,339 +1,567 @@
-import { useMemo, useState } from 'react'
+import { ROUTES } from '../../app/routes'
+import { useRef, useState } from 'react'
 import {
   AlertTriangle,
-  BadgeDollarSign,
   BookOpen,
   CheckCircle2,
   Download,
-  Edit3,
+  RefreshCw,
   Search,
   ShieldCheck,
   UserPlus,
+  UsersRound,
   X,
-} from 'lucide-react'
+} from '../../components/icons'
 import { AdminLayout } from '../../layouts'
-import { adminUsers } from '../../data/mock/admin'
-import { Avatar, Badge, Button, Card, Input, Modal, Select, Tabs } from '../../components/ui'
-
-const roleTone = { Reader: 'blue', Author: 'green', Moderator: 'orange', Admin: 'purple' }
-const statusTone = { Active: 'green', Flagged: 'orange', Suspended: 'red' }
-
+import { useBackendDocument } from '../../api/useBackendResource'
+import { useLocale } from '../../context/LocaleContext'
+import { AuthorApplications } from '../../components/admin/AuthorApplications'
+import { AuthorRoleManagement } from '../../components/admin/AuthorRoleManagement'
+import { AuthorAccountStatusDialog } from '../../components/admin/AuthorAccountStatusDialog'
+import {
+  Avatar,
+  Badge,
+  Button,
+  ButtonLink,
+  Card,
+  EmptyState,
+  IconButton,
+  Input,
+  Select,
+  Skeleton,
+  Tabs,
+} from '../../components/ui'
+const emptyFeed = {
+  items: [],
+  total: 0,
+  summary: {},
+}
+const emptyDetail = {
+  account: {},
+  stories: [],
+  audit: [],
+}
+const roleTone = {
+  reader: 'blue',
+  author: 'green',
+  moderator: 'orange',
+  admin: 'purple',
+}
+const statusTone = {
+  active: 'green',
+  suspended: 'red',
+  'pending-verification': 'orange',
+  anonymized: 'neutral',
+}
+const cell = 'px-4 py-4 first:pl-5 last:pr-5'
 export function UsersManagementPage() {
-  const [query, setQuery] = useState('')
-  const [role, setRole] = useState('All')
-  const [status, setStatus] = useState('All')
-  const [selected, setSelected] = useState(adminUsers[1])
-  const [editing, setEditing] = useState(false)
-  const [notice, setNotice] = useState('')
-  const users = useMemo(
-    () =>
-      adminUsers.filter(
-        user =>
-          (role === 'All' || user.role === role) &&
-          (status === 'All' || user.status === status) &&
-          `${user.name} ${user.handle} ${user.email} ${user.id}`
-            .toLowerCase()
-            .includes(query.toLowerCase()),
-      ),
-    [query, role, status],
+  const [accountRevision, setAccountRevision] = useState(0)
+  const { t, formatDate, formatNumber } = useLocale()
+  const [filter, setFilter] = useState({
+    query: '',
+    role: 'all',
+    status: 'all',
+    sort: 'newest',
+    page: 1,
+  })
+  const resource = useBackendDocument(
+    `/admin/accounts?${new URLSearchParams({
+      ...filter,
+      pageSize: 10,
+    })}`,
+    emptyFeed,
   )
-  const suspend = () => {
-    setNotice(
-      selected.status === 'Suspended'
-        ? `${selected.name} was reactivated (mock).`
-        : `${selected.name} was suspended (mock).`,
-    )
+  const loading = resource.status === 'loading'
+  const [selectedId, setSelectedId] = useState(null)
+  const inspectorTitleRef = useRef(null)
+  const selected = resource.data.items.find(user => user.id === selectedId)
+  const update = values => {
+    setFilter(current => ({
+      ...current,
+      ...values,
+      page: 1,
+    }))
+    setSelectedId(null)
+  }
+  const summary = resource.data.summary
+  const count = key => (resource.status === 'ready' ? formatNumber(summary[key] ?? 0) : '—')
+  const closeInspector = () => {
+    const id = selectedId
+    setSelectedId(null)
+    requestAnimationFrame(() => document.querySelector(`[data-inspect="${id}"]`)?.focus())
+  }
+  const inspect = user => {
+    setSelectedId(user.id)
+    requestAnimationFrame(() => inspectorTitleRef.current?.focus())
   }
   return (
     <AdminLayout>
-      <main className="page-admin py-6">
-        <div className="flex flex-col justify-between gap-4 xl:flex-row xl:items-center">
-          <div>
-            <p className="text-xs text-muted">Admin Console / Access Management</p>
-            <h1 className="mt-1 text-2xl font-bold">Users &amp; Accounts</h1>
-            <p className="mt-1 text-xs text-muted">
-              <strong className="text-brand">142,850</strong> total accounts · 1,240 authors · 48
-              staff/moderators
+      <div className="page-admin py-6">
+        <header className="flex flex-col justify-between gap-4 xl:flex-row xl:items-end">
+          <div className="min-w-0">
+            <p className="text-caption text-ink/70">{t('adminAccounts.breadcrumb')}</p>
+            <h1 className="mt-1 text-h2 sm:text-h1">{t('adminAccounts.title')}</h1>
+            <p className="mt-2 text-caption text-ink/70">
+              {t('adminAccounts.summary', {
+                accounts: count('accounts'),
+                authors: count('authors'),
+                staff:
+                  resource.status === 'ready'
+                    ? formatNumber((summary.moderators ?? 0) + (summary.admins ?? 0))
+                    : '—',
+              })}
             </p>
           </div>
           <div className="flex flex-wrap gap-2">
-            <Button
-              variant="secondary"
-              onClick={() => setNotice('User directory CSV prepared (mock).')}
-            >
-              <Download size={15} />
-              Export Directory
+            <Button variant="secondary" disabled title={t('adminAccounts.unavailable')}>
+              <Download size={16} />
+              {t('adminAccounts.export')}
             </Button>
-            <Button onClick={() => setNotice('Staff invitation opened (mock).')}>
-              <UserPlus size={15} />
-              Invite Staff Member
+            <Button disabled title={t('adminAccounts.unavailable')}>
+              <UserPlus size={16} />
+              {t('adminAccounts.invite')}
             </Button>
           </div>
-        </div>
-        <Card className="mt-6">
-          <div className="grid gap-3 lg:grid-cols-[minmax(260px,1fr)_190px_190px]">
+        </header>
+        <AuthorApplications />
+        <AuthorRoleManagement key={accountRevision} onChanged={resource.retry} />
+        <Card className="mt-6 p-4 sm:p-5">
+          <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-[minmax(0,2fr)_minmax(0,1fr)_minmax(0,1fr)]">
             <Input
               icon={Search}
-              value={query}
-              onChange={event => setQuery(event.target.value)}
-              placeholder="Search name, @handle, email, or user ID..."
+              type="search"
+              maxLength={100}
+              value={filter.query}
+              onChange={event =>
+                update({
+                  query: event.target.value,
+                })
+              }
+              aria-label={t('adminAccounts.search')}
+              placeholder={t('adminAccounts.search')}
+              className="sm:col-span-2 xl:col-span-1"
             />
-            <Select value={status} onChange={event => setStatus(event.target.value)}>
-              <option value="All">All statuses</option>
-              <option>Active</option>
-              <option>Flagged</option>
-              <option>Suspended</option>
+            <Select
+              aria-label={t('adminAccounts.statusFilter')}
+              value={filter.status}
+              onChange={event =>
+                update({
+                  status: event.target.value,
+                })
+              }
+            >
+              <option value="all">{t('adminAccounts.allStatuses')}</option>
+              {Object.keys(statusTone).map(status => (
+                <option key={status} value={status}>
+                  {t(`adminAccounts.statuses.${status}`)}
+                </option>
+              ))}
             </Select>
-            <Select>
-              <option>Sort: Most active</option>
-              <option>Newest joined</option>
-              <option>Most coins</option>
+            <Select
+              aria-label={t('adminAccounts.sortLabel')}
+              value={filter.sort}
+              onChange={event =>
+                update({
+                  sort: event.target.value,
+                })
+              }
+            >
+              {['newest', 'oldest', 'stories'].map(sort => (
+                <option key={sort} value={sort}>
+                  {t(`adminAccounts.sort.${sort}`)}
+                </option>
+              ))}
             </Select>
           </div>
-          <div className="mt-4 overflow-x-auto">
+          <div className="mt-4 min-w-0">
             <Tabs
-              value={role}
-              onChange={setRole}
-              items={[
-                { value: 'All', label: 'All 142,850' },
-                { value: 'Reader', label: 'Readers 141,562' },
-                { value: 'Author', label: 'Authors 1,240' },
-                { value: 'Moderator', label: 'Moderators 38' },
-              ]}
+              label={t('adminAccounts.roleFilter')}
+              singleRow
+              value={filter.role}
+              onChange={role =>
+                update({
+                  role,
+                })
+              }
+              items={['all', 'reader', 'author', 'moderator', 'admin'].map(role => ({
+                value: role,
+                label: t('adminAccounts.roleCount', {
+                  role: t(`adminAccounts.roles.${role}`),
+                  count: count(
+                    {
+                      all: 'accounts',
+                      reader: 'readers',
+                      author: 'authors',
+                      moderator: 'moderators',
+                      admin: 'admins',
+                    }[role],
+                  ),
+                }),
+              }))}
             />
           </div>
         </Card>
-        <div className="mt-5 grid items-start gap-5 2xl:grid-cols-[minmax(0,1fr)_360px]">
-          <Card className="overflow-hidden p-0">
-            <div className="overflow-x-auto">
-              <table className="w-full min-w-[790px] text-left text-xs">
-                <thead className="bg-elevated text-[9px] uppercase tracking-[.14em] text-muted">
-                  <tr>
-                    <th className="px-5 py-4">User &amp; handle</th>
-                    <th>System role</th>
-                    <th>Status</th>
-                    <th>Joined</th>
-                    <th>Activity &amp; coins</th>
-                    <th className="pr-5">Action</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-line">
-                  {users.map(user => (
-                    <tr
-                      key={user.id}
-                      onClick={() => setSelected(user)}
-                      className={`cursor-pointer transition hover:bg-elevated/70 ${selected.id === user.id ? 'bg-brand/10' : ''}`}
-                    >
-                      <td className="px-5 py-4">
-                        <div className="flex items-center gap-3">
-                          <Avatar name={user.name} />
-                          <div>
-                            <strong className="block text-sm">{user.name}</strong>
-                            <span className="text-muted">
-                              {user.handle} · #{user.id}
-                            </span>
-                          </div>
-                        </div>
-                      </td>
-                      <td>
-                        <Badge tone={roleTone[user.role]}>
-                          {user.role}
-                          {user.guild ? ` · ${user.guild}` : ''}
-                        </Badge>
-                      </td>
-                      <td>
-                        <Badge tone={statusTone[user.status]}>{user.status}</Badge>
-                      </td>
-                      <td>
-                        <span className="block">{user.joined}</span>
-                        <small className="text-muted">{user.tenure}</small>
-                      </td>
-                      <td>
-                        <span className="block">{user.activity}</span>
-                        <strong className="text-orange">{user.coins}</strong>
-                      </td>
-                      <td className="pr-5">
-                        <button
-                          onClick={event => {
-                            event.stopPropagation()
-                            setSelected(user)
-                          }}
-                          className="rounded-xl border border-line px-3 py-2 hover:border-brand hover:text-brand"
-                        >
-                          Inspect
-                        </button>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-            {users.length === 0 && (
-              <p className="p-10 text-center text-sm text-muted">No users match these filters.</p>
-            )}
-            <div className="flex flex-col justify-between gap-3 border-t border-line p-4 text-xs text-muted sm:flex-row sm:items-center">
-              <span>Showing {users.length} of 142,850 accounts</span>
-              <div className="flex gap-2">
-                <button disabled className="rounded-xl border border-line px-3 py-2 disabled:opacity-40">Previous</button>
-                <button onClick={() => setNotice('Page 1 selected.')} className="rounded-xl bg-brand px-3 py-2 text-white">1</button>
-                <button onClick={() => setNotice('Page 2 selected (mock).')} className="rounded-xl border border-line px-3 py-2">2</button>
-                <button onClick={() => setNotice('Next page selected (mock).')} className="rounded-xl border border-line px-3 py-2">Next</button>
-              </div>
-            </div>
-          </Card>
-          <UserInspector user={selected} onEdit={() => setEditing(true)} onSuspend={suspend} />
-        </div>
-        <Modal
-          open={editing}
-          title={`Edit roles · ${selected.name}`}
-          onClose={() => setEditing(false)}
+        <div
+          className={`nh-grid-12 mt-5 grid items-start gap-5 ${selected ? 'nh-layout-2xl-8-4' : ''}`}
         >
-          <p className="text-sm text-muted">
-            Role changes are simulated locally for this frontend preview.
-          </p>
-          <div className="mt-4 grid gap-2">
-            {['Reader', 'Author', 'Moderator', 'Administrator'].map(item => (
-              <label
-                key={item}
-                className="flex items-center gap-3 rounded-2xl bg-elevated p-3 text-sm"
-              >
-                <input
-                  type="checkbox"
-                  defaultChecked={item === selected.role || item === 'Reader'}
-                />
-                {item}
-              </label>
-            ))}
-          </div>
-          <div className="mt-5 flex justify-end gap-2">
-            <Button variant="secondary" onClick={() => setEditing(false)}>
-              Cancel
-            </Button>
-            <Button
-              onClick={() => {
-                setEditing(false)
-                setNotice('Role changes saved (mock).')
+          <Card className="overflow-hidden p-0">
+            {!loading && resource.status !== 'ready' ? (
+              <EmptyState
+                tone="rose"
+                icon={AlertTriangle}
+                title={t('adminAccounts.failed')}
+                description={resource.error?.message}
+                action={
+                  <Button variant="secondary" onClick={resource.retry}>
+                    <RefreshCw size={15} />
+                    {t('adminAccounts.reload')}
+                  </Button>
+                }
+              />
+            ) : (
+              <>
+                <div className="overflow-x-auto">
+                  <table
+                    aria-busy={loading}
+                    className="w-full whitespace-nowrap text-left text-sm md:min-w-[820px]"
+                  >
+                    <caption className="sr-only">{t('adminAccounts.table')}</caption>
+                    <thead className="border-b border-hairline bg-elevated text-[11px] uppercase tracking-[.12em] text-ink/70">
+                      <tr>
+                        {['identity', 'role', 'status', 'joined', 'activity', 'actions'].map(
+                          key => (
+                            <th
+                              key={key}
+                              scope="col"
+                              className={`${cell} py-3 font-semibold ${['joined', 'activity'].includes(key) ? 'hidden md:table-cell' : ''} ${key === 'actions' ? 'text-right' : ''}`}
+                            >
+                              {t(`adminAccounts.columns.${key}`)}
+                            </th>
+                          ),
+                        )}
+                      </tr>
+                    </thead>
+                    <tbody className={`divide-y divide-hairline ${loading ? '' : 'nh-fade-enter'}`}>
+                      {loading
+                        ? Array.from(
+                            {
+                              length: 5,
+                            },
+                            (_, index) => <SkeletonRow key={index} />,
+                          )
+                        : resource.data.items.map(user => (
+                            <tr
+                              key={user.id}
+                              onClick={() => inspect(user)}
+                              className={`cursor-pointer transition-colors ${selectedId === user.id ? 'bg-brand/10' : 'hover:bg-elevated/70'}`}
+                            >
+                              <td className={cell}>
+                                <div className="flex items-center gap-3">
+                                  <Avatar name={user.name} />
+                                  <div className="min-w-0">
+                                    <strong className="block font-semibold">{user.name}</strong>
+                                    <span className="text-xs text-muted">#{user.id}</span>
+                                  </div>
+                                </div>
+                              </td>
+                              <td className={cell}>
+                                <Badge tone={roleTone[user.roles[0] ?? 'reader']}>
+                                  {t(`adminAccounts.roles.${user.roles[0] ?? 'reader'}`)}
+                                </Badge>
+                              </td>
+                              <td className={cell}>
+                                <Badge tone={statusTone[user.status]}>
+                                  {t(`adminAccounts.statuses.${user.status}`)}
+                                </Badge>
+                              </td>
+                              <td className={`${cell} hidden md:table-cell`}>
+                                {formatDate(user.createdAt)}
+                              </td>
+
+                              <td className={`${cell} hidden md:table-cell`}>
+                                {t('adminAccounts.stories', {
+                                  count: formatNumber(user.storyCount),
+                                })}
+                              </td>
+                              <td className={`${cell} text-right`}>
+                                <Button
+                                  data-inspect={user.id}
+                                  size="sm"
+                                  variant={selectedId === user.id ? 'outline' : 'secondary'}
+                                  aria-pressed={selectedId === user.id}
+                                  onClick={event => {
+                                    event.stopPropagation()
+                                    inspect(user)
+                                  }}
+                                >
+                                  {t('adminAccounts.inspect')}
+                                </Button>
+                              </td>
+                            </tr>
+                          ))}
+                    </tbody>
+                  </table>
+                </div>
+                {!loading && !resource.data.items.length && (
+                  <EmptyState
+                    icon={UsersRound}
+                    title={t('adminAccounts.empty')}
+                    action={
+                      <Button
+                        variant="secondary"
+                        onClick={() =>
+                          update({
+                            query: '',
+                            role: 'all',
+                            status: 'all',
+                          })
+                        }
+                      >
+                        {t('adminAccounts.clear')}
+                      </Button>
+                    }
+                  />
+                )}
+                <div className="flex flex-col justify-between gap-3 border-t border-hairline px-5 py-4 text-caption text-muted sm:flex-row sm:items-center">
+                  <span>
+                    {loading
+                      ? t('adminAccounts.loading')
+                      : t('adminAccounts.shown', {
+                          count: resource.data.items.length,
+                          total: formatNumber(resource.data.total),
+                        })}
+                  </span>
+                  <nav aria-label={t('adminAccounts.pagination')} className="flex gap-2">
+                    <Button
+                      variant="secondary"
+                      size="sm"
+                      disabled={loading || filter.page === 1}
+                      onClick={() => {
+                        setSelectedId(null)
+                        setFilter({
+                          ...filter,
+                          page: filter.page - 1,
+                        })
+                      }}
+                    >
+                      {t('authorRevocation.previous')}
+                    </Button>
+                    <Button size="sm" aria-current="page" disabled>
+                      {filter.page}
+                    </Button>
+                    <Button
+                      variant="secondary"
+                      size="sm"
+                      disabled={loading || filter.page * 10 >= resource.data.total}
+                      onClick={() => {
+                        setSelectedId(null)
+                        setFilter({
+                          ...filter,
+                          page: filter.page + 1,
+                        })
+                      }}
+                    >
+                      {t('authorRevocation.next')}
+                    </Button>
+                  </nav>
+                </div>
+              </>
+            )}
+          </Card>
+          {selected && (
+            <UserInspector
+              key={selected.id}
+              user={selected}
+              titleRef={inspectorTitleRef}
+              onClose={closeInspector}
+              onChanged={() => {
+                closeInspector()
+                resource.retry()
+                setAccountRevision(value => value + 1)
               }}
-            >
-              Save Roles
-            </Button>
-          </div>
-        </Modal>
-        <Modal open={Boolean(notice)} title="Admin action" onClose={() => setNotice('')}>
-          <p className="text-sm">{notice}</p>
-          <Button onClick={() => setNotice('')} className="mt-5 w-full">
-            Done
-          </Button>
-        </Modal>
-      </main>
+            />
+          )}
+        </div>
+      </div>
     </AdminLayout>
   )
 }
-
-function UserInspector({ user, onEdit, onSuspend }) {
+function UserInspector({ user, titleRef, onClose, onChanged }) {
+  const { t, formatDate, formatNumber } = useLocale()
+  const detail = useBackendDocument(`/admin/accounts/${user.id}`, emptyDetail)
+  const [statusDialog, setStatusDialog] = useState(false)
   return (
-    <aside className="space-y-4 2xl:sticky 2xl:top-24">
-      <Card>
+    <aside
+      aria-labelledby="user-inspector-title"
+      className="grid content-start gap-4 md:grid-cols-2 2xl:sticky 2xl:top-24 2xl:grid-cols-1"
+    >
+      <Card className="md:col-span-2 2xl:col-span-1">
         <div className="flex items-start gap-3">
-          <Avatar name={user.name} />
+          <Avatar name={user.name} className="size-12" />
           <div className="min-w-0 flex-1">
-            <div className="flex flex-wrap items-center gap-2">
-              <h2 className="text-xl font-bold">{user.name}</h2>
-              {user.guild && <Badge tone="green">{user.guild}</Badge>}
-            </div>
-            <p className="text-xs text-muted">
-              {user.handle} · #{user.id}
-            </p>
-            <p className="mt-1 text-[10px] text-brand">● {user.status} · Good standing</p>
+            <h2
+              id="user-inspector-title"
+              ref={titleRef}
+              tabIndex={-1}
+              className="text-h3 outline-none"
+            >
+              {user.name}
+            </h2>
+            <p className="mt-1 break-all text-xs text-muted">#{user.id}</p>
+            <Badge tone={statusTone[user.status]}>
+              {t(`adminAccounts.statuses.${user.status}`)}
+            </Badge>
           </div>
-          <X size={17} className="text-muted" />
+          <IconButton label={t('adminAccounts.close')} shape="circle" size="sm" onClick={onClose}>
+            <X size={16} />
+          </IconButton>
         </div>
-        <div className="mt-5 grid grid-cols-2 gap-2">
-          <Button variant="secondary" onClick={onEdit}>
-            <Edit3 size={14} />
-            Edit Roles
-          </Button>
-          <Button onClick={() => window.alert('Coin adjustment dialog opened (mock).')} variant="secondary">
-            <BadgeDollarSign size={14} />
-            Adjust Coins
-          </Button>
-          <Button onClick={() => window.alert('Warning composer opened (mock).')} variant="secondary">
-            <AlertTriangle size={14} />
-            Issue Warning
-          </Button>
-          <Button variant="danger" onClick={onSuspend}>
-            {user.status === 'Suspended' ? 'Reactivate' : 'Suspend Account'}
-          </Button>
+        {user.roles.includes('author') && (
+          <ButtonLink to={ROUTES.adminUser(user.id)} variant="secondary" size="sm" className="mt-4">
+            {t('agreement.title')}
+          </ButtonLink>
+        )}
+        <div className="mt-5 grid gap-2 sm:grid-cols-2">
+          {detail.status === 'ready' &&
+            detail.data.account.everAuthor &&
+            !user.roles.some(role => ['admin', 'moderator'].includes(role)) &&
+            ['active', 'suspended'].includes(detail.data.account.status) && (
+              <>
+                <Button variant="secondary" size="sm" onClick={() => setStatusDialog('status')}>
+                  {t(
+                    `authorAccountStatus.${detail.data.account.status === 'active' ? 'suspend' : 'restore'}`,
+                  )}
+                </Button>
+                <Button variant="danger" size="sm" onClick={() => setStatusDialog('close')}>
+                  {t('authorAccountStatus.close')}
+                </Button>
+              </>
+            )}
         </div>
       </Card>
-      <InfoCard title="Account credentials" icon={ShieldCheck}>
-        <Row label="Email address" value={user.email} />
-        <Row label="Current role" value={user.role} />
-        <Row label="Tenure" value={`${user.joined} (${user.tenure})`} />
-      </InfoCard>
-      <InfoCard title="Creator portfolio & metrics" icon={BookOpen}>
-        <div className="grid grid-cols-3 gap-2 text-center">
-          <Metric value={user.role === 'Author' ? '6' : '0'} label="Serials" />
-          <Metric value={user.role === 'Author' ? '1.25M' : '—'} label="Total reads" />
-          <Metric value="99.4%" label="Integrity" />
-        </div>
-        <p className="mt-4 text-xs text-muted">Top published titles</p>
-        <ul className="mt-2 space-y-2 text-xs">
-          <li>
-            • The Silent Forest <span className="float-right text-muted">820K</span>
-          </li>
-          <li>
-            • Echoes of Eldoria <span className="float-right text-muted">312K</span>
-          </li>
-        </ul>
-      </InfoCard>
-      <InfoCard title="Financials & royalties" icon={BadgeDollarSign}>
-        <Row label="Ledger balance" value={user.coins} />
-        <Row
-          label="Payout method"
-          value={user.role === 'Author' ? 'Stripe Connect · Verified' : 'Not configured'}
+      {statusDialog && (
+        <AuthorAccountStatusDialog
+          account={detail.data.account}
+          closeAccount={statusDialog === 'close'}
+          onClose={() => setStatusDialog(false)}
+          onChanged={onChanged}
         />
-        <Row label="Next cycle" value="Nov 1, 2026" />
-      </InfoCard>
-      <InfoCard title="Audit trail · last 60 days" icon={CheckCircle2}>
-        <div className="space-y-4 border-l border-line pl-4 text-xs">
-          <div>
-            <strong>Security credential update</strong>
-            <p className="text-muted">Password reset authenticated via 2FA</p>
-          </div>
-          <div>
-            <strong>Account role verified</strong>
-            <p className="text-muted">Reviewed by Super Admin Marcus Vance</p>
-          </div>
-        </div>
-      </InfoCard>
+      )}
+      {detail.status !== 'ready' ? (
+        <Card className="md:col-span-2 2xl:col-span-1">
+          <p role={detail.status === 'loading' ? 'status' : 'alert'} className="text-sm text-muted">
+            {detail.status === 'loading'
+              ? t('adminAccounts.loading')
+              : detail.error?.message || t('adminAccounts.failed')}
+          </p>
+          <Button
+            className="mt-4"
+            variant="secondary"
+            disabled={detail.status === 'loading'}
+            onClick={detail.retry}
+          >
+            {t('adminAccounts.reload')}
+          </Button>
+        </Card>
+      ) : (
+        <>
+          <InfoCard title={t('adminAccounts.info')} icon={ShieldCheck}>
+            <Row label={t('adminAccounts.email')} value={detail.data.account.email ?? '—'} />
+            <Row
+              label={t('adminAccounts.columns.role')}
+              value={
+                user.roles.length
+                  ? user.roles.map(role => t(`adminAccounts.roles.${role}`)).join(', ')
+                  : t('adminAccounts.roles.reader')
+              }
+            />
+            <Row
+              label={t('adminAccounts.columns.joined')}
+              value={formatDate(detail.data.account.createdAt)}
+            />
+          </InfoCard>
+          <InfoCard title={t('adminAccounts.authoring')} icon={BookOpen}>
+            <Row label={t('adminAccounts.storyTotal')} value={formatNumber(user.storyCount)} />
+            <ul className="mt-3 space-y-2 text-sm">
+              {detail.data.stories.map(story => (
+                <li key={story.id} className="break-words">
+                  {story.title}
+                </li>
+              ))}
+            </ul>
+            {!detail.data.stories.length && (
+              <p className="text-sm text-muted">{t('adminAccounts.noStories')}</p>
+            )}
+          </InfoCard>
+
+          <InfoCard title={t('adminAccounts.audit')} icon={CheckCircle2}>
+            <ol className="space-y-3 text-sm">
+              {detail.data.audit.map(event => (
+                <li key={event.id}>
+                  <strong className="break-words">{event.action}</strong>
+                  <p className="text-xs text-muted">
+                    {event.result} · {formatDate(event.occurredAt)}
+                  </p>
+                </li>
+              ))}
+            </ol>
+            {!detail.data.audit.length && (
+              <p className="text-sm text-muted">{t('adminAccounts.noAudit')}</p>
+            )}
+          </InfoCard>
+        </>
+      )}
     </aside>
   )
 }
-function InfoCard({ title, icon: Icon, children }) {
+function SkeletonRow() {
   return (
-    <Card>
-      <h3 className="flex items-center justify-between text-[10px] font-semibold uppercase tracking-[.14em] text-muted">
+    <tr aria-hidden="true">
+      <td className={cell}>
+        <div className="flex items-center gap-3">
+          <Skeleton className="size-10" />
+          <div className="space-y-2">
+            <Skeleton className="h-3.5 w-28" />
+            <Skeleton className="h-3 w-36" />
+          </div>
+        </div>
+      </td>
+      <td className={cell}>
+        <Skeleton className="h-6 w-24" />
+      </td>
+      <td className={cell}>
+        <Skeleton className="h-6 w-28" />
+      </td>
+      {['w-20', 'w-24'].map(width => (
+        <td key={width} className={`${cell} hidden md:table-cell`}>
+          <Skeleton className={`h-3.5 ${width}`} />
+          <Skeleton className="mt-2 h-3 w-14" />
+        </td>
+      ))}
+      <td className={`${cell} text-right`}>
+        <Skeleton className="ml-auto h-9 w-[5.5rem]" />
+      </td>
+    </tr>
+  )
+}
+function InfoCard({ title, icon: Icon, loading = false, children }) {
+  return (
+    <Card className={`p-5 ${loading ? '' : 'nh-fade-enter'}`}>
+      <h3 className="flex items-center justify-between gap-3 text-base font-semibold">
         {title}
-        <Icon size={15} />
+        <span className="grid size-8 shrink-0 place-items-center rounded-xl bg-brand/10 text-brand-strong">
+          <Icon size={16} aria-hidden="true" />
+        </span>
       </h3>
-      <div className="mt-4">{children}</div>
+      <div className="mt-3">{children}</div>
     </Card>
   )
 }
 function Row({ label, value }) {
   return (
-    <div className="flex flex-col justify-between gap-1 border-b border-line py-3 text-xs last:border-0 sm:flex-row">
-      <span className="text-muted">{label}</span>
-      <strong className="break-all sm:text-right">{value}</strong>
-    </div>
-  )
-}
-function Metric({ value, label }) {
-  return (
-    <div className="rounded-2xl bg-elevated p-3">
-      <strong className="block text-lg text-brand">{value}</strong>
-      <span className="text-[8px] uppercase text-muted">{label}</span>
+    <div className="flex flex-col justify-between gap-1 border-b border-hairline py-3 text-sm last:border-0 sm:flex-row sm:gap-4">
+      <span className="shrink-0 text-muted">{label}</span>
+      <strong className="break-all font-semibold sm:text-right">{value}</strong>
     </div>
   )
 }
