@@ -1,5 +1,5 @@
-import { useMemo, useRef, useState } from 'react';
-import { Link, useNavigate, useParams, useSearchParams } from 'react-router';
+import { useMemo, useRef, useState } from 'react'
+import { Link, useNavigate, useParams, useSearchParams } from 'react-router'
 import {
   AlertTriangle,
   Archive,
@@ -21,19 +21,19 @@ import {
   Send,
   Sparkles,
   Star,
-} from '../../components/icons';
-import { AuthorLayout } from '../../layouts';
-import { useBackendDocument, useBackendResource } from '../../api/useBackendResource';
-import { apiRequest } from '../../api/client';
-import { useLocale } from '../../context/LocaleContext';
-import { StoryCover } from '../../components/story/StoryCover';
-import { ChapterOrderDialog } from './ChapterOrderDialog';
-import { ChapterLifecycleDialog } from './ChapterLifecycleDialog';
-import { ChapterReleaseDialog, StoryReleaseDialog } from './StoryReleaseDialog';
-import { StoryUnpublishDialog } from './StoryUnpublishDialog';
-import { ChapterScheduleDialog } from './ChapterScheduleDialog';
-import { ChapterEarlyAccessDialog } from './ChapterEarlyAccessDialog';
-import { ROUTES } from '../../app/routes';
+} from '../../components/icons'
+import { AuthorLayout } from '../../layouts'
+import { useBackendDocument, useBackendResource } from '../../api/useBackendResource'
+import { apiRequest } from '../../api/client'
+import { useLocale } from '../../context/LocaleContext'
+import { StoryCover } from '../../components/story/StoryCover'
+import { ChapterOrderDialog } from './ChapterOrderDialog'
+import { ChapterLifecycleDialog } from './ChapterLifecycleDialog'
+import { ChapterReleaseDialog, StoryReleaseDialog } from './StoryReleaseDialog'
+import { StoryUnpublishDialog } from './StoryUnpublishDialog'
+import { ChapterScheduleDialog } from './ChapterScheduleDialog'
+import { ChapterEarlyAccessDialog } from './ChapterEarlyAccessDialog'
+import { ROUTES } from '../../app/routes'
 import {
   Badge,
   Button,
@@ -44,15 +44,15 @@ import {
   Skeleton,
   Modal,
   Tabs,
-} from '../../components/ui';
+} from '../../components/ui'
 
-const PAGE_SIZE = 5;
+const PAGE_SIZE = 5
 const emptyWorkspace = {
   story: { id: null, title: '—', description: '', genres: [], canEdit: false, version: 0 },
   chapters: [],
   stats: { availableWords: 0, publishedChapters: 0, reads: 0, rating: '—', ratings: 0 },
-};
-const normalStatus = (value) =>
+}
+const normalStatus = value =>
   ({
     published: 'Published',
     scheduled: 'Scheduled',
@@ -63,14 +63,14 @@ const normalStatus = (value) =>
     unpublished: 'Unpublished',
     archived: 'Archived',
     cancelled: 'Cancelled',
-  })[value] ?? value;
+  })[value] ?? value
 const tabItems = [
   { value: 'chapters', label: 'Chương' },
   { value: 'details', label: 'Thông tin và tóm tắt truyện' },
   { value: 'media', label: 'Media và bản âm thanh' },
   { value: 'reviews', label: 'Bản gửi và đánh giá' },
   { value: 'analytics', label: 'Phân tích truyện' },
-];
+]
 const linkedTabs = {
   media: {
     icon: Images,
@@ -93,14 +93,14 @@ const linkedTabs = {
     to: '/author/analytics',
     action: 'Mở phân tích truyện',
   },
-};
+}
 const filters = [
   { value: 'All', label: 'Tất cả' },
   { value: 'Published', label: 'Đã xuất bản' },
   { value: 'Scheduled', label: 'Đã lên lịch' },
   { value: 'In Review', label: 'Đang xét duyệt' },
   { value: 'Draft', label: 'Bản nháp' },
-];
+]
 const statusLabels = {
   Published: 'Đã xuất bản',
   Scheduled: 'Đã lên lịch',
@@ -110,37 +110,37 @@ const statusLabels = {
   Unpublished: 'Đã gỡ xuất bản',
   Archived: 'Đã lưu trữ',
   Cancelled: 'Đã hủy',
-};
-const statusTones = { Published: 'green', Scheduled: 'orange', 'In Review': 'purple' };
+}
+const statusTones = { Published: 'green', Scheduled: 'orange', 'In Review': 'purple' }
 export function StoryManagerPage() {
-  const navigate = useNavigate();
-  const { storyId } = useParams();
-  const { t } = useLocale();
-  const [search, setSearch] = useSearchParams();
-  const tab = tabItems.some((item) => item.value === search.get('tab'))
+  const navigate = useNavigate()
+  const { storyId } = useParams()
+  const { t } = useLocale()
+  const [search, setSearch] = useSearchParams()
+  const tab = tabItems.some(item => item.value === search.get('tab'))
     ? search.get('tab')
-    : 'chapters';
-  const setTab = (value) =>
-    setSearch((previous) => {
-      const next = new URLSearchParams(previous);
-      next.set('tab', value);
-      return next;
-    });
-  const [filter, setFilter] = useState('All');
-  const [query, setQuery] = useState('');
-  const [page, setPage] = useState(1);
-  const workspace = useBackendDocument(`/author/stories/${storyId}/workspace`, emptyWorkspace);
-  const [savedStory, setSavedStory] = useState(null);
-  const story = savedStory?.source === workspace.data ? savedStory.story : workspace.data.story;
+    : 'chapters'
+  const setTab = value =>
+    setSearch(previous => {
+      const next = new URLSearchParams(previous)
+      next.set('tab', value)
+      return next
+    })
+  const [filter, setFilter] = useState('All')
+  const [query, setQuery] = useState('')
+  const [page, setPage] = useState(1)
+  const workspace = useBackendDocument(`/author/stories/${storyId}/workspace`, emptyWorkspace)
+  const [savedStory, setSavedStory] = useState(null)
+  const story = savedStory?.source === workspace.data ? savedStory.story : workspace.data.story
   const chaptersResource = {
     ...workspace,
     status:
       workspace.status === 'ready' && !workspace.data.chapters.length ? 'empty' : workspace.status,
-    data: workspace.data.chapters.map((chapter) => ({
+    data: workspace.data.chapters.map(chapter => ({
       ...chapter,
       status: normalStatus(chapter.status),
     })),
-  };
+  }
   const storyStats = [
     [FileText, workspace.data.stats.availableWords, t('managerData.knownWords')],
     [BookOpen, workspace.data.stats.publishedChapters, t('managerData.publishedChapters')],
@@ -150,51 +150,51 @@ export function StoryManagerPage() {
       workspace.data.stats.rating,
       t('managerData.ratingCount', { count: workspace.data.stats.ratings }),
     ],
-  ];
-  const [newOpen, setNewOpen] = useState(false);
-  const [newTitle, setNewTitle] = useState('');
-  const [newBusy, setNewBusy] = useState(false);
-  const [newError, setNewError] = useState('');
-  const [notice, setNotice] = useState('');
-  const [orderOpen, setOrderOpen] = useState(false);
-  const [chapterAction, setChapterAction] = useState(null);
-  const [releaseOpen, setReleaseOpen] = useState(false);
-  const [releaseChapter, setReleaseChapter] = useState(null);
-  const [scheduleChapter, setScheduleChapter] = useState(null);
-  const [accessChapter, setAccessChapter] = useState(null);
-  const createChapter = async (event) => {
-    event.preventDefault();
-    if (newBusy || !newTitle.trim()) return;
-    setNewBusy(true);
-    setNewError('');
+  ]
+  const [newOpen, setNewOpen] = useState(false)
+  const [newTitle, setNewTitle] = useState('')
+  const [newBusy, setNewBusy] = useState(false)
+  const [newError, setNewError] = useState('')
+  const [notice, setNotice] = useState('')
+  const [orderOpen, setOrderOpen] = useState(false)
+  const [chapterAction, setChapterAction] = useState(null)
+  const [releaseOpen, setReleaseOpen] = useState(false)
+  const [releaseChapter, setReleaseChapter] = useState(null)
+  const [scheduleChapter, setScheduleChapter] = useState(null)
+  const [accessChapter, setAccessChapter] = useState(null)
+  const createChapter = async event => {
+    event.preventDefault()
+    if (newBusy || !newTitle.trim()) return
+    setNewBusy(true)
+    setNewError('')
     try {
       await apiRequest(`/author/stories/${storyId}/chapters`, {
         method: 'POST',
         body: { title: newTitle.trim(), paragraphs: [''] },
-      });
-      setNewOpen(false);
-      setNewTitle('');
-      setNotice(t('managerData.created'));
-      workspace.retry();
+      })
+      setNewOpen(false)
+      setNewTitle('')
+      setNotice(t('managerData.created'))
+      workspace.retry()
     } catch (error) {
-      setNewError(error.message || t('managerData.saveError'));
+      setNewError(error.message || t('managerData.saveError'))
     } finally {
-      setNewBusy(false);
+      setNewBusy(false)
     }
-  };
+  }
   const chapters = useMemo(
     () =>
       chaptersResource.data.filter(
-        (chapter) =>
+        chapter =>
           (filter === 'All' || chapter.status === filter) &&
           chapter.title.toLowerCase().includes(query.trim().toLowerCase()),
       ),
     [chaptersResource.data, filter, query],
-  );
-  const pageCount = Math.max(1, Math.ceil(chapters.length / PAGE_SIZE));
-  const currentPage = Math.min(page, pageCount);
-  const pageRows = chapters.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE);
-  const linked = linkedTabs[tab];
+  )
+  const pageCount = Math.max(1, Math.ceil(chapters.length / PAGE_SIZE))
+  const currentPage = Math.min(page, pageCount)
+  const pageRows = chapters.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE)
+  const linked = linkedTabs[tab]
 
   if (workspace.status === 'error' || workspace.status === 'empty')
     return (
@@ -211,7 +211,7 @@ export function StoryManagerPage() {
           </Card>
         </div>
       </AuthorLayout>
-    );
+    )
   return (
     <AuthorLayout>
       <div className="page-author py-6 lg:py-8">
@@ -310,9 +310,9 @@ export function StoryManagerPage() {
             storyId={storyId}
             onClose={() => setReleaseOpen(false)}
             onReleased={() => {
-              setReleaseOpen(false);
-              setNotice(t('storyRelease.success'));
-              workspace.retry();
+              setReleaseOpen(false)
+              setNotice(t('storyRelease.success'))
+              workspace.retry()
             }}
           />
         )}
@@ -322,9 +322,9 @@ export function StoryManagerPage() {
             chapterId={accessChapter.id}
             onClose={() => setAccessChapter(null)}
             onSaved={() => {
-              setAccessChapter(null);
-              setNotice(t('earlyAccess.saved'));
-              workspace.retry();
+              setAccessChapter(null)
+              setNotice(t('earlyAccess.saved'))
+              workspace.retry()
             }}
           />
         )}
@@ -334,10 +334,10 @@ export function StoryManagerPage() {
             storyId={storyId}
             chapterId={scheduleChapter.id}
             onClose={() => setScheduleChapter(null)}
-            onSaved={(cancelled) => {
-              setScheduleChapter(null);
-              setNotice(t(cancelled ? 'chapterSchedule.cancelled' : 'chapterSchedule.saved'));
-              workspace.retry();
+            onSaved={cancelled => {
+              setScheduleChapter(null)
+              setNotice(t(cancelled ? 'chapterSchedule.cancelled' : 'chapterSchedule.saved'))
+              workspace.retry()
             }}
           />
         )}
@@ -348,9 +348,9 @@ export function StoryManagerPage() {
             chapterId={releaseChapter.id}
             onClose={() => setReleaseChapter(null)}
             onReleased={() => {
-              setReleaseChapter(null);
-              setNotice(t('chapterRelease.success'));
-              workspace.retry();
+              setReleaseChapter(null)
+              setNotice(t('chapterRelease.success'))
+              workspace.retry()
             }}
           />
         )}
@@ -360,7 +360,7 @@ export function StoryManagerPage() {
             label="Mục quản lý truyện"
             value={tab}
             onChange={setTab}
-            items={tabItems.map((item) =>
+            items={tabItems.map(item =>
               item.value === 'chapters'
                 ? {
                     ...item,
@@ -376,7 +376,7 @@ export function StoryManagerPage() {
             key={story.id}
             story={story}
             onLifecycle={workspace.retry}
-            onSaved={(updated) =>
+            onSaved={updated =>
               setSavedStory({ source: workspace.data, story: { ...story, ...updated } })
             }
           />
@@ -425,9 +425,9 @@ export function StoryManagerPage() {
                   enterKeyHint="search"
                   aria-label="Tìm tiêu đề chương"
                   value={query}
-                  onChange={(event) => {
-                    setQuery(event.target.value);
-                    setPage(1);
+                  onChange={event => {
+                    setQuery(event.target.value)
+                    setPage(1)
                   }}
                   placeholder="Tìm tiêu đề chương..."
                   className="2xl:w-64 2xl:shrink-0"
@@ -437,9 +437,9 @@ export function StoryManagerPage() {
                     singleRow
                     label="Lọc trạng thái chương"
                     value={filter}
-                    onChange={(value) => {
-                      setFilter(value);
-                      setPage(1);
+                    onChange={value => {
+                      setFilter(value)
+                      setPage(1)
                     }}
                     items={[
                       ...filters,
@@ -459,7 +459,7 @@ export function StoryManagerPage() {
                   <table aria-hidden="true" className="w-full text-left sm:min-w-[680px]">
                     <ChapterTableHead />
                     <tbody className="divide-y divide-hairline">
-                      {[0, 1, 2, 3, 4].map((item) => (
+                      {[0, 1, 2, 3, 4].map(item => (
                         <ChapterRowSkeleton key={item} />
                       ))}
                     </tbody>
@@ -490,7 +490,7 @@ export function StoryManagerPage() {
                   <table className="w-full text-left sm:min-w-[680px]">
                     <ChapterTableHead />
                     <tbody className="divide-y divide-hairline">
-                      {pageRows.map((chapter) => (
+                      {pageRows.map(chapter => (
                         <ChapterRow
                           key={chapter.id}
                           chapter={chapter}
@@ -498,7 +498,7 @@ export function StoryManagerPage() {
                           onRelease={() => setReleaseChapter(chapter)}
                           onSchedule={() => setScheduleChapter(chapter)}
                           onEarlyAccess={() => setAccessChapter(chapter)}
-                          onLifecycle={(action) => setChapterAction({ story, chapter, action })}
+                          onLifecycle={action => setChapterAction({ story, chapter, action })}
                         />
                       ))}
                     </tbody>
@@ -514,8 +514,8 @@ export function StoryManagerPage() {
                       variant="secondary"
                       size="sm"
                       onClick={() => {
-                        setFilter('All');
-                        setQuery('');
+                        setFilter('All')
+                        setQuery('')
                       }}
                     >
                       Xóa bộ lọc
@@ -578,20 +578,20 @@ export function StoryManagerPage() {
             {...chapterAction}
             onClose={() => setChapterAction(null)}
             onReload={() => {
-              setChapterAction(null);
-              workspace.retry();
+              setChapterAction(null)
+              workspace.retry()
             }}
-            onSaved={(result) => {
+            onSaved={result => {
               if (chapterAction.action === 'reviseUnpublished') {
-                const revision = result.revision;
+                const revision = result.revision
                 navigate(
                   `/author/stories/${revision.storyId}/chapters/${revision.chapterId}/edit${['blocks-v2', 'blocks-v3'].includes(revision.formatVersion) ? '?mode=rich' : ''}`,
-                );
-                return;
+                )
+                return
               }
-              setChapterAction(null);
-              setNotice(t(`chapterLifecycle.${chapterAction.action}Saved`));
-              workspace.retry();
+              setChapterAction(null)
+              setNotice(t(`chapterLifecycle.${chapterAction.action}Saved`))
+              workspace.retry()
             }}
           />
         )}
@@ -601,13 +601,13 @@ export function StoryManagerPage() {
             chapters={workspace.data.chapters}
             onClose={() => setOrderOpen(false)}
             onReload={() => {
-              setOrderOpen(false);
-              workspace.retry();
+              setOrderOpen(false)
+              workspace.retry()
             }}
             onSaved={() => {
-              setOrderOpen(false);
-              setNotice(t('chapterOrder.saved'));
-              workspace.retry();
+              setOrderOpen(false)
+              setNotice(t('chapterOrder.saved'))
+              workspace.retry()
             }}
           />
         )}
@@ -615,7 +615,7 @@ export function StoryManagerPage() {
           open={newOpen}
           title={t('managerData.newChapter')}
           onClose={() => {
-            if (!newBusy) setNewOpen(false);
+            if (!newBusy) setNewOpen(false)
           }}
         >
           <form onSubmit={createChapter}>
@@ -628,7 +628,7 @@ export function StoryManagerPage() {
               maxLength={200}
               disabled={newBusy}
               value={newTitle}
-              onChange={(event) => setNewTitle(event.target.value)}
+              onChange={event => setNewTitle(event.target.value)}
               className="mt-2"
             />
             {newError && (
@@ -643,7 +643,7 @@ export function StoryManagerPage() {
         </Modal>
       </div>
     </AuthorLayout>
-  );
+  )
 }
 
 function RetryButton({ onClick }) {
@@ -652,7 +652,7 @@ function RetryButton({ onClick }) {
       <RefreshCw size={14} aria-hidden="true" />
       Thử lại
     </Button>
-  );
+  )
 }
 
 function ChapterTableHead() {
@@ -676,7 +676,7 @@ function ChapterTableHead() {
         </th>
       </tr>
     </thead>
-  );
+  )
 }
 
 function ChapterRowSkeleton() {
@@ -711,11 +711,11 @@ function ChapterRowSkeleton() {
         </div>
       </td>
     </tr>
-  );
+  )
 }
 
 function ChapterRow({ chapter, storyId, onLifecycle, onRelease, onSchedule, onEarlyAccess }) {
-  const { t, formatDate, formatNumber } = useLocale();
+  const { t, formatDate, formatNumber } = useLocale()
   const note =
     chapter.status === 'Scheduled' && chapter.requestedReleaseAt
       ? t('managerData.scheduledOn', { date: formatDate(chapter.requestedReleaseAt) })
@@ -723,8 +723,8 @@ function ChapterRow({ chapter, storyId, onLifecycle, onRelease, onSchedule, onEa
         ? t('managerData.publishedOn', { date: formatDate(chapter.publishedAt) })
         : chapter.updatedAt
           ? t('managerData.updatedOn', { date: formatDate(chapter.updatedAt) })
-          : '—';
-  const access = chapter.earlyAccess;
+          : '—'
+  const access = chapter.earlyAccess
   const price =
     chapter.status !== 'Published'
       ? t('managerData.notReleased')
@@ -732,8 +732,8 @@ function ChapterRow({ chapter, storyId, onLifecycle, onRelease, onSchedule, onEa
         ? t('managerData.free')
         : access.coinPrice == null || !access.endsAt
           ? '—'
-          : t('managerData.coinPrice', { count: access.coinPrice });
-  const draft = chapter.status === 'Draft';
+          : t('managerData.coinPrice', { count: access.coinPrice })
+  const draft = chapter.status === 'Draft'
   return (
     <tr className="transition-colors duration-200 hover:bg-elevated/60">
       <td className="px-4 py-4 sm:min-w-[11.5rem] sm:px-5">
@@ -854,41 +854,41 @@ function ChapterRow({ chapter, storyId, onLifecycle, onRelease, onSchedule, onEa
         </div>
       </td>
     </tr>
-  );
+  )
 }
 
 function StoryDetails({ story, onSaved, onLifecycle }) {
-  const { t } = useLocale();
-  const categories = useBackendResource('/catalog/categories');
-  const [categoryIds, setCategoryIds] = useState(story.categoryIds ?? []);
-  const categoriesChanged = JSON.stringify(categoryIds) !== JSON.stringify(story.categoryIds ?? []);
+  const { t } = useLocale()
+  const categories = useBackendResource('/catalog/categories')
+  const [categoryIds, setCategoryIds] = useState(story.categoryIds ?? [])
+  const categoriesChanged = JSON.stringify(categoryIds) !== JSON.stringify(story.categoryIds ?? [])
   const retired = categoryIds
-    .filter((id) =>
+    .filter(id =>
       ['ready', 'empty'].includes(categories.status)
-        ? !categories.data.some((item) => item.id === id)
-        : story.categories?.some((item) => item.id === id && item.status === 'retired'),
+        ? !categories.data.some(item => item.id === id)
+        : story.categories?.some(item => item.id === id && item.status === 'retired'),
     )
-    .map((id) => story.categories?.find((item) => item.id === id) ?? { id, name: id });
-  const genreOptions = [...categories.data, ...retired];
-  const [version, setVersion] = useState(story.version);
-  const [saveError, setSaveError] = useState('');
-  const [title, setTitle] = useState(story.title);
-  const [synopsis, setSynopsis] = useState(story.description);
-  const [status, setStatus] = useState('idle');
-  const [lifecycleBusy, setLifecycleBusy] = useState(false);
-  const [unpublishOpen, setUnpublishOpen] = useState(false);
-  const dirty = title !== story.title || synopsis !== story.description || categoriesChanged;
-  const titleError = !title.trim();
-  const synopsisError = synopsis.trim().length < 40;
-  const submit = async (event) => {
-    event.preventDefault();
-    if (!story.canEdit || status === 'saving' || lifecycleBusy) return;
+    .map(id => story.categories?.find(item => item.id === id) ?? { id, name: id })
+  const genreOptions = [...categories.data, ...retired]
+  const [version, setVersion] = useState(story.version)
+  const [saveError, setSaveError] = useState('')
+  const [title, setTitle] = useState(story.title)
+  const [synopsis, setSynopsis] = useState(story.description)
+  const [status, setStatus] = useState('idle')
+  const [lifecycleBusy, setLifecycleBusy] = useState(false)
+  const [unpublishOpen, setUnpublishOpen] = useState(false)
+  const dirty = title !== story.title || synopsis !== story.description || categoriesChanged
+  const titleError = !title.trim()
+  const synopsisError = synopsis.trim().length < 40
+  const submit = async event => {
+    event.preventDefault()
+    if (!story.canEdit || status === 'saving' || lifecycleBusy) return
     if (titleError || synopsisError || (categoriesChanged && !categoryIds.length)) {
-      setStatus('invalid');
-      return;
+      setStatus('invalid')
+      return
     }
-    setStatus('saving');
-    setSaveError('');
+    setStatus('saving')
+    setSaveError('')
     try {
       const result = await apiRequest(`/author/stories/${story.id}`, {
         method: 'PUT',
@@ -898,25 +898,23 @@ function StoryDetails({ story, onSaved, onLifecycle }) {
           expectedVersion: version,
           ...(categoriesChanged ? { categoryIds } : {}),
         },
-      });
-      setVersion(result.story.version);
-      setStatus('saved');
+      })
+      setVersion(result.story.version)
+      setStatus('saved')
       onSaved({
         ...result.story,
         ...(categoriesChanged
           ? {
-              genres: categoryIds.map(
-                (id) => genreOptions.find((item) => item.id === id)?.name ?? id,
-              ),
+              genres: categoryIds.map(id => genreOptions.find(item => item.id === id)?.name ?? id),
             }
           : {}),
-      });
+      })
     } catch (error) {
-      setStatus('error');
-      setSaveError(error.message || t('managerData.saveError'));
+      setStatus('error')
+      setSaveError(error.message || t('managerData.saveError'))
     }
-  };
-  const showErrors = status === 'invalid';
+  }
+  const showErrors = status === 'invalid'
   return (
     <Card as="form" noValidate onSubmit={submit} className="mt-5 max-w-3xl">
       <h2 className="text-h3">Thông tin và tóm tắt truyện</h2>
@@ -929,9 +927,9 @@ function StoryDetails({ story, onSaved, onLifecycle }) {
         value={title}
         disabled={!story.canEdit || status === 'saving' || lifecycleBusy}
         maxLength={100}
-        onChange={(event) => {
-          setTitle(event.target.value);
-          setStatus('idle');
+        onChange={event => {
+          setTitle(event.target.value)
+          setStatus('idle')
         }}
         aria-invalid={showErrors && titleError}
         aria-describedby={showErrors && titleError ? 'story-title-error' : undefined}
@@ -951,9 +949,9 @@ function StoryDetails({ story, onSaved, onLifecycle }) {
         value={synopsis}
         disabled={!story.canEdit || status === 'saving' || lifecycleBusy}
         maxLength={2000}
-        onChange={(event) => {
-          setSynopsis(event.target.value);
-          setStatus('idle');
+        onChange={event => {
+          setSynopsis(event.target.value)
+          setStatus('idle')
         }}
         aria-invalid={showErrors && synopsisError}
         aria-describedby="story-synopsis-hint"
@@ -989,7 +987,7 @@ function StoryDetails({ story, onSaved, onLifecycle }) {
           <p className="mt-3 text-sm text-muted">{t('managerData.categoriesEmpty')}</p>
         ) : null}
         <div className="mt-3 flex flex-wrap gap-2">
-          {genreOptions.map((item) => (
+          {genreOptions.map(item => (
             <label
               key={item.id}
               className="flex min-h-11 items-center gap-2 rounded-full border border-line bg-elevated px-3 py-2 text-sm"
@@ -998,18 +996,18 @@ function StoryDetails({ story, onSaved, onLifecycle }) {
                 type="checkbox"
                 checked={categoryIds.includes(item.id)}
                 disabled={!categoryIds.includes(item.id) && categoryIds.length >= 10}
-                onChange={(event) => {
-                  setCategoryIds((current) =>
+                onChange={event => {
+                  setCategoryIds(current =>
                     event.target.checked
                       ? [...current, item.id]
-                      : current.filter((id) => id !== item.id),
-                  );
-                  setStatus('idle');
+                      : current.filter(id => id !== item.id),
+                  )
+                  setStatus('idle')
                 }}
                 className="size-4 accent-brand"
               />
               {item.name}
-              {retired.some((old) => old.id === item.id) && (
+              {retired.some(old => old.id === item.id) && (
                 <span className="text-xs text-muted">{t('managerData.retiredCategory')}</span>
               )}
             </label>
@@ -1055,8 +1053,8 @@ function StoryDetails({ story, onSaved, onLifecycle }) {
           onBusy={setLifecycleBusy}
           onClose={() => setUnpublishOpen(false)}
           onChanged={() => {
-            setUnpublishOpen(false);
-            onLifecycle();
+            setUnpublishOpen(false)
+            onLifecycle()
           }}
         />
       )}
@@ -1068,40 +1066,40 @@ function StoryDetails({ story, onSaved, onLifecycle }) {
         onChanged={onLifecycle}
       />
     </Card>
-  );
+  )
 }
 
 function DraftLifecycle({ story, version, disabled, onBusy, onChanged }) {
-  const { t } = useLocale();
-  const [open, setOpen] = useState(false);
-  const [busy, setBusy] = useState(false);
-  const busyRef = useRef(false);
-  const [error, setError] = useState('');
-  const restore = story.status === 'archived';
-  const allowed = restore ? story.canRestore : story.canArchive;
+  const { t } = useLocale()
+  const [open, setOpen] = useState(false)
+  const [busy, setBusy] = useState(false)
+  const busyRef = useRef(false)
+  const [error, setError] = useState('')
+  const restore = story.status === 'archived'
+  const allowed = restore ? story.canRestore : story.canArchive
   const submit = async () => {
-    if (busyRef.current || disabled || !allowed) return;
-    busyRef.current = true;
-    setBusy(true);
-    onBusy(true);
-    setError('');
+    if (busyRef.current || disabled || !allowed) return
+    busyRef.current = true
+    setBusy(true)
+    onBusy(true)
+    setError('')
     try {
       const response = await apiRequest(`/author/stories/${story.id}/lifecycle`, {
         method: 'POST',
         body: { action: restore ? 'restore' : 'archive', expectedVersion: version },
-      });
+      })
       if (response?.story?.status !== (restore ? 'draft' : 'archived'))
-        throw new Error(t('managerData.lifecycleError'));
-      setOpen(false);
-      onChanged();
+        throw new Error(t('managerData.lifecycleError'))
+      setOpen(false)
+      onChanged()
     } catch (failure) {
-      setError(failure.message || t('managerData.lifecycleError'));
+      setError(failure.message || t('managerData.lifecycleError'))
     } finally {
-      busyRef.current = false;
-      setBusy(false);
-      onBusy(false);
+      busyRef.current = false
+      setBusy(false)
+      onBusy(false)
     }
-  };
+  }
   return (
     <section className="mt-6 border-t border-hairline pt-5">
       <h3 className="text-sm font-semibold">{t('managerData.lifecycleTitle')}</h3>
@@ -1113,8 +1111,8 @@ function DraftLifecycle({ story, version, disabled, onBusy, onChanged }) {
         className="mt-4"
         disabled={!allowed || disabled || busy}
         onClick={() => {
-          setError('');
-          setOpen(true);
+          setError('')
+          setOpen(true)
         }}
       >
         <Archive size={16} />
@@ -1144,11 +1142,11 @@ function DraftLifecycle({ story, version, disabled, onBusy, onChanged }) {
         </div>
       </Modal>
     </section>
-  );
+  )
 }
 
 function StoryHealth({ storyId, stats }) {
-  const { t } = useLocale();
+  const { t } = useLocale()
   return (
     <aside className="min-w-0 space-y-6 xl:sticky xl:top-24" aria-label="Sức khỏe truyện">
       <Card>
@@ -1209,7 +1207,7 @@ function StoryHealth({ storyId, stats }) {
         <p className="mt-2 text-sm leading-6 text-muted">{t('managerData.adviceUnknown')}</p>
       </Card>
     </aside>
-  );
+  )
 }
 
 function Metric({ label }) {
@@ -1221,5 +1219,5 @@ function Metric({ label }) {
       </div>
       <div aria-hidden="true" className="mt-2 h-1.5 rounded-full bg-elevated" />
     </div>
-  );
+  )
 }

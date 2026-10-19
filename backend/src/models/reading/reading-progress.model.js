@@ -1,4 +1,4 @@
-import { defineModel, mutableOptions, ObjectId, Schema } from '../shared/schema.js';
+import { defineModel, mutableOptions, ObjectId, Schema } from '../shared/schema.js'
 
 const schema = new Schema(
   {
@@ -14,7 +14,7 @@ const schema = new Schema(
     completedAt: Date,
   },
   mutableOptions,
-);
-schema.index({ accountId: 1, storyId: 1, chapterId: 1, mode: 1 }, { unique: true });
-schema.index({ accountId: 1, chapterId: 1, mode: 1 });
-export const ReadingProgress = defineModel('ReadingProgress', schema, 'readingProgress');
+)
+schema.index({ accountId: 1, storyId: 1, chapterId: 1, mode: 1 }, { unique: true })
+schema.index({ accountId: 1, chapterId: 1, mode: 1 })
+export const ReadingProgress = defineModel('ReadingProgress', schema, 'readingProgress')

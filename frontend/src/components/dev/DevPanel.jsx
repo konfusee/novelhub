@@ -1,14 +1,14 @@
-import { useId, useState } from 'react';
-import { FlaskConical, X } from '../icons';
-import { useTheme } from '../../context/ThemeContext';
-import { MOCK_LATENCIES, useMockData } from '../../context/MockDataContext';
-import { ApiStatus } from '../ApiStatus';
-import { Select } from '../ui';
+import { useId, useState } from 'react'
+import { FlaskConical, X } from '../icons'
+import { useTheme } from '../../context/ThemeContext'
+import { MOCK_LATENCIES, useMockData } from '../../context/MockDataContext'
+import { ApiStatus } from '../ApiStatus'
+import { Select } from '../ui'
 export function DevPanel() {
-  const [open, setOpen] = useState(false);
-  const { resolvedTheme, setTheme } = useTheme();
-  const { data, setSimulation, setLatency, reset } = useMockData();
-  if (!import.meta.env.DEV) return null;
+  const [open, setOpen] = useState(false)
+  const { resolvedTheme, setTheme } = useTheme()
+  const { data, setSimulation, setLatency, reset } = useMockData()
+  if (!import.meta.env.DEV) return null
   return (
     <div className="fixed bottom-[max(1rem,env(safe-area-inset-bottom))] right-[max(1rem,env(safe-area-inset-right))] z-[100] text-ink">
       {open && (
@@ -71,10 +71,10 @@ export function DevPanel() {
         <FlaskConical size={20} />
       </button>
     </div>
-  );
+  )
 }
 function Control({ label, value, options, optionLabels = {}, onChange }) {
-  const id = useId();
+  const id = useId()
   return (
     <div className="mt-3">
       <label
@@ -86,15 +86,15 @@ function Control({ label, value, options, optionLabels = {}, onChange }) {
       <Select
         id={id}
         value={value}
-        onChange={(e) => onChange(e.target.value)}
+        onChange={e => onChange(e.target.value)}
         className="mt-1 w-full"
       >
-        {options.map((item) => (
+        {options.map(item => (
           <option key={item} value={item}>
             {optionLabels[item] ?? item}
           </option>
         ))}
       </Select>
     </div>
-  );
+  )
 }

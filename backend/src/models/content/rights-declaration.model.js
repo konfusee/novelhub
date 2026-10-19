@@ -1,6 +1,6 @@
-import { defineModel, mutableOptions, ObjectId, Schema } from '../shared/schema.js';
-import { lockFields, forwardOnly } from '../shared/guards.js';
-export const RIGHTS_BASES = ['original', 'licensed'];
+import { defineModel, mutableOptions, ObjectId, Schema } from '../shared/schema.js'
+import { lockFields, forwardOnly } from '../shared/guards.js'
+export const RIGHTS_BASES = ['original', 'licensed']
 const schema = new Schema(
   {
     storyId: { type: ObjectId, ref: 'Story', required: true },
@@ -20,7 +20,7 @@ const schema = new Schema(
     immutableAt: Date,
   },
   mutableOptions,
-);
+)
 lockFields(
   schema,
   [
@@ -34,11 +34,11 @@ lockFields(
     'declaredAt',
   ],
   { mode: 'frozen-by', lockField: 'immutableAt' },
-);
+)
 forwardOnly(schema, 'status', {
   draft: ['asserted'],
   asserted: ['superseded'],
   superseded: [],
-});
-schema.index({ storyId: 1, revisionId: 1 }, { unique: true });
-export const RightsDeclaration = defineModel('RightsDeclaration', schema, 'rightsDeclarations');
+})
+schema.index({ storyId: 1, revisionId: 1 }, { unique: true })
+export const RightsDeclaration = defineModel('RightsDeclaration', schema, 'rightsDeclarations')

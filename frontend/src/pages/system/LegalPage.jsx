@@ -1,13 +1,13 @@
-import { Link } from 'react-router';
-import { ROUTES } from '../../app/routes';
-import { authorAgreements } from '../../data/authorAgreements';
-import { ShieldCheck } from '../../components/icons';
-import { PublicHeader } from '../../components/public/PublicHeader';
-import { Card } from '../../components/ui';
-import { useLocale } from '../../context/LocaleContext';
+import { Link } from 'react-router'
+import { ROUTES } from '../../app/routes'
+import { authorAgreements } from '../../data/authorAgreements'
+import { ShieldCheck } from '../../components/icons'
+import { PublicHeader } from '../../components/public/PublicHeader'
+import { Card } from '../../components/ui'
+import { useLocale } from '../../context/LocaleContext'
 
 const legalDocuments = {
-  ...Object.fromEntries(authorAgreements.map((document) => [document.type, document])),
+  ...Object.fromEntries(authorAgreements.map(document => [document.type, document])),
   terms: {
     title: 'legal.termsTitle',
     introduction: 'legal.termsIntro',
@@ -30,15 +30,15 @@ const legalDocuments = {
       ['legal.privacyChoicesTitle', 'legal.privacyChoicesBody'],
     ],
   },
-};
+}
 
-const getDocument = (type) => legalDocuments[type] || legalDocuments.terms;
+const getDocument = type => legalDocuments[type] || legalDocuments.terms
 
 /* `compact` omits the document heading for hosts that already title it (e.g. a Modal). */
 export function LegalContent({ type, compact = false, anchorPrefix }) {
-  const { t } = useLocale();
-  const document = getDocument(type);
-  const SectionHeading = compact ? 'h3' : 'h2';
+  const { t } = useLocale()
+  const document = getDocument(type)
+  const SectionHeading = compact ? 'h3' : 'h2'
   return (
     <article>
       {compact ? (
@@ -81,23 +81,23 @@ export function LegalContent({ type, compact = false, anchorPrefix }) {
         ))}
       </ol>
     </article>
-  );
+  )
 }
 
 function LegalNavigation({ type }) {
-  const { t } = useLocale();
-  const document = getDocument(type);
+  const { t } = useLocale()
+  const document = getDocument(type)
   const pages = [
     { type: 'terms', title: 'legal.termsTitle', path: '/terms' },
     { type: 'privacy', title: 'legal.privacyTitle', path: '/privacy' },
-    ...authorAgreements.map((item) => ({ ...item, path: ROUTES.authorAgreement(item.type) })),
-  ];
+    ...authorAgreements.map(item => ({ ...item, path: ROUTES.authorAgreement(item.type) })),
+  ]
   const links = (
     <>
       <nav aria-label={t('legal.quickNavigation')}>
         <h2 className="text-sm font-semibold">{t('legal.relatedPages')}</h2>
         <ul className="mt-3 space-y-1">
-          {pages.map((page) => (
+          {pages.map(page => (
             <li key={page.type}>
               <Link
                 to={page.path}
@@ -134,7 +134,7 @@ function LegalNavigation({ type }) {
         </ol>
       </nav>
     </>
-  );
+  )
   return (
     <aside className="order-first min-w-0 self-start lg:sticky lg:top-24 lg:order-last">
       <Card className="p-5 lg:max-h-[calc(100dvh-8rem)] lg:overflow-y-auto">
@@ -147,7 +147,7 @@ function LegalNavigation({ type }) {
         </details>
       </Card>
     </aside>
-  );
+  )
 }
 
 export function LegalPage({ type, embedded = false }) {
@@ -158,12 +158,12 @@ export function LegalPage({ type, embedded = false }) {
       </Card>
       <LegalNavigation type={type} />
     </div>
-  );
-  if (embedded) return content;
+  )
+  if (embedded) return content
   return (
     <div className="min-h-screen bg-page text-ink">
       <PublicHeader />
       <main>{content}</main>
     </div>
-  );
+  )
 }

@@ -11,14 +11,14 @@ import {
   PenLine,
   ShieldCheck,
   Sparkles,
-} from '../icons';
-import { ProgressBar } from '../ui';
-import { StoryCover } from '../story/StoryCover';
-import { useLocale } from '../../context/LocaleContext';
-import { stories } from '../../data/mock/stories';
+} from '../icons'
+import { ProgressBar } from '../ui'
+import { StoryCover } from '../story/StoryCover'
+import { useLocale } from '../../context/LocaleContext'
+import { stories } from '../../data/mock/stories'
 
-const storyById = Object.fromEntries(stories.map((story) => [story.id, story]));
-const socialCovers = ['silent-forest', 'whispers-of-you', 'neon-hearts'];
+const storyById = Object.fromEntries(stories.map(story => [story.id, story]))
+const socialCovers = ['silent-forest', 'whispers-of-you', 'neon-hearts']
 
 /*
  * Fan positions for md+ (x: % of one cover width, r: rotation, s: scale, order: flat-row slot
@@ -28,60 +28,60 @@ const loginFan = [
   { id: 'whispers-of-you', x: -62, r: -8, s: 0.9, z: 'z-0', order: 'order-1', lift: true },
   { id: 'neon-hearts', x: 62, r: 8, s: 0.9, z: 'z-0', order: 'order-3', lift: true },
   { id: 'silent-forest', x: 0, r: 0, s: 1, z: 'z-10', order: 'order-2', lift: true, lead: true },
-];
+]
 
-const wideFan = (center) => [
+const wideFan = center => [
   { id: 'dragons-wish', x: -100, r: -13, s: 0.8, z: 'z-0', outer: true },
   { id: 'last-kingdom', x: 100, r: 13, s: 0.8, z: 'z-0', outer: true },
   { id: 'whispers-of-you', x: -53, r: -8, s: 0.9, z: 'z-[1]', order: 'order-1', lift: true },
   { id: 'neon-hearts', x: 53, r: 8, s: 0.9, z: 'z-[1]', order: 'order-3', lift: true },
   { x: 0, r: 0, s: 1, z: 'z-10', order: 'order-2', lift: true, lead: true, ...center },
-];
+]
 
 /*
  * md+: the stage is a size container. --cover (one cover width) scales with both the stage width
  * and height, so the cascade grows with the viewport instead of leaving a fixed-size island.
  * The frame hugs the fan so the floating cards stay anchored to the covers at every width.
  */
-const loginStage = { '--cover': 'min(30cqw, 52cqh)', '--frame': 2.9 };
-const wideStage = { '--cover': 'min(30cqw, 50cqh)', '--frame': 3.1 };
+const loginStage = { '--cover': 'min(30cqw, 52cqh)', '--frame': 2.9 }
+const wideStage = { '--cover': 'min(30cqw, 50cqh)', '--frame': 3.1 }
 
 const tones = {
   brand: 'bg-brand/12 text-brand-strong',
   orange: 'bg-orange/16 text-orange-strong',
   purple: 'bg-purple/12 text-purple-strong',
-};
+}
 
-const readerBenefits = (t) => [
+const readerBenefits = t => [
   { icon: BookOpen, text: t('auth.benefitLibrary'), tone: tones.brand },
   { icon: Headphones, text: t('auth.benefitListening'), tone: tones.orange },
   { icon: ShieldCheck, text: t('auth.benefitPublishing'), tone: tones.purple },
-];
+]
 
 const variants = {
   login: {
-    eyebrow: (t) => [Sparkles, t('auth.storiesTogether')],
-    proof: (t) => ['3M+', t('home.readers').toLowerCase()],
+    eyebrow: t => [Sparkles, t('auth.storiesTogether')],
+    proof: t => ['3M+', t('home.readers').toLowerCase()],
     fan: () => loginFan,
     stage: loginStage,
     Floating: ContinueCard,
-    title: (t) => t('auth.introLoginTitle'),
-    description: (t) => t('auth.introDescription'),
+    title: t => t('auth.introLoginTitle'),
+    description: t => t('auth.introDescription'),
     points: readerBenefits,
   },
   register: {
-    eyebrow: (t) => [Sparkles, t('auth.storiesTogether')],
-    proof: (t) => ['3M+', t('home.readers').toLowerCase()],
+    eyebrow: t => [Sparkles, t('auth.storiesTogether')],
+    proof: t => ['3M+', t('home.readers').toLowerCase()],
     fan: () => wideFan({ id: 'silent-forest' }),
     stage: wideStage,
     Floating: RoleCards,
-    title: (t) => t('auth.introRegisterTitle'),
-    description: (t) => t('auth.introDescription'),
+    title: t => t('auth.introRegisterTitle'),
+    description: t => t('auth.introDescription'),
     points: readerBenefits,
   },
   author: {
     eyebrow: () => [Feather, 'Studio tác giả'],
-    proof: (t) => ['15K+', t('home.authors').toLowerCase()],
+    proof: t => ['15K+', t('home.authors').toLowerCase()],
     fan: ({ authorName }) =>
       wideFan({ id: 'your-story', story: { title: 'Truyện của bạn', author: authorName } }),
     stage: wideStage,
@@ -96,18 +96,18 @@ const variants = {
       { icon: BadgeDollarSign, text: 'Xuất bản và nhận doanh thu', tone: tones.purple },
     ],
   },
-};
+}
 
 /*
  * Presentational visual panel for the auth surfaces (/login, /register, /author/apply).
  * variant: 'login' | 'register' | 'author'. authorShare/authorName feed the author variant.
  */
 export function AuthShowcase({ variant, authorShare, authorName, className = '' }) {
-  const { t } = useLocale();
-  const config = variants[variant] || variants.register;
-  const [EyebrowIcon, eyebrow] = config.eyebrow(t);
-  const [proofValue, proofLabel] = config.proof(t);
-  const List = config.ordered ? 'ol' : 'ul';
+  const { t } = useLocale()
+  const config = variants[variant] || variants.register
+  const [EyebrowIcon, eyebrow] = config.eyebrow(t)
+  const [proofValue, proofLabel] = config.proof(t)
+  const List = config.ordered ? 'ol' : 'ul'
 
   return (
     <section
@@ -126,7 +126,7 @@ export function AuthShowcase({ variant, authorShare, authorName, className = '' 
         </p>
         <div className="flex items-center gap-2.5 text-xs text-ink/70">
           <div aria-hidden="true" className="flex -space-x-2">
-            {socialCovers.map((id) => (
+            {socialCovers.map(id => (
               <StoryCover
                 key={id}
                 story={storyById[id]}
@@ -203,7 +203,7 @@ export function AuthShowcase({ variant, authorShare, authorName, className = '' 
         </List>
       </div>
     </section>
-  );
+  )
 }
 
 function ContinueCard({ t }) {
@@ -228,7 +228,7 @@ function ContinueCard({ t }) {
         <BellRing size={14} /> 3 chương mới
       </span>
     </>
-  );
+  )
 }
 
 function RoleCards({ t }) {
@@ -249,7 +249,7 @@ function RoleCards({ t }) {
         className="bottom-0 right-0"
       />
     </>
-  );
+  )
 }
 
 function AuthorCards({ authorShare, t }) {
@@ -272,7 +272,7 @@ function AuthorCards({ authorShare, t }) {
         className="bottom-0 right-0"
       />
     </>
-  );
+  )
 }
 
 function FloatingCard({ icon: Icon, tone, title, text, className }) {
@@ -291,5 +291,5 @@ function FloatingCard({ icon: Icon, tone, title, text, className }) {
         </span>
       </span>
     </div>
-  );
+  )
 }

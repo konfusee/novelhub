@@ -1,4 +1,4 @@
-import { z } from 'zod';
+import { z } from 'zod'
 import {
   Account,
   AuditEvent,
@@ -7,13 +7,13 @@ import {
   PublicationSubmission,
   RoleAssignment,
   Story,
-} from '../models/index.js';
-import { withTransaction } from '../db/connection.js';
-import { HttpError } from '../middleware/errors.js';
-import { loadSubmittedPackage } from './author-submitted-package.js';
-import { digest } from './submission-digests.js';
+} from '../models/index.js'
+import { withTransaction } from '../db/connection.js'
+import { HttpError } from '../middleware/errors.js'
+import { loadSubmittedPackage } from './author-submitted-package.js'
+import { digest } from './submission-digests.js'
 
-const oid = z.string().regex(/^[a-f\d]{24}$/i);
+const oid = z.string().regex(/^[a-f\d]{24}$/i)
 export const formerStoryInput = z.discriminatedUnion('action', [
   z
     .object({
@@ -24,7 +24,7 @@ export const formerStoryInput = z.discriminatedUnion('action', [
         .array(oid)
         .min(1)
         .max(10)
-        .refine((ids) => new Set(ids).size === ids.length),
+        .refine(ids => new Set(ids).size === ids.length),
       expectedVersion: z.number().int().min(0),
       expectedPublishedRevisionId: oid,
       reason: z.string().trim().min(1).max(1000),
@@ -38,45 +38,45 @@ export const formerStoryInput = z.discriminatedUnion('action', [
       reason: z.string().trim().min(1).max(1000),
     })
     .strict(),
-]);
+])
 const metadata = z
   .object({
     title: z.string().trim().min(1).max(200),
     description: z.string().max(10000).optional(),
     categoryIds: z.array(oid).min(1).max(10),
   })
-  .strict();
+  .strict()
 const unavailable = () =>
   new HttpError(
     409,
     'former_author_only',
     'Chỉ xử lý truyện từng công khai của cựu Author đang hoạt động, đã bị thu hồi quyền và đóng băng soạn thảo.',
-  );
+  )
 
 async function state(storyId, session, lockOwner = false) {
-  const story = await Story.findById(storyId).session(session ?? null);
-  if (!story) throw new HttpError(404, 'not_found', 'Không tìm thấy truyện.');
+  const story = await Story.findById(storyId).session(session ?? null)
+  if (!story) throw new HttpError(404, 'not_found', 'Không tìm thấy truyện.')
   const owner = lockOwner
     ? await Account.findOneAndUpdate(
         { _id: story.authorAccountId, status: 'active', everAuthor: true },
         { $inc: { version: 1 } },
         { session, returnDocument: 'after' },
       )
-    : await Account.findById(story.authorAccountId).session(session ?? null);
+    : await Account.findById(story.authorAccountId).session(session ?? null)
   const roles = await RoleAssignment.find({ accountId: story.authorAccountId, role: 'author' })
     .session(session ?? null)
-    .lean();
+    .lean()
   if (
     !owner ||
     owner.status !== 'active' ||
     !owner.everAuthor ||
     !story.authoringFrozen ||
-    !roles.some((role) => role.status === 'revoked') ||
-    roles.some((role) => role.status === 'active') ||
+    !roles.some(role => role.status === 'revoked') ||
+    roles.some(role => role.status === 'active') ||
     !['published', 'unpublished'].includes(story.publicationStatus) ||
     !story.publishedRevisionId
   )
-    throw unavailable();
+    throw unavailable()
   const source = await ContentRevision.findOne({
     _id: story.publishedRevisionId,
     storyId: story._id,
@@ -87,13 +87,13 @@ async function state(storyId, session, lockOwner = false) {
     immutableAt: { $ne: null },
   })
     .session(session ?? null)
-    .lean();
+    .lean()
   if (!source || source.mediaIds?.length || !metadata.safeParse(source.content).success)
-    throw unavailable();
-  const correction = source.validation?.adminFormerAuthorCorrection;
-  const rootId = correction?.rootRevisionId ?? String(source._id);
+    throw unavailable()
+  const correction = source.validation?.adminFormerAuthorCorrection
+  const rootId = correction?.rootRevisionId ?? String(source._id)
   if (correction && source.packageDigest !== digest({ content: source.content, correction }))
-    throw unavailable();
+    throw unavailable()
   const submission = await PublicationSubmission.findOne({
     revisionId: rootId,
     storyId: story._id,
@@ -102,9 +102,9 @@ async function state(storyId, session, lockOwner = false) {
     status: 'approved',
   })
     .session(session ?? null)
-    .lean();
-  if (!submission) throw unavailable();
-  const root = await loadSubmittedPackage({ _id: owner._id }, submission._id, session);
+    .lean()
+  if (!submission) throw unavailable()
+  const root = await loadSubmittedPackage({ _id: owner._id }, submission._id, session)
   if (
     root.revision.formatVersion !== 'story-v1' ||
     root.manifest.length ||
@@ -114,8 +114,8 @@ async function state(storyId, session, lockOwner = false) {
       (correction.rootPackageDigest !== root.revision.packageDigest ||
         correction.rootRightsDigest !== root.revision.rightsDigest))
   )
-    throw unavailable();
-  return { story, source, root, owner };
+    throw unavailable()
+  return { story, source, root, owner }
 }
 const view = ({ story, source, owner }) => ({
   id: String(story._id),
@@ -126,16 +126,16 @@ const view = ({ story, source, owner }) => ({
   version: story.version,
   publishedRevisionId: String(source._id),
   ownerName: owner.displayName,
-});
+})
 export async function formerStoryDetail(id) {
-  return { story: view(await state(id)) };
+  return { story: view(await state(id)) }
 }
 export async function formerStoryList(page) {
   const match = {
     authoringFrozen: true,
     publishedRevisionId: { $ne: null },
     publicationStatus: { $in: ['published', 'unpublished'] },
-  };
+  }
   const [items, total] = await Promise.all([
     Story.find(match)
       .sort({ updatedAt: -1, _id: -1 })
@@ -144,9 +144,9 @@ export async function formerStoryList(page) {
       .select('title publicationStatus authorAccountId')
       .lean(),
     Story.countDocuments(match),
-  ]);
+  ])
   return {
-    items: items.map((item) => ({
+    items: items.map(item => ({
       id: String(item._id),
       title: item.title,
       status: item.publicationStatus,
@@ -155,10 +155,10 @@ export async function formerStoryList(page) {
     total,
     page,
     pageSize: 20,
-  };
+  }
 }
 export async function changeFormerStory(admin, id, input) {
-  return withTransaction(async (session) => {
+  return withTransaction(async session => {
     const actor = await Account.findOneAndUpdate(
       {
         _id: admin._id,
@@ -168,27 +168,27 @@ export async function changeFormerStory(admin, id, input) {
       },
       { $inc: { version: 1 } },
       { session },
-    );
+    )
     const allowed = await RoleAssignment.exists({
       accountId: admin._id,
       role: 'admin',
       status: 'active',
-    }).session(session);
+    }).session(session)
     if (!actor || !allowed)
-      throw new HttpError(403, 'forbidden', 'Quyền quản trị không còn hiệu lực.');
-    const current = await state(id, session, true);
-    const { story, source, root } = current;
+      throw new HttpError(403, 'forbidden', 'Quyền quản trị không còn hiệu lực.')
+    const current = await state(id, session, true)
+    const { story, source, root } = current
     if (
       story.version !== input.expectedVersion ||
       String(story.publishedRevisionId) !== input.expectedPublishedRevisionId
     )
-      throw new HttpError(409, 'stale_content', 'Truyện đã thay đổi. Hãy tải lại.');
+      throw new HttpError(409, 'stale_content', 'Truyện đã thay đổi. Hãy tải lại.')
     if (
       (input.action === 'unpublish' && story.publicationStatus !== 'published') ||
       (input.action === 'republish' && story.publicationStatus !== 'unpublished')
     )
-      throw new HttpError(409, 'state_changed', 'Trạng thái truyện không phù hợp. Hãy tải lại.');
-    const categories = input.action === 'correct' ? input.categoryIds : source.content.categoryIds;
+      throw new HttpError(409, 'state_changed', 'Trạng thái truyện không phù hợp. Hãy tải lại.')
+    const categories = input.action === 'correct' ? input.categoryIds : source.content.categoryIds
     if (
       input.action !== 'unpublish' &&
       (await Category.countDocuments({ _id: { $in: categories }, status: 'active' }).session(
@@ -199,19 +199,19 @@ export async function changeFormerStory(admin, id, input) {
         409,
         'invalid_categories',
         'Cần thể loại đang hoạt động trước khi công khai.',
-      );
+      )
     const now = new Date(),
       before = story.publicationStatus,
-      previous = String(source._id);
+      previous = String(source._id)
     if (input.action === 'correct') {
       const last = await ContentRevision.findOne({ storyId: story._id, contentType: 'story' })
         .sort({ revisionNumber: -1 })
-        .session(session);
+        .session(session)
       const content = {
         title: input.title,
         description: input.description,
         categoryIds: input.categoryIds,
-      };
+      }
       const correction = {
         rootRevisionId: String(root.revision._id),
         rootPackageDigest: root.revision.packageDigest,
@@ -219,7 +219,7 @@ export async function changeFormerStory(admin, id, input) {
         previousPublishedRevisionId: previous,
         actorId: String(admin._id),
         occurredAt: now.toISOString(),
-      };
+      }
       const [revision] = await ContentRevision.create(
         [
           {
@@ -237,14 +237,14 @@ export async function changeFormerStory(admin, id, input) {
           },
         ],
         { session },
-      );
-      story.publishedRevisionId = revision._id;
-      story.currentRevisionId = revision._id;
-      story.title = input.title;
-      story.description = input.description;
-      story.categoryIds = input.categoryIds;
+      )
+      story.publishedRevisionId = revision._id
+      story.currentRevisionId = revision._id
+      story.title = input.title
+      story.description = input.description
+      story.categoryIds = input.categoryIds
     }
-    story.publicationStatus = input.action === 'unpublish' ? 'unpublished' : 'published';
+    story.publicationStatus = input.action === 'unpublish' ? 'unpublished' : 'published'
     story.publicationTransition = {
       actorAccountId: admin._id,
       occurredAt: now,
@@ -253,8 +253,8 @@ export async function changeFormerStory(admin, id, input) {
       result: `admin-former-author-${input.action}`,
       previousPublishedRevisionId: previous,
       rootRevisionId: String(root.revision._id),
-    };
-    await story.save({ session });
+    }
+    await story.save({ session })
     await AuditEvent.create(
       [
         {
@@ -275,9 +275,9 @@ export async function changeFormerStory(admin, id, input) {
         },
       ],
       { session },
-    );
+    )
     return {
       story: { id: String(story._id), status: story.publicationStatus, version: story.version },
-    };
-  });
+    }
+  })
 }

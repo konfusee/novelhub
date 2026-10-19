@@ -1,23 +1,23 @@
-import { createHash } from 'node:crypto';
+import { createHash } from 'node:crypto'
 
-const canonical = (value) =>
+const canonical = value =>
   Array.isArray(value)
     ? value.map(canonical)
     : value && typeof value === 'object'
       ? Object.fromEntries(
           Object.keys(value)
             .sort()
-            .map((key) => [key, canonical(value[key])]),
+            .map(key => [key, canonical(value[key])]),
         )
-      : value;
+      : value
 
-export const digest = (value) =>
+export const digest = value =>
   createHash('sha256')
     .update(JSON.stringify(canonical(value)))
-    .digest('hex');
+    .digest('hex')
 
-export const rightsFacts = (rights) => ({
+export const rightsFacts = rights => ({
   basis: rights.basis,
   asserted: rights.asserted,
   sourceLicenceNote: rights.sourceLicenceNote ?? '',
-});
+})

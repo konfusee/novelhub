@@ -1,63 +1,63 @@
-import { useEffect, useId, useState } from 'react';
-import { apiRequest } from '../../api/client';
-import { useLocale } from '../../context/LocaleContext';
-import { Button, Card, Modal, Select, SkeletonText } from '../ui';
+import { useEffect, useId, useState } from 'react'
+import { apiRequest } from '../../api/client'
+import { useLocale } from '../../context/LocaleContext'
+import { Button, Card, Modal, Select, SkeletonText } from '../ui'
 
 export function AuthorApplications() {
-  const { t } = useLocale();
-  const fieldId = useId();
-  const [status, setStatus] = useState('submitted');
-  const [page, setPage] = useState(1);
-  const [refresh, setRefresh] = useState(0);
-  const [feed, setFeed] = useState({ state: 'loading', items: [], total: 0 });
-  const [selected, setSelected] = useState(null);
-  const [decision, setDecision] = useState('approve');
-  const [reason, setReason] = useState('');
-  const [saving, setSaving] = useState(false);
-  const [error, setError] = useState('');
-  const [notice, setNotice] = useState('');
-  const pageSize = 10;
+  const { t } = useLocale()
+  const fieldId = useId()
+  const [status, setStatus] = useState('submitted')
+  const [page, setPage] = useState(1)
+  const [refresh, setRefresh] = useState(0)
+  const [feed, setFeed] = useState({ state: 'loading', items: [], total: 0 })
+  const [selected, setSelected] = useState(null)
+  const [decision, setDecision] = useState('approve')
+  const [reason, setReason] = useState('')
+  const [saving, setSaving] = useState(false)
+  const [error, setError] = useState('')
+  const [notice, setNotice] = useState('')
+  const pageSize = 10
 
   useEffect(() => {
-    const controller = new AbortController();
+    const controller = new AbortController()
     apiRequest(`/admin/author-applications?${new URLSearchParams({ status, page, pageSize })}`, {
       signal: controller.signal,
     })
-      .then((result) => {
-        if (!controller.signal.aborted) setFeed({ state: 'ready', ...result });
+      .then(result => {
+        if (!controller.signal.aborted) setFeed({ state: 'ready', ...result })
       })
-      .catch((failure) => {
+      .catch(failure => {
         if (failure.name !== 'AbortError' && !controller.signal.aborted) {
-          setFeed({ state: 'error', items: [], total: 0 });
+          setFeed({ state: 'error', items: [], total: 0 })
         }
-      });
-    return () => controller.abort();
-  }, [status, page, refresh]);
+      })
+    return () => controller.abort()
+  }, [status, page, refresh])
 
   const reload = () => {
-    setFeed({ state: 'loading', items: [], total: 0 });
-    setRefresh((value) => value + 1);
-  };
-  const inspect = async (application) => {
-    setSelected(application);
-    setReason('');
-    setDecision('approve');
-    setError('');
-    setNotice('');
-  };
-  const confirm = async (event) => {
-    event.preventDefault();
-    if (saving || !reason.trim() || selected?.status !== 'submitted') return;
-    setSaving(true);
-    setError('');
+    setFeed({ state: 'loading', items: [], total: 0 })
+    setRefresh(value => value + 1)
+  }
+  const inspect = async application => {
+    setSelected(application)
+    setReason('')
+    setDecision('approve')
+    setError('')
+    setNotice('')
+  }
+  const confirm = async event => {
+    event.preventDefault()
+    if (saving || !reason.trim() || selected?.status !== 'submitted') return
+    setSaving(true)
+    setError('')
     try {
       await apiRequest(`/admin/author-applications/${selected.id}/decision`, {
         method: 'POST',
         body: { decision, reason: reason.trim(), expectedVersion: selected.version },
-      });
-      setSelected(null);
-      setNotice(t('authorAccess.decisionSaved'));
-      reload();
+      })
+      setSelected(null)
+      setNotice(t('authorAccess.decisionSaved'))
+      reload()
     } catch (failure) {
       setError(
         t(
@@ -67,11 +67,11 @@ export function AuthorApplications() {
               ? 'authorAccess.ineligible'
               : 'authorAccess.saveFailed',
         ),
-      );
+      )
     } finally {
-      setSaving(false);
+      setSaving(false)
     }
-  };
+  }
   return (
     <Card className="mt-6" aria-labelledby={`${fieldId}-title`}>
       <div className="flex flex-wrap items-end justify-between gap-4">
@@ -92,13 +92,13 @@ export function AuthorApplications() {
         <Select
           id={`${fieldId}-filter`}
           value={status}
-          onChange={(event) => {
-            setStatus(event.target.value);
-            setPage(1);
-            setFeed({ state: 'loading', items: [], total: 0 });
+          onChange={event => {
+            setStatus(event.target.value)
+            setPage(1)
+            setFeed({ state: 'loading', items: [], total: 0 })
           }}
         >
-          {['submitted', 'approved', 'rejected', 'all'].map((value) => (
+          {['submitted', 'approved', 'rejected', 'all'].map(value => (
             <option key={value} value={value}>
               {t(`authorAccess.${value}`)}
             </option>
@@ -126,7 +126,7 @@ export function AuthorApplications() {
           <table className="w-full min-w-[36rem] text-left text-sm">
             <thead>
               <tr className="border-b border-line">
-                {['applicant', 'submittedAt', 'status', 'action'].map((key) => (
+                {['applicant', 'submittedAt', 'status', 'action'].map(key => (
                   <th key={key} className="px-3 py-3 font-semibold">
                     {t(`authorAccess.${key}`)}
                   </th>
@@ -134,7 +134,7 @@ export function AuthorApplications() {
               </tr>
             </thead>
             <tbody>
-              {feed.items.map((application) => (
+              {feed.items.map(application => (
                 <tr key={application.id} className="border-b border-hairline">
                   <td className="px-3 py-3">
                     <p className="font-medium">
@@ -168,8 +168,8 @@ export function AuthorApplications() {
               variant="secondary"
               disabled={page === 1}
               onClick={() => {
-                setPage(page - 1);
-                setFeed({ state: 'loading', items: [], total: 0 });
+                setPage(page - 1)
+                setFeed({ state: 'loading', items: [], total: 0 })
               }}
             >
               {t('authorAccess.previous')}
@@ -179,8 +179,8 @@ export function AuthorApplications() {
               variant="secondary"
               disabled={page * pageSize >= feed.total}
               onClick={() => {
-                setPage(page + 1);
-                setFeed({ state: 'loading', items: [], total: 0 });
+                setPage(page + 1)
+                setFeed({ state: 'loading', items: [], total: 0 })
               }}
             >
               {t('authorAccess.next')}
@@ -192,7 +192,7 @@ export function AuthorApplications() {
         open={Boolean(selected)}
         title={t('authorAccess.reviewTitle')}
         onClose={() => {
-          if (!saving) setSelected(null);
+          if (!saving) setSelected(null)
         }}
       >
         {selected && (
@@ -212,9 +212,9 @@ export function AuthorApplications() {
                   id={`${fieldId}-decision`}
                   disabled={saving}
                   value={decision}
-                  onChange={(event) => setDecision(event.target.value)}
+                  onChange={event => setDecision(event.target.value)}
                 >
-                  {['approve', 'reject'].map((value) => (
+                  {['approve', 'reject'].map(value => (
                     <option key={value} value={value}>
                       {t(`authorAccess.${value}`)}
                     </option>
@@ -232,7 +232,7 @@ export function AuthorApplications() {
                   required
                   maxLength={1000}
                   disabled={saving}
-                  onChange={(event) => setReason(event.target.value)}
+                  onChange={event => setReason(event.target.value)}
                   className="min-h-28 w-full rounded-2xl border border-line bg-surface px-4 py-3 text-sm text-ink"
                 />
                 <p className="mt-2 text-caption text-muted">{t('authorAccess.confirmHint')}</p>
@@ -262,5 +262,5 @@ export function AuthorApplications() {
         )}
       </Modal>
     </Card>
-  );
+  )
 }

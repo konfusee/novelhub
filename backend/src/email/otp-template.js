@@ -1,7 +1,7 @@
-const escapeHtml = (value) =>
+const escapeHtml = value =>
   String(value).replace(
     /[&<>"']/g,
-    (character) =>
+    character =>
       ({
         '&': '&amp;',
         '<': '&lt;',
@@ -9,18 +9,18 @@ const escapeHtml = (value) =>
         '"': '&quot;',
         "'": '&#39;',
       })[character],
-  );
+  )
 
 export function renderOtpEmail({ otp, expiresInMinutes, purpose }) {
-  if (!/^\d{6}$/.test(otp)) throw new Error('OTP email requires six digits');
+  if (!/^\d{6}$/.test(otp)) throw new Error('OTP email requires six digits')
   if (!Number.isFinite(expiresInMinutes) || expiresInMinutes <= 0)
-    throw new Error('OTP email requires a valid expiry');
-  const recovery = purpose === 'password-reset';
-  const title = recovery ? 'Đặt lại mật khẩu' : 'Xác minh bảo mật';
+    throw new Error('OTP email requires a valid expiry')
+  const recovery = purpose === 'password-reset'
+  const title = recovery ? 'Đặt lại mật khẩu' : 'Xác minh bảo mật'
   const description = recovery
     ? 'Bạn vừa yêu cầu đặt lại mật khẩu NovelHub. Dùng mã bên dưới để tiếp tục.'
-    : 'Dùng mã bên dưới để hoàn tất yêu cầu xác minh trên NovelHub.';
-  const expiry = escapeHtml(expiresInMinutes);
+    : 'Dùng mã bên dưới để hoàn tất yêu cầu xác minh trên NovelHub.'
+  const expiry = escapeHtml(expiresInMinutes)
   return {
     text: `${title} · NovelHub\n\n${description}\n\nMã xác thực của bạn:\n${otp}\n\nMã có hiệu lực trong ${expiresInMinutes} phút và chỉ dùng một lần.\nSao chép 6 chữ số ở trên, quay lại NovelHub và dán vào ô mã xác minh.\nKhông chia sẻ mã này với bất kỳ ai.\n\nNếu bạn không yêu cầu xác minh, hãy bỏ qua email này.`,
     html: `<!doctype html>
@@ -62,5 +62,5 @@ export function renderOtpEmail({ otp, expiresInMinutes, purpose }) {
   </table>
 </body>
 </html>`,
-  };
+  }
 }

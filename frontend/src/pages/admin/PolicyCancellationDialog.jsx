@@ -1,33 +1,33 @@
-import { useId, useRef, useState } from 'react';
-import { Button, Input, Modal } from '../../components/ui';
-import { apiRequest } from '../../api/client';
-import { useLocale } from '../../context/LocaleContext';
+import { useId, useRef, useState } from 'react'
+import { Button, Input, Modal } from '../../components/ui'
+import { apiRequest } from '../../api/client'
+import { useLocale } from '../../context/LocaleContext'
 
 export function PolicyCancellationDialog({ policy, onClose, onSaved, onReload }) {
-  const { t } = useLocale();
-  const id = useId();
-  const [reason, setReason] = useState('');
-  const [busy, setBusy] = useState(false);
-  const busyRef = useRef(false);
-  const [failed, setFailed] = useState(false);
+  const { t } = useLocale()
+  const id = useId()
+  const [reason, setReason] = useState('')
+  const [busy, setBusy] = useState(false)
+  const busyRef = useRef(false)
+  const [failed, setFailed] = useState(false)
   async function submit(event) {
-    event.preventDefault();
-    if (busyRef.current || failed || !reason.trim() || !policy.future) return;
-    busyRef.current = true;
-    setBusy(true);
+    event.preventDefault()
+    if (busyRef.current || failed || !reason.trim() || !policy.future) return
+    busyRef.current = true
+    setBusy(true)
     try {
       const response = await apiRequest(`/admin/policy/${policy.id}/cancel`, {
         method: 'POST',
         body: { expectedVersion: policy.version, reason: reason.trim() },
-      });
+      })
       if (response?.policyId !== policy.id || response?.version !== policy.version + 1)
-        throw new Error('Invalid cancellation response');
-      onSaved();
+        throw new Error('Invalid cancellation response')
+      onSaved()
     } catch {
-      setFailed(true);
+      setFailed(true)
     } finally {
-      busyRef.current = false;
-      setBusy(false);
+      busyRef.current = false
+      setBusy(false)
     }
   }
   return (
@@ -47,7 +47,7 @@ export function PolicyCancellationDialog({ policy, onClose, onSaved, onReload })
           maxLength={1000}
           value={reason}
           disabled={busy || failed}
-          onChange={(event) => setReason(event.target.value)}
+          onChange={event => setReason(event.target.value)}
         />
         {failed && (
           <p role="alert" className="mt-3 text-caption text-rose-strong">
@@ -74,5 +74,5 @@ export function PolicyCancellationDialog({ policy, onClose, onSaved, onReload })
         </div>
       </form>
     </Modal>
-  );
+  )
 }

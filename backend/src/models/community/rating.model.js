@@ -1,5 +1,5 @@
-import { defineModel, mutableOptions, ObjectId, Schema } from '../shared/schema.js';
-export const RATING_STATUSES = ['active', 'removed'];
+import { defineModel, mutableOptions, ObjectId, Schema } from '../shared/schema.js'
+export const RATING_STATUSES = ['active', 'removed']
 const schema = new Schema(
   {
     accountId: { type: ObjectId, ref: 'Account', required: true },
@@ -9,7 +9,7 @@ const schema = new Schema(
     removedAt: Date,
   },
   mutableOptions,
-);
-schema.index({ accountId: 1, storyId: 1 }, { unique: true });
-schema.index({ storyId: 1, status: 1 });
-export const Rating = defineModel('Rating', schema, 'ratings');
+)
+schema.index({ accountId: 1, storyId: 1 }, { unique: true })
+schema.index({ storyId: 1, status: 1 })
+export const Rating = defineModel('Rating', schema, 'ratings')

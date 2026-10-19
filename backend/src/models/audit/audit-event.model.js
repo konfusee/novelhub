@@ -1,4 +1,4 @@
-import { appendOnly, appendOnlyOptions, defineModel, ObjectId, Schema } from '../shared/schema.js';
+import { appendOnly, appendOnlyOptions, defineModel, ObjectId, Schema } from '../shared/schema.js'
 
 const schema = new Schema(
   {
@@ -22,7 +22,7 @@ const schema = new Schema(
     retentionClass: String,
   },
   appendOnlyOptions,
-);
-schema.plugin(appendOnly);
-schema.index({ targetType: 1, targetId: 1, occurredAt: -1 });
-export const AuditEvent = defineModel('AuditEvent', schema, 'auditEvents');
+)
+schema.plugin(appendOnly)
+schema.index({ targetType: 1, targetId: 1, occurredAt: -1 })
+export const AuditEvent = defineModel('AuditEvent', schema, 'auditEvents')

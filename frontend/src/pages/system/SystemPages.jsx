@@ -1,13 +1,13 @@
-import { ArrowLeft, FileSearch, Home, ShieldX } from '../../components/icons';
-import { useLocation, useNavigate } from 'react-router';
-import { Button, ButtonLink, Card } from '../../components/ui';
-import { PublicHeader } from '../../components/public/PublicHeader';
+import { ArrowLeft, FileSearch, Home, ShieldX } from '../../components/icons'
+import { useLocation, useNavigate } from 'react-router'
+import { Button, ButtonLink, Card } from '../../components/ui'
+import { PublicHeader } from '../../components/public/PublicHeader'
 
 function StatePage({ code, icon: Icon, title, children }) {
-  const navigate = useNavigate();
-  const location = useLocation();
+  const navigate = useNavigate()
+  const location = useLocation()
   // A directly opened URL has no in-app history entry to return to.
-  const goBack = () => (location.key === 'default' ? navigate('/') : navigate(-1));
+  const goBack = () => (location.key === 'default' ? navigate('/') : navigate(-1))
   return (
     <div className="flex min-h-screen flex-col bg-page text-ink">
       <PublicHeader />
@@ -34,12 +34,12 @@ function StatePage({ code, icon: Icon, title, children }) {
         </Card>
       </main>
     </div>
-  );
+  )
 }
 
 export const ForbiddenPage = () => {
-  const location = useLocation();
-  const from = location.state?.from;
+  const location = useLocation()
+  const from = location.state?.from
   return (
     <StatePage code="403" icon={ShieldX} title="Khu vực này bị giới hạn">
       Tài khoản của bạn không thể mở{' '}
@@ -50,11 +50,11 @@ export const ForbiddenPage = () => {
       )}
       . Hãy chuyển sang tài khoản có quyền phù hợp.
     </StatePage>
-  );
-};
+  )
+}
 
 export const NotFoundPage = () => (
   <StatePage code="404" icon={FileSearch} title="Không tìm thấy chương này">
     Liên kết có thể đã cũ hoặc trang đã được chuyển. Hãy về trang chủ và tiếp tục khám phá NovelHub.
   </StatePage>
-);
+)

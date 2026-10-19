@@ -1,5 +1,5 @@
-import mongoose from 'mongoose';
-import { z } from 'zod';
+import mongoose from 'mongoose'
+import { z } from 'zod'
 import {
   AuditEvent,
   Category,
@@ -10,29 +10,29 @@ import {
   PublicationSubmission,
   RightsDeclaration,
   Story,
-} from '../models/index.js';
-import { HttpError } from '../middleware/errors.js';
-import { withTransaction } from '../db/connection.js';
-import { lockAuthor, ownStory } from './author-ownership.js';
-import { textChapterDocument } from './chapter-document.js';
-import { digest, rightsFacts } from './submission-digests.js';
-import { inspectChapterImages, pinChapterImages } from './author-chapter-media.js';
-import { loadSubmittedPackage } from './author-submitted-package.js';
+} from '../models/index.js'
+import { HttpError } from '../middleware/errors.js'
+import { withTransaction } from '../db/connection.js'
+import { lockAuthor, ownStory } from './author-ownership.js'
+import { textChapterDocument } from './chapter-document.js'
+import { digest, rightsFacts } from './submission-digests.js'
+import { inspectChapterImages, pinChapterImages } from './author-chapter-media.js'
+import { loadSubmittedPackage } from './author-submitted-package.js'
 import {
   richChapterDocument,
   editableChapterDocument,
   chapterTextProjection,
-} from './rich-chapter-document.js';
+} from './rich-chapter-document.js'
 
-const oid = z.string().regex(/^[a-f\d]{24}$/i);
+const oid = z.string().regex(/^[a-f\d]{24}$/i)
 const storyContent = z
   .object({
     title: z.string().trim().min(1).max(200),
     description: z.string().trim().min(1).max(10000),
     categoryIds: z.array(oid).min(1).max(10),
   })
-  .strict();
-const markup = /<\/?[a-z][^>]*>|```|\*\*|__|!\[[^\]]*\]\(|^\s{0,3}(?:#{1,6}\s|>\s)/imu;
+  .strict()
+const markup = /<\/?[a-z][^>]*>|```|\*\*|__|!\[[^\]]*\]\(|^\s{0,3}(?:#{1,6}\s|>\s)/imu
 
 export function canReviseUnpublished(submission, target, revision, story) {
   return Boolean(
@@ -47,63 +47,63 @@ export function canReviseUnpublished(submission, target, revision, story) {
     ['approved', 'immutable'].includes(revision.status) &&
     String(target.publishedRevisionId) === String(submission.revisionId) &&
     String(target.draftRevisionId ?? target.currentRevisionId) === String(submission.revisionId),
-  );
+  )
 }
 
 async function packageState(account, input, session, config) {
-  const story = await ownStory(account, input.storyId, session);
+  const story = await ownStory(account, input.storyId, session)
   const target = input.chapterId
     ? await Chapter.findOne({ _id: input.chapterId, storyId: story._id }).session(session ?? null)
-    : story;
-  if (!target) throw new HttpError(404, 'not_found', 'Không tìm thấy chương.');
+    : story
+  if (!target) throw new HttpError(404, 'not_found', 'Không tìm thấy chương.')
   const revision = await ContentRevision.findOne({
     _id: target.draftRevisionId ?? target.currentRevisionId,
     storyId: story._id,
     authorAccountId: account._id,
     contentType: input.chapterId ? 'chapter' : 'story',
     ...(input.chapterId ? { chapterId: target._id } : { chapterId: null }),
-  }).session(session ?? null);
-  if (!revision) throw new HttpError(409, 'missing_revision', 'Không tìm thấy bản nháp để gửi.');
+  }).session(session ?? null)
+  if (!revision) throw new HttpError(409, 'missing_revision', 'Không tìm thấy bản nháp để gửi.')
   const content =
     revision.content && typeof revision.content === 'object' && !Array.isArray(revision.content)
       ? revision.content
-      : {};
-  const blocks = Array.isArray(content.blocks) ? content.blocks : [];
+      : {}
+  const blocks = Array.isArray(content.blocks) ? content.blocks : []
   let valid = input.chapterId
     ? ((revision.formatVersion === 'blocks-v1' && textChapterDocument.safeParse(content).success) ||
         (revision.formatVersion === 'blocks-v2' &&
           richChapterDocument.safeParse(content).success) ||
         (revision.formatVersion === 'blocks-v3' &&
           editableChapterDocument.safeParse(content).success)) &&
-      chapterTextProjection(revision).some((text) => text.trim())
-    : revision.formatVersion === 'story-v1' && storyContent.safeParse(content).success;
+      chapterTextProjection(revision).some(text => text.trim())
+    : revision.formatVersion === 'story-v1' && storyContent.safeParse(content).success
   const text = input.chapterId
     ? chapterTextProjection(revision).join('\n')
-    : (content.description ?? '');
+    : (content.description ?? '')
   valid = Boolean(
     valid &&
     (['blocks-v2', 'blocks-v3'].includes(revision.formatVersion) || !markup.test(text)) &&
     !markup.test(content.title ?? ''),
-  );
-  const rawCategoryIds = input.chapterId ? story.categoryIds.map(String) : content.categoryIds;
+  )
+  const rawCategoryIds = input.chapterId ? story.categoryIds.map(String) : content.categoryIds
   const categoryIds = Array.isArray(rawCategoryIds)
-    ? rawCategoryIds.filter((value) => oid.safeParse(value).success)
-    : [];
+    ? rawCategoryIds.filter(value => oid.safeParse(value).success)
+    : []
   const active = await Category.countDocuments({
     _id: { $in: categoryIds },
     status: 'active',
-  }).session(session ?? null);
+  }).session(session ?? null)
   const categoriesValid =
     Array.isArray(rawCategoryIds) &&
     categoryIds.length === rawCategoryIds.length &&
     categoryIds.length > 0 &&
     new Set(categoryIds.map(String)).size === categoryIds.length &&
-    active === categoryIds.length;
-  const illustrated = Boolean(input.chapterId && revision.formatVersion === 'blocks-v3');
-  let images = null;
+    active === categoryIds.length
+  const illustrated = Boolean(input.chapterId && revision.formatVersion === 'blocks-v3')
+  let images = null
   if (illustrated && valid) {
     try {
-      images = await inspectChapterImages(config, account, story._id, content, session);
+      images = await inspectChapterImages(config, account, story._id, content, session)
       if (
         !images.mediaIds.length ||
         JSON.stringify(revision.mediaIds.map(String)) !== JSON.stringify(images.mediaIds) ||
@@ -112,9 +112,9 @@ async function packageState(account, input, session, config) {
           digest(images.validation.mediaManifest) ||
         revision.validation?.mediaManifestVersion !== 'chapter-images-v1'
       )
-        images = null;
+        images = null
     } catch (error) {
-      if (!(error instanceof HttpError) || ![404, 409].includes(error.status)) throw error;
+      if (!(error instanceof HttpError) || ![404, 409].includes(error.status)) throw error
     }
   }
   const mediaSupported =
@@ -122,7 +122,7 @@ async function packageState(account, input, session, config) {
     !story.theme?.coverBannerMediaId &&
     (illustrated
       ? Boolean(images)
-      : !revision.mediaIds?.length && !blocks.some((block) => block?.type === 'image'));
+      : !revision.mediaIds?.length && !blocks.some(block => block?.type === 'image'))
   const rights = input.chapterId
     ? await RightsDeclaration.findOne({
         storyId: story._id,
@@ -132,7 +132,7 @@ async function packageState(account, input, session, config) {
         status: 'asserted',
         immutableAt: { $ne: null },
       }).session(session ?? null)
-    : null;
+    : null
   const approvedParent = rights
     ? await ContentRevision.exists({
         _id: rights.revisionId,
@@ -142,12 +142,12 @@ async function packageState(account, input, session, config) {
         status: { $in: ['approved', 'immutable'] },
         immutableAt: { $ne: null },
       }).session(session ?? null)
-    : false;
+    : false
   const parentReady =
     !input.chapterId ||
     (['published', 'approved'].includes(story.publicationStatus) &&
       Boolean(rights) &&
-      Boolean(approvedParent));
+      Boolean(approvedParent))
   const editable =
     !story.authoringFrozen &&
     !['submitted', 'under-review', 'archived'].includes(story.publicationStatus) &&
@@ -158,7 +158,7 @@ async function packageState(account, input, session, config) {
         target.draftRevisionId &&
         String(target.draftRevisionId) !== String(target.publishedRevisionId))) &&
     revision.status === 'editable' &&
-    !revision.immutableAt;
+    !revision.immutableAt
   return {
     story,
     target,
@@ -173,10 +173,10 @@ async function packageState(account, input, session, config) {
       { code: 'media', ok: mediaSupported },
       { code: 'parent', ok: parentReady },
     ],
-  };
+  }
 }
 export async function prepareSubmission(account, input, config) {
-  const state = await packageState(account, input, undefined, config);
+  const state = await packageState(account, input, undefined, config)
   const frozenRights = state.revision.immutableAt
     ? await RightsDeclaration.findOne({
         _id: state.revision.rightsDeclarationId,
@@ -184,7 +184,7 @@ export async function prepareSubmission(account, input, config) {
         declaredBy: account._id,
         immutableAt: { $ne: null },
       }).lean()
-    : null;
+    : null
   return {
     story: { id: String(state.story._id), title: state.story.title, author: account.displayName },
     target: {
@@ -197,7 +197,7 @@ export async function prepareSubmission(account, input, config) {
       formatVersion: state.revision.formatVersion,
     },
     checks: state.checks,
-    ready: state.checks.every((check) => check.ok),
+    ready: state.checks.every(check => check.ok),
     words: (input.chapterId
       ? chapterTextProjection(state.revision)
       : [state.revision.content?.description ?? '']
@@ -212,63 +212,63 @@ export async function prepareSubmission(account, input, config) {
           },
         }
       : {}),
-  };
+  }
 }
 export async function submitContent(account, input, config) {
-  return withTransaction(async (session) => {
-    await lockAuthor(account, session);
-    await ownStory(account, input.storyId, session);
+  return withTransaction(async session => {
+    await lockAuthor(account, session)
+    await ownStory(account, input.storyId, session)
     const existing = await PublicationSubmission.findOne({
       revisionId: input.revisionId,
       storyId: input.storyId,
       authorAccountId: account._id,
       chapterId: input.chapterId ?? null,
-    }).session(session);
+    }).session(session)
     if (existing) {
-      const frozen = await ContentRevision.findById(existing.revisionId).session(session);
-      const illustrated = frozen?.formatVersion === 'blocks-v3';
+      const frozen = await ContentRevision.findById(existing.revisionId).session(session)
+      const illustrated = frozen?.formatVersion === 'blocks-v3'
       if (!input.chapterId || illustrated) {
         const rights = await RightsDeclaration.findOne({ submissionId: existing._id }).session(
           session,
-        );
+        )
         if (
           !rights ||
           !input.rights ||
           digest(rightsFacts(rights)) !== digest(rightsFacts(input.rights)) ||
           (illustrated && input.imageManifestDigest !== frozen.mediaDigest)
         )
-          throw new HttpError(409, 'package_changed', 'Nội dung quyền khác với gói đã gửi.');
+          throw new HttpError(409, 'package_changed', 'Nội dung quyền khác với gói đã gửi.')
       } else if (input.rights || input.imageManifestDigest)
         throw new HttpError(
           400,
           'validation_error',
           'Chương văn bản dùng khai báo quyền của truyện.',
-        );
-      return { id: String(existing._id), status: existing.status, replayed: true };
+        )
+      return { id: String(existing._id), status: existing.status, replayed: true }
     }
-    const state = await packageState(account, input, session, config);
+    const state = await packageState(account, input, session, config)
     if (
       String(state.revision._id) !== input.revisionId ||
       state.target.version !== input.expectedVersion
     )
-      throw new HttpError(409, 'stale_content', 'Bản nháp đã thay đổi. Hãy tải lại trước khi gửi.');
-    if (!state.checks.every((check) => check.ok))
+      throw new HttpError(409, 'stale_content', 'Bản nháp đã thay đổi. Hãy tải lại trước khi gửi.')
+    if (!state.checks.every(check => check.ok))
       throw new HttpError(409, 'submission_not_ready', 'Bản nháp chưa đủ điều kiện gửi.', {
         checks: state.checks,
-      });
+      })
     if (state.illustrated) {
       if (!input.rights || input.imageManifestDigest !== state.images.mediaDigest)
         throw new HttpError(
           409,
           'image_rights_required',
           'Hãy khai báo quyền cho đúng danh sách ảnh của bản nháp.',
-        );
+        )
       if (input.rights.basis === 'licensed' && !input.rights.sourceLicenceNote?.trim())
         throw new HttpError(
           400,
           'licence_note_required',
           'Hãy ghi nguồn và phạm vi được cấp phép cho nội dung và ảnh.',
-        );
+        )
       // Pin the verified assets in the same transaction as the immutable package.
       const pinned = await pinChapterImages(
         config,
@@ -276,17 +276,17 @@ export async function submitContent(account, input, config) {
         state.story._id,
         state.revision.content,
         session,
-      );
+      )
       if (pinned.mediaDigest !== state.images.mediaDigest)
-        throw new HttpError(409, 'media_changed', 'Ảnh đã thay đổi. Hãy kiểm tra lại bản nháp.');
+        throw new HttpError(409, 'media_changed', 'Ảnh đã thay đổi. Hãy kiểm tra lại bản nháp.')
     } else if (input.imageManifestDigest || (input.chapterId && input.rights)) {
-      throw new HttpError(400, 'validation_error', 'Khai báo ảnh không phù hợp với phiên bản này.');
+      throw new HttpError(400, 'validation_error', 'Khai báo ảnh không phù hợp với phiên bản này.')
     }
-    const now = new Date();
-    const submissionId = new mongoose.Types.ObjectId();
-    let rights = state.rights;
+    const now = new Date()
+    const submissionId = new mongoose.Types.ObjectId()
+    let rights = state.rights
     if (!input.chapterId || state.illustrated) {
-      [rights] = await RightsDeclaration.create(
+      ;[rights] = await RightsDeclaration.create(
         [
           {
             ...rightsFacts(input.rights),
@@ -300,7 +300,7 @@ export async function submitContent(account, input, config) {
           },
         ],
         { session },
-      );
+      )
     }
     const rightsDigest = state.illustrated
       ? digest({
@@ -308,14 +308,14 @@ export async function submitContent(account, input, config) {
           parentRightsDeclarationId: String(state.rights._id),
           mediaDigest: state.images.mediaDigest,
         })
-      : digest(rightsFacts(rights));
-    const mediaDigest = state.images?.mediaDigest ?? digest([]);
+      : digest(rightsFacts(rights))
+    const mediaDigest = state.images?.mediaDigest ?? digest([])
     const packageDigest = digest({
       formatVersion: state.revision.formatVersion,
       content: state.revision.content,
       rightsDigest,
       mediaDigest,
-    });
+    })
     state.revision.set({
       rightsDeclarationId: rights._id,
       rightsDigest,
@@ -331,8 +331,8 @@ export async function submitContent(account, input, config) {
       status: 'submitted',
       submittedAt: now,
       immutableAt: now,
-    });
-    await state.revision.save({ session });
+    })
+    await state.revision.save({ session })
     const [submission] = await PublicationSubmission.create(
       [
         {
@@ -347,7 +347,7 @@ export async function submitContent(account, input, config) {
         },
       ],
       { session },
-    );
+    )
     const [batch] = await EvidenceBatch.create(
       [
         {
@@ -359,17 +359,16 @@ export async function submitContent(account, input, config) {
         },
       ],
       { session },
-    );
-    submission.currentEvidenceBatchId = batch._id;
-    await submission.save({ session });
+    )
+    submission.currentEvidenceBatchId = batch._id
+    await submission.save({ session })
     if (input.chapterId) {
-      if (state.target.status !== 'published') state.target.status = 'submitted';
-      await state.target.save({ session });
+      if (state.target.status !== 'published') state.target.status = 'submitted'
+      await state.target.save({ session })
     } else {
-      state.story.authoringFrozen = true;
-      if (state.story.publicationStatus !== 'published')
-        state.story.publicationStatus = 'submitted';
-      await state.story.save({ session });
+      state.story.authoringFrozen = true
+      if (state.story.publicationStatus !== 'published') state.story.publicationStatus = 'submitted'
+      await state.story.save({ session })
     }
     await AuditEvent.create(
       [
@@ -386,7 +385,7 @@ export async function submitContent(account, input, config) {
         },
       ],
       { session },
-    );
+    )
     await ModerationHistory.create(
       [
         {
@@ -404,12 +403,12 @@ export async function submitContent(account, input, config) {
         },
       ],
       { session },
-    );
-    return { id: String(submissionId), status: 'validated', replayed: false };
-  });
+    )
+    return { id: String(submissionId), status: 'validated', replayed: false }
+  })
 }
 export async function submissionList(account, { page = 1 } = {}) {
-  const filter = { authorAccountId: account._id };
+  const filter = { authorAccountId: account._id }
   const [total, items, stories] = await Promise.all([
     PublicationSubmission.countDocuments(filter),
     PublicationSubmission.find(filter)
@@ -421,38 +420,38 @@ export async function submissionList(account, { page = 1 } = {}) {
       .sort({ updatedAt: -1 })
       .select('title authoringFrozen publicationStatus')
       .lean(),
-  ]);
+  ])
   const revisions = await ContentRevision.find({
-    _id: { $in: items.map((item) => item.revisionId) },
+    _id: { $in: items.map(item => item.revisionId) },
     authorAccountId: account._id,
   })
     .select('content.title revisionNumber status immutableAt')
-    .lean();
+    .lean()
   const chapters = await Chapter.find({
-    _id: { $in: items.map((item) => item.chapterId).filter(Boolean) },
-    storyId: { $in: stories.map((story) => story._id) },
+    _id: { $in: items.map(item => item.chapterId).filter(Boolean) },
+    storyId: { $in: stories.map(story => story._id) },
   })
     .select('status publishedRevisionId draftRevisionId currentRevisionId storyId')
-    .lean();
+    .lean()
   const history = await ModerationHistory.find({
-    submissionId: { $in: items.map((item) => item._id) },
+    submissionId: { $in: items.map(item => item._id) },
   })
     .sort({ occurredAt: -1, _id: -1 })
     .select('submissionId action outcome feedback occurredAt')
-    .lean();
+    .lean()
   const batches = await EvidenceBatch.find({
-    _id: { $in: items.map((item) => item.currentEvidenceBatchId).filter(Boolean) },
+    _id: { $in: items.map(item => item.currentEvidenceBatchId).filter(Boolean) },
   })
     .select('status failedStage')
-    .lean();
+    .lean()
   return {
     page,
     total,
     pageCount: Math.max(1, Math.ceil(total / 10)),
-    stories: stories.map((story) => ({ id: String(story._id), title: story.title })),
-    items: items.map((item) => {
-      const revision = revisions.find((revision) => revision._id.equals(item.revisionId));
-      const batch = batches.find((batch) => batch._id.equals(item.currentEvidenceBatchId));
+    stories: stories.map(story => ({ id: String(story._id), title: story.title })),
+    items: items.map(item => {
+      const revision = revisions.find(revision => revision._id.equals(item.revisionId))
+      const batch = batches.find(batch => batch._id.equals(item.currentEvidenceBatchId))
       return {
         id: String(item._id),
         storyId: String(item.storyId),
@@ -464,61 +463,60 @@ export async function submissionList(account, { page = 1 } = {}) {
           ['rejected', 'revision-requested'].includes(item.status) ||
           canReviseUnpublished(
             item,
-            chapters.find((chapter) => chapter._id.equals(item.chapterId)),
+            chapters.find(chapter => chapter._id.equals(item.chapterId)),
             revision,
-            stories.find((story) => story._id.equals(item.storyId)) ?? {},
+            stories.find(story => story._id.equals(item.storyId)) ?? {},
           ),
         version: item.version,
         submittedAt: item.submittedAt,
         decisionSummary: item.decisionSummary ?? '',
         processing: batch ? { status: batch.status, failedStage: batch.failedStage ?? null } : null,
         history: history
-          .filter((row) => row.submissionId.equals(item._id))
-          .map((row) => ({
+          .filter(row => row.submissionId.equals(item._id))
+          .map(row => ({
             id: String(row._id),
             action: row.action,
             outcome: row.outcome ?? '',
             feedback: row.feedback ?? '',
             occurredAt: row.occurredAt,
           })),
-      };
+      }
     }),
-  };
+  }
 }
 
 /** A review result starts a new editable revision; the reviewed package stays immutable. */
 export async function reviseSubmission(account, submissionId, expectedVersion) {
-  return withTransaction(async (session) => {
-    await lockAuthor(account, session);
+  return withTransaction(async session => {
+    await lockAuthor(account, session)
     const submission = await PublicationSubmission.findOne({
       _id: submissionId,
       authorAccountId: account._id,
-    }).session(session);
-    if (!submission) throw new HttpError(404, 'not_found', 'Không tìm thấy gói gửi.');
+    }).session(session)
+    if (!submission) throw new HttpError(404, 'not_found', 'Không tìm thấy gói gửi.')
     if (submission.version !== expectedVersion)
-      throw new HttpError(409, 'stale_submission', 'Kết quả xét duyệt đã thay đổi. Hãy tải lại.');
-    const story = await ownStory(account, submission.storyId, session);
+      throw new HttpError(409, 'stale_submission', 'Kết quả xét duyệt đã thay đổi. Hãy tải lại.')
+    const story = await ownStory(account, submission.storyId, session)
     if (story.publicationStatus === 'archived')
-      throw new HttpError(409, 'content_frozen', 'Truyện đã được lưu trữ.');
+      throw new HttpError(409, 'content_frozen', 'Truyện đã được lưu trữ.')
     const target = submission.chapterId
       ? await Chapter.findOne({ _id: submission.chapterId, storyId: story._id }).session(session)
-      : story;
-    if (!target) throw new HttpError(404, 'not_found', 'Không tìm thấy nội dung.');
+      : story
+    if (!target) throw new HttpError(404, 'not_found', 'Không tìm thấy nội dung.')
     if (submission.chapterId && story.authoringFrozen)
-      throw new HttpError(409, 'content_frozen', 'Truyện đang có gói thông tin chờ xử lý.');
+      throw new HttpError(409, 'content_frozen', 'Truyện đang có gói thông tin chờ xử lý.')
     if (['archived', 'cancelled', 'scheduled', 'due'].includes(target.status))
-      throw new HttpError(409, 'content_frozen', 'Nội dung không còn ở vòng chỉnh sửa này.');
-    const currentId = target.draftRevisionId ?? target.currentRevisionId;
+      throw new HttpError(409, 'content_frozen', 'Nội dung không còn ở vòng chỉnh sửa này.')
+    const currentId = target.draftRevisionId ?? target.currentRevisionId
     const current = await ContentRevision.findOne({
       _id: currentId,
       storyId: story._id,
       authorAccountId: account._id,
       contentType: submission.chapterId ? 'chapter' : 'story',
       chapterId: submission.chapterId ?? null,
-    }).session(session);
-    if (!current)
-      throw new HttpError(409, 'missing_revision', 'Không tìm thấy phiên bản hiện tại.');
-    const unpublished = canReviseUnpublished(submission, target, current, story);
+    }).session(session)
+    if (!current) throw new HttpError(409, 'missing_revision', 'Không tìm thấy phiên bản hiện tại.')
+    const unpublished = canReviseUnpublished(submission, target, current, story)
     const unpublishedReplay =
       submission.chapterId &&
       submission.status === 'approved' &&
@@ -526,13 +524,13 @@ export async function reviseSubmission(account, submissionId, expectedVersion) {
       String(target.publishedRevisionId) === String(submission.revisionId) &&
       current.parentRevisionId?.equals(submission.revisionId) &&
       current.status === 'editable' &&
-      !current.immutableAt;
+      !current.immutableAt
     if (
       !['rejected', 'revision-requested'].includes(submission.status) &&
       !unpublished &&
       !unpublishedReplay
     )
-      throw new HttpError(409, 'revision_not_allowed', 'Gói chưa đủ điều kiện tạo bản sửa.');
+      throw new HttpError(409, 'revision_not_allowed', 'Gói chưa đủ điều kiện tạo bản sửa.')
     if (
       current.parentRevisionId?.equals(submission.revisionId) &&
       current.status === 'editable' &&
@@ -544,17 +542,17 @@ export async function reviseSubmission(account, submissionId, expectedVersion) {
         chapterId: submission.chapterId ? String(target._id) : null,
         formatVersion: current.formatVersion,
         replayed: true,
-      };
+      }
     if (!current._id.equals(submission.revisionId) || !current.immutableAt)
-      throw new HttpError(409, 'stale_content', 'Nội dung đã chuyển sang phiên bản khác.');
-    if (unpublished) await loadSubmittedPackage(account, submission._id, session);
+      throw new HttpError(409, 'stale_content', 'Nội dung đã chuyển sang phiên bản khác.')
+    if (unpublished) await loadSubmittedPackage(account, submission._id, session)
     const last = await ContentRevision.findOne({
       storyId: story._id,
       contentType: current.contentType,
       chapterId: submission.chapterId ?? null,
     })
       .sort({ revisionNumber: -1 })
-      .session(session);
+      .session(session)
     const [revision] = await ContentRevision.create(
       [
         {
@@ -580,22 +578,22 @@ export async function reviseSubmission(account, submissionId, expectedVersion) {
         },
       ],
       { session },
-    );
-    target.draftRevisionId = revision._id;
-    target.currentRevisionId = revision._id;
+    )
+    target.draftRevisionId = revision._id
+    target.currentRevisionId = revision._id
     if (submission.chapterId) {
-      if (target.status !== 'published') target.status = 'draft';
+      if (target.status !== 'published') target.status = 'draft'
     } else {
-      story.authoringFrozen = false;
+      story.authoringFrozen = false
       if (!['published', 'unpublished'].includes(story.publicationStatus))
-        story.publicationStatus = story.publishedRevisionId ? 'unpublished' : 'draft';
+        story.publicationStatus = story.publishedRevisionId ? 'unpublished' : 'draft'
     }
-    await target.save({ session });
+    await target.save({ session })
     if (unpublished) {
-      story.increment();
-      await story.save({ session });
+      story.increment()
+      await story.save({ session })
     }
-    const now = new Date();
+    const now = new Date()
     await AuditEvent.create(
       [
         {
@@ -611,7 +609,7 @@ export async function reviseSubmission(account, submissionId, expectedVersion) {
         },
       ],
       { session },
-    );
+    )
     await ModerationHistory.create(
       [
         {
@@ -627,13 +625,13 @@ export async function reviseSubmission(account, submissionId, expectedVersion) {
         },
       ],
       { session },
-    );
+    )
     return {
       id: String(revision._id),
       storyId: String(story._id),
       chapterId: submission.chapterId ? String(target._id) : null,
       formatVersion: revision.formatVersion,
       replayed: false,
-    };
-  });
+    }
+  })
 }

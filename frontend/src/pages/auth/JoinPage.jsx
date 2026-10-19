@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react'
 import {
   AlertTriangle,
   ArrowRight,
@@ -14,17 +14,17 @@ import {
   RefreshCw,
   ShieldCheck,
   UserRound,
-} from '../../components/icons';
-import { Link, useLocation, useNavigate } from 'react-router';
-import { apiRequest } from '../../api/client';
-import { PublicHeader } from '../../components/public/PublicHeader';
-import { AuthShowcase } from '../../components/auth/AuthShowcase';
-import { Button, Card, IconButton, Input, Modal } from '../../components/ui';
-import { authorAgreements } from '../../data/authorAgreements';
-import { ROUTES } from '../../app/routes';
-import { LegalContent } from '../system/LegalPage';
-import { canAccessPath, getAccountHome, useAuth } from '../../context/AuthContext';
-import { useLocale } from '../../context/LocaleContext';
+} from '../../components/icons'
+import { Link, useLocation, useNavigate } from 'react-router'
+import { apiRequest } from '../../api/client'
+import { PublicHeader } from '../../components/public/PublicHeader'
+import { AuthShowcase } from '../../components/auth/AuthShowcase'
+import { Button, Card, IconButton, Input, Modal } from '../../components/ui'
+import { authorAgreements } from '../../data/authorAgreements'
+import { ROUTES } from '../../app/routes'
+import { LegalContent } from '../system/LegalPage'
+import { canAccessPath, getAccountHome, useAuth } from '../../context/AuthContext'
+import { useLocale } from '../../context/LocaleContext'
 
 const accountOptions = [
   {
@@ -39,42 +39,42 @@ const accountOptions = [
     descriptionKey: 'auth.authorDescription',
     icon: PenLine,
   },
-];
+]
 
-const authorAgreementItems = authorAgreements.map(({ type, title }) => [type, title]);
+const authorAgreementItems = authorAgreements.map(({ type, title }) => [type, title])
 
-const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-const FIELD_ORDER = ['name', 'email', 'password', 'confirmation', 'captcha', 'author', 'terms'];
+const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+const FIELD_ORDER = ['name', 'email', 'password', 'confirmation', 'captcha', 'author', 'terms']
 
 export function JoinPage({ initialMode }) {
-  const { t } = useLocale();
-  const location = useLocation();
-  const navigate = useNavigate();
-  const { login, loginWithGoogle, register, verifyTwoFactor } = useAuth();
-  const queryMode = new URLSearchParams(location.search).get('mode');
-  const mode = initialMode || queryMode || 'register';
-  const isLogin = mode === 'login';
-  const [accountType, setAccountType] = useState('reader');
-  const [rememberMe, setRememberMe] = useState(false);
+  const { t } = useLocale()
+  const location = useLocation()
+  const navigate = useNavigate()
+  const { login, loginWithGoogle, register, verifyTwoFactor } = useAuth()
+  const queryMode = new URLSearchParams(location.search).get('mode')
+  const mode = initialMode || queryMode || 'register'
+  const isLogin = mode === 'login'
+  const [accountType, setAccountType] = useState('reader')
+  const [rememberMe, setRememberMe] = useState(false)
   const [loginChallenge, setLoginChallenge] = useState(
     () => new URLSearchParams(location.search).get('googleChallenge') || '',
-  );
-  const [loginOtp, setLoginOtp] = useState('');
-  const [captchaVersion, setCaptchaVersion] = useState(0);
-  const [captcha, setCaptcha] = useState({ token: '', image: '', answer: '', status: 'loading' });
-  const [showPassword, setShowPassword] = useState(false);
-  const [showConfirmation, setShowConfirmation] = useState(false);
-  const googleError = new URLSearchParams(location.search).get('googleError');
+  )
+  const [loginOtp, setLoginOtp] = useState('')
+  const [captchaVersion, setCaptchaVersion] = useState(0)
+  const [captcha, setCaptcha] = useState({ token: '', image: '', answer: '', status: 'loading' })
+  const [showPassword, setShowPassword] = useState(false)
+  const [showConfirmation, setShowConfirmation] = useState(false)
+  const googleError = new URLSearchParams(location.search).get('googleError')
   const googleErrorKeys = {
     cancelled: 'auth.googleCancelled',
     failed: 'auth.googleFailed',
     account_unavailable: 'auth.googleAccountUnavailable',
-  };
+  }
   const [error, setError] = useState(() =>
     googleError ? t(googleErrorKeys[googleError] || 'auth.googleFailed') : '',
-  );
-  const [notice, setNotice] = useState('');
-  const registered = new URLSearchParams(location.search).get('registered');
+  )
+  const [notice, setNotice] = useState('')
+  const registered = new URLSearchParams(location.search).get('registered')
   const registrationNotice =
     isLogin && registered
       ? t(
@@ -84,14 +84,14 @@ export function JoinPage({ initialMode }) {
               ? 'auth.emailRegistered'
               : 'auth.emailRegisteredDeliveryFailed',
         )
-      : '';
-  const [fieldErrors, setFieldErrors] = useState({});
-  const [busy, setBusy] = useState(false);
-  const [legalDocument, setLegalDocument] = useState(null);
-  const [agreementOpen, setAgreementOpen] = useState(false);
-  const [agreementDocument, setAgreementDocument] = useState(authorAgreements[0].type);
-  const formRef = useRef(null);
-  const agreementReaderRef = useRef(null);
+      : ''
+  const [fieldErrors, setFieldErrors] = useState({})
+  const [busy, setBusy] = useState(false)
+  const [legalDocument, setLegalDocument] = useState(null)
+  const [agreementOpen, setAgreementOpen] = useState(false)
+  const [agreementDocument, setAgreementDocument] = useState(authorAgreements[0].type)
+  const formRef = useRef(null)
+  const agreementReaderRef = useRef(null)
   const [form, setForm] = useState({
     name: '',
     email: '',
@@ -102,132 +102,132 @@ export function JoinPage({ initialMode }) {
     publishing: false,
     rights: false,
     revenue: false,
-  });
+  })
 
   useEffect(() => {
-    if (isLogin) return;
-    const controller = new AbortController();
+    if (isLogin) return
+    const controller = new AbortController()
     apiRequest('/auth/captcha', { signal: controller.signal })
-      .then((result) => setCaptcha({ ...result, answer: '', status: 'ready' }))
-      .catch((reason) => {
+      .then(result => setCaptcha({ ...result, answer: '', status: 'ready' }))
+      .catch(reason => {
         if (reason.name !== 'AbortError')
-          setCaptcha({ token: '', image: '', answer: '', status: 'error' });
-      });
-    return () => controller.abort();
-  }, [isLogin, captchaVersion]);
+          setCaptcha({ token: '', image: '', answer: '', status: 'error' })
+      })
+    return () => controller.abort()
+  }, [isLogin, captchaVersion])
   const strengthRules = [
     form.password.length >= 10,
     /[a-z]/.test(form.password) && /[A-Z]/.test(form.password),
     /[0-9]/.test(form.password),
     /[^a-zA-Z0-9]/.test(form.password),
-  ];
-  const strength = strengthRules.filter(Boolean).length;
+  ]
+  const strength = strengthRules.filter(Boolean).length
   const reloadCaptcha = () => {
-    setCaptcha({ token: '', image: '', answer: '', status: 'loading' });
-    setCaptchaVersion((value) => value + 1);
-  };
+    setCaptcha({ token: '', image: '', answer: '', status: 'loading' })
+    setCaptchaVersion(value => value + 1)
+  }
 
   const update = (key, value) => {
-    setForm((current) => ({ ...current, [key]: value }));
-    const errorKey = authorAgreementItems.some(([item]) => item === key) ? 'author' : key;
-    setFieldErrors((current) => {
-      if (!current[errorKey]) return current;
-      const next = { ...current };
-      delete next[errorKey];
-      return next;
-    });
-  };
+    setForm(current => ({ ...current, [key]: value }))
+    const errorKey = authorAgreementItems.some(([item]) => item === key) ? 'author' : key
+    setFieldErrors(current => {
+      if (!current[errorKey]) return current
+      const next = { ...current }
+      delete next[errorKey]
+      return next
+    })
+  }
 
   const resetFeedback = () => {
-    setError('');
-    setNotice('');
-    setFieldErrors({});
-  };
+    setError('')
+    setNotice('')
+    setFieldErrors({})
+  }
 
-  const switchMode = (nextMode) => {
-    resetFeedback();
-    setLoginChallenge('');
-    setLoginOtp('');
+  const switchMode = nextMode => {
+    resetFeedback()
+    setLoginChallenge('')
+    setLoginOtp('')
     navigate(nextMode === 'login' ? '/login' : '/register', {
       state: location.state,
       replace: true,
-    });
-  };
+    })
+  }
 
   const agreementErrors = () => {
-    const next = {};
-    if (isLogin) return next;
-    if (!form.terms) next.terms = 'Bạn cần đồng ý với Điều khoản dịch vụ và Chính sách bảo mật.';
+    const next = {}
+    if (isLogin) return next
+    if (!form.terms) next.terms = 'Bạn cần đồng ý với Điều khoản dịch vụ và Chính sách bảo mật.'
     if (accountType === 'author' && !authorAgreementItems.every(([key]) => form[key])) {
-      next.author = 'Hãy xác nhận đủ 4 mục của thỏa thuận tác giả.';
+      next.author = 'Hãy xác nhận đủ 4 mục của thỏa thuận tác giả.'
     }
-    return next;
-  };
+    return next
+  }
 
   const credentialErrors = () => {
-    const next = {};
-    if (!isLogin && !form.name.trim()) next.name = 'Vui lòng nhập tên hiển thị.';
-    if (!form.email.trim()) next.email = 'Vui lòng nhập địa chỉ email.';
+    const next = {}
+    if (!isLogin && !form.name.trim()) next.name = 'Vui lòng nhập tên hiển thị.'
+    if (!form.email.trim()) next.email = 'Vui lòng nhập địa chỉ email.'
     else if (!EMAIL_PATTERN.test(form.email.trim()))
-      next.email = 'Email chưa đúng định dạng, ví dụ ten@email.com.';
-    if (!form.password) next.password = 'Vui lòng nhập mật khẩu.';
-    else if (!isLogin && form.password.length < 10) next.password = t('auth.passwordMin');
+      next.email = 'Email chưa đúng định dạng, ví dụ ten@email.com.'
+    if (!form.password) next.password = 'Vui lòng nhập mật khẩu.'
+    else if (!isLogin && form.password.length < 10) next.password = t('auth.passwordMin')
     if (!isLogin && form.password !== form.confirmation)
-      next.confirmation = t('auth.confirmationMismatch');
+      next.confirmation = t('auth.confirmationMismatch')
     if (!isLogin && (!form.confirmation || form.confirmation.length < 10))
-      next.confirmation = t('auth.confirmationRequired');
+      next.confirmation = t('auth.confirmationRequired')
     if (!isLogin && (captcha.status !== 'ready' || captcha.answer.trim().length !== 6))
-      next.captcha = t('auth.captchaRequired');
-    return next;
-  };
+      next.captcha = t('auth.captchaRequired')
+    return next
+  }
 
-  const showErrors = (errors) => {
-    setFieldErrors(errors);
-    const first = FIELD_ORDER.find((key) => errors[key]);
-    if (!first) return false;
+  const showErrors = errors => {
+    setFieldErrors(errors)
+    const first = FIELD_ORDER.find(key => errors[key])
+    if (!first) return false
     requestAnimationFrame(() => {
-      formRef.current?.querySelector(`[data-field="${first}"]`)?.focus();
-    });
-    return true;
-  };
+      formRef.current?.querySelector(`[data-field="${first}"]`)?.focus()
+    })
+    return true
+  }
 
-  const finishAuth = (user) => {
-    const requestedPath = location.state?.from;
+  const finishAuth = user => {
+    const requestedPath = location.state?.from
     navigate(
       requestedPath && canAccessPath(user, requestedPath) ? requestedPath : getAccountHome(user),
       { replace: true },
-    );
-  };
+    )
+  }
 
-  const submit = async (event) => {
-    event.preventDefault();
-    setError('');
-    setNotice('');
-    if (!loginChallenge && showErrors({ ...credentialErrors(), ...agreementErrors() })) return;
+  const submit = async event => {
+    event.preventDefault()
+    setError('')
+    setNotice('')
+    if (!loginChallenge && showErrors({ ...credentialErrors(), ...agreementErrors() })) return
     if (loginChallenge && !/^[0-9]{6}$/.test(loginOtp)) {
-      setError(t('security.invalidOtp'));
-      return;
+      setError(t('security.invalidOtp'))
+      return
     }
-    setBusy(true);
+    setBusy(true)
     try {
       if (isLogin) {
         if (loginChallenge) {
-          const user = await verifyTwoFactor(loginChallenge, loginOtp);
-          const returnTo = sessionStorage.getItem('novelhub.google.returnTo');
-          sessionStorage.removeItem('novelhub.google.returnTo');
+          const user = await verifyTwoFactor(loginChallenge, loginOtp)
+          const returnTo = sessionStorage.getItem('novelhub.google.returnTo')
+          sessionStorage.removeItem('novelhub.google.returnTo')
           if (
             returnTo?.startsWith('/') &&
             !returnTo.startsWith('//') &&
             canAccessPath(user, returnTo)
           )
-            navigate(returnTo, { replace: true });
-          else finishAuth(user);
+            navigate(returnTo, { replace: true })
+          else finishAuth(user)
         } else {
-          const result = await login(form.email.trim(), form.password, rememberMe);
+          const result = await login(form.email.trim(), form.password, rememberMe)
           if (result.requiresTwoFactor) {
-            setLoginChallenge(result.challenge);
-            setBusy(false);
-          } else finishAuth(result);
+            setLoginChallenge(result.challenge)
+            setBusy(false)
+          } else finishAuth(result)
         }
       } else {
         const result = await register({
@@ -238,15 +238,15 @@ export function JoinPage({ initialMode }) {
           captchaToken: captcha.token,
           captchaAnswer: captcha.answer,
           accountType,
-        });
+        })
         navigate(`/login?registered=${result.emailDelivered ? 'email' : 'email-pending'}`, {
           replace: true,
           state: {
             ...location.state,
             from: result.authorApplicationRequired ? ROUTES.authorApply : location.state?.from,
           },
-        });
-        setBusy(false);
+        })
+        setBusy(false)
       }
     } catch (reason) {
       setError(
@@ -255,32 +255,32 @@ export function JoinPage({ initialMode }) {
           : reason.code === 'invalid_captcha'
             ? t('auth.captchaInvalid')
             : reason.message,
-      );
-      if (!isLogin) reloadCaptcha();
-      setBusy(false);
+      )
+      if (!isLogin) reloadCaptcha()
+      setBusy(false)
     }
-  };
+  }
 
   const continueWithGoogle = async () => {
-    setError('');
-    setNotice('');
-    if (showErrors(agreementErrors())) return;
-    setBusy(true);
+    setError('')
+    setNotice('')
+    if (showErrors(agreementErrors())) return
+    setBusy(true)
     try {
       await loginWithGoogle({
         mode: isLogin ? 'login' : 'register',
         returnTo: !isLogin && accountType === 'author' ? ROUTES.authorApply : location.state?.from,
-      });
+      })
     } catch (reason) {
       setError(
         t(reason.code === 'google_unavailable' ? 'auth.googleUnavailable' : 'auth.googleFailed'),
-      );
-      setBusy(false);
+      )
+      setBusy(false)
     }
-  };
+  }
 
-  const describedBy = (key) => (fieldErrors[key] ? `join-${key}-error` : undefined);
-  const selectedAccount = accountOptions.find((option) => option.value === accountType);
+  const describedBy = key => (fieldErrors[key] ? `join-${key}-error` : undefined)
+  const selectedAccount = accountOptions.find(option => option.value === accountType)
 
   return (
     <div className="flex min-h-screen flex-col bg-page text-ink">
@@ -346,7 +346,7 @@ export function JoinPage({ initialMode }) {
                         pattern="[0-9]{6}"
                         maxLength={6}
                         value={loginOtp}
-                        onChange={(e) => setLoginOtp(e.target.value.replace(/[^0-9]/g, ''))}
+                        onChange={e => setLoginOtp(e.target.value.replace(/[^0-9]/g, ''))}
                         required
                       />
                     </label>
@@ -363,10 +363,10 @@ export function JoinPage({ initialMode }) {
                       variant="ghost"
                       disabled={busy}
                       onClick={() => {
-                        setLoginChallenge('');
-                        setLoginOtp('');
-                        setError('');
-                        navigate('/login', { replace: true });
+                        setLoginChallenge('')
+                        setLoginOtp('')
+                        setError('')
+                        navigate('/login', { replace: true })
                       }}
                     >
                       {t('security.restartLogin')}
@@ -381,7 +381,7 @@ export function JoinPage({ initialMode }) {
                             {t('auth.accountType')}
                           </legend>
                           <div className="grid grid-cols-2 gap-2">
-                            {accountOptions.map((option) => (
+                            {accountOptions.map(option => (
                               <AccountOption
                                 key={option.value}
                                 option={option}
@@ -411,7 +411,7 @@ export function JoinPage({ initialMode }) {
                               icon={UserRound}
                               autoComplete="name"
                               value={form.name}
-                              onChange={(event) => update('name', event.target.value)}
+                              onChange={event => update('name', event.target.value)}
                               placeholder={t('auth.displayNamePlaceholder')}
                               aria-invalid={Boolean(fieldErrors.name)}
                               aria-describedby={describedBy('name')}
@@ -466,7 +466,7 @@ export function JoinPage({ initialMode }) {
                         autoComplete={isLogin ? 'current-password' : 'new-password'}
                         type={showPassword ? 'text' : 'password'}
                         value={form.password}
-                        onChange={(event) => update('password', event.target.value)}
+                        onChange={event => update('password', event.target.value)}
                         placeholder={t('auth.enterPassword')}
                         aria-invalid={Boolean(fieldErrors.password)}
                         aria-describedby={
@@ -483,7 +483,7 @@ export function JoinPage({ initialMode }) {
                             shape="circle"
                             size="sm"
                             className="border-transparent bg-transparent text-muted"
-                            onClick={() => setShowPassword((current) => !current)}
+                            onClick={() => setShowPassword(current => !current)}
                           >
                             {showPassword ? <EyeOff size={17} /> : <Eye size={17} />}
                           </IconButton>
@@ -496,7 +496,7 @@ export function JoinPage({ initialMode }) {
                         {form.password && (
                           <div className="space-y-2" aria-live="polite">
                             <div className="flex gap-1">
-                              {[1, 2, 3, 4].map((level) => (
+                              {[1, 2, 3, 4].map(level => (
                                 <span
                                   key={level}
                                   className={
@@ -538,7 +538,7 @@ export function JoinPage({ initialMode }) {
                             autoComplete="new-password"
                             maxLength={1024}
                             value={form.confirmation}
-                            onChange={(event) => update('confirmation', event.target.value)}
+                            onChange={event => update('confirmation', event.target.value)}
                             aria-invalid={Boolean(fieldErrors.confirmation)}
                             aria-describedby={describedBy('confirmation')}
                             placeholder={t('auth.enterConfirmation')}
@@ -553,7 +553,7 @@ export function JoinPage({ initialMode }) {
                                 tone="neutral"
                                 shape="circle"
                                 className="border-transparent! bg-transparent! text-muted"
-                                onClick={() => setShowConfirmation((value) => !value)}
+                                onClick={() => setShowConfirmation(value => !value)}
                               >
                                 {showConfirmation ? <EyeOff size={17} /> : <Eye size={17} />}
                               </IconButton>
@@ -597,8 +597,8 @@ export function JoinPage({ initialMode }) {
                             autoComplete="off"
                             maxLength={6}
                             value={captcha.answer}
-                            onChange={(event) =>
-                              setCaptcha((current) => ({
+                            onChange={event =>
+                              setCaptcha(current => ({
                                 ...current,
                                 answer: event.target.value.toUpperCase(),
                               }))
@@ -635,7 +635,7 @@ export function JoinPage({ initialMode }) {
                           checked={form.terms}
                           invalid={Boolean(fieldErrors.terms)}
                           describedBy={describedBy('terms')}
-                          onChange={(value) => update('terms', value)}
+                          onChange={value => update('terms', value)}
                           label={
                             <span>
                               {t('auth.termsAcceptBefore')}{' '}
@@ -739,17 +739,17 @@ export function JoinPage({ initialMode }) {
               update={update}
               error={fieldErrors.author}
               selected={agreementDocument}
-              onRead={(document) => {
-                setAgreementDocument(document);
+              onRead={document => {
+                setAgreementDocument(document)
                 requestAnimationFrame(() => {
-                  if (!agreementReaderRef.current) return;
-                  agreementReaderRef.current.scrollTop = 0;
+                  if (!agreementReaderRef.current) return
+                  agreementReaderRef.current.scrollTop = 0
                   if (window.matchMedia('(max-width: 1023px)').matches)
                     agreementReaderRef.current.scrollIntoView({
                       block: 'nearest',
                       behavior: 'smooth',
-                    });
-                });
+                    })
+                })
               }}
             />
           </div>
@@ -769,7 +769,7 @@ export function JoinPage({ initialMode }) {
         {legalDocument && <LegalContent type={legalDocument} compact />}
       </Modal>
     </div>
-  );
+  )
 }
 
 function EmailField({ form, update, error, describedBy, t }) {
@@ -783,14 +783,14 @@ function EmailField({ form, update, error, describedBy, t }) {
         inputMode="email"
         type="email"
         value={form.email}
-        onChange={(event) => update('email', event.target.value)}
+        onChange={event => update('email', event.target.value)}
         placeholder="ten@email.com"
         aria-invalid={Boolean(error)}
         aria-describedby={describedBy('email')}
         className={error ? 'border-rose!' : undefined}
       />
     </Field>
-  );
+  )
 }
 
 function GoogleMark() {
@@ -813,7 +813,7 @@ function GoogleMark() {
         d="M12 6.1c1.5 0 2.8.5 3.9 1.5l2.9-2.9A9.8 9.8 0 0 0 3.1 7.6l3.4 2.6A5.9 5.9 0 0 1 12 6.1Z"
       />
     </svg>
-  );
+  )
 }
 
 function ModeButton({ active, children, onClick }) {
@@ -830,11 +830,11 @@ function ModeButton({ active, children, onClick }) {
     >
       {children}
     </button>
-  );
+  )
 }
 
 function AccountOption({ option, selected, onSelect, t }) {
-  const Icon = option.icon;
+  const Icon = option.icon
   return (
     <button
       type="button"
@@ -856,7 +856,7 @@ function AccountOption({ option, selected, onSelect, t }) {
       </span>
       <span className="min-w-0 truncate">{t(option.titleKey)}</span>
     </button>
-  );
+  )
 }
 
 function Field({ id, label, action, error, children }) {
@@ -871,11 +871,11 @@ function Field({ id, label, action, error, children }) {
       {children}
       <FieldError id={`${id}-error`} message={error} />
     </div>
-  );
+  )
 }
 
 function FieldError({ id, message }) {
-  if (!message) return null;
+  if (!message) return null
   return (
     <p
       id={id}
@@ -884,22 +884,22 @@ function FieldError({ id, message }) {
       <AlertTriangle size={13} className="mt-px shrink-0" />
       {message}
     </p>
-  );
+  )
 }
 
 function LegalLink({ onOpen, children }) {
   return (
     <button
       type="button"
-      onClick={(event) => {
-        event.preventDefault();
-        onOpen();
+      onClick={event => {
+        event.preventDefault()
+        onOpen()
       }}
       className="rounded-sm font-semibold text-brand-strong underline-offset-4 hover:underline"
     >
       {children}
     </button>
-  );
+  )
 }
 
 function AgreementCheck({ field, label, checked, onChange, invalid, describedBy }) {
@@ -911,17 +911,17 @@ function AgreementCheck({ field, label, checked, onChange, invalid, describedBy 
         checked={checked}
         aria-invalid={invalid || undefined}
         aria-describedby={describedBy}
-        onChange={(event) => onChange(event.target.checked)}
+        onChange={event => onChange(event.target.checked)}
         className="mt-1 size-4 shrink-0 accent-[var(--primary)]"
       />
       {label}
     </label>
-  );
+  )
 }
 
 function AuthorAgreementTrigger({ form, error, describedBy, onOpen }) {
-  const done = authorAgreementItems.filter(([key]) => form[key]).length;
-  const complete = done === authorAgreementItems.length;
+  const done = authorAgreementItems.filter(([key]) => form[key]).length
+  const complete = done === authorAgreementItems.length
   return (
     <div>
       <button
@@ -961,11 +961,11 @@ function AuthorAgreementTrigger({ form, error, describedBy, onOpen }) {
       </button>
       <FieldError id="join-author-error" message={error} />
     </div>
-  );
+  )
 }
 
 function AuthorAgreementChecklist({ form, update, error, selected, onRead }) {
-  const { t } = useLocale();
+  const { t } = useLocale()
   return (
     <fieldset>
       <legend className="sr-only">{t('legal.author.agreementTitle')}</legend>
@@ -1000,12 +1000,12 @@ function AuthorAgreementChecklist({ form, update, error, selected, onRead }) {
                 label={t('legal.author.agree', { title: t(title) })}
                 checked={form[key]}
                 invalid={Boolean(error) && !form[key]}
-                onChange={(value) => update(key, value)}
+                onChange={value => update(key, value)}
               />
             </div>
           </div>
         ))}
       </div>
     </fieldset>
-  );
+  )
 }

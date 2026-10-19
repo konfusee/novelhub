@@ -1,5 +1,5 @@
-import { defineModel, mutableOptions, ObjectId, Schema } from '../shared/schema.js';
-export const LIKE_STATUSES = ['active', 'removed'];
+import { defineModel, mutableOptions, ObjectId, Schema } from '../shared/schema.js'
+export const LIKE_STATUSES = ['active', 'removed']
 const schema = new Schema(
   {
     accountId: { type: ObjectId, ref: 'Account', required: true },
@@ -8,7 +8,7 @@ const schema = new Schema(
     removedAt: Date,
   },
   mutableOptions,
-);
-schema.index({ accountId: 1, commentId: 1 }, { unique: true });
-schema.index({ commentId: 1, status: 1 });
-export const CommentLike = defineModel('CommentLike', schema, 'commentLikes');
+)
+schema.index({ accountId: 1, commentId: 1 }, { unique: true })
+schema.index({ commentId: 1, status: 1 })
+export const CommentLike = defineModel('CommentLike', schema, 'commentLikes')

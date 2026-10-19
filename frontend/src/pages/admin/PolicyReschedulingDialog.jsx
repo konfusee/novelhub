@@ -1,36 +1,36 @@
-import { useId, useRef, useState } from 'react';
-import { Button, Input, Modal } from '../../components/ui';
-import { apiRequest } from '../../api/client';
-import { useLocale } from '../../context/LocaleContext';
+import { useId, useRef, useState } from 'react'
+import { Button, Input, Modal } from '../../components/ui'
+import { apiRequest } from '../../api/client'
+import { useLocale } from '../../context/LocaleContext'
 
-const actionTime = () => Date.now();
+const actionTime = () => Date.now()
 export function PolicyReschedulingDialog({ policy, onClose, onSaved, onReload }) {
-  const { t, locale } = useLocale();
-  const id = useId();
-  const [effectiveAt, setEffectiveAt] = useState('');
-  const [reason, setReason] = useState('');
-  const [validationTime, setValidationTime] = useState(actionTime);
-  const [busy, setBusy] = useState(false);
-  const busyRef = useRef(false);
-  const [failed, setFailed] = useState(false);
-  const selected = new Date(effectiveAt);
+  const { t, locale } = useLocale()
+  const id = useId()
+  const [effectiveAt, setEffectiveAt] = useState('')
+  const [reason, setReason] = useState('')
+  const [validationTime, setValidationTime] = useState(actionTime)
+  const [busy, setBusy] = useState(false)
+  const busyRef = useRef(false)
+  const [failed, setFailed] = useState(false)
+  const selected = new Date(effectiveAt)
   const valid = Boolean(
     policy.future &&
     effectiveAt &&
     Number.isFinite(selected.getTime()) &&
     selected.getTime() > validationTime &&
     selected.getTime() !== new Date(policy.effectiveAt).getTime(),
-  );
+  )
   async function submit(event) {
-    event.preventDefault();
-    if (busyRef.current || failed || !valid || !reason.trim()) return;
-    const now = actionTime();
+    event.preventDefault()
+    if (busyRef.current || failed || !valid || !reason.trim()) return
+    const now = actionTime()
     if (selected.getTime() <= now) {
-      setValidationTime(now);
-      return;
+      setValidationTime(now)
+      return
     }
-    busyRef.current = true;
-    setBusy(true);
+    busyRef.current = true
+    setBusy(true)
     try {
       const response = await apiRequest(`/admin/policy/${policy.id}/reschedule`, {
         method: 'POST',
@@ -39,7 +39,7 @@ export function PolicyReschedulingDialog({ policy, onClose, onSaved, onReload })
           effectiveAt: selected.toISOString(),
           reason: reason.trim(),
         },
-      });
+      })
       if (
         !/^[a-f\d]{24}$/i.test(response?.policyId ?? '') ||
         response.policyId === policy.id ||
@@ -49,13 +49,13 @@ export function PolicyReschedulingDialog({ policy, onClose, onSaved, onReload })
         response.previousVersion !== policy.version + 1 ||
         response.effectiveAt !== selected.toISOString()
       )
-        throw new Error('Invalid rescheduling response');
-      onSaved();
+        throw new Error('Invalid rescheduling response')
+      onSaved()
     } catch {
-      setFailed(true);
+      setFailed(true)
     } finally {
-      busyRef.current = false;
-      setBusy(false);
+      busyRef.current = false
+      setBusy(false)
     }
   }
   return (
@@ -85,9 +85,9 @@ export function PolicyReschedulingDialog({ policy, onClose, onSaved, onReload })
           className="mt-2"
           value={effectiveAt}
           disabled={busy || failed}
-          onChange={(event) => {
-            setEffectiveAt(event.target.value);
-            setValidationTime(actionTime());
+          onChange={event => {
+            setEffectiveAt(event.target.value)
+            setValidationTime(actionTime())
           }}
         />
         <p className="mt-2 text-caption text-muted">
@@ -103,7 +103,7 @@ export function PolicyReschedulingDialog({ policy, onClose, onSaved, onReload })
           className="mt-2"
           value={reason}
           disabled={busy || failed}
-          onChange={(event) => setReason(event.target.value)}
+          onChange={event => setReason(event.target.value)}
         />
         {effectiveAt && !valid && (
           <p role="alert" className="mt-3 text-caption text-rose-strong">
@@ -131,5 +131,5 @@ export function PolicyReschedulingDialog({ policy, onClose, onSaved, onReload })
         </div>
       </form>
     </Modal>
-  );
+  )
 }

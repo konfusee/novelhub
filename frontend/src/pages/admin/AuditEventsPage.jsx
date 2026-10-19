@@ -1,37 +1,37 @@
-import { useSearchParams } from 'react-router';
-import { AdminLayout } from '../../layouts';
-import { Button, Card, EmptyState, Input } from '../../components/ui';
-import { useBackendDocument } from '../../api/useBackendResource';
-import { useLocale } from '../../context/LocaleContext';
+import { useSearchParams } from 'react-router'
+import { AdminLayout } from '../../layouts'
+import { Button, Card, EmptyState, Input } from '../../components/ui'
+import { useBackendDocument } from '../../api/useBackendResource'
+import { useLocale } from '../../context/LocaleContext'
 
-const empty = { items: [], total: 0, page: 1, pageSize: 20 };
-const fields = ['action', 'targetType', 'targetId', 'actorId', 'result', 'from', 'to'];
+const empty = { items: [], total: 0, page: 1, pageSize: 20 }
+const fields = ['action', 'targetType', 'targetId', 'actorId', 'result', 'from', 'to']
 const timestamp = new Intl.DateTimeFormat('vi-VN', {
   dateStyle: 'short',
   timeStyle: 'medium',
   timeZone: 'Asia/Ho_Chi_Minh',
-});
+})
 export function AuditEventsPage() {
-  const { t, formatNumber } = useLocale();
-  const m = (key) => t(`adminAudit.${key}`);
-  const [search, setSearch] = useSearchParams();
-  const query = new URLSearchParams(search);
+  const { t, formatNumber } = useLocale()
+  const m = key => t(`adminAudit.${key}`)
+  const [search, setSearch] = useSearchParams()
+  const query = new URLSearchParams(search)
   for (const key of ['from', 'to']) {
-    const value = search.get(key);
+    const value = search.get(key)
     if (value && /^\d{4}-\d{2}-\d{2}$/.test(value)) {
-      const date = new Date(`${value}T${key === 'from' ? '00:00:00.000' : '23:59:59.999'}+07:00`);
-      if (Number.isFinite(date.getTime())) query.set(key, date.toISOString());
+      const date = new Date(`${value}T${key === 'from' ? '00:00:00.000' : '23:59:59.999'}+07:00`)
+      if (Number.isFinite(date.getTime())) query.set(key, date.toISOString())
     }
   }
-  const feed = useBackendDocument(`/admin/audit-events?${query}`, empty);
-  const ready = feed.status === 'ready';
-  const loading = feed.status === 'loading';
-  const { items, total, page, pageSize } = feed.data;
-  const move = (next) => {
-    const params = new URLSearchParams(search);
-    params.set('page', String(next));
-    setSearch(params);
-  };
+  const feed = useBackendDocument(`/admin/audit-events?${query}`, empty)
+  const ready = feed.status === 'ready'
+  const loading = feed.status === 'loading'
+  const { items, total, page, pageSize } = feed.data
+  const move = next => {
+    const params = new URLSearchParams(search)
+    params.set('page', String(next))
+    setSearch(params)
+  }
   return (
     <AdminLayout>
       <div className="page-admin py-6">
@@ -40,18 +40,18 @@ export function AuditEventsPage() {
         <Card className="mt-6">
           <form
             key={search.toString()}
-            onSubmit={(event) => {
-              event.preventDefault();
-              const draft = Object.fromEntries(new FormData(event.currentTarget));
+            onSubmit={event => {
+              event.preventDefault()
+              const draft = Object.fromEntries(new FormData(event.currentTarget))
               setSearch(
                 Object.fromEntries(
-                  fields.filter((key) => draft[key]?.trim()).map((key) => [key, draft[key].trim()]),
+                  fields.filter(key => draft[key]?.trim()).map(key => [key, draft[key].trim()]),
                 ),
-              );
+              )
             }}
           >
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-              {fields.map((key) => (
+              {fields.map(key => (
                 <label key={key} className="block min-w-0 text-sm font-medium">
                   {m(key)}
                   <Input
@@ -69,7 +69,7 @@ export function AuditEventsPage() {
               <Button
                 variant="secondary"
                 onClick={() => {
-                  setSearch({});
+                  setSearch({})
                 }}
               >
                 {m('clear')}
@@ -99,7 +99,7 @@ export function AuditEventsPage() {
               <table className="w-full min-w-[900px] text-left text-sm">
                 <thead className="bg-elevated">
                   <tr>
-                    {['time', 'actorId', 'action', 'target', 'result', 'reason'].map((key) => (
+                    {['time', 'actorId', 'action', 'target', 'result', 'reason'].map(key => (
                       <th key={key} scope="col" className="px-4 py-3">
                         {m(key)}
                       </th>
@@ -107,7 +107,7 @@ export function AuditEventsPage() {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-hairline">
-                  {items.map((event) => (
+                  {items.map(event => (
                     <tr key={event.id}>
                       <td className="whitespace-nowrap px-4 py-4">
                         {timestamp.format(new Date(event.occurredAt))}
@@ -153,5 +153,5 @@ export function AuditEventsPage() {
         </Card>
       </div>
     </AdminLayout>
-  );
+  )
 }

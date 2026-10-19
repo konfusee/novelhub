@@ -1,29 +1,29 @@
-import { useEffect, useState } from 'react';
-import { createPortal } from 'react-dom';
-import { ArrowUp, ArrowRight, NovelHubMark } from '../icons';
-import { Link } from 'react-router';
-import { ROUTES } from '../../app/routes';
-import { useLocale } from '../../context/LocaleContext';
+import { useEffect, useState } from 'react'
+import { createPortal } from 'react-dom'
+import { ArrowUp, ArrowRight, NovelHubMark } from '../icons'
+import { Link } from 'react-router'
+import { ROUTES } from '../../app/routes'
+import { useLocale } from '../../context/LocaleContext'
 
 const discoverLinks = [
   ['navigation.categories', ROUTES.categories],
   ['navigation.explore', ROUTES.search],
   ['navigation.rankings', ROUTES.rankings],
   ['navigation.library', ROUTES.library],
-];
+]
 const authorLinks = [
   ['navigation.becomeAuthor', ROUTES.authorApply],
   ['legal.author.authorGuidelines.title', ROUTES.authorAgreement('authorGuidelines')],
   ['legal.author.publishing.title', ROUTES.authorAgreement('publishing')],
   ['legal.author.revenue.title', ROUTES.authorAgreement('revenue')],
-];
+]
 const informationLinks = [
   ['footer.termsOfUse', '/terms'],
   ['footer.privacyPolicy', '/privacy'],
   ['legal.author.rights.title', ROUTES.authorAgreement('rights')],
-];
+]
 function FooterLinks({ title, links, className }) {
-  const { t } = useLocale();
+  const { t } = useLocale()
   return (
     <div className={className}>
       <h2 className="text-xs font-bold uppercase tracking-widest text-[var(--footer-ink)]">
@@ -42,21 +42,21 @@ function FooterLinks({ title, links, className }) {
         ))}
       </ul>
     </div>
-  );
+  )
 }
 
 /* Back-to-top visibility from an IntersectionObserver sentinel 240px below the document top. */
 function useScrolledPastTop() {
-  const [sentinel, setSentinel] = useState(null);
-  const [scrolled, setScrolled] = useState(false);
+  const [sentinel, setSentinel] = useState(null)
+  const [scrolled, setScrolled] = useState(false)
   useEffect(() => {
-    if (!sentinel || typeof IntersectionObserver === 'undefined') return undefined;
+    if (!sentinel || typeof IntersectionObserver === 'undefined') return undefined
     const observer = new IntersectionObserver(([entry]) =>
       setScrolled(!entry.isIntersecting && entry.boundingClientRect.top < 0),
-    );
-    observer.observe(sentinel);
-    return () => observer.disconnect();
-  }, [sentinel]);
+    )
+    observer.observe(sentinel)
+    return () => observer.disconnect()
+  }, [sentinel])
   const marker = createPortal(
     <span
       ref={setSentinel}
@@ -64,13 +64,13 @@ function useScrolledPastTop() {
       className="pointer-events-none absolute left-0 top-[240px] h-px w-px"
     />,
     document.body,
-  );
-  return [scrolled, marker];
+  )
+  return [scrolled, marker]
 }
 
 export function SiteFooter() {
-  const { t } = useLocale();
-  const [showBackToTop, sentinel] = useScrolledPastTop();
+  const { t } = useLocale()
+  const [showBackToTop, sentinel] = useScrolledPastTop()
   return (
     <footer className="relative mt-auto border-t border-[var(--footer-line)] bg-footer text-[var(--footer-muted)]">
       {sentinel}
@@ -135,5 +135,5 @@ export function SiteFooter() {
         </button>
       )}
     </footer>
-  );
+  )
 }

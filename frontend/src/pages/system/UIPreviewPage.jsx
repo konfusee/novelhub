@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useMemo, useState } from 'react'
 import {
   ArrowRight,
   NovelHubMark,
@@ -7,10 +7,10 @@ import {
   Moon,
   Search,
   Sun,
-} from '../../components/icons';
-import { Link } from 'react-router';
-import { pageRegistry, pageRoles, pageStatuses } from '../../data/pageRegistry';
-import { useTheme } from '../../context/ThemeContext';
+} from '../../components/icons'
+import { Link } from 'react-router'
+import { pageRegistry, pageRoles, pageStatuses } from '../../data/pageRegistry'
+import { useTheme } from '../../context/ThemeContext'
 import {
   Badge,
   Button,
@@ -21,40 +21,40 @@ import {
   PageContainer,
   ProgressBar,
   Select,
-} from '../../components/ui';
-import { StoryCover } from '../../components/story/StoryCover';
-import { stories } from '../../data/mock/stories';
-import { IconGallery } from '../../components/icons/IconGallery';
+} from '../../components/ui'
+import { StoryCover } from '../../components/story/StoryCover'
+import { stories } from '../../data/mock/stories'
+import { IconGallery } from '../../components/icons/IconGallery'
 
-const statusTone = { TODO: 'neutral', IN_PROGRESS: 'orange', DONE: 'green', BLOCKED: 'red' };
+const statusTone = { TODO: 'neutral', IN_PROGRESS: 'orange', DONE: 'green', BLOCKED: 'red' }
 const workflows = [
   ['Đăng ký làm tác giả', '/author/apply'],
   ['Thỏa thuận doanh thu', '/admin/users/user-author'],
   ['403 Không có quyền', '/403'],
   ['404 Không tìm thấy', '/route-not-found'],
-];
+]
 const statusLabels = {
   TODO: 'Cần làm',
   IN_PROGRESS: 'Đang thực hiện',
   DONE: 'Hoàn tất',
   BLOCKED: 'Bị chặn',
-};
+}
 
 export function UIPreviewPage() {
-  const { resolvedTheme, setTheme } = useTheme();
-  const [query, setQuery] = useState('');
-  const [filter, setFilter] = useState('All');
-  const completed = pageRegistry.filter((p) => p.status === 'DONE').length;
+  const { resolvedTheme, setTheme } = useTheme()
+  const [query, setQuery] = useState('')
+  const [filter, setFilter] = useState('All')
+  const completed = pageRegistry.filter(p => p.status === 'DONE').length
   const visible = useMemo(
     () =>
       pageRegistry.filter(
-        (p) =>
+        p =>
           (filter === 'All' || p.role === filter || p.status === filter) &&
           `${p.id} ${p.name} ${p.role}`.toLowerCase().includes(query.toLowerCase()),
       ),
     [filter, query],
-  );
-  const dark = resolvedTheme === 'dark';
+  )
+  const dark = resolvedTheme === 'dark'
 
   return (
     <div className="min-h-screen bg-page text-ink">
@@ -97,21 +97,21 @@ export function UIPreviewPage() {
             />
           </div>
           <ul className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-3">
-            {pageRoles.map((role) => {
-              const pages = pageRegistry.filter((p) => p.role === role);
+            {pageRoles.map(role => {
+              const pages = pageRegistry.filter(p => p.role === role)
               return (
                 <li
                   className="min-w-0 rounded-2xl border border-hairline bg-surface px-3 py-2.5 shadow-whisper"
                   key={role}
                 >
                   <strong className="block text-sm tabular-nums">
-                    {pages.filter((p) => p.status === 'DONE').length}/{pages.length}
+                    {pages.filter(p => p.status === 'DONE').length}/{pages.length}
                   </strong>
                   <span className="block truncate text-xs text-muted" title={role}>
                     {role}
                   </span>
                 </li>
-              );
+              )
             })}
           </ul>
         </section>
@@ -123,23 +123,23 @@ export function UIPreviewPage() {
             aria-label="Tìm màn hình"
             placeholder="Tìm màn hình..."
             value={query}
-            onChange={(e) => setQuery(e.target.value)}
+            onChange={e => setQuery(e.target.value)}
             className="flex-1"
           />
           <Select
             aria-label="Lọc màn hình"
             value={filter}
-            onChange={(e) => setFilter(e.target.value)}
+            onChange={e => setFilter(e.target.value)}
             className="md:w-56"
           >
             <option value="All">Tất cả</option>
             <optgroup label="Vai trò">
-              {pageRoles.map((role) => (
+              {pageRoles.map(role => (
                 <option key={role}>{role}</option>
               ))}
             </optgroup>
             <optgroup label="Trạng thái">
-              {pageStatuses.map((status) => (
+              {pageStatuses.map(status => (
                 <option key={status} value={status}>
                   {statusLabels[status] || status}
                 </option>
@@ -150,8 +150,8 @@ export function UIPreviewPage() {
 
         {visible.length > 0 ? (
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-            {visible.map((page) => {
-              const available = page.status !== 'TODO';
+            {visible.map(page => {
+              const available = page.status !== 'TODO'
               return (
                 <Card as="article" key={page.id} className="flex min-h-56 min-w-0 flex-col p-5">
                   <div className="flex items-center justify-between gap-3">
@@ -186,7 +186,7 @@ export function UIPreviewPage() {
                     )}
                   </div>
                 </Card>
-              );
+              )
             })}
           </div>
         ) : (
@@ -199,8 +199,8 @@ export function UIPreviewPage() {
                   variant="secondary"
                   size="sm"
                   onClick={() => {
-                    setQuery('');
-                    setFilter('All');
+                    setQuery('')
+                    setFilter('All')
                   }}
                 >
                   Xóa bộ lọc
@@ -239,7 +239,7 @@ export function UIPreviewPage() {
             Ảnh gốc tỷ lệ 2:3 không chứa chữ, tiêu đề dựng bằng HTML và có phương án dự phòng.
           </p>
           <div className="mt-5 grid grid-cols-2 gap-4 sm:grid-cols-3 lg:max-w-3xl">
-            {stories.slice(0, 3).map((story) => (
+            {stories.slice(0, 3).map(story => (
               <article key={story.id} className="min-w-0">
                 <StoryCover story={story} className="aspect-[2/3] rounded-2xl" />
                 <h3 className="mt-2 truncate text-sm font-semibold">{story.title}</h3>
@@ -251,5 +251,5 @@ export function UIPreviewPage() {
         <IconGallery />
       </PageContainer>
     </div>
-  );
+  )
 }

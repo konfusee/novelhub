@@ -5,7 +5,7 @@ import {
   defineModel,
   ObjectId,
   Schema,
-} from '../shared/schema.js';
+} from '../shared/schema.js'
 
 // Allowed directions per ledger type (adjustments and reversals may go either way).
 const DIRECTIONS_BY_TYPE = {
@@ -16,9 +16,9 @@ const DIRECTIONS_BY_TYPE = {
   adjustment: ['credit', 'debit'],
   reversal: ['credit', 'debit'],
   'deletion-forfeiture': ['debit'],
-};
+}
 
-export const LEDGER_TYPES = Object.keys(DIRECTIONS_BY_TYPE);
+export const LEDGER_TYPES = Object.keys(DIRECTIONS_BY_TYPE)
 
 const ledgerEntrySchema = new Schema(
   {
@@ -42,24 +42,24 @@ const ledgerEntrySchema = new Schema(
     occurredAt: { type: Date, required: true, default: Date.now },
   },
   appendOnlyOptions,
-);
+)
 
-ledgerEntrySchema.plugin(appendOnly);
+ledgerEntrySchema.plugin(appendOnly)
 
 ledgerEntrySchema.pre('validate', function enforceLedgerRules() {
-  const allowed = DIRECTIONS_BY_TYPE[this.ledgerType];
+  const allowed = DIRECTIONS_BY_TYPE[this.ledgerType]
   if (allowed && !allowed.includes(this.direction)) {
-    this.invalidate('direction', `${this.ledgerType} entries must be ${allowed.join(' or ')}`);
+    this.invalidate('direction', `${this.ledgerType} entries must be ${allowed.join(' or ')}`)
   }
   if (this.ledgerType === 'adjustment') {
-    if (!this.reason) this.invalidate('reason', 'Admin adjustments require a reason');
+    if (!this.reason) this.invalidate('reason', 'Admin adjustments require a reason')
     if (!this.actorAccountId)
-      this.invalidate('actorAccountId', 'Admin adjustments require an actor');
+      this.invalidate('actorAccountId', 'Admin adjustments require an actor')
   }
   if (this.ledgerType === 'reversal' && !this.reversalOf) {
-    this.invalidate('reversalOf', 'Reversals must reference the reversed entry');
+    this.invalidate('reversalOf', 'Reversals must reference the reversed entry')
   }
-});
+})
 
 // One operation (e.g. an unlock) writes one entry per wallet leg; retries hit this key.
 ledgerEntrySchema.index(
@@ -70,13 +70,13 @@ ledgerEntrySchema.index(
     walletId: 1,
   },
   { unique: true },
-);
+)
 // An entry can be reversed at most once.
 ledgerEntrySchema.index(
   { reversalOf: 1 },
   { unique: true, partialFilterExpression: { reversalOf: { $type: 'objectId' } } },
-);
-ledgerEntrySchema.index({ walletId: 1, occurredAt: -1 });
-ledgerEntrySchema.index({ sourceType: 1, sourceId: 1 });
+)
+ledgerEntrySchema.index({ walletId: 1, occurredAt: -1 })
+ledgerEntrySchema.index({ sourceType: 1, sourceId: 1 })
 
-export const LedgerEntry = defineModel('LedgerEntry', ledgerEntrySchema, 'ledgerEntries');
+export const LedgerEntry = defineModel('LedgerEntry', ledgerEntrySchema, 'ledgerEntries')

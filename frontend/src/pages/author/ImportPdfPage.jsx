@@ -1,7 +1,7 @@
-import { useEffect, useRef, useState } from 'react';
-import { useSearchParams } from 'react-router';
-import { ArrowLeft, CheckCircle2, FileText, ShieldCheck, Upload } from '../../components/icons';
-import { AuthorLayout } from '../../layouts';
+import { useEffect, useRef, useState } from 'react'
+import { useSearchParams } from 'react-router'
+import { ArrowLeft, CheckCircle2, FileText, ShieldCheck, Upload } from '../../components/icons'
+import { AuthorLayout } from '../../layouts'
 import {
   Badge,
   Button,
@@ -12,82 +12,82 @@ import {
   ProgressBar,
   Select,
   Skeleton,
-} from '../../components/ui';
-import { apiRequest } from '../../api/client';
-import { useBackendResource } from '../../api/useBackendResource';
-import { useLocale } from '../../context/LocaleContext';
-import { suggestDocumentChapters } from './documentChapters';
-import { chapterParagraphs, ChapterTextError } from './chapterParagraphs';
+} from '../../components/ui'
+import { apiRequest } from '../../api/client'
+import { useBackendResource } from '../../api/useBackendResource'
+import { useLocale } from '../../context/LocaleContext'
+import { suggestDocumentChapters } from './documentChapters'
+import { chapterParagraphs, ChapterTextError } from './chapterParagraphs'
 
-const formats = ['pdf', 'doc', 'docx', 'txt', 'md'];
-const wordCount = (text) => text.trim().split(/\s+/u).filter(Boolean).length;
+const formats = ['pdf', 'doc', 'docx', 'txt', 'md']
+const wordCount = text => text.trim().split(/\s+/u).filter(Boolean).length
 export function ImportPdfPage() {
-  const [search] = useSearchParams();
-  const { t, formatNumber } = useLocale();
-  const message = (key, values) => t(`documentImport.${key}`, values);
-  const picker = useRef(null);
-  const pending = useRef(null);
-  const busyRef = useRef(false);
-  const cursor = useRef(0);
-  const targets = useBackendResource('/author/imports/targets');
-  const [busy, setBusy] = useState('');
-  const [error, setError] = useState('');
-  const [preview, setPreview] = useState(null);
-  const [chapters, setChapters] = useState([]);
-  const [active, setActive] = useState('');
-  const [destination, setDestination] = useState(() => search.get('storyId') ?? '');
-  const [result, setResult] = useState(null);
-  useEffect(() => () => pending.current?.abort(), []);
-  const selected = chapters.filter((chapter) => chapter.selected);
-  const current = chapters.find((chapter) => chapter.id === active);
-  const target = targets.data.find((story) => story.id === destination);
-  const step = result ? 4 : preview ? 3 : busy ? 2 : 1;
+  const [search] = useSearchParams()
+  const { t, formatNumber } = useLocale()
+  const message = (key, values) => t(`documentImport.${key}`, values)
+  const picker = useRef(null)
+  const pending = useRef(null)
+  const busyRef = useRef(false)
+  const cursor = useRef(0)
+  const targets = useBackendResource('/author/imports/targets')
+  const [busy, setBusy] = useState('')
+  const [error, setError] = useState('')
+  const [preview, setPreview] = useState(null)
+  const [chapters, setChapters] = useState([])
+  const [active, setActive] = useState('')
+  const [destination, setDestination] = useState(() => search.get('storyId') ?? '')
+  const [result, setResult] = useState(null)
+  useEffect(() => () => pending.current?.abort(), [])
+  const selected = chapters.filter(chapter => chapter.selected)
+  const current = chapters.find(chapter => chapter.id === active)
+  const target = targets.data.find(story => story.id === destination)
+  const step = result ? 4 : preview ? 3 : busy ? 2 : 1
   const update = (id, patch) =>
-    setChapters((items) => items.map((item) => (item.id === id ? { ...item, ...patch } : item)));
+    setChapters(items => items.map(item => (item.id === id ? { ...item, ...patch } : item)))
   async function choose(file) {
-    if (!file || busyRef.current) return;
-    const format = file.name.split('.').pop().toLowerCase();
+    if (!file || busyRef.current) return
+    const format = file.name.split('.').pop().toLowerCase()
     if (!formats.includes(format) || !file.size || file.size > 10 * 1024 * 1024) {
-      setError(message('invalidFile'));
-      return;
+      setError(message('invalidFile'))
+      return
     }
-    busyRef.current = true;
-    const controller = new AbortController();
-    pending.current = controller;
-    setBusy('extract');
-    setError('');
-    setPreview(null);
-    setChapters([]);
-    setResult(null);
+    busyRef.current = true
+    const controller = new AbortController()
+    pending.current = controller
+    setBusy('extract')
+    setError('')
+    setPreview(null)
+    setChapters([])
+    setResult(null)
     try {
       const response = await apiRequest(`/author/imports/preview?format=${format}`, {
         method: 'POST',
         body: file,
         binary: true,
         signal: controller.signal,
-      });
-      if (controller.signal.aborted) return;
+      })
+      if (controller.signal.aborted) return
       const first = {
         id: crypto.randomUUID(),
         title: file.name.replace(/\.[^.]+$/, '').slice(0, 200),
         text: response.text,
         selected: true,
-      };
-      setPreview({ ...response, name: file.name });
-      setChapters([first]);
-      setActive(first.id);
+      }
+      setPreview({ ...response, name: file.name })
+      setChapters([first])
+      setActive(first.id)
     } catch (failure) {
-      if (!controller.signal.aborted) setError(failure.message);
+      if (!controller.signal.aborted) setError(failure.message)
     } finally {
       if (pending.current === controller) {
-        pending.current = null;
-        busyRef.current = false;
-        setBusy('');
+        pending.current = null
+        busyRef.current = false
+        setBusy('')
       }
     }
   }
   function split() {
-    const at = cursor.current;
+    const at = cursor.current
     if (
       !current ||
       at <= 0 ||
@@ -95,62 +95,62 @@ export function ImportPdfPage() {
       !current.text.slice(0, at).trim() ||
       !current.text.slice(at).trim()
     ) {
-      setError(message('splitHint'));
-      return;
+      setError(message('splitHint'))
+      return
     }
-    const index = chapters.findIndex((chapter) => chapter.id === active);
+    const index = chapters.findIndex(chapter => chapter.id === active)
     const next = {
       id: crypto.randomUUID(),
       title: message('untitled'),
       text: current.text.slice(at),
       selected: true,
-    };
+    }
     setChapters([
       ...chapters.slice(0, index),
       { ...current, text: current.text.slice(0, at) },
       next,
       ...chapters.slice(index + 1),
-    ]);
-    setActive(next.id);
-    cursor.current = 0;
-    setError('');
+    ])
+    setActive(next.id)
+    cursor.current = 0
+    setError('')
   }
   function suggest() {
-    if (!current || busyRef.current) return;
+    if (!current || busyRef.current) return
     const suggestions = suggestDocumentChapters(current.text, message('preamble'), {
       format: preview?.format,
       headings: preview?.headings,
       numberedHeadings: preview?.numberedHeadings,
-    });
+    })
     if (!suggestions || chapters.length - 1 + suggestions.length > 100) {
-      setError(message('noHeadings'));
-      return;
+      setError(message('noHeadings'))
+      return
     }
-    const index = chapters.findIndex((chapter) => chapter.id === active);
-    const replacements = suggestions.map((chapter) => ({
+    const index = chapters.findIndex(chapter => chapter.id === active)
+    const replacements = suggestions.map(chapter => ({
       ...chapter,
       id: crypto.randomUUID(),
       selected: current.selected,
-    }));
-    setChapters([...chapters.slice(0, index), ...replacements, ...chapters.slice(index + 1)]);
-    setActive(replacements[0].id);
-    cursor.current = 0;
-    setError('');
+    }))
+    setChapters([...chapters.slice(0, index), ...replacements, ...chapters.slice(index + 1)])
+    setActive(replacements[0].id)
+    cursor.current = 0
+    setError('')
   }
   function merge(index) {
-    const following = chapters[index + 1];
-    if (!following) return;
-    const merged = { ...chapters[index], text: `${chapters[index].text}\n\n${following.text}` };
-    setChapters([...chapters.slice(0, index), merged, ...chapters.slice(index + 2)]);
-    setActive(merged.id);
+    const following = chapters[index + 1]
+    if (!following) return
+    const merged = { ...chapters[index], text: `${chapters[index].text}\n\n${following.text}` }
+    setChapters([...chapters.slice(0, index), merged, ...chapters.slice(index + 2)])
+    setActive(merged.id)
   }
   async function save() {
-    if (busyRef.current || !target || !selected.length) return;
-    busyRef.current = true;
-    setBusy('save');
-    setError('');
-    const controller = new AbortController();
-    pending.current = controller;
+    if (busyRef.current || !target || !selected.length) return
+    busyRef.current = true
+    setBusy('save')
+    setError('')
+    const controller = new AbortController()
+    pending.current = controller
     try {
       const response = await apiRequest('/author/imports', {
         method: 'POST',
@@ -159,32 +159,32 @@ export function ImportPdfPage() {
           receipt: preview.receipt,
           storyId: target.id,
           expectedVersion: target.version,
-          chapters: selected.map((chapter) => ({
+          chapters: selected.map(chapter => ({
             title: chapter.title,
             paragraphs: chapterParagraphs(chapter.text),
           })),
         },
-      });
-      if (controller.signal.aborted) return;
+      })
+      if (controller.signal.aborted) return
       if (
         response?.storyId !== target.id ||
         !Array.isArray(response.chapterIds) ||
         response.chapterIds.length !== selected.length ||
-        response.chapterIds.some((id) => typeof id !== 'string' || !id.trim()) ||
+        response.chapterIds.some(id => typeof id !== 'string' || !id.trim()) ||
         new Set(response.chapterIds).size !== response.chapterIds.length
       )
-        throw new Error(message('invalidSaveResponse'));
-      setResult(response);
+        throw new Error(message('invalidSaveResponse'))
+      setResult(response)
     } catch (failure) {
       if (!controller.signal.aborted)
         setError(
           failure instanceof ChapterTextError ? t(`chapterText.${failure.code}`) : failure.message,
-        );
+        )
     } finally {
       if (pending.current === controller) {
-        pending.current = null;
-        busyRef.current = false;
-        setBusy('');
+        pending.current = null
+        busyRef.current = false
+        setBusy('')
       }
     }
   }
@@ -243,9 +243,9 @@ export function ImportPdfPage() {
           tabIndex={-1}
           aria-hidden="true"
           accept=".pdf,.doc,.docx,.txt,.md"
-          onChange={(event) => {
-            choose(event.target.files?.[0]);
-            event.target.value = '';
+          onChange={event => {
+            choose(event.target.files?.[0])
+            event.target.value = ''
           }}
         />
         {error && (
@@ -265,10 +265,10 @@ export function ImportPdfPage() {
                   <Button
                     variant="secondary"
                     onClick={() => {
-                      setResult(null);
-                      setPreview(null);
-                      setChapters([]);
-                      targets.retry();
+                      setResult(null)
+                      setPreview(null)
+                      setChapters([])
+                      targets.retry()
                     }}
                   >
                     {message('another')}
@@ -282,10 +282,10 @@ export function ImportPdfPage() {
             {!preview && (
               <Card
                 className="mt-6 p-6 sm:p-10"
-                onDragOver={(event) => event.preventDefault()}
-                onDrop={(event) => {
-                  event.preventDefault();
-                  choose(event.dataTransfer.files?.[0]);
+                onDragOver={event => event.preventDefault()}
+                onDrop={event => {
+                  event.preventDefault()
+                  choose(event.dataTransfer.files?.[0])
                 }}
               >
                 <div className="flex flex-col items-center gap-4 rounded-2xl border border-dashed border-line p-6 text-center">
@@ -314,7 +314,7 @@ export function ImportPdfPage() {
                         <p className="text-xs text-muted">
                           {message('words', {
                             count: formatNumber(
-                              wordCount(chapters.map((chapter) => chapter.text).join(' ')),
+                              wordCount(chapters.map(chapter => chapter.text).join(' ')),
                             ),
                           })}
                           {preview.pageCount
@@ -345,7 +345,7 @@ export function ImportPdfPage() {
                               checked={chapter.selected}
                               disabled={!!busy}
                               aria-label={message('selectChapter', { number: index + 1 })}
-                              onChange={(event) =>
+                              onChange={event =>
                                 update(chapter.id, { selected: event.target.checked })
                               }
                             />
@@ -354,9 +354,7 @@ export function ImportPdfPage() {
                               value={chapter.title}
                               maxLength={200}
                               disabled={!!busy}
-                              onChange={(event) =>
-                                update(chapter.id, { title: event.target.value })
-                              }
+                              onChange={event => update(chapter.id, { title: event.target.value })}
                               className="min-w-0 flex-1"
                             />
                           </div>
@@ -366,8 +364,8 @@ export function ImportPdfPage() {
                               variant="ghost"
                               disabled={!!busy}
                               onClick={() => {
-                                setActive(chapter.id);
-                                cursor.current = 0;
+                                setActive(chapter.id)
+                                cursor.current = 0
                               }}
                             >
                               {message('edit')}
@@ -401,10 +399,10 @@ export function ImportPdfPage() {
                           className="mt-2 min-h-96 w-full resize-y rounded-2xl border border-line bg-surface p-4 text-sm leading-7 text-ink"
                           value={current.text}
                           disabled={!!busy}
-                          onSelect={(event) => {
-                            cursor.current = event.target.selectionStart;
+                          onSelect={event => {
+                            cursor.current = event.target.selectionStart
                           }}
-                          onChange={(event) => update(current.id, { text: event.target.value })}
+                          onChange={event => update(current.id, { text: event.target.value })}
                         />
                         <Button
                           className="mt-3"
@@ -440,11 +438,11 @@ export function ImportPdfPage() {
                       <Select
                         aria-label={message('destination')}
                         value={destination}
-                        onChange={(event) => setDestination(event.target.value)}
+                        onChange={event => setDestination(event.target.value)}
                         disabled={!!busy}
                       >
                         <option value="">{message('chooseStory')}</option>
-                        {targets.data.map((story) => (
+                        {targets.data.map(story => (
                           <option key={story.id} value={story.id}>
                             {story.title}
                           </option>
@@ -474,7 +472,7 @@ export function ImportPdfPage() {
                       !!busy ||
                       !target ||
                       !selected.length ||
-                      selected.some((chapter) => !chapter.title.trim() || !chapter.text.trim())
+                      selected.some(chapter => !chapter.title.trim() || !chapter.text.trim())
                     }
                     onClick={save}
                   >
@@ -487,5 +485,5 @@ export function ImportPdfPage() {
         )}
       </div>
     </AuthorLayout>
-  );
+  )
 }

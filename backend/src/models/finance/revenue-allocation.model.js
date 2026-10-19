@@ -5,7 +5,7 @@ import {
   defineModel,
   ObjectId,
   Schema,
-} from '../shared/schema.js';
+} from '../shared/schema.js'
 
 const schema = new Schema(
   {
@@ -14,13 +14,13 @@ const schema = new Schema(
       type: [{ type: ObjectId, ref: 'LedgerEntry' }],
       required: true,
       default: undefined,
-      validate: { validator: (v) => v.length > 0, message: 'ledgerEntryIds must not be empty' },
+      validate: { validator: v => v.length > 0, message: 'ledgerEntryIds must not be empty' },
     },
     beneficiaries: {
       type: [ObjectId],
       required: true,
       default: undefined,
-      validate: { validator: (v) => v.length > 0, message: 'beneficiaries must not be empty' },
+      validate: { validator: v => v.length > 0, message: 'beneficiaries must not be empty' },
     },
     amount: coinAmount,
     negotiatedAllocationSnapshot: Schema.Types.Mixed,
@@ -31,12 +31,12 @@ const schema = new Schema(
     policySnapshot: {
       type: Schema.Types.Mixed,
       required: function () {
-        return this.negotiatedAllocationSnapshot == null;
+        return this.negotiatedAllocationSnapshot == null
       },
     },
   },
   appendOnlyOptions,
-);
-schema.plugin(appendOnly);
-schema.index({ unlockRequestId: 1 }, { unique: true });
-export const RevenueAllocation = defineModel('RevenueAllocation', schema, 'revenueAllocations');
+)
+schema.plugin(appendOnly)
+schema.index({ unlockRequestId: 1 }, { unique: true })
+export const RevenueAllocation = defineModel('RevenueAllocation', schema, 'revenueAllocations')

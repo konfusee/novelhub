@@ -11,21 +11,21 @@ export const storyDetail = {
   genres: ['Fantasy', 'Adventure', 'Mystery'],
   synopsis:
     'Deep within the ancient whispers of the silver birch forest lies an empire lost to time. When Elora accidentally triggers a primordial boundary stone, dormant guardians awaken and a shattered prophecy begins to piece itself together. Together with an exiled archivist and a renegade soulwarden, she must unravel the origin of the silent shroud before the rot swallows both mortal realms.',
-};
+}
 export const chapterPreview = [
   { number: 1, title: 'The Whispering Trees', meta: '7 min read · 2,420 words', free: true },
   { number: 2, title: 'The Amber Key', meta: '9 min read · 3,110 words', free: true },
   { number: 3, title: 'Shadows of Eldoria', meta: '8 min read · 2,890 words', free: true },
   { number: 4, title: 'The Sunstone Gate', meta: '11 min read · 3,450 words', free: false },
   { number: 5, title: 'Echoes of the High Ward', meta: '9 min read · 3,020 words', free: false },
-];
+]
 export const previewParagraphs = [
   'The wind moved gently through the ancient trees, carrying whispers of forgotten stories. In that quiet moment, everything felt possible. Elora closed her eyes and listened—not just to the forest, but to her own heartbeat, steady and unafraid.',
   'Morning light spilled between the silver birches in long, pale ribbons. Somewhere beyond the moss-covered stones, a stream traced its patient path through the valley. She had walked these woods every day since childhood, yet today each familiar turning seemed to hold its breath.',
   'At the oldest tree, she found the mark: a small circle carved into the bark, crossed by three delicate lines. It was the same symbol that appeared in her grandmother’s journal, beside a warning written in fading ink.',
   'Do not wake what the forest has chosen to forget.',
   'Elora reached toward the carving. The moment her fingertips touched it, warmth rushed beneath the bark. Birds burst from the canopy. Deep under the roots, something answered with a sound like a door opening after a hundred years.',
-];
+]
 
 export const readerHome = {
   continueReading: {
@@ -102,7 +102,7 @@ export const readerHome = {
     { date: 'OCT 06', title: 'A Thousand Paper Stars', author: 'Mina Lee' },
     { date: 'OCT 12', title: 'The Winter Archive', author: 'Theo Grant' },
   ],
-};
+}
 
 export const libraryItems = [
   {
@@ -201,7 +201,7 @@ export const libraryItems = [
     color: '#a56752',
     offline: false,
   },
-];
+]
 
 export const followingData = {
   collections: [
@@ -270,7 +270,7 @@ export const followingData = {
     { name: 'Sora Lin', meta: '112 nghìn người theo dõi · 9 tiểu thuyết' },
     { name: 'Julian Scott', meta: '45 nghìn người theo dõi · 3 tiểu thuyết' },
   ],
-};
+}
 
 export const fullChapter = {
   story: 'The Silent Forest',
@@ -288,7 +288,7 @@ export const fullChapter = {
     'Lyra turned slowly, letting her gaze sweep across the valley. From this vantage point, the distant citadel of Oakhaven looked less like a monument of human empire and more like a collection of river pebbles left behind by a receding tide. The answers they sought were waiting beneath this very leaf-mold.',
     'She knelt down, pressing her fingers deep into the moist, fragrant earth. The soil was rich with decayed eons, radiating a gentle warmth that defied the autumn chill. A faint chime resonated in the hollow space behind her ribs—the first true resonance of the Elder Pact.',
   ],
-};
+}
 
 export const audioPlayerData = {
   title: 'Whispers of You',
@@ -313,17 +313,17 @@ export const audioPlayerData = {
     ['Liam Vance', 'Người kể chính · Góc nhìn của Julian'],
     ['Maya Chen', 'Người kể · Nhật ký của Clara'],
   ],
-};
+}
 
 /* Full demo index; unpublished sample titles are numbered instead of repeating another chapter's title. */
 export const storyChapterList = Array.from({ length: storyDetail.chapters }, (_, index) => {
-  const number = index + 1;
+  const number = index + 1
   return (
-    chapterPreview.find((chapter) => chapter.number === number) || {
+    chapterPreview.find(chapter => chapter.number === number) || {
       number,
       title: 'Chương ' + number,
       meta: 'Nội dung chương mẫu',
       free: false,
     }
-  );
-});
+  )
+})

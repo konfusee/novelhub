@@ -1,23 +1,23 @@
-import { Router } from 'express';
-import { z } from 'zod';
-import { requireAuth, requireRole } from '../middleware/auth.js';
-import { HttpError } from '../middleware/errors.js';
-import { adminAuthorStatistics } from '../modules/admin-author-statistics.js';
-import { adminDashboard } from '../modules/admin-dashboard.js';
+import { Router } from 'express'
+import { z } from 'zod'
+import { requireAuth, requireRole } from '../middleware/auth.js'
+import { HttpError } from '../middleware/errors.js'
+import { adminAuthorStatistics } from '../modules/admin-author-statistics.js'
+import { adminDashboard } from '../modules/admin-dashboard.js'
 export function createAdminAuthorStatisticsRouter(config) {
-  const router = Router();
+  const router = Router()
   router.get(
     '/admin/dashboard',
     requireAuth(config),
     requireRole('admin'),
     async (req, res, next) => {
       try {
-        res.set('Cache-Control', 'private, no-store').json(await adminDashboard());
+        res.set('Cache-Control', 'private, no-store').json(await adminDashboard())
       } catch (error) {
-        next(error);
+        next(error)
       }
     },
-  );
+  )
   router.get(
     '/admin/author-statistics',
     requireAuth(config),
@@ -31,16 +31,16 @@ export function createAdminAuthorStatisticsRouter(config) {
               .default('all'),
           })
           .strict()
-          .safeParse(req.query);
+          .safeParse(req.query)
         if (!parsed.success)
-          throw new HttpError(400, 'validation_error', 'Kỳ thống kê không hợp lệ.');
+          throw new HttpError(400, 'validation_error', 'Kỳ thống kê không hợp lệ.')
         res
           .set('Cache-Control', 'private, no-store')
-          .json(await adminAuthorStatistics(parsed.data.period));
+          .json(await adminAuthorStatistics(parsed.data.period))
       } catch (error) {
-        next(error);
+        next(error)
       }
     },
-  );
-  return router;
+  )
+  return router
 }

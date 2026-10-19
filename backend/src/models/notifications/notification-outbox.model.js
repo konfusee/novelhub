@@ -1,6 +1,6 @@
-import { defineModel, mutableOptions, ObjectId, Schema } from '../shared/schema.js';
+import { defineModel, mutableOptions, ObjectId, Schema } from '../shared/schema.js'
 
-export const NOTIFICATION_OUTBOX_STATUSES = ['pending', 'claimed', 'delivered', 'failed'];
+export const NOTIFICATION_OUTBOX_STATUSES = ['pending', 'claimed', 'delivered', 'failed']
 const schema = new Schema(
   {
     sourceEventKey: { type: String, required: true },
@@ -19,7 +19,7 @@ const schema = new Schema(
     lastFailureCode: String,
   },
   mutableOptions,
-);
-schema.index({ sourceEventKey: 1, channel: 1 }, { unique: true });
-schema.index({ status: 1, nextAttemptAt: 1 });
-export const NotificationOutbox = defineModel('NotificationOutbox', schema, 'notificationOutbox');
+)
+schema.index({ sourceEventKey: 1, channel: 1 }, { unique: true })
+schema.index({ status: 1, nextAttemptAt: 1 })
+export const NotificationOutbox = defineModel('NotificationOutbox', schema, 'notificationOutbox')

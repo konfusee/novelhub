@@ -1,19 +1,19 @@
-import { useState } from 'react';
-import { AuthorLayout } from '../../layouts';
-import { useBackendDocument, useBackendResource } from '../../api/useBackendResource';
-import { useLocale } from '../../context/LocaleContext';
-import { BookOpen, Plus, RefreshCw, AlertTriangle, PenLine, Search } from '../../components/icons';
-import { Badge, Button, ButtonLink, Card, EmptyState, Input, Skeleton } from '../../components/ui';
+import { useState } from 'react'
+import { AuthorLayout } from '../../layouts'
+import { useBackendDocument, useBackendResource } from '../../api/useBackendResource'
+import { useLocale } from '../../context/LocaleContext'
+import { BookOpen, Plus, RefreshCw, AlertTriangle, PenLine, Search } from '../../components/icons'
+import { Badge, Button, ButtonLink, Card, EmptyState, Input, Skeleton } from '../../components/ui'
 
-const emptyWorkspace = { chapters: [] };
+const emptyWorkspace = { chapters: [] }
 export function AuthorWorksPage({ editor = false }) {
-  const { t } = useLocale();
-  const works = useBackendResource('/author/stories');
-  const [query, setQuery] = useState('');
-  const [selected, setSelected] = useState(null);
-  const matches = works.data.filter((story) =>
+  const { t } = useLocale()
+  const works = useBackendResource('/author/stories')
+  const [query, setQuery] = useState('')
+  const [selected, setSelected] = useState(null)
+  const matches = works.data.filter(story =>
     story.title.toLocaleLowerCase('vi').includes(query.trim().toLocaleLowerCase('vi')),
-  );
+  )
   return (
     <AuthorLayout>
       <div className="page-author py-6 lg:py-8">
@@ -39,11 +39,11 @@ export function AuthorWorksPage({ editor = false }) {
             aria-label={t('worksData.search')}
             placeholder={t('worksData.search')}
             value={query}
-            onChange={(event) => setQuery(event.target.value)}
+            onChange={event => setQuery(event.target.value)}
           />
           {works.status === 'loading' ? (
             <div aria-busy="true" className="mt-5 space-y-4">
-              {[0, 1, 2].map((i) => (
+              {[0, 1, 2].map(i => (
                 <Skeleton key={i} className="h-20 w-full" />
               ))}
             </div>
@@ -60,7 +60,7 @@ export function AuthorWorksPage({ editor = false }) {
             />
           ) : matches.length ? (
             <ul className="mt-5 divide-y divide-hairline">
-              {matches.map((story) => (
+              {matches.map(story => (
                 <li
                   key={story.id}
                   className="flex flex-wrap items-center justify-between gap-4 py-5"
@@ -94,11 +94,11 @@ export function AuthorWorksPage({ editor = false }) {
         {editor && selected && <ChapterPicker key={selected.id} story={selected} />}
       </div>
     </AuthorLayout>
-  );
+  )
 }
 function ChapterPicker({ story }) {
-  const { t } = useLocale();
-  const workspace = useBackendDocument(`/author/stories/${story.id}/workspace`, emptyWorkspace);
+  const { t } = useLocale()
+  const workspace = useBackendDocument(`/author/stories/${story.id}/workspace`, emptyWorkspace)
   return (
     <Card className="mt-6">
       <h2 className="break-words text-h3">{story.title}</h2>
@@ -112,7 +112,7 @@ function ChapterPicker({ story }) {
         />
       ) : workspace.data.chapters.length ? (
         <ul className="mt-4 divide-y divide-hairline">
-          {workspace.data.chapters.map((chapter) => (
+          {workspace.data.chapters.map(chapter => (
             <li key={chapter.id} className="flex flex-wrap items-center justify-between gap-3 py-4">
               <span className="min-w-0 flex-1 break-words">
                 {t('worksData.chapter', { number: chapter.number, title: chapter.title })}
@@ -139,5 +139,5 @@ function ChapterPicker({ story }) {
         />
       )}
     </Card>
-  );
+  )
 }

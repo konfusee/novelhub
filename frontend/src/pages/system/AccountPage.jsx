@@ -1,23 +1,23 @@
-import { Fragment } from 'react';
-import { SecurityPanel } from '../../components/account/SecurityPanel';
-import { AccountSessions } from '../../components/account/AccountSessions';
-import { Mail, ShieldCheck, UserRound } from '../../components/icons';
-import { AdminLayout, AuthorLayout, ModeratorLayout, ReaderLayout } from '../../layouts';
-import { Avatar, Card, Input, SectionHeader } from '../../components/ui';
-import { useAuth } from '../../context/AuthContext';
-import { useLocale } from '../../context/LocaleContext';
+import { Fragment } from 'react'
+import { SecurityPanel } from '../../components/account/SecurityPanel'
+import { AccountSessions } from '../../components/account/AccountSessions'
+import { Mail, ShieldCheck, UserRound } from '../../components/icons'
+import { AdminLayout, AuthorLayout, ModeratorLayout, ReaderLayout } from '../../layouts'
+import { Avatar, Card, Input, SectionHeader } from '../../components/ui'
+import { useAuth } from '../../context/AuthContext'
+import { useLocale } from '../../context/LocaleContext'
 
 const layouts = {
   reader: ReaderLayout,
   author: AuthorLayout,
   moderator: ModeratorLayout,
   admin: AdminLayout,
-};
+}
 
 export function AccountPage({ workspace = 'reader', embedded = false }) {
-  const Layout = embedded ? Fragment : layouts[workspace] || ReaderLayout;
-  const { currentUser } = useAuth();
-  const { t } = useLocale();
+  const Layout = embedded ? Fragment : layouts[workspace] || ReaderLayout
+  const { currentUser } = useAuth()
+  const { t } = useLocale()
   return (
     <Layout>
       <div className={embedded ? '' : `page-${workspace} pt-6 sm:pt-8`}>
@@ -90,5 +90,5 @@ export function AccountPage({ workspace = 'reader', embedded = false }) {
         </div>
       </div>
     </Layout>
-  );
+  )
 }

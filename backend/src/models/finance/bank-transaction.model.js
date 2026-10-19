@@ -1,5 +1,5 @@
-import { defineModel, mutableOptions, ObjectId, Schema } from '../shared/schema.js';
-import { lockFields } from '../shared/guards.js';
+import { defineModel, mutableOptions, ObjectId, Schema } from '../shared/schema.js'
+import { lockFields } from '../shared/guards.js'
 
 export const BANK_MATCH_STATUSES = [
   'matched',
@@ -8,7 +8,7 @@ export const BANK_MATCH_STATUSES = [
   'expired',
   'already-paid',
   'resolved',
-];
+]
 const schema = new Schema(
   {
     sePayTransactionId: { type: String, required: true },
@@ -26,10 +26,10 @@ const schema = new Schema(
     adjustmentId: { type: ObjectId, ref: 'LedgerEntry' },
   },
   mutableOptions,
-);
+)
 schema.pre('validate', function setOriginalMatchStatus() {
-  if (this.isNew && this.originalMatchStatus == null) this.originalMatchStatus = this.matchStatus;
-});
+  if (this.isNew && this.originalMatchStatus == null) this.originalMatchStatus = this.matchStatus
+})
 lockFields(
   schema,
   [
@@ -42,7 +42,7 @@ lockFields(
     'apiKeyAuthenticated',
   ],
   { mode: 'insert-only' },
-);
-schema.index({ sePayTransactionId: 1 }, { unique: true });
-schema.index({ matchStatus: 1, receivedAt: -1 });
-export const BankTransaction = defineModel('BankTransaction', schema, 'bankTransactions');
+)
+schema.index({ sePayTransactionId: 1 }, { unique: true })
+schema.index({ matchStatus: 1, receivedAt: -1 })
+export const BankTransaction = defineModel('BankTransaction', schema, 'bankTransactions')

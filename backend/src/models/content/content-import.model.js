@@ -1,5 +1,5 @@
-import { defineModel, mutableOptions, ObjectId, Schema } from '../shared/schema.js';
-export const EXTRACTION_STATUSES = ['pending', 'succeeded', 'failed', 'rejected'];
+import { defineModel, mutableOptions, ObjectId, Schema } from '../shared/schema.js'
+export const EXTRACTION_STATUSES = ['pending', 'succeeded', 'failed', 'rejected']
 const schema = new Schema(
   {
     accountId: { type: ObjectId, ref: 'Account', required: true },
@@ -14,6 +14,6 @@ const schema = new Schema(
     createdRevisionId: { type: ObjectId, ref: 'ContentRevision' },
   },
   mutableOptions,
-);
-schema.index({ accountId: 1, createdAt: -1 });
-export const ContentImport = defineModel('ContentImport', schema, 'contentImports');
+)
+schema.index({ accountId: 1, createdAt: -1 })
+export const ContentImport = defineModel('ContentImport', schema, 'contentImports')

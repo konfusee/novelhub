@@ -1,47 +1,47 @@
-import { useRef, useState } from 'react';
-import { ArrowUp } from '../../components/icons';
-import { Button, Modal } from '../../components/ui';
-import { useLocale } from '../../context/LocaleContext';
-import { apiRequest } from '../../api/client';
+import { useRef, useState } from 'react'
+import { ArrowUp } from '../../components/icons'
+import { Button, Modal } from '../../components/ui'
+import { useLocale } from '../../context/LocaleContext'
+import { apiRequest } from '../../api/client'
 
 export function ChapterOrderDialog({ story, chapters, onClose, onSaved, onReload }) {
-  const { t } = useLocale();
-  const [initial] = useState(() => [...chapters].sort((a, b) => a.number - b.number));
-  const [version] = useState(story.version);
-  const pending = useRef(false);
-  const [order, setOrder] = useState(initial);
-  const [busy, setBusy] = useState(false);
-  const [error, setError] = useState('');
-  const [conflict, setConflict] = useState(false);
-  const dirty = order.some((chapter, index) => chapter.id !== initial[index].id);
+  const { t } = useLocale()
+  const [initial] = useState(() => [...chapters].sort((a, b) => a.number - b.number))
+  const [version] = useState(story.version)
+  const pending = useRef(false)
+  const [order, setOrder] = useState(initial)
+  const [busy, setBusy] = useState(false)
+  const [error, setError] = useState('')
+  const [conflict, setConflict] = useState(false)
+  const dirty = order.some((chapter, index) => chapter.id !== initial[index].id)
   function move(index, direction) {
-    if (pending.current || conflict) return;
-    const target = index + direction;
-    if (target < 0 || target >= order.length) return;
-    const next = [...order];
-    [next[index], next[target]] = [next[target], next[index]];
-    setOrder(next);
+    if (pending.current || conflict) return
+    const target = index + direction
+    if (target < 0 || target >= order.length) return
+    const next = [...order]
+    ;[next[index], next[target]] = [next[target], next[index]]
+    setOrder(next)
   }
   async function save() {
-    if (pending.current || conflict || !dirty) return;
-    pending.current = true;
-    setBusy(true);
-    setError('');
+    if (pending.current || conflict || !dirty) return
+    pending.current = true
+    setBusy(true)
+    setError('')
     try {
       await apiRequest(`/author/stories/${story.id}/chapters/reorder`, {
         method: 'POST',
         body: {
           expectedVersion: version,
-          chapters: order.map((chapter) => ({ id: chapter.id, expectedVersion: chapter.version })),
+          chapters: order.map(chapter => ({ id: chapter.id, expectedVersion: chapter.version })),
         },
-      });
-      onSaved();
+      })
+      onSaved()
     } catch (failure) {
-      setError(failure.message || t('chapterOrder.error'));
-      setConflict(failure.status === 409);
+      setError(failure.message || t('chapterOrder.error'))
+      setConflict(failure.status === 409)
     } finally {
-      pending.current = false;
-      setBusy(false);
+      pending.current = false
+      setBusy(false)
     }
   }
   return (
@@ -49,7 +49,7 @@ export function ChapterOrderDialog({ story, chapters, onClose, onSaved, onReload
       open
       title={t('chapterOrder.title')}
       onClose={() => {
-        if (!pending.current) onClose();
+        if (!pending.current) onClose()
       }}
     >
       <p className="text-sm text-muted">{t('chapterOrder.hint')}</p>
@@ -107,5 +107,5 @@ export function ChapterOrderDialog({ story, chapters, onClose, onSaved, onReload
         )}
       </div>
     </Modal>
-  );
+  )
 }

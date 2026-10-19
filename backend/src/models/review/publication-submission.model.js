@@ -1,4 +1,4 @@
-import { defineModel, mutableOptions, ObjectId, Schema } from '../shared/schema.js';
+import { defineModel, mutableOptions, ObjectId, Schema } from '../shared/schema.js'
 export const SUBMISSION_STATUSES = [
   'validated',
   'pending-review',
@@ -7,8 +7,8 @@ export const SUBMISSION_STATUSES = [
   'rejected',
   'revision-requested',
   'cancelled',
-];
-export const SUBMISSION_CANCELLATION_REASONS = ['author-role-removed', 'account-deleted'];
+]
+export const SUBMISSION_CANCELLATION_REASONS = ['author-role-removed', 'account-deleted']
 const schema = new Schema(
   {
     storyId: { type: ObjectId, ref: 'Story', required: true },
@@ -28,11 +28,11 @@ const schema = new Schema(
     cancellationReason: { type: String, enum: SUBMISSION_CANCELLATION_REASONS },
   },
   mutableOptions,
-);
-schema.index({ revisionId: 1 }, { unique: true });
-schema.index({ status: 1, claimExpiresAt: 1, submittedAt: 1 });
+)
+schema.index({ revisionId: 1 }, { unique: true })
+schema.index({ status: 1, claimExpiresAt: 1, submittedAt: 1 })
 export const PublicationSubmission = defineModel(
   'PublicationSubmission',
   schema,
   'publicationSubmissions',
-);
+)

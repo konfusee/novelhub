@@ -1,7 +1,7 @@
-import { coinAmount, defineModel, mutableOptions, ObjectId, Schema } from '../shared/schema.js';
-import { lockFields, forwardOnly } from '../shared/guards.js';
+import { coinAmount, defineModel, mutableOptions, ObjectId, Schema } from '../shared/schema.js'
+import { lockFields, forwardOnly } from '../shared/guards.js'
 
-export const UNLOCK_ENTITLEMENT_STATUSES = ['active', 'expired', 'revoked'];
+export const UNLOCK_ENTITLEMENT_STATUSES = ['active', 'expired', 'revoked']
 
 const schema = new Schema(
   {
@@ -17,7 +17,7 @@ const schema = new Schema(
     accessPolicySnapshot: Schema.Types.Mixed,
   },
   mutableOptions,
-);
+)
 lockFields(
   schema,
   [
@@ -32,7 +32,7 @@ lockFields(
     'accessPolicySnapshot',
   ],
   { mode: 'insert-only' },
-);
-forwardOnly(schema, 'status', { active: ['expired', 'revoked'], expired: [], revoked: [] });
-schema.index({ accountId: 1, chapterId: 1 }, { unique: true });
-export const UnlockEntitlement = defineModel('UnlockEntitlement', schema, 'unlockEntitlements');
+)
+forwardOnly(schema, 'status', { active: ['expired', 'revoked'], expired: [], revoked: [] })
+schema.index({ accountId: 1, chapterId: 1 }, { unique: true })
+export const UnlockEntitlement = defineModel('UnlockEntitlement', schema, 'unlockEntitlements')

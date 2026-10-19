@@ -1,5 +1,5 @@
-import { coinAmount, defineModel, mutableOptions, ObjectId, Schema } from '../shared/schema.js';
-import { lockFields } from '../shared/guards.js';
+import { coinAmount, defineModel, mutableOptions, ObjectId, Schema } from '../shared/schema.js'
+import { lockFields } from '../shared/guards.js'
 
 const schema = new Schema(
   {
@@ -22,24 +22,24 @@ const schema = new Schema(
     correctionReason: String,
   },
   mutableOptions,
-);
+)
 lockFields(
   schema,
   ['withdrawalRequestId', 'periodId', 'bankDetailsSnapshot', 'bankDetailsMissing', 'amountCoins'],
   { mode: 'insert-only' },
-);
+)
 schema.pre('validate', function requireBankDetailsOrMarker() {
-  if (!this.isNew) return;
+  if (!this.isNew) return
   if (this.bankDetailsMissing && this.bankDetailsSnapshot != null) {
-    this.invalidate('bankDetailsMissing', 'A row cannot have bank details and be marked missing');
+    this.invalidate('bankDetailsMissing', 'A row cannot have bank details and be marked missing')
   }
   if (!this.bankDetailsMissing && this.bankDetailsSnapshot == null) {
     this.invalidate(
       'bankDetailsSnapshot',
       'bankDetailsSnapshot is required unless bankDetailsMissing',
-    );
+    )
   }
-});
-schema.index({ withdrawalRequestId: 1 }, { unique: true });
-schema.index({ periodId: 1 });
-export const PayoutSheetRow = defineModel('PayoutSheetRow', schema, 'payoutSheetRows');
+})
+schema.index({ withdrawalRequestId: 1 }, { unique: true })
+schema.index({ periodId: 1 })
+export const PayoutSheetRow = defineModel('PayoutSheetRow', schema, 'payoutSheetRows')

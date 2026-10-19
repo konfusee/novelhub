@@ -1,6 +1,6 @@
-import { fileURLToPath } from 'node:url';
+import { fileURLToPath } from 'node:url'
 
-const DEFAULT_PATH = fileURLToPath(new URL('../../.env', import.meta.url));
+const DEFAULT_PATH = fileURLToPath(new URL('../../.env', import.meta.url))
 
 /**
  * Loads `backend/.env` into process.env, whatever the current working directory
@@ -9,10 +9,10 @@ const DEFAULT_PATH = fileURLToPath(new URL('../../.env', import.meta.url));
  */
 export function loadDotenv(path = DEFAULT_PATH) {
   try {
-    process.loadEnvFile(path);
-    return true;
+    process.loadEnvFile(path)
+    return true
   } catch (error) {
-    if (error.code === 'ENOENT') return false;
-    throw error;
+    if (error.code === 'ENOENT') return false
+    throw error
   }
 }

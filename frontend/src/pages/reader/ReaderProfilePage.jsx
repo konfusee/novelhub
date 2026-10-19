@@ -1,6 +1,6 @@
-import { SecurityPanel } from '../../components/account/SecurityPanel';
-import { Fragment, useEffect, useId, useRef, useState } from 'react';
-import { useLocation, useNavigate } from 'react-router';
+import { SecurityPanel } from '../../components/account/SecurityPanel'
+import { Fragment, useEffect, useId, useRef, useState } from 'react'
+import { useLocation, useNavigate } from 'react-router'
 import {
   AlertTriangle,
   BookOpen,
@@ -17,8 +17,8 @@ import {
   ShieldCheck,
   UserRound,
   X,
-} from '../../components/icons';
-import { AdminLayout, AuthorLayout, ModeratorLayout, ReaderLayout } from '../../layouts';
+} from '../../components/icons'
+import { AdminLayout, AuthorLayout, ModeratorLayout, ReaderLayout } from '../../layouts'
 import {
   Avatar,
   Badge,
@@ -31,34 +31,34 @@ import {
   Skeleton,
   SkeletonText,
   Tabs,
-} from '../../components/ui';
-import { ReaderRange } from '../../components/reader/ReaderSettings';
-import { useTheme } from '../../context/ThemeContext';
-import { useAuth } from '../../context/AuthContext';
-import { useLocale } from '../../context/LocaleContext';
-import { useMockResource } from '../../context/MockDataContext';
+} from '../../components/ui'
+import { ReaderRange } from '../../components/reader/ReaderSettings'
+import { useTheme } from '../../context/ThemeContext'
+import { useAuth } from '../../context/AuthContext'
+import { useLocale } from '../../context/LocaleContext'
+import { useMockResource } from '../../context/MockDataContext'
 
 const workspaceLayouts = {
   reader: ReaderLayout,
   author: AuthorLayout,
   moderator: ModeratorLayout,
   admin: AdminLayout,
-};
-const DEFAULT_BIO = 'Yêu thích truyện kỳ ảo phát triển chậm và trinh thám chữa lành.';
-const DEFAULT_GENRES = ['Kỳ ảo', 'Lãng mạn', 'Bí ẩn'];
-const SUGGESTED_GENRE = 'Khoa học viễn tưởng';
-const FONT_RANGE = { min: 14, max: 24 };
+}
+const DEFAULT_BIO = 'Yêu thích truyện kỳ ảo phát triển chậm và trinh thám chữa lành.'
+const DEFAULT_GENRES = ['Kỳ ảo', 'Lãng mạn', 'Bí ẩn']
+const SUGGESTED_GENRE = 'Khoa học viễn tưởng'
+const FONT_RANGE = { min: 14, max: 24 }
 /* Reading-canvas swatches are a deliberate canvas preview (AGENTS §7), not product chrome. */
 const canvases = {
   parchment: { labelKey: 'settings.reading.parchment', background: '#fcf8f2', ink: '#172033' },
   cream: { labelKey: 'settings.reading.cream', background: '#fffdf9', ink: '#172033' },
   navy: { labelKey: 'settings.reading.navy', background: '#081321', ink: '#f4f1ea' },
-};
-const handleFor = (name) =>
-  `@${(name || 'novelhub_reader').toLowerCase().replace(/[^a-z0-9]+/g, '_')}`;
+}
+const handleFor = name =>
+  `@${(name || 'novelhub_reader').toLowerCase().replace(/[^a-z0-9]+/g, '_')}`
 
-const PREFERENCES_KEY = 'novelhub.user.preferences';
-const defaultPreferences = (user) => ({
+const PREFERENCES_KEY = 'novelhub.user.preferences'
+const defaultPreferences = user => ({
   name: user?.name || 'Độc giả NovelHub',
   handle: handleFor(user?.name),
   bio: DEFAULT_BIO,
@@ -69,54 +69,54 @@ const defaultPreferences = (user) => ({
   speed: 1,
   skip: 15,
   autoplay: true,
-});
+})
 /* Preferences saved by this page; null when nothing was saved yet (resource 'empty'). */
 const readSavedPreferences = () => {
   try {
-    const value = JSON.parse(localStorage.getItem(PREFERENCES_KEY));
-    return value && typeof value === 'object' ? value : null;
+    const value = JSON.parse(localStorage.getItem(PREFERENCES_KEY))
+    return value && typeof value === 'object' ? value : null
   } catch {
-    return null;
+    return null
   }
-};
-const isMissing = (value) => !value;
+}
+const isMissing = value => !value
 
 export function ReaderProfilePage({ workspace = 'reader', embedded = false }) {
-  const Layout = embedded ? Fragment : workspaceLayouts[workspace] || ReaderLayout;
-  const location = useLocation();
-  const navigate = useNavigate();
-  const { currentUser } = useAuth();
-  const { t } = useLocale();
-  const [savedPreferences] = useState(readSavedPreferences);
+  const Layout = embedded ? Fragment : workspaceLayouts[workspace] || ReaderLayout
+  const location = useLocation()
+  const navigate = useNavigate()
+  const { currentUser } = useAuth()
+  const { t } = useLocale()
+  const [savedPreferences] = useState(readSavedPreferences)
   const {
     status,
     data: stored,
     retry,
   } = useMockResource('user:preferences', savedPreferences, {
     isEmpty: isMissing,
-  });
-  const settingsRoot = workspace === 'admin' ? '/admin/preferences' : `/${workspace}/settings`;
-  const isSettings = location.pathname.startsWith(settingsRoot);
-  const sectionFromPath = location.pathname.split('/').at(-1);
+  })
+  const settingsRoot = workspace === 'admin' ? '/admin/preferences' : `/${workspace}/settings`
+  const isSettings = location.pathname.startsWith(settingsRoot)
+  const sectionFromPath = location.pathname.split('/').at(-1)
   const section =
     isSettings &&
     ['reading', 'listening', 'appearance', 'privacy', 'security'].includes(sectionFromPath)
       ? sectionFromPath
       : isSettings
         ? 'reading'
-        : 'profile';
-  const tabsRef = useRef(null);
+        : 'profile'
+  const tabsRef = useRef(null)
   /* Keep the active section visible in the horizontally scrolling tab rail on phones. */
   useEffect(() => {
-    const active = tabsRef.current?.querySelector('[aria-pressed="true"]');
-    const rail = active?.parentElement;
-    if (!rail || rail.scrollWidth <= rail.clientWidth) return;
+    const active = tabsRef.current?.querySelector('[aria-pressed="true"]')
+    const rail = active?.parentElement
+    if (!rail || rail.scrollWidth <= rail.clientWidth) return
     rail.scrollLeft =
-      active.offsetLeft - rail.offsetLeft - (rail.clientWidth - active.offsetWidth) / 2;
-  }, [section]);
-  const changeSection = (value) => {
-    navigate(`${settingsRoot}/${value}`);
-  };
+      active.offsetLeft - rail.offsetLeft - (rail.clientWidth - active.offsetWidth) / 2
+  }, [section])
+  const changeSection = value => {
+    navigate(`${settingsRoot}/${value}`)
+  }
   return (
     <Layout>
       <div className={embedded ? '' : `page-${workspace} pb-12 pt-7`}>
@@ -177,7 +177,7 @@ export function ReaderProfilePage({ workspace = 'reader', embedded = false }) {
         )}
       </div>
     </Layout>
-  );
+  )
 }
 
 function PanelTitle({ icon: Icon, title, note }) {
@@ -195,7 +195,7 @@ function PanelTitle({ icon: Icon, title, note }) {
         description={note}
       />
     </div>
-  );
+  )
 }
 function Field({ label, htmlFor, className = '', children }) {
   return (
@@ -205,7 +205,7 @@ function Field({ label, htmlFor, className = '', children }) {
       </label>
       {children}
     </div>
-  );
+  )
 }
 function Choice({ active, onClick, title, note }) {
   return (
@@ -221,7 +221,7 @@ function Choice({ active, onClick, title, note }) {
       </strong>
       <span className="mt-1 block text-caption text-muted">{note}</span>
     </button>
-  );
+  )
 }
 function Switch({ checked, onChange, labelledBy }) {
   return (
@@ -238,7 +238,7 @@ function Switch({ checked, onChange, labelledBy }) {
         className={`size-5 rounded-full bg-surface shadow-whisper transition-transform duration-200 ${checked ? 'translate-x-5' : ''}`}
       />
     </button>
-  );
+  )
 }
 function ControlRow({ label, labelId, children }) {
   return (
@@ -248,7 +248,7 @@ function ControlRow({ label, labelId, children }) {
       </span>
       {children}
     </div>
-  );
+  )
 }
 
 /*
@@ -256,28 +256,28 @@ function ControlRow({ label, labelId, children }) {
  * last loaded or saved values; save persists them.
  */
 function PreferencesForm({ initial, isSettings, section }) {
-  const { theme, setTheme } = useTheme();
-  const { t } = useLocale();
-  const ids = useId();
-  const [baseline, setBaseline] = useState(initial);
-  const [name, setName] = useState(initial.name);
-  const [handle, setHandle] = useState(initial.handle);
-  const [bio, setBio] = useState(initial.bio);
-  const [fontSize, setFontSize] = useState(initial.fontSize);
-  const [spacing, setSpacing] = useState(initial.spacing);
-  const [canvas, setCanvas] = useState(initial.canvas in canvases ? initial.canvas : 'parchment');
-  const [speed, setSpeed] = useState(initial.speed);
-  const [skip, setSkip] = useState(initial.skip);
-  const [autoplay, setAutoplay] = useState(initial.autoplay);
-  const [saved, setSaved] = useState(true);
-  const [genres, setGenres] = useState(initial.genres);
-  const [audioPlaying, setAudioPlaying] = useState(false);
-  const [notice, setNotice] = useState('');
-  const changed = () => setSaved(false);
-  const changeFontSize = (value) => {
-    setFontSize(Math.min(FONT_RANGE.max, Math.max(FONT_RANGE.min, value)));
-    changed();
-  };
+  const { theme, setTheme } = useTheme()
+  const { t } = useLocale()
+  const ids = useId()
+  const [baseline, setBaseline] = useState(initial)
+  const [name, setName] = useState(initial.name)
+  const [handle, setHandle] = useState(initial.handle)
+  const [bio, setBio] = useState(initial.bio)
+  const [fontSize, setFontSize] = useState(initial.fontSize)
+  const [spacing, setSpacing] = useState(initial.spacing)
+  const [canvas, setCanvas] = useState(initial.canvas in canvases ? initial.canvas : 'parchment')
+  const [speed, setSpeed] = useState(initial.speed)
+  const [skip, setSkip] = useState(initial.skip)
+  const [autoplay, setAutoplay] = useState(initial.autoplay)
+  const [saved, setSaved] = useState(true)
+  const [genres, setGenres] = useState(initial.genres)
+  const [audioPlaying, setAudioPlaying] = useState(false)
+  const [notice, setNotice] = useState('')
+  const changed = () => setSaved(false)
+  const changeFontSize = value => {
+    setFontSize(Math.min(FONT_RANGE.max, Math.max(FONT_RANGE.min, value)))
+    changed()
+  }
   const save = () => {
     const values = {
       name,
@@ -290,27 +290,27 @@ function PreferencesForm({ initial, isSettings, section }) {
       speed,
       skip,
       autoplay,
-    };
-    localStorage.setItem(PREFERENCES_KEY, JSON.stringify(values));
-    setBaseline(values);
-    setSaved(true);
-    setNotice(t(isSettings ? 'settings.preferencesSavedNotice' : 'settings.profileSavedNotice'));
-  };
+    }
+    localStorage.setItem(PREFERENCES_KEY, JSON.stringify(values))
+    setBaseline(values)
+    setSaved(true)
+    setNotice(t(isSettings ? 'settings.preferencesSavedNotice' : 'settings.profileSavedNotice'))
+  }
   const discard = () => {
-    setName(baseline.name);
-    setHandle(baseline.handle);
-    setBio(baseline.bio);
-    setGenres(baseline.genres);
-    setFontSize(baseline.fontSize);
-    setSpacing(baseline.spacing);
-    setCanvas(baseline.canvas in canvases ? baseline.canvas : 'parchment');
-    setSpeed(baseline.speed);
-    setSkip(baseline.skip);
-    setAutoplay(baseline.autoplay);
-    setSaved(true);
-    setNotice(t(isSettings ? 'settings.preferencesDiscarded' : 'settings.profileDiscarded'));
-  };
-  const activeCanvas = canvases[canvas];
+    setName(baseline.name)
+    setHandle(baseline.handle)
+    setBio(baseline.bio)
+    setGenres(baseline.genres)
+    setFontSize(baseline.fontSize)
+    setSpacing(baseline.spacing)
+    setCanvas(baseline.canvas in canvases ? baseline.canvas : 'parchment')
+    setSpeed(baseline.speed)
+    setSkip(baseline.skip)
+    setAutoplay(baseline.autoplay)
+    setSaved(true)
+    setNotice(t(isSettings ? 'settings.preferencesDiscarded' : 'settings.profileDiscarded'))
+  }
+  const activeCanvas = canvases[canvas]
   return (
     <>
       <div className="nh-grid-12 mt-6 grid items-start gap-6 nh-layout-xl-8-4">
@@ -360,9 +360,9 @@ function PreferencesForm({ initial, isSettings, section }) {
                     id={`${ids}-name`}
                     autoComplete="nickname"
                     value={name}
-                    onChange={(e) => {
-                      setName(e.target.value);
-                      changed();
+                    onChange={e => {
+                      setName(e.target.value)
+                      changed()
                     }}
                   />
                 </Field>
@@ -371,9 +371,9 @@ function PreferencesForm({ initial, isSettings, section }) {
                     id={`${ids}-handle`}
                     autoComplete="username"
                     value={handle}
-                    onChange={(e) => {
-                      setHandle(e.target.value);
-                      changed();
+                    onChange={e => {
+                      setHandle(e.target.value)
+                      changed()
                     }}
                   />
                 </Field>
@@ -382,9 +382,9 @@ function PreferencesForm({ initial, isSettings, section }) {
                 <textarea
                   id={`${ids}-bio`}
                   value={bio}
-                  onChange={(e) => {
-                    setBio(e.target.value);
-                    changed();
+                  onChange={e => {
+                    setBio(e.target.value)
+                    changed()
                   }}
                   maxLength={160}
                   aria-describedby={`${ids}-bio-count`}
@@ -402,15 +402,15 @@ function PreferencesForm({ initial, isSettings, section }) {
                   Thể loại yêu thích
                 </p>
                 <ul aria-labelledby={`${ids}-genres`} className="mt-2 flex flex-wrap gap-2">
-                  {genres.map((item) => (
+                  {genres.map(item => (
                     <li key={item}>
                       <button
                         type="button"
                         aria-label={`Bỏ thể loại ${item}`}
                         className="inline-flex min-h-9 items-center rounded-full transition-transform active:scale-[0.96]"
                         onClick={() => {
-                          setGenres((current) => current.filter((genre) => genre !== item));
-                          changed();
+                          setGenres(current => current.filter(genre => genre !== item))
+                          changed()
                         }}
                       >
                         <Badge tone="green" className="gap-1">
@@ -425,8 +425,8 @@ function PreferencesForm({ initial, isSettings, section }) {
                       <button
                         type="button"
                         onClick={() => {
-                          setGenres((current) => [...current, SUGGESTED_GENRE]);
-                          changed();
+                          setGenres(current => [...current, SUGGESTED_GENRE])
+                          changed()
                         }}
                         className="inline-flex min-h-9 items-center gap-1 rounded-full border border-dashed border-line px-3 text-xs font-semibold text-ink/80 transition-colors hover:border-brand hover:text-brand-strong"
                       >
@@ -471,13 +471,13 @@ function PreferencesForm({ initial, isSettings, section }) {
                 aria-labelledby={`${ids}-spacing`}
                 className="nh-grid-12 mt-2 grid nh-cols-3 gap-2"
               >
-                {[1.4, 1.8, 2.2].map((value) => (
+                {[1.4, 1.8, 2.2].map(value => (
                   <Choice
                     key={value}
                     active={spacing === value}
                     onClick={() => {
-                      setSpacing(value);
-                      changed();
+                      setSpacing(value)
+                      changed()
                     }}
                     title={`${value}×`}
                     note={t(
@@ -504,8 +504,8 @@ function PreferencesForm({ initial, isSettings, section }) {
                     key={value}
                     aria-pressed={canvas === value}
                     onClick={() => {
-                      setCanvas(value);
-                      changed();
+                      setCanvas(value)
+                      changed()
                     }}
                     className={`flex min-h-12 items-center justify-between gap-2 whitespace-normal rounded-2xl border px-3 py-2 text-left text-xs font-semibold transition-[border-color,box-shadow,transform] active:scale-[0.98] ${canvas === value ? 'border-brand ring-2 ring-brand/25' : 'border-line hover:border-brand/50'}`}
                     style={{ backgroundColor: option.background, color: option.ink }}
@@ -530,13 +530,13 @@ function PreferencesForm({ initial, isSettings, section }) {
                   aria-labelledby={`${ids}-speed`}
                   className="flex gap-1 rounded-full border border-hairline bg-elevated p-1"
                 >
-                  {[0.8, 1, 1.25, 1.5].map((value) => (
+                  {[0.8, 1, 1.25, 1.5].map(value => (
                     <button
                       type="button"
                       aria-pressed={speed === value}
                       onClick={() => {
-                        setSpeed(value);
-                        changed();
+                        setSpeed(value)
+                        changed()
                       }}
                       key={value}
                       className={`min-h-10 rounded-full px-3.5 text-xs font-semibold tabular-nums transition-colors pointer-coarse:min-h-11 ${speed === value ? 'bg-brand text-on-brand' : 'text-ink/70 hover:text-ink'}`}
@@ -548,13 +548,13 @@ function PreferencesForm({ initial, isSettings, section }) {
               </ControlRow>
               <ControlRow label={t('settings.listening.skip')} labelId={`${ids}-skip`}>
                 <div role="group" aria-labelledby={`${ids}-skip`} className="flex gap-2">
-                  {[10, 15, 30].map((value) => (
+                  {[10, 15, 30].map(value => (
                     <button
                       type="button"
                       aria-pressed={skip === value}
                       onClick={() => {
-                        setSkip(value);
-                        changed();
+                        setSkip(value)
+                        changed()
                       }}
                       key={value}
                       className={`min-h-10 rounded-full border px-3 text-xs font-semibold tabular-nums transition-colors ${skip === value ? 'border-brand bg-brand/10 text-brand-strong' : 'border-line text-ink/80 hover:border-brand/50'}`}
@@ -569,8 +569,8 @@ function PreferencesForm({ initial, isSettings, section }) {
                   checked={autoplay}
                   labelledBy={`${ids}-autoplay`}
                   onChange={() => {
-                    setAutoplay(!autoplay);
-                    changed();
+                    setAutoplay(!autoplay)
+                    changed()
                   }}
                 />
               </ControlRow>
@@ -696,7 +696,7 @@ function PreferencesForm({ initial, isSettings, section }) {
                   </div>
                   <button
                     type="button"
-                    onClick={() => setAudioPlaying((value) => !value)}
+                    onClick={() => setAudioPlaying(value => !value)}
                     className="grid size-11 shrink-0 place-items-center rounded-full bg-brand text-on-brand shadow-[0_10px_24px_-14px_var(--primary)] transition-transform active:scale-[0.96]"
                     aria-label={t(
                       audioPlaying ? 'settings.preview.pause' : 'settings.preview.play',
@@ -741,7 +741,7 @@ function PreferencesForm({ initial, isSettings, section }) {
         </section>
       )}
     </>
-  );
+  )
 }
 
 /* Field placeholder: label line above a pill input of the given height. */
@@ -753,7 +753,7 @@ function FieldSkeleton({ control = 'h-11', className = '' }) {
       </span>
       <Skeleton className={`mt-2 w-full rounded-3xl ${control}`} />
     </div>
-  );
+  )
 }
 
 /*
@@ -784,13 +784,13 @@ function PreferencesSkeleton({ isSettings }) {
             <Skeleton className="mt-4 h-2 w-full" />
             <Skeleton className="mt-8 h-3.5 w-28" />
             <div className="mt-3 grid grid-cols-3 gap-2">
-              {[0, 1, 2].map((item) => (
+              {[0, 1, 2].map(item => (
                 <Skeleton key={item} className="h-14 rounded-2xl" />
               ))}
             </div>
             <Skeleton className="mt-6 h-3.5 w-28" />
             <div className="mt-3 grid grid-cols-3 gap-2">
-              {[0, 1, 2].map((item) => (
+              {[0, 1, 2].map(item => (
                 <Skeleton key={item} className="h-12 rounded-2xl" />
               ))}
             </div>
@@ -816,7 +816,7 @@ function PreferencesSkeleton({ isSettings }) {
               <Skeleton className="h-3.5 w-32" />
             </span>
             <div className="mt-2 flex flex-wrap gap-2">
-              {[0, 1, 2, 3].map((item) => (
+              {[0, 1, 2, 3].map(item => (
                 <Skeleton key={item} className="h-9 w-24" />
               ))}
             </div>
@@ -839,5 +839,5 @@ function PreferencesSkeleton({ isSettings }) {
         </div>
       )}
     </div>
-  );
+  )
 }

@@ -1,4 +1,4 @@
-import { defineModel, mutableOptions, ObjectId, Schema } from '../shared/schema.js';
+import { defineModel, mutableOptions, ObjectId, Schema } from '../shared/schema.js'
 
 export const EMAIL_TOKEN_PURPOSES = [
   'email-verification',
@@ -8,7 +8,7 @@ export const EMAIL_TOKEN_PURPOSES = [
   'security-enable',
   'security-disable',
   'security-login',
-];
+]
 
 const emailTokenSchema = new Schema(
   {
@@ -26,9 +26,9 @@ const emailTokenSchema = new Schema(
     revokedAt: Date,
   },
   mutableOptions,
-);
+)
 
-emailTokenSchema.index({ tokenHash: 1 }, { unique: true });
-emailTokenSchema.index({ accountId: 1, purpose: 1, usedAt: 1, revokedAt: 1 });
+emailTokenSchema.index({ tokenHash: 1 }, { unique: true })
+emailTokenSchema.index({ accountId: 1, purpose: 1, usedAt: 1, revokedAt: 1 })
 
-export const EmailToken = defineModel('EmailToken', emailTokenSchema, 'emailTokens');
+export const EmailToken = defineModel('EmailToken', emailTokenSchema, 'emailTokens')

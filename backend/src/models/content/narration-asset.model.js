@@ -1,5 +1,5 @@
-import { defineModel, mutableOptions, ObjectId, Schema } from '../shared/schema.js';
-export const NARRATION_STATUSES = ['requested', 'processing', 'available', 'failed'];
+import { defineModel, mutableOptions, ObjectId, Schema } from '../shared/schema.js'
+export const NARRATION_STATUSES = ['requested', 'processing', 'available', 'failed']
 const schema = new Schema(
   {
     chapterId: { type: ObjectId, ref: 'Chapter', required: true },
@@ -16,7 +16,7 @@ const schema = new Schema(
     completedAt: Date,
   },
   mutableOptions,
-);
-schema.index({ revisionId: 1, voiceId: 1 }, { unique: true });
-schema.index({ chapterId: 1, status: 1 });
-export const NarrationAsset = defineModel('NarrationAsset', schema, 'narrationAssets');
+)
+schema.index({ revisionId: 1, voiceId: 1 }, { unique: true })
+schema.index({ chapterId: 1, status: 1 })
+export const NarrationAsset = defineModel('NarrationAsset', schema, 'narrationAssets')

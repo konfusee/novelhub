@@ -1,6 +1,6 @@
-import { defineModel, mutableOptions, ObjectId, Schema } from '../shared/schema.js';
-export const REPORT_STATUSES = ['open', 'under-review', 'dismissed', 'actioned', 'closed'];
-export const REPORT_TARGET_TYPES = ['story', 'chapter', 'comment'];
+import { defineModel, mutableOptions, ObjectId, Schema } from '../shared/schema.js'
+export const REPORT_STATUSES = ['open', 'under-review', 'dismissed', 'actioned', 'closed']
+export const REPORT_TARGET_TYPES = ['story', 'chapter', 'comment']
 const schema = new Schema(
   {
     reporterAccountId: { type: ObjectId, ref: 'Account', required: true },
@@ -19,7 +19,7 @@ const schema = new Schema(
     claimReleaseHistory: [{ type: Schema.Types.Mixed }],
   },
   mutableOptions,
-);
-schema.index({ targetType: 1, targetId: 1, status: 1 });
-schema.index({ status: 1, claimExpiresAt: 1, submittedAt: 1 });
-export const ContentReport = defineModel('ContentReport', schema, 'contentReports');
+)
+schema.index({ targetType: 1, targetId: 1, status: 1 })
+schema.index({ status: 1, claimExpiresAt: 1, submittedAt: 1 })
+export const ContentReport = defineModel('ContentReport', schema, 'contentReports')

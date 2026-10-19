@@ -1,4 +1,4 @@
-import { useMemo, useRef, useState } from 'react';
+import { useMemo, useRef, useState } from 'react'
 import {
   AlertTriangle,
   BookOpen,
@@ -15,12 +15,12 @@ import {
   Trash2,
   Upload,
   WandSparkles,
-} from '../../components/icons';
-import { AuthorLayout } from '../../layouts';
-import { useBackendDocument } from '../../api/useBackendResource';
-import { apiRequest } from '../../api/client';
-import { useLocale } from '../../context/LocaleContext';
-import { ChapterLifecycleDialog } from './ChapterLifecycleDialog';
+} from '../../components/icons'
+import { AuthorLayout } from '../../layouts'
+import { useBackendDocument } from '../../api/useBackendResource'
+import { apiRequest } from '../../api/client'
+import { useLocale } from '../../context/LocaleContext'
+import { ChapterLifecycleDialog } from './ChapterLifecycleDialog'
 import {
   Badge,
   Button,
@@ -34,81 +34,81 @@ import {
   Select,
   Skeleton,
   Tabs,
-} from '../../components/ui';
+} from '../../components/ui'
 
-const editorRoute = (draft) => `/author/stories/${draft.storyId}/chapters/${draft.id}/edit`;
-const emptyDrafts = { items: [], stories: [], history: [] };
-const WORDS_PER_MINUTE = 250;
+const editorRoute = draft => `/author/stories/${draft.storyId}/chapters/${draft.id}/edit`
+const emptyDrafts = { items: [], stories: [], history: [] }
+const WORDS_PER_MINUTE = 250
 const filterLabels = [
   ['All Drafts', 'Tất cả bản nháp'],
   ['Story Chapters', 'Chương truyện'],
   ['Standalone Concepts', 'Ý tưởng độc lập'],
   ['Ready for Review', 'Sẵn sàng xét duyệt'],
-];
+]
 const matchesFilter = (draft, filter) =>
   filter === 'All Drafts' ||
   (filter === 'Story Chapters' && draft.type.includes('Chapter')) ||
   (filter === 'Standalone Concepts' && draft.type === 'Standalone Concept') ||
-  (filter === 'Ready for Review' && draft.meta === 'Ready for Review');
+  (filter === 'Ready for Review' && draft.meta === 'Ready for Review')
 const draftTypeLabels = {
   'Story Chapter': 'Chương truyện',
   'Chapter Draft': 'Bản nháp chương',
   'Standalone Concept': 'Ý tưởng độc lập',
   'Special Edition': 'Phiên bản đặc biệt',
-};
-const wordCount = (draft) => Number(String(draft.words).replace(/[^\d]/g, '')) || 0;
-const formatNumber = (value) => value.toLocaleString('vi-VN');
-const readMinutes = (words) =>
+}
+const wordCount = draft => Number(String(draft.words).replace(/[^\d]/g, '')) || 0
+const formatNumber = value => value.toLocaleString('vi-VN')
+const readMinutes = words =>
   (words ? Math.max(0.1, Math.round((words / WORDS_PER_MINUTE) * 10) / 10) : 0).toLocaleString(
     'vi-VN',
-  );
+  )
 
 export function DraftsPage() {
-  const [filter, setFilter] = useState('All Drafts');
-  const [query, setQuery] = useState('');
-  const [sort, setSort] = useState('Last Edited');
-  const [view, setView] = useState('grid');
-  const { t } = useLocale();
-  const resource = useBackendDocument('/author/drafts', emptyDrafts);
-  const [storyId, setStoryId] = useState('');
-  const [busy, setBusy] = useState(false);
-  const busyRef = useRef(false);
-  const [requestError, setRequestError] = useState('');
-  const [newOpen, setNewOpen] = useState(false);
-  const [newTitle, setNewTitle] = useState('Bản thảo chưa đặt tên');
-  const [newTouched, setNewTouched] = useState(false);
-  const [deleting, setDeleting] = useState(null);
+  const [filter, setFilter] = useState('All Drafts')
+  const [query, setQuery] = useState('')
+  const [sort, setSort] = useState('Last Edited')
+  const [view, setView] = useState('grid')
+  const { t } = useLocale()
+  const resource = useBackendDocument('/author/drafts', emptyDrafts)
+  const [storyId, setStoryId] = useState('')
+  const [busy, setBusy] = useState(false)
+  const busyRef = useRef(false)
+  const [requestError, setRequestError] = useState('')
+  const [newOpen, setNewOpen] = useState(false)
+  const [newTitle, setNewTitle] = useState('Bản thảo chưa đặt tên')
+  const [newTouched, setNewTouched] = useState(false)
+  const [deleting, setDeleting] = useState(null)
   async function openDelete(draft) {
-    if (busyRef.current) return;
-    busyRef.current = true;
-    setBusy(true);
-    setRequestError('');
+    if (busyRef.current) return
+    busyRef.current = true
+    setBusy(true)
+    setRequestError('')
     try {
-      const workspace = await apiRequest(`/author/stories/${draft.storyId}/workspace`);
-      const chapter = workspace.chapters.find((item) => item.id === draft.id);
+      const workspace = await apiRequest(`/author/stories/${draft.storyId}/workspace`)
+      const chapter = workspace.chapters.find(item => item.id === draft.id)
       if (!chapter?.canDelete || chapter.version !== draft.version)
-        throw new Error(t('draftsData.stale'));
-      setDeleting({ story: workspace.story, chapter, action: 'delete' });
+        throw new Error(t('draftsData.stale'))
+      setDeleting({ story: workspace.story, chapter, action: 'delete' })
     } catch (failure) {
-      setRequestError(failure.message);
+      setRequestError(failure.message)
     } finally {
-      busyRef.current = false;
-      setBusy(false);
+      busyRef.current = false
+      setBusy(false)
     }
   }
   const draftsResource = {
     ...resource,
     data: resource.data.items,
     status: resource.status === 'ready' && !resource.data.items.length ? 'empty' : resource.status,
-  };
-  const source = draftsResource.data;
-  const ready = resource.status === 'ready';
+  }
+  const source = draftsResource.data
+  const ready = resource.status === 'ready'
 
   const shown = useMemo(
     () =>
       source
         .filter(
-          (draft) =>
+          draft =>
             matchesFilter(draft, filter) &&
             `${draft.title} ${draft.story}`.toLowerCase().includes(query.trim().toLowerCase()),
         )
@@ -120,67 +120,67 @@ export function DraftsPage() {
               : a.order - b.order,
         ),
     [source, filter, query, sort],
-  );
+  )
   const tabItems = filterLabels.map(([value, label]) => ({
     value,
     label: ready
-      ? `${label} (${['Standalone Concepts', 'Ready for Review'].includes(value) ? '—' : source.filter((draft) => matchesFilter(draft, value)).length})`
+      ? `${label} (${['Standalone Concepts', 'Ready for Review'].includes(value) ? '—' : source.filter(draft => matchesFilter(draft, value)).length})`
       : label,
-  }));
-  const newTitleError = newTouched && !newTitle.trim();
+  }))
+  const newTitleError = newTouched && !newTitle.trim()
 
   const openNew = () => {
-    setRequestError('');
-    setNewTitle('Bản thảo chưa đặt tên');
-    setNewTouched(false);
-    setNewOpen(true);
-  };
-  const addDraft = async (event) => {
-    event.preventDefault();
-    setNewTouched(true);
+    setRequestError('')
+    setNewTitle('Bản thảo chưa đặt tên')
+    setNewTouched(false)
+    setNewOpen(true)
+  }
+  const addDraft = async event => {
+    event.preventDefault()
+    setNewTouched(true)
     if (
       busyRef.current ||
       !newTitle.trim() ||
-      !resource.data.stories.some((story) => story.id === storyId)
+      !resource.data.stories.some(story => story.id === storyId)
     )
-      return;
-    busyRef.current = true;
-    setBusy(true);
-    setRequestError('');
+      return
+    busyRef.current = true
+    setBusy(true)
+    setRequestError('')
     try {
       const result = await apiRequest(`/author/stories/${storyId}/chapters`, {
         method: 'POST',
         body: { title: newTitle.trim(), paragraphs: [''] },
-      });
-      if (!result.chapter?.id) throw new Error(t('draftsData.error'));
-      setNewOpen(false);
-      setFilter('All Drafts');
-      setQuery('');
-      resource.retry();
+      })
+      if (!result.chapter?.id) throw new Error(t('draftsData.error'))
+      setNewOpen(false)
+      setFilter('All Drafts')
+      setQuery('')
+      resource.retry()
     } catch (error) {
-      setRequestError(error.message || t('draftsData.error'));
+      setRequestError(error.message || t('draftsData.error'))
     } finally {
-      busyRef.current = false;
-      setBusy(false);
+      busyRef.current = false
+      setBusy(false)
     }
-  };
-  const duplicate = async (draft) => {
-    if (busyRef.current) return;
-    busyRef.current = true;
-    setBusy(true);
-    setRequestError('');
+  }
+  const duplicate = async draft => {
+    if (busyRef.current) return
+    busyRef.current = true
+    setBusy(true)
+    setRequestError('')
     try {
-      const path = `/author/stories/${draft.storyId}/chapters/${draft.id}`;
-      let response;
+      const path = `/author/stories/${draft.storyId}/chapters/${draft.id}`
+      let response
       try {
-        response = await apiRequest(path);
+        response = await apiRequest(path)
       } catch (failure) {
-        if (failure.code !== 'unsupported_editor_format') throw failure;
-        response = await apiRequest(`${path}?format=rich`);
+        if (failure.code !== 'unsupported_editor_format') throw failure
+        response = await apiRequest(`${path}?format=rich`)
       }
-      const { chapter } = response;
+      const { chapter } = response
       if (!chapter.canEdit || chapter.version !== draft.version)
-        throw new Error(t('draftsData.stale'));
+        throw new Error(t('draftsData.stale'))
       const result = await apiRequest(`/author/stories/${draft.storyId}/chapters`, {
         method: 'POST',
         body: chapter.document
@@ -194,16 +194,16 @@ export function DraftsPage() {
               title: `${chapter.title.slice(0, 180)} (${t('draftsData.copy')})`,
               paragraphs: chapter.paragraphs.length ? chapter.paragraphs : [''],
             },
-      });
-      if (!result.chapter?.id) throw new Error(t('draftsData.error'));
-      resource.retry();
+      })
+      if (!result.chapter?.id) throw new Error(t('draftsData.error'))
+      resource.retry()
     } catch (error) {
-      setRequestError(error.message || t('draftsData.error'));
+      setRequestError(error.message || t('draftsData.error'))
     } finally {
-      busyRef.current = false;
-      setBusy(false);
+      busyRef.current = false
+      setBusy(false)
     }
-  };
+  }
 
   return (
     <AuthorLayout>
@@ -249,7 +249,7 @@ export function DraftsPage() {
                 enterKeyHint="search"
                 aria-label="Tìm bản nháp"
                 value={query}
-                onChange={(event) => setQuery(event.target.value)}
+                onChange={event => setQuery(event.target.value)}
                 placeholder="Tìm bản nháp, truyện..."
                 className="sm:flex-1 2xl:w-64 2xl:flex-none"
               />
@@ -257,7 +257,7 @@ export function DraftsPage() {
                 <Select
                   aria-label="Sắp xếp bản nháp"
                   value={sort}
-                  onChange={(event) => setSort(event.target.value)}
+                  onChange={event => setSort(event.target.value)}
                   className="min-w-44 flex-1 sm:flex-none"
                 >
                   <option value="Last Edited">Chỉnh sửa gần nhất</option>
@@ -299,7 +299,7 @@ export function DraftsPage() {
             aria-label="Đang tải bản nháp"
             className={`nh-grid-12 mt-6 grid gap-5 ${view === 'grid' ? 'nh-md-cols-2' : 'nh-cols-1'}`}
           >
-            {[0, 1, 2, 3].map((item) => (
+            {[0, 1, 2, 3].map(item => (
               <DraftCardSkeleton key={item} featured={item === 0 && view === 'grid'} />
             ))}
           </section>
@@ -355,8 +355,8 @@ export function DraftsPage() {
                     variant="secondary"
                     size="sm"
                     onClick={() => {
-                      setFilter('All Drafts');
-                      setQuery('');
+                      setFilter('All Drafts')
+                      setQuery('')
                     }}
                   >
                     Xóa bộ lọc
@@ -392,7 +392,7 @@ export function DraftsPage() {
               </div>
             </div>
             <ul className="nh-grid-12 mt-5 grid gap-3 nh-sm-cols-2 nh-xl-cols-4">
-              {resource.data.history.map((item) => (
+              {resource.data.history.map(item => (
                 <li
                   key={item.id}
                   className="flex flex-col rounded-2xl border border-hairline bg-elevated p-4"
@@ -432,10 +432,10 @@ export function DraftsPage() {
               id="draft-story"
               value={storyId}
               disabled={busy}
-              onChange={(event) => setStoryId(event.target.value)}
+              onChange={event => setStoryId(event.target.value)}
             >
               <option value="">{t('draftsData.chooseStory')}</option>
-              {resource.data.stories.map((story) => (
+              {resource.data.stories.map(story => (
                 <option key={story.id} value={story.id}>
                   {story.title}
                 </option>
@@ -453,7 +453,7 @@ export function DraftsPage() {
               id="new-draft-title"
               disabled={busy}
               value={newTitle}
-              onChange={(event) => setNewTitle(event.target.value)}
+              onChange={event => setNewTitle(event.target.value)}
               onBlur={() => setNewTouched(true)}
               maxLength={120}
               aria-invalid={newTitleError}
@@ -482,25 +482,25 @@ export function DraftsPage() {
             {...deleting}
             onClose={() => setDeleting(null)}
             onReload={() => {
-              setDeleting(null);
-              resource.retry();
+              setDeleting(null)
+              resource.retry()
             }}
             onSaved={() => {
-              setDeleting(null);
-              resource.retry();
+              setDeleting(null)
+              resource.retry()
             }}
           />
         )}
       </div>
     </AuthorLayout>
-  );
+  )
 }
 
 function DraftCard({ draft, featured, onDelete, onDuplicate, busy }) {
-  const { t } = useLocale();
-  const words = wordCount(draft);
-  const synced = draft.meta === 'Stored';
-  const ready = draft.meta === 'Ready for Review';
+  const { t } = useLocale()
+  const words = wordCount(draft)
+  const synced = draft.meta === 'Stored'
+  const ready = draft.meta === 'Ready for Review'
   return (
     <Card as="article" className={`flex flex-col ${featured ? 'md:min-h-96' : ''}`}>
       <div className="flex flex-wrap items-center gap-2">
@@ -579,7 +579,7 @@ function DraftCard({ draft, featured, onDelete, onDuplicate, busy }) {
         </div>
       </div>
     </Card>
-  );
+  )
 }
 
 function RetryButton({ onClick }) {
@@ -588,7 +588,7 @@ function RetryButton({ onClick }) {
       <RefreshCw size={14} aria-hidden="true" />
       Thử lại
     </Button>
-  );
+  )
 }
 
 function DraftCardSkeleton({ featured }) {
@@ -607,7 +607,7 @@ function DraftCardSkeleton({ featured }) {
         <Skeleton className="mb-1.5 mt-3 h-3 w-2/3" />
       </div>
       <div className="mt-5 grid grid-cols-3 gap-3 rounded-2xl border border-hairline bg-elevated p-4">
-        {[0, 1, 2].map((item) => (
+        {[0, 1, 2].map(item => (
           <div key={item}>
             <Skeleton className="mt-0.5 h-3 w-16" />
             <Skeleton className="mb-1 mt-2.5 h-3.5 w-20" />
@@ -626,5 +626,5 @@ function DraftCardSkeleton({ featured }) {
         </div>
       </div>
     </Card>
-  );
+  )
 }

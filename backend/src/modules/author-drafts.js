@@ -1,5 +1,5 @@
-import { Chapter, ContentRevision, Story } from '../models/index.js';
-import { chapterTextProjection } from './rich-chapter-document.js';
+import { Chapter, ContentRevision, Story } from '../models/index.js'
+import { chapterTextProjection } from './rich-chapter-document.js'
 
 export async function authorDrafts(accountId) {
   const stories = await Story.find({
@@ -8,33 +8,33 @@ export async function authorDrafts(accountId) {
     publicationStatus: { $nin: ['submitted', 'under-review', 'archived'] },
   })
     .sort({ updatedAt: -1 })
-    .lean();
+    .lean()
   const chapters = await Chapter.find({
-    storyId: { $in: stories.map((story) => story._id) },
+    storyId: { $in: stories.map(story => story._id) },
     status: 'draft',
   })
     .sort({ updatedAt: -1, _id: -1 })
-    .lean();
+    .lean()
   const revisions = await ContentRevision.find({
-    _id: { $in: chapters.map((chapter) => chapter.draftRevisionId).filter(Boolean) },
+    _id: { $in: chapters.map(chapter => chapter.draftRevisionId).filter(Boolean) },
     authorAccountId: accountId,
     contentType: 'chapter',
     status: 'editable',
-  }).lean();
+  }).lean()
   const items = chapters.flatMap((chapter, order) => {
     const revision = revisions.find(
-      (item) =>
+      item =>
         item._id.equals(chapter.draftRevisionId) &&
         item.chapterId?.equals(chapter._id) &&
         item.storyId.equals(chapter.storyId),
-    );
-    if (!revision) return [];
-    const paragraphs = chapterTextProjection(revision);
+    )
+    if (!revision) return []
+    const paragraphs = chapterTextProjection(revision)
     return [
       {
         id: String(chapter._id),
         storyId: String(chapter.storyId),
-        story: stories.find((story) => story._id.equals(chapter.storyId)).title,
+        story: stories.find(story => story._id.equals(chapter.storyId)).title,
         title: revision.content?.title ?? chapter.title,
         words: paragraphs.reduce((sum, text) => sum + (text.match(/\S+/gu)?.length ?? 0), 0),
         excerpt: paragraphs.join('\n\n').slice(0, 400),
@@ -45,21 +45,21 @@ export async function authorDrafts(accountId) {
         meta: 'Stored',
         tone: 'green',
       },
-    ];
-  });
+    ]
+  })
   const history = await ContentRevision.find({
-    chapterId: { $in: items.map((item) => item.id) },
+    chapterId: { $in: items.map(item => item.id) },
     authorAccountId: accountId,
     contentType: 'chapter',
   })
     .sort({ createdAt: -1, _id: -1 })
     .limit(4)
     .select('storyId chapterId content.title revisionNumber createdAt')
-    .lean();
+    .lean()
   return {
     items,
-    stories: stories.map((story) => ({ id: String(story._id), title: story.title })),
-    history: history.map((revision) => ({
+    stories: stories.map(story => ({ id: String(story._id), title: story.title })),
+    history: history.map(revision => ({
       id: String(revision._id),
       storyId: String(revision.storyId),
       chapterId: String(revision.chapterId),
@@ -68,5 +68,5 @@ export async function authorDrafts(accountId) {
       createdAt: revision.createdAt,
     })),
     storage: null,
-  };
+  }
 }

@@ -1,21 +1,21 @@
-import { useState } from 'react';
-import { useBackendDocument } from '../../api/useBackendResource';
-import { privateMediaUrl } from '../../api/media';
-import { useLocale } from '../../context/LocaleContext';
-import { Button, ButtonLink, Input, Modal } from '../../components/ui';
-const empty = { items: [], nextCursor: null };
+import { useState } from 'react'
+import { useBackendDocument } from '../../api/useBackendResource'
+import { privateMediaUrl } from '../../api/media'
+import { useLocale } from '../../context/LocaleContext'
+import { Button, ButtonLink, Input, Modal } from '../../components/ui'
+const empty = { items: [], nextCursor: null }
 export function ChapterImagePicker({ storyId, onClose, onAdd }) {
-  const { t } = useLocale();
-  const [cursor, setCursor] = useState('');
-  const [previous, setPrevious] = useState([]);
-  const resource = useBackendDocument(`/author/media${cursor ? `?cursor=${cursor}` : ''}`, empty);
-  const [selected, setSelected] = useState(null);
-  const [alt, setAlt] = useState('');
-  const [caption, setCaption] = useState('');
-  const [error, setError] = useState('');
+  const { t } = useLocale()
+  const [cursor, setCursor] = useState('')
+  const [previous, setPrevious] = useState([])
+  const resource = useBackendDocument(`/author/media${cursor ? `?cursor=${cursor}` : ''}`, empty)
+  const [selected, setSelected] = useState(null)
+  const [alt, setAlt] = useState('')
+  const [caption, setCaption] = useState('')
+  const [error, setError] = useState('')
   const items = [...previous, ...resource.data.items].filter(
-    (asset) => asset.url && (!asset.storyId || asset.storyId === storyId),
-  );
+    asset => asset.url && (!asset.storyId || asset.storyId === storyId),
+  )
   return (
     <Modal open title={t('chapterImages.title')} onClose={onClose}>
       <p className="text-sm leading-6 text-muted">{t('chapterImages.hint')}</p>
@@ -34,10 +34,10 @@ export function ChapterImagePicker({ storyId, onClose, onAdd }) {
           size="sm"
           disabled={resource.status === 'loading'}
           onClick={() => {
-            setPrevious([]);
-            setCursor('');
-            setSelected(null);
-            resource.retry();
+            setPrevious([])
+            setCursor('')
+            setSelected(null)
+            resource.retry()
           }}
         >
           {t('mediaData.refresh')}
@@ -54,15 +54,15 @@ export function ChapterImagePicker({ storyId, onClose, onAdd }) {
         </p>
       )}
       <div className="mt-4 grid max-h-64 grid-cols-2 gap-3 overflow-y-auto sm:grid-cols-3">
-        {items.map((asset) => (
+        {items.map(asset => (
           <button
             key={asset.id}
             type="button"
             aria-label={t('chapterImages.pick', { name: asset.name })}
             aria-pressed={selected === asset.id}
             onClick={() => {
-              setSelected(asset.id);
-              setError('');
+              setSelected(asset.id)
+              setError('')
             }}
             className={`min-w-0 rounded-2xl border p-2 text-left ${selected === asset.id ? 'border-brand bg-brand-soft' : 'border-line bg-elevated'}`}
           >
@@ -86,8 +86,8 @@ export function ChapterImagePicker({ storyId, onClose, onAdd }) {
           size="sm"
           className="mt-3"
           onClick={() => {
-            setPrevious([...previous, ...resource.data.items]);
-            setCursor(resource.data.nextCursor);
+            setPrevious([...previous, ...resource.data.items])
+            setCursor(resource.data.nextCursor)
           }}
         >
           {t('mediaData.more')}
@@ -99,7 +99,7 @@ export function ChapterImagePicker({ storyId, onClose, onAdd }) {
           className="mt-2 w-full"
           value={alt}
           maxLength={500}
-          onChange={(event) => setAlt(event.target.value)}
+          onChange={event => setAlt(event.target.value)}
         />
       </label>
       <label className="mt-3 block text-sm font-semibold">
@@ -108,7 +108,7 @@ export function ChapterImagePicker({ storyId, onClose, onAdd }) {
           rows={2}
           maxLength={1000}
           value={caption}
-          onChange={(event) => setCaption(event.target.value)}
+          onChange={event => setCaption(event.target.value)}
           className="mt-2 w-full rounded-2xl border border-line bg-surface p-3 text-sm text-ink"
         />
       </label>
@@ -125,16 +125,16 @@ export function ChapterImagePicker({ storyId, onClose, onAdd }) {
           disabled={!selected || resource.status === 'loading'}
           onClick={() => {
             if (!alt.trim()) {
-              setError(t('chapterImages.altRequired'));
-              return;
+              setError(t('chapterImages.altRequired'))
+              return
             }
             if (!onAdd({ type: 'image', mediaId: selected, alt: alt.trim(), caption }))
-              setError(t('chapterImages.limit'));
+              setError(t('chapterImages.limit'))
           }}
         >
           {t('chapterImages.add')}
         </Button>
       </div>
     </Modal>
-  );
+  )
 }

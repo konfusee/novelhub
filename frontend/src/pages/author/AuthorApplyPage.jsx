@@ -1,76 +1,76 @@
-import { useEffect, useState } from 'react';
-import { apiRequest } from '../../api/client';
-import { authorAgreements } from '../../data/authorAgreements';
-import { ROUTES } from '../../app/routes';
-import { LegalContent } from '../system/LegalPage';
-import { useLocale } from '../../context/LocaleContext';
-import { ArrowRight, Check, Feather, ShieldCheck } from '../../components/icons';
-import { AuthShowcase } from '../../components/auth/AuthShowcase';
-import { PublicHeader } from '../../components/public/PublicHeader';
-import { Button, ButtonLink, Card, Modal } from '../../components/ui';
-import { useAuth } from '../../context/AuthContext';
+import { useEffect, useState } from 'react'
+import { apiRequest } from '../../api/client'
+import { authorAgreements } from '../../data/authorAgreements'
+import { ROUTES } from '../../app/routes'
+import { LegalContent } from '../system/LegalPage'
+import { useLocale } from '../../context/LocaleContext'
+import { ArrowRight, Check, Feather, ShieldCheck } from '../../components/icons'
+import { AuthShowcase } from '../../components/auth/AuthShowcase'
+import { PublicHeader } from '../../components/public/PublicHeader'
+import { Button, ButtonLink, Card, Modal } from '../../components/ui'
+import { useAuth } from '../../context/AuthContext'
 
 export function AuthorApplyPage() {
-  const { t } = useLocale();
-  const labels = authorAgreements.map(({ title }) => t('legal.author.agree', { title: t(title) }));
-  const [legalDocument, setLegalDocument] = useState(null);
-  const [applicationState, setApplicationState] = useState('loading');
-  const [decisionReason, setDecisionReason] = useState('');
-  const [refresh, setRefresh] = useState(0);
-  const [checking, setChecking] = useState(false);
-  const [checkedAt, setCheckedAt] = useState('');
-  const [checks, setChecks] = useState(() => labels.map(() => false));
-  const { applyForAuthor, currentUser } = useAuth();
-  const [submission, setSubmission] = useState({ status: 'idle', message: '' });
-  const confirmed = checks.filter(Boolean).length;
-  const ready = confirmed === labels.length;
-  const alreadyAuthor = currentUser?.roles?.includes('author');
+  const { t } = useLocale()
+  const labels = authorAgreements.map(({ title }) => t('legal.author.agree', { title: t(title) }))
+  const [legalDocument, setLegalDocument] = useState(null)
+  const [applicationState, setApplicationState] = useState('loading')
+  const [decisionReason, setDecisionReason] = useState('')
+  const [refresh, setRefresh] = useState(0)
+  const [checking, setChecking] = useState(false)
+  const [checkedAt, setCheckedAt] = useState('')
+  const [checks, setChecks] = useState(() => labels.map(() => false))
+  const { applyForAuthor, currentUser } = useAuth()
+  const [submission, setSubmission] = useState({ status: 'idle', message: '' })
+  const confirmed = checks.filter(Boolean).length
+  const ready = confirmed === labels.length
+  const alreadyAuthor = currentUser?.roles?.includes('author')
 
   useEffect(() => {
-    const controller = new AbortController();
+    const controller = new AbortController()
     apiRequest('/auth/author-application', { signal: controller.signal })
       .then(({ application, access }) => {
-        if (controller.signal.aborted) return;
+        if (controller.signal.aborted) return
         setApplicationState(
           application?.status === 'approved' &&
             access?.canApply === true &&
             access?.activeAuthor === false
             ? 'revoked'
             : application?.status || 'none',
-        );
-        setDecisionReason(application?.decisionReason || '');
-        setSubmission({ status: 'idle', message: '' });
-        setCheckedAt(new Date().toLocaleTimeString('vi-VN'));
+        )
+        setDecisionReason(application?.decisionReason || '')
+        setSubmission({ status: 'idle', message: '' })
+        setCheckedAt(new Date().toLocaleTimeString('vi-VN'))
       })
-      .catch((error) => {
-        if (error.name === 'AbortError' || controller.signal.aborted) return;
-        if (error.status === 401) setApplicationState('expired');
+      .catch(error => {
+        if (error.name === 'AbortError' || controller.signal.aborted) return
+        if (error.status === 401) setApplicationState('expired')
         else if (refresh > 0)
-          setSubmission({ status: 'error', message: t('authorAccess.statusFailed') });
-        else setApplicationState('unavailable');
+          setSubmission({ status: 'error', message: t('authorAccess.statusFailed') })
+        else setApplicationState('unavailable')
       })
       .finally(() => {
-        if (!controller.signal.aborted) setChecking(false);
-      });
-    return () => controller.abort();
-  }, [refresh, t]);
+        if (!controller.signal.aborted) setChecking(false)
+      })
+    return () => controller.abort()
+  }, [refresh, t])
 
-  const finish = async (event) => {
-    event.preventDefault();
-    if (!ready) return;
-    setSubmission({ status: 'submitting', message: '' });
+  const finish = async event => {
+    event.preventDefault()
+    if (!ready) return
+    setSubmission({ status: 'submitting', message: '' })
     try {
-      await applyForAuthor();
-      setApplicationState('submitted');
+      await applyForAuthor()
+      setApplicationState('submitted')
       setSubmission({
         status: 'submitted',
         message:
           'Đơn đăng ký đã được gửi. Quyền Tác giả chỉ được kích hoạt sau khi Admin phê duyệt.',
-      });
+      })
     } catch (error) {
-      setSubmission({ status: 'error', message: error.message });
+      setSubmission({ status: 'error', message: error.message })
     }
-  };
+  }
 
   return (
     <div className="flex min-h-screen flex-col bg-page text-ink">
@@ -151,9 +151,9 @@ export function AuthorApplyPage() {
                     disabled={checking}
                     aria-busy={checking}
                     onClick={() => {
-                      setChecking(true);
-                      setSubmission({ status: 'idle', message: '' });
-                      setRefresh((value) => value + 1);
+                      setChecking(true)
+                      setSubmission({ status: 'idle', message: '' })
+                      setRefresh(value => value + 1)
                     }}
                   >
                     {t(checking ? 'authorAccess.checking' : 'authorAccess.refresh')}
@@ -206,8 +206,8 @@ export function AuthorApplyPage() {
                         variant="secondary"
                         className="mt-3"
                         onClick={() => {
-                          setApplicationState('loading');
-                          setRefresh((value) => value + 1);
+                          setApplicationState('loading')
+                          setRefresh(value => value + 1)
                         }}
                       >
                         {t('authorAccess.refresh')}
@@ -253,8 +253,8 @@ export function AuthorApplyPage() {
                               type="checkbox"
                               className="mt-0.5 size-4 shrink-0 accent-[var(--primary)]"
                               checked={checks[index]}
-                              onChange={(event) =>
-                                setChecks((values) =>
+                              onChange={event =>
+                                setChecks(values =>
                                   values.map((value, i) =>
                                     i === index ? event.target.checked : value,
                                   ),
@@ -348,5 +348,5 @@ export function AuthorApplyPage() {
         </div>
       </Modal>
     </div>
-  );
+  )
 }

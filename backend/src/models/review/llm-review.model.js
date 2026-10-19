@@ -1,5 +1,5 @@
-import { defineModel, mutableOptions, ObjectId, Schema } from '../shared/schema.js';
-export const LLM_REVIEW_STATUSES = ['pending', 'succeeded', 'failed'];
+import { defineModel, mutableOptions, ObjectId, Schema } from '../shared/schema.js'
+export const LLM_REVIEW_STATUSES = ['pending', 'succeeded', 'failed']
 const schema = new Schema(
   {
     batchId: { type: ObjectId, ref: 'EvidenceBatch', required: true },
@@ -16,6 +16,6 @@ const schema = new Schema(
     failureCode: String,
   },
   mutableOptions,
-);
-schema.index({ batchId: 1 }, { unique: true, partialFilterExpression: { status: 'succeeded' } });
-export const LlmReview = defineModel('LlmReview', schema, 'llmReviews');
+)
+schema.index({ batchId: 1 }, { unique: true, partialFilterExpression: { status: 'succeeded' } })
+export const LlmReview = defineModel('LlmReview', schema, 'llmReviews')

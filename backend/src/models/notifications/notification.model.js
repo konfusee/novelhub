@@ -1,4 +1,4 @@
-import { defineModel, mutableOptions, ObjectId, Schema } from '../shared/schema.js';
+import { defineModel, mutableOptions, ObjectId, Schema } from '../shared/schema.js'
 
 const schema = new Schema(
   {
@@ -10,7 +10,7 @@ const schema = new Schema(
     deliveryState: String,
   },
   mutableOptions,
-);
-schema.index({ recipientAccountId: 1, createdAt: -1 });
-schema.index({ recipientAccountId: 1, sourceEventKey: 1 }, { unique: true });
-export const Notification = defineModel('Notification', schema, 'notifications');
+)
+schema.index({ recipientAccountId: 1, createdAt: -1 })
+schema.index({ recipientAccountId: 1, sourceEventKey: 1 }, { unique: true })
+export const Notification = defineModel('Notification', schema, 'notifications')

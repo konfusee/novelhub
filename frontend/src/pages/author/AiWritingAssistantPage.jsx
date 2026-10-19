@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react'
 import {
   AlertTriangle,
   BookOpen,
@@ -15,10 +15,10 @@ import {
   ShieldCheck,
   Sparkles,
   WandSparkles,
-} from '../../components/icons';
-import { AuthorLayout } from '../../layouts';
-import { managedChapters } from '../../data/mock/author';
-import { useMockResource } from '../../context/MockDataContext';
+} from '../../components/icons'
+import { AuthorLayout } from '../../layouts'
+import { managedChapters } from '../../data/mock/author'
+import { useMockResource } from '../../context/MockDataContext'
 import {
   Badge,
   Button,
@@ -28,7 +28,7 @@ import {
   Input,
   Modal,
   Skeleton,
-} from '../../components/ui';
+} from '../../components/ui'
 
 const modules = [
   ['Động não và nút thắt cốt truyện', 'Nhánh kể chuyện và tình tiết hé lộ', BrainCircuit],
@@ -37,7 +37,7 @@ const modules = [
   ['Điều hòa giọng điệu và phong cách', 'Kiểm tra nhịp chậm u buồn', WandSparkles],
   ['Trau chuốt hội thoại', 'Hàm ý và nhịp điệu', MessageSquare],
   ['Nhịp độ và điểm rời bỏ của độc giả', 'Mô hình hóa đường cong căng thẳng', History],
-];
+]
 const baseSuggestions = [
   {
     title: 'Sensory Subtlety: Bioluminescent Pollen & Resonating Heartbeat',
@@ -57,7 +57,7 @@ const baseSuggestions = [
     tone: '94%',
     body: 'She reached out with a trembling gloved hand. As her fingers brushed the trunk, warm golden amber welled from a hairline fissure. It did not cool; instead, it spread in intricate tendrils along the moss, framing the slumbering silhouette of the horn-crowned guardian entwined in rootwood.',
   },
-];
+]
 const baseLore = [
   ['Eldoria Tree Spirits', 'Bound to elder ironwood. Cannot cross moving salt water.'],
   [
@@ -65,77 +65,77 @@ const baseLore = [
     'Carved during the First Eclipse. React violently to iron ore weapons.',
   ],
   ["Lyra's Vow & Scars", 'Carries silver pendant from the Ashen Valley raid.'],
-];
+]
 const suggestionTagLabels = {
   Recommended: 'Đề xuất',
   'Subtle Dialogue': 'Hội thoại tinh tế',
   'Slow Pacing': 'Nhịp chậm',
-};
-const suggestionTones = ['green', 'orange', 'neutral'];
+}
+const suggestionTones = ['green', 'orange', 'neutral']
 const draftHistory = [
   'Hé lộ hộ vệ · Hiện tại',
   'Biến thể hội thoại · 12 phút trước',
   'Kiểm tra nhịp độ · Hôm qua',
-];
+]
 
 export function AiWritingAssistantPage() {
-  const promptRef = useRef(null);
-  const timerRef = useRef(null);
-  const [module, setModule] = useState(modules[0][0]);
+  const promptRef = useRef(null)
+  const timerRef = useRef(null)
+  const [module, setModule] = useState(modules[0][0])
   const [prompt, setPrompt] = useState(
     'Generate 3 atmospheric ways to reveal the ancient guardian hidden beneath the elder tree roots without breaking the melancholic slow-burn tone.',
-  );
-  const [tone, setTone] = useState(85);
-  const [pacing, setPacing] = useState(60);
-  const [ambience, setAmbience] = useState(92);
-  const [suggestions, setSuggestions] = useState(baseSuggestions);
-  const [generating, setGenerating] = useState(false);
-  const [inserted, setInserted] = useState(null);
-  const [copied, setCopied] = useState(null);
-  const [historyOpen, setHistoryOpen] = useState(false);
-  const [chapterOpen, setChapterOpen] = useState(false);
+  )
+  const [tone, setTone] = useState(85)
+  const [pacing, setPacing] = useState(60)
+  const [ambience, setAmbience] = useState(92)
+  const [suggestions, setSuggestions] = useState(baseSuggestions)
+  const [generating, setGenerating] = useState(false)
+  const [inserted, setInserted] = useState(null)
+  const [copied, setCopied] = useState(null)
+  const [historyOpen, setHistoryOpen] = useState(false)
+  const [chapterOpen, setChapterOpen] = useState(false)
   const [chapter, setChapter] = useState(
-    managedChapters.find((item) => item.number === 16) ?? managedChapters[0],
-  );
-  const [lore, setLore] = useState(baseLore);
-  const [loreOpen, setLoreOpen] = useState(false);
-  const [loreName, setLoreName] = useState('');
-  const [loreNote, setLoreNote] = useState('');
-  const [saved, setSaved] = useState(false);
-  const chapters = useMockResource('author:ai:chapters', managedChapters);
-  const suggestionsResource = useMockResource('author:ai:suggestions', suggestions);
-  const loreResource = useMockResource('author:ai:lore', lore);
-  const history = useMockResource('author:ai:history', draftHistory);
+    managedChapters.find(item => item.number === 16) ?? managedChapters[0],
+  )
+  const [lore, setLore] = useState(baseLore)
+  const [loreOpen, setLoreOpen] = useState(false)
+  const [loreName, setLoreName] = useState('')
+  const [loreNote, setLoreNote] = useState('')
+  const [saved, setSaved] = useState(false)
+  const chapters = useMockResource('author:ai:chapters', managedChapters)
+  const suggestionsResource = useMockResource('author:ai:suggestions', suggestions)
+  const loreResource = useMockResource('author:ai:lore', lore)
+  const history = useMockResource('author:ai:history', draftHistory)
 
-  useEffect(() => () => clearTimeout(timerRef.current), []);
+  useEffect(() => () => clearTimeout(timerRef.current), [])
 
   const regenerate = () => {
-    setGenerating(true);
-    clearTimeout(timerRef.current);
+    setGenerating(true)
+    clearTimeout(timerRef.current)
     timerRef.current = setTimeout(() => {
-      setSuggestions((current) => [...current.slice(1), current[0]]);
-      setInserted(null);
-      setGenerating(false);
-    }, 700);
-  };
-  const copy = async (suggestion) => {
+      setSuggestions(current => [...current.slice(1), current[0]])
+      setInserted(null)
+      setGenerating(false)
+    }, 700)
+  }
+  const copy = async suggestion => {
     try {
-      await navigator.clipboard?.writeText(suggestion.body);
+      await navigator.clipboard?.writeText(suggestion.body)
     } catch {
       // Clipboard may be blocked; the passage stays visible for manual copy.
     }
-    setCopied(suggestion.title);
-  };
-  const refine = (suggestion) => {
-    setPrompt(`Refine option “${suggestion.title}”: keep the slow-burn tone, tighten the imagery.`);
-    promptRef.current?.focus();
-    promptRef.current?.scrollIntoView({ block: 'center' });
-  };
+    setCopied(suggestion.title)
+  }
+  const refine = suggestion => {
+    setPrompt(`Refine option “${suggestion.title}”: keep the slow-burn tone, tighten the imagery.`)
+    promptRef.current?.focus()
+    promptRef.current?.scrollIntoView({ block: 'center' })
+  }
   const closeLore = () => {
-    setLoreOpen(false);
-    setLoreName('');
-    setLoreNote('');
-  };
+    setLoreOpen(false)
+    setLoreName('')
+    setLoreNote('')
+  }
 
   return (
     <AuthorLayout>
@@ -186,7 +186,7 @@ export function AiWritingAssistantPage() {
               <h2 className="px-1 text-sm font-semibold">Mô-đun biên tập</h2>
               <div className="mt-3 grid gap-1 sm:grid-cols-2 xl:grid-cols-1">
                 {modules.map(([title, note, Icon]) => {
-                  const active = module === title;
+                  const active = module === title
                   return (
                     <button
                       key={title}
@@ -201,7 +201,7 @@ export function AiWritingAssistantPage() {
                         <small className="mt-0.5 block text-xs leading-4 text-muted">{note}</small>
                       </span>
                     </button>
-                  );
+                  )
                 })}
               </div>
             </Card>
@@ -310,7 +310,7 @@ export function AiWritingAssistantPage() {
                 id="ai-prompt"
                 ref={promptRef}
                 value={prompt}
-                onChange={(event) => setPrompt(event.target.value)}
+                onChange={event => setPrompt(event.target.value)}
                 className="mt-3 min-h-28 w-full resize-y rounded-2xl border border-line bg-surface p-4 text-base leading-6 outline-none transition-[border-color] duration-200 focus:border-purple sm:text-sm"
               />
               <div className="mt-3 flex flex-wrap items-center gap-2">
@@ -521,7 +521,7 @@ export function AiWritingAssistantPage() {
             />
           ) : (
             <ul className="nh-fade-enter space-y-2">
-              {history.data.map((item) => (
+              {history.data.map(item => (
                 <li key={item} className="rounded-2xl bg-elevated px-4 py-3 text-sm">
                   {item}
                 </li>
@@ -532,16 +532,16 @@ export function AiWritingAssistantPage() {
 
         <Modal open={chapterOpen} title="Chọn chương" onClose={() => setChapterOpen(false)}>
           <ul className="space-y-2">
-            {chapters.data.map((item) => {
-              const active = item.number === chapter.number;
+            {chapters.data.map(item => {
+              const active = item.number === chapter.number
               return (
                 <li key={item.number}>
                   <button
                     type="button"
                     aria-pressed={active}
                     onClick={() => {
-                      setChapter(item);
-                      setChapterOpen(false);
+                      setChapter(item)
+                      setChapterOpen(false)
                     }}
                     className={`flex w-full items-center gap-3 whitespace-normal rounded-2xl border px-4 py-3 text-left text-sm transition-[background-color,border-color] duration-200 ${active ? 'border-brand bg-brand/8' : 'border-hairline hover:bg-elevated'}`}
                   >
@@ -556,18 +556,18 @@ export function AiWritingAssistantPage() {
                     )}
                   </button>
                 </li>
-              );
+              )
             })}
           </ul>
         </Modal>
 
         <Modal open={loreOpen} title="Ghim thực thể thế giới" onClose={closeLore}>
           <form
-            onSubmit={(event) => {
-              event.preventDefault();
-              if (!loreName.trim()) return;
-              setLore((current) => [...current, [loreName.trim(), loreNote.trim()]]);
-              closeLore();
+            onSubmit={event => {
+              event.preventDefault()
+              if (!loreName.trim()) return
+              setLore(current => [...current, [loreName.trim(), loreNote.trim()]])
+              closeLore()
             }}
           >
             <label htmlFor="lore-name" className="block text-sm font-semibold">
@@ -577,7 +577,7 @@ export function AiWritingAssistantPage() {
               id="lore-name"
               className="mt-2"
               value={loreName}
-              onChange={(event) => setLoreName(event.target.value)}
+              onChange={event => setLoreName(event.target.value)}
               required
             />
             <label htmlFor="lore-note" className="mt-4 block text-sm font-semibold">
@@ -586,7 +586,7 @@ export function AiWritingAssistantPage() {
             <textarea
               id="lore-note"
               value={loreNote}
-              onChange={(event) => setLoreNote(event.target.value)}
+              onChange={event => setLoreNote(event.target.value)}
               className="mt-2 min-h-24 w-full rounded-2xl border border-line bg-surface p-3 text-base outline-none focus:border-brand sm:text-sm"
             />
             <Button type="submit" disabled={!loreName.trim()} className="mt-5 w-full">
@@ -597,14 +597,14 @@ export function AiWritingAssistantPage() {
         </Modal>
       </div>
     </AuthorLayout>
-  );
+  )
 }
 
 const sliderAccents = {
   brand: 'var(--primary)',
   orange: 'var(--accent-orange)',
   purple: 'var(--accent-purple)',
-};
+}
 
 function ToneSlider({ label, value, setValue, color = 'brand' }) {
   return (
@@ -618,12 +618,12 @@ function ToneSlider({ label, value, setValue, color = 'brand' }) {
         min="0"
         max="100"
         value={value}
-        onChange={(event) => setValue(Number(event.target.value))}
+        onChange={event => setValue(Number(event.target.value))}
         className="mt-2 w-full"
         style={{ accentColor: sliderAccents[color] }}
       />
     </label>
-  );
+  )
 }
 
 function Suggestion({ suggestion, index, inserted, copied, onInsert, onCopy, onRefine }) {
@@ -680,7 +680,7 @@ function Suggestion({ suggestion, index, inserted, copied, onInsert, onCopy, onR
         </Button>
       </div>
     </Card>
-  );
+  )
 }
 
 function RetryButton({ onClick }) {
@@ -689,7 +689,7 @@ function RetryButton({ onClick }) {
       <RefreshCw size={14} aria-hidden="true" />
       Thử lại
     </Button>
-  );
+  )
 }
 
 /*
@@ -698,17 +698,17 @@ function RetryButton({ onClick }) {
  */
 function lineClasses([base, sm, xl]) {
   return Array.from({ length: Math.max(base, sm, xl) }, (_, index) => {
-    const classes = [];
-    if (index >= base) classes.push('hidden');
-    if (index < base !== index < sm) classes.push(index < sm ? 'sm:block' : 'sm:hidden');
-    if (index < sm !== index < xl) classes.push(index < xl ? 'xl:block' : 'xl:hidden');
-    classes.push(index === base - 1 ? 'w-3/5' : 'w-full');
+    const classes = []
+    if (index >= base) classes.push('hidden')
+    if (index < base !== index < sm) classes.push(index < sm ? 'sm:block' : 'sm:hidden')
+    if (index < sm !== index < xl) classes.push(index < xl ? 'xl:block' : 'xl:hidden')
+    classes.push(index === base - 1 ? 'w-3/5' : 'w-full')
     if ((index === base - 1) !== (index === sm - 1))
-      classes.push(index === sm - 1 ? 'sm:w-3/5' : 'sm:w-full');
+      classes.push(index === sm - 1 ? 'sm:w-3/5' : 'sm:w-full')
     if ((index === sm - 1) !== (index === xl - 1))
-      classes.push(index === xl - 1 ? 'xl:w-3/5' : 'xl:w-full');
-    return classes.join(' ');
-  });
+      classes.push(index === xl - 1 ? 'xl:w-3/5' : 'xl:w-full')
+    return classes.join(' ')
+  })
 }
 
 /*
@@ -719,13 +719,13 @@ const suggestionSkeletons = [
   { title: [3, 1, 2], body: [10, 4, 5] },
   { title: [3, 2, 2], body: [7, 3, 4] },
   { title: [2, 1, 1], body: [9, 4, 5], shortTitle: true },
-];
+]
 /* Note line counts [below sm, sm–lg, xl+] of the three mock lore entries. */
 const loreSkeletons = [
   [2, 1, 2],
   [2, 1, 3],
   [2, 1, 2],
-];
+]
 
 function ManuscriptSkeleton() {
   return (
@@ -754,7 +754,7 @@ function ManuscriptSkeleton() {
         </div>
       </Card>
     </>
-  );
+  )
 }
 
 function SuggestionSkeleton({ lines }) {
@@ -791,7 +791,7 @@ function SuggestionSkeleton({ lines }) {
         <Skeleton className="ml-auto h-9 w-[12.5rem]" />
       </div>
     </Card>
-  );
+  )
 }
 
 function LoreSkeleton({ noteLines }) {
@@ -805,5 +805,5 @@ function LoreSkeleton({ noteLines }) {
       </span>
       <Skeleton className="mb-0.5 mt-2.5 h-3 w-36" />
     </li>
-  );
+  )
 }

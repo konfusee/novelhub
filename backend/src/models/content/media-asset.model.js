@@ -1,6 +1,6 @@
-import { defineModel, mutableOptions, ObjectId, Schema } from '../shared/schema.js';
-export const MEDIA_KINDS = ['image', 'cover', 'banner'];
-export const MEDIA_STATUSES = ['pending-upload', 'available', 'quarantined', 'failed', 'deleted'];
+import { defineModel, mutableOptions, ObjectId, Schema } from '../shared/schema.js'
+export const MEDIA_KINDS = ['image', 'cover', 'banner']
+export const MEDIA_STATUSES = ['pending-upload', 'available', 'quarantined', 'failed', 'deleted']
 const schema = new Schema(
   {
     ownerAccountId: { type: ObjectId, ref: 'Account', required: true },
@@ -21,10 +21,10 @@ const schema = new Schema(
     deletedAt: Date,
   },
   mutableOptions,
-);
-schema.index({ storyId: 1, status: 1 });
+)
+schema.index({ storyId: 1, status: 1 })
 schema.index(
   { objectKey: 1 },
   { unique: true, partialFilterExpression: { objectKey: { $type: 'string' } } },
-);
-export const MediaAsset = defineModel('MediaAsset', schema, 'mediaAssets');
+)
+export const MediaAsset = defineModel('MediaAsset', schema, 'mediaAssets')

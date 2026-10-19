@@ -1,7 +1,7 @@
-import { coinAmount, defineModel, mutableOptions, ObjectId, Schema } from '../shared/schema.js';
-import { lockFields, forwardOnly } from '../shared/guards.js';
+import { coinAmount, defineModel, mutableOptions, ObjectId, Schema } from '../shared/schema.js'
+import { lockFields, forwardOnly } from '../shared/guards.js'
 
-export const UNLOCK_REQUEST_STATUSES = ['requested', 'committed', 'rejected'];
+export const UNLOCK_REQUEST_STATUSES = ['requested', 'committed', 'rejected']
 
 const schema = new Schema(
   {
@@ -19,19 +19,19 @@ const schema = new Schema(
     policySnapshot: Schema.Types.Mixed,
   },
   mutableOptions,
-);
+)
 lockFields(
   schema,
   ['accountId', 'chapterId', 'requestedPriceCoins', 'effectivePriceCoins', 'policySnapshot'],
   { mode: 'insert-only' },
-);
+)
 forwardOnly(schema, 'status', {
   requested: ['committed', 'rejected'],
   committed: [],
   rejected: [],
-});
+})
 schema.index(
   { 'idempotencyScope.operation': 1, 'idempotencyScope.ownerId': 1, 'idempotencyScope.key': 1 },
   { unique: true },
-);
-export const UnlockRequest = defineModel('UnlockRequest', schema, 'unlockRequests');
+)
+export const UnlockRequest = defineModel('UnlockRequest', schema, 'unlockRequests')

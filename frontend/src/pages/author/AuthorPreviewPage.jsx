@@ -1,19 +1,19 @@
-import { useParams } from 'react-router';
-import { AuthorLayout } from '../../layouts';
-import { useBackendDocument } from '../../api/useBackendResource';
-import { Button, ButtonLink, Card } from '../../components/ui';
-import { useLocale } from '../../context/LocaleContext';
-import { DraftReadingCanvas } from './DraftReadingCanvas';
+import { useParams } from 'react-router'
+import { AuthorLayout } from '../../layouts'
+import { useBackendDocument } from '../../api/useBackendResource'
+import { Button, ButtonLink, Card } from '../../components/ui'
+import { useLocale } from '../../context/LocaleContext'
+import { DraftReadingCanvas } from './DraftReadingCanvas'
 
-const emptyWorkspace = { story: {}, chapters: [] };
-const emptyChapter = { chapter: null };
+const emptyWorkspace = { story: {}, chapters: [] }
+const emptyChapter = { chapter: null }
 export function AuthorPreviewPage() {
-  const { storyId, chapterId } = useParams();
-  const { t } = useLocale();
-  const resource = useBackendDocument(`/author/stories/${storyId}/workspace`, emptyWorkspace);
+  const { storyId, chapterId } = useParams()
+  const { t } = useLocale()
+  const resource = useBackendDocument(`/author/stories/${storyId}/workspace`, emptyWorkspace)
   const chapters = [...resource.data.chapters]
-    .filter((chapter) => chapter.status !== 'archived')
-    .sort((a, b) => a.number - b.number);
+    .filter(chapter => chapter.status !== 'archived')
+    .sort((a, b) => a.number - b.number)
   return (
     <AuthorLayout>
       <div className="page-author py-7">
@@ -42,17 +42,17 @@ export function AuthorPreviewPage() {
         )}
       </div>
     </AuthorLayout>
-  );
+  )
 }
 
 function PreviewChapter({ storyId, chapterId, chapters }) {
-  const { t } = useLocale();
+  const { t } = useLocale()
   const resource = useBackendDocument(
     `/author/stories/${storyId}/chapters/${chapterId}?format=rich`,
     emptyChapter,
-  );
-  const chapter = resource.data.chapter;
-  const index = chapters.findIndex((item) => item.id === chapterId);
+  )
+  const chapter = resource.data.chapter
+  const index = chapters.findIndex(item => item.id === chapterId)
   return (
     <>
       <div className="mb-5 flex flex-wrap items-center gap-3">
@@ -94,5 +94,5 @@ function PreviewChapter({ storyId, chapterId, chapters }) {
         )
       )}
     </>
-  );
+  )
 }

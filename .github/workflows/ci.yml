@@ -22,5 +22,9 @@ jobs:
           key: mongodb-binaries-8.0.32
       - run: npm run format:check
       - run: npm run lint
+      - name: Check translations
+        run: npm run i18n:check --workspace frontend
+      - name: Check icon usage
+        run: npm run icons:check --workspace frontend
       - run: npm test
       - run: npm run build

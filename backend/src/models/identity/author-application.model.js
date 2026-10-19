@@ -1,6 +1,6 @@
-import { defineModel, mutableOptions, ObjectId, Schema } from '../shared/schema.js';
+import { defineModel, mutableOptions, ObjectId, Schema } from '../shared/schema.js'
 
-export const AUTHOR_APPLICATION_STATUSES = ['submitted', 'approved', 'rejected'];
+export const AUTHOR_APPLICATION_STATUSES = ['submitted', 'approved', 'rejected']
 const schema = new Schema(
   {
     applicantAccountId: { type: ObjectId, ref: 'Account', required: true },
@@ -17,7 +17,7 @@ const schema = new Schema(
     evidenceRefs: [{ type: ObjectId }],
   },
   mutableOptions,
-);
-schema.index({ applicantAccountId: 1, submittedAt: -1 });
-schema.index({ status: 1, submittedAt: 1 });
-export const AuthorApplication = defineModel('AuthorApplication', schema, 'authorApplications');
+)
+schema.index({ applicantAccountId: 1, submittedAt: -1 })
+schema.index({ status: 1, submittedAt: 1 })
+export const AuthorApplication = defineModel('AuthorApplication', schema, 'authorApplications')

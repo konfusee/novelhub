@@ -4,7 +4,7 @@ export const moderationStats = [
   ['AI Signals', '6', '3 Copyright', 'orange'],
   ['Escalations', '3', 'Tier-2 Legal', 'purple'],
   ['Decisions Today', '42', '34 Approvals', 'green'],
-];
+]
 export const urgentModerationItems = [
   {
     id: 'MS-88402',
@@ -42,7 +42,7 @@ export const urgentModerationItems = [
     action: 'Compare',
     tone: 'purple',
   },
-];
+]
 
 export const submissionQueue = [
   {
@@ -115,7 +115,7 @@ export const submissionQueue = [
     assigned: 'Unassigned',
     tone: 'purple',
   },
-];
+]
 
 export const communityReports = [
   {
@@ -175,4 +175,4 @@ export const communityReports = [
     score: 'Metadata check',
     tone: 'orange',
   },
-];
+]

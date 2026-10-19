@@ -1,15 +1,15 @@
-import { useEffect, useId, useRef, useState } from 'react';
-import { createPortal } from 'react-dom';
-import { Link, useLocation } from 'react-router';
-import { NovelHubMark, Menu, Settings, HelpCircle, UserRound, X } from '../icons';
-import { IconButton } from '../ui';
-import { SharedWorkspaceHeader, WorkspaceSwitcher } from '../shared/RoleNavigation';
-import { workspaceMeta, workspaceNavigation } from '../../navigation/workspaceNavigation';
-import { useAuth } from '../../context/AuthContext';
-import { ROUTES } from '../../app/routes';
-import { useLocale } from '../../context/LocaleContext';
+import { useEffect, useId, useRef, useState } from 'react'
+import { createPortal } from 'react-dom'
+import { Link, useLocation } from 'react-router'
+import { NovelHubMark, Menu, Settings, HelpCircle, UserRound, X } from '../icons'
+import { IconButton } from '../ui'
+import { SharedWorkspaceHeader, WorkspaceSwitcher } from '../shared/RoleNavigation'
+import { workspaceMeta, workspaceNavigation } from '../../navigation/workspaceNavigation'
+import { useAuth } from '../../context/AuthContext'
+import { ROUTES } from '../../app/routes'
+import { useLocale } from '../../context/LocaleContext'
 
-const SIDEBAR_KEY = 'novelhub.sidebar.collapsed';
+const SIDEBAR_KEY = 'novelhub.sidebar.collapsed'
 
 function SidebarItem({
   item,
@@ -20,34 +20,34 @@ function SidebarItem({
   tooltipPath,
   onTooltipChange,
 }) {
-  const { t } = useLocale();
-  const [labelKey, path, Icon] = item;
-  const label = t(labelKey);
-  const hideTooltip = () => onTooltipChange((current) => (current?.path === path ? null : current));
-  const showTooltip = (event) => {
-    if (!collapsed) return;
-    const box = event.currentTarget.getBoundingClientRect();
-    const sidebar = event.currentTarget.closest('[data-app-sidebar]')?.getBoundingClientRect();
+  const { t } = useLocale()
+  const [labelKey, path, Icon] = item
+  const label = t(labelKey)
+  const hideTooltip = () => onTooltipChange(current => (current?.path === path ? null : current))
+  const showTooltip = event => {
+    if (!collapsed) return
+    const box = event.currentTarget.getBoundingClientRect()
+    const sidebar = event.currentTarget.closest('[data-app-sidebar]')?.getBoundingClientRect()
     onTooltipChange({
       path,
       label,
       left: (sidebar?.right ?? box.right) + 12,
       top: Math.max(20, Math.min(innerHeight - 20, box.top + box.height / 2)),
-    });
-  };
+    })
+  }
   return (
     <Link
       to={path}
       onClick={() => {
-        hideTooltip();
-        onNavigate?.();
+        hideTooltip()
+        onNavigate?.()
       }}
       onMouseEnter={showTooltip}
       onMouseLeave={hideTooltip}
       onFocus={showTooltip}
       onBlur={hideTooltip}
-      onKeyDown={(event) => {
-        if (event.key === 'Escape') hideTooltip();
+      onKeyDown={event => {
+        if (event.key === 'Escape') hideTooltip()
       }}
       aria-label={collapsed ? label : undefined}
       aria-describedby={collapsed && tooltipPath === path ? tooltipId : undefined}
@@ -57,7 +57,7 @@ function SidebarItem({
       <Icon size={17} className="shrink-0" />
       {!collapsed && <span className="truncate">{label}</span>}
     </Link>
-  );
+  )
 }
 
 function SidebarGroup({
@@ -69,7 +69,7 @@ function SidebarGroup({
   tooltipPath,
   onTooltipChange,
 }) {
-  const { t } = useLocale();
+  const { t } = useLocale()
   return (
     <section className="space-y-1">
       {!collapsed && (
@@ -77,7 +77,7 @@ function SidebarGroup({
           {t(group.labelKey)}
         </p>
       )}
-      {group.items.map((item) => (
+      {group.items.map(item => (
         <SidebarItem
           key={item[1]}
           item={item}
@@ -90,12 +90,12 @@ function SidebarGroup({
         />
       ))}
     </section>
-  );
+  )
 }
 
 function commonNavigation(workspace) {
-  const base = `/${workspace}`;
-  const settingsPath = workspace === 'admin' ? '/admin/preferences' : `${base}/settings`;
+  const base = `/${workspace}`
+  const settingsPath = workspace === 'admin' ? '/admin/preferences' : `${base}/settings`
   return {
     labelKey: 'navigation.account',
     items: [
@@ -103,36 +103,36 @@ function commonNavigation(workspace) {
       ['navigation.settings', settingsPath, Settings],
       ['common.helpSupport', `${base}/support`, HelpCircle],
     ],
-  };
+  }
 }
 
 function AppSidebar({ workspace, collapsed, mobile = false, onCollapse, onNavigate }) {
-  const { t } = useLocale();
-  const { pathname } = useLocation();
-  const tooltipId = useId();
-  const [tooltip, setTooltip] = useState(null);
+  const { t } = useLocale()
+  const { pathname } = useLocation()
+  const tooltipId = useId()
+  const [tooltip, setTooltip] = useState(null)
   useEffect(() => {
-    if (!collapsed || !tooltip) return;
-    const hide = () => setTooltip(null);
-    window.addEventListener('scroll', hide, true);
-    window.addEventListener('resize', hide);
+    if (!collapsed || !tooltip) return
+    const hide = () => setTooltip(null)
+    window.addEventListener('scroll', hide, true)
+    window.addEventListener('resize', hide)
     return () => {
-      window.removeEventListener('scroll', hide, true);
-      window.removeEventListener('resize', hide);
-    };
-  }, [collapsed, tooltip]);
-  const meta = workspaceMeta[workspace];
-  const { hasRole } = useAuth();
-  const groups = [...workspaceNavigation[workspace], commonNavigation(workspace)].map((group) => ({
+      window.removeEventListener('scroll', hide, true)
+      window.removeEventListener('resize', hide)
+    }
+  }, [collapsed, tooltip])
+  const meta = workspaceMeta[workspace]
+  const { hasRole } = useAuth()
+  const groups = [...workspaceNavigation[workspace], commonNavigation(workspace)].map(group => ({
     ...group,
     items: group.items.filter(([, path]) => path !== ROUTES.authorApply || !hasRole('author')),
-  }));
+  }))
   const activePath = groups
-    .flatMap((group) => group.items)
+    .flatMap(group => group.items)
     .filter(([, path, , exact]) =>
       exact ? pathname === path : path === '/' ? pathname === '/' : pathname.startsWith(path),
     )
-    .sort((a, b) => b[1].length - a[1].length)[0]?.[1];
+    .sort((a, b) => b[1].length - a[1].length)[0]?.[1]
   return (
     <div className="flex h-full flex-col bg-surface p-3">
       <div className={`mb-4 flex h-12 items-center ${collapsed ? 'justify-center' : 'gap-2 px-2'}`}>
@@ -155,7 +155,7 @@ function AppSidebar({ workspace, collapsed, mobile = false, onCollapse, onNaviga
         data-sidebar-navigation
         className="-mx-1 min-h-0 flex-1 space-y-5 overflow-y-auto overflow-x-hidden px-1 pb-4"
       >
-        {groups.map((group) => (
+        {groups.map(group => (
           <SidebarGroup
             key={group.labelKey}
             group={group}
@@ -203,41 +203,41 @@ function AppSidebar({ workspace, collapsed, mobile = false, onCollapse, onNaviga
           document.body,
         )}
     </div>
-  );
+  )
 }
 
 export function AppShell({ workspace, children }) {
-  const { t } = useLocale();
-  const [collapsed, setCollapsed] = useState(() => localStorage.getItem(SIDEBAR_KEY) === 'true');
-  const [mobileOpen, setMobileOpen] = useState(false);
-  const drawerRef = useRef(null);
+  const { t } = useLocale()
+  const [collapsed, setCollapsed] = useState(() => localStorage.getItem(SIDEBAR_KEY) === 'true')
+  const [mobileOpen, setMobileOpen] = useState(false)
+  const drawerRef = useRef(null)
   useEffect(() => {
-    if (!mobileOpen) return undefined;
+    if (!mobileOpen) return undefined
     // Modal drawer: move focus in, lock page scroll, restore both on close.
-    const previous = document.activeElement;
-    const { overflow } = document.body.style;
-    document.body.style.overflow = 'hidden';
-    drawerRef.current?.querySelector('a[aria-current="page"], a, button')?.focus();
-    const onKeyDown = (event) => {
-      if (event.key === 'Escape') setMobileOpen(false);
-    };
-    document.addEventListener('keydown', onKeyDown);
+    const previous = document.activeElement
+    const { overflow } = document.body.style
+    document.body.style.overflow = 'hidden'
+    drawerRef.current?.querySelector('a[aria-current="page"], a, button')?.focus()
+    const onKeyDown = event => {
+      if (event.key === 'Escape') setMobileOpen(false)
+    }
+    document.addEventListener('keydown', onKeyDown)
     return () => {
-      document.removeEventListener('keydown', onKeyDown);
-      document.body.style.overflow = overflow;
-      previous?.focus?.();
-    };
-  }, [mobileOpen]);
+      document.removeEventListener('keydown', onKeyDown)
+      document.body.style.overflow = overflow
+      previous?.focus?.()
+    }
+  }, [mobileOpen])
   const toggleCollapsed = () =>
-    setCollapsed((value) => {
-      localStorage.setItem(SIDEBAR_KEY, String(!value));
-      return !value;
-    });
-  const desktopWidth = collapsed ? 'lg:w-[72px]' : 'lg:w-[260px]';
-  const contentOffset = collapsed ? 'md:pl-[72px] lg:pl-[72px]' : 'md:pl-[72px] lg:pl-[260px]';
+    setCollapsed(value => {
+      localStorage.setItem(SIDEBAR_KEY, String(!value))
+      return !value
+    })
+  const desktopWidth = collapsed ? 'lg:w-[72px]' : 'lg:w-[260px]'
+  const contentOffset = collapsed ? 'md:pl-[72px] lg:pl-[72px]' : 'md:pl-[72px] lg:pl-[260px]'
   const headerOffset = collapsed
     ? 'md:left-[72px] lg:left-[72px]'
-    : 'md:left-[72px] lg:left-[260px]';
+    : 'md:left-[72px] lg:left-[260px]'
   return (
     <div className="min-h-screen bg-page text-ink">
       <aside
@@ -295,5 +295,5 @@ export function AppShell({ workspace, children }) {
         <main className="workspace-content flex-1 pt-[var(--app-header-h)]">{children}</main>
       </div>
     </div>
-  );
+  )
 }

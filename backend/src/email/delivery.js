@@ -1,35 +1,35 @@
-import nodemailer from 'nodemailer';
-import { renderOtpEmail } from './otp-template.js';
+import nodemailer from 'nodemailer'
+import { renderOtpEmail } from './otp-template.js'
 
 export function createDevelopmentEmailDelivery({ logger } = {}) {
   return {
     async send({ to, subject, actionUrl, otp }) {
       // Development-only fallback. Never enabled by production configuration.
-      logger?.info({ to, subject, actionUrl, otp }, 'development authentication email');
-      if (!logger) console.info(`[development email] ${to}: ${subject}\n${otp || actionUrl}`);
-      return { provider: 'development-console', accepted: true };
+      logger?.info({ to, subject, actionUrl, otp }, 'development authentication email')
+      if (!logger) console.info(`[development email] ${to}: ${subject}\n${otp || actionUrl}`)
+      return { provider: 'development-console', accepted: true }
     },
-  };
+  }
 }
 
 export function unavailableEmailDelivery() {
   return {
     async send() {
-      throw new Error('Production email delivery is not configured');
+      throw new Error('Production email delivery is not configured')
     },
-  };
+  }
 }
 
 export async function sendWithRetry(delivery, message, { attempts }) {
-  let lastError;
+  let lastError
   for (let attempt = 1; attempt <= attempts; attempt += 1) {
     try {
-      return await delivery.send({ ...message, attempt });
+      return await delivery.send({ ...message, attempt })
     } catch (error) {
-      lastError = error;
+      lastError = error
     }
   }
-  throw lastError;
+  throw lastError
 }
 export function createSmtpEmailDelivery(config) {
   const transport = nodemailer.createTransport({
@@ -43,7 +43,7 @@ export function createSmtpEmailDelivery(config) {
     socketTimeout: config.socketTimeoutMs,
     disableFileAccess: true,
     disableUrlAccess: true,
-  });
+  })
   return {
     verify: () => transport.verify(),
     async send({ to, subject, actionUrl, otp, expiresInMinutes, purpose, text }) {
@@ -58,11 +58,11 @@ export function createSmtpEmailDelivery(config) {
             : {
                 text: `${subject}\n\nOpen this link to continue:\n${actionUrl}\n\nIf you did not request this email, you can ignore it.`,
               }),
-      });
+      })
       if (!result.accepted?.length || result.rejected?.length) {
-        throw new Error('SMTP server did not accept the recipient');
+        throw new Error('SMTP server did not accept the recipient')
       }
-      return { provider: 'smtp', accepted: true, messageId: result.messageId };
+      return { provider: 'smtp', accepted: true, messageId: result.messageId }
     },
-  };
+  }
 }

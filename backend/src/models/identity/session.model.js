@@ -1,6 +1,6 @@
-import { defineModel, mutableOptions, ObjectId, Schema } from '../shared/schema.js';
+import { defineModel, mutableOptions, ObjectId, Schema } from '../shared/schema.js'
 
-export const SESSION_STATUSES = ['active', 'revoked', 'expired'];
+export const SESSION_STATUSES = ['active', 'revoked', 'expired']
 const schema = new Schema(
   {
     accountId: { type: ObjectId, ref: 'Account', required: true },
@@ -21,8 +21,8 @@ const schema = new Schema(
     providerSessionReference: { type: String, select: false },
   },
   mutableOptions,
-);
-schema.index({ accountId: 1, status: 1 });
-schema.index({ tokenHash: 1 }, { unique: true });
-schema.index({ expiresAt: 1, status: 1 });
-export const Session = defineModel('Session', schema, 'sessions');
+)
+schema.index({ accountId: 1, status: 1 })
+schema.index({ tokenHash: 1 }, { unique: true })
+schema.index({ expiresAt: 1, status: 1 })
+export const Session = defineModel('Session', schema, 'sessions')

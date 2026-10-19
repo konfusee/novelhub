@@ -1,6 +1,6 @@
-import mongoose from 'mongoose';
+import mongoose from 'mongoose'
 
-mongoose.set('strictQuery', true);
+mongoose.set('strictQuery', true)
 
 /**
  * Connects Mongoose and verifies the deployment supports multi-document
@@ -8,17 +8,17 @@ mongoose.set('strictQuery', true);
  * invariants depend on. Fails fast rather than silently running without them.
  */
 export async function connectDatabase(uri, { autoIndex = false, serverSelectionTimeoutMS }) {
-  await mongoose.connect(uri, { autoIndex, serverSelectionTimeoutMS });
-  const hello = await mongoose.connection.db.admin().command({ hello: 1 });
+  await mongoose.connect(uri, { autoIndex, serverSelectionTimeoutMS })
+  const hello = await mongoose.connection.db.admin().command({ hello: 1 })
   if (!hello.setName) {
-    await mongoose.disconnect();
-    throw new Error('MongoDB must run as a replica set: transactions are required.');
+    await mongoose.disconnect()
+    throw new Error('MongoDB must run as a replica set: transactions are required.')
   }
-  return mongoose.connection;
+  return mongoose.connection
 }
 
 export async function disconnectDatabase() {
-  await mongoose.disconnect();
+  await mongoose.disconnect()
 }
 
 /**
@@ -26,23 +26,23 @@ export async function disconnectDatabase() {
  * driver recommends. Every write inside `work` must pass `{ session }`.
  */
 export async function withTransaction(work) {
-  const session = await mongoose.startSession();
+  const session = await mongoose.startSession()
   try {
-    let result;
+    let result
     await session.withTransaction(
       async () => {
-        result = await work(session);
+        result = await work(session)
       },
       { readConcern: { level: 'snapshot' }, writeConcern: { w: 'majority' } },
-    );
-    return result;
+    )
+    return result
   } finally {
-    await session.endSession();
+    await session.endSession()
   }
 }
 
 export function databaseState() {
   return ['disconnected', 'connected', 'connecting', 'disconnecting'][
     mongoose.connection.readyState
-  ];
+  ]
 }

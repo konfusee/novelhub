@@ -1,4 +1,4 @@
-import { Fragment, useId, useMemo, useState } from 'react';
+import { Fragment, useId, useMemo, useState } from 'react'
 import {
   AlertTriangle,
   BookOpen,
@@ -12,10 +12,10 @@ import {
   ShieldCheck,
   UserRound,
   X,
-} from '../../components/icons';
-import { AdminLayout } from '../../layouts';
-import { useMockResource } from '../../context/MockDataContext';
-import { Badge, Button, Card, EmptyState, Input, Modal, Skeleton, Tabs } from '../../components/ui';
+} from '../../components/icons'
+import { AdminLayout } from '../../layouts'
+import { useMockResource } from '../../context/MockDataContext'
+import { Badge, Button, Card, EmptyState, Input, Modal, Skeleton, Tabs } from '../../components/ui'
 
 const roles = [
   {
@@ -50,13 +50,13 @@ const roles = [
       'Full platform governance, user management, service configuration, taxonomy control, and audit logs.',
     tags: ['Protected Role', 'Hardware 2FA'],
   },
-];
+]
 const roleLabels = {
   Reader: 'Độc giả',
   Author: 'Tác giả',
   Moderator: 'Kiểm duyệt viên',
   Administrator: 'Quản trị viên',
-};
+}
 const roleDescriptions = {
   Reader: 'Tài khoản công khai tiêu chuẩn. Đọc chương, mua xu, bình luận và theo dõi tác giả.',
   Author:
@@ -65,7 +65,7 @@ const roleDescriptions = {
     'Truy cập khu vực Tin cậy và An toàn, kiểm tra bản gửi, phân tích tương đồng và xử lý báo cáo.',
   Administrator:
     'Quản trị toàn bộ nền tảng, người dùng, cấu hình dịch vụ, phân loại và nhật ký kiểm tra.',
-};
+}
 const tagLabels = {
   'Default Role': 'Vai trò mặc định',
   'Unrestricted Signup': 'Đăng ký không hạn chế',
@@ -75,7 +75,7 @@ const tagLabels = {
   'NDA Signed': 'Đã ký NDA',
   'Protected Role': 'Vai trò được bảo vệ',
   'Hardware 2FA': '2FA phần cứng',
-};
+}
 const capabilities = [
   [
     'Content Publishing & Authoring',
@@ -145,7 +145,7 @@ const capabilities = [
     'Inspect complete administrative event stream',
     [0, 0, 1, 1],
   ],
-];
+]
 const modules = [
   'All Modules',
   'Content & Stories',
@@ -153,7 +153,7 @@ const modules = [
   'Moderation',
   'Billing & Coins',
   'Platform Config',
-];
+]
 const moduleLabels = {
   'All Modules': 'Tất cả mô-đun',
   'Content & Stories': 'Nội dung và truyện',
@@ -161,13 +161,13 @@ const moduleLabels = {
   Moderation: 'Kiểm duyệt',
   'Billing & Coins': 'Thanh toán và xu',
   'Platform Config': 'Cấu hình nền tảng',
-};
+}
 const groupLabels = {
   'Content Publishing & Authoring': 'Xuất bản nội dung và sáng tác',
   'Editorial & Moderation': 'Biên tập và kiểm duyệt',
   'Monetization & Ledger': 'Kiếm tiền và sổ cái',
   'Platform Infrastructure': 'Hạ tầng nền tảng',
-};
+}
 const capabilityDescriptions = {
   'Create manuscripts and upload metadata': 'Tạo bản thảo và tải lên siêu dữ liệu',
   'Edit long-form text and autosave to cloud': 'Sửa văn bản dài và tự động lưu lên đám mây',
@@ -182,59 +182,59 @@ const capabilityDescriptions = {
   'Manually credit or debit user balances': 'Điều chỉnh tăng hoặc giảm số dư người dùng thủ công',
   'Modify TTS endpoints, AI keys, and storage': 'Thay đổi điểm cuối TTS, khóa AI và lưu trữ',
   'Inspect complete administrative event stream': 'Kiểm tra toàn bộ luồng sự kiện quản trị',
-};
+}
 
 const moduleGroups = {
   'Content & Stories': 'Content Publishing & Authoring',
   Moderation: 'Editorial & Moderation',
   'Billing & Coins': 'Monetization & Ledger',
   'Platform Config': 'Platform Infrastructure',
-};
-const baselineMatrix = () => capabilities.map((row) => [...row[3]]);
+}
+const baselineMatrix = () => capabilities.map(row => [...row[3]])
 const inModule = (module, row) => {
-  if (module === 'All Modules') return true;
+  if (module === 'All Modules') return true
   /* Reader & Social = every capability a standard reader account holds by default. */
-  if (module === 'Reader & Social') return row[3][0] === 1;
-  return row[0] === moduleGroups[module];
-};
-const stickyCell = 'sticky left-0 z-10';
+  if (module === 'Reader & Social') return row[3][0] === 1
+  return row[0] === moduleGroups[module]
+}
+const stickyCell = 'sticky left-0 z-10'
 
 export function RolesPermissionsPage() {
-  const fieldId = useId();
-  const roleList = useMockResource('admin:roles', roles);
-  const permissions = useMockResource('admin:permissions', capabilities);
-  const [module, setModule] = useState('All Modules');
-  const [query, setQuery] = useState('');
-  const [baseline, setBaseline] = useState(baselineMatrix);
-  const [matrix, setMatrix] = useState(baselineMatrix);
-  const [modal, setModal] = useState('');
+  const fieldId = useId()
+  const roleList = useMockResource('admin:roles', roles)
+  const permissions = useMockResource('admin:permissions', capabilities)
+  const [module, setModule] = useState('All Modules')
+  const [query, setQuery] = useState('')
+  const [baseline, setBaseline] = useState(baselineMatrix)
+  const [matrix, setMatrix] = useState(baselineMatrix)
+  const [modal, setModal] = useState('')
   const visible = useMemo(() => {
-    const needle = query.trim().toLowerCase();
+    const needle = query.trim().toLowerCase()
     return permissions.data
       .map((row, index) => ({ ...row, index }))
       .filter(
-        (row) =>
+        row =>
           inModule(module, row) &&
           `${row[1]} ${row[2]} ${capabilityDescriptions[row[2]] ?? ''}`
             .toLowerCase()
             .includes(needle),
-      );
-  }, [permissions.data, module, query]);
+      )
+  }, [permissions.data, module, query])
   const drafts = matrix.reduce(
     (total, cells, row) =>
       total + cells.filter((enabled, col) => enabled !== baseline[row][col]).length,
     0,
-  );
+  )
   const toggle = (row, col) => {
-    setMatrix((value) =>
+    setMatrix(value =>
       value.map((cells, index) =>
         index === row
           ? cells.map((enabled, cell) => (cell === col ? (enabled ? 0 : 1) : enabled))
           : cells,
       ),
-    );
-  };
-  const closeModal = () => setModal('');
+    )
+  }
+  const closeModal = () => setModal('')
   return (
     <AdminLayout>
       <div className="page-admin py-6">
@@ -313,7 +313,7 @@ export function RolesPermissionsPage() {
             >
               {roleList.status === 'loading'
                 ? Array.from({ length: 4 }, (_, index) => <RoleCardSkeleton key={index} />)
-                : roleList.data.map((role) => (
+                : roleList.data.map(role => (
                     <RoleCard
                       key={role.name}
                       role={role}
@@ -341,7 +341,7 @@ export function RolesPermissionsPage() {
                   singleRow
                   value={module}
                   onChange={setModule}
-                  items={modules.map((value) => ({ value, label: moduleLabels[value] }))}
+                  items={modules.map(value => ({ value, label: moduleLabels[value] }))}
                 />
               </div>
               <Input
@@ -349,7 +349,7 @@ export function RolesPermissionsPage() {
                 type="search"
                 enterKeyHint="search"
                 value={query}
-                onChange={(event) => setQuery(event.target.value)}
+                onChange={event => setQuery(event.target.value)}
                 aria-label="Tìm quyền"
                 placeholder="Tìm mã định danh quyền…"
                 className="w-full shrink-0 xl:w-72"
@@ -398,7 +398,7 @@ export function RolesPermissionsPage() {
                     <th scope="col" className="hidden px-4 py-3 font-semibold md:table-cell">
                       Mô tả
                     </th>
-                    {roles.map((role) => (
+                    {roles.map(role => (
                       <th
                         key={role.name}
                         scope="col"
@@ -413,10 +413,10 @@ export function RolesPermissionsPage() {
                   {permissions.status === 'loading' && <MatrixSkeletonRows />}
                   {permissions.status === 'ready' &&
                     visible.map((row, position) => {
-                      const group = row[0];
-                      const slug = row[1];
-                      const description = capabilityDescriptions[row[2]] ?? row[2];
-                      const showGroup = group !== visible[position - 1]?.[0];
+                      const group = row[0]
+                      const slug = row[1]
+                      const description = capabilityDescriptions[row[2]] ?? row[2]
+                      const showGroup = group !== visible[position - 1]?.[0]
                       return (
                         <FragmentRow key={slug} showGroup={showGroup} group={group}>
                           <th
@@ -433,7 +433,7 @@ export function RolesPermissionsPage() {
                             {description}
                           </td>
                           {matrix[row.index].map((enabled, col) => {
-                            const changed = enabled !== baseline[row.index][col];
+                            const changed = enabled !== baseline[row.index][col]
                             return (
                               <td key={col} className="px-2 py-3 text-center last:pr-5">
                                 <button
@@ -456,10 +456,10 @@ export function RolesPermissionsPage() {
                                   )}
                                 </button>
                               </td>
-                            );
+                            )
                           })}
                         </FragmentRow>
-                      );
+                      )
                     })}
                 </tbody>
               </table>
@@ -474,8 +474,8 @@ export function RolesPermissionsPage() {
                   variant="secondary"
                   size="sm"
                   onClick={() => {
-                    setQuery('');
-                    setModule('All Modules');
+                    setQuery('')
+                    setModule('All Modules')
                   }}
                 >
                   Xóa bộ lọc
@@ -527,7 +527,7 @@ export function RolesPermissionsPage() {
             <div className="flex flex-wrap gap-2">
               <Button
                 variant="secondary"
-                onClick={() => setMatrix(baseline.map((cells) => [...cells]))}
+                onClick={() => setMatrix(baseline.map(cells => [...cells]))}
               >
                 Hủy bản nháp
               </Button>
@@ -543,9 +543,9 @@ export function RolesPermissionsPage() {
           {modal === 'Tạo vai trò tùy chỉnh' ? (
             <form
               className="space-y-4"
-              onSubmit={(event) => {
-                event.preventDefault();
-                closeModal();
+              onSubmit={event => {
+                event.preventDefault()
+                closeModal()
               }}
             >
               <div>
@@ -579,8 +579,8 @@ export function RolesPermissionsPage() {
                 <Button
                   onClick={() => {
                     if (modal === 'Áp dụng ma trận quyền')
-                      setBaseline(matrix.map((cells) => [...cells]));
-                    closeModal();
+                      setBaseline(matrix.map(cells => [...cells]))
+                    closeModal()
                   }}
                 >
                   Xác nhận thao tác mẫu
@@ -591,12 +591,12 @@ export function RolesPermissionsPage() {
         </Modal>
       </div>
     </AdminLayout>
-  );
+  )
 }
 
 function RoleCard({ role, onAction }) {
-  const Icon = role.icon;
-  const protectedRole = role.name === 'Administrator';
+  const Icon = role.icon
+  const protectedRole = role.name === 'Administrator'
   return (
     <Card as="article" className={`flex flex-col ${protectedRole ? 'border-brand' : ''}`}>
       <div className="flex items-start justify-between gap-3">
@@ -625,7 +625,7 @@ function RoleCard({ role, onAction }) {
         {protectedRole ? 'Quản lý khóa' : role.name === 'Reader' ? 'Xem phạm vi' : 'Sửa chính sách'}
       </Button>
     </Card>
-  );
+  )
 }
 function FragmentRow({ showGroup, group, children }) {
   return (
@@ -645,7 +645,7 @@ function FragmentRow({ showGroup, group, children }) {
         {children}
       </tr>
     </>
-  );
+  )
 }
 
 /* Same card rhythm as RoleCard: icon + count row, title, three description lines, tags, button. */
@@ -675,7 +675,7 @@ function RoleCardSkeleton() {
       </div>
       <Skeleton className="mt-auto h-11 w-full" />
     </Card>
-  );
+  )
 }
 
 /* Module bands with their capability rows (4/4/3/2) in the real matrix columns. */
@@ -701,7 +701,7 @@ function MatrixSkeletonRows() {
           <td className="hidden min-w-64 px-4 py-3 md:table-cell">
             <Skeleton className="h-3 w-60 max-w-full" />
           </td>
-          {[0, 1, 2, 3].map((col) => (
+          {[0, 1, 2, 3].map(col => (
             <td key={col} className="px-2 py-3 last:pr-5">
               <Skeleton className="mx-auto size-9 pointer-coarse:size-11" />
             </td>
@@ -709,7 +709,7 @@ function MatrixSkeletonRows() {
         </tr>
       ))}
     </Fragment>
-  ));
+  ))
 }
 
 function LoadError({ title, description, onRetry }) {
@@ -727,5 +727,5 @@ function LoadError({ title, description, onRetry }) {
         </Button>
       }
     />
-  );
+  )
 }

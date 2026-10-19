@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { useLocation } from 'react-router';
+import { useState } from 'react'
+import { useLocation } from 'react-router'
 import {
   Activity,
   AlertTriangle,
@@ -9,53 +9,53 @@ import {
   History,
   RotateCcw,
   Search,
-} from '../../components/icons';
-import { AdminLayout, AuthorLayout, ModeratorLayout, ReaderLayout } from '../../layouts';
-import { Badge, Button, Card, EmptyState, Input, ProgressBar, Skeleton } from '../../components/ui';
-import { useLocale } from '../../context/LocaleContext';
-import { useMockResource } from '../../context/MockDataContext';
+} from '../../components/icons'
+import { AdminLayout, AuthorLayout, ModeratorLayout, ReaderLayout } from '../../layouts'
+import { Badge, Button, Card, EmptyState, Input, ProgressBar, Skeleton } from '../../components/ui'
+import { useLocale } from '../../context/LocaleContext'
+import { useMockResource } from '../../context/MockDataContext'
 
 const layouts = {
   reader: ReaderLayout,
   author: AuthorLayout,
   moderator: ModeratorLayout,
   admin: AdminLayout,
-};
+}
 
 const rows = [
   { id: 'NH-1042', name: 'The Silent Forest', time: 'Cập nhật 12 phút trước', status: 'active' },
   { id: 'NH-1038', name: 'Whispers of You', time: 'Cập nhật 46 phút trước', status: 'review' },
   { id: 'NH-1027', name: 'Neon Hearts', time: 'Cập nhật hôm qua', status: 'resolved' },
-];
+]
 
-const statusTone = { active: 'green', review: 'orange', resolved: 'purple' };
+const statusTone = { active: 'green', review: 'orange', resolved: 'purple' }
 
 /* Same grid template as the activity rows so placeholders keep each row's height. */
 const rowGrid =
-  'grid grid-cols-[minmax(0,1fr)_auto] items-center gap-x-4 gap-y-1 px-5 py-4 sm:grid-cols-[6.5rem_minmax(0,1fr)_11rem_auto] sm:px-6';
+  'grid grid-cols-[minmax(0,1fr)_auto] items-center gap-x-4 gap-y-1 px-5 py-4 sm:grid-cols-[6.5rem_minmax(0,1fr)_11rem_auto] sm:px-6'
 const statTones = {
   brand: 'bg-brand/12 text-brand-strong',
   orange: 'bg-orange/16 text-orange-strong',
   purple: 'bg-purple/12 text-purple-strong',
-};
+}
 
 export function RoleUtilityPage({ role, eyebrow, title, description }) {
-  const Layout = layouts[role];
-  const { t } = useLocale();
-  const { pathname } = useLocation();
-  const activity = useMockResource(`activity:${pathname}`, rows);
-  const [query, setQuery] = useState('');
-  const records = activity.data;
-  const keyword = query.trim().toLowerCase();
+  const Layout = layouts[role]
+  const { t } = useLocale()
+  const { pathname } = useLocation()
+  const activity = useMockResource(`activity:${pathname}`, rows)
+  const [query, setQuery] = useState('')
+  const records = activity.data
+  const keyword = query.trim().toLowerCase()
   const visible = keyword
-    ? records.filter((row) => `${row.id} ${row.name}`.toLowerCase().includes(keyword))
-    : records;
-  const loading = activity.status === 'loading';
-  const ready = activity.status === 'ready' || activity.status === 'empty';
-  const openCount = records.filter((row) => row.status !== 'resolved').length;
-  const reviewCount = records.filter((row) => row.status === 'review').length;
-  const resolvedCount = records.length - openCount;
-  const completedPercent = records.length ? Math.round((resolvedCount / records.length) * 100) : 0;
+    ? records.filter(row => `${row.id} ${row.name}`.toLowerCase().includes(keyword))
+    : records
+  const loading = activity.status === 'loading'
+  const ready = activity.status === 'ready' || activity.status === 'empty'
+  const openCount = records.filter(row => row.status !== 'resolved').length
+  const reviewCount = records.filter(row => row.status === 'review').length
+  const resolvedCount = records.length - openCount
+  const completedPercent = records.length ? Math.round((resolvedCount / records.length) * 100) : 0
 
   const stats = [
     { label: t('workspace.openItems'), value: openCount, icon: Activity, tone: 'brand' },
@@ -67,7 +67,7 @@ export function RoleUtilityPage({ role, eyebrow, title, description }) {
       tone: 'purple',
       progress: completedPercent,
     },
-  ];
+  ]
 
   return (
     <Layout>
@@ -125,7 +125,7 @@ export function RoleUtilityPage({ role, eyebrow, title, description }) {
               icon={Search}
               type="search"
               value={query}
-              onChange={(event) => setQuery(event.target.value)}
+              onChange={event => setQuery(event.target.value)}
               disabled={!ready || !records.length}
               aria-label={t('workspace.searchRecords')}
               placeholder={t('workspace.searchRecords')}
@@ -136,7 +136,7 @@ export function RoleUtilityPage({ role, eyebrow, title, description }) {
           {loading && (
             <div aria-busy="true" aria-label={t('workspace.loading')}>
               <ul aria-hidden="true" className="divide-y divide-hairline">
-                {rows.map((row) => (
+                {rows.map(row => (
                   <li key={row.id} className={rowGrid}>
                     <span className="flex h-4 items-center">
                       <Skeleton className="h-3 w-16" />
@@ -201,7 +201,7 @@ export function RoleUtilityPage({ role, eyebrow, title, description }) {
           {ready && visible.length > 0 && (
             <div className="nh-fade-enter">
               <ul className="divide-y divide-hairline">
-                {visible.map((row) => (
+                {visible.map(row => (
                   <li
                     key={row.id}
                     className={`${rowGrid} transition-colors duration-200 hover:bg-ink/[0.025]`}
@@ -230,5 +230,5 @@ export function RoleUtilityPage({ role, eyebrow, title, description }) {
         </Card>
       </div>
     </Layout>
-  );
+  )
 }

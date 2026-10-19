@@ -1,18 +1,18 @@
-import { useParams } from 'react-router';
-import { AuthorLayout } from '../../layouts';
-import { useBackendDocument } from '../../api/useBackendResource';
-import { useLocale } from '../../context/LocaleContext';
-import { Badge, Button, ButtonLink, Card } from '../../components/ui';
-import { DraftReadingCanvas } from './DraftReadingCanvas';
+import { useParams } from 'react-router'
+import { AuthorLayout } from '../../layouts'
+import { useBackendDocument } from '../../api/useBackendResource'
+import { useLocale } from '../../context/LocaleContext'
+import { Badge, Button, ButtonLink, Card } from '../../components/ui'
+import { DraftReadingCanvas } from './DraftReadingCanvas'
 
 export function SubmittedPackagePage() {
-  const { submissionId } = useParams();
-  const { t, formatDate, formatNumber } = useLocale();
-  const resource = useBackendDocument(`/author/submissions/${submissionId}/package`, null);
-  const data = resource.data;
+  const { submissionId } = useParams()
+  const { t, formatDate, formatNumber } = useLocale()
+  const resource = useBackendDocument(`/author/submissions/${submissionId}/package`, null)
+  const data = resource.data
   const back = data
     ? `/author/submissions?${new URLSearchParams({ storyId: data.story.id, ...(data.chapter ? { chapterId: data.chapter.id } : {}) })}`
-    : '/author/submissions';
+    : '/author/submissions'
   return (
     <AuthorLayout>
       <div className="page-author py-7">
@@ -83,5 +83,5 @@ export function SubmittedPackagePage() {
         )}
       </div>
     </AuthorLayout>
-  );
+  )
 }

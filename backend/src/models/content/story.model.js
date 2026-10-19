@@ -1,4 +1,4 @@
-import { defineModel, mutableOptions, ObjectId, Schema } from '../shared/schema.js';
+import { defineModel, mutableOptions, ObjectId, Schema } from '../shared/schema.js'
 export const PUBLICATION_STATUSES = [
   'draft',
   'submitted',
@@ -7,8 +7,8 @@ export const PUBLICATION_STATUSES = [
   'published',
   'unpublished',
   'archived',
-];
-export const COMPLETION_STATUSES = ['ongoing', 'completed'];
+]
+export const COMPLETION_STATUSES = ['ongoing', 'completed']
 const themeSchema = new Schema(
   {
     accentColor: { type: String, maxlength: 64 },
@@ -17,7 +17,7 @@ const themeSchema = new Schema(
     coverBannerMediaId: { type: ObjectId, ref: 'MediaAsset' },
   },
   { _id: false, strict: 'throw' },
-);
+)
 const schema = new Schema(
   {
     authorAccountId: { type: ObjectId, ref: 'Account', required: true },
@@ -29,7 +29,7 @@ const schema = new Schema(
       type: [{ type: ObjectId, ref: 'Category' }],
       required: true,
       validate: {
-        validator: (values) => values.length >= 1,
+        validator: values => values.length >= 1,
         message: 'a story must have at least one category',
       },
     },
@@ -54,8 +54,8 @@ const schema = new Schema(
     publishedAt: Date,
   },
   mutableOptions,
-);
-schema.index({ publicationStatus: 1, completionStatus: 1, publishedAt: -1 });
-schema.index({ authorAccountId: 1, publicationStatus: 1 });
-schema.index({ categoryIds: 1, publicationStatus: 1 });
-export const Story = defineModel('Story', schema, 'stories');
+)
+schema.index({ publicationStatus: 1, completionStatus: 1, publishedAt: -1 })
+schema.index({ authorAccountId: 1, publicationStatus: 1 })
+schema.index({ categoryIds: 1, publicationStatus: 1 })
+export const Story = defineModel('Story', schema, 'stories')

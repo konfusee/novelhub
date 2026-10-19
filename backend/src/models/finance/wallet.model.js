@@ -1,8 +1,8 @@
-import { lockFields } from '../shared/guards.js';
-import { coinAmount, defineModel, mutableOptions, ObjectId, Schema } from '../shared/schema.js';
+import { lockFields } from '../shared/guards.js'
+import { coinAmount, defineModel, mutableOptions, ObjectId, Schema } from '../shared/schema.js'
 
-export const WALLET_PURPOSES = ['reader-coins', 'author-earnings', 'system-earnings'];
-export const OWNER_TYPES = ['account', 'system'];
+export const WALLET_PURPOSES = ['reader-coins', 'author-earnings', 'system-earnings']
+export const OWNER_TYPES = ['account', 'system']
 
 const walletSchema = new Schema(
   {
@@ -15,22 +15,22 @@ const walletSchema = new Schema(
     expiresAt: { type: Date, default: null },
   },
   mutableOptions,
-);
+)
 // Owner, purpose and unit define the wallet; they never change after creation.
 // Balance changes must use a conditional update (e.g. `availableBalance: { $gte: amount }`)
 // because $inc bypasses schema validators.
 lockFields(walletSchema, ['ownerType', 'ownerId', 'purpose', 'unit', 'expiresAt'], {
   mode: 'insert-only',
-});
-walletSchema.index({ ownerId: 1, purpose: 1 }, { unique: true });
-walletSchema.index({ ownerType: 1, purpose: 1 });
+})
+walletSchema.index({ ownerId: 1, purpose: 1 }, { unique: true })
+walletSchema.index({ ownerType: 1, purpose: 1 })
 walletSchema.pre('validate', function validateWallet() {
-  if (this.expiresAt != null) this.invalidate('expiresAt', 'Coins never expire');
+  if (this.expiresAt != null) this.invalidate('expiresAt', 'Coins never expire')
   if (this.ownerType === 'system' && this.purpose !== 'system-earnings') {
-    this.invalidate('purpose', 'System owners hold only system earnings');
+    this.invalidate('purpose', 'System owners hold only system earnings')
   }
   if (this.ownerType === 'account' && this.purpose === 'system-earnings') {
-    this.invalidate('purpose', 'Account owners cannot hold system earnings');
+    this.invalidate('purpose', 'Account owners cannot hold system earnings')
   }
-});
-export const Wallet = defineModel('Wallet', walletSchema, 'wallets');
+})
+export const Wallet = defineModel('Wallet', walletSchema, 'wallets')

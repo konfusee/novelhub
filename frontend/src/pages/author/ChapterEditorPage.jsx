@@ -1,5 +1,5 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
-import { Link, useParams, useNavigate, useSearchParams } from 'react-router';
+import { useEffect, useMemo, useRef, useState } from 'react'
+import { Link, useParams, useNavigate, useSearchParams } from 'react-router'
 import {
   AlertTriangle,
   AlignLeft,
@@ -25,18 +25,18 @@ import {
   Send,
   Underline,
   X,
-} from '../../components/icons';
-import { AuthorLayout } from '../../layouts';
-import { useBackendDocument } from '../../api/useBackendResource';
-import { apiRequest } from '../../api/client';
-import { useLocale } from '../../context/LocaleContext';
-import { chapterParagraphs, ChapterTextError } from './chapterParagraphs';
-import { ChapterConflictDialog } from './ChapterConflictDialog';
-import { DraftReadingCanvas } from './DraftReadingCanvas';
-import { RichChapterInput } from './RichChapterInput';
-import { ChapterImagePicker } from './ChapterImagePicker';
-import { ChapterImageControls } from './ChapterImageControls';
-import { richChapterBody } from './richChapterDom';
+} from '../../components/icons'
+import { AuthorLayout } from '../../layouts'
+import { useBackendDocument } from '../../api/useBackendResource'
+import { apiRequest } from '../../api/client'
+import { useLocale } from '../../context/LocaleContext'
+import { chapterParagraphs, ChapterTextError } from './chapterParagraphs'
+import { ChapterConflictDialog } from './ChapterConflictDialog'
+import { DraftReadingCanvas } from './DraftReadingCanvas'
+import { RichChapterInput } from './RichChapterInput'
+import { ChapterImagePicker } from './ChapterImagePicker'
+import { ChapterImageControls } from './ChapterImageControls'
+import { richChapterBody } from './richChapterDom'
 import {
   Badge,
   Button,
@@ -49,17 +49,17 @@ import {
   Skeleton,
   SkeletonText,
   Tabs,
-} from '../../components/ui';
+} from '../../components/ui'
 
-const TARGET_WORDS = 2500; // Local reference for the self-check panel, not a publishing policy or saved goal.
-const WORDS_PER_MINUTE = 250;
-const SCENE_BREAK = '*     *     *';
-const emptyChapter = { chapter: null };
+const TARGET_WORDS = 2500 // Local reference for the self-check panel, not a publishing policy or saved goal.
+const WORDS_PER_MINUTE = 250
+const SCENE_BREAK = '*     *     *'
+const emptyChapter = { chapter: null }
 const utilityTabs = [
   { value: 'outline', label: 'Dàn ý' },
   { value: 'notes', label: 'Ghi chú' },
   { value: 'checklist', label: 'Danh sách kiểm tra' },
-];
+]
 
 // Plain mode exposes only paragraph-safe tools. Rich mode uses the AST surface.
 const tools = [
@@ -70,30 +70,30 @@ const tools = [
   [Heading3, 'heading3', null],
   [Quote, 'quote', null],
   [AlignLeft, 'sceneBreak', () => [`\n\n${SCENE_BREAK}\n\n`, '', '']],
-  [MessageSquare, 'dialogue', (text) => ['“', text, '”']],
-  [AtSign, 'mention', (text) => ['@', text, '']],
+  [MessageSquare, 'dialogue', text => ['“', text, '”']],
+  [AtSign, 'mention', text => ['@', text, '']],
   [Image, 'image', null],
-];
+]
 
-const countWords = (text) => text.trim().split(/\s+/).filter(Boolean).length;
-const paragraphsOf = (text) =>
+const countWords = text => text.trim().split(/\s+/).filter(Boolean).length
+const paragraphsOf = text =>
   text
     .split(/\n\s*\n/)
-    .map((part) => part.trim())
-    .filter(Boolean);
+    .map(part => part.trim())
+    .filter(Boolean)
 
 export function ChapterEditorPage() {
-  const [search] = useSearchParams();
-  const rich = search.get('mode') === 'rich';
-  const { storyId, chapterId } = useParams();
-  const { t } = useLocale();
-  const resourceKey = `${storyId}:${chapterId}:${rich}`;
+  const [search] = useSearchParams()
+  const rich = search.get('mode') === 'rich'
+  const { storyId, chapterId } = useParams()
+  const { t } = useLocale()
+  const resourceKey = `${storyId}:${chapterId}:${rich}`
   const resource = useBackendDocument(
     `/author/stories/${storyId}/chapters/${chapterId}${rich ? '?format=rich' : ''}`,
     emptyChapter,
-  );
-  const loading = resource.status === 'loading';
-  const value = resource.data.chapter;
+  )
+  const loading = resource.status === 'loading'
+  const value = resource.data.chapter
   const chapter = {
     ...resource,
     data: value
@@ -102,12 +102,12 @@ export function ChapterEditorPage() {
           body: value.document ? richChapterBody(value.document) : value.paragraphs.join('\n\n'),
           storyMeta: t('editorData.chapterCount', { count: value.outline.length }),
           activeChapter: value.number,
-          nextChapter: value.outline.find((item) => item.number > value.number),
+          nextChapter: value.outline.find(item => item.number > value.number),
           groups: [
             {
               act: t('editorData.chapterList'),
               count: value.outline.length,
-              chapters: value.outline.map((item) => [
+              chapters: value.outline.map(item => [
                 item.number,
                 `Chương ${item.number}: ${item.title}`,
                 item.id,
@@ -116,8 +116,8 @@ export function ChapterEditorPage() {
           ],
         }
       : null,
-  };
-  const STORY_ROUTE = `/author/stories/${storyId}`;
+  }
+  const STORY_ROUTE = `/author/stories/${storyId}`
   return (
     <AuthorLayout>
       {chapter.status === 'ready' && chapter.data ? (
@@ -208,81 +208,81 @@ export function ChapterEditorPage() {
         </div>
       )}
     </AuthorLayout>
-  );
+  )
 }
 
 function ChapterEditor({ chapter }) {
-  const { t } = useLocale();
-  const navigate = useNavigate();
-  const STORY_ROUTE = `/author/stories/${chapter.storyId}`;
-  const chapterRoute = (id) =>
-    `${STORY_ROUTE}/chapters/${id}/edit${chapter.document ? '?mode=rich' : ''}`;
-  const [version, setVersion] = useState(chapter.version);
-  const [saveBusy, setSaveBusy] = useState(false);
-  const busyRef = useRef(false);
-  const [saveError, setSaveError] = useState('');
-  const [conflict, setConflict] = useState(false);
-  const [compareOpen, setCompareOpen] = useState(false);
-  const bodyRef = useRef(null);
-  const rich = Boolean(chapter.document);
-  const [richDocument, setRichDocument] = useState(chapter.document);
-  const [title, setTitle] = useState(chapter.title);
-  const [body, setBody] = useState(chapter.body);
-  const [saved, setSaved] = useState(true);
-  const [caret, setCaret] = useState(0);
-  const [utility, setUtility] = useState('outline');
-  const [notes, setNotes] = useState('');
-  const groups = chapter.groups;
-  const [leftOpen, setLeftOpen] = useState(false);
-  const [rightOpen, setRightOpen] = useState(false);
-  const [previewOpen, setPreviewOpen] = useState(false);
-  const [imagePicker, setImagePicker] = useState(false);
-  const [submit, setSubmit] = useState('idle');
-  const words = useMemo(() => countWords(body), [body]);
-  const minutes = Math.max(1, Math.round(words / WORDS_PER_MINUTE));
-  const paragraph = paragraphsOf(body.slice(0, caret)).length || 1;
-  const line = body.slice(0, caret).split('\n').length;
+  const { t } = useLocale()
+  const navigate = useNavigate()
+  const STORY_ROUTE = `/author/stories/${chapter.storyId}`
+  const chapterRoute = id =>
+    `${STORY_ROUTE}/chapters/${id}/edit${chapter.document ? '?mode=rich' : ''}`
+  const [version, setVersion] = useState(chapter.version)
+  const [saveBusy, setSaveBusy] = useState(false)
+  const busyRef = useRef(false)
+  const [saveError, setSaveError] = useState('')
+  const [conflict, setConflict] = useState(false)
+  const [compareOpen, setCompareOpen] = useState(false)
+  const bodyRef = useRef(null)
+  const rich = Boolean(chapter.document)
+  const [richDocument, setRichDocument] = useState(chapter.document)
+  const [title, setTitle] = useState(chapter.title)
+  const [body, setBody] = useState(chapter.body)
+  const [saved, setSaved] = useState(true)
+  const [caret, setCaret] = useState(0)
+  const [utility, setUtility] = useState('outline')
+  const [notes, setNotes] = useState('')
+  const groups = chapter.groups
+  const [leftOpen, setLeftOpen] = useState(false)
+  const [rightOpen, setRightOpen] = useState(false)
+  const [previewOpen, setPreviewOpen] = useState(false)
+  const [imagePicker, setImagePicker] = useState(false)
+  const [submit, setSubmit] = useState('idle')
+  const words = useMemo(() => countWords(body), [body])
+  const minutes = Math.max(1, Math.round(words / WORDS_PER_MINUTE))
+  const paragraph = paragraphsOf(body.slice(0, caret)).length || 1
+  const line = body.slice(0, caret).split('\n').length
 
-  const updateBody = (value) => {
-    setBody(value);
-    setSaved(false);
-  };
+  const updateBody = value => {
+    setBody(value)
+    setSaved(false)
+  }
   const applyTool = (edit, key) => {
     if (rich) {
-      if (saveBusy || !chapter.canEdit) return;
+      if (saveBusy || !chapter.canEdit) return
       if (key === 'image') {
-        setImagePicker(true);
-        return;
+        setImagePicker(true)
+        return
       }
-      if (!bodyRef.current?.format(key)) setSaveError(t('richEditor.selectText'));
-      return;
+      if (!bodyRef.current?.format(key)) setSaveError(t('richEditor.selectText'))
+      return
     }
-    if (!edit || busyRef.current || !chapter.canEdit) return;
-    const field = bodyRef.current;
-    if (!field) return;
-    const { selectionStart: start, selectionEnd: end } = field;
-    const [before, inner, after] = edit(body.slice(start, end));
-    updateBody(`${body.slice(0, start)}${before}${inner}${after}${body.slice(end)}`);
+    if (!edit || busyRef.current || !chapter.canEdit) return
+    const field = bodyRef.current
+    if (!field) return
+    const { selectionStart: start, selectionEnd: end } = field
+    const [before, inner, after] = edit(body.slice(start, end))
+    updateBody(`${body.slice(0, start)}${before}${inner}${after}${body.slice(end)}`)
     requestAnimationFrame(() => {
-      field.focus();
-      field.setSelectionRange(start + before.length, start + before.length + inner.length);
-      setCaret(start + before.length + inner.length);
-    });
-  };
+      field.focus()
+      field.setSelectionRange(start + before.length, start + before.length + inner.length)
+      setCaret(start + before.length + inner.length)
+    })
+  }
   const saveChapter = async () => {
-    if (busyRef.current) return false;
-    if (conflict) return false;
-    if (saved) return true;
-    if (!chapter.canEdit) return false;
+    if (busyRef.current) return false
+    if (conflict) return false
+    if (saved) return true
+    if (!chapter.canEdit) return false
     if (!title.trim()) {
-      setSaveError(t('editorData.titleRequired'));
-      return false;
+      setSaveError(t('editorData.titleRequired'))
+      return false
     }
-    busyRef.current = true;
-    setSaveBusy(true);
-    setSaveError('');
+    busyRef.current = true
+    setSaveBusy(true)
+    setSaveError('')
     try {
-      const paragraphs = rich ? [] : chapterParagraphs(body);
+      const paragraphs = rich ? [] : chapterParagraphs(body)
       const result = await apiRequest(`/author/stories/${chapter.storyId}/chapters/${chapter.id}`, {
         method: 'PUT',
         body: {
@@ -291,57 +291,57 @@ function ChapterEditor({ chapter }) {
             : { title: title.trim(), paragraphs: paragraphs.length ? paragraphs : [''] }),
           expectedVersion: version,
         },
-      });
-      setVersion(result.chapter.version);
-      setSaved(true);
-      return true;
+      })
+      setVersion(result.chapter.version)
+      setSaved(true)
+      return true
     } catch (error) {
       if (error.status === 409 && error.code === 'stale_content') {
-        setConflict(true);
-        setSubmit('idle');
+        setConflict(true)
+        setSubmit('idle')
       }
       setSaveError(
         error instanceof ChapterTextError
           ? t(`chapterText.${error.code}`)
           : error.message || t('editorData.saveError'),
-      );
-      return false;
+      )
+      return false
     } finally {
-      busyRef.current = false;
-      setSaveBusy(false);
+      busyRef.current = false
+      setSaveBusy(false)
     }
-  };
+  }
   const addChapter = async () => {
-    if (!chapter.canCreate || busyRef.current) return;
-    if (!saved && !(await saveChapter())) return;
-    busyRef.current = true;
-    setSaveBusy(true);
-    setSaveError('');
+    if (!chapter.canCreate || busyRef.current) return
+    if (!saved && !(await saveChapter())) return
+    busyRef.current = true
+    setSaveBusy(true)
+    setSaveError('')
     try {
       const result = await apiRequest(`/author/stories/${chapter.storyId}/chapters`, {
         method: 'POST',
         body: { title: t('editorData.untitled'), paragraphs: [''] },
-      });
-      navigate(chapterRoute(result.chapter.id));
+      })
+      navigate(chapterRoute(result.chapter.id))
     } catch (error) {
-      setSaveError(error.message || t('editorData.saveError'));
+      setSaveError(error.message || t('editorData.saveError'))
     } finally {
-      busyRef.current = false;
-      setSaveBusy(false);
+      busyRef.current = false
+      setSaveBusy(false)
     }
-  };
-  const leave = (event) => {
-    if (!saved && !window.confirm(t('editorData.discard'))) event.preventDefault();
-  };
+  }
+  const leave = event => {
+    if (!saved && !window.confirm(t('editorData.discard'))) event.preventDefault()
+  }
   useEffect(() => {
-    if (saved) return;
-    const warn = (event) => {
-      event.preventDefault();
-      event.returnValue = '';
-    };
-    window.addEventListener('beforeunload', warn);
-    return () => window.removeEventListener('beforeunload', warn);
-  }, [saved]);
+    if (saved) return
+    const warn = event => {
+      event.preventDefault()
+      event.returnValue = ''
+    }
+    window.addEventListener('beforeunload', warn)
+    return () => window.removeEventListener('beforeunload', warn)
+  }, [saved])
   const tree = (
     <ChapterTree
       storyTitle={chapter.storyTitle}
@@ -354,7 +354,7 @@ function ChapterEditor({ chapter }) {
       onLeave={leave}
       rich={rich}
     />
-  );
+  )
   const utilityPanel = (
     <WriterUtility
       tab={utility}
@@ -366,7 +366,7 @@ function ChapterEditor({ chapter }) {
       notes={notes}
       setNotes={setNotes}
     />
-  );
+  )
 
   return (
     <div className="flex min-h-[calc(100dvh-var(--app-header-h))] flex-col bg-reader">
@@ -425,7 +425,7 @@ function ChapterEditor({ chapter }) {
                       ? t(`editorTools.${key}`)
                       : t('editorTools.unavailable', { tool: t(`editorTools.${key}`) })
                   }
-                  onMouseDown={(event) => event.preventDefault()}
+                  onMouseDown={event => event.preventDefault()}
                   onClick={() => applyTool(edit, key)}
                   disabled={(!edit && !rich) || saveBusy || !chapter.canEdit}
                   className="grid size-9 shrink-0 place-items-center rounded-full text-ink/75 transition-[background-color,color,transform] duration-200 hover:bg-elevated hover:text-brand-strong active:scale-[0.96] disabled:cursor-not-allowed disabled:opacity-40 pointer-coarse:size-11"
@@ -484,9 +484,9 @@ function ChapterEditor({ chapter }) {
               value={title}
               disabled={saveBusy || !chapter.canEdit}
               maxLength={200}
-              onChange={(event) => {
-                setTitle(event.target.value.replace(/\n/g, ' '));
-                setSaved(false);
+              onChange={event => {
+                setTitle(event.target.value.replace(/\n/g, ' '))
+                setSaved(false)
               }}
               placeholder="Tiêu đề chương"
               className="w-full resize-none border-b border-transparent bg-transparent pb-3 text-[1.75rem] font-bold leading-tight tracking-[-0.02em] text-ink outline-none transition-colors [field-sizing:content] placeholder:text-muted hover:border-line focus:border-brand sm:text-4xl"
@@ -500,9 +500,9 @@ function ChapterEditor({ chapter }) {
                 initialDocument={chapter.document}
                 disabled={saveBusy || !chapter.canEdit}
                 label={t('richEditor.body')}
-                onChange={(document) => {
-                  setRichDocument(document);
-                  updateBody(richChapterBody(document));
+                onChange={document => {
+                  setRichDocument(document)
+                  updateBody(richChapterBody(document))
                 }}
                 onSave={saveChapter}
                 onError={() => setSaveError(t('richEditor.pasteHint'))}
@@ -513,15 +513,15 @@ function ChapterEditor({ chapter }) {
                 ref={bodyRef}
                 value={body}
                 disabled={saveBusy || !chapter.canEdit}
-                onChange={(event) => {
-                  updateBody(event.target.value);
-                  setCaret(event.target.selectionStart);
+                onChange={event => {
+                  updateBody(event.target.value)
+                  setCaret(event.target.selectionStart)
                 }}
-                onSelect={(event) => setCaret(event.currentTarget.selectionStart)}
-                onKeyDown={(event) => {
+                onSelect={event => setCaret(event.currentTarget.selectionStart)}
+                onKeyDown={event => {
                   if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 's') {
-                    event.preventDefault();
-                    void saveChapter();
+                    event.preventDefault()
+                    void saveChapter()
                   }
                 }}
                 placeholder="Bắt đầu viết chương của bạn…"
@@ -591,18 +591,18 @@ function ChapterEditor({ chapter }) {
           body={body}
           richDocument={richDocument}
           onClose={() => setCompareOpen(false)}
-          onApply={(merged) => {
-            setTitle(merged.title);
-            setBody(merged.body);
+          onApply={merged => {
+            setTitle(merged.title)
+            setBody(merged.body)
             if (merged.document) {
-              setRichDocument(merged.document);
-              bodyRef.current?.replace(merged.document);
+              setRichDocument(merged.document)
+              bodyRef.current?.replace(merged.document)
             }
-            setVersion(merged.version);
-            setSaved(false);
-            setConflict(false);
-            setSaveError('');
-            setCompareOpen(false);
+            setVersion(merged.version)
+            setSaved(false)
+            setConflict(false)
+            setSaveError('')
+            setCompareOpen(false)
           }}
         />
       )}
@@ -610,10 +610,10 @@ function ChapterEditor({ chapter }) {
         <ChapterImagePicker
           storyId={chapter.storyId}
           onClose={() => setImagePicker(false)}
-          onAdd={(block) => {
-            const added = bodyRef.current?.changeImage(null, block);
-            if (added) setImagePicker(false);
-            return added;
+          onAdd={block => {
+            const added = bodyRef.current?.changeImage(null, block)
+            if (added) setImagePicker(false)
+            return added
           }}
         />
       )}
@@ -631,7 +631,7 @@ function ChapterEditor({ chapter }) {
               ? { ...richDocument, title: title.trim() || t('editorData.untitled') }
               : {
                   title: title.trim() || t('editorData.untitled'),
-                  blocks: paragraphsOf(body).map((text) =>
+                  blocks: paragraphsOf(body).map(text =>
                     text === SCENE_BREAK
                       ? { type: 'scene-break' }
                       : { type: 'paragraph', inlines: [{ text, marks: [] }] },
@@ -660,8 +660,8 @@ function ChapterEditor({ chapter }) {
             disabled={saveBusy}
             className="w-full sm:w-auto"
             onClick={async () => {
-              if (!saved && !(await saveChapter())) return;
-              navigate(`/author/submissions?storyId=${chapter.storyId}&chapterId=${chapter.id}`);
+              if (!saved && !(await saveChapter())) return
+              navigate(`/author/submissions?storyId=${chapter.storyId}&chapterId=${chapter.id}`)
             }}
           >
             <Check size={16} aria-hidden="true" />
@@ -670,7 +670,7 @@ function ChapterEditor({ chapter }) {
         </div>
       </Modal>
     </div>
-  );
+  )
 }
 
 function EditorHeader({
@@ -686,7 +686,7 @@ function EditorHeader({
   onLeave,
   richTo,
 }) {
-  const { t } = useLocale();
+  const { t } = useLocale()
   return (
     <div className="flex flex-wrap items-center gap-x-3 gap-y-2 border-b border-hairline bg-surface px-4 py-3">
       <IconButton
@@ -746,7 +746,7 @@ function EditorHeader({
         </div>
       </div>
     </div>
-  );
+  )
 }
 
 function RetryButton({ onClick }) {
@@ -755,7 +755,7 @@ function RetryButton({ onClick }) {
       <RefreshCw size={14} aria-hidden="true" />
       Thử lại
     </Button>
-  );
+  )
 }
 
 /* Mirrors the ready editor: outline rail, toolbar + manuscript surface, writer utility panel. */
@@ -810,7 +810,7 @@ function EditorSkeleton() {
         <WriterUtilitySkeleton />
       </aside>
     </div>
-  );
+  )
 }
 
 function ChapterTreeSkeleton() {
@@ -839,7 +839,7 @@ function ChapterTreeSkeleton() {
       </div>
       <Skeleton className="mt-8 h-11 w-full" />
     </>
-  );
+  )
 }
 
 /* Text lines on the line-box pitch of the copy they stand in for: 24px (leading-6) or 20px (leading-5). */
@@ -856,7 +856,7 @@ function SkeletonLines({ lines, tight = false, className = '' }) {
         />
       ))}
     </span>
-  );
+  )
 }
 
 function WriterUtilitySkeleton() {
@@ -890,29 +890,29 @@ function WriterUtilitySkeleton() {
         </div>
       </Card>
     </div>
-  );
+  )
 }
 
 function EditorSheet({ open, side, title, onClose, children }) {
-  const panelRef = useRef(null);
-  const closeRef = useRef(onClose);
+  const panelRef = useRef(null)
+  const closeRef = useRef(onClose)
   useEffect(() => {
-    closeRef.current = onClose;
-  }, [onClose]);
+    closeRef.current = onClose
+  }, [onClose])
   useEffect(() => {
-    if (!open) return undefined;
-    const previous = document.activeElement;
-    panelRef.current?.focus({ preventScroll: true });
-    const onKeyDown = (event) => {
-      if (event.key === 'Escape') closeRef.current?.();
-    };
-    document.addEventListener('keydown', onKeyDown);
+    if (!open) return undefined
+    const previous = document.activeElement
+    panelRef.current?.focus({ preventScroll: true })
+    const onKeyDown = event => {
+      if (event.key === 'Escape') closeRef.current?.()
+    }
+    document.addEventListener('keydown', onKeyDown)
     return () => {
-      document.removeEventListener('keydown', onKeyDown);
-      if (previous instanceof HTMLElement && previous.isConnected) previous.focus();
-    };
-  }, [open]);
-  const left = side === 'left';
+      document.removeEventListener('keydown', onKeyDown)
+      if (previous instanceof HTMLElement && previous.isConnected) previous.focus()
+    }
+  }, [open])
+  const left = side === 'left'
   return (
     <div className="xl:hidden" inert={!open}>
       {open && (
@@ -942,7 +942,7 @@ function EditorSheet({ open, side, title, onClose, children }) {
         </div>
       </aside>
     </div>
-  );
+  )
 }
 
 function ChapterTree({
@@ -963,7 +963,7 @@ function ChapterTree({
         <p className="text-xs text-muted">{storyMeta}</p>
       </div>
       <div className="mt-5 space-y-6">
-        {groups.map((group) => (
+        {groups.map(group => (
           <section key={group.act} aria-label={group.act}>
             <div className="flex items-start gap-2">
               <ChevronDown size={14} aria-hidden="true" className="mt-0.5 shrink-0 text-brand" />
@@ -974,7 +974,7 @@ function ChapterTree({
             </div>
             <ul className="mt-2 space-y-1 border-l border-hairline pl-3">
               {group.chapters.map(([number, label, id]) => {
-                const active = number === activeChapter;
+                const active = number === activeChapter
                 return (
                   <li key={number}>
                     <Link
@@ -991,7 +991,7 @@ function ChapterTree({
                       )}
                     </Link>
                   </li>
-                );
+                )
               })}
             </ul>
           </section>
@@ -1002,11 +1002,11 @@ function ChapterTree({
         Thêm chương
       </Button>
     </>
-  );
+  )
 }
 
 function WriterUtility({ tab, setTab, body, title, words, saved, notes, setNotes }) {
-  const { t } = useLocale();
+  const { t } = useLocale()
   return (
     <div className="space-y-5 p-5">
       <Tabs label="Tiện ích sáng tác" value={tab} onChange={setTab} items={utilityTabs} />
@@ -1020,7 +1020,7 @@ function WriterUtility({ tab, setTab, body, title, words, saved, notes, setNotes
             id="chapter-notes"
             value={notes}
             disabled
-            onChange={(event) => setNotes(event.target.value)}
+            onChange={event => setNotes(event.target.value)}
             placeholder="Ý tưởng, chi tiết cần nhớ, câu thoại muốn giữ lại..."
             className="mt-2 min-h-48 w-full resize-y rounded-3xl border border-line bg-surface p-4 text-base leading-6 text-ink outline-none transition-colors placeholder:text-muted focus:border-brand sm:text-sm"
           />
@@ -1029,14 +1029,14 @@ function WriterUtility({ tab, setTab, body, title, words, saved, notes, setNotes
       )}
       {tab === 'checklist' && <Checklist title={title} body={body} words={words} saved={saved} />}
     </div>
-  );
+  )
 }
 
 function Outline({ body }) {
   const scenes = body
     .split(SCENE_BREAK)
-    .map((part) => part.trim())
-    .filter(Boolean);
+    .map(part => part.trim())
+    .filter(Boolean)
   return (
     <ol className="space-y-3">
       {scenes.map((scene, index) => (
@@ -1049,7 +1049,7 @@ function Outline({ body }) {
         </li>
       ))}
     </ol>
-  );
+  )
 }
 
 function Checklist({ title, body, words, saved }) {
@@ -1058,7 +1058,7 @@ function Checklist({ title, body, words, saved }) {
     ['Có ít nhất một dấu ngắt cảnh', body.includes(SCENE_BREAK)],
     [`Mốc tham khảo ${TARGET_WORDS.toLocaleString('vi-VN')} từ`, words >= TARGET_WORDS],
     ['Mọi thay đổi đã được lưu', saved],
-  ];
+  ]
   return (
     <div>
       <p className="flex justify-between text-sm">
@@ -1094,5 +1094,5 @@ function Checklist({ title, body, words, saved }) {
         Hoàn thành danh sách trước khi gửi chương để rút ngắn thời gian xét duyệt.
       </p>
     </div>
-  );
+  )
 }

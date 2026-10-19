@@ -1,13 +1,13 @@
-import { useLocation } from 'react-router';
-import { Skeleton, SkeletonCard } from '../ui';
-import { TopProgress } from './TopProgress';
+import { useLocation } from 'react-router'
+import { Skeleton, SkeletonCard } from '../ui'
+import { TopProgress } from './TopProgress'
 
-const WORKSPACE = /^\/(reader|author|moderator|admin|read|listen|library)(\/|$)/;
+const WORKSPACE = /^\/(reader|author|moderator|admin|read|listen|library)(\/|$)/
 
 /* Suspense fallback while a route chunk downloads: skeleton of the shell the route will use. */
 export function RouteFallback() {
-  const { pathname } = useLocation();
-  const workspace = WORKSPACE.test(pathname);
+  const { pathname } = useLocation()
+  const workspace = WORKSPACE.test(pathname)
   return (
     <div aria-busy="true" className="min-h-[100dvh] bg-page">
       <TopProgress active />
@@ -37,7 +37,7 @@ export function RouteFallback() {
         </>
       )}
     </div>
-  );
+  )
 }
 
 function PageBody() {
@@ -55,5 +55,5 @@ function PageBody() {
         <SkeletonCard lines={4} />
       </div>
     </div>
-  );
+  )
 }

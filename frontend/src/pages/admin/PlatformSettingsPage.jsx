@@ -1,6 +1,6 @@
-import { useLocale } from '../../context/LocaleContext';
-import { PolicySettingsPanel } from './PolicySettingsPanel';
-import { useMemo, useState } from 'react';
+import { useLocale } from '../../context/LocaleContext'
+import { PolicySettingsPanel } from './PolicySettingsPanel'
+import { useMemo, useState } from 'react'
 import {
   AlertTriangle,
   Bot,
@@ -15,9 +15,9 @@ import {
   Search,
   ShieldAlert,
   ShieldCheck,
-} from '../../components/icons';
-import { AdminLayout } from '../../layouts';
-import { useMockResource } from '../../context/MockDataContext';
+} from '../../components/icons'
+import { AdminLayout } from '../../layouts'
+import { useMockResource } from '../../context/MockDataContext'
 import {
   Badge,
   Button,
@@ -29,7 +29,7 @@ import {
   Select,
   Skeleton,
   Tabs,
-} from '../../components/ui';
+} from '../../components/ui'
 
 const services = [
   [
@@ -57,7 +57,7 @@ const services = [
     Database,
     'Manage Backups',
   ],
-];
+]
 const logs = [
   [
     '2026-10-24 16:12:04',
@@ -99,7 +99,7 @@ const logs = [
     'Critical',
     'Role: Moderator',
   ],
-];
+]
 const sections = [
   'Platform Settings',
   'External Services & APIs',
@@ -107,7 +107,7 @@ const sections = [
   'AI Models & Orchestrator',
   'Storage & Media Mesh',
   'Audit Logs',
-];
+]
 const sectionLabels = {
   'Platform Settings': 'Cài đặt nền tảng',
   'External Services & APIs': 'Dịch vụ ngoài và API',
@@ -115,20 +115,20 @@ const sectionLabels = {
   'AI Models & Orchestrator': 'Mô hình AI và bộ điều phối',
   'Storage & Media Mesh': 'Lưu trữ và mạng media',
   'Audit Logs': 'Nhật ký kiểm tra',
-};
+}
 const actionLabels = {
   'Configure Voices': 'Cấu hình giọng đọc',
   'Adjust Quota': 'Điều chỉnh hạn mức',
   'Purge Edge Cache': 'Xóa bộ nhớ đệm biên',
   'Manage Backups': 'Quản lý bản sao lưu',
-};
-const impactLabels = { Low: 'Thấp', Medium: 'Trung bình', High: 'Cao', Critical: 'Nghiêm trọng' };
+}
+const impactLabels = { Low: 'Thấp', Medium: 'Trung bình', High: 'Cao', Critical: 'Nghiêm trọng' }
 const serviceLabels = {
   'TTS Neural Engine': 'Bộ máy TTS thần kinh',
   'AI Writing Co-Pilot': 'Trợ lý viết AI',
   'Storage & CDN Mesh': 'Mạng lưu trữ và CDN',
   'PostgreSQL Cluster': 'Cụm PostgreSQL',
-};
+}
 const logDetailLabels = {
   'TTS Engine endpoint': 'Điểm cuối bộ máy TTS',
   'Full PostgreSQL db': 'Toàn bộ cơ sở dữ liệu PostgreSQL',
@@ -136,35 +136,34 @@ const logDetailLabels = {
   'Edge perimeter firewall': 'Tường lửa biên ngoài',
   'Staff capability update': 'Cập nhật quyền nhân viên',
   'Role: Moderator': 'Vai trò: Kiểm duyệt viên',
-};
+}
 
 const serviceSections = {
   'TTS & Audio Narration': 'TTS Neural Engine',
   'AI Models & Orchestrator': 'AI Writing Co-Pilot',
   'Storage & Media Mesh': 'Storage & CDN Mesh',
-};
+}
 
 export function PlatformSettingsPage() {
-  const { t } = useLocale();
-  const integrations = useMockResource('admin:integrations', services);
-  const auditStream = useMockResource('admin:audit-stream', logs);
-  const [section, setSection] = useState('Platform Settings');
-  const [maintenance, setMaintenance] = useState(false);
-  const [confirmMaintenance, setConfirmMaintenance] = useState(false);
-  const [query, setQuery] = useState('');
-  const [actor, setActor] = useState('All');
-  const [modal, setModal] = useState('');
+  const { t } = useLocale()
+  const integrations = useMockResource('admin:integrations', services)
+  const auditStream = useMockResource('admin:audit-stream', logs)
+  const [section, setSection] = useState('Platform Settings')
+  const [maintenance, setMaintenance] = useState(false)
+  const [confirmMaintenance, setConfirmMaintenance] = useState(false)
+  const [query, setQuery] = useState('')
+  const [actor, setActor] = useState('All')
+  const [modal, setModal] = useState('')
   const filtered = useMemo(() => {
-    const needle = query.trim().toLowerCase();
+    const needle = query.trim().toLowerCase()
     return auditStream.data.filter(
-      (row) =>
-        (actor === 'All' || row[1] === actor) && row.join(' ').toLowerCase().includes(needle),
-    );
-  }, [auditStream.data, query, actor]);
+      row => (actor === 'All' || row[1] === actor) && row.join(' ').toLowerCase().includes(needle),
+    )
+  }, [auditStream.data, query, actor])
   const visibleServices = integrations.data.filter(
-    (service) => section === 'External Services & APIs' || serviceSections[section] === service[0],
-  );
-  const isServiceSection = section !== 'Platform Settings' && section !== 'Audit Logs';
+    service => section === 'External Services & APIs' || serviceSections[section] === service[0],
+  )
+  const isServiceSection = section !== 'Platform Settings' && section !== 'Audit Logs'
 
   return (
     <AdminLayout>
@@ -205,7 +204,7 @@ export function PlatformSettingsPage() {
             singleRow
             value={section}
             onChange={setSection}
-            items={sections.map((value) => ({ value, label: sectionLabels[value] }))}
+            items={sections.map(value => ({ value, label: sectionLabels[value] }))}
           />
         </div>
 
@@ -253,7 +252,7 @@ export function PlatformSettingsPage() {
                       { length: section === 'External Services & APIs' ? services.length : 1 },
                       (_, index) => <ServiceCardSkeleton key={index} />,
                     )
-                  : visibleServices.map((service) => (
+                  : visibleServices.map(service => (
                       <ServiceCard
                         key={service[0]}
                         service={service}
@@ -291,17 +290,17 @@ export function PlatformSettingsPage() {
                   type="search"
                   enterKeyHint="search"
                   value={query}
-                  onChange={(event) => setQuery(event.target.value)}
+                  onChange={event => setQuery(event.target.value)}
                   aria-label="Tìm trong nhật ký kiểm tra"
                   placeholder="Mã sự kiện, chủ thể hoặc IP…"
                 />
                 <Select
                   aria-label="Lọc theo chủ thể"
                   value={actor}
-                  onChange={(event) => setActor(event.target.value)}
+                  onChange={event => setActor(event.target.value)}
                 >
                   <option value="All">Tất cả chủ thể</option>
-                  {[...new Set(auditStream.data.map((row) => row[1]))].map((name) => (
+                  {[...new Set(auditStream.data.map(row => row[1]))].map(name => (
                     <option key={name}>{name}</option>
                   ))}
                 </Select>
@@ -352,7 +351,7 @@ export function PlatformSettingsPage() {
                         'Thao tác và tài nguyên',
                         'Mức tác động',
                         'Đối tượng / Thực thể',
-                      ].map((heading) => (
+                      ].map(heading => (
                         <th
                           key={heading}
                           scope="col"
@@ -369,7 +368,7 @@ export function PlatformSettingsPage() {
                     {auditStream.status === 'loading' &&
                       Array.from({ length: 5 }, (_, index) => <LogRowSkeleton key={index} />)}
                     {auditStream.status === 'ready' &&
-                      filtered.map((row) => (
+                      filtered.map(row => (
                         <tr key={row[0]}>
                           <td className="whitespace-nowrap px-4 py-4 pl-5 font-mono text-xs text-muted">
                             {row[0]}
@@ -413,8 +412,8 @@ export function PlatformSettingsPage() {
                     variant="secondary"
                     size="sm"
                     onClick={() => {
-                      setQuery('');
-                      setActor('All');
+                      setQuery('')
+                      setActor('All')
                     }}
                   >
                     Xóa bộ lọc
@@ -466,8 +465,8 @@ export function PlatformSettingsPage() {
             <Button
               variant="danger"
               onClick={() => {
-                setMaintenance(true);
-                setConfirmMaintenance(false);
+                setMaintenance(true)
+                setConfirmMaintenance(false)
               }}
             >
               Bật chế độ bảo trì
@@ -476,12 +475,12 @@ export function PlatformSettingsPage() {
         </Modal>
       </div>
     </AdminLayout>
-  );
+  )
 }
 
 function ServiceCard({ service, onAction }) {
-  const [name, provider, uptime, metric, Icon, action] = service;
-  const label = serviceLabels[name] ?? name;
+  const [name, provider, uptime, metric, Icon, action] = service
+  const label = serviceLabels[name] ?? name
   return (
     <Card as="article" className="flex flex-col">
       <div className="flex items-start justify-between gap-3">
@@ -510,7 +509,7 @@ function ServiceCard({ service, onAction }) {
         {actionLabels[action] ?? action}
       </Button>
     </Card>
-  );
+  )
 }
 /* ServiceCard geometry: icon + uptime badge, name, provider, metric well, full-width action. */
 function ServiceCardSkeleton() {
@@ -535,7 +534,7 @@ function ServiceCardSkeleton() {
       </div>
       <Skeleton className="mt-auto h-11 w-full" />
     </Card>
-  );
+  )
 }
 
 /* Audit row: timestamp, actor, code pill over a detail line, impact badge, target. */
@@ -559,7 +558,7 @@ function LogRowSkeleton() {
         <Skeleton className="h-3.5 w-32" />
       </td>
     </tr>
-  );
+  )
 }
 
 function LoadError({ title, description, onRetry }) {
@@ -577,5 +576,5 @@ function LoadError({ title, description, onRetry }) {
         </Button>
       }
     />
-  );
+  )
 }

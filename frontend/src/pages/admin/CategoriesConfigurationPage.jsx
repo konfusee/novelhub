@@ -1,34 +1,32 @@
-import { useRef, useState } from 'react';
-import { AdminLayout } from '../../layouts';
-import { useBackendDocument } from '../../api/useBackendResource';
-import { apiRequest } from '../../api/client';
-import { useLocale } from '../../context/LocaleContext';
-import { Badge, Button, Card, EmptyState, Input, Modal, Select, Tabs } from '../../components/ui';
-import { FolderTree, Plus, Search } from '../../components/icons';
+import { useRef, useState } from 'react'
+import { AdminLayout } from '../../layouts'
+import { useBackendDocument } from '../../api/useBackendResource'
+import { apiRequest } from '../../api/client'
+import { useLocale } from '../../context/LocaleContext'
+import { Badge, Button, Card, EmptyState, Input, Modal, Select, Tabs } from '../../components/ui'
+import { FolderTree, Plus, Search } from '../../components/icons'
 
-const empty = { items: [], total: 0, page: 1, pageSize: 20 };
+const empty = { items: [], total: 0, page: 1, pageSize: 20 }
 export function CategoriesConfigurationPage() {
-  const { t, formatNumber } = useLocale();
-  const m = (key) => t(`adminTaxonomy.${key}`);
-  const [active, setActive] = useState('categories');
-  const [filter, setFilter] = useState({ q: '', status: 'all', page: 1 });
-  const [query, setQuery] = useState('');
-  const [form, setForm] = useState(null);
-  const [error, setError] = useState('');
-  const [busy, setBusy] = useState(false);
-  const lock = useRef(false);
+  const { t, formatNumber } = useLocale()
+  const m = key => t(`adminTaxonomy.${key}`)
+  const [active, setActive] = useState('categories')
+  const [filter, setFilter] = useState({ q: '', status: 'all', page: 1 })
+  const [query, setQuery] = useState('')
+  const [form, setForm] = useState(null)
+  const [error, setError] = useState('')
+  const [busy, setBusy] = useState(false)
+  const lock = useRef(false)
   const feed = useBackendDocument(
     `/admin/taxonomy/categories?${new URLSearchParams({ ...filter, page: String(filter.page) })}`,
     empty,
-  );
-  const ready = feed.status === 'ready';
-  const loading = feed.status === 'loading';
-  const open = (item) => {
-    setError('');
-    setForm(
-      item ? { ...item, reason: '' } : { name: '', sortKey: 0, reason: '', status: 'active' },
-    );
-  };
+  )
+  const ready = feed.status === 'ready'
+  const loading = feed.status === 'loading'
+  const open = item => {
+    setError('')
+    setForm(item ? { ...item, reason: '' } : { name: '', sortKey: 0, reason: '', status: 'active' })
+  }
   return (
     <AdminLayout>
       <div className="page-admin py-6">
@@ -53,7 +51,7 @@ export function CategoriesConfigurationPage() {
             singleRow
             value={active}
             onChange={setActive}
-            items={['categories', 'tags', 'ratings', 'lifecycle'].map((value) => ({
+            items={['categories', 'tags', 'ratings', 'lifecycle'].map(value => ({
               value,
               label: m(value),
             }))}
@@ -73,9 +71,9 @@ export function CategoriesConfigurationPage() {
               <p className="mt-1 text-sm text-muted">{m('description')}</p>
               <form
                 className="mt-4 flex flex-col gap-3 sm:flex-row"
-                onSubmit={(event) => {
-                  event.preventDefault();
-                  setFilter({ ...filter, q: query.trim(), page: 1 });
+                onSubmit={event => {
+                  event.preventDefault()
+                  setFilter({ ...filter, q: query.trim(), page: 1 })
                 }}
               >
                 <Input
@@ -84,17 +82,15 @@ export function CategoriesConfigurationPage() {
                   type="search"
                   aria-label={m('search')}
                   value={query}
-                  onChange={(event) => setQuery(event.target.value)}
+                  onChange={event => setQuery(event.target.value)}
                   maxLength={100}
                 />
                 <Select
                   aria-label={m('status')}
                   value={filter.status}
-                  onChange={(event) =>
-                    setFilter({ ...filter, status: event.target.value, page: 1 })
-                  }
+                  onChange={event => setFilter({ ...filter, status: event.target.value, page: 1 })}
                 >
-                  {['all', 'active', 'retired'].map((status) => (
+                  {['all', 'active', 'retired'].map(status => (
                     <option key={status} value={status}>
                       {m(status)}
                     </option>
@@ -120,7 +116,7 @@ export function CategoriesConfigurationPage() {
                 <table className="w-full min-w-[680px] text-left text-sm">
                   <thead className="bg-elevated">
                     <tr>
-                      {['name', 'order', 'stories', 'status', 'actions'].map((key) => (
+                      {['name', 'order', 'stories', 'status', 'actions'].map(key => (
                         <th key={key} scope="col" className="px-5 py-3">
                           {m(key)}
                         </th>
@@ -128,7 +124,7 @@ export function CategoriesConfigurationPage() {
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-hairline">
-                    {feed.data.items.map((item) => (
+                    {feed.data.items.map(item => (
                       <tr key={item.id}>
                         <td className="max-w-sm break-words px-5 py-4 font-semibold">
                           {item.name}
@@ -183,37 +179,37 @@ export function CategoriesConfigurationPage() {
             onClose={() => !lock.current && setForm(null)}
           >
             <form
-              onSubmit={async (event) => {
-                event.preventDefault();
-                if (lock.current || !form.name.trim() || !form.reason.trim()) return;
-                lock.current = true;
-                setBusy(true);
-                setError('');
+              onSubmit={async event => {
+                event.preventDefault()
+                if (lock.current || !form.name.trim() || !form.reason.trim()) return
+                lock.current = true
+                setBusy(true)
+                setError('')
                 try {
                   const body = {
                     name: form.name.trim(),
                     sortKey: Number(form.sortKey),
                     reason: form.reason.trim(),
                     ...(form.id ? { expectedVersion: form.version, status: form.status } : {}),
-                  };
+                  }
                   const result = await apiRequest(
                     `/admin/taxonomy/categories${form.id ? '/' + form.id : ''}`,
                     { method: form.id ? 'PUT' : 'POST', body },
-                  );
+                  )
                   if (
                     !result?.category?.id ||
                     (form.id && result.category.id !== form.id) ||
                     !Number.isSafeInteger(result.category.version) ||
                     (form.id && result.category.version <= form.version)
                   )
-                    throw new Error(m('saveError'));
-                  setForm(null);
-                  feed.retry();
+                    throw new Error(m('saveError'))
+                  setForm(null)
+                  feed.retry()
                 } catch (failure) {
-                  setError(failure.message || m('saveError'));
+                  setError(failure.message || m('saveError'))
                 } finally {
-                  lock.current = false;
-                  setBusy(false);
+                  lock.current = false
+                  setBusy(false)
                 }
               }}
             >
@@ -226,7 +222,7 @@ export function CategoriesConfigurationPage() {
                   maxLength={100}
                   required
                   disabled={busy}
-                  onChange={(event) => setForm({ ...form, name: event.target.value })}
+                  onChange={event => setForm({ ...form, name: event.target.value })}
                 />
               </label>
               <label className="mt-4 block text-sm font-medium">
@@ -240,7 +236,7 @@ export function CategoriesConfigurationPage() {
                   required
                   disabled={busy}
                   value={form.sortKey}
-                  onChange={(event) => setForm({ ...form, sortKey: event.target.value })}
+                  onChange={event => setForm({ ...form, sortKey: event.target.value })}
                 />
               </label>
               {form.id && (
@@ -250,9 +246,9 @@ export function CategoriesConfigurationPage() {
                     className="mt-2"
                     disabled={busy}
                     value={form.status}
-                    onChange={(event) => setForm({ ...form, status: event.target.value })}
+                    onChange={event => setForm({ ...form, status: event.target.value })}
                   >
-                    {['active', 'retired'].map((status) => (
+                    {['active', 'retired'].map(status => (
                       <option key={status} value={status}>
                         {m(status)}
                       </option>
@@ -268,7 +264,7 @@ export function CategoriesConfigurationPage() {
                   maxLength={1000}
                   required
                   disabled={busy}
-                  onChange={(event) => setForm({ ...form, reason: event.target.value })}
+                  onChange={event => setForm({ ...form, reason: event.target.value })}
                 />
               </label>
               {error && (
@@ -289,5 +285,5 @@ export function CategoriesConfigurationPage() {
         )}
       </div>
     </AdminLayout>
-  );
+  )
 }

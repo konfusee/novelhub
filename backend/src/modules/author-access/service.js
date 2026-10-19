@@ -1,12 +1,12 @@
-import { withTransaction } from '../../db/connection.js';
-import { HttpError } from '../../middleware/errors.js';
-import { Account } from '../../models/identity/account.model.js';
-import { AuthorApplication } from '../../models/identity/author-application.model.js';
-import { RoleAssignment } from '../../models/identity/role-assignment.model.js';
-import { AuditEvent } from '../../models/audit/audit-event.model.js';
-import { Notification } from '../../models/notifications/notification.model.js';
+import { withTransaction } from '../../db/connection.js'
+import { HttpError } from '../../middleware/errors.js'
+import { Account } from '../../models/identity/account.model.js'
+import { AuthorApplication } from '../../models/identity/author-application.model.js'
+import { RoleAssignment } from '../../models/identity/role-assignment.model.js'
+import { AuditEvent } from '../../models/audit/audit-event.model.js'
+import { Notification } from '../../models/notifications/notification.model.js'
 
-export const applicationView = (application) =>
+export const applicationView = application =>
   application
     ? {
         id: application._id.toString(),
@@ -16,7 +16,7 @@ export const applicationView = (application) =>
         decidedAt: application.decidedAt ?? null,
         decisionReason: application.decisionReason ?? null,
       }
-    : null;
+    : null
 
 // All application/role writers serialize on the account, in the same transaction.
 // Recheck the session epoch after authentication to reject stale privileged writes.
@@ -30,40 +30,40 @@ async function lockAccount(account, session) {
     },
     { $inc: { version: 1 } },
     { session, returnDocument: 'after' },
-  );
-  if (!locked) throw new HttpError(409, 'account_changed', 'Account permissions have changed');
-  return locked;
+  )
+  if (!locked) throw new HttpError(409, 'account_changed', 'Account permissions have changed')
+  return locked
 }
 
 async function assertApplicant(account, session) {
   if (!account.emailVerifiedAt || !account.email) {
-    throw new HttpError(409, 'applicant_ineligible', 'A verified active account is required');
+    throw new HttpError(409, 'applicant_ineligible', 'A verified active account is required')
   }
   const staff = await RoleAssignment.exists({ accountId: account._id, status: 'active' }).session(
     session,
-  );
-  if (staff) throw new HttpError(409, 'staff_role_conflict', 'Account already has a staff role');
+  )
+  if (staff) throw new HttpError(409, 'staff_role_conflict', 'Account already has a staff role')
 }
 
 export async function submitApplication(account) {
-  return withTransaction(async (session) => {
-    const applicant = await lockAccount(account, session);
-    await assertApplicant(applicant, session);
+  return withTransaction(async session => {
+    const applicant = await lockAccount(account, session)
+    await assertApplicant(applicant, session)
     const existing = await AuthorApplication.findOne({
       applicantAccountId: applicant._id,
       status: 'submitted',
-    }).session(session);
-    if (existing) return { application: applicationView(existing), created: false };
+    }).session(session)
+    if (existing) return { application: applicationView(existing), created: false }
     const [application] = await AuthorApplication.create(
       [{ applicantAccountId: applicant._id, status: 'submitted' }],
       { session },
-    );
-    return { application: applicationView(application), created: true };
-  });
+    )
+    return { application: applicationView(application), created: true }
+  })
 }
 
 export async function listApplications({ status, page, pageSize }) {
-  const filter = status === 'all' ? {} : { status };
+  const filter = status === 'all' ? {} : { status }
   const [applications, total] = await Promise.all([
     AuthorApplication.find(filter)
       .sort({ submittedAt: -1, _id: -1 })
@@ -72,12 +72,12 @@ export async function listApplications({ status, page, pageSize }) {
       .populate('applicantAccountId', 'displayName email status')
       .lean(),
     AuthorApplication.countDocuments(filter),
-  ]);
-  return { items: applications.map(adminView), total, page, pageSize };
+  ])
+  return { items: applications.map(adminView), total, page, pageSize }
 }
 
 function adminView(application) {
-  const applicant = application.applicantAccountId;
+  const applicant = application.applicantAccountId
   return {
     ...applicationView(application),
     applicant: applicant
@@ -88,54 +88,54 @@ function adminView(application) {
           status: applicant.status,
         }
       : null,
-  };
+  }
 }
 
 export async function getApplication(id) {
   const application = await AuthorApplication.findById(id)
     .populate('applicantAccountId', 'displayName email status')
-    .lean();
-  if (!application) throw new HttpError(404, 'application_not_found', 'Application not found');
-  return adminView(application);
+    .lean()
+  if (!application) throw new HttpError(404, 'application_not_found', 'Application not found')
+  return adminView(application)
 }
 
 export async function decideApplication(admin, id, { decision, reason, expectedVersion }) {
-  return withTransaction(async (session) => {
-    await lockAccount(admin, session);
+  return withTransaction(async session => {
+    await lockAccount(admin, session)
     const allowed = await RoleAssignment.exists({
       accountId: admin._id,
       role: 'admin',
       status: 'active',
-    }).session(session);
-    if (!allowed) throw new HttpError(403, 'forbidden', 'Admin permission required');
-    const application = await AuthorApplication.findById(id).session(session);
-    if (!application) throw new HttpError(404, 'application_not_found', 'Application not found');
+    }).session(session)
+    if (!allowed) throw new HttpError(403, 'forbidden', 'Admin permission required')
+    const application = await AuthorApplication.findById(id).session(session)
+    if (!application) throw new HttpError(404, 'application_not_found', 'Application not found')
     if (application.status !== 'submitted' || application.version !== expectedVersion) {
-      throw new HttpError(409, 'application_changed', 'Application has already changed; reload it');
+      throw new HttpError(409, 'application_changed', 'Application has already changed; reload it')
     }
-    const applicant = await Account.findById(application.applicantAccountId).session(session);
+    const applicant = await Account.findById(application.applicantAccountId).session(session)
     if (!applicant || applicant.status !== 'active') {
-      throw new HttpError(409, 'applicant_ineligible', 'Applicant is no longer active');
+      throw new HttpError(409, 'applicant_ineligible', 'Applicant is no longer active')
     }
-    await lockAccount(applicant, session);
+    await lockAccount(applicant, session)
     if (decision === 'approve') {
-      await assertApplicant(applicant, session);
+      await assertApplicant(applicant, session)
       await RoleAssignment.create(
         [{ accountId: applicant._id, role: 'author', grantedBy: admin._id }],
         { session },
-      );
+      )
       await Account.updateOne(
         { _id: applicant._id },
         { $set: { everAuthor: true }, $inc: { authorizationEpoch: 1 } },
         { session },
-      );
+      )
     }
-    const now = new Date();
-    application.status = decision === 'approve' ? 'approved' : 'rejected';
-    application.decidedAt = now;
-    application.decidedBy = admin._id;
-    application.decisionReason = reason;
-    await application.save({ session });
+    const now = new Date()
+    application.status = decision === 'approve' ? 'approved' : 'rejected'
+    application.decidedAt = now
+    application.decidedBy = admin._id
+    application.decisionReason = reason
+    await application.save({ session })
     await AuditEvent.create(
       [
         {
@@ -151,7 +151,7 @@ export async function decideApplication(admin, id, { decision, reason, expectedV
         },
       ],
       { session },
-    );
+    )
     await Notification.create(
       [
         {
@@ -163,7 +163,7 @@ export async function decideApplication(admin, id, { decision, reason, expectedV
         },
       ],
       { session },
-    );
-    return applicationView(application);
-  });
+    )
+    return applicationView(application)
+  })
 }

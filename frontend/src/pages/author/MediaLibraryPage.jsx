@@ -1,5 +1,5 @@
-import { useMemo, useRef, useState } from 'react';
-import { useSearchParams } from 'react-router';
+import { useMemo, useRef, useState } from 'react'
+import { useSearchParams } from 'react-router'
 import {
   AlertTriangle,
   Check,
@@ -15,11 +15,11 @@ import {
   Trash2,
   Upload,
   X,
-} from '../../components/icons';
-import { AuthorLayout } from '../../layouts';
-import { useBackendDocument } from '../../api/useBackendResource';
-import { apiRequest, API_BASE } from '../../api/client';
-import { useLocale } from '../../context/LocaleContext';
+} from '../../components/icons'
+import { AuthorLayout } from '../../layouts'
+import { useBackendDocument } from '../../api/useBackendResource'
+import { apiRequest, API_BASE } from '../../api/client'
+import { useLocale } from '../../context/LocaleContext'
 import {
   Badge,
   Button,
@@ -31,14 +31,14 @@ import {
   Select,
   Skeleton,
   Tabs,
-} from '../../components/ui';
+} from '../../components/ui'
 
 const filters = [
   { value: 'All Assets', label: 'Tất cả tài nguyên' },
   { value: 'Story Covers', label: 'Bìa truyện' },
   { value: 'Chapter Art & Maps', label: 'Minh họa chương và bản đồ' },
   { value: 'Audiobook Narration', label: 'Thuyết minh sách nói' },
-];
+]
 const statusLabels = {
   'In Use': 'Đang sử dụng',
   Linked: 'Đã liên kết',
@@ -46,7 +46,7 @@ const statusLabels = {
   Unused: 'Chưa sử dụng',
   Draft: 'Bản nháp',
   New: 'Mới',
-};
+}
 const statusTones = {
   'In Use': 'green',
   Linked: 'purple',
@@ -54,70 +54,70 @@ const statusTones = {
   Unused: 'neutral',
   Draft: 'orange',
   New: 'purple',
-};
-const UNASSIGNED = 'Chưa gán';
+}
+const UNASSIGNED = 'Chưa gán'
 
-const formatSize = (bytes) =>
+const formatSize = bytes =>
   bytes < 1024
     ? `${bytes} B`
     : bytes >= 1024 * 1024
       ? `${(bytes / 1024 / 1024).toFixed(1)} MB`
-      : `${Math.max(1, Math.round(bytes / 1024))} KB`;
-const assetUrl = (asset) =>
-  asset.url ? new URL(`${API_BASE}${asset.url}`, window.location.origin).href : '';
-const emptyMedia = { items: [], stories: [], stats: { bytes: 0, count: 0 }, nextCursor: null };
+      : `${Math.max(1, Math.round(bytes / 1024))} KB`
+const assetUrl = asset =>
+  asset.url ? new URL(`${API_BASE}${asset.url}`, window.location.origin).href : ''
+const emptyMedia = { items: [], stories: [], stats: { bytes: 0, count: 0 }, nextCursor: null }
 
 export function MediaLibraryPage() {
-  const [searchParams] = useSearchParams();
-  const requestedStory = searchParams.get('storyId');
-  const { t } = useLocale();
-  const [cursor, setCursor] = useState('');
-  const [previous, setPrevious] = useState([]);
+  const [searchParams] = useSearchParams()
+  const requestedStory = searchParams.get('storyId')
+  const { t } = useLocale()
+  const [cursor, setCursor] = useState('')
+  const [previous, setPrevious] = useState([])
   const resource = useBackendDocument(
     `/author/media${cursor ? `?cursor=${cursor}` : ''}`,
     emptyMedia,
-  );
+  )
   const media = {
     ...resource,
     status:
       resource.status === 'ready' && !previous.length && !resource.data.items.length
         ? 'empty'
         : resource.status,
-  };
+  }
   const reload = () => {
-    setPrevious([]);
-    setCursor('');
-    resource.retry();
-  };
-  const [busy, setBusy] = useState(false);
-  const busyRef = useRef(false);
-  const [kind, setKind] = useState('image');
-  const [uploadStory, setUploadStory] = useState(null);
-  const contextStory = resource.data.stories.find((item) => item.id === requestedStory);
-  const uploadCandidate = uploadStory ?? contextStory?.id ?? '';
-  const uploadStoryId = resource.data.stories.some((item) => item.id === uploadCandidate)
+    setPrevious([])
+    setCursor('')
+    resource.retry()
+  }
+  const [busy, setBusy] = useState(false)
+  const busyRef = useRef(false)
+  const [kind, setKind] = useState('image')
+  const [uploadStory, setUploadStory] = useState(null)
+  const contextStory = resource.data.stories.find(item => item.id === requestedStory)
+  const uploadCandidate = uploadStory ?? contextStory?.id ?? ''
+  const uploadStoryId = resource.data.stories.some(item => item.id === uploadCandidate)
     ? uploadCandidate
-    : '';
-  const fileRef = useRef(null);
-  const inspectorRef = useRef(null);
-  const [filter, setFilter] = useState('All Assets');
-  const [query, setQuery] = useState('');
-  const [story, setStory] = useState('All Stories');
-  const [sort, setSort] = useState('Newest Uploads');
-  const [view, setView] = useState('grid');
-  const [selectedId, setSelectedId] = useState(null);
-  const [copied, setCopied] = useState(false);
-  const [dragging, setDragging] = useState(false);
-  const [uploadNotice, setUploadNotice] = useState(null);
-  const [confirmDelete, setConfirmDelete] = useState(false);
-  const [deleteError, setDeleteError] = useState('');
-  const [bulkItems, setBulkItems] = useState(null);
-  const [bulkStory, setBulkStory] = useState('');
-  const [bulkError, setBulkError] = useState('');
+    : ''
+  const fileRef = useRef(null)
+  const inspectorRef = useRef(null)
+  const [filter, setFilter] = useState('All Assets')
+  const [query, setQuery] = useState('')
+  const [story, setStory] = useState('All Stories')
+  const [sort, setSort] = useState('Newest Uploads')
+  const [view, setView] = useState('grid')
+  const [selectedId, setSelectedId] = useState(null)
+  const [copied, setCopied] = useState(false)
+  const [dragging, setDragging] = useState(false)
+  const [uploadNotice, setUploadNotice] = useState(null)
+  const [confirmDelete, setConfirmDelete] = useState(false)
+  const [deleteError, setDeleteError] = useState('')
+  const [bulkItems, setBulkItems] = useState(null)
+  const [bulkStory, setBulkStory] = useState('')
+  const [bulkError, setBulkError] = useState('')
 
   const library = useMemo(
     () =>
-      [...previous, ...resource.data.items].map((asset) => ({
+      [...previous, ...resource.data.items].map(asset => ({
         ...asset,
         type: asset.kind === 'cover' ? 'Story Covers' : 'Chapter Art & Maps',
         kind: 'image',
@@ -126,15 +126,15 @@ export function MediaLibraryPage() {
         size: asset.sizeBytes == null ? '—' : formatSize(asset.sizeBytes),
         dimensions: asset.width && asset.height ? `${asset.width} × ${asset.height}` : '—',
         story:
-          resource.data.stories.find((item) => item.id === asset.storyId)?.title ??
+          resource.data.stories.find(item => item.id === asset.storyId)?.title ??
           (asset.storyId ? t('mediaData.associatedStory') : UNASSIGNED),
         status: t('mediaData.stored'),
       })),
     [previous, resource.data, t],
-  );
+  )
   const selected =
-    media.status === 'ready' ? (library.find((asset) => asset.id === selectedId) ?? null) : null;
-  const stories = resource.data.stories;
+    media.status === 'ready' ? (library.find(asset => asset.id === selectedId) ?? null) : null
+  const stories = resource.data.stories
   const counts = useMemo(
     () =>
       Object.fromEntries(
@@ -142,16 +142,16 @@ export function MediaLibraryPage() {
           value,
           value === 'All Assets'
             ? library.length
-            : library.filter((asset) => asset.type === value).length,
+            : library.filter(asset => asset.type === value).length,
         ]),
       ),
     [library],
-  );
+  )
   const shown = useMemo(() => {
-    const needle = query.trim().toLowerCase();
+    const needle = query.trim().toLowerCase()
     return library
       .filter(
-        (asset) =>
+        asset =>
           (filter === 'All Assets' || asset.type === filter) &&
           (story === 'All Stories' || asset.storyId === story) &&
           (!needle ||
@@ -160,94 +160,94 @@ export function MediaLibraryPage() {
       )
       .sort((a, b) =>
         sort === 'Name A–Z' ? a.name.localeCompare(b.name) : b.id.localeCompare(a.id),
-      );
-  }, [library, filter, query, story, sort]);
-  const gridClass = `mt-5 grid gap-3 sm:gap-4 ${view === 'grid' ? 'grid-cols-2 lg:grid-cols-3 xl:grid-cols-2 2xl:grid-cols-3' : ''}`;
-  const showCounts = media.status === 'ready' || media.status === 'empty';
+      )
+  }, [library, filter, query, story, sort])
+  const gridClass = `mt-5 grid gap-3 sm:gap-4 ${view === 'grid' ? 'grid-cols-2 lg:grid-cols-3 xl:grid-cols-2 2xl:grid-cols-3' : ''}`
+  const showCounts = media.status === 'ready' || media.status === 'empty'
 
-  const select = (asset) => {
-    setSelectedId(asset.id);
-    setCopied(false);
+  const select = asset => {
+    setSelectedId(asset.id)
+    setCopied(false)
     // Below xl the inspector stacks under the grid; bring it into view after selection.
     if (window.matchMedia('(max-width: 1279px)').matches) {
       requestAnimationFrame(() =>
         inspectorRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }),
-      );
+      )
     }
-  };
-  const addFile = async (file) => {
-    if (!file || busyRef.current || resource.status === 'loading') return;
+  }
+  const addFile = async file => {
+    if (!file || busyRef.current || resource.status === 'loading') return
     if (!/\.(png|jpe?g|webp)$/iu.test(file.name) || !file.size || file.size > 10 * 1024 * 1024) {
-      setUploadNotice({ tone: 'error', text: t('mediaData.invalidFile') });
-      return;
+      setUploadNotice({ tone: 'error', text: t('mediaData.invalidFile') })
+      return
     }
-    busyRef.current = true;
-    setBusy(true);
-    setUploadNotice(null);
+    busyRef.current = true
+    setBusy(true)
+    setUploadNotice(null)
     try {
       const query = new URLSearchParams({
         name: file.name,
         kind,
         ...(uploadStoryId ? { storyId: uploadStoryId } : {}),
-      });
+      })
       const result = await apiRequest(`/author/media?${query}`, {
         method: 'POST',
         body: file,
         binary: true,
-      });
-      setSelectedId(result.asset.id);
-      reload();
-      setUploadNotice({ tone: 'success', text: t('mediaData.uploaded') });
+      })
+      setSelectedId(result.asset.id)
+      reload()
+      setUploadNotice({ tone: 'success', text: t('mediaData.uploaded') })
     } catch (failure) {
-      setUploadNotice({ tone: 'error', text: failure.message });
+      setUploadNotice({ tone: 'error', text: failure.message })
     } finally {
-      busyRef.current = false;
-      setBusy(false);
+      busyRef.current = false
+      setBusy(false)
     }
-  };
+  }
   const resetFilters = () => {
-    setFilter('All Assets');
-    setStory('All Stories');
-    setQuery('');
-  };
+    setFilter('All Assets')
+    setStory('All Stories')
+    setQuery('')
+  }
   const copyUrl = async () => {
-    if (!selected) return;
+    if (!selected) return
     try {
-      if (!navigator.clipboard || !assetUrl(selected)) throw new Error(t('mediaData.copyError'));
-      await navigator.clipboard.writeText(assetUrl(selected));
+      if (!navigator.clipboard || !assetUrl(selected)) throw new Error(t('mediaData.copyError'))
+      await navigator.clipboard.writeText(assetUrl(selected))
     } catch {
-      setUploadNotice({ tone: 'error', text: t('mediaData.copyError') });
-      return;
+      setUploadNotice({ tone: 'error', text: t('mediaData.copyError') })
+      return
     }
-    setCopied(true);
-  };
+    setCopied(true)
+  }
   const remove = async () => {
-    setDeleteError('');
-    if (!selected || busyRef.current) return;
-    busyRef.current = true;
-    setBusy(true);
+    setDeleteError('')
+    if (!selected || busyRef.current) return
+    busyRef.current = true
+    setBusy(true)
     try {
       await apiRequest(`/author/media/${selected.id}/delete`, {
         method: 'POST',
         body: { expectedVersion: selected.version },
-      });
-      setConfirmDelete(false);
-      setSelectedId(null);
-      reload();
-      setUploadNotice({ tone: 'success', text: t('mediaData.deleted') });
+      })
+      setConfirmDelete(false)
+      setSelectedId(null)
+      reload()
+      setUploadNotice({ tone: 'success', text: t('mediaData.deleted') })
     } catch (failure) {
-      setDeleteError(failure.message);
+      setDeleteError(failure.message)
     } finally {
-      busyRef.current = false;
-      setBusy(false);
+      busyRef.current = false
+      setBusy(false)
     }
-  };
+  }
 
   const organize = async () => {
-    if (!bulkItems?.length || busyRef.current) return;
-    busyRef.current = true;
-    setBusy(true);
-    setBulkError('');
+    if (!bulkItems?.length || busyRef.current) return
+    busyRef.current = true
+    setBusy(true)
+    setBulkError('')
     try {
       const result = await apiRequest('/author/media/organize', {
         method: 'POST',
@@ -255,20 +255,20 @@ export function MediaLibraryPage() {
           storyId: bulkStory || null,
           items: bulkItems.map(({ id, version }) => ({ id, expectedVersion: version })),
         },
-      });
-      setBulkItems(null);
-      reload();
+      })
+      setBulkItems(null)
+      reload()
       setUploadNotice({
         tone: 'success',
         text: t('mediaData.organized', { count: result.changed }),
-      });
+      })
     } catch (failure) {
-      setBulkError(failure.message);
+      setBulkError(failure.message)
     } finally {
-      busyRef.current = false;
-      setBusy(false);
+      busyRef.current = false
+      setBusy(false)
     }
-  };
+  }
 
   return (
     <AuthorLayout>
@@ -288,14 +288,14 @@ export function MediaLibraryPage() {
                   disabled={busy || !showCounts || !shown.length || shown.length > 100}
                   title={t('mediaData.bulkLimit')}
                   onClick={() => {
-                    setBulkItems(shown.map(({ id, version, name }) => ({ id, version, name })));
+                    setBulkItems(shown.map(({ id, version, name }) => ({ id, version, name })))
                     setBulkStory(
-                      shown.every((item) => item.storyId === shown[0].storyId) &&
-                        stories.some((item) => item.id === shown[0].storyId)
+                      shown.every(item => item.storyId === shown[0].storyId) &&
+                        stories.some(item => item.id === shown[0].storyId)
                         ? shown[0].storyId
                         : '',
-                    );
-                    setBulkError('');
+                    )
+                    setBulkError('')
                   }}
                   variant="secondary"
                 >
@@ -304,9 +304,9 @@ export function MediaLibraryPage() {
                 </Button>
                 <input
                   ref={fileRef}
-                  onChange={(event) => {
-                    addFile(event.target.files?.[0]);
-                    event.target.value = '';
+                  onChange={event => {
+                    addFile(event.target.files?.[0])
+                    event.target.value = ''
                   }}
                   className="hidden"
                   type="file"
@@ -372,7 +372,7 @@ export function MediaLibraryPage() {
                   {t('mediaData.kind')}
                   <Select
                     value={kind}
-                    onChange={(event) => setKind(event.target.value)}
+                    onChange={event => setKind(event.target.value)}
                     disabled={busy}
                     className="mt-2 w-full"
                   >
@@ -385,12 +385,12 @@ export function MediaLibraryPage() {
                   {t('mediaData.story')}
                   <Select
                     value={uploadStoryId}
-                    onChange={(event) => setUploadStory(event.target.value)}
+                    onChange={event => setUploadStory(event.target.value)}
                     disabled={busy || resource.status === 'loading'}
                     className="mt-2 w-full"
                   >
                     <option value="">{t('mediaData.unassigned')}</option>
-                    {stories.map((item) => (
+                    {stories.map(item => (
                       <option key={item.id} value={item.id}>
                         {item.title}
                       </option>
@@ -408,7 +408,7 @@ export function MediaLibraryPage() {
                     singleRow
                     value={filter}
                     onChange={setFilter}
-                    items={filters.map((item) => ({
+                    items={filters.map(item => ({
                       value: item.value,
                       label: showCounts ? `${item.label} (${counts[item.value]})` : item.label,
                     }))}
@@ -442,7 +442,7 @@ export function MediaLibraryPage() {
                   type="search"
                   enterKeyHint="search"
                   value={query}
-                  onChange={(event) => setQuery(event.target.value)}
+                  onChange={event => setQuery(event.target.value)}
                   placeholder="Tìm theo tên tệp hoặc truyện..."
                   aria-label="Tìm tài nguyên"
                   className="flex-1"
@@ -451,10 +451,10 @@ export function MediaLibraryPage() {
                   <Select
                     aria-label="Lọc theo truyện"
                     value={story}
-                    onChange={(event) => setStory(event.target.value)}
+                    onChange={event => setStory(event.target.value)}
                   >
                     <option value="All Stories">Tất cả truyện</option>
-                    {stories.map((item) => (
+                    {stories.map(item => (
                       <option key={item.id} value={item.id}>
                         {item.title}
                       </option>
@@ -463,7 +463,7 @@ export function MediaLibraryPage() {
                   <Select
                     aria-label="Sắp xếp"
                     value={sort}
-                    onChange={(event) => setSort(event.target.value)}
+                    onChange={event => setSort(event.target.value)}
                   >
                     <option value="Newest Uploads">Tải lên mới nhất</option>
                     <option value="Name A–Z">Tên A–Z</option>
@@ -508,7 +508,7 @@ export function MediaLibraryPage() {
               </Card>
             ) : shown.length ? (
               <section aria-label="Danh sách tài nguyên" className={`nh-fade-enter ${gridClass}`}>
-                {shown.map((asset) => (
+                {shown.map(asset => (
                   <AssetCard
                     key={asset.id}
                     asset={asset}
@@ -553,8 +553,8 @@ export function MediaLibraryPage() {
                   size="sm"
                   disabled={busy}
                   onClick={() => {
-                    setPrevious([...previous, ...resource.data.items]);
-                    setCursor(resource.data.nextCursor);
+                    setPrevious([...previous, ...resource.data.items])
+                    setCursor(resource.data.nextCursor)
                   }}
                 >
                   {t('mediaData.more')}
@@ -566,15 +566,15 @@ export function MediaLibraryPage() {
               type="button"
               disabled={busy || resource.status === 'loading'}
               onClick={() => fileRef.current?.click()}
-              onDragOver={(event) => {
-                event.preventDefault();
-                setDragging(true);
+              onDragOver={event => {
+                event.preventDefault()
+                setDragging(true)
               }}
               onDragLeave={() => setDragging(false)}
-              onDrop={(event) => {
-                event.preventDefault();
-                setDragging(false);
-                addFile(event.dataTransfer.files?.[0]);
+              onDrop={event => {
+                event.preventDefault()
+                setDragging(false)
+                addFile(event.dataTransfer.files?.[0])
               }}
               className={`mt-5 flex min-h-36 w-full flex-col items-center justify-center gap-2 whitespace-normal rounded-3xl border border-dashed px-6 py-8 text-center transition-[background-color,border-color] duration-200 ${dragging ? 'border-brand bg-brand-soft' : 'border-brand/50 hover:border-brand hover:bg-brand/5'}`}
             >
@@ -621,8 +621,8 @@ export function MediaLibraryPage() {
                 onCopy={copyUrl}
                 onClose={() => setSelectedId(null)}
                 onDelete={() => {
-                  setDeleteError('');
-                  setConfirmDelete(true);
+                  setDeleteError('')
+                  setConfirmDelete(true)
                 }}
                 busy={busy}
               />
@@ -634,14 +634,14 @@ export function MediaLibraryPage() {
           open={Boolean(bulkItems)}
           title={t('mediaData.bulkTitle')}
           onClose={() => {
-            if (!busy) setBulkItems(null);
+            if (!busy) setBulkItems(null)
           }}
         >
           <p className="text-sm leading-6 text-muted">
             {t('mediaData.bulkHint', { count: bulkItems?.length ?? 0 })}
           </p>
           <ul className="mt-3 max-h-40 overflow-y-auto rounded-2xl bg-elevated p-3 text-sm">
-            {bulkItems?.map((item) => (
+            {bulkItems?.map(item => (
               <li key={item.id} className="break-all py-1">
                 {item.name}
               </li>
@@ -653,10 +653,10 @@ export function MediaLibraryPage() {
               className="mt-2 w-full"
               value={bulkStory}
               disabled={busy}
-              onChange={(event) => setBulkStory(event.target.value)}
+              onChange={event => setBulkStory(event.target.value)}
             >
               <option value="">{t('mediaData.unassigned')}</option>
-              {stories.map((item) => (
+              {stories.map(item => (
                 <option key={item.id} value={item.id}>
                   {item.title}
                 </option>
@@ -682,7 +682,7 @@ export function MediaLibraryPage() {
           open={confirmDelete && Boolean(selected)}
           title="Xóa tài nguyên?"
           onClose={() => {
-            if (!busy) setConfirmDelete(false);
+            if (!busy) setConfirmDelete(false)
           }}
         >
           <p className="text-sm leading-6 text-muted">
@@ -706,13 +706,13 @@ export function MediaLibraryPage() {
         </Modal>
       </div>
     </AuthorLayout>
-  );
+  )
 }
 
 function AssetPreview({ asset, children }) {
-  const { t } = useLocale();
-  const [failedUrl, setFailedUrl] = useState(null);
-  const url = assetUrl(asset);
+  const { t } = useLocale()
+  const [failedUrl, setFailedUrl] = useState(null)
+  const url = assetUrl(asset)
   return (
     <div className="relative grid h-full place-items-center bg-elevated">
       {url && failedUrl !== url ? (
@@ -732,11 +732,11 @@ function AssetPreview({ asset, children }) {
       )}
       {children}
     </div>
-  );
+  )
 }
 
 function AssetCard({ asset, selected, view, onSelect }) {
-  const list = view === 'list';
+  const list = view === 'list'
   return (
     <article
       className={`group relative overflow-hidden rounded-3xl border bg-surface shadow-whisper transition-[transform,box-shadow,border-color] duration-[420ms] hover:-translate-y-0.5 hover:shadow-lift ${selected ? 'border-brand ring-2 ring-brand/20' : 'border-line'} ${list ? 'flex items-stretch' : ''}`}
@@ -776,11 +776,11 @@ function AssetCard({ asset, selected, view, onSelect }) {
         </div>
       </div>
     </article>
-  );
+  )
 }
 
 function AssetInspector({ asset, copied, onCopy, onClose, onDelete, busy }) {
-  const { t } = useLocale();
+  const { t } = useLocale()
   if (!asset)
     return (
       <Card as="aside" className="hidden p-0 xl:block">
@@ -791,7 +791,7 @@ function AssetInspector({ asset, copied, onCopy, onClose, onDelete, busy }) {
           description={t('mediaData.inspectHint')}
         />
       </Card>
-    );
+    )
   return (
     <Card as="aside" aria-label="Chi tiết tài nguyên" className="p-5">
       <div className="flex items-start justify-between gap-3 border-b border-hairline pb-4">
@@ -853,7 +853,7 @@ function AssetInspector({ asset, copied, onCopy, onClose, onDelete, busy }) {
         </div>
       </div>
     </Card>
-  );
+  )
 }
 
 function Detail({ label, value }) {
@@ -862,7 +862,7 @@ function Detail({ label, value }) {
       <dt className="text-ink/70">{label}</dt>
       <dd className="text-right font-medium">{value}</dd>
     </div>
-  );
+  )
 }
 
 function RetryButton({ onClick }) {
@@ -871,11 +871,11 @@ function RetryButton({ onClick }) {
       <RefreshCw size={14} aria-hidden="true" />
       Thử lại
     </Button>
-  );
+  )
 }
 
 function AssetCardSkeleton({ view }) {
-  const list = view === 'list';
+  const list = view === 'list'
   return (
     <div
       aria-hidden="true"
@@ -893,7 +893,7 @@ function AssetCardSkeleton({ view }) {
         </div>
       </div>
     </div>
-  );
+  )
 }
 
 function AssetInspectorSkeleton() {
@@ -932,5 +932,5 @@ function AssetInspectorSkeleton() {
         </div>
       </div>
     </Card>
-  );
+  )
 }

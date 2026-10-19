@@ -1,7 +1,7 @@
-import { useEffect, useRef, useState } from 'react';
-import { Link, useSearchParams } from 'react-router';
-import { apiRequest } from '../../api/client';
-import { PublicHeader } from '../../components/public/PublicHeader';
+import { useEffect, useRef, useState } from 'react'
+import { Link, useSearchParams } from 'react-router'
+import { apiRequest } from '../../api/client'
+import { PublicHeader } from '../../components/public/PublicHeader'
 import {
   ArrowLeft,
   Check,
@@ -11,42 +11,42 @@ import {
   KeyRound,
   Mail,
   ShieldCheck,
-} from '../../components/icons';
-import { Button, ButtonLink, Card, IconButton, Input } from '../../components/ui';
-import { useLocale } from '../../context/LocaleContext';
+} from '../../components/icons'
+import { Button, ButtonLink, Card, IconButton, Input } from '../../components/ui'
+import { useLocale } from '../../context/LocaleContext'
 
 export function AuthRecoveryPage({ mode }) {
-  const { t } = useLocale();
-  const [params] = useSearchParams();
-  const [step, setStep] = useState(mode === 'forgot' ? 'email' : mode);
-  const [email, setEmail] = useState('');
-  const [otp, setOtp] = useState('');
-  const [challenge, setChallenge] = useState('');
-  const [token, setToken] = useState(params.get('token') || '');
-  const [password, setPassword] = useState('');
-  const [confirmation, setConfirmation] = useState('');
-  const [visible, setVisible] = useState(false);
-  const [busy, setBusy] = useState(false);
-  const [error, setError] = useState('');
-  const [notice, setNotice] = useState('');
-  const [deadlines, setDeadlines] = useState({ resend: 0, expires: 0 });
-  const [now, setNow] = useState(0);
-  const heading = useRef(null);
-  const key = (name, variables) => t('auth.recovery.' + name, variables);
-  const remaining = Math.max(0, Math.ceil((deadlines.expires - now) / 1000));
-  const cooldown = Math.max(0, Math.ceil((deadlines.resend - now) / 1000));
-  const activeStep = step === 'email' ? 0 : step === 'otp' ? 1 : 2;
+  const { t } = useLocale()
+  const [params] = useSearchParams()
+  const [step, setStep] = useState(mode === 'forgot' ? 'email' : mode)
+  const [email, setEmail] = useState('')
+  const [otp, setOtp] = useState('')
+  const [challenge, setChallenge] = useState('')
+  const [token, setToken] = useState(params.get('token') || '')
+  const [password, setPassword] = useState('')
+  const [confirmation, setConfirmation] = useState('')
+  const [visible, setVisible] = useState(false)
+  const [busy, setBusy] = useState(false)
+  const [error, setError] = useState('')
+  const [notice, setNotice] = useState('')
+  const [deadlines, setDeadlines] = useState({ resend: 0, expires: 0 })
+  const [now, setNow] = useState(0)
+  const heading = useRef(null)
+  const key = (name, variables) => t('auth.recovery.' + name, variables)
+  const remaining = Math.max(0, Math.ceil((deadlines.expires - now) / 1000))
+  const cooldown = Math.max(0, Math.ceil((deadlines.resend - now) / 1000))
+  const activeStep = step === 'email' ? 0 : step === 'otp' ? 1 : 2
 
   useEffect(() => {
-    heading.current?.focus();
-  }, [step]);
+    heading.current?.focus()
+  }, [step])
   useEffect(() => {
-    if (step !== 'otp') return;
-    const interval = setInterval(() => setNow(Date.now()), 1000);
-    return () => clearInterval(interval);
-  }, [step]);
+    if (step !== 'otp') return
+    const interval = setInterval(() => setNow(Date.now()), 1000)
+    return () => clearInterval(interval)
+  }, [step])
 
-  const reportError = (caught) => {
+  const reportError = caught => {
     const messages = {
       invalid_otp: 'invalidOtp',
       invalid_token: 'invalidToken',
@@ -54,70 +54,70 @@ export function AuthRecoveryPage({ mode }) {
       too_many_attempts: 'tooMany',
       network_error: 'networkError',
       validation_error: 'validationError',
-    };
-    setError(key(messages[caught.code] || 'requestError'));
-  };
+    }
+    setError(key(messages[caught.code] || 'requestError'))
+  }
   const sendCode = async () => {
-    setBusy(true);
-    setError('');
-    setNotice('');
+    setBusy(true)
+    setError('')
+    setNotice('')
     try {
       const result = await apiRequest('/auth/forgot-password', {
         method: 'POST',
         body: { email: email.trim() },
-      });
-      const sentAt = Date.now();
-      setChallenge(result.challenge);
-      setOtp('');
-      setNow(sentAt);
+      })
+      const sentAt = Date.now()
+      setChallenge(result.challenge)
+      setOtp('')
+      setNow(sentAt)
       setDeadlines({
         resend: sentAt + result.retryAfterSeconds * 1000,
         expires: sentAt + result.expiresInSeconds * 1000,
-      });
-      setStep('otp');
-      setNotice(key('sent'));
+      })
+      setStep('otp')
+      setNotice(key('sent'))
     } catch (caught) {
-      reportError(caught);
+      reportError(caught)
     } finally {
-      setBusy(false);
+      setBusy(false)
     }
-  };
-  const submit = async (event) => {
-    event.preventDefault();
-    if (step === 'email') return sendCode();
+  }
+  const submit = async event => {
+    event.preventDefault()
+    if (step === 'email') return sendCode()
     if (step === 'reset' && password !== confirmation) {
-      setError(key('mismatch'));
-      return;
+      setError(key('mismatch'))
+      return
     }
-    setBusy(true);
-    setError('');
-    setNotice('');
+    setBusy(true)
+    setError('')
+    setNotice('')
     try {
       if (step === 'otp') {
         const result = await apiRequest('/auth/verify-reset-otp', {
           method: 'POST',
           body: { challenge, otp },
-        });
-        setToken(result.token);
-        setOtp('');
-        setStep('reset');
+        })
+        setToken(result.token)
+        setOtp('')
+        setStep('reset')
       } else {
         await apiRequest(step === 'verify' ? '/auth/verify-email' : '/auth/reset-password', {
           method: 'POST',
           body: step === 'verify' ? { token } : { token, password },
-        });
-        setPassword('');
-        setConfirmation('');
-        setToken('');
-        setStep('done');
+        })
+        setPassword('')
+        setConfirmation('')
+        setToken('')
+        setStep('done')
       }
     } catch (caught) {
-      reportError(caught);
+      reportError(caught)
     } finally {
-      setBusy(false);
+      setBusy(false)
     }
-  };
-  const missingToken = (step === 'reset' || step === 'verify') && !token;
+  }
+  const missingToken = (step === 'reset' || step === 'verify') && !token
   const Icon =
     step === 'email'
       ? Mail
@@ -125,7 +125,7 @@ export function AuthRecoveryPage({ mode }) {
         ? ShieldCheck
         : step === 'done'
           ? CheckCircle2
-          : KeyRound;
+          : KeyRound
 
   return (
     <div className="min-h-screen bg-page text-ink">
@@ -204,7 +204,7 @@ export function AuthRecoveryPage({ mode }) {
                       maxLength={254}
                       required
                       value={email}
-                      onChange={(event) => setEmail(event.target.value)}
+                      onChange={event => setEmail(event.target.value)}
                       placeholder={key('emailPlaceholder')}
                     />
                   </div>
@@ -224,9 +224,7 @@ export function AuthRecoveryPage({ mode }) {
                       pattern="[0-9]{6}"
                       maxLength={6}
                       value={otp}
-                      onChange={(event) =>
-                        setOtp(event.target.value.replace(/\D/g, '').slice(0, 6))
-                      }
+                      onChange={event => setOtp(event.target.value.replace(/\D/g, '').slice(0, 6))}
                       placeholder={key('otpPlaceholder')}
                       aria-describedby="otp-expiry"
                       className="[&_input]:py-3 [&_input]:text-center [&_input]:text-2xl [&_input]:font-semibold [&_input]:tracking-[0.4em]"
@@ -258,7 +256,7 @@ export function AuthRecoveryPage({ mode }) {
                         minLength={10}
                         maxLength={1024}
                         value={password}
-                        onChange={(event) => setPassword(event.target.value)}
+                        onChange={event => setPassword(event.target.value)}
                         aria-describedby="password-help"
                         trailing={
                           <IconButton
@@ -289,7 +287,7 @@ export function AuthRecoveryPage({ mode }) {
                         minLength={10}
                         maxLength={1024}
                         value={confirmation}
-                        onChange={(event) => setConfirmation(event.target.value)}
+                        onChange={event => setConfirmation(event.target.value)}
                       />
                     </div>
                   </>
@@ -336,11 +334,11 @@ export function AuthRecoveryPage({ mode }) {
                     disabled={busy}
                     className="text-sm font-semibold text-muted hover:text-ink"
                     onClick={() => {
-                      setStep('email');
-                      setOtp('');
-                      setChallenge('');
-                      setError('');
-                      setNotice('');
+                      setStep('email')
+                      setOtp('')
+                      setChallenge('')
+                      setError('')
+                      setNotice('')
                     }}
                   >
                     {key('changeEmail')}
@@ -369,5 +367,5 @@ export function AuthRecoveryPage({ mode }) {
         </Card>
       </main>
     </div>
-  );
+  )
 }

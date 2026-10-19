@@ -1,6 +1,6 @@
-import { coinAmount, defineModel, mutableOptions, ObjectId, Schema } from '../shared/schema.js';
+import { coinAmount, defineModel, mutableOptions, ObjectId, Schema } from '../shared/schema.js'
 
-export const TOP_UP_ORDER_STATUSES = ['pending', 'paid', 'expired'];
+export const TOP_UP_ORDER_STATUSES = ['pending', 'paid', 'expired']
 const schema = new Schema(
   {
     accountId: { type: ObjectId, ref: 'Account', required: true },
@@ -16,8 +16,8 @@ const schema = new Schema(
     confirmedAt: Date,
   },
   mutableOptions,
-);
-schema.index({ paymentCode: 1 }, { unique: true });
-schema.index({ expiresAt: 1, status: 1 });
-schema.index({ accountId: 1, createdAt: -1 });
-export const TopUpOrder = defineModel('TopUpOrder', schema, 'topUpOrders');
+)
+schema.index({ paymentCode: 1 }, { unique: true })
+schema.index({ expiresAt: 1, status: 1 })
+schema.index({ accountId: 1, createdAt: -1 })
+export const TopUpOrder = defineModel('TopUpOrder', schema, 'topUpOrders')

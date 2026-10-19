@@ -1,20 +1,19 @@
 // NovelHub Folio · original 24-unit drawings · rounded 1.75-unit strokes · 2–22 live area.
 // Paths are authored here, not sourced from an external icon library.
-const book = 'M12 6C9 4 6 3.5 3 4v14c3-.5 6 0 9 2 3-2 6-2.5 9-2V4c-3-.5-6 0-9 2Zm0 0v14';
-const page = 'M6 3h9l4 4v14H6V3Zm9 0v5h4';
-const shield = 'M12 3 3.5 6v5c0 5 3.5 8 8.5 10 5-2 8.5-5 8.5-10V6L12 3Z';
-const person = 'M15.5 7a3.5 3.5 0 1 1-7 0 3.5 3.5 0 0 1 7 0ZM5 21v-3c0-4 14-4 14 0v3';
-const heart = 'M12 20 4 12C-1 6 7 1 12 7c5-6 13-1 8 5l-8 8Z';
-const bubble = 'M4 4h16v12H9l-5 4V4Z';
-const check = 'm5 12 4 4 10-10';
-const ring = 'M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z';
-const photo = 'M3 4h18v16H3V4Zm0 12 5-5 5 5 3-3 5 5M17 8a1 1 0 1 1-2 0 1 1 0 0 1 2 0Z';
-const folder = 'M3 6h7l2 3h9v11H3V6Z';
-const bookmark = 'M6 3h12v18l-6-4-6 4V3Z';
-const coin =
-  'M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0ZM15 8h-4a2 2 0 0 0 0 4h2a2 2 0 0 1 0 4H9m3-10v12';
-const clock = 'M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0ZM12 6v6l4 3';
-const sparkle = 'm12 2 2.5 7.5L22 12l-7.5 2.5L12 22l-2.5-7.5L2 12l7.5-2.5L12 2Z';
+const book = 'M12 6C9 4 6 3.5 3 4v14c3-.5 6 0 9 2 3-2 6-2.5 9-2V4c-3-.5-6 0-9 2Zm0 0v14'
+const page = 'M6 3h9l4 4v14H6V3Zm9 0v5h4'
+const shield = 'M12 3 3.5 6v5c0 5 3.5 8 8.5 10 5-2 8.5-5 8.5-10V6L12 3Z'
+const person = 'M15.5 7a3.5 3.5 0 1 1-7 0 3.5 3.5 0 0 1 7 0ZM5 21v-3c0-4 14-4 14 0v3'
+const heart = 'M12 20 4 12C-1 6 7 1 12 7c5-6 13-1 8 5l-8 8Z'
+const bubble = 'M4 4h16v12H9l-5 4V4Z'
+const check = 'm5 12 4 4 10-10'
+const ring = 'M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z'
+const photo = 'M3 4h18v16H3V4Zm0 12 5-5 5 5 3-3 5 5M17 8a1 1 0 1 1-2 0 1 1 0 0 1 2 0Z'
+const folder = 'M3 6h7l2 3h9v11H3V6Z'
+const bookmark = 'M6 3h12v18l-6-4-6 4V3Z'
+const coin = 'M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0ZM15 8h-4a2 2 0 0 0 0 4h2a2 2 0 0 1 0 4H9m3-10v12'
+const clock = 'M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0ZM12 6v6l4 3'
+const sparkle = 'm12 2 2.5 7.5L22 12l-7.5 2.5L12 22l-2.5-7.5L2 12l7.5-2.5L12 2Z'
 
 export const iconPaths = {
   NovelHubMark:
@@ -199,4 +198,4 @@ export const iconPaths = {
   Castle: 'M3 21V6h3V3h3v3h6V3h3v3h3v15H3Zm7 0v-6h4v6M6 10h2m8 0h2',
   TreePine: 'm12 2 8 10h-4l5 6H3l5-6H4L12 2Zm0 16v4',
   Sunrise: 'M2 19h20M4 22h16M6 16a6 6 0 0 1 12 0M12 2v5m-8 3 2 2m12 0 2-2M12 6l-3 3m3-3 3 3',
-};
+}

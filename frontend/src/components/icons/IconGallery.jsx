@@ -1,15 +1,15 @@
-import { useState } from 'react';
-import * as icons from './index';
-import { iconPaths } from './iconPaths';
-import { useLocale } from '../../context/LocaleContext';
-import { Card, EmptyState, Input } from '../ui';
+import { useState } from 'react'
+import * as icons from './index'
+import { iconPaths } from './iconPaths'
+import { useLocale } from '../../context/LocaleContext'
+import { Card, EmptyState, Input } from '../ui'
 
 export function IconGallery() {
-  const { t } = useLocale();
-  const [query, setQuery] = useState('');
-  const names = Object.keys(iconPaths).filter((name) =>
+  const { t } = useLocale()
+  const [query, setQuery] = useState('')
+  const names = Object.keys(iconPaths).filter(name =>
     name.toLowerCase().includes(query.toLowerCase()),
-  );
+  )
   return (
     <section id="icons" className="mt-10 scroll-mt-6 border-t border-hairline pt-8">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
@@ -23,7 +23,7 @@ export function IconGallery() {
           icon={icons.Search}
           type="search"
           value={query}
-          onChange={(event) => setQuery(event.target.value)}
+          onChange={event => setQuery(event.target.value)}
           aria-label={t('icons.search')}
           placeholder={t('icons.search')}
           className="w-full sm:w-64"
@@ -52,8 +52,8 @@ export function IconGallery() {
       </Card>
       {names.length > 0 ? (
         <div className="mt-5 grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6">
-          {names.map((name) => {
-            const Icon = icons[name];
+          {names.map(name => {
+            const Icon = icons[name]
             return (
               <figure
                 key={name}
@@ -68,7 +68,7 @@ export function IconGallery() {
                   {name}
                 </figcaption>
               </figure>
-            );
+            )
           })}
         </div>
       ) : (
@@ -77,5 +77,5 @@ export function IconGallery() {
         </Card>
       )}
     </section>
-  );
+  )
 }

@@ -4,34 +4,34 @@ import {
   EvidenceBatch,
   PublicationSubmission,
   RightsDeclaration,
-} from '../models/index.js';
-import { withTransaction } from '../db/connection.js';
-import { HttpError } from '../middleware/errors.js';
-import { lockAuthor, ownStory } from './author-ownership.js';
-import { loadSubmittedPackage } from './author-submitted-package.js';
-import { digest } from './submission-digests.js';
-import { approvedReviewEvidence } from './review-evidence.js';
+} from '../models/index.js'
+import { withTransaction } from '../db/connection.js'
+import { HttpError } from '../middleware/errors.js'
+import { lockAuthor, ownStory } from './author-ownership.js'
+import { loadSubmittedPackage } from './author-submitted-package.js'
+import { digest } from './submission-digests.js'
+import { approvedReviewEvidence } from './review-evidence.js'
 
 export function canReleaseStoryVersion(story, revisionId) {
-  const unpublished = story.publicationStatus === 'unpublished';
-  const authorWithdrew = story.publicationTransition?.result === 'author-story-unpublished';
+  const unpublished = story.publicationStatus === 'unpublished'
+  const authorWithdrew = story.publicationTransition?.result === 'author-story-unpublished'
   const restoring =
     unpublished &&
     authorWithdrew &&
     !story.draftRevisionId &&
-    String(story.publishedRevisionId) === String(revisionId);
+    String(story.publishedRevisionId) === String(revisionId)
   return Boolean(
     revisionId &&
     !story.authoringFrozen &&
     ['approved', 'published', 'unpublished'].includes(story.publicationStatus) &&
     (!unpublished || authorWithdrew) &&
     (restoring || String(story.publishedRevisionId) !== String(revisionId)),
-  );
+  )
 }
 
 async function releaseState(account, storyId, session) {
-  const story = await ownStory(account, storyId, session);
-  const revisionId = story.draftRevisionId ?? story.currentRevisionId;
+  const story = await ownStory(account, storyId, session)
+  const revisionId = story.draftRevisionId ?? story.currentRevisionId
   const submission = revisionId
     ? await PublicationSubmission.findOne({
         storyId: story._id,
@@ -41,13 +41,13 @@ async function releaseState(account, storyId, session) {
       })
         .session(session ?? null)
         .lean()
-    : null;
-  let snapshot = null;
+    : null
+  let snapshot = null
   if (submission) {
     try {
-      snapshot = await loadSubmittedPackage(account, submission._id, session);
+      snapshot = await loadSubmittedPackage(account, submission._id, session)
     } catch (error) {
-      if (!(error instanceof HttpError) || ![404, 409].includes(error.status)) throw error;
+      if (!(error instanceof HttpError) || ![404, 409].includes(error.status)) throw error
     }
   }
   const batch = submission?.currentEvidenceBatchId
@@ -59,14 +59,14 @@ async function releaseState(account, storyId, session) {
       })
         .session(session ?? null)
         .lean()
-    : null;
-  const evidenceReady = await approvedReviewEvidence(submission, batch, session);
-  const ids = snapshot?.revision.content.categoryIds ?? [];
+    : null
+  const evidenceReady = await approvedReviewEvidence(submission, batch, session)
+  const ids = snapshot?.revision.content.categoryIds ?? []
   const active = ids.length
     ? await Category.countDocuments({ _id: { $in: ids }, status: 'active' }).session(
         session ?? null,
       )
-    : 0;
+    : 0
   const checks = [
     {
       code: 'approval',
@@ -88,12 +88,12 @@ async function releaseState(account, storyId, session) {
       code: 'editable',
       ok: canReleaseStoryVersion(story, revisionId),
     },
-  ];
-  return { story, submission, snapshot, checks };
+  ]
+  return { story, submission, snapshot, checks }
 }
 
 export async function prepareStoryRelease(account, storyId) {
-  const state = await releaseState(account, storyId);
+  const state = await releaseState(account, storyId)
   return {
     target: {
       storyId: String(state.story._id),
@@ -105,42 +105,42 @@ export async function prepareStoryRelease(account, storyId) {
         state.story.publicationStatus === 'unpublished' &&
         String(state.story.publishedRevisionId) === String(state.snapshot?.revision._id),
     },
-    ready: state.checks.every((check) => check.ok),
+    ready: state.checks.every(check => check.ok),
     checks: state.checks,
-  };
+  }
 }
 
 export async function publishStory(account, storyId, input) {
-  return withTransaction(async (session) => {
-    await lockAuthor(account, session);
-    const state = await releaseState(account, storyId, session);
-    const { story, submission, snapshot, checks } = state;
+  return withTransaction(async session => {
+    await lockAuthor(account, session)
+    const state = await releaseState(account, storyId, session)
+    const { story, submission, snapshot, checks } = state
     if (
       !snapshot ||
       String(snapshot.revision._id) !== input.revisionId ||
       String(submission._id) !== input.submissionId
     )
-      throw new HttpError(409, 'stale_content', 'Gói đã duyệt đã thay đổi. Hãy kiểm tra lại.');
+      throw new HttpError(409, 'stale_content', 'Gói đã duyệt đã thay đổi. Hãy kiểm tra lại.')
     if (
       story.publicationStatus === 'published' &&
       String(story.publishedRevisionId) === input.revisionId &&
       story.publicationTransition?.submissionId === input.submissionId &&
-      checks.filter((check) => check.code !== 'editable').every((check) => check.ok)
+      checks.filter(check => check.code !== 'editable').every(check => check.ok)
     )
-      return { id: String(story._id), status: 'published', version: story.version, replayed: true };
+      return { id: String(story._id), status: 'published', version: story.version, replayed: true }
     if (story.version !== input.expectedVersion)
       throw new HttpError(
         409,
         'stale_content',
         'Truyện đã thay đổi. Hãy tải lại trước khi phát hành.',
-      );
-    if (!checks.every((check) => check.ok))
+      )
+    if (!checks.every(check => check.ok))
       throw new HttpError(
         409,
         'release_not_ready',
         'Thông tin truyện chưa đủ điều kiện phát hành.',
         { checks },
-      );
+      )
     for (const [Model, row, status] of [
       [PublicationSubmission, submission, 'approved'],
       [RightsDeclaration, snapshot.rights, 'asserted'],
@@ -149,27 +149,27 @@ export async function publishStory(account, storyId, input) {
         { _id: row._id, version: row.version, status },
         { $inc: { version: 1 } },
         { session },
-      );
+      )
       if (pinned.modifiedCount !== 1)
         throw new HttpError(
           409,
           'stale_content',
           'Kết quả duyệt hoặc quyền nội dung đã thay đổi. Hãy kiểm tra lại.',
-        );
+        )
     }
-    const now = new Date();
-    const before = story.publicationStatus;
+    const now = new Date()
+    const before = story.publicationStatus
     const previousPublishedRevisionId = story.publishedRevisionId
       ? String(story.publishedRevisionId)
-      : null;
-    story.title = snapshot.revision.content.title;
-    story.description = snapshot.revision.content.description;
-    story.categoryIds = snapshot.revision.content.categoryIds;
-    story.publicationStatus = 'published';
-    story.publishedRevisionId = snapshot.revision._id;
-    story.currentRevisionId = snapshot.revision._id;
-    story.draftRevisionId = undefined;
-    story.publishedAt = story.publishedAt ?? now;
+      : null
+    story.title = snapshot.revision.content.title
+    story.description = snapshot.revision.content.description
+    story.categoryIds = snapshot.revision.content.categoryIds
+    story.publicationStatus = 'published'
+    story.publishedRevisionId = snapshot.revision._id
+    story.currentRevisionId = snapshot.revision._id
+    story.draftRevisionId = undefined
+    story.publishedAt = story.publishedAt ?? now
     story.publicationTransition = {
       actorAccountId: account._id,
       occurredAt: now,
@@ -179,8 +179,8 @@ export async function publishStory(account, storyId, input) {
       revisionId: input.revisionId,
       submissionId: input.submissionId,
       previousPublishedRevisionId,
-    };
-    await story.save({ session });
+    }
+    await story.save({ session })
     await AuditEvent.create(
       [
         {
@@ -201,12 +201,12 @@ export async function publishStory(account, storyId, input) {
         },
       ],
       { session },
-    );
+    )
     return {
       id: String(story._id),
       status: story.publicationStatus,
       version: story.version,
       replayed: false,
-    };
-  });
+    }
+  })
 }

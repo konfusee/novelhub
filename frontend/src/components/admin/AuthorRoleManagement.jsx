@@ -1,21 +1,21 @@
-import { useRef, useState } from 'react';
-import { apiRequest } from '../../api/client';
-import { useBackendDocument } from '../../api/useBackendResource';
-import { useLocale } from '../../context/LocaleContext';
-import { Avatar, Badge, Button, Card, Input, Modal } from '../ui';
+import { useRef, useState } from 'react'
+import { apiRequest } from '../../api/client'
+import { useBackendDocument } from '../../api/useBackendResource'
+import { useLocale } from '../../context/LocaleContext'
+import { Avatar, Badge, Button, Card, Input, Modal } from '../ui'
 
-const emptyFeed = { items: [], total: 0 };
-const emptyRole = { role: null };
+const emptyFeed = { items: [], total: 0 }
+const emptyRole = { role: null }
 export function AuthorRoleManagement({ onChanged }) {
-  const { t } = useLocale();
-  const [filter, setFilter] = useState({ page: 1, query: '' });
-  const [query, setQuery] = useState('');
-  const [selected, setSelected] = useState(null);
-  const [notice, setNotice] = useState('');
+  const { t } = useLocale()
+  const [filter, setFilter] = useState({ page: 1, query: '' })
+  const [query, setQuery] = useState('')
+  const [selected, setSelected] = useState(null)
+  const [notice, setNotice] = useState('')
   const feed = useBackendDocument(
     `/admin/authors?${new URLSearchParams({ ...filter, pageSize: 10 })}`,
     emptyFeed,
-  );
+  )
   return (
     <Card className="mt-6" aria-label={t('authorRevocation.title')}>
       <div className="flex flex-wrap items-start justify-between gap-3">
@@ -29,9 +29,9 @@ export function AuthorRoleManagement({ onChanged }) {
       </div>
       <form
         className="mt-4 flex flex-wrap items-end gap-2"
-        onSubmit={(event) => {
-          event.preventDefault();
-          setFilter({ page: 1, query: query.trim() });
+        onSubmit={event => {
+          event.preventDefault()
+          setFilter({ page: 1, query: query.trim() })
         }}
       >
         <div className="min-w-0 flex-1">
@@ -43,7 +43,7 @@ export function AuthorRoleManagement({ onChanged }) {
             type="search"
             value={query}
             maxLength={100}
-            onChange={(event) => setQuery(event.target.value)}
+            onChange={event => setQuery(event.target.value)}
           />
         </div>
         <Button type="submit" variant="secondary">
@@ -72,7 +72,7 @@ export function AuthorRoleManagement({ onChanged }) {
             <p className="mt-4 text-sm text-muted">{t('authorRevocation.empty')}</p>
           )}
           <ul className="mt-3 divide-y divide-line">
-            {feed.data.items.map((author) => (
+            {feed.data.items.map(author => (
               <li key={author.accountId} className="flex flex-wrap items-center gap-3 py-4">
                 <Avatar name={author.displayName} />
                 <div className="min-w-0 flex-1 basis-40">
@@ -90,8 +90,8 @@ export function AuthorRoleManagement({ onChanged }) {
                   variant="danger"
                   size="sm"
                   onClick={() => {
-                    setSelected(author);
-                    setNotice('');
+                    setSelected(author)
+                    setNotice('')
                   }}
                 >
                   {t('authorRevocation.open')}
@@ -127,45 +127,45 @@ export function AuthorRoleManagement({ onChanged }) {
           key={selected.accountId}
           accountId={selected.accountId}
           onClose={() => setSelected(null)}
-          onRevoked={(result) => {
-            onChanged?.();
-            setSelected(null);
+          onRevoked={result => {
+            onChanged?.()
+            setSelected(null)
             setNotice(
               t('authorRevocation.success', {
                 stories: result.frozenStories,
                 chapters: result.cancelledChapters,
                 submissions: result.cancelledSubmissions,
               }),
-            );
-            if (filter.page !== 1) setFilter({ ...filter, page: 1 });
-            else feed.retry();
+            )
+            if (filter.page !== 1) setFilter({ ...filter, page: 1 })
+            else feed.retry()
           }}
         />
       )}
     </Card>
-  );
+  )
 }
 
 export function RevokeAuthorDialog({ accountId, onClose, onRevoked }) {
-  const { t } = useLocale();
-  const resource = useBackendDocument(`/admin/authors/${accountId}/role`, emptyRole);
-  const [reason, setReason] = useState('');
-  const [acknowledged, setAcknowledged] = useState(false);
-  const [busy, setBusy] = useState(false);
-  const busyRef = useRef(false);
-  const [stale, setStale] = useState(false);
-  const [error, setError] = useState('');
+  const { t } = useLocale()
+  const resource = useBackendDocument(`/admin/authors/${accountId}/role`, emptyRole)
+  const [reason, setReason] = useState('')
+  const [acknowledged, setAcknowledged] = useState(false)
+  const [busy, setBusy] = useState(false)
+  const busyRef = useRef(false)
+  const [stale, setStale] = useState(false)
+  const [error, setError] = useState('')
   const ready =
     resource.status === 'ready' &&
     resource.data.accountId === accountId &&
     resource.data.role &&
-    ['active', 'suspended'].includes(resource.data.status);
-  const confirm = async (event) => {
-    event.preventDefault();
-    if (!ready || busyRef.current || stale || !acknowledged || !reason.trim()) return;
-    busyRef.current = true;
-    setBusy(true);
-    setError('');
+    ['active', 'suspended'].includes(resource.data.status)
+  const confirm = async event => {
+    event.preventDefault()
+    if (!ready || busyRef.current || stale || !acknowledged || !reason.trim()) return
+    busyRef.current = true
+    setBusy(true)
+    setError('')
     try {
       const result = await apiRequest(`/admin/authors/${accountId}/revoke`, {
         method: 'POST',
@@ -175,34 +175,34 @@ export function RevokeAuthorDialog({ accountId, onClose, onRevoked }) {
           expectedAccountVersion: resource.data.accountVersion,
           reason: reason.trim(),
         },
-      });
+      })
       if (
         result?.accountId !== accountId ||
         result?.roleId !== resource.data.role.id ||
         result.status !== 'revoked' ||
         ![result.frozenStories, result.cancelledChapters, result.cancelledSubmissions].every(
-          (count) => Number.isInteger(count) && count >= 0,
+          count => Number.isInteger(count) && count >= 0,
         )
       )
-        throw new Error(t('authorRevocation.failed'));
-      onRevoked(result);
+        throw new Error(t('authorRevocation.failed'))
+      onRevoked(result)
     } catch (failure) {
-      setError(failure.message || t('authorRevocation.failed'));
+      setError(failure.message || t('authorRevocation.failed'))
       if ([401, 403, 409].includes(failure.status)) {
-        setStale(true);
-        setAcknowledged(false);
+        setStale(true)
+        setAcknowledged(false)
       }
     } finally {
-      busyRef.current = false;
-      setBusy(false);
+      busyRef.current = false
+      setBusy(false)
     }
-  };
+  }
   const reload = () => {
-    setStale(false);
-    setAcknowledged(false);
-    setError('');
-    resource.retry();
-  };
+    setStale(false)
+    setAcknowledged(false)
+    setError('')
+    resource.retry()
+  }
   return (
     <Modal open title={t('authorRevocation.confirmTitle')} onClose={() => !busy && onClose()}>
       {resource.status === 'loading' ? (
@@ -239,7 +239,7 @@ export function RevokeAuthorDialog({ accountId, onClose, onRevoked }) {
           maxLength={1000}
           required
           disabled={!ready || busy || stale}
-          onChange={(event) => setReason(event.target.value)}
+          onChange={event => setReason(event.target.value)}
         />
         <label className="mt-4 flex items-start gap-3 text-sm leading-6">
           <input
@@ -247,7 +247,7 @@ export function RevokeAuthorDialog({ accountId, onClose, onRevoked }) {
             className="mt-1 accent-brand"
             checked={acknowledged}
             disabled={!ready || busy || stale}
-            onChange={(event) => setAcknowledged(event.target.checked)}
+            onChange={event => setAcknowledged(event.target.checked)}
           />
           <span>{t('authorRevocation.acknowledge')}</span>
         </label>
@@ -279,5 +279,5 @@ export function RevokeAuthorDialog({ accountId, onClose, onRevoked }) {
         </div>
       </form>
     </Modal>
-  );
+  )
 }

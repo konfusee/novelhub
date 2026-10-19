@@ -1,5 +1,5 @@
-import { defineModel, mutableOptions, ObjectId, Schema } from '../shared/schema.js';
-export const CATEGORY_STATUSES = ['active', 'retired'];
+import { defineModel, mutableOptions, ObjectId, Schema } from '../shared/schema.js'
+export const CATEGORY_STATUSES = ['active', 'retired']
 const schema = new Schema(
   {
     name: { type: String, required: true, trim: true },
@@ -10,7 +10,7 @@ const schema = new Schema(
     retiredAt: Date,
   },
   mutableOptions,
-);
-schema.index({ normalizedName: 1 }, { unique: true });
-schema.index({ status: 1, sortKey: 1 });
-export const Category = defineModel('Category', schema, 'categories');
+)
+schema.index({ normalizedName: 1 }, { unique: true })
+schema.index({ status: 1, sortKey: 1 })
+export const Category = defineModel('Category', schema, 'categories')

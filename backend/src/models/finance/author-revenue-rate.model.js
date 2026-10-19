@@ -1,4 +1,4 @@
-import { appendOnly, appendOnlyOptions, defineModel, ObjectId, Schema } from '../shared/schema.js';
+import { appendOnly, appendOnlyOptions, defineModel, ObjectId, Schema } from '../shared/schema.js'
 
 const schema = new Schema(
   {
@@ -9,7 +9,7 @@ const schema = new Schema(
     policyVersionId: { type: ObjectId, ref: 'PolicyVersion' },
   },
   appendOnlyOptions,
-);
-schema.plugin(appendOnly);
-schema.index({ authorAccountId: 1, effectiveAt: -1 }, { unique: true });
-export const AuthorRevenueRate = defineModel('AuthorRevenueRate', schema, 'authorRevenueRates');
+)
+schema.plugin(appendOnly)
+schema.index({ authorAccountId: 1, effectiveAt: -1 }, { unique: true })
+export const AuthorRevenueRate = defineModel('AuthorRevenueRate', schema, 'authorRevenueRates')

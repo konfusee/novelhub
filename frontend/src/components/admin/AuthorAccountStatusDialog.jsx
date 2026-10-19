@@ -1,49 +1,45 @@
-import { useRef, useState } from 'react';
-import { apiRequest } from '../../api/client';
-import { useLocale } from '../../context/LocaleContext';
-import { Button, Modal } from '../ui';
+import { useRef, useState } from 'react'
+import { apiRequest } from '../../api/client'
+import { useLocale } from '../../context/LocaleContext'
+import { Button, Modal } from '../ui'
 
 export function AuthorAccountStatusDialog({ account, closeAccount = false, onClose, onChanged }) {
-  const { t } = useLocale();
-  const m = (key) => t(`authorAccountStatus.${key}`);
-  const action = closeAccount ? 'close' : account.status === 'active' ? 'suspend' : 'restore';
-  const expectedStatus = closeAccount
-    ? 'anonymized'
-    : action === 'suspend'
-      ? 'suspended'
-      : 'active';
-  const [reason, setReason] = useState('');
-  const [busy, setBusy] = useState(false);
-  const [error, setError] = useState('');
-  const [confirmed, setConfirmed] = useState(false);
-  const lock = useRef(false);
+  const { t } = useLocale()
+  const m = key => t(`authorAccountStatus.${key}`)
+  const action = closeAccount ? 'close' : account.status === 'active' ? 'suspend' : 'restore'
+  const expectedStatus = closeAccount ? 'anonymized' : action === 'suspend' ? 'suspended' : 'active'
+  const [reason, setReason] = useState('')
+  const [busy, setBusy] = useState(false)
+  const [error, setError] = useState('')
+  const [confirmed, setConfirmed] = useState(false)
+  const lock = useRef(false)
   return (
     <Modal open title={m(action)} onClose={() => !lock.current && onClose()}>
       <form
-        onSubmit={async (event) => {
-          event.preventDefault();
-          event.stopPropagation();
-          if (lock.current || error || !reason.trim() || (closeAccount && !confirmed)) return;
-          lock.current = true;
-          setBusy(true);
+        onSubmit={async event => {
+          event.preventDefault()
+          event.stopPropagation()
+          if (lock.current || error || !reason.trim() || (closeAccount && !confirmed)) return
+          lock.current = true
+          setBusy(true)
           try {
             const result = await apiRequest(`/admin/accounts/${account.id}/status`, {
               method: 'POST',
               body: { action, expectedVersion: account.version, reason: reason.trim() },
-            });
+            })
             if (
               result?.account?.id !== account.id ||
               result.account.status !== expectedStatus ||
               !Number.isSafeInteger(result.account.version) ||
               result.account.version <= account.version
             )
-              throw new Error(m('failed'));
-            onChanged();
+              throw new Error(m('failed'))
+            onChanged()
           } catch (failure) {
-            setError(failure.message || m('failed'));
+            setError(failure.message || m('failed'))
           } finally {
-            lock.current = false;
-            setBusy(false);
+            lock.current = false
+            setBusy(false)
           }
         }}
       >
@@ -55,7 +51,7 @@ export function AuthorAccountStatusDialog({ account, closeAccount = false, onClo
               type="checkbox"
               checked={confirmed}
               disabled={busy || !!error}
-              onChange={(event) => setConfirmed(event.target.checked)}
+              onChange={event => setConfirmed(event.target.checked)}
             />
             {m('closeConfirm')}
           </label>
@@ -70,7 +66,7 @@ export function AuthorAccountStatusDialog({ account, closeAccount = false, onClo
           maxLength={1000}
           required
           disabled={busy || !!error}
-          onChange={(event) => setReason(event.target.value)}
+          onChange={event => setReason(event.target.value)}
         />
         {error && (
           <p role="alert" className="mt-3 text-sm text-rose-strong">
@@ -91,5 +87,5 @@ export function AuthorAccountStatusDialog({ account, closeAccount = false, onClo
         </div>
       </form>
     </Modal>
-  );
+  )
 }

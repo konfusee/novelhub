@@ -1,63 +1,63 @@
-import { useState } from 'react';
-import { Badge, Button, Card, Input, Modal, SectionHeader } from '../ui';
-import { LockKeyhole } from '../icons';
-import { apiRequest } from '../../api/client';
-import { useAuth } from '../../context/AuthContext';
-import { useLocale } from '../../context/LocaleContext';
+import { useState } from 'react'
+import { Badge, Button, Card, Input, Modal, SectionHeader } from '../ui'
+import { LockKeyhole } from '../icons'
+import { apiRequest } from '../../api/client'
+import { useAuth } from '../../context/AuthContext'
+import { useLocale } from '../../context/LocaleContext'
 
 export function SecurityPanel() {
-  const { currentUser, updateSecurity } = useAuth();
-  const { t } = useLocale();
-  const [action, setAction] = useState(null);
-  const [challenge, setChallenge] = useState('');
-  const [codeMinutes, setCodeMinutes] = useState(null);
-  const [currentPassword, setCurrentPassword] = useState('');
-  const [password, setPassword] = useState('');
-  const [confirmation, setConfirmation] = useState('');
-  const [otp, setOtp] = useState('');
-  const [busy, setBusy] = useState(false);
-  const [error, setError] = useState('');
-  const [notice, setNotice] = useState('');
-  const enabled = Boolean(currentUser?.twoFactorEnabled);
+  const { currentUser, updateSecurity } = useAuth()
+  const { t } = useLocale()
+  const [action, setAction] = useState(null)
+  const [challenge, setChallenge] = useState('')
+  const [codeMinutes, setCodeMinutes] = useState(null)
+  const [currentPassword, setCurrentPassword] = useState('')
+  const [password, setPassword] = useState('')
+  const [confirmation, setConfirmation] = useState('')
+  const [otp, setOtp] = useState('')
+  const [busy, setBusy] = useState(false)
+  const [error, setError] = useState('')
+  const [notice, setNotice] = useState('')
+  const enabled = Boolean(currentUser?.twoFactorEnabled)
   const title =
     action === 'password'
       ? t(currentUser?.hasPassword ? 'account.changePassword' : 'security.setPassword')
-      : t(action === 'disable' ? 'security.disable' : 'account.configure');
+      : t(action === 'disable' ? 'security.disable' : 'account.configure')
   const reset = () => {
-    setAction(null);
-    setChallenge('');
-    setCurrentPassword('');
-    setPassword('');
-    setConfirmation('');
-    setOtp('');
-    setError('');
-  };
-  const open = (value) => {
-    reset();
-    setNotice('');
-    setAction(value);
-  };
-  const submit = async (event) => {
-    event.preventDefault();
-    setError('');
+    setAction(null)
+    setChallenge('')
+    setCurrentPassword('')
+    setPassword('')
+    setConfirmation('')
+    setOtp('')
+    setError('')
+  }
+  const open = value => {
+    reset()
+    setNotice('')
+    setAction(value)
+  }
+  const submit = async event => {
+    event.preventDefault()
+    setError('')
     if (action === 'password' && password.length < 10) {
-      setError(t('auth.passwordMin'));
-      return;
+      setError(t('auth.passwordMin'))
+      return
     }
     if (action === 'password' && password !== confirmation) {
-      setError(t('auth.confirmationMismatch'));
-      return;
+      setError(t('auth.confirmationMismatch'))
+      return
     }
-    setBusy(true);
+    setBusy(true)
     try {
       if (!challenge) {
         const result = await apiRequest('/auth/security/challenge', {
           method: 'POST',
           body: { action, ...(currentUser?.hasPassword ? { currentPassword } : {}) },
-        });
-        setChallenge(result.challenge);
-        setCodeMinutes(Math.ceil(result.expiresInSeconds / 60));
-        setCurrentPassword('');
+        })
+        setChallenge(result.challenge)
+        setCodeMinutes(Math.ceil(result.expiresInSeconds / 60))
+        setCurrentPassword('')
       } else {
         await updateSecurity(action === 'password' ? 'password' : 'two-factor', {
           challenge,
@@ -65,7 +65,7 @@ export function SecurityPanel() {
           ...(action === 'password'
             ? { password, passwordConfirmation: confirmation }
             : { enabled: action === 'enable' }),
-        });
+        })
         setNotice(
           t(
             action === 'password'
@@ -74,8 +74,8 @@ export function SecurityPanel() {
                 ? 'security.enabledNotice'
                 : 'security.disabledNotice',
           ),
-        );
-        reset();
+        )
+        reset()
       }
     } catch (reason) {
       const keys = {
@@ -85,12 +85,12 @@ export function SecurityPanel() {
         too_many_attempts: 'security.rateLimited',
         unauthorized: 'security.signInAgain',
         security_state_changed: 'security.stateChanged',
-      };
-      setError(t(keys[reason.code] || 'security.failed'));
+      }
+      setError(t(keys[reason.code] || 'security.failed'))
     } finally {
-      setBusy(false);
+      setBusy(false)
     }
-  };
+  }
   return (
     <Card>
       <SectionHeader
@@ -139,7 +139,7 @@ export function SecurityPanel() {
         open={Boolean(action)}
         title={title}
         onClose={() => {
-          if (!busy) reset();
+          if (!busy) reset()
         }}
       >
         <form onSubmit={submit} className="space-y-4">
@@ -157,7 +157,7 @@ export function SecurityPanel() {
                 type="password"
                 autoComplete="current-password"
                 value={currentPassword}
-                onChange={(e) => setCurrentPassword(e.target.value)}
+                onChange={e => setCurrentPassword(e.target.value)}
                 required
                 maxLength={1024}
               />
@@ -172,7 +172,7 @@ export function SecurityPanel() {
                   type="password"
                   autoComplete="new-password"
                   value={password}
-                  onChange={(e) => setPassword(e.target.value)}
+                  onChange={e => setPassword(e.target.value)}
                   required
                   minLength={10}
                   maxLength={1024}
@@ -185,7 +185,7 @@ export function SecurityPanel() {
                   type="password"
                   autoComplete="new-password"
                   value={confirmation}
-                  onChange={(e) => setConfirmation(e.target.value)}
+                  onChange={e => setConfirmation(e.target.value)}
                   required
                   minLength={10}
                   maxLength={1024}
@@ -204,7 +204,7 @@ export function SecurityPanel() {
                 pattern="[0-9]{6}"
                 maxLength={6}
                 value={otp}
-                onChange={(e) => setOtp(e.target.value.replace(/[^0-9]/g, ''))}
+                onChange={e => setOtp(e.target.value.replace(/[^0-9]/g, ''))}
                 required
               />
             </label>
@@ -225,5 +225,5 @@ export function SecurityPanel() {
         </form>
       </Modal>
     </Card>
-  );
+  )
 }

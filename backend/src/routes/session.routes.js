@@ -1,10 +1,10 @@
-import { Router } from 'express';
-import { requireAuth } from '../middleware/auth.js';
-import { Session } from '../models/identity/session.model.js';
+import { Router } from 'express'
+import { requireAuth } from '../middleware/auth.js'
+import { Session } from '../models/identity/session.model.js'
 
 export function createSessionRouter(config) {
-  const router = Router();
-  router.use('/auth/sessions', requireAuth(config));
+  const router = Router()
+  router.use('/auth/sessions', requireAuth(config))
   router.get('/auth/sessions', async (req, res, next) => {
     try {
       const filter = {
@@ -13,10 +13,10 @@ export function createSessionRouter(config) {
         authorizationEpoch: req.account.authorizationEpoch,
         status: 'active',
         expiresAt: { $gt: new Date() },
-      };
-      const sessions = await Session.find(filter).sort({ lastSeenAt: -1, _id: -1 }).lean();
+      }
+      const sessions = await Session.find(filter).sort({ lastSeenAt: -1, _id: -1 }).lean()
       const items = sessions
-        .map((session) => ({
+        .map(session => ({
           id: session._id.toString(),
           current: session._id.equals(req.auth.session._id),
           client: session.client ?? null,
@@ -24,12 +24,12 @@ export function createSessionRouter(config) {
           lastSeenAt: session.lastSeenAt ?? session.issuedAt,
           expiresAt: session.expiresAt,
         }))
-        .sort((a, b) => Number(b.current) - Number(a.current));
-      res.json({ items });
+        .sort((a, b) => Number(b.current) - Number(a.current))
+      res.json({ items })
     } catch (error) {
-      next(error);
+      next(error)
     }
-  });
+  })
   router.post('/auth/sessions/revoke-others', async (req, res, next) => {
     try {
       const result = await Session.updateMany(
@@ -42,11 +42,11 @@ export function createSessionRouter(config) {
           expiresAt: { $gt: new Date() },
         },
         { $set: { status: 'revoked', revokedAt: new Date() } },
-      );
-      res.json({ revokedCount: result.modifiedCount });
+      )
+      res.json({ revokedCount: result.modifiedCount })
     } catch (error) {
-      next(error);
+      next(error)
     }
-  });
-  return router;
+  })
+  return router
 }

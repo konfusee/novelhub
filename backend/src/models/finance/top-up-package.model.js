@@ -1,6 +1,6 @@
-import { coinAmount, defineModel, mutableOptions, ObjectId, Schema } from '../shared/schema.js';
+import { coinAmount, defineModel, mutableOptions, ObjectId, Schema } from '../shared/schema.js'
 
-export const TOP_UP_PACKAGE_STATUSES = ['active', 'inactive'];
+export const TOP_UP_PACKAGE_STATUSES = ['active', 'inactive']
 const schema = new Schema(
   {
     priceVnd: { type: Number, required: true, min: 0, validate: Number.isInteger },
@@ -10,11 +10,11 @@ const schema = new Schema(
     actorAccountId: { type: ObjectId, ref: 'Account' },
   },
   mutableOptions,
-);
-schema.index({ status: 1 });
+)
+schema.index({ status: 1 })
 schema.pre('validate', function validateFixedExchange() {
   if (this.priceVnd !== this.coinAmount) {
-    this.invalidate('coinAmount', 'Top-up packages exchange VND to coins at 1:1');
+    this.invalidate('coinAmount', 'Top-up packages exchange VND to coins at 1:1')
   }
-});
-export const TopUpPackage = defineModel('TopUpPackage', schema, 'topUpPackages');
+})
+export const TopUpPackage = defineModel('TopUpPackage', schema, 'topUpPackages')

@@ -1,11 +1,11 @@
-import { loadDotenv } from '../src/config/load-dotenv.js';
-import { loadEnv } from '../src/config/env.js';
-import { createSmtpEmailDelivery } from '../src/email/delivery.js';
+import { loadDotenv } from '../src/config/load-dotenv.js'
+import { loadEnv } from '../src/config/env.js'
+import { createSmtpEmailDelivery } from '../src/email/delivery.js'
 
-loadDotenv();
+loadDotenv()
 try {
-  const env = loadEnv();
-  if (!env.SMTP_HOST) throw new Error('SMTP_HOST is not configured');
+  const env = loadEnv()
+  if (!env.SMTP_HOST) throw new Error('SMTP_HOST is not configured')
   const delivery = createSmtpEmailDelivery({
     host: env.SMTP_HOST,
     port: env.SMTP_PORT,
@@ -16,12 +16,12 @@ try {
     connectionTimeoutMs: env.SMTP_CONNECTION_TIMEOUT_MS,
     greetingTimeoutMs: env.SMTP_GREETING_TIMEOUT_MS,
     socketTimeoutMs: env.SMTP_SOCKET_TIMEOUT_MS,
-  });
-  await delivery.verify();
-  console.info('SMTP connection and authentication succeeded. No email was sent.');
+  })
+  await delivery.verify()
+  console.info('SMTP connection and authentication succeeded. No email was sent.')
 } catch (error) {
   console.error(
     `SMTP verification failed (${error.code || 'configuration'}). Check SMTP settings and credentials.`,
-  );
-  process.exitCode = 1;
+  )
+  process.exitCode = 1
 }

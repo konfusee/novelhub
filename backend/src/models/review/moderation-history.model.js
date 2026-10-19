@@ -1,4 +1,4 @@
-import { appendOnly, appendOnlyOptions, defineModel, ObjectId, Schema } from '../shared/schema.js';
+import { appendOnly, appendOnlyOptions, defineModel, ObjectId, Schema } from '../shared/schema.js'
 const schema = new Schema(
   {
     aggregateType: { type: String, required: true },
@@ -19,8 +19,8 @@ const schema = new Schema(
     correlationId: String,
   },
   appendOnlyOptions,
-);
-schema.plugin(appendOnly);
-schema.index({ aggregateType: 1, aggregateId: 1, createdAt: -1 });
-schema.index({ submissionId: 1, createdAt: -1 });
-export const ModerationHistory = defineModel('ModerationHistory', schema, 'moderationHistory');
+)
+schema.plugin(appendOnly)
+schema.index({ aggregateType: 1, aggregateId: 1, createdAt: -1 })
+schema.index({ submissionId: 1, createdAt: -1 })
+export const ModerationHistory = defineModel('ModerationHistory', schema, 'moderationHistory')

@@ -1,7 +1,7 @@
-import { AuditEvent, Chapter, ContentRevision, PublicationSubmission } from '../models/index.js';
-import { withTransaction } from '../db/connection.js';
-import { HttpError } from '../middleware/errors.js';
-import { lockAuthor, ownStory } from './author-ownership.js';
+import { AuditEvent, Chapter, ContentRevision, PublicationSubmission } from '../models/index.js'
+import { withTransaction } from '../db/connection.js'
+import { HttpError } from '../middleware/errors.js'
+import { lockAuthor, ownStory } from './author-ownership.js'
 
 export function isPrivateDraftChapter(chapter, authorId) {
   return (
@@ -16,7 +16,7 @@ export function isPrivateDraftChapter(chapter, authorId) {
           chapter.publicationTransition?.result,
         ) &&
         String(chapter.publicationTransition?.actorAccountId) === String(authorId)))
-  );
+  )
 }
 
 export async function draftLifecycle(story, session) {
@@ -42,18 +42,18 @@ export async function draftLifecycle(story, session) {
           immutableAt: null,
         }).session(session ?? null)
       : Promise.resolve(null),
-  ];
+  ]
   // MongoDB transactions must not run parallel operations on the same session.
   const [chapters, activeSubmission, editableRevision] = session
     ? [await queries[0], await queries[1], await queries[2]]
-    : await Promise.all(queries);
+    : await Promise.all(queries)
   const safe =
     !story.authoringFrozen &&
     !story.publishedRevisionId &&
     !story.publishedAt &&
-    chapters.every((chapter) => isPrivateDraftChapter(chapter, story.authorAccountId)) &&
+    chapters.every(chapter => isPrivateDraftChapter(chapter, story.authorAccountId)) &&
     !activeSubmission &&
-    Boolean(editableRevision);
+    Boolean(editableRevision)
   return {
     canArchive: safe && story.publicationStatus === 'draft',
     canRestore:
@@ -61,37 +61,37 @@ export async function draftLifecycle(story, session) {
       story.publicationStatus === 'archived' &&
       story.publicationTransition?.result === 'author-draft-archived' &&
       String(story.publicationTransition?.actorAccountId) === String(story.authorAccountId),
-  };
+  }
 }
 
 export async function changeDraftLifecycle(account, storyId, { action, expectedVersion }) {
-  return withTransaction(async (session) => {
-    await lockAuthor(account, session);
-    const story = await ownStory(account, storyId, session);
+  return withTransaction(async session => {
+    await lockAuthor(account, session)
+    const story = await ownStory(account, storyId, session)
     if (story.version !== expectedVersion)
       throw new HttpError(
         409,
         'stale_content',
         'Truyện đã thay đổi. Hãy tải lại trước khi tiếp tục.',
-      );
-    const flags = await draftLifecycle(story, session);
+      )
+    const flags = await draftLifecycle(story, session)
     if (!(action === 'archive' ? flags.canArchive : flags.canRestore))
       throw new HttpError(
         409,
         'lifecycle_not_allowed',
         'Chỉ lưu trữ hoặc khôi phục bản nháp riêng tư đủ điều kiện, không có nội dung đã phát hành hay gói đang chờ duyệt.',
-      );
-    const before = story.publicationStatus;
-    story.publicationStatus = action === 'archive' ? 'archived' : 'draft';
-    const now = new Date();
+      )
+    const before = story.publicationStatus
+    story.publicationStatus = action === 'archive' ? 'archived' : 'draft'
+    const now = new Date()
     story.publicationTransition = {
       actorAccountId: account._id,
       occurredAt: now,
       from: before,
       to: story.publicationStatus,
       result: action === 'archive' ? 'author-draft-archived' : 'author-draft-restored',
-    };
-    await story.save({ session });
+    }
+    await story.save({ session })
     await AuditEvent.create(
       [
         {
@@ -106,7 +106,7 @@ export async function changeDraftLifecycle(account, storyId, { action, expectedV
         },
       ],
       { session },
-    );
-    return { id: String(story._id), status: story.publicationStatus, version: story.version };
-  });
+    )
+    return { id: String(story._id), status: story.publicationStatus, version: story.version }
+  })
 }

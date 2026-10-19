@@ -1,4 +1,4 @@
-import { appendOnly, appendOnlyOptions, defineModel, ObjectId, Schema } from '../shared/schema.js';
+import { appendOnly, appendOnlyOptions, defineModel, ObjectId, Schema } from '../shared/schema.js'
 const schema = new Schema(
   {
     revisionId: { type: ObjectId, ref: 'ContentRevision', required: true },
@@ -17,7 +17,7 @@ const schema = new Schema(
       required: true,
       validate: {
         validator(values) {
-          return values.length === this.dimensions;
+          return values.length === this.dimensions
         },
         message: 'vector length must equal dimensions',
       },
@@ -27,8 +27,8 @@ const schema = new Schema(
     chunkingVersion: { type: String, required: true },
   },
   appendOnlyOptions,
-);
-schema.plugin(appendOnly);
-schema.index({ revisionId: 1, model: 1, chunkingVersion: 1, passageId: 1 }, { unique: true });
-schema.index({ batchId: 1, passageOrder: 1 });
-export const EmbeddingArtifact = defineModel('EmbeddingArtifact', schema, 'embeddingArtifacts');
+)
+schema.plugin(appendOnly)
+schema.index({ revisionId: 1, model: 1, chunkingVersion: 1, passageId: 1 }, { unique: true })
+schema.index({ batchId: 1, passageOrder: 1 })
+export const EmbeddingArtifact = defineModel('EmbeddingArtifact', schema, 'embeddingArtifacts')

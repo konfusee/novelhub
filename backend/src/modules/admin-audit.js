@@ -1,7 +1,7 @@
-import { z } from 'zod';
-import { AuditEvent } from '../models/index.js';
+import { z } from 'zod'
+import { AuditEvent } from '../models/index.js'
 
-const id = z.string().regex(/^[a-f\d]{24}$/i);
+const id = z.string().regex(/^[a-f\d]{24}$/i)
 export const auditQuery = z
   .object({
     page: z.coerce.number().int().min(1).max(100000).default(1),
@@ -15,10 +15,10 @@ export const auditQuery = z
     to: z.string().datetime({ offset: true }).optional(),
   })
   .strict()
-  .refine((q) => !q.from || !q.to || new Date(q.from) <= new Date(q.to));
+  .refine(q => !q.from || !q.to || new Date(q.from) <= new Date(q.to))
 
 export async function adminAudit(query) {
-  const { page, pageSize, from, to, ...fields } = query;
+  const { page, pageSize, from, to, ...fields } = query
   const match = {
     ...fields,
     ...(from || to
@@ -29,7 +29,7 @@ export async function adminAudit(query) {
           },
         }
       : {}),
-  };
+  }
   const [items, total] = await Promise.all([
     AuditEvent.find(match)
       .sort({ occurredAt: -1, _id: -1 })
@@ -41,7 +41,7 @@ export async function adminAudit(query) {
       )
       .lean(),
     AuditEvent.countDocuments(match).maxTimeMS(5000),
-  ]);
+  ])
   return {
     items: items.map(({ _id, ...event }) => ({
       ...event,
@@ -52,5 +52,5 @@ export async function adminAudit(query) {
     total,
     page,
     pageSize,
-  };
+  }
 }

@@ -1,5 +1,5 @@
-import { defineModel, mutableOptions, ObjectId, Schema } from '../shared/schema.js';
-export const POLICY_STATUSES = ['draft', 'effective', 'superseded'];
+import { defineModel, mutableOptions, ObjectId, Schema } from '../shared/schema.js'
+export const POLICY_STATUSES = ['draft', 'effective', 'superseded']
 const schema = new Schema(
   {
     status: { type: String, enum: POLICY_STATUSES, default: 'draft', required: true },
@@ -16,14 +16,14 @@ const schema = new Schema(
     actorAccountId: { type: ObjectId, ref: 'Account', required: true },
   },
   mutableOptions,
-);
+)
 schema.pre('validate', function validateBounds() {
   if (this.priceMinCoins > this.priceMaxCoins)
-    this.invalidate('priceMaxCoins', 'max must be >= min');
+    this.invalidate('priceMaxCoins', 'max must be >= min')
   if (this.durationMinDays > this.durationMaxDays)
-    this.invalidate('durationMaxDays', 'max must be >= min');
+    this.invalidate('durationMaxDays', 'max must be >= min')
   if (this.authorSharePercent + this.platformSharePercent !== 100)
-    this.invalidate('platformSharePercent', 'shares must total 100');
-});
-schema.index({ status: 1, effectiveAt: -1 });
-export const PolicyVersion = defineModel('PolicyVersion', schema, 'policyVersions');
+    this.invalidate('platformSharePercent', 'shares must total 100')
+})
+schema.index({ status: 1, effectiveAt: -1 })
+export const PolicyVersion = defineModel('PolicyVersion', schema, 'policyVersions')

@@ -1,6 +1,6 @@
-import { Account } from '../../src/models/identity/account.model.js';
-import { RoleAssignment } from '../../src/models/identity/role-assignment.model.js';
-import { issueSession } from '../../src/auth/session.js';
+import { Account } from '../../src/models/identity/account.model.js'
+import { RoleAssignment } from '../../src/models/identity/role-assignment.model.js'
+import { issueSession } from '../../src/auth/session.js'
 
 // Disposable test database only. Does not load .env or write to a shared database.
 export async function authenticatedAccount(role = 'reader', overrides = {}) {
@@ -11,10 +11,10 @@ export async function authenticatedAccount(role = 'reader', overrides = {}) {
     emailVerifiedAt: new Date(),
     everAuthor: role === 'author',
     ...overrides,
-  });
+  })
   if (role !== 'reader') {
-    await RoleAssignment.create({ accountId: account._id, role, grantedBy: account._id });
+    await RoleAssignment.create({ accountId: account._id, role, grantedBy: account._id })
   }
-  const { token } = await issueSession(account, 1);
-  return { account, cookie: `novelhub_session=${token}` };
+  const { token } = await issueSession(account, 1)
+  return { account, cookie: `novelhub_session=${token}` }
 }

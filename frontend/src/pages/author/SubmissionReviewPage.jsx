@@ -1,11 +1,11 @@
-import { useRef, useState } from 'react';
-import { useNavigate, useSearchParams } from 'react-router';
-import { AlertTriangle, Check, Clock3, FileCheck2, RefreshCw, Send } from '../../components/icons';
-import { AuthorLayout } from '../../layouts';
-import { useBackendDocument } from '../../api/useBackendResource';
-import { apiRequest } from '../../api/client';
-import { useLocale } from '../../context/LocaleContext';
-import { StoryCover } from '../../components/story/StoryCover';
+import { useRef, useState } from 'react'
+import { useNavigate, useSearchParams } from 'react-router'
+import { AlertTriangle, Check, Clock3, FileCheck2, RefreshCw, Send } from '../../components/icons'
+import { AuthorLayout } from '../../layouts'
+import { useBackendDocument } from '../../api/useBackendResource'
+import { apiRequest } from '../../api/client'
+import { useLocale } from '../../context/LocaleContext'
+import { StoryCover } from '../../components/story/StoryCover'
 import {
   Badge,
   Button,
@@ -16,22 +16,22 @@ import {
   ProgressBar,
   Select,
   Skeleton,
-} from '../../components/ui';
+} from '../../components/ui'
 
-const emptyFeed = { items: [], stories: [], page: 1, pageCount: 1, total: 0 };
-const emptyWorkspace = { chapters: [] };
-const emptyPackage = { checks: [], ready: false };
+const emptyFeed = { items: [], stories: [], page: 1, pageCount: 1, total: 0 }
+const emptyWorkspace = { chapters: [] }
+const emptyPackage = { checks: [], ready: false }
 
 export function SubmissionReviewPage() {
-  const { t } = useLocale();
-  const [params, setParams] = useSearchParams();
-  const [page, setPage] = useState(1);
-  const storyId = params.get('storyId') || '';
-  const chapterId = params.get('chapterId') || '';
-  const feed = useBackendDocument(`/author/submissions?page=${page}`, emptyFeed);
+  const { t } = useLocale()
+  const [params, setParams] = useSearchParams()
+  const [page, setPage] = useState(1)
+  const storyId = params.get('storyId') || ''
+  const chapterId = params.get('chapterId') || ''
+  const feed = useBackendDocument(`/author/submissions?page=${page}`, emptyFeed)
   const choose = (story, chapter = '') => {
-    setParams(story ? { storyId: story, ...(chapter ? { chapterId: chapter } : {}) } : {});
-  };
+    setParams(story ? { storyId: story, ...(chapter ? { chapterId: chapter } : {}) } : {})
+  }
   return (
     <AuthorLayout>
       <div className="page-author py-7">
@@ -53,14 +53,14 @@ export function SubmissionReviewPage() {
             id="submission-story"
             className="mt-3 w-full"
             value={storyId}
-            onChange={(event) => choose(event.target.value)}
+            onChange={event => choose(event.target.value)}
             disabled={feed.status !== 'ready'}
           >
             <option value="">{t('submissionData.chooseStory')}</option>
-            {storyId && !feed.data.stories.some((story) => story.id === storyId) && (
+            {storyId && !feed.data.stories.some(story => story.id === storyId) && (
               <option value={storyId}>{storyId}</option>
             )}
-            {feed.data.stories.map((story) => (
+            {feed.data.stories.map(story => (
               <option key={story.id} value={story.id}>
                 {story.title}
               </option>
@@ -109,7 +109,7 @@ export function SubmissionReviewPage() {
             />
           ) : (
             <div className="mt-4 space-y-3">
-              {feed.data.items.map((item) => (
+              {feed.data.items.map(item => (
                 <SubmissionEntry key={item.id} item={item} choose={choose} />
               ))}
               <div className="flex flex-wrap items-center justify-between gap-3 pt-3">
@@ -132,12 +132,12 @@ export function SubmissionReviewPage() {
         </Card>
       </div>
     </AuthorLayout>
-  );
+  )
 }
 
 function StoryPackage({ storyId, chapterId, choose, onSubmitted }) {
-  const { t } = useLocale();
-  const workspace = useBackendDocument(`/author/stories/${storyId}/workspace`, emptyWorkspace);
+  const { t } = useLocale()
+  const workspace = useBackendDocument(`/author/stories/${storyId}/workspace`, emptyWorkspace)
   return (
     <>
       <Card className="mt-5">
@@ -149,13 +149,13 @@ function StoryPackage({ storyId, chapterId, choose, onSubmitted }) {
           className="mt-3 w-full"
           value={chapterId}
           disabled={workspace.status !== 'ready'}
-          onChange={(event) => choose(storyId, event.target.value)}
+          onChange={event => choose(storyId, event.target.value)}
         >
           <option value="">{t('submissionData.storyTarget')}</option>
-          {chapterId && !workspace.data.chapters.some((chapter) => chapter.id === chapterId) && (
+          {chapterId && !workspace.data.chapters.some(chapter => chapter.id === chapterId) && (
             <option value={chapterId}>{chapterId}</option>
           )}
-          {workspace.data.chapters.map((chapter) => (
+          {workspace.data.chapters.map(chapter => (
             <option key={chapter.id} value={chapter.id}>
               {chapter.title}
             </option>
@@ -174,40 +174,40 @@ function StoryPackage({ storyId, chapterId, choose, onSubmitted }) {
         onSubmitted={onSubmitted}
       />
     </>
-  );
+  )
 }
 
 function SubmissionPackage({ storyId, chapterId, onSubmitted }) {
-  const { t, formatNumber } = useLocale();
-  const query = new URLSearchParams({ storyId, ...(chapterId ? { chapterId } : {}) });
-  const resource = useBackendDocument(`/author/submissions/prepare?${query}`, emptyPackage);
-  const [basis, setBasis] = useState('original');
-  const [assertedRevision, setAssertedRevision] = useState(null);
-  const [note, setNote] = useState('');
-  const [confirm, setConfirm] = useState(false);
-  const [busy, setBusy] = useState(false);
-  const busyRef = useRef(false);
-  const [error, setError] = useState('');
-  const [sent, setSent] = useState(null);
-  const data = resource.data;
-  const asserted = data.frozenRights?.asserted ?? assertedRevision === data.target?.revisionId;
-  const shownBasis = data.frozenRights?.basis ?? basis;
-  const shownNote = data.frozenRights?.sourceLicenceNote ?? note;
-  const imageRights = data.imageRights;
-  const licenceRequired = Boolean(imageRights && shownBasis === 'licensed');
-  const passed = data.checks.filter((check) => check.ok).length;
-  const percent = data.checks.length ? Math.round((passed / data.checks.length) * 100) : 0;
+  const { t, formatNumber } = useLocale()
+  const query = new URLSearchParams({ storyId, ...(chapterId ? { chapterId } : {}) })
+  const resource = useBackendDocument(`/author/submissions/prepare?${query}`, emptyPackage)
+  const [basis, setBasis] = useState('original')
+  const [assertedRevision, setAssertedRevision] = useState(null)
+  const [note, setNote] = useState('')
+  const [confirm, setConfirm] = useState(false)
+  const [busy, setBusy] = useState(false)
+  const busyRef = useRef(false)
+  const [error, setError] = useState('')
+  const [sent, setSent] = useState(null)
+  const data = resource.data
+  const asserted = data.frozenRights?.asserted ?? assertedRevision === data.target?.revisionId
+  const shownBasis = data.frozenRights?.basis ?? basis
+  const shownNote = data.frozenRights?.sourceLicenceNote ?? note
+  const imageRights = data.imageRights
+  const licenceRequired = Boolean(imageRights && shownBasis === 'licensed')
+  const passed = data.checks.filter(check => check.ok).length
+  const percent = data.checks.length ? Math.round((passed / data.checks.length) * 100) : 0
   const ready =
     resource.status === 'ready' &&
     data.ready &&
     (!data.requiresRights || asserted) &&
     (!licenceRequired || Boolean(note.trim())) &&
-    !sent;
-  const richTarget = ['blocks-v2', 'blocks-v3'].includes(data.target?.formatVersion);
-  const chapterMedia = Boolean(chapterId && data.target?.formatVersion === 'blocks-v3');
+    !sent
+  const richTarget = ['blocks-v2', 'blocks-v3'].includes(data.target?.formatVersion)
+  const chapterMedia = Boolean(chapterId && data.target?.formatVersion === 'blocks-v3')
   const back = chapterId
     ? `/author/stories/${storyId}/chapters/${chapterId}/edit${richTarget ? '?mode=rich' : ''}`
-    : `/author/stories/${storyId}`;
+    : `/author/stories/${storyId}`
   const fixes = {
     editable: { to: `/author/stories/${storyId}?tab=reviews`, label: 'status' },
     content: { to: chapterId ? back : `/author/stories/${storyId}?tab=details`, label: 'content' },
@@ -217,12 +217,12 @@ function SubmissionPackage({ storyId, chapterId, onSubmitted }) {
       label: chapterMedia ? 'chapterMedia' : 'media',
     },
     parent: { to: `/author/submissions?storyId=${encodeURIComponent(storyId)}`, label: 'parent' },
-  };
+  }
   const send = async () => {
-    if (!ready || busyRef.current) return;
-    busyRef.current = true;
-    setBusy(true);
-    setError('');
+    if (!ready || busyRef.current) return
+    busyRef.current = true
+    setBusy(true)
+    setError('')
     try {
       const result = await apiRequest('/author/submissions', {
         method: 'POST',
@@ -234,19 +234,19 @@ function SubmissionPackage({ storyId, chapterId, onSubmitted }) {
           ...(data.requiresRights ? { rights: { basis, asserted, sourceLicenceNote: note } } : {}),
           ...(imageRights ? { imageManifestDigest: imageRights.mediaDigest } : {}),
         },
-      });
-      if (!result?.submission?.id) throw new Error(t('submissionData.sendError'));
-      setSent(result.submission);
-      setConfirm(false);
-      onSubmitted();
-      resource.retry();
+      })
+      if (!result?.submission?.id) throw new Error(t('submissionData.sendError'))
+      setSent(result.submission)
+      setConfirm(false)
+      onSubmitted()
+      resource.retry()
     } catch (failure) {
-      setError(failure.message || t('submissionData.sendError'));
+      setError(failure.message || t('submissionData.sendError'))
     } finally {
-      busyRef.current = false;
-      setBusy(false);
+      busyRef.current = false
+      setBusy(false)
     }
-  };
+  }
   return (
     <>
       {resource.status === 'ready' && (
@@ -319,7 +319,7 @@ function SubmissionPackage({ storyId, chapterId, onSubmitted }) {
               <>
                 <ProgressBar value={percent} className="mt-5" />
                 <ol className="mt-5 space-y-3">
-                  {data.checks.map((check) => (
+                  {data.checks.map(check => (
                     <li
                       key={check.code}
                       className={`flex gap-3 rounded-2xl border p-4 ${check.ok ? 'border-hairline' : 'border-rose/40 bg-rose/5'}`}
@@ -368,9 +368,7 @@ function SubmissionPackage({ storyId, chapterId, onSubmitted }) {
             {resource.status === 'ready' && data.requiresRights ? (
               <fieldset
                 disabled={
-                  busy ||
-                  Boolean(sent) ||
-                  !data.checks.find((check) => check.code === 'editable')?.ok
+                  busy || Boolean(sent) || !data.checks.find(check => check.code === 'editable')?.ok
                 }
                 className="mt-4 space-y-4"
               >
@@ -385,7 +383,7 @@ function SubmissionPackage({ storyId, chapterId, onSubmitted }) {
                 <Select
                   id="rights-basis"
                   value={shownBasis}
-                  onChange={(event) => setBasis(event.target.value)}
+                  onChange={event => setBasis(event.target.value)}
                 >
                   <option value="original">{t('submissionData.original')}</option>
                   <option value="licensed">{t('submissionData.licensed')}</option>
@@ -394,7 +392,7 @@ function SubmissionPackage({ storyId, chapterId, onSubmitted }) {
                   <input
                     type="checkbox"
                     checked={asserted}
-                    onChange={(event) =>
+                    onChange={event =>
                       setAssertedRevision(event.target.checked ? data.target.revisionId : null)
                     }
                     className="mt-1 size-4 shrink-0 accent-brand"
@@ -413,7 +411,7 @@ function SubmissionPackage({ storyId, chapterId, onSubmitted }) {
                   value={shownNote}
                   maxLength={2000}
                   required={licenceRequired}
-                  onChange={(event) => setNote(event.target.value)}
+                  onChange={event => setNote(event.target.value)}
                   className="min-h-28 w-full resize-y rounded-2xl border border-line bg-elevated p-4 text-sm"
                 />
                 <p className="text-xs text-muted">{t('submissionData.rightsHint')}</p>
@@ -504,43 +502,43 @@ function SubmissionPackage({ storyId, chapterId, onSubmitted }) {
         </div>
       </Modal>
     </>
-  );
+  )
 }
 
 function SubmissionEntry({ item, choose }) {
-  const { t, formatDate } = useLocale();
+  const { t, formatDate } = useLocale()
   const reviseLabel = t(
     item.status === 'approved' ? 'submissionData.reviseUnpublished' : 'submissionData.revise',
-  );
-  const navigate = useNavigate();
-  const [confirm, setConfirm] = useState(false);
-  const [busy, setBusy] = useState(false);
-  const busyRef = useRef(false);
-  const [error, setError] = useState('');
+  )
+  const navigate = useNavigate()
+  const [confirm, setConfirm] = useState(false)
+  const [busy, setBusy] = useState(false)
+  const busyRef = useRef(false)
+  const [error, setError] = useState('')
   const revise = async () => {
-    if (busyRef.current) return;
-    busyRef.current = true;
-    setBusy(true);
-    setError('');
+    if (busyRef.current) return
+    busyRef.current = true
+    setBusy(true)
+    setError('')
     try {
       const { revision } = await apiRequest(`/author/submissions/${item.id}/revise`, {
         method: 'POST',
         body: { expectedVersion: item.version },
-      });
-      if (!revision?.id || !revision.storyId) throw new Error(t('submissionData.reviseError'));
+      })
+      if (!revision?.id || !revision.storyId) throw new Error(t('submissionData.reviseError'))
       navigate(
         revision.chapterId
           ? `/author/stories/${revision.storyId}/chapters/${revision.chapterId}/edit${['blocks-v2', 'blocks-v3'].includes(revision.formatVersion) ? '?mode=rich' : ''}`
           : `/author/stories/${revision.storyId}`,
-      );
+      )
     } catch (failure) {
-      setError(failure.message || t('submissionData.reviseError'));
+      setError(failure.message || t('submissionData.reviseError'))
     } finally {
-      busyRef.current = false;
-      setBusy(false);
+      busyRef.current = false
+      setBusy(false)
     }
-  };
-  const statusKey = `submissionData.status.${item.status}`;
+  }
+  const statusKey = `submissionData.status.${item.status}`
   const known = [
     'validated',
     'pending-review',
@@ -549,7 +547,7 @@ function SubmissionEntry({ item, choose }) {
     'rejected',
     'revision-requested',
     'cancelled',
-  ];
+  ]
   const evidenceStatuses = [
     'pending',
     'embedding-complete',
@@ -557,7 +555,7 @@ function SubmissionEntry({ item, choose }) {
     'llm-complete',
     'available-for-human-review',
     'failed',
-  ];
+  ]
   return (
     <article className="rounded-2xl border border-hairline p-4">
       <div className="flex flex-wrap items-center justify-between gap-3">
@@ -581,7 +579,7 @@ function SubmissionEntry({ item, choose }) {
         <p className="mt-3 whitespace-pre-wrap text-sm">{item.decisionSummary}</p>
       )}
       <ul className="mt-3 space-y-2">
-        {item.history.map((row) => (
+        {item.history.map(row => (
           <li key={row.id} className="rounded-xl bg-elevated p-3 text-xs">
             <p>
               {row.action} · {row.outcome} · {row.occurredAt ? formatDate(row.occurredAt) : '—'}
@@ -629,7 +627,7 @@ function SubmissionEntry({ item, choose }) {
         </div>
       </Modal>
     </article>
-  );
+  )
 }
 
 function StatusSkeleton() {
@@ -652,7 +650,7 @@ function StatusSkeleton() {
         <Skeleton className="mb-0.5 ml-auto mt-2 h-3 w-8" />
       </div>
     </div>
-  );
+  )
 }
 
 /* Wrapped line boxes of the five checklist rows below sm (one line each from sm up). */
@@ -662,7 +660,7 @@ const checklistSkeletons = [
   { wideTitle: true, badge: 'h-14' },
   { wideTitle: true, badge: 'h-10' },
   { wideTitle: true, badge: 'h-10' },
-];
+]
 
 function ChecklistSkeleton({ wideTitle, badge }) {
   return (
@@ -685,5 +683,5 @@ function ChecklistSkeleton({ wideTitle, badge }) {
         </div>
       </div>
     </li>
-  );
+  )
 }

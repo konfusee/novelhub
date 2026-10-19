@@ -1,9 +1,9 @@
-import { forwardOnly, lockFields } from '../shared/guards.js';
-import { defineModel, mutableOptions, ObjectId, Schema } from '../shared/schema.js';
+import { forwardOnly, lockFields } from '../shared/guards.js'
+import { defineModel, mutableOptions, ObjectId, Schema } from '../shared/schema.js'
 
 // Design lifecycle: pending → accepted | failed. The row is written as `pending`
 // before the provider call and resolved once it returns.
-export const DELIVERY_ATTEMPT_STATUSES = ['pending', 'accepted', 'failed'];
+export const DELIVERY_ATTEMPT_STATUSES = ['pending', 'accepted', 'failed']
 
 const schema = new Schema(
   {
@@ -22,15 +22,15 @@ const schema = new Schema(
     attemptNumber: { type: Number, min: 1, max: 3, required: true, validate: Number.isInteger },
   },
   mutableOptions,
-);
+)
 lockFields(
   schema,
   ['notificationId', 'outboxId', 'attemptKey', 'channel', 'attemptNumber', 'attemptedAt'],
   {
     mode: 'insert-only',
   },
-);
-forwardOnly(schema, 'status', { pending: ['accepted', 'failed'] });
-schema.index({ attemptKey: 1 }, { unique: true });
-schema.index({ outboxId: 1, attemptNumber: 1 }, { unique: true });
-export const DeliveryAttempt = defineModel('DeliveryAttempt', schema, 'deliveryAttempts');
+)
+forwardOnly(schema, 'status', { pending: ['accepted', 'failed'] })
+schema.index({ attemptKey: 1 }, { unique: true })
+schema.index({ outboxId: 1, attemptNumber: 1 }, { unique: true })
+export const DeliveryAttempt = defineModel('DeliveryAttempt', schema, 'deliveryAttempts')

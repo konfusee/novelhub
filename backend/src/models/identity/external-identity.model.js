@@ -1,6 +1,6 @@
-import { defineModel, mutableOptions, ObjectId, Schema } from '../shared/schema.js';
+import { defineModel, mutableOptions, ObjectId, Schema } from '../shared/schema.js'
 
-export const EXTERNAL_IDENTITY_STATUSES = ['linked', 'unlinked'];
+export const EXTERNAL_IDENTITY_STATUSES = ['linked', 'unlinked']
 const schema = new Schema(
   {
     accountId: { type: ObjectId, ref: 'Account', required: true },
@@ -12,7 +12,7 @@ const schema = new Schema(
     status: { type: String, enum: EXTERNAL_IDENTITY_STATUSES, default: 'linked', required: true },
   },
   mutableOptions,
-);
-schema.index({ provider: 1, providerSubject: 1 }, { unique: true });
-schema.index({ accountId: 1, status: 1 });
-export const ExternalIdentity = defineModel('ExternalIdentity', schema, 'externalIdentities');
+)
+schema.index({ provider: 1, providerSubject: 1 }, { unique: true })
+schema.index({ accountId: 1, status: 1 })
+export const ExternalIdentity = defineModel('ExternalIdentity', schema, 'externalIdentities')

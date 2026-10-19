@@ -1,13 +1,13 @@
-import { useRef, useState } from 'react';
-import { useBackendDocument } from '../../api/useBackendResource';
-import { apiRequest } from '../../api/client';
-import { useLocale } from '../../context/LocaleContext';
-import { Button, ButtonLink, Modal } from '../../components/ui';
-import { ROUTES } from '../../app/routes';
+import { useRef, useState } from 'react'
+import { useBackendDocument } from '../../api/useBackendResource'
+import { apiRequest } from '../../api/client'
+import { useLocale } from '../../context/LocaleContext'
+import { Button, ButtonLink, Modal } from '../../components/ui'
+import { ROUTES } from '../../app/routes'
 
-const emptyRelease = { target: {}, checks: [], ready: false };
+const emptyRelease = { target: {}, checks: [], ready: false }
 export function StoryReleaseDialog({ storyId, onClose, onReleased }) {
-  return <ReleaseDialog storyId={storyId} onClose={onClose} onReleased={onReleased} />;
+  return <ReleaseDialog storyId={storyId} onClose={onClose} onReleased={onReleased} />
 }
 export function ChapterReleaseDialog({ storyId, chapterId, onClose, onReleased }) {
   return (
@@ -17,20 +17,20 @@ export function ChapterReleaseDialog({ storyId, chapterId, onClose, onReleased }
       onClose={onClose}
       onReleased={onReleased}
     />
-  );
+  )
 }
 function ReleaseDialog({ storyId, chapterId, onClose, onReleased }) {
-  const { t } = useLocale();
-  const chapter = Boolean(chapterId);
-  const endpoint = `/author/stories/${storyId}${chapter ? `/chapters/${chapterId}` : ''}/release`;
-  const label = chapter ? 'chapterRelease' : 'storyRelease';
-  const resource = useBackendDocument(endpoint, emptyRelease);
-  const [busy, setBusy] = useState(false);
-  const busyRef = useRef(false);
-  const [error, setError] = useState('');
-  const data = resource.data;
-  const manager = ROUTES.authorStory(storyId);
-  const review = `/author/submissions?storyId=${encodeURIComponent(storyId)}${chapter ? `&chapterId=${encodeURIComponent(chapterId)}` : ''}`;
+  const { t } = useLocale()
+  const chapter = Boolean(chapterId)
+  const endpoint = `/author/stories/${storyId}${chapter ? `/chapters/${chapterId}` : ''}/release`
+  const label = chapter ? 'chapterRelease' : 'storyRelease'
+  const resource = useBackendDocument(endpoint, emptyRelease)
+  const [busy, setBusy] = useState(false)
+  const busyRef = useRef(false)
+  const [error, setError] = useState('')
+  const data = resource.data
+  const manager = ROUTES.authorStory(storyId)
+  const review = `/author/submissions?storyId=${encodeURIComponent(storyId)}${chapter ? `&chapterId=${encodeURIComponent(chapterId)}` : ''}`
   const fixes = {
     approval: { to: review, label: 'review' },
     integrity: { to: review, label: 'package' },
@@ -43,18 +43,18 @@ function ReleaseDialog({ storyId, chapterId, onClose, onReleased }) {
     format: { to: review, label: 'format' },
     media: { to: chapter ? review : `${manager}?tab=media`, label: 'media' },
     editable: { to: `${manager}?tab=reviews`, label: 'status' },
-  };
+  }
   const ready =
     resource.status === 'ready' &&
     !error &&
     data.ready &&
     data.target.revisionId &&
-    data.target.submissionId;
+    data.target.submissionId
   const publish = async () => {
-    if (!ready || busyRef.current) return;
-    busyRef.current = true;
-    setBusy(true);
-    setError('');
+    if (!ready || busyRef.current) return
+    busyRef.current = true
+    setBusy(true)
+    setError('')
     try {
       const result = await apiRequest(endpoint, {
         method: 'POST',
@@ -64,18 +64,18 @@ function ReleaseDialog({ storyId, chapterId, onClose, onReleased }) {
           expectedVersion: data.target.version,
           ...(chapter ? { expectedStoryVersion: data.target.storyVersion } : {}),
         },
-      });
-      const released = result?.[chapter ? 'chapter' : 'story'];
+      })
+      const released = result?.[chapter ? 'chapter' : 'story']
       if (released?.id !== (chapter ? chapterId : storyId) || released.status !== 'published')
-        throw new Error(t('storyRelease.failed'));
-      onReleased();
+        throw new Error(t('storyRelease.failed'))
+      onReleased()
     } catch (failure) {
-      setError(failure.message || t('storyRelease.failed'));
+      setError(failure.message || t('storyRelease.failed'))
     } finally {
-      busyRef.current = false;
-      setBusy(false);
+      busyRef.current = false
+      setBusy(false)
     }
-  };
+  }
   return (
     <Modal
       open
@@ -97,7 +97,7 @@ function ReleaseDialog({ storyId, chapterId, onClose, onReleased }) {
         <>
           <h3 className="mt-4 break-words text-base font-semibold">{data.target.title}</h3>
           <ul className="mt-4 space-y-3">
-            {data.checks.map((check) => (
+            {data.checks.map(check => (
               <li
                 key={check.code}
                 className="grid grid-cols-[minmax(0,1fr)_auto] items-start gap-3 text-sm"
@@ -151,8 +151,8 @@ function ReleaseDialog({ storyId, chapterId, onClose, onReleased }) {
           variant="secondary"
           disabled={busy}
           onClick={() => {
-            setError('');
-            resource.retry();
+            setError('')
+            resource.retry()
           }}
         >
           {t('storyRelease.checkAgain')}
@@ -162,5 +162,5 @@ function ReleaseDialog({ storyId, chapterId, onClose, onReleased }) {
         </Button>
       </div>
     </Modal>
-  );
+  )
 }

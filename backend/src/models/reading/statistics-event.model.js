@@ -1,7 +1,7 @@
-import { appendOnly, appendOnlyOptions, defineModel, ObjectId, Schema } from '../shared/schema.js';
+import { appendOnly, appendOnlyOptions, defineModel, ObjectId, Schema } from '../shared/schema.js'
 
-export const STATISTICS_EVENT_TYPES = ['view', 'follow', 'rating', 'unlock', 'earning', 'comment'];
-export const VIEWER_TYPES = ['account', 'guest-device'];
+export const STATISTICS_EVENT_TYPES = ['view', 'follow', 'rating', 'unlock', 'earning', 'comment']
+export const VIEWER_TYPES = ['account', 'guest-device']
 const schema = new Schema(
   {
     sourceEventKey: { type: String, required: true },
@@ -10,24 +10,24 @@ const schema = new Schema(
       type: String,
       required: true,
       match: /^\d{4}-\d{2}-\d{2}$/,
-      set: (value) => {
+      set: value => {
         if (value instanceof Date) {
-          return new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Ho_Chi_Minh' }).format(value);
+          return new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Ho_Chi_Minh' }).format(value)
         }
-        return value;
+        return value
       },
     },
     viewerType: {
       type: String,
       enum: VIEWER_TYPES,
       required: function () {
-        return this.eventType === 'view';
+        return this.eventType === 'view'
       },
     },
     viewerKey: {
       type: String,
       required: function () {
-        return this.eventType === 'view';
+        return this.eventType === 'view'
       },
     },
     storyId: { type: ObjectId, ref: 'Story' },
@@ -35,7 +35,7 @@ const schema = new Schema(
       type: ObjectId,
       ref: 'Chapter',
       required: function () {
-        return this.eventType === 'view';
+        return this.eventType === 'view'
       },
     },
     occurredAt: { type: Date, required: true },
@@ -43,15 +43,15 @@ const schema = new Schema(
     projectionVersion: Number,
   },
   appendOnlyOptions,
-);
-schema.index({ sourceEventKey: 1 }, { unique: true });
-schema.plugin(appendOnly);
+)
+schema.index({ sourceEventKey: 1 }, { unique: true })
+schema.plugin(appendOnly)
 schema.index(
   { chapterId: 1, day: 1, viewerType: 1, viewerKey: 1 },
   {
     unique: true,
     partialFilterExpression: { eventType: 'view' },
   },
-);
-schema.index({ storyId: 1, day: 1, eventType: 1 });
-export const StatisticsEvent = defineModel('StatisticsEvent', schema, 'statisticsEvents');
+)
+schema.index({ storyId: 1, day: 1, eventType: 1 })
+export const StatisticsEvent = defineModel('StatisticsEvent', schema, 'statisticsEvents')

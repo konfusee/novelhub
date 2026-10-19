@@ -1,18 +1,18 @@
-import { useRef, useState } from 'react';
-import { AdminLayout } from '../../layouts';
-import { useBackendDocument, useBackendResource } from '../../api/useBackendResource';
-import { apiRequest } from '../../api/client';
-import { useLocale } from '../../context/LocaleContext';
-import { Button, ButtonLink, Card, EmptyState, Input, Modal, Select } from '../../components/ui';
-import { ROUTES } from '../../app/routes';
-const empty = { items: [], total: 0, page: 1, pageSize: 20 };
+import { useRef, useState } from 'react'
+import { AdminLayout } from '../../layouts'
+import { useBackendDocument, useBackendResource } from '../../api/useBackendResource'
+import { apiRequest } from '../../api/client'
+import { useLocale } from '../../context/LocaleContext'
+import { Button, ButtonLink, Card, EmptyState, Input, Modal, Select } from '../../components/ui'
+import { ROUTES } from '../../app/routes'
+const empty = { items: [], total: 0, page: 1, pageSize: 20 }
 export function FormerAuthorStoriesPage() {
-  const { t, formatNumber } = useLocale();
-  const m = (key) => t(`formerAuthorContent.${key}`);
+  const { t, formatNumber } = useLocale()
+  const m = key => t(`formerAuthorContent.${key}`)
   const [page, setPage] = useState(1),
-    [selected, setSelected] = useState(null);
-  const feed = useBackendDocument(`/admin/former-author-stories?page=${page}`, empty);
-  const ready = feed.status === 'ready';
+    [selected, setSelected] = useState(null)
+  const feed = useBackendDocument(`/admin/former-author-stories?page=${page}`, empty)
+  const ready = feed.status === 'ready'
   return (
     <AdminLayout>
       <div className="page-admin py-6">
@@ -37,7 +37,7 @@ export function FormerAuthorStoriesPage() {
               <table className="w-full min-w-[640px] text-left text-sm">
                 <thead className="bg-elevated">
                   <tr>
-                    {['story', 'status', 'owner', 'actions'].map((key) => (
+                    {['story', 'status', 'owner', 'actions'].map(key => (
                       <th scope="col" key={key} className="px-5 py-3">
                         {m(key)}
                       </th>
@@ -45,7 +45,7 @@ export function FormerAuthorStoriesPage() {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-hairline">
-                  {feed.data.items.map((story) => (
+                  {feed.data.items.map(story => (
                     <tr key={story.id}>
                       <td className="max-w-sm break-words px-5 py-4 font-semibold">
                         {story.title}
@@ -93,25 +93,25 @@ export function FormerAuthorStoriesPage() {
             id={selected}
             onClose={() => setSelected(null)}
             onChanged={() => {
-              setSelected(null);
-              feed.retry();
+              setSelected(null)
+              feed.retry()
             }}
           />
         )}
       </div>
     </AdminLayout>
-  );
+  )
 }
 function FormerStoryDialog({ id, onClose, onChanged }) {
-  const { t } = useLocale();
-  const m = (key) => t(`formerAuthorContent.${key}`);
-  const detail = useBackendDocument(`/admin/former-author-stories/${id}`, null);
-  const categories = useBackendResource('/catalog/categories');
-  const story = detail.status === 'ready' ? detail.data.story : null;
+  const { t } = useLocale()
+  const m = key => t(`formerAuthorContent.${key}`)
+  const detail = useBackendDocument(`/admin/former-author-stories/${id}`, null)
+  const categories = useBackendResource('/catalog/categories')
+  const story = detail.status === 'ready' ? detail.data.story : null
   const [action, setAction] = useState('correct'),
     [busy, setBusy] = useState(false),
-    [error, setError] = useState('');
-  const lock = useRef(false);
+    [error, setError] = useState('')
+  const lock = useRef(false)
   return (
     <Modal open title={m('manage')} onClose={() => !lock.current && onClose()}>
       {!story ? (
@@ -126,15 +126,15 @@ function FormerStoryDialog({ id, onClose, onChanged }) {
       ) : (
         <form
           key={story.version}
-          onSubmit={async (event) => {
-            event.preventDefault();
-            if (lock.current) return;
-            const form = new FormData(event.currentTarget);
-            const reason = String(form.get('reason') ?? '').trim();
-            if (!reason) return;
-            lock.current = true;
-            setBusy(true);
-            setError('');
+          onSubmit={async event => {
+            event.preventDefault()
+            if (lock.current) return
+            const form = new FormData(event.currentTarget)
+            const reason = String(form.get('reason') ?? '').trim()
+            if (!reason) return
+            lock.current = true
+            setBusy(true)
+            setError('')
             try {
               const input = {
                 action,
@@ -148,24 +148,24 @@ function FormerStoryDialog({ id, onClose, onChanged }) {
                       categoryIds: form.getAll('categoryIds'),
                     }
                   : {}),
-              };
+              }
               const result = await apiRequest(`/admin/former-author-stories/${id}`, {
                 method: 'POST',
                 body: input,
-              });
+              })
               if (
                 result?.story?.id !== id ||
                 result.story.status !== (action === 'unpublish' ? 'unpublished' : 'published') ||
                 !Number.isSafeInteger(result.story.version) ||
                 result.story.version <= story.version
               )
-                throw new Error(m('failed'));
-              onChanged();
+                throw new Error(m('failed'))
+              onChanged()
             } catch (failure) {
-              setError(failure.message || m('failed'));
+              setError(failure.message || m('failed'))
             } finally {
-              lock.current = false;
-              setBusy(false);
+              lock.current = false
+              setBusy(false)
             }
           }}
         >
@@ -177,7 +177,7 @@ function FormerStoryDialog({ id, onClose, onChanged }) {
               className="mt-2"
               disabled={busy}
               value={action}
-              onChange={(event) => setAction(event.target.value)}
+              onChange={event => setAction(event.target.value)}
             >
               <option value="correct">{m('correct')}</option>
               <option value={story.status === 'published' ? 'unpublish' : 'republish'}>
@@ -212,7 +212,7 @@ function FormerStoryDialog({ id, onClose, onChanged }) {
               <legend className="text-sm font-medium">{m('categories')}</legend>
               {categories.status === 'ready' ? (
                 <div className="mt-2 grid gap-2 sm:grid-cols-2">
-                  {categories.data.map((category) => (
+                  {categories.data.map(category => (
                     <label key={category.id} className="flex items-start gap-2 text-sm">
                       <input
                         type="checkbox"
@@ -254,5 +254,5 @@ function FormerStoryDialog({ id, onClose, onChanged }) {
         </form>
       )}
     </Modal>
-  );
+  )
 }

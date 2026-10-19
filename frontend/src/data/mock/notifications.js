@@ -54,4 +54,4 @@ export const notifications = [
     unread: false,
     color: '#d78f7d',
   },
-];
+]

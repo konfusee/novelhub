@@ -1,5 +1,5 @@
-import { defineModel, mutableOptions, ObjectId, Schema } from '../shared/schema.js';
-import { lockFields } from '../shared/guards.js';
+import { defineModel, mutableOptions, ObjectId, Schema } from '../shared/schema.js'
+import { lockFields } from '../shared/guards.js'
 export const CHAPTER_STATUSES = [
   'draft',
   'submitted',
@@ -10,8 +10,8 @@ export const CHAPTER_STATUSES = [
   'unpublished',
   'archived',
   'cancelled',
-];
-export const CANCELLATION_REASONS = ['author-role-removed', 'account-deleted'];
+]
+export const CANCELLATION_REASONS = ['author-role-removed', 'account-deleted']
 const earlyAccessSchema = new Schema(
   {
     enabled: { type: Boolean, default: false },
@@ -21,7 +21,7 @@ const earlyAccessSchema = new Schema(
     policyVersionId: { type: ObjectId, ref: 'PolicyVersion' },
   },
   { _id: false, strict: 'throw' },
-);
+)
 const transitionSchema = new Schema(
   {
     actorAccountId: { type: ObjectId, ref: 'Account' },
@@ -32,7 +32,7 @@ const transitionSchema = new Schema(
     failure: String,
   },
   { _id: false, strict: 'throw' },
-);
+)
 const schema = new Schema(
   {
     storyId: { type: ObjectId, ref: 'Story', required: true },
@@ -51,9 +51,9 @@ const schema = new Schema(
     cancellationReason: { type: String, enum: CANCELLATION_REASONS },
   },
   mutableOptions,
-);
-lockFields(schema, ['firstReleasedAt'], { mode: 'set-once' });
-schema.index({ storyId: 1, orderKey: 1 }, { unique: true });
-schema.index({ status: 1, requestedReleaseAt: 1, storyId: 1, orderKey: 1 });
-schema.index({ storyId: 1, publishedRevisionId: 1, orderKey: 1 });
-export const Chapter = defineModel('Chapter', schema, 'chapters');
+)
+lockFields(schema, ['firstReleasedAt'], { mode: 'set-once' })
+schema.index({ storyId: 1, orderKey: 1 }, { unique: true })
+schema.index({ status: 1, requestedReleaseAt: 1, storyId: 1, orderKey: 1 })
+schema.index({ storyId: 1, publishedRevisionId: 1, orderKey: 1 })
+export const Chapter = defineModel('Chapter', schema, 'chapters')

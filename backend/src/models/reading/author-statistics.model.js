@@ -1,4 +1,4 @@
-import { defineModel, mutableOptions, ObjectId, Schema } from '../shared/schema.js';
+import { defineModel, mutableOptions, ObjectId, Schema } from '../shared/schema.js'
 
 const schema = new Schema(
   {
@@ -15,6 +15,6 @@ const schema = new Schema(
     status: String,
   },
   mutableOptions,
-);
-schema.index({ authorAccountId: 1 }, { unique: true });
-export const AuthorStatistics = defineModel('AuthorStatistics', schema, 'authorStatistics');
+)
+schema.index({ authorAccountId: 1 }, { unique: true })
+export const AuthorStatistics = defineModel('AuthorStatistics', schema, 'authorStatistics')

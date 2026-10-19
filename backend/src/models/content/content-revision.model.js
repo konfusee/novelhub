@@ -1,5 +1,5 @@
-import { defineModel, mutableOptions, ObjectId, Schema } from '../shared/schema.js';
-import { lockFields } from '../shared/guards.js';
+import { defineModel, mutableOptions, ObjectId, Schema } from '../shared/schema.js'
+import { lockFields } from '../shared/guards.js'
 export const REVISION_STATUSES = [
   'editable',
   'validated',
@@ -9,7 +9,7 @@ export const REVISION_STATUSES = [
   'approved',
   'rejected',
   'cancelled',
-];
+]
 const schema = new Schema(
   {
     contentType: { type: String, enum: ['story', 'chapter'], required: true },
@@ -18,7 +18,7 @@ const schema = new Schema(
       type: ObjectId,
       ref: 'Chapter',
       required() {
-        return this.contentType === 'chapter';
+        return this.contentType === 'chapter'
       },
     },
     authorAccountId: { type: ObjectId, ref: 'Account', required: true },
@@ -38,7 +38,7 @@ const schema = new Schema(
     mediaIds: [{ type: ObjectId, ref: 'MediaAsset' }],
   },
   mutableOptions,
-);
+)
 lockFields(
   schema,
   [
@@ -60,7 +60,7 @@ lockFields(
     'submittedAt',
   ],
   { mode: 'frozen-by', lockField: 'immutableAt' },
-);
-schema.index({ contentType: 1, storyId: 1, chapterId: 1, revisionNumber: 1 }, { unique: true });
-schema.index({ chapterId: 1, status: 1, revisionNumber: -1 });
-export const ContentRevision = defineModel('ContentRevision', schema, 'contentRevisions');
+)
+schema.index({ contentType: 1, storyId: 1, chapterId: 1, revisionNumber: 1 }, { unique: true })
+schema.index({ chapterId: 1, status: 1, revisionNumber: -1 })
+export const ContentRevision = defineModel('ContentRevision', schema, 'contentRevisions')

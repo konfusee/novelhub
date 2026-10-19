@@ -8,59 +8,59 @@ import {
   useLayoutEffect,
   useRef,
   useState,
-} from 'react';
-import { createPortal } from 'react-dom';
-import { Link } from 'react-router';
-import { ArrowUp, Check, ChevronDown, Sparkles, X } from '../icons';
-import { useLocale } from '../../context/LocaleContext';
+} from 'react'
+import { createPortal } from 'react-dom'
+import { Link } from 'react-router'
+import { ArrowUp, Check, ChevronDown, Sparkles, X } from '../icons'
+import { useLocale } from '../../context/LocaleContext'
 
-const cn = (...classes) => classes.filter(Boolean).join(' ');
+const cn = (...classes) => classes.filter(Boolean).join(' ')
 
 /*
  * Tailwind orders same-property utilities by value, not by class order, so a caller's `p-4` can
  * never beat a default `p-6`. Defaults are therefore emitted only when the caller's className
  * does not set that (unprefixed) utility itself.
  */
-const PADDING = /(^|\s)p-/;
-const RADIUS = /(^|\s)rounded-(none|sm|md|lg|xl|2xl|3xl|full|\[)/;
-const SIZE = /(^|\s)size-/;
+const PADDING = /(^|\s)p-/
+const RADIUS = /(^|\s)rounded-(none|sm|md|lg|xl|2xl|3xl|full|\[)/
+const SIZE = /(^|\s)size-/
 const DISPLAY =
-  /(^|\s)(hidden|block|flex|grid|inline|inline-block|inline-flex|inline-grid|contents)(?=\s|$)/;
+  /(^|\s)(hidden|block|flex|grid|inline|inline-block|inline-flex|inline-grid|contents)(?=\s|$)/
 const BACKGROUND =
-  /(^|\s)bg-(?!clip|origin|fixed|local|scroll|repeat|no-repeat|cover|contain|center|top|bottom|left|right|none|linear|radial|conic|gradient)/;
+  /(^|\s)bg-(?!clip|origin|fixed|local|scroll|repeat|no-repeat|cover|contain|center|top|bottom|left|right|none|linear|radial|conic|gradient)/
 const BORDER_COLOR =
-  /(^|\s)border-(brand|orange|purple|rose|transparent|ink|hairline|elevated|surface|\[)/;
-const unless = (className, pattern, fallback) => (pattern.test(className || '') ? '' : fallback);
+  /(^|\s)border-(brand|orange|purple|rose|transparent|ink|hairline|elevated|surface|\[)/
+const unless = (className, pattern, fallback) => (pattern.test(className || '') ? '' : fallback)
 const buttonSizeParts = (className, parts) =>
   parts
     .filter(([pattern]) => !pattern.test(className || ''))
     .map(([, value]) => value)
-    .join(' ');
+    .join(' ')
 
 const renderIcon = (icon, size) =>
-  isValidElement(icon) ? icon : createElement(icon, { size, 'aria-hidden': true });
+  isValidElement(icon) ? icon : createElement(icon, { size, 'aria-hidden': true })
 
 /* Escape-to-close plus focus hand-off/restore for overlay primitives. */
 function useOverlayFocus(open, onClose, panelRef) {
-  const closeRef = useRef(onClose);
+  const closeRef = useRef(onClose)
   useEffect(() => {
-    closeRef.current = onClose;
-  }, [onClose]);
+    closeRef.current = onClose
+  }, [onClose])
   useEffect(() => {
-    if (!open) return undefined;
-    const previous = document.activeElement;
-    panelRef.current?.focus({ preventScroll: true });
-    const onKeyDown = (event) => {
-      if (event.key === 'Escape') closeRef.current?.();
-    };
-    document.addEventListener('keydown', onKeyDown);
+    if (!open) return undefined
+    const previous = document.activeElement
+    panelRef.current?.focus({ preventScroll: true })
+    const onKeyDown = event => {
+      if (event.key === 'Escape') closeRef.current?.()
+    }
+    document.addEventListener('keydown', onKeyDown)
     return () => {
-      document.removeEventListener('keydown', onKeyDown);
+      document.removeEventListener('keydown', onKeyDown)
       if (previous instanceof HTMLElement && previous.isConnected) {
-        previous.focus({ preventScroll: true });
+        previous.focus({ preventScroll: true })
       }
-    };
-  }, [open, panelRef]);
+    }
+  }, [open, panelRef])
 }
 
 const buttonVariants = {
@@ -74,13 +74,13 @@ const buttonVariants = {
   tertiary:
     'border-purple bg-purple text-on-purple shadow-[0_10px_24px_-14px_var(--accent-purple)] hover:bg-purple/88',
   danger: 'border-rose/40 bg-rose/12 text-rose-strong hover:border-rose hover:bg-rose/18',
-};
+}
 
-const MIN_HEIGHT = /(^|\s)min-h-/;
-const PADDING_X = /(^|\s)(p|px)-/;
-const PADDING_Y = /(^|\s)(p|py)-/;
-const FONT_SIZE = /(^|\s)text-(xs|sm|base|lg|xl|\d|\[\d)/;
-const GAP = /(^|\s)gap-/;
+const MIN_HEIGHT = /(^|\s)min-h-/
+const PADDING_X = /(^|\s)(p|px)-/
+const PADDING_Y = /(^|\s)(p|py)-/
+const FONT_SIZE = /(^|\s)text-(xs|sm|base|lg|xl|\d|\[\d)/
+const GAP = /(^|\s)gap-/
 
 // [layout parts, trailing-icon right padding, trailing circle size, trailing icon px]
 const buttonSizes = {
@@ -120,17 +120,17 @@ const buttonSizes = {
     'size-9',
     18,
   ],
-};
+}
 
 const trailingTones = {
   primary: 'bg-on-brand/15',
   accent: 'bg-on-orange/10',
   tertiary: 'bg-on-purple/15',
   danger: 'bg-rose/15',
-};
+}
 
 function buttonClassName({ variant = 'primary', size = 'md', trailingIcon, className }) {
-  const [sizeParts, trailingPad] = buttonSizes[size] || buttonSizes.md;
+  const [sizeParts, trailingPad] = buttonSizes[size] || buttonSizes.md
   return cn(
     'group/btn max-w-full select-none items-center justify-center border font-semibold transition-[background-color,border-color,color,box-shadow,transform] duration-200 ease-spring active:scale-[0.98] disabled:pointer-events-none disabled:opacity-50',
     unless(className, DISPLAY, 'inline-flex'),
@@ -139,12 +139,12 @@ function buttonClassName({ variant = 'primary', size = 'md', trailingIcon, class
     trailingIcon && trailingPad,
     buttonVariants[variant] || buttonVariants.primary,
     className,
-  );
+  )
 }
 
 function ButtonContent({ variant, size, trailingIcon, children }) {
-  if (!trailingIcon) return children;
-  const [, , circle, iconSize] = buttonSizes[size] || buttonSizes.md;
+  if (!trailingIcon) return children
+  const [, , circle, iconSize] = buttonSizes[size] || buttonSizes.md
   return (
     <>
       {children}
@@ -159,7 +159,7 @@ function ButtonContent({ variant, size, trailingIcon, children }) {
         {renderIcon(trailingIcon, iconSize)}
       </span>
     </>
-  );
+  )
 }
 
 export function Button({
@@ -176,7 +176,7 @@ export function Button({
         {children}
       </ButtonContent>
     </button>
-  );
+  )
 }
 
 /* Same look as Button for router navigation (Link semantics, no nested <button>). */
@@ -194,7 +194,7 @@ export function ButtonLink({
         {children}
       </ButtonContent>
     </Link>
-  );
+  )
 }
 
 const iconButtonTones = {
@@ -203,10 +203,10 @@ const iconButtonTones = {
   orange: 'border-transparent bg-orange/16 text-orange-strong hover:bg-orange/24',
   purple: 'border-transparent bg-purple/12 text-purple-strong hover:bg-purple/20',
   rose: 'border-transparent bg-rose/14 text-rose-strong hover:bg-rose/22',
-};
+}
 
 // Small icon buttons keep a 36px look on fine pointers but get a full 44px square on touch.
-const iconButtonSizes = { sm: 'size-9 pointer-coarse:size-11', md: 'size-11', lg: 'size-12' };
+const iconButtonSizes = { sm: 'size-9 pointer-coarse:size-11', md: 'size-11', lg: 'size-12' }
 
 export function IconButton({
   label,
@@ -232,7 +232,7 @@ export function IconButton({
     >
       {children}
     </button>
-  );
+  )
 }
 
 export function Card({
@@ -246,7 +246,7 @@ export function Card({
 }) {
   const lift =
     interactive &&
-    'transition-[transform,box-shadow,border-color] duration-[420ms] ease-spring hover:-translate-y-0.5 hover:shadow-lift';
+    'transition-[transform,box-shadow,border-color] duration-[420ms] ease-spring hover:-translate-y-0.5 hover:shadow-lift'
   if (bezel) {
     return (
       <Tag className={cn('nh-bezel', lift, className)} {...props}>
@@ -260,7 +260,7 @@ export function Card({
           {children}
         </div>
       </Tag>
-    );
+    )
   }
   return (
     <Tag
@@ -277,7 +277,7 @@ export function Card({
     >
       {children}
     </Tag>
-  );
+  )
 }
 
 const badgeTones = {
@@ -287,10 +287,10 @@ const badgeTones = {
   red: 'bg-rose/14 text-rose-strong ring-rose/25',
   purple: 'bg-purple/12 text-purple-strong ring-purple/22',
   blue: 'bg-ink/7 text-ink ring-ink/12',
-};
-badgeTones.brand = badgeTones.green;
-badgeTones.rose = badgeTones.red;
-badgeTones.slate = badgeTones.blue;
+}
+badgeTones.brand = badgeTones.green
+badgeTones.rose = badgeTones.red
+badgeTones.slate = badgeTones.blue
 
 export function Badge({ tone = 'neutral', className, ...props }) {
   return (
@@ -303,7 +303,7 @@ export function Badge({ tone = 'neutral', className, ...props }) {
       )}
       {...props}
     />
-  );
+  )
 }
 
 /*
@@ -315,19 +315,19 @@ const TREND = {
   down: { tone: 'rose', icon: ArrowUp, flip: true, sr: 'Giảm ' },
   new: { tone: 'purple', icon: Sparkles, sr: '' },
   flat: { tone: 'neutral', icon: null, sr: 'Không đổi' },
-};
+}
 // eslint-disable-next-line react-refresh/only-export-components
 export function parseTrend(value) {
-  const text = String(value ?? '').trim();
-  const match = text.match(/^([↑↓▲▼])\s*(.*)$/u);
-  if (match) return { direction: /[↑▲]/u.test(match[1]) ? 'up' : 'down', label: match[2] };
-  if (/^(mới|new)$/iu.test(text)) return { direction: 'new', label: text };
-  if (!text || /^[—–-]$/u.test(text)) return { direction: 'flat', label: '' };
-  return { direction: 'flat', label: text };
+  const text = String(value ?? '').trim()
+  const match = text.match(/^([↑↓▲▼])\s*(.*)$/u)
+  if (match) return { direction: /[↑▲]/u.test(match[1]) ? 'up' : 'down', label: match[2] }
+  if (/^(mới|new)$/iu.test(text)) return { direction: 'new', label: text }
+  if (!text || /^[—–-]$/u.test(text)) return { direction: 'flat', label: '' }
+  return { direction: 'flat', label: text }
 }
 export function Trend({ value, variant = 'badge', className }) {
-  const { direction, label } = parseTrend(value);
-  const { tone, icon: Icon, flip, sr } = TREND[direction];
+  const { direction, label } = parseTrend(value)
+  const { tone, icon: Icon, flip, sr } = TREND[direction]
   const content = (
     <>
       {Icon ? (
@@ -338,27 +338,27 @@ export function Trend({ value, variant = 'badge', className }) {
       <span className="sr-only">{sr}</span>
       {label}
     </>
-  );
+  )
   if (variant === 'inline') {
     const color = {
       up: 'text-brand-strong',
       down: 'text-rose-strong',
       new: 'text-purple-strong',
       flat: 'text-ink/70',
-    }[direction];
+    }[direction]
     return (
       <span
         className={cn('inline-flex items-center gap-0.5 text-xs font-semibold', color, className)}
       >
         {content}
       </span>
-    );
+    )
   }
   return (
     <Badge tone={tone} className={cn('gap-1 tabular-nums', className)}>
       {content}
     </Badge>
-  );
+  )
 }
 
 export function Input({ icon: Icon, trailing, className, ...props }) {
@@ -378,68 +378,68 @@ export function Input({ icon: Icon, trailing, className, ...props }) {
       />
       {trailing}
     </label>
-  );
+  )
 }
 
 /* Select: native-<select>-compatible API rendered as a WAI-ARIA select-only combobox. */
-const LISTBOX_GAP = 6;
-const LISTBOX_EDGE = 8;
-const LISTBOX_MAX_HEIGHT = 320;
-const LISTBOX_MAX_WIDTH = 352;
-const TYPEAHEAD_RESET_MS = 500;
+const LISTBOX_GAP = 6
+const LISTBOX_EDGE = 8
+const LISTBOX_MAX_HEIGHT = 320
+const LISTBOX_MAX_WIDTH = 352
+const TYPEAHEAD_RESET_MS = 500
 
 // Diacritics-insensitive comparison so "tieng" matches "Tiếng" and "d" matches "đ".
-const foldText = (text) =>
+const foldText = text =>
   text
     .normalize('NFD')
     .replace(/[\u0300-\u036f]/g, '')
     .replace(/[đĐ]/g, 'd')
-    .toLowerCase();
+    .toLowerCase()
 
-const nodeText = (node) => {
-  if (node == null || typeof node === 'boolean') return '';
-  if (typeof node === 'string' || typeof node === 'number') return String(node);
-  if (Array.isArray(node)) return node.map(nodeText).join('');
-  return isValidElement(node) ? nodeText(node.props.children) : '';
-};
+const nodeText = node => {
+  if (node == null || typeof node === 'boolean') return ''
+  if (typeof node === 'string' || typeof node === 'number') return String(node)
+  if (Array.isArray(node)) return node.map(nodeText).join('')
+  return isValidElement(node) ? nodeText(node.props.children) : ''
+}
 
 /* Flattens <option>/<optgroup>/fragment children into items the way a native select reads them. */
 function collectOptions(children, group = null, items = []) {
-  Children.forEach(children, (child) => {
-    if (!isValidElement(child)) return;
-    const { props } = child;
+  Children.forEach(children, child => {
+    if (!isValidElement(child)) return
+    const { props } = child
     if (child.type === Fragment) {
-      collectOptions(props.children, group, items);
+      collectOptions(props.children, group, items)
     } else if (child.type === 'optgroup') {
       collectOptions(
         props.children,
         { label: props.label, disabled: Boolean(props.disabled) },
         items,
-      );
+      )
     } else if (child.type === 'option') {
-      const text = nodeText(props.children).replace(/\s+/g, ' ').trim();
+      const text = nodeText(props.children).replace(/\s+/g, ' ').trim()
       items.push({
         value: String(props.value ?? text),
         label: props.label ?? text,
         disabled: Boolean(props.disabled || group?.disabled),
         group,
-      });
+      })
     }
-  });
-  return items;
+  })
+  return items
 }
 
 /* Moves `count` enabled options from `from` in `direction`, stopping at the last enabled one. */
 function moveIndex(items, from, direction, count = 1) {
-  let index = from;
-  let remaining = count;
+  let index = from
+  let remaining = count
   for (let i = from + direction; i >= 0 && i < items.length && remaining > 0; i += direction) {
     if (!items[i].disabled) {
-      index = i;
-      remaining -= 1;
+      index = i
+      remaining -= 1
     }
   }
-  return index;
+  return index
 }
 
 /*
@@ -448,29 +448,29 @@ function moveIndex(items, from, direction, count = 1) {
  * scrim with backdrop-filter). The layer itself never animates, so its rect is exact.
  */
 function placeListbox(trigger, layer, list) {
-  if (!trigger || !layer || !list) return;
-  const rect = trigger.getBoundingClientRect();
-  const viewportWidth = document.documentElement.clientWidth;
-  const viewportHeight = window.innerHeight;
-  const maxWidth = viewportWidth - LISTBOX_EDGE * 2;
-  list.style.minWidth = `${Math.min(rect.width, maxWidth)}px`;
-  list.style.maxWidth = `${Math.min(maxWidth, Math.max(rect.width, LISTBOX_MAX_WIDTH))}px`;
-  list.style.maxHeight = 'none';
-  const below = viewportHeight - rect.bottom - LISTBOX_GAP - LISTBOX_EDGE;
-  const above = rect.top - LISTBOX_GAP - LISTBOX_EDGE;
-  const flip = Math.min(list.offsetHeight, LISTBOX_MAX_HEIGHT) > below && above > below;
-  list.style.maxHeight = `${Math.max(Math.min(LISTBOX_MAX_HEIGHT, flip ? above : below), 0)}px`;
-  list.dataset.side = flip ? 'top' : 'bottom';
-  const top = flip ? rect.top - LISTBOX_GAP - list.offsetHeight : rect.bottom + LISTBOX_GAP;
+  if (!trigger || !layer || !list) return
+  const rect = trigger.getBoundingClientRect()
+  const viewportWidth = document.documentElement.clientWidth
+  const viewportHeight = window.innerHeight
+  const maxWidth = viewportWidth - LISTBOX_EDGE * 2
+  list.style.minWidth = `${Math.min(rect.width, maxWidth)}px`
+  list.style.maxWidth = `${Math.min(maxWidth, Math.max(rect.width, LISTBOX_MAX_WIDTH))}px`
+  list.style.maxHeight = 'none'
+  const below = viewportHeight - rect.bottom - LISTBOX_GAP - LISTBOX_EDGE
+  const above = rect.top - LISTBOX_GAP - LISTBOX_EDGE
+  const flip = Math.min(list.offsetHeight, LISTBOX_MAX_HEIGHT) > below && above > below
+  list.style.maxHeight = `${Math.max(Math.min(LISTBOX_MAX_HEIGHT, flip ? above : below), 0)}px`
+  list.dataset.side = flip ? 'top' : 'bottom'
+  const top = flip ? rect.top - LISTBOX_GAP - list.offsetHeight : rect.bottom + LISTBOX_GAP
   const left = Math.max(
     LISTBOX_EDGE,
     Math.min(rect.left, viewportWidth - list.offsetWidth - LISTBOX_EDGE),
-  );
-  layer.style.left = '0px';
-  layer.style.top = '0px';
-  const origin = layer.getBoundingClientRect();
-  layer.style.left = `${left - origin.left}px`;
-  layer.style.top = `${top - origin.top}px`;
+  )
+  layer.style.left = '0px'
+  layer.style.top = '0px'
+  const origin = layer.getBoundingClientRect()
+  layer.style.left = `${left - origin.left}px`
+  layer.style.top = `${top - origin.top}px`
 }
 
 export function Select({
@@ -490,98 +490,98 @@ export function Select({
   'aria-labelledby': ariaLabelledby,
   ...props
 }) {
-  const baseId = useId();
-  const listId = `${baseId}-listbox`;
-  const optionId = (index) => `${baseId}-option-${index}`;
-  const triggerRef = useRef(null);
-  const layerRef = useRef(null);
-  const listRef = useRef(null);
-  const optionRefs = useRef([]);
-  const typeaheadRef = useRef({ buffer: '', timer: 0 });
-  const [open, setOpen] = useState(false);
-  const [active, setActive] = useState(-1);
-  const [host, setHost] = useState(null);
-  const [listLabel, setListLabel] = useState('');
-  const [innerValue, setInnerValue] = useState(defaultValue);
+  const baseId = useId()
+  const listId = `${baseId}-listbox`
+  const optionId = index => `${baseId}-option-${index}`
+  const triggerRef = useRef(null)
+  const layerRef = useRef(null)
+  const listRef = useRef(null)
+  const optionRefs = useRef([])
+  const typeaheadRef = useRef({ buffer: '', timer: 0 })
+  const [open, setOpen] = useState(false)
+  const [active, setActive] = useState(-1)
+  const [host, setHost] = useState(null)
+  const [listLabel, setListLabel] = useState('')
+  const [innerValue, setInnerValue] = useState(defaultValue)
 
-  const items = collectOptions(children);
-  const current = String((value !== undefined ? value : innerValue) ?? '');
-  const matched = items.findIndex((item) => item.value === current);
+  const items = collectOptions(children)
+  const current = String((value !== undefined ? value : innerValue) ?? '')
+  const matched = items.findIndex(item => item.value === current)
   // Like a native select, an unmatched value displays the first enabled option.
-  const selectedIndex = matched >= 0 ? matched : moveIndex(items, -1, 1);
-  const selected = items[selectedIndex];
+  const selectedIndex = matched >= 0 ? matched : moveIndex(items, -1, 1)
+  const selected = items[selectedIndex]
 
   const openList = (index = selectedIndex) => {
-    if (disabled || !items.length) return;
-    const trigger = triggerRef.current;
+    if (disabled || !items.length) return
+    const trigger = triggerRef.current
     // Inside a dialog the list stays in the dialog's subtree so aria-modal does not hide it.
-    setHost(trigger.closest('[role="dialog"]') ?? document.body);
+    setHost(trigger.closest('[role="dialog"]') ?? document.body)
     setListLabel(
-      ariaLabel ?? Array.from(trigger.labels ?? [], (label) => label.textContent.trim()).join(' '),
-    );
-    setActive(index);
-    setOpen(true);
-  };
+      ariaLabel ?? Array.from(trigger.labels ?? [], label => label.textContent.trim()).join(' '),
+    )
+    setActive(index)
+    setOpen(true)
+  }
 
-  const commit = (index) => {
-    setOpen(false);
-    const item = items[index];
-    if (!item || item.disabled || item.value === current) return;
-    if (value === undefined) setInnerValue(item.value);
-    const target = { value: item.value, name, id };
+  const commit = index => {
+    setOpen(false)
+    const item = items[index]
+    if (!item || item.disabled || item.value === current) return
+    if (value === undefined) setInnerValue(item.value)
+    const target = { value: item.value, name, id }
     onChange?.({
       type: 'change',
       target,
       currentTarget: target,
       preventDefault() {},
       stopPropagation() {},
-    });
-  };
+    })
+  }
 
   const findTypeahead = (key, from) => {
-    const typeahead = typeaheadRef.current;
-    window.clearTimeout(typeahead.timer);
-    typeahead.buffer += foldText(key);
+    const typeahead = typeaheadRef.current
+    window.clearTimeout(typeahead.timer)
+    typeahead.buffer += foldText(key)
     typeahead.timer = window.setTimeout(() => {
-      typeahead.buffer = '';
-    }, TYPEAHEAD_RESET_MS);
-    const { buffer } = typeahead;
+      typeahead.buffer = ''
+    }, TYPEAHEAD_RESET_MS)
+    const { buffer } = typeahead
     // Repeating one letter cycles through options starting with it; a word keeps the current match.
-    const repeated = [...buffer].every((char) => char === buffer[0]);
-    const query = repeated ? buffer[0] : buffer;
-    const start = Math.max(from, 0) + (repeated ? 1 : 0);
+    const repeated = [...buffer].every(char => char === buffer[0])
+    const query = repeated ? buffer[0] : buffer
+    const start = Math.max(from, 0) + (repeated ? 1 : 0)
     for (let step = 0; step < items.length; step += 1) {
-      const index = (start + step) % items.length;
-      if (!items[index].disabled && foldText(items[index].label).startsWith(query)) return index;
+      const index = (start + step) % items.length
+      if (!items[index].disabled && foldText(items[index].label).startsWith(query)) return index
     }
-    return -1;
-  };
+    return -1
+  }
 
-  const handleKeyDown = (event) => {
-    onKeyDown?.(event);
-    if (event.defaultPrevented || disabled) return;
-    const { key, altKey, ctrlKey, metaKey } = event;
-    const typing = typeaheadRef.current.buffer !== '';
+  const handleKeyDown = event => {
+    onKeyDown?.(event)
+    if (event.defaultPrevented || disabled) return
+    const { key, altKey, ctrlKey, metaKey } = event
+    const typing = typeaheadRef.current.buffer !== ''
     const printable =
       key.length === 1 &&
       !ctrlKey &&
       !metaKey &&
       !altKey &&
       !event.nativeEvent.isComposing &&
-      (key !== ' ' || typing);
+      (key !== ' ' || typing)
     if (!open) {
       if (printable) {
-        event.preventDefault();
-        const match = findTypeahead(key, selectedIndex);
-        openList(match >= 0 ? match : selectedIndex);
+        event.preventDefault()
+        const match = findTypeahead(key, selectedIndex)
+        openList(match >= 0 ? match : selectedIndex)
       } else if (['ArrowDown', 'ArrowUp', 'Enter', ' '].includes(key)) {
-        event.preventDefault();
-        openList();
+        event.preventDefault()
+        openList()
       } else if (key === 'Home' || key === 'End') {
-        event.preventDefault();
-        openList(key === 'Home' ? moveIndex(items, -1, 1) : moveIndex(items, items.length, -1));
+        event.preventDefault()
+        openList(key === 'Home' ? moveIndex(items, -1, 1) : moveIndex(items, items.length, -1))
       }
-      return;
+      return
     }
     const moves = {
       ArrowDown: () => moveIndex(items, active, 1),
@@ -590,83 +590,83 @@ export function Select({
       End: () => moveIndex(items, items.length, -1),
       PageDown: () => moveIndex(items, active, 1, 10),
       PageUp: () => moveIndex(items, active, -1, 10),
-    };
+    }
     if (printable) {
-      event.preventDefault();
-      const match = findTypeahead(key, active);
-      if (match >= 0) setActive(match);
+      event.preventDefault()
+      const match = findTypeahead(key, active)
+      if (match >= 0) setActive(match)
     } else if (key === 'Enter' || key === ' ' || (key === 'ArrowUp' && altKey)) {
-      event.preventDefault();
-      commit(active);
+      event.preventDefault()
+      commit(active)
     } else if (key === 'Escape') {
       // Keep the Escape from also closing an enclosing Modal/Drawer.
-      event.preventDefault();
-      event.stopPropagation();
-      setOpen(false);
+      event.preventDefault()
+      event.stopPropagation()
+      setOpen(false)
     } else if (key === 'Tab') {
-      commit(active);
+      commit(active)
     } else if (moves[key]) {
-      event.preventDefault();
-      setActive(moves[key]());
+      event.preventDefault()
+      setActive(moves[key]())
     }
-  };
+  }
 
   useLayoutEffect(() => {
-    if (!open || !host) return undefined;
-    const place = () => placeListbox(triggerRef.current, layerRef.current, listRef.current);
-    place();
-    const inside = (target) =>
-      triggerRef.current?.contains(target) || layerRef.current?.contains(target);
-    const onPointerDown = (event) => {
-      if (!inside(event.target)) setOpen(false);
-    };
+    if (!open || !host) return undefined
+    const place = () => placeListbox(triggerRef.current, layerRef.current, listRef.current)
+    place()
+    const inside = target =>
+      triggerRef.current?.contains(target) || layerRef.current?.contains(target)
+    const onPointerDown = event => {
+      if (!inside(event.target)) setOpen(false)
+    }
     // A fixed list would detach from a scrolled trigger, so any outside scroll closes it.
-    const onScroll = (event) => {
-      if (!inside(event.target)) setOpen(false);
-    };
-    document.addEventListener('pointerdown', onPointerDown, true);
-    document.addEventListener('scroll', onScroll, { capture: true, passive: true });
-    window.addEventListener('resize', place);
+    const onScroll = event => {
+      if (!inside(event.target)) setOpen(false)
+    }
+    document.addEventListener('pointerdown', onPointerDown, true)
+    document.addEventListener('scroll', onScroll, { capture: true, passive: true })
+    window.addEventListener('resize', place)
     return () => {
-      document.removeEventListener('pointerdown', onPointerDown, true);
-      document.removeEventListener('scroll', onScroll, { capture: true });
-      window.removeEventListener('resize', place);
-    };
-  }, [open, host]);
+      document.removeEventListener('pointerdown', onPointerDown, true)
+      document.removeEventListener('scroll', onScroll, { capture: true })
+      window.removeEventListener('resize', place)
+    }
+  }, [open, host])
 
   // Keep the active option visible inside the list without scrolling the page.
   useLayoutEffect(() => {
-    const list = listRef.current;
-    const option = optionRefs.current[active];
-    if (!open || !list || !option) return;
-    const top = option.offsetTop - LISTBOX_GAP;
-    const bottom = option.offsetTop + option.offsetHeight + LISTBOX_GAP;
-    if (top < list.scrollTop) list.scrollTop = top;
+    const list = listRef.current
+    const option = optionRefs.current[active]
+    if (!open || !list || !option) return
+    const top = option.offsetTop - LISTBOX_GAP
+    const bottom = option.offsetTop + option.offsetHeight + LISTBOX_GAP
+    if (top < list.scrollTop) list.scrollTop = top
     else if (bottom > list.scrollTop + list.clientHeight) {
-      list.scrollTop = bottom - list.clientHeight;
+      list.scrollTop = bottom - list.clientHeight
     }
-  }, [open, active]);
+  }, [open, active])
 
   useEffect(() => {
-    const typeahead = typeaheadRef.current;
-    return () => window.clearTimeout(typeahead.timer);
-  }, []);
+    const typeahead = typeaheadRef.current
+    return () => window.clearTimeout(typeahead.timer)
+  }, [])
 
-  const sections = [];
+  const sections = []
   items.forEach((item, index) => {
-    const last = sections[sections.length - 1];
-    if (last && last.group === item.group) last.entries.push(index);
-    else sections.push({ group: item.group, entries: [index] });
-  });
+    const last = sections[sections.length - 1]
+    if (last && last.group === item.group) last.entries.push(index)
+    else sections.push({ group: item.group, entries: [index] })
+  })
 
-  const renderOption = (index) => {
-    const item = items[index];
-    const isSelected = index === selectedIndex;
+  const renderOption = index => {
+    const item = items[index]
+    const isSelected = index === selectedIndex
     return (
       <div
         key={index}
-        ref={(node) => {
-          optionRefs.current[index] = node;
+        ref={node => {
+          optionRefs.current[index] = node
         }}
         id={optionId(index)}
         role="option"
@@ -674,12 +674,12 @@ export function Select({
         aria-disabled={item.disabled || undefined}
         data-active={index === active || undefined}
         onPointerMove={() => {
-          if (!item.disabled && index !== active) setActive(index);
+          if (!item.disabled && index !== active) setActive(index)
         }}
         onClick={() => {
-          if (item.disabled) return;
-          commit(index);
-          triggerRef.current?.focus({ preventScroll: true });
+          if (item.disabled) return
+          commit(index)
+          triggerRef.current?.focus({ preventScroll: true })
         }}
         className={cn(
           'flex min-h-10 select-none items-center gap-3 rounded-xl px-3 py-2 text-sm pointer-coarse:min-h-11',
@@ -696,8 +696,8 @@ export function Select({
           className={cn('shrink-0', !isSelected && 'invisible')}
         />
       </div>
-    );
-  };
+    )
+  }
 
   return (
     <>
@@ -715,20 +715,20 @@ export function Select({
         aria-required={required || undefined}
         disabled={disabled}
         title={items[selectedIndex]?.label || undefined}
-        onClick={(event) => {
-          onClick?.(event);
-          if (event.defaultPrevented) return;
-          if (open) setOpen(false);
-          else openList();
+        onClick={event => {
+          onClick?.(event)
+          if (event.defaultPrevented) return
+          if (open) setOpen(false)
+          else openList()
         }}
         onKeyDown={handleKeyDown}
         // Space activates buttons on keyup; the keydown handler already toggled the list.
-        onKeyUp={(event) => {
-          if (event.key === ' ') event.preventDefault();
+        onKeyUp={event => {
+          if (event.key === ' ') event.preventDefault()
         }}
-        onBlur={(event) => {
-          onBlur?.(event);
-          setOpen(false);
+        onBlur={event => {
+          onBlur?.(event)
+          setOpen(false)
         }}
         className={cn(
           'inline-flex min-h-11 min-w-0 max-w-full items-center gap-2 rounded-full border border-line bg-surface pl-4 pr-3 text-left text-sm text-ink outline-none transition-colors hover:border-[var(--color-rule-strong)] focus:border-brand disabled:cursor-not-allowed disabled:opacity-50',
@@ -775,7 +775,7 @@ export function Select({
               aria-label={ariaLabelledby ? undefined : listLabel || undefined}
               aria-labelledby={ariaLabelledby}
               // Keeps focus (and aria-activedescendant) on the trigger for clicks and scrollbar drags.
-              onMouseDown={(event) => event.preventDefault()}
+              onMouseDown={event => event.preventDefault()}
               className="nh-listbox w-max overflow-y-auto overscroll-contain rounded-2xl border border-hairline bg-surface p-1.5 shadow-float"
             >
               {sections.map(({ group, entries }, sectionIndex) =>
@@ -802,23 +802,23 @@ export function Select({
           host,
         )}
     </>
-  );
+  )
 }
 
 export function Tabs({ items, value, onChange, label, singleRow = false, className }) {
-  const railRef = useRef(null);
+  const railRef = useRef(null)
   useEffect(() => {
     // Keep the active tab visible inside a horizontally scrolling single-row rail.
-    const rail = railRef.current;
-    if (!singleRow || !rail) return;
-    const active = rail.querySelector('[aria-pressed="true"]');
-    if (!active) return;
-    const left = active.offsetLeft - rail.offsetLeft;
-    const right = left + active.offsetWidth;
-    if (left < rail.scrollLeft) rail.scrollLeft = left - 4;
+    const rail = railRef.current
+    if (!singleRow || !rail) return
+    const active = rail.querySelector('[aria-pressed="true"]')
+    if (!active) return
+    const left = active.offsetLeft - rail.offsetLeft
+    const right = left + active.offsetWidth
+    if (left < rail.scrollLeft) rail.scrollLeft = left - 4
     else if (right > rail.scrollLeft + rail.clientWidth)
-      rail.scrollLeft = right - rail.clientWidth + 4;
-  }, [value, singleRow]);
+      rail.scrollLeft = right - rail.clientWidth + 4
+  }, [value, singleRow])
   return (
     <div
       ref={railRef}
@@ -830,9 +830,9 @@ export function Tabs({ items, value, onChange, label, singleRow = false, classNa
         className,
       )}
     >
-      {items.map((item) => {
-        const active = value === item.value;
-        const Icon = item.icon;
+      {items.map(item => {
+        const active = value === item.value
+        const Icon = item.icon
         return (
           <button
             key={item.value}
@@ -849,10 +849,10 @@ export function Tabs({ items, value, onChange, label, singleRow = false, classNa
             {Icon && <Icon size={16} />}
             {item.label}
           </button>
-        );
+        )
       })}
     </div>
-  );
+  )
 }
 
 export function Avatar({ name = 'Người dùng NovelHub', src, className }) {
@@ -873,35 +873,35 @@ export function Avatar({ name = 'Người dùng NovelHub', src, className }) {
     >
       {name[0]}
     </span>
-  );
+  )
 }
 
 /* Locks page scrolling while an overlay is open; nested overlays restore in order. */
 function useScrollLock(active) {
   useEffect(() => {
-    if (!active) return undefined;
-    const { overflow } = document.body.style;
-    document.body.style.overflow = 'hidden';
+    if (!active) return undefined
+    const { overflow } = document.body.style
+    document.body.style.overflow = 'hidden'
     return () => {
-      document.body.style.overflow = overflow;
-    };
-  }, [active]);
+      document.body.style.overflow = overflow
+    }
+  }, [active])
 }
 
 export function Modal({ open, title, onClose, className, children }) {
-  const { t } = useLocale();
-  const panelRef = useRef(null);
-  const titleId = useId();
-  useOverlayFocus(open, onClose, panelRef);
-  useScrollLock(open);
-  if (!open) return null;
+  const { t } = useLocale()
+  const panelRef = useRef(null)
+  const titleId = useId()
+  useOverlayFocus(open, onClose, panelRef)
+  useScrollLock(open)
+  if (!open) return null
   // Portaled to <body> so page stacking contexts (isolation, transforms) can't trap the dialog.
   return createPortal(
     <div
       className="nh-fade-enter fixed inset-0 z-50 grid place-items-center overflow-y-auto bg-scrim p-4 backdrop-blur-sm"
       // Tapping the backdrop (not the panel) closes, which phones rely on.
-      onMouseDown={(event) => {
-        if (event.target === event.currentTarget) onClose?.();
+      onMouseDown={event => {
+        if (event.target === event.currentTarget) onClose?.()
       }}
     >
       <div
@@ -929,15 +929,15 @@ export function Modal({ open, title, onClose, className, children }) {
       </div>
     </div>,
     document.body,
-  );
+  )
 }
 
 export function Drawer({ open, title, onClose, children, docked = false }) {
-  const { t } = useLocale();
-  const panelRef = useRef(null);
-  const titleId = useId();
-  useOverlayFocus(open, onClose, panelRef);
-  useScrollLock(open && !docked);
+  const { t } = useLocale()
+  const panelRef = useRef(null)
+  const titleId = useId()
+  useOverlayFocus(open, onClose, panelRef)
+  useScrollLock(open && !docked)
   return createPortal(
     <>
       {open && !docked && (
@@ -981,7 +981,7 @@ export function Drawer({ open, title, onClose, children, docked = false }) {
       </aside>
     </>,
     document.body,
-  );
+  )
 }
 
 export function PageContainer({ className, ...props }) {
@@ -990,7 +990,7 @@ export function PageContainer({ className, ...props }) {
       className={cn('mx-auto w-full max-w-[1360px] px-5 py-8 md:px-8 lg:px-12', className)}
       {...props}
     />
-  );
+  )
 }
 
 export function SectionHeader({ title, description, action, eyebrow }) {
@@ -1003,30 +1003,30 @@ export function SectionHeader({ title, description, action, eyebrow }) {
       </div>
       {action}
     </div>
-  );
+  )
 }
 
 /* Fade-up + blur entry when scrolled into view. Reduced motion shows content immediately. */
 export function Reveal({ as: Tag = 'div', delay = 0, className, style, children, ...props }) {
-  const ref = useRef(null);
+  const ref = useRef(null)
   useEffect(() => {
-    const node = ref.current;
-    if (!node) return undefined;
+    const node = ref.current
+    if (!node) return undefined
     if (typeof IntersectionObserver === 'undefined') {
-      node.dataset.visible = 'true';
-      return undefined;
+      node.dataset.visible = 'true'
+      return undefined
     }
     const observer = new IntersectionObserver(
-      (entries) => {
-        if (!entries.some((entry) => entry.isIntersecting)) return;
-        node.dataset.visible = 'true';
-        observer.disconnect();
+      entries => {
+        if (!entries.some(entry => entry.isIntersecting)) return
+        node.dataset.visible = 'true'
+        observer.disconnect()
       },
       { threshold: 0.12, rootMargin: '0px 0px -6% 0px' },
-    );
-    observer.observe(node);
-    return () => observer.disconnect();
-  }, []);
+    )
+    observer.observe(node)
+    return () => observer.disconnect()
+  }, [])
   return (
     <Tag
       ref={ref}
@@ -1036,7 +1036,7 @@ export function Reveal({ as: Tag = 'div', delay = 0, className, style, children,
     >
       {children}
     </Tag>
-  );
+  )
 }
 
 const progressTones = {
@@ -1044,8 +1044,8 @@ const progressTones = {
   orange: 'bg-orange',
   purple: 'bg-purple',
   rose: 'bg-rose',
-};
-const progressSizes = { sm: 'h-1.5', md: 'h-2', lg: 'h-3' };
+}
+const progressSizes = { sm: 'h-1.5', md: 'h-2', lg: 'h-3' }
 
 export function ProgressBar({
   value = 0,
@@ -1055,7 +1055,7 @@ export function ProgressBar({
   label,
   className,
 }) {
-  const percent = max > 0 ? Math.min(100, Math.max(0, (value / max) * 100)) : 0;
+  const percent = max > 0 ? Math.min(100, Math.max(0, (value / max) * 100)) : 0
   return (
     <div
       role="progressbar"
@@ -1078,7 +1078,7 @@ export function ProgressBar({
         style={{ transform: `translateX(${percent - 100}%)` }}
       />
     </div>
-  );
+  )
 }
 
 /*
@@ -1091,7 +1091,7 @@ export function Skeleton({ as: Tag = 'span', className }) {
       aria-hidden="true"
       className={cn('nh-skeleton block', unless(className, RADIUS, 'rounded-full'), className)}
     />
-  );
+  )
 }
 
 export function SkeletonText({ lines = 3, className }) {
@@ -1104,7 +1104,7 @@ export function SkeletonText({ lines = 3, className }) {
         />
       ))}
     </span>
-  );
+  )
 }
 
 /* Card-shaped placeholder for grid/list loading states. */
@@ -1115,7 +1115,7 @@ export function SkeletonCard({ media = false, lines = 2, className }) {
       <Skeleton className="h-5 w-2/3" />
       <SkeletonText lines={lines} />
     </Card>
-  );
+  )
 }
 
 const emptyTones = {
@@ -1123,7 +1123,7 @@ const emptyTones = {
   rose: 'bg-rose/14 text-rose-strong',
   orange: 'bg-orange/16 text-orange-strong',
   purple: 'bg-purple/12 text-purple-strong',
-};
+}
 
 /* `tone="rose"` marks an error state: rose icon tile and role=alert so it is announced. */
 export function EmptyState({
@@ -1135,7 +1135,7 @@ export function EmptyState({
   tone = 'brand',
   className,
 }) {
-  const Heading = headingAs;
+  const Heading = headingAs
   return (
     <div
       role={tone === 'rose' ? 'alert' : undefined}
@@ -1155,5 +1155,5 @@ export function EmptyState({
       {description && <p className="mt-1.5 max-w-sm text-sm text-muted">{description}</p>}
       {action && <div className="mt-5 flex flex-wrap justify-center gap-3">{action}</div>}
     </div>
-  );
+  )
 }

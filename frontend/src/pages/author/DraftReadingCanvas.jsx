@@ -1,24 +1,24 @@
-import { useState } from 'react';
-import { ReaderRange } from '../../components/reader/ReaderSettings';
+import { useState } from 'react'
+import { ReaderRange } from '../../components/reader/ReaderSettings'
 import {
   DEFAULT_READER_FONT,
   READER_FONT_SIZES,
   READER_WIDTH,
   READER_LINE_HEIGHTS,
-} from '../../components/reader/readerOptions';
-import { Button } from '../../components/ui';
-import { useLocale } from '../../context/LocaleContext';
-import { ChapterInlineText } from '../../components/reader/ChapterInlineText';
-import { PrivateChapterImage } from '../../components/story/PrivateChapterImage';
+} from '../../components/reader/readerOptions'
+import { Button } from '../../components/ui'
+import { useLocale } from '../../context/LocaleContext'
+import { ChapterInlineText } from '../../components/reader/ChapterInlineText'
+import { PrivateChapterImage } from '../../components/story/PrivateChapterImage'
 
 // Same reading font, width limits, spacing options and surface geometry as the reader.
 // Preview settings stay local; preview never records a read, view, purchase or progress.
 export function DraftReadingCanvas({ document, storyTitle, submissionId, headingLevel = 1 }) {
-  const { t } = useLocale();
-  const Heading = headingLevel === 2 ? 'h2' : 'h1';
-  const [fontSize, setFontSize] = useState(20);
-  const [width, setWidth] = useState(800);
-  const [lineHeight, setLineHeight] = useState(1.8);
+  const { t } = useLocale()
+  const Heading = headingLevel === 2 ? 'h2' : 'h1'
+  const [fontSize, setFontSize] = useState(20)
+  const [width, setWidth] = useState(800)
+  const [lineHeight, setLineHeight] = useState(1.8)
   return (
     <div className="min-w-0 bg-reader pb-10 text-ink">
       <div className="mx-auto grid max-w-4xl gap-4 rounded-3xl border border-hairline bg-surface p-4 sm:grid-cols-2">
@@ -50,7 +50,7 @@ export function DraftReadingCanvas({ document, storyTitle, submissionId, heading
         </div>
         <div className="flex flex-wrap items-center gap-2 sm:col-span-2">
           <span className="text-sm font-semibold">{t('reader.lineHeight')}</span>
-          {READER_LINE_HEIGHTS.map((value) => (
+          {READER_LINE_HEIGHTS.map(value => (
             <Button
               key={value}
               size="sm"
@@ -75,25 +75,25 @@ export function DraftReadingCanvas({ document, storyTitle, submissionId, heading
         >
           {document.blocks.map((block, index) => {
             if (block.type === 'image')
-              return <PrivateChapterImage key={index} block={block} submissionId={submissionId} />;
-            const className = 'mb-[22px] whitespace-pre-wrap break-words last:mb-0';
+              return <PrivateChapterImage key={index} block={block} submissionId={submissionId} />
+            const className = 'mb-[22px] whitespace-pre-wrap break-words last:mb-0'
             if (
               block.type === 'scene-break' ||
               (block.type === 'paragraph' &&
                 block.inlines
-                  .map((item) => item.text)
+                  .map(item => item.text)
                   .join('')
                   .trim() === '*     *     *')
             )
-              return <hr key={index} className="my-8 border-hairline" />;
-            const text = <ChapterInlineText inlines={block.inlines} />;
+              return <hr key={index} className="my-8 border-hairline" />
+            const text = <ChapterInlineText inlines={block.inlines} />
             if (block.type === 'heading') {
-              const Heading = block.level === 2 ? 'h2' : 'h3';
+              const Heading = block.level === 2 ? 'h2' : 'h3'
               return (
                 <Heading key={index} className={`${className} font-bold`}>
                   {text}
                 </Heading>
-              );
+              )
             }
             if (block.type === 'quote')
               return (
@@ -103,15 +103,15 @@ export function DraftReadingCanvas({ document, storyTitle, submissionId, heading
                 >
                   {text}
                 </blockquote>
-              );
+              )
             return (
               <p key={index} className={className}>
                 {text}
               </p>
-            );
+            )
           })}
         </article>
       </div>
     </div>
-  );
+  )
 }

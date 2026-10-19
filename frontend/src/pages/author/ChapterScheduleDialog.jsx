@@ -1,22 +1,22 @@
-import { useRef, useState } from 'react';
-import { useBackendDocument } from '../../api/useBackendResource';
-import { apiRequest } from '../../api/client';
-import { useLocale } from '../../context/LocaleContext';
-import { Button, ButtonLink, Input, Modal } from '../../components/ui';
+import { useRef, useState } from 'react'
+import { useBackendDocument } from '../../api/useBackendResource'
+import { apiRequest } from '../../api/client'
+import { useLocale } from '../../context/LocaleContext'
+import { Button, ButtonLink, Input, Modal } from '../../components/ui'
 
-const emptySchedule = { target: {}, checks: [], ready: false };
+const emptySchedule = { target: {}, checks: [], ready: false }
 function localTime(value) {
-  if (!value) return '';
-  const date = new Date(value);
-  if (!Number.isFinite(date.getTime())) return '';
-  const pad = (number) => String(number).padStart(2, '0');
-  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}`;
+  if (!value) return ''
+  const date = new Date(value)
+  if (!Number.isFinite(date.getTime())) return ''
+  const pad = number => String(number).padStart(2, '0')
+  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}`
 }
 export function ChapterScheduleDialog({ storyId, chapterId, onClose, onSaved }) {
-  const { t } = useLocale();
-  const endpoint = `/author/stories/${storyId}/chapters/${chapterId}/schedule`;
-  const resource = useBackendDocument(endpoint, emptySchedule);
-  const [busy, setBusy] = useState(false);
+  const { t } = useLocale()
+  const endpoint = `/author/stories/${storyId}/chapters/${chapterId}/schedule`
+  const resource = useBackendDocument(endpoint, emptySchedule)
+  const [busy, setBusy] = useState(false)
   return (
     <Modal open title={t('chapterSchedule.title')} onClose={() => !busy && onClose()}>
       {resource.status === 'ready' ? (
@@ -56,26 +56,26 @@ export function ChapterScheduleDialog({ storyId, chapterId, onClose, onSaved }) 
         </>
       )}
     </Modal>
-  );
+  )
 }
 
 function ScheduleForm({ data, endpoint, chapterId, busy, setBusy, onClose, onSaved, onReload }) {
-  const { t } = useLocale();
-  const [value, setValue] = useState(() => localTime(data.requestedReleaseAt));
-  const [error, setError] = useState('');
-  const [stale, setStale] = useState(false);
-  const busyRef = useRef(false);
-  const date = new Date(value);
-  const valid = Boolean(value && Number.isFinite(date.getTime()) && localTime(date) === value);
-  const ready = data.ready && data.target.revisionId && data.target.submissionId;
-  const changed = value !== localTime(data.requestedReleaseAt);
-  const zone = Intl.DateTimeFormat().resolvedOptions().timeZone;
-  const save = async (cancel) => {
+  const { t } = useLocale()
+  const [value, setValue] = useState(() => localTime(data.requestedReleaseAt))
+  const [error, setError] = useState('')
+  const [stale, setStale] = useState(false)
+  const busyRef = useRef(false)
+  const date = new Date(value)
+  const valid = Boolean(value && Number.isFinite(date.getTime()) && localTime(date) === value)
+  const ready = data.ready && data.target.revisionId && data.target.submissionId
+  const changed = value !== localTime(data.requestedReleaseAt)
+  const zone = Intl.DateTimeFormat().resolvedOptions().timeZone
+  const save = async cancel => {
     if (busyRef.current || stale || (cancel ? !data.canCancel : !ready || !valid || !changed))
-      return;
-    busyRef.current = true;
-    setBusy(true);
-    setError('');
+      return
+    busyRef.current = true
+    setBusy(true)
+    setError('')
     try {
       const result = await apiRequest(endpoint, {
         method: 'PUT',
@@ -86,7 +86,7 @@ function ScheduleForm({ data, endpoint, chapterId, busy, setBusy, onClose, onSav
           expectedStoryVersion: data.target.storyVersion,
           requestedReleaseAt: cancel ? null : date.toISOString(),
         },
-      });
+      })
       if (
         result?.chapter?.id !== chapterId ||
         !(cancel
@@ -95,16 +95,16 @@ function ScheduleForm({ data, endpoint, chapterId, busy, setBusy, onClose, onSav
             result.chapter.requestedReleaseAt &&
             new Date(result.chapter.requestedReleaseAt).getTime() === date.getTime())
       )
-        throw new Error(t('chapterSchedule.failed'));
-      onSaved(cancel);
+        throw new Error(t('chapterSchedule.failed'))
+      onSaved(cancel)
     } catch (failure) {
-      setError(failure.message || t('chapterSchedule.failed'));
-      if (failure.status === 409) setStale(true);
+      setError(failure.message || t('chapterSchedule.failed'))
+      if (failure.status === 409) setStale(true)
     } finally {
-      busyRef.current = false;
-      setBusy(false);
+      busyRef.current = false
+      setBusy(false)
     }
-  };
+  }
   return (
     <>
       <h3 className="break-words text-base font-semibold">{data.target.title}</h3>
@@ -115,7 +115,7 @@ function ScheduleForm({ data, endpoint, chapterId, busy, setBusy, onClose, onSav
         </p>
       )}
       <ul className="mt-4 space-y-2">
-        {data.checks.map((check) => (
+        {data.checks.map(check => (
           <li key={check.code} className="grid grid-cols-[minmax(0,1fr)_auto] gap-3 text-sm">
             <span>{t(`chapterRelease.checks.${check.code}`)}</span>
             <strong className={check.ok ? 'text-brand-strong' : 'text-rose-strong'}>
@@ -139,9 +139,9 @@ function ScheduleForm({ data, endpoint, chapterId, busy, setBusy, onClose, onSav
       )}
       <form
         className="mt-5"
-        onSubmit={(event) => {
-          event.preventDefault();
-          save(false);
+        onSubmit={event => {
+          event.preventDefault()
+          save(false)
         }}
       >
         <label htmlFor="chapter-release-time" className="mb-2 block text-sm font-semibold">
@@ -155,7 +155,7 @@ function ScheduleForm({ data, endpoint, chapterId, busy, setBusy, onClose, onSav
           required
           aria-describedby="chapter-release-zone"
           disabled={busy || stale || !ready}
-          onChange={(event) => setValue(event.target.value)}
+          onChange={event => setValue(event.target.value)}
         />
         <p id="chapter-release-zone" className="mt-2 break-words text-xs text-muted">
           {t('chapterSchedule.zone', { zone })}
@@ -192,5 +192,5 @@ function ScheduleForm({ data, endpoint, chapterId, busy, setBusy, onClose, onSav
         </div>
       </form>
     </>
-  );
+  )
 }

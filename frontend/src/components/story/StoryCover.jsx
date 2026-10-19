@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState } from 'react'
 import {
   Archive,
   BookOpen,
@@ -12,23 +12,23 @@ import {
   Settings,
   Sparkles,
   Theater,
-} from '../icons';
-import fantasyCover from '../../assets/covers/fantasy-cover-silent-forest.webp';
-import romanceCover from '../../assets/covers/romance-cover-whispers-of-you.webp';
-import scifiCover from '../../assets/covers/scifi-cover-neon-hearts.webp';
+} from '../icons'
+import fantasyCover from '../../assets/covers/fantasy-cover-silent-forest.webp'
+import romanceCover from '../../assets/covers/romance-cover-whispers-of-you.webp'
+import scifiCover from '../../assets/covers/scifi-cover-neon-hearts.webp'
 
 const covers = {
   'silent-forest': fantasyCover,
   'the-silent-forest': fantasyCover,
   'whispers-of-you': romanceCover,
   'neon-hearts': scifiCover,
-};
+}
 
-const slugify = (value) =>
+const slugify = value =>
   value
     ?.toLowerCase()
     .replace(/[^a-z0-9]+/g, '-')
-    .replace(/(^-|-$)/g, '');
+    .replace(/(^-|-$)/g, '')
 
 /* Genre motif for generated covers: Folio glyph plus a palette tint (VI and EN genre labels). */
 const genreMotifs = [
@@ -42,30 +42,30 @@ const genreMotifs = [
   [/ch[íi]nh k[ịi]ch|drama/i, Theater, 'oklch(52% 0.1 10)'],
   [/kinh d[ịi]|horror/i, Ghost, 'oklch(32% 0.03 258)'],
   [/steampunk/i, Settings, 'oklch(48% 0.07 55)'],
-];
-const motifFor = (genre) =>
-  genreMotifs.find(([pattern]) => pattern.test(genre || '')) || [null, BookOpen, 'var(--primary)'];
+]
+const motifFor = genre =>
+  genreMotifs.find(([pattern]) => pattern.test(genre || '')) || [null, BookOpen, 'var(--primary)']
 
 /*
  * Generated fallback: the story's own color (media data), else its genre tint, shaped into a
  * lit-from-above gradient with a spine shade, a faint ring pattern and the genre glyph.
  */
-const fallbackBackground = (tint) => ({
+const fallbackBackground = tint => ({
   backgroundImage: [
     'linear-gradient(90deg, oklch(15% 0.03 258 / 0.28), oklch(15% 0.03 258 / 0) 9%)',
     'repeating-radial-gradient(circle at 78% 22%, oklch(100% 0 0 / 0.07) 0 1px, transparent 1px 9%)',
     'radial-gradient(120% 70% at 85% 105%, oklch(100% 0 0 / 0.16), transparent 60%)',
     `linear-gradient(162deg, color-mix(in oklab, ${tint} 72%, white) 0%, ${tint} 48%, color-mix(in oklab, ${tint} 62%, oklch(15% 0.03 258)) 100%)`,
   ].join(', '),
-});
+})
 
 export function StoryCover({ story, className = '', eager = false, badge }) {
-  const [failed, setFailed] = useState(false);
-  const key = story?.id || slugify(story?.title);
-  const src = story?.cover || covers[key] || covers[slugify(story?.title)];
-  const label = story?.title ? `Ảnh bìa của ${story.title}` : 'Ảnh bìa truyện NovelHub';
-  const title = story?.title?.trim() || 'NovelHub';
-  const [, GenreIcon, genreTint] = motifFor(story?.genre);
+  const [failed, setFailed] = useState(false)
+  const key = story?.id || slugify(story?.title)
+  const src = story?.cover || covers[key] || covers[slugify(story?.title)]
+  const label = story?.title ? `Ảnh bìa của ${story.title}` : 'Ảnh bìa truyện NovelHub'
+  const title = story?.title?.trim() || 'NovelHub'
+  const [, GenreIcon, genreTint] = motifFor(story?.genre)
 
   return (
     <div className={`relative overflow-hidden bg-elevated ${className}`}>
@@ -112,5 +112,5 @@ export function StoryCover({ story, className = '', eager = false, badge }) {
       )}
       {badge}
     </div>
-  );
+  )
 }

@@ -1,7 +1,7 @@
-import { coinAmount, defineModel, mutableOptions, ObjectId, Schema } from '../shared/schema.js';
-import { lockFields, forwardOnly } from '../shared/guards.js';
+import { coinAmount, defineModel, mutableOptions, ObjectId, Schema } from '../shared/schema.js'
+import { lockFields, forwardOnly } from '../shared/guards.js'
 
-export const WITHDRAWAL_STATUSES = ['pending', 'paid'];
+export const WITHDRAWAL_STATUSES = ['pending', 'paid']
 const schema = new Schema(
   {
     accountId: { type: ObjectId, ref: 'Account', required: true },
@@ -20,12 +20,12 @@ const schema = new Schema(
     forcedByDeletion: { type: Boolean, required: true },
   },
   mutableOptions,
-);
+)
 schema.pre('validate', function validateSlipAmount() {
   if (this.payoutSlipAmountVnd !== this.amountCoins) {
-    this.invalidate('payoutSlipAmountVnd', 'Payout slip equals withdrawn coins');
+    this.invalidate('payoutSlipAmountVnd', 'Payout slip equals withdrawn coins')
   }
-});
+})
 lockFields(
   schema,
   [
@@ -44,8 +44,8 @@ lockFields(
     'forcedByDeletion',
   ],
   { mode: 'insert-only' },
-);
-forwardOnly(schema, 'status', { pending: ['paid'], paid: [] });
-schema.index({ accountId: 1, periodId: 1 }, { unique: true });
-schema.index({ status: 1, periodId: 1 });
-export const WithdrawalRequest = defineModel('WithdrawalRequest', schema, 'withdrawalRequests');
+)
+forwardOnly(schema, 'status', { pending: ['paid'], paid: [] })
+schema.index({ accountId: 1, periodId: 1 }, { unique: true })
+schema.index({ status: 1, periodId: 1 })
+export const WithdrawalRequest = defineModel('WithdrawalRequest', schema, 'withdrawalRequests')

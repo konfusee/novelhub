@@ -1,21 +1,21 @@
-import { useRef, useState } from 'react';
-import { apiRequest } from '../../api/client';
-import { useLocale } from '../../context/LocaleContext';
-import { Button, Modal } from '../../components/ui';
+import { useRef, useState } from 'react'
+import { apiRequest } from '../../api/client'
+import { useLocale } from '../../context/LocaleContext'
+import { Button, Modal } from '../../components/ui'
 
 export function StoryUnpublishDialog({ story, version, onClose, onChanged, onBusy }) {
-  const { t } = useLocale();
-  const [reason, setReason] = useState('');
-  const [busy, setBusy] = useState(false);
-  const [error, setError] = useState('');
-  const locked = useRef(false);
-  const submit = async (event) => {
-    event.preventDefault();
-    event.stopPropagation();
-    if (locked.current || !reason.trim() || error) return;
-    locked.current = true;
-    setBusy(true);
-    onBusy?.(true);
+  const { t } = useLocale()
+  const [reason, setReason] = useState('')
+  const [busy, setBusy] = useState(false)
+  const [error, setError] = useState('')
+  const locked = useRef(false)
+  const submit = async event => {
+    event.preventDefault()
+    event.stopPropagation()
+    if (locked.current || !reason.trim() || error) return
+    locked.current = true
+    setBusy(true)
+    onBusy?.(true)
     try {
       const result = await apiRequest(`/author/stories/${story.id}/lifecycle`, {
         method: 'POST',
@@ -25,23 +25,23 @@ export function StoryUnpublishDialog({ story, version, onClose, onChanged, onBus
           expectedPublishedRevisionId: story.publishedRevisionId,
           reason: reason.trim(),
         },
-      });
+      })
       if (
         result?.story?.id !== story.id ||
         result.story.status !== 'unpublished' ||
         !Number.isSafeInteger(result.story.version) ||
         result.story.version <= version
       )
-        throw new Error(t('storyUnpublish.failed'));
-      onChanged();
+        throw new Error(t('storyUnpublish.failed'))
+      onChanged()
     } catch (failure) {
-      setError(failure.message || t('storyUnpublish.failed'));
+      setError(failure.message || t('storyUnpublish.failed'))
     } finally {
-      locked.current = false;
-      setBusy(false);
-      onBusy?.(false);
+      locked.current = false
+      setBusy(false)
+      onBusy?.(false)
     }
-  };
+  }
   return (
     <Modal open title={t('storyUnpublish.title')} onClose={() => !locked.current && onClose()}>
       <form onSubmit={submit}>
@@ -56,7 +56,7 @@ export function StoryUnpublishDialog({ story, version, onClose, onChanged, onBus
           maxLength={1000}
           value={reason}
           disabled={busy || Boolean(error)}
-          onChange={(event) => setReason(event.target.value)}
+          onChange={event => setReason(event.target.value)}
           className="mt-2 min-h-28 w-full rounded-3xl border border-line bg-surface p-4 text-ink"
         />
         {error && (
@@ -80,5 +80,5 @@ export function StoryUnpublishDialog({ story, version, onClose, onChanged, onBus
         </div>
       </form>
     </Modal>
-  );
+  )
 }

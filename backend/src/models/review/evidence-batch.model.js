@@ -1,5 +1,5 @@
-import { defineModel, mutableOptions, ObjectId, Schema } from '../shared/schema.js';
-export const EVIDENCE_STAGES = ['embedding', 'comparison', 'llm'];
+import { defineModel, mutableOptions, ObjectId, Schema } from '../shared/schema.js'
+export const EVIDENCE_STAGES = ['embedding', 'comparison', 'llm']
 export const EVIDENCE_STATUSES = [
   'pending',
   'embedding-complete',
@@ -7,7 +7,7 @@ export const EVIDENCE_STATUSES = [
   'llm-complete',
   'available-for-human-review',
   'failed',
-];
+]
 const schema = new Schema(
   {
     submissionId: { type: ObjectId, ref: 'PublicationSubmission', required: true },
@@ -20,7 +20,7 @@ const schema = new Schema(
     activeLeaseId: String,
   },
   mutableOptions,
-);
-schema.index({ submissionId: 1, createdAt: -1 });
-schema.index({ revisionId: 1, status: 1 });
-export const EvidenceBatch = defineModel('EvidenceBatch', schema, 'evidenceBatches');
+)
+schema.index({ submissionId: 1, createdAt: -1 })
+schema.index({ revisionId: 1, status: 1 })
+export const EvidenceBatch = defineModel('EvidenceBatch', schema, 'evidenceBatches')

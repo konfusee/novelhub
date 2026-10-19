@@ -1,25 +1,25 @@
-import { useRef, useState } from 'react';
-import { Button, Input, Modal } from '../../components/ui';
-import { useBackendDocument } from '../../api/useBackendResource';
-import { useLocale } from '../../context/LocaleContext';
-import { RichChapterInput } from './RichChapterInput';
-import { DraftReadingCanvas } from './DraftReadingCanvas';
-import { richChapterBody } from './richChapterDom';
+import { useRef, useState } from 'react'
+import { Button, Input, Modal } from '../../components/ui'
+import { useBackendDocument } from '../../api/useBackendResource'
+import { useLocale } from '../../context/LocaleContext'
+import { RichChapterInput } from './RichChapterInput'
+import { DraftReadingCanvas } from './DraftReadingCanvas'
+import { richChapterBody } from './richChapterDom'
 
-const empty = Object.freeze({ chapter: null });
+const empty = Object.freeze({ chapter: null })
 export function ChapterConflictDialog({ chapter, title, body, richDocument, onClose, onApply }) {
-  const rich = Boolean(richDocument);
-  const richRef = useRef(null);
-  const [mergedDocument, setMergedDocument] = useState(richDocument);
-  const { t } = useLocale();
+  const rich = Boolean(richDocument)
+  const richRef = useRef(null)
+  const [mergedDocument, setMergedDocument] = useState(richDocument)
+  const { t } = useLocale()
   const resource = useBackendDocument(
     `/author/stories/${chapter.storyId}/chapters/${chapter.id}${rich ? '?format=rich' : ''}`,
     empty,
-  );
-  const [mergedTitle, setMergedTitle] = useState(title);
-  const [mergedBody, setMergedBody] = useState(body);
-  const [checked, setChecked] = useState(false);
-  const latest = resource.data.chapter;
+  )
+  const [mergedTitle, setMergedTitle] = useState(title)
+  const [mergedBody, setMergedBody] = useState(body)
+  const [checked, setChecked] = useState(false)
+  const latest = resource.data.chapter
   const valid =
     resource.status === 'ready' &&
     latest?.id === chapter.id &&
@@ -29,12 +29,12 @@ export function ChapterConflictDialog({ chapter, title, body, richDocument, onCl
     (rich
       ? Array.isArray(latest.document?.blocks)
       : Array.isArray(latest.paragraphs) &&
-        latest.paragraphs.every((text) => typeof text === 'string')) &&
-    typeof latest.title === 'string';
-  const canApply = valid && latest.canEdit && checked && Boolean(mergedTitle.trim());
+        latest.paragraphs.every(text => typeof text === 'string')) &&
+    typeof latest.title === 'string'
+  const canApply = valid && latest.canEdit && checked && Boolean(mergedTitle.trim())
   function refresh() {
-    setChecked(false);
-    resource.retry();
+    setChecked(false)
+    resource.retry()
   }
   return (
     <Modal open title={t('chapterConflict.title')} className="max-w-4xl" onClose={onClose}>
@@ -81,9 +81,9 @@ export function ChapterConflictDialog({ chapter, title, body, richDocument, onCl
                   id="conflict-merged-title"
                   maxLength={200}
                   value={mergedTitle}
-                  onChange={(event) => {
-                    setMergedTitle(event.target.value);
-                    setChecked(false);
+                  onChange={event => {
+                    setMergedTitle(event.target.value)
+                    setChecked(false)
                   }}
                 />
                 <label className="block text-xs text-muted" htmlFor="conflict-merged-body">
@@ -95,10 +95,10 @@ export function ChapterConflictDialog({ chapter, title, body, richDocument, onCl
                       variant="secondary"
                       size="sm"
                       onClick={() => {
-                        setMergedTitle(latest.document.title);
-                        setMergedDocument(latest.document);
-                        richRef.current?.replace(latest.document);
-                        setChecked(false);
+                        setMergedTitle(latest.document.title)
+                        setMergedDocument(latest.document)
+                        richRef.current?.replace(latest.document)
+                        setChecked(false)
                       }}
                     >
                       {t('richEditor.useServer')}
@@ -107,9 +107,9 @@ export function ChapterConflictDialog({ chapter, title, body, richDocument, onCl
                       ref={richRef}
                       initialDocument={richDocument}
                       label={t('chapterConflict.mergedBody')}
-                      onChange={(document) => {
-                        setMergedDocument(document);
-                        setChecked(false);
+                      onChange={document => {
+                        setMergedDocument(document)
+                        setChecked(false)
                       }}
                       onSave={() => {}}
                       onError={() => setChecked(false)}
@@ -119,9 +119,9 @@ export function ChapterConflictDialog({ chapter, title, body, richDocument, onCl
                   <textarea
                     id="conflict-merged-body"
                     value={mergedBody}
-                    onChange={(event) => {
-                      setMergedBody(event.target.value);
-                      setChecked(false);
+                    onChange={event => {
+                      setMergedBody(event.target.value)
+                      setChecked(false)
                     }}
                     className="h-56 w-full resize-y rounded-2xl border border-line bg-surface p-3 text-sm leading-6 text-ink"
                   />
@@ -139,7 +139,7 @@ export function ChapterConflictDialog({ chapter, title, body, richDocument, onCl
               <input
                 type="checkbox"
                 checked={checked}
-                onChange={(event) => setChecked(event.target.checked)}
+                onChange={event => setChecked(event.target.checked)}
                 className="mt-1 size-4 shrink-0 accent-brand"
               />
               <span>{t('chapterConflict.confirm')}</span>
@@ -167,12 +167,12 @@ export function ChapterConflictDialog({ chapter, title, body, richDocument, onCl
                       version: latest.version,
                     }
                   : { title: mergedTitle, body: mergedBody, version: latest.version },
-              );
+              )
           }}
         >
           {t('chapterConflict.apply')}
         </Button>
       </div>
     </Modal>
-  );
+  )
 }

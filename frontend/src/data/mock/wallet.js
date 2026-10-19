@@ -36,7 +36,7 @@ export const coinPackages = [
     label: 'Kho lưu trữ',
     note: 'Gói lớn dành cho người nghe nhiều và mở khóa tuyển tập.',
   },
-];
+]
 export const transactions = [
   {
     date: '24 thg 10, 2026, 14:15',
@@ -78,4 +78,4 @@ export const transactions = [
     amount: -25,
     balance: 280,
   },
-];
+]

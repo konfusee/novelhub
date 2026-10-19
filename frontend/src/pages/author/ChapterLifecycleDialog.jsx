@@ -1,21 +1,21 @@
-import { useRef, useState } from 'react';
-import { Button, Modal } from '../../components/ui';
-import { useLocale } from '../../context/LocaleContext';
-import { apiRequest } from '../../api/client';
+import { useRef, useState } from 'react'
+import { Button, Modal } from '../../components/ui'
+import { useLocale } from '../../context/LocaleContext'
+import { apiRequest } from '../../api/client'
 
 export function ChapterLifecycleDialog({ story, chapter, action, onClose, onSaved, onReload }) {
-  const { t } = useLocale();
-  const pending = useRef(false);
-  const [busy, setBusy] = useState(false);
-  const [error, setError] = useState('');
-  const [conflict, setConflict] = useState(false);
+  const { t } = useLocale()
+  const pending = useRef(false)
+  const [busy, setBusy] = useState(false)
+  const [error, setError] = useState('')
+  const [conflict, setConflict] = useState(false)
   async function confirm() {
-    if (pending.current || conflict) return;
-    pending.current = true;
-    setBusy(true);
-    setError('');
+    if (pending.current || conflict) return
+    pending.current = true
+    setBusy(true)
+    setError('')
     try {
-      const revise = action === 'reviseUnpublished';
+      const revise = action === 'reviseUnpublished'
       const result = await apiRequest(
         revise
           ? `/author/submissions/${chapter.reviseSource.id}/revise`
@@ -26,26 +26,26 @@ export function ChapterLifecycleDialog({ story, chapter, action, onClose, onSave
             ? { expectedVersion: chapter.reviseSource.version }
             : { action, expectedVersion: chapter.version, expectedStoryVersion: story.version },
         },
-      );
+      )
       if (
         revise &&
         (!result?.revision?.id ||
           result.revision.chapterId !== chapter.id ||
           result.revision.storyId !== story.id)
       )
-        throw new Error(t('chapterLifecycle.error'));
+        throw new Error(t('chapterLifecycle.error'))
       if (
         action === 'unpublish' &&
         (result?.chapter?.id !== chapter.id || result.chapter.status !== 'unpublished')
       )
-        throw new Error(t('chapterLifecycle.error'));
-      onSaved(result);
+        throw new Error(t('chapterLifecycle.error'))
+      onSaved(result)
     } catch (failure) {
-      setError(failure.message || t('chapterLifecycle.error'));
-      setConflict(failure.status === 409);
+      setError(failure.message || t('chapterLifecycle.error'))
+      setConflict(failure.status === 409)
     } finally {
-      pending.current = false;
-      setBusy(false);
+      pending.current = false
+      setBusy(false)
     }
   }
   return (
@@ -53,7 +53,7 @@ export function ChapterLifecycleDialog({ story, chapter, action, onClose, onSave
       open
       title={t(`chapterLifecycle.${action}`)}
       onClose={() => {
-        if (!pending.current) onClose();
+        if (!pending.current) onClose()
       }}
     >
       <p className="break-words text-sm font-semibold">{chapter.title}</p>
@@ -80,5 +80,5 @@ export function ChapterLifecycleDialog({ story, chapter, action, onClose, onSave
         )}
       </div>
     </Modal>
-  );
+  )
 }

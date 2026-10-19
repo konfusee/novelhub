@@ -1,16 +1,16 @@
-import { Button } from './index';
-import { ChevronLeft, ChevronRight } from '../icons';
-import { useLocale } from '../../context/LocaleContext';
+import { Button } from './index'
+import { ChevronLeft, ChevronRight } from '../icons'
+import { useLocale } from '../../context/LocaleContext'
 export function Pagination({ page, pageCount, onChange }) {
-  const { t } = useLocale();
-  if (pageCount <= 1) return null;
+  const { t } = useLocale()
+  if (pageCount <= 1) return null
   const pages = [
     ...new Set([
       1,
-      ...[page - 1, page, page + 1].filter((value) => value > 1 && value < pageCount),
+      ...[page - 1, page, page + 1].filter(value => value > 1 && value < pageCount),
       pageCount,
     ]),
-  ].sort((a, b) => a - b);
+  ].sort((a, b) => a - b)
   return (
     <nav
       aria-label={t('pagination.label')}
@@ -54,10 +54,10 @@ export function Pagination({ page, pageCount, onChange }) {
       </Button>
       <form
         className="flex items-center gap-2"
-        onSubmit={(event) => {
-          event.preventDefault();
-          const value = Number(new FormData(event.currentTarget).get('page'));
-          if (Number.isInteger(value) && value >= 1 && value <= pageCount) onChange(value);
+        onSubmit={event => {
+          event.preventDefault()
+          const value = Number(new FormData(event.currentTarget).get('page'))
+          if (Number.isInteger(value) && value >= 1 && value <= pageCount) onChange(value)
         }}
       >
         <label className="flex items-center gap-2 text-xs text-muted">
@@ -78,5 +78,5 @@ export function Pagination({ page, pageCount, onChange }) {
         </Button>
       </form>
     </nav>
-  );
+  )
 }

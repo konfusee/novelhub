@@ -1,6 +1,6 @@
-import { appendOnly, appendOnlyOptions, defineModel, ObjectId, Schema } from '../shared/schema.js';
-export const RESOLUTION_OUTCOMES = ['dismissed', 'hidden', 'unpublished', 'warned'];
-export const CONTENT_ACTIONS = ['hide-comment', 'unpublish-chapter', 'unpublish-story', 'none'];
+import { appendOnly, appendOnlyOptions, defineModel, ObjectId, Schema } from '../shared/schema.js'
+export const RESOLUTION_OUTCOMES = ['dismissed', 'hidden', 'unpublished', 'warned']
+export const CONTENT_ACTIONS = ['hide-comment', 'unpublish-chapter', 'unpublish-story', 'none']
 const schema = new Schema(
   {
     reportId: { type: ObjectId, ref: 'ContentReport', required: true },
@@ -14,7 +14,7 @@ const schema = new Schema(
     historyId: { type: ObjectId, ref: 'ModerationHistory' },
   },
   appendOnlyOptions,
-);
-schema.plugin(appendOnly);
-schema.index({ reportId: 1 }, { unique: true });
-export const ReportResolution = defineModel('ReportResolution', schema, 'reportResolutions');
+)
+schema.plugin(appendOnly)
+schema.index({ reportId: 1 }, { unique: true })
+export const ReportResolution = defineModel('ReportResolution', schema, 'reportResolutions')

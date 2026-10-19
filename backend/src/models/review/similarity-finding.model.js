@@ -1,4 +1,4 @@
-import { appendOnly, appendOnlyOptions, defineModel, ObjectId, Schema } from '../shared/schema.js';
+import { appendOnly, appendOnlyOptions, defineModel, ObjectId, Schema } from '../shared/schema.js'
 const schema = new Schema(
   {
     batchId: { type: ObjectId, ref: 'EvidenceBatch', required: true },
@@ -15,8 +15,8 @@ const schema = new Schema(
     occurredAt: { type: Date, default: Date.now },
   },
   appendOnlyOptions,
-);
-schema.plugin(appendOnly);
-schema.index({ batchId: 1, score: -1 });
-schema.index({ revisionId: 1, sourceRevisionId: 1 });
-export const SimilarityFinding = defineModel('SimilarityFinding', schema, 'similarityFindings');
+)
+schema.plugin(appendOnly)
+schema.index({ batchId: 1, score: -1 })
+schema.index({ revisionId: 1, sourceRevisionId: 1 })
+export const SimilarityFinding = defineModel('SimilarityFinding', schema, 'similarityFindings')

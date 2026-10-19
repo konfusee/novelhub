@@ -59,11 +59,11 @@ export const searchResults = [
     color: '#386059',
     icon: '🌿',
   },
-];
+]
 export const trendingSearches = [
   '#BloodMoon',
   '#CyberCity',
   '#MagicAcademy',
   '#SilentForest',
   '#ImmortalKing',
-];
+]

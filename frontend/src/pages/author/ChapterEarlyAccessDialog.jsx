@@ -1,14 +1,14 @@
-import { useId, useRef, useState } from 'react';
-import { apiRequest } from '../../api/client';
-import { useBackendDocument } from '../../api/useBackendResource';
-import { useLocale } from '../../context/LocaleContext';
-import { Button, Input, Modal } from '../../components/ui';
+import { useId, useRef, useState } from 'react'
+import { apiRequest } from '../../api/client'
+import { useBackendDocument } from '../../api/useBackendResource'
+import { useLocale } from '../../context/LocaleContext'
+import { Button, Input, Modal } from '../../components/ui'
 
 export function ChapterEarlyAccessDialog({ storyId, chapterId, onClose, onSaved }) {
-  const { t } = useLocale();
-  const path = `/author/stories/${storyId}/chapters/${chapterId}/early-access`;
-  const resource = useBackendDocument(path, null);
-  const [busy, setBusy] = useState(false);
+  const { t } = useLocale()
+  const path = `/author/stories/${storyId}/chapters/${chapterId}/early-access`
+  const resource = useBackendDocument(path, null)
+  const [busy, setBusy] = useState(false)
   return (
     <Modal open title={t('earlyAccess.title')} onClose={() => !busy && onClose()}>
       {resource.status === 'ready' ? (
@@ -41,24 +41,24 @@ export function ChapterEarlyAccessDialog({ storyId, chapterId, onClose, onSaved 
         </>
       )}
     </Modal>
-  );
+  )
 }
 function EarlyAccessForm({ data, path, busy, setBusy, onClose, onSaved, onReload }) {
-  const { t } = useLocale();
-  const id = useId();
-  const [enabled, setEnabled] = useState(data.settings.enabled);
+  const { t } = useLocale()
+  const id = useId()
+  const [enabled, setEnabled] = useState(data.settings.enabled)
   const [price, setPrice] = useState(
     String(data.settings.coinPrice ?? data.policy?.priceMinCoins ?? ''),
-  );
+  )
   const [days, setDays] = useState(
     String(data.settings.durationDays ?? data.policy?.durationMinDays ?? ''),
-  );
-  const [error, setError] = useState('');
-  const [stale, setStale] = useState(false);
-  const busyRef = useRef(false);
-  const policy = data.policy;
+  )
+  const [error, setError] = useState('')
+  const [stale, setStale] = useState(false)
+  const busyRef = useRef(false)
+  const policy = data.policy
   const coinPrice = Number(price),
-    durationDays = Number(days);
+    durationDays = Number(days)
   const valid =
     !enabled ||
     Boolean(
@@ -71,19 +71,19 @@ function EarlyAccessForm({ data, path, busy, setBusy, onClose, onSaved, onReload
       coinPrice <= policy.priceMaxCoins &&
       durationDays >= policy.durationMinDays &&
       durationDays <= policy.durationMaxDays,
-    );
+    )
   const dirty =
     enabled !== data.settings.enabled ||
     (enabled &&
-      (coinPrice !== data.settings.coinPrice || durationDays !== data.settings.durationDays));
-  const canManage = data.canEdit || data.canDisable;
-  const permitted = data.canEdit || (!enabled && data.canDisable);
-  const save = async (event) => {
-    event.preventDefault();
-    if (busyRef.current || stale || !permitted || !dirty || !valid) return;
-    busyRef.current = true;
-    setBusy(true);
-    setError('');
+      (coinPrice !== data.settings.coinPrice || durationDays !== data.settings.durationDays))
+  const canManage = data.canEdit || data.canDisable
+  const permitted = data.canEdit || (!enabled && data.canDisable)
+  const save = async event => {
+    event.preventDefault()
+    if (busyRef.current || stale || !permitted || !dirty || !valid) return
+    busyRef.current = true
+    setBusy(true)
+    setError('')
     try {
       const result = await apiRequest(path, {
         method: 'PUT',
@@ -100,7 +100,7 @@ function EarlyAccessForm({ data, path, busy, setBusy, onClose, onSaved, onReload
               }
             : {}),
         },
-      });
+      })
       if (
         result?.chapterId !== data.chapterId ||
         result?.version !== data.version + 1 ||
@@ -110,16 +110,16 @@ function EarlyAccessForm({ data, path, busy, setBusy, onClose, onSaved, onReload
           (result.settings.coinPrice !== coinPrice ||
             result.settings.durationDays !== durationDays))
       )
-        throw new Error(t('earlyAccess.failed'));
-      onSaved();
+        throw new Error(t('earlyAccess.failed'))
+      onSaved()
     } catch (failure) {
-      setError(failure.message || t('earlyAccess.failed'));
-      setStale(true);
+      setError(failure.message || t('earlyAccess.failed'))
+      setStale(true)
     } finally {
-      busyRef.current = false;
-      setBusy(false);
+      busyRef.current = false
+      setBusy(false)
     }
-  };
+  }
   return (
     <form onSubmit={save} aria-busy={busy}>
       <h3 className="break-words text-base font-semibold">{data.title}</h3>
@@ -135,7 +135,7 @@ function EarlyAccessForm({ data, path, busy, setBusy, onClose, onSaved, onReload
           type="checkbox"
           checked={enabled}
           disabled={busy || stale || !canManage}
-          onChange={(event) => setEnabled(event.target.checked)}
+          onChange={event => setEnabled(event.target.checked)}
         />
         {t(data.canEdit ? 'earlyAccess.enable' : 'earlyAccess.enabledState')}
       </label>
@@ -154,7 +154,7 @@ function EarlyAccessForm({ data, path, busy, setBusy, onClose, onSaved, onReload
             value={price}
             disabled={!enabled || busy || stale || !data.canEdit}
             className="mt-2"
-            onChange={(event) => setPrice(event.target.value)}
+            onChange={event => setPrice(event.target.value)}
           />
         </div>
         <div>
@@ -171,7 +171,7 @@ function EarlyAccessForm({ data, path, busy, setBusy, onClose, onSaved, onReload
             value={days}
             disabled={!enabled || busy || stale || !data.canEdit}
             className="mt-2"
-            onChange={(event) => setDays(event.target.value)}
+            onChange={event => setDays(event.target.value)}
           />
         </div>
       </div>
@@ -197,5 +197,5 @@ function EarlyAccessForm({ data, path, busy, setBusy, onClose, onSaved, onReload
         )}
       </div>
     </form>
-  );
+  )
 }
