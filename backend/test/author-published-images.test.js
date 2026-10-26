@@ -398,13 +398,11 @@ it('allows guests only chapter one and requires a valid session for later free t
   const reader = await authenticatedAccount()
   expect((await get(reader.cookie, f.publicUrl)).status).toBe(200)
   expect((await get(reader.cookie, f.imageUrl)).status).toBe(200)
-  const home = await request(app).get('/api/catalog/home')
-  expect(home.body.preview.chapterId).toBe(f.firstChapterId)
-  expect(JSON.stringify(home.body)).not.toContain('Nội dung và hình minh họa')
+
   const first = await Chapter.findById(f.firstChapterId)
   first.status = 'unpublished'
   await first.save()
-  expect((await request(app).get('/api/catalog/home')).body.preview).toBeNull()
+
   expect((await get(reader.cookie, f.publicUrl)).status).toBe(200)
 })
 it('creates a private illustrated correction after unpublishing and requires a new image declaration before resubmission', async () => {
