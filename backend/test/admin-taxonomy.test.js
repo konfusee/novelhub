@@ -42,8 +42,8 @@ it('creates, renames, retires and restores categories without rewriting story re
     )
     expect(changed.status).toBe(200)
     category = changed.body.category
-    const genres = await request(app).get('/api/catalog/categories')
-    expect(genres.body.items.some(item => item.id === category.id)).toBe(status === 'active')
+    const genres = await request(app).get(path).set('Cookie', admin.cookie).query({ status })
+    expect(genres.body.items.some(item => item.id === category.id)).toBe(true)
     if (status === 'retired') {
       const draft = await request(app)
         .post('/api/author/stories')

@@ -10,7 +10,6 @@
     "start": "node src/server.js",
     "db:sync-indexes": "node scripts/sync-indexes.js",
     "db:seed-dev-account": "node scripts/seed-dev-account.js",
-    "db:seed-reference": "node scripts/seed-reference-data.js",
     "lint": "eslint .",
     "test": "vitest run",
     "test:watch": "vitest"
