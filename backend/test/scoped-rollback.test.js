@@ -21,7 +21,7 @@ it('removes dedicated reader, community, moderation and payment endpoints withou
   const moderator = await authenticatedAccount('moderator')
   const id = '000000000000000000000001'
   for (const url of [
-    '/api/reader/wallet',
+    // '/api/reader/wallet',
     '/api/reader/home',
     '/api/reader/library',
     '/api/reader/history',

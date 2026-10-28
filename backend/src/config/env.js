@@ -64,6 +64,19 @@ const envSchema = z.object({
   GOOGLE_CLIENT_ID: z.string().min(1).optional(),
   GOOGLE_CLIENT_SECRET: z.string().min(1).optional(),
   GOOGLE_REDIRECT_URI: z.string().url().optional(),
+  TOPUP_BANK_BIN: z
+    .string()
+    .trim()
+    .regex(/^\d{6}$/)
+    .optional(),
+  TOPUP_BANK_NAME: z.string().trim().min(1).max(100).optional(),
+  TOPUP_BANK_ACCOUNT_NUMBER: z
+    .string()
+    .trim()
+    .regex(/^\d{6,34}$/)
+    .optional(),
+  TOPUP_BANK_ACCOUNT_NAME: z.string().trim().min(1).max(100).optional(),
+  SEPAY_WEBHOOK_API_KEY: z.string().trim().min(32).max(256).optional(),
 })
 
 /**
@@ -86,6 +99,11 @@ export function loadEnv(source = process.env) {
     'SMTP_PASSWORD',
     'SMTP_FROM',
     'MEDIA_STORAGE_DIR',
+    'TOPUP_BANK_BIN',
+    'TOPUP_BANK_NAME',
+    'TOPUP_BANK_ACCOUNT_NUMBER',
+    'TOPUP_BANK_ACCOUNT_NAME',
+    'SEPAY_WEBHOOK_API_KEY',
   ]) {
     if (normalized[key] === '') delete normalized[key]
   }
@@ -144,5 +162,12 @@ export function toAppConfig(env) {
           timeoutMs: env.GOOGLE_HTTP_TIMEOUT_MS,
         }
       : undefined,
+    topUpBank: {
+      bin: env.TOPUP_BANK_BIN,
+      name: env.TOPUP_BANK_NAME,
+      accountNumber: env.TOPUP_BANK_ACCOUNT_NUMBER,
+      accountName: env.TOPUP_BANK_ACCOUNT_NAME,
+    },
+    sePayWebhookApiKey: env.SEPAY_WEBHOOK_API_KEY,
   }
 }

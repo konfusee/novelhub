@@ -1,51 +1,37 @@
-import { useEffect, useId, useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
+import { Badge, Button, Card, EmptyState, Modal, Reveal, Skeleton, Tabs } from '../../components/ui'
 import {
   AlertTriangle,
-  BadgeDollarSign,
-  BookOpen,
   Check,
-  ChevronDown,
   Coins,
   Download,
-  Heart,
-  LockKeyhole,
   Plus,
   RefreshCw,
-  ShieldCheck,
-  Sparkles,
   WalletCards,
 } from '../../components/icons'
 import { ReaderLayout } from '../../layouts'
-import {
-  Badge,
-  Button,
-  ButtonLink,
-  Card,
-  EmptyState,
-  Modal,
-  Reveal,
-  Skeleton,
-  Tabs,
-} from '../../components/ui'
-import { useMockResource } from '../../context/MockDataContext'
-import { coinPackages, transactions } from '../../data/mock/wallet'
+import { useBackendResource } from '../../api/useBackendResource'
+import { apiRequest } from '../../api/client'
+
+const transactionLabels = {
+  'topup-credit': 'Nạp xu',
+  'unlock-debit': 'Mở khóa chương',
+  'allocation-credit': 'Phân bổ doanh thu',
+  'withdrawal-debit': 'Lập khoản chi trả',
+  adjustment: 'Điều chỉnh ví',
+  reversal: 'Bút toán đảo',
+  'deletion-forfeiture': 'Thu hồi xu khi đóng tài khoản',
+}
 
 const filters = [
   ['all', 'Tất cả giao dịch'],
   ['added', 'Xu đã nạp'],
   ['unlock', 'Chương đã mở khóa'],
-  ['tip', 'Ủng hộ tác giả'],
+  ['other', 'Biến động khác'],
 ]
-const faqs = [
-  'Xu đã mua có hết hạn không?',
-  'Giá mở khóa chương là bao nhiêu?',
-  'Tôi có thể yêu cầu hoàn xu không?',
-  'Xu thưởng là gì?',
-]
-const typeTone = { added: 'text-brand-strong', tip: 'text-purple-strong', unlock: 'text-ink' }
+
+const typeTone = { added: 'text-brand-strong', unlock: 'text-ink' }
 const formatCoins = value => value.toLocaleString('vi-VN')
-const STARTING_BALANCE = 1420
-const never = () => false
 const TABLE_COLUMNS = 6
 
 function RetryButton({ onClick }) {
@@ -57,79 +43,133 @@ function RetryButton({ onClick }) {
   )
 }
 
-/* Coin package card frame: label row, coin total, bonus line, note, price footer. */
-function PackageSkeleton() {
-  return (
-    <Card as="div" aria-hidden="true" className="flex flex-col p-5">
-      <div className="flex min-h-6 items-center justify-between gap-2">
-        <Skeleton className="h-3.5 w-24" />
-      </div>
-      <span className="mt-4 flex h-7 items-end gap-1.5">
-        <Skeleton className="h-6 w-24 rounded-xl" />
-        <Skeleton className="h-3 w-5" />
-      </span>
-      <span className="mt-2 flex h-5 items-center">
-        <Skeleton className="h-3 w-4/5" />
-      </span>
-      <span className="mb-5 mt-3 flex flex-col gap-2 py-1">
-        <Skeleton className="h-3 w-full" />
-        <Skeleton className="h-3 w-1/2" />
-      </span>
-      <div className="mt-auto flex items-center justify-between gap-3 border-t border-hairline pt-4">
-        <Skeleton className="h-5 w-16" />
-        <Skeleton className="h-9 w-24" />
-      </div>
-    </Card>
-  )
+const emptyWallet = {
+  balance: 0,
+  entries: [],
+  hasMore: false,
+}
+
+const selectWallet = response => {
+  if (
+    !response ||
+    !Number.isSafeInteger(response.balance) ||
+    response.balance < 0 ||
+    !Array.isArray(response.entries) ||
+    response.entries.length > 50 ||
+    typeof response.hasMore !== 'boolean'
+  ) {
+    throw new Error('Dữ liệu ví không hợp lệ')
+  }
+
+  const invalidEntry = response.entries.some(entry => {
+    return (
+      !entry ||
+      typeof entry.id !== 'string' ||
+      !/^[a-f\d]{24}$/i.test(entry.id) ||
+      !Object.hasOwn(transactionLabels, entry.type) ||
+      !Number.isSafeInteger(entry.amount) ||
+      typeof entry.occurredAt !== 'string' ||
+      !Number.isFinite(Date.parse(entry.occurredAt))
+    )
+  })
+
+  if (invalidEntry) {
+    throw new Error('Dữ liệu giao dịch không hợp lệ')
+  }
+
+  return response
+}
+
+const emptyPackages = []
+
+const selectPackages = response => {
+  if (!response || !Array.isArray(response.items)) {
+    throw new Error('Danh sách gói nạp không hợp lệ')
+  }
+
+  const invalidPackage = response.items.some(pack => {
+    return (
+      !pack ||
+      typeof pack.id !== 'string' ||
+      !/^[a-f\d]{24}$/i.test(pack.id) ||
+      !Number.isSafeInteger(pack.priceVnd) ||
+      pack.priceVnd <= 0 ||
+      !Number.isSafeInteger(pack.coinAmount) ||
+      pack.coinAmount !== pack.priceVnd
+    )
+  })
+
+  if (invalidPackage) {
+    throw new Error('Thông tin gói nạp không hợp lệ')
+  }
+
+  return response.items
+}
+
+function buildTopUpQrUrl(payment) {
+  const params = new URLSearchParams({
+    acc: payment.accountNumber,
+    bank: payment.bankName,
+    amount: String(payment.amount),
+    des: payment.content,
+    template: 'compact',
+  })
+
+  return `https://vietqr.app/img?${params.toString()}`
 }
 
 export function WalletPage() {
-  const ids = useId()
-  const wallet = useMockResource('reader:wallet:balance', STARTING_BALANCE, { isEmpty: never })
-  const packs = useMockResource('reader:wallet:packages', coinPackages)
-  const ledger = useMockResource('reader:wallet:transactions', transactions)
-  const [credited, setCredited] = useState(0)
-  const [purchases, setPurchases] = useState([])
-  const balance = (wallet.status === 'empty' ? 0 : wallet.data) + credited
-  const [autoUnlock, setAutoUnlock] = useState(true)
+  const wallet = useBackendResource('/reader/wallet', emptyWallet, selectWallet)
+  const packages = useBackendResource('/reader/top-up-packages', emptyPackages, selectPackages)
+  const ledger = wallet
+  const balance = wallet.data.balance
   const [filter, setFilter] = useState('all')
-  const [selected, setSelected] = useState(null)
-  const [faq, setFaq] = useState(0)
   const [notice, setNotice] = useState('')
+
+  const [creatingPackageId, setCreatingPackageId] = useState(null)
+  const [topUpOrder, setTopUpOrder] = useState(null)
+  const [orderError, setOrderError] = useState('')  
+  const [qrError, setQrError] = useState(false)
+
+  const [checkingOrder, setCheckingOrder] = useState(false)
+  const [statusError, setStatusError] = useState(null)
+  const [statusMessage, setStatusMessage] = useState(null)
+
   useEffect(() => {
     if (!notice) return undefined
     const timer = setTimeout(() => setNotice(''), 5000)
     return () => clearTimeout(timer)
   }, [notice])
+
   const records = useMemo(
-    () => (ledger.status === 'ready' ? [...purchases, ...ledger.data] : purchases),
-    [ledger.status, ledger.data, purchases],
-  )
+  () =>
+    wallet.data.entries.map(entry => ({
+      id: entry.id,
+      date: new Date(entry.occurredAt).toLocaleString('vi-VN', {
+        timeZone: 'Asia/Ho_Chi_Minh',
+      }),
+      type:
+        entry.type === 'topup-credit'
+          ? 'added'
+          : entry.type === 'unlock-debit'
+            ? 'unlock'
+            : 'other',
+      label: transactionLabels[entry.type],
+      item: entry.id,
+      amount: entry.amount,
+    })),
+  [wallet.data.entries],
+)
+
   const shown = useMemo(
     () => (filter === 'all' ? records : records.filter(item => item.type === filter)),
     [filter, records],
   )
-  const purchase = () => {
-    if (!selected) return
-    setCredited(current => current + selected.total)
-    setPurchases(current => [
-      {
-        date: 'Vừa xong',
-        type: 'added',
-        label: 'Nạp xu',
-        item: `${selected.label} (${selected.price})`,
-        amount: selected.total,
-        balance: balance + selected.total,
-      },
-      ...current,
-    ])
-    setNotice(`Đã cộng ${formatCoins(selected.total)} xu vào ví của bạn.`)
-    setSelected(null)
-  }
+
   const exportCsv = () => {
     const rows = [
-      ['Ngày & giờ', 'Loại', 'Chi tiết', 'Số xu', 'Số dư'],
-      ...shown.map(item => [item.date, item.label, item.item, item.amount, item.balance]),
+      ['Ngày & giờ', 'Loại', 'Chi tiết', 'Số xu'],
+      ...shown.map(item => [item.date, item.label, item.item, item.amount]),
     ]
     const csv = rows
       .map(row => row.map(cell => `"${String(cell).replaceAll('"', '""')}"`).join(','))
@@ -141,15 +181,82 @@ export function WalletPage() {
     URL.revokeObjectURL(link.href)
     setNotice('Đã xuất CSV giao dịch.')
   }
+
+  /*Tao hoa don */
+  async function handleCreateOrder(pack) {
+    if (creatingPackageId) return
+
+    setCreatingPackageId(pack.id)
+    setOrderError('')
+    setQrError(false)
+
+    try {
+      const result = await apiRequest('/reader/top-up-orders', {
+        method: 'POST',
+        body: { packageId: pack.id },
+      })
+
+      setTopUpOrder(result.order)
+    } catch (error) {
+      setOrderError(error.message || 'Không tạo được đơn nạp xu.')
+    } finally {
+      setCreatingPackageId(null)
+    }
+  }
+
+  async function handleCheckPayment() {
+    if (!topUpOrder || checkingOrder) return
+
+    const orderId = topUpOrder.id
+
+    setStatusMessage(null)
+    setCheckingOrder(true)
+    setStatusError(null)
+
+    try {
+      const result = await apiRequest(
+        `/reader/top-up-orders/${orderId}`,
+      )
+
+      setTopUpOrder(current =>
+        current?.id === orderId
+          ? { ...current, ...result.order }
+          : current,
+      )
+
+      setStatusMessage({
+        orderId,
+        text:
+          result.order.status === 'paid'
+            ? 'Đơn đã được xác nhận thanh toán.'
+            : result.order.status === 'expired'
+              ? 'Đơn đã hết hạn thanh toán.'
+              : 'Chưa ghi nhận thanh toán cho đơn này. Bạn có thể kiểm tra lại sau.',
+      })
+
+      if (result.order.status === 'paid') {
+        wallet.retry()
+        setNotice('Đơn đã được xác nhận thanh toán.')
+      }
+    } catch (error) {
+      setStatusError({
+        orderId,
+        message: error.message || 'Không kiểm tra được thanh toán.',
+      })
+    } finally {
+      setCheckingOrder(false)
+    }
+  }
+
   return (
     <ReaderLayout>
       <div className="page-reader py-7">
         <p className="text-[11px] font-semibold uppercase tracking-[.16em] text-brand-strong">
-          Sổ giao dịch · Tài khoản độc giả #NH-94821
+          Sổ giao dịch · Tài khoản độc giả
         </p>
         <h1 className="mt-2 text-h2 sm:text-h1">Ví &amp; Xu</h1>
         <p className="mt-2 max-w-prose text-sm text-ink/70">
-          Quản lý số dư, mở khóa chương và ủng hộ tác giả yêu thích bằng hệ thống xu minh bạch.
+          Quản lý số dư và lịch sử giao dịch xu của bạn.
         </p>
         {/* Always-mounted live region; the toast floats above the fold where the purchase happened. */}
         <div
@@ -166,7 +273,7 @@ export function WalletPage() {
         </div>
         <div className="nh-grid-12 mt-6 grid min-w-0 items-start gap-6 nh-layout-xl-8-4">
           <div className="min-w-0 space-y-8">
-            {wallet.status === 'error' ? (
+            {wallet.status === 'error' || wallet.status === 'empty'? (
               <Card className="p-0">
                 <EmptyState
                   tone="rose"
@@ -202,140 +309,74 @@ export function WalletPage() {
                         Xu
                       </span>
                     </p>
-                    <p className="mt-3 text-caption text-muted">
-                      Quy đổi: <strong className="text-ink">100 xu ≈ 0,99 USD</strong> · Xu không
-                      hết hạn
-                    </p>
+                    <p className="mt-3 text-caption text-muted">Xu không hết hạn.</p>
                   </div>
                   <div className="sm:shrink-0 sm:text-right">
-                    <Button
-                      onClick={() => setSelected(coinPackages[1])}
-                      disabled={wallet.status === 'loading'}
-                    >
+                    <Button disabled>
                       <Plus size={16} aria-hidden="true" />
                       Nạp thêm xu
                     </Button>
-                    <p className="mt-2 flex items-center gap-1.5 text-caption text-brand-strong sm:justify-end sm:whitespace-nowrap">
-                      <LockKeyhole size={13} aria-hidden="true" className="shrink-0" />
-                      Thanh toán mô phỏng bảo mật 256-bit
-                    </p>
                   </div>
-                </div>
-                <div className="mt-6 flex items-center justify-between gap-4 border-t border-hairline pt-5">
-                  <div>
-                    <strong id={`${ids}-auto`} className="text-sm">
-                      Tự động mở khóa chương mới khi phát hành
-                    </strong>
-                    <p id={`${ids}-auto-note`} className="mt-0.5 text-caption text-muted">
-                      Tự động dùng xu trong ví cho các truyện đã đánh dấu.
-                    </p>
-                  </div>
-                  <button
-                    type="button"
-                    role="switch"
-                    aria-checked={autoUnlock}
-                    aria-labelledby={`${ids}-auto`}
-                    aria-describedby={`${ids}-auto-note`}
-                    onClick={() => setAutoUnlock(!autoUnlock)}
-                    className={`relative flex h-7 w-12 shrink-0 items-center rounded-full p-1 transition-colors after:absolute after:-inset-2 ${autoUnlock ? 'bg-brand' : 'bg-ink/15'}`}
-                  >
-                    <span
-                      aria-hidden="true"
-                      className={`size-5 rounded-full bg-surface shadow-whisper transition-transform duration-200 ${autoUnlock ? 'translate-x-5' : ''}`}
-                    />
-                  </button>
                 </div>
               </Card>
             )}
-            <Reveal as="section" aria-labelledby={`${ids}-packs`}>
-              <h2 id={`${ids}-packs`} className="text-h3 md:text-h2">
-                Các gói nạp xu
-              </h2>
-              <p className="mt-1 text-sm text-ink/70">
-                Xu được cộng ngay vào tài khoản đọc của bạn.
-              </p>
-              {packs.status === 'loading' ? (
-                <div
-                  aria-busy="true"
-                  aria-label="Đang tải các gói nạp xu"
-                  className="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-2 2xl:grid-cols-4"
-                >
-                  {coinPackages.map(pack => (
-                    <PackageSkeleton key={pack.id} />
-                  ))}
-                </div>
-              ) : packs.status === 'error' ? (
-                <Card className="mt-6 p-0">
-                  <EmptyState
-                    tone="rose"
-                    headingAs="h3"
-                    icon={AlertTriangle}
-                    title="Không tải được các gói nạp xu"
-                    description="Kết nối tới máy chủ bị gián đoạn. Hãy thử lại sau ít phút."
-                    action={<RetryButton onClick={packs.retry} />}
-                  />
+
+            <Reveal as="section">
+              <h2 className="text-h3">Các gói nạp xu</h2>
+              {orderError && (
+                <p role="alert" className="mt-3 text-sm text-red-600">
+                  {orderError}
+                </p>
+              )}
+
+              {packages.status === 'loading' ? (
+                <p className="mt-3 text-sm text-muted">Đang tải gói nạp...</p>
+              ) : packages.status === 'error' ? (
+                <Card className="mt-3">
+                  <p className="mb-3 text-sm">Không tải được danh sách gói nạp.</p>
+                  <RetryButton onClick={packages.retry} />
                 </Card>
-              ) : packs.status === 'empty' ? (
-                <Card className="mt-6 p-0">
-                  <EmptyState
-                    headingAs="h3"
-                    icon={Coins}
-                    title="Hiện chưa mở bán gói xu"
-                    description="Bạn vẫn có thể dùng số dư hiện có để mở khóa chương và ủng hộ tác giả."
-                    action={
-                      <ButtonLink to="/reader/library" variant="secondary" size="sm">
-                        <BookOpen size={14} aria-hidden="true" />
-                        Tiếp tục đọc
-                      </ButtonLink>
-                    }
-                  />
+              ) : packages.status === 'empty' ? (
+                <Card className="mt-3">
+                  <p className="text-sm text-muted">Hiện chưa có gói nạp khả dụng.</p>
                 </Card>
               ) : (
-                <div className="nh-fade-enter mt-6 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-2 2xl:grid-cols-4">
-                  {packs.data.map(pack => (
-                    <Card
-                      as="article"
-                      key={pack.id}
-                      className={`relative flex flex-col p-5 ${pack.badge ? 'border-brand ring-1 ring-brand/30' : ''}`}
-                    >
-                      <div className="flex min-h-6 flex-wrap items-center justify-between gap-2">
-                        <h3 className="text-sm font-semibold text-ink/80">{pack.label}</h3>
-                        {pack.badge && <Badge tone="green">{pack.badge}</Badge>}
-                      </div>
-                      <p className="mt-4 flex items-baseline gap-1.5">
-                        <span className="text-[1.75rem] font-bold leading-none tracking-[-0.02em] tabular-nums">
-                          {formatCoins(pack.coins)}
-                        </span>
-                        <span className="text-sm font-semibold text-muted">xu</span>
+                <div className="mt-4 grid gap-4 sm:grid-cols-2">
+                  {packages.data.map(pack => (
+                    <Card key={pack.id}>
+                      <h3 className="text-h3">
+                        {formatCoins(pack.coinAmount)} xu
+                      </h3>
+
+                      <p className="mt-2 text-sm text-muted">
+                        {formatCoins(pack.priceVnd)} VND
                       </p>
-                      <p className="mt-2 min-h-5 text-caption font-semibold text-orange-strong">
-                        {pack.bonus
-                          ? `+${formatCoins(pack.bonus)} xu thưởng · Tổng ${formatCoins(pack.total)} xu`
-                          : ''}
-                      </p>
-                      <p className="mb-5 mt-3 text-caption text-muted">{pack.note}</p>
-                      <div className="mt-auto flex items-center justify-between gap-3 border-t border-hairline pt-4">
-                        <strong className="text-lg tabular-nums">{pack.price}</strong>
-                        <Button
-                          size="sm"
-                          variant={pack.badge ? 'primary' : 'secondary'}
-                          onClick={() => setSelected(pack)}
-                        >
-                          {pack.badge ? 'Mua gói' : 'Chọn gói'}
-                        </Button>
-                      </div>
+
+                      <Button
+                        className="mt-4"
+                        disabled={creatingPackageId !== null}
+                        onClick={() => handleCreateOrder(pack)}
+                      >
+                        {creatingPackageId === pack.id ? 'Đang tạo đơn...' : 'Chọn gói'}
+                    </Button>
                     </Card>
                   ))}
                 </div>
               )}
             </Reveal>
+            
             <Reveal>
+               {wallet.status === 'ready' && wallet.data.hasMore && (
+                  <p className="px-6 py-4 text-caption text-muted">
+                    Đang hiển thị 50 giao dịch gần nhất.
+                  </p>
+                )}
               <Card className="p-0">
                 <div className="flex flex-wrap items-start justify-between gap-3 px-6 pt-6">
                   <div>
                     <h2 className="text-h3">Lịch sử giao dịch</h2>
                     <p className="mt-0.5 text-caption text-muted">
-                      Chi tiết các lần mở khóa, nạp xu và ủng hộ tác giả.
+                      Chi tiết các lần tăng và giảm xu trong ví.
                     </p>
                   </div>
                   <Button
@@ -376,8 +417,8 @@ export function WalletPage() {
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-hairline">
-                        {transactions.map(item => (
-                          <tr key={`${item.date}-${item.item}`}>
+                        {Array.from({ length: 3 }, (_, index) => (
+                          <tr key={index}>
                             {Array.from({ length: TABLE_COLUMNS }, (_, column) => (
                               <td
                                 key={column}
@@ -403,7 +444,7 @@ export function WalletPage() {
                       </tbody>
                     </table>
                   </div>
-                ) : ledger.status === 'error' ? (
+                ) : ledger.status === 'error' || ledger.status === 'empty' ? (
                   <EmptyState
                     tone="rose"
                     headingAs="h3"
@@ -439,7 +480,7 @@ export function WalletPage() {
                       </thead>
                       <tbody className="divide-y divide-hairline">
                         {shown.map(item => (
-                          <tr key={`${item.date}-${item.item}`}>
+                          <tr key={item.id}>
                             <td className="whitespace-nowrap py-4 pl-6 pr-3 text-caption text-muted">
                               {item.date}
                             </td>
@@ -455,9 +496,7 @@ export function WalletPage() {
                               {item.amount > 0 ? '+' : ''}
                               {formatCoins(item.amount)} xu
                             </td>
-                            <td className="px-3 text-right tabular-nums text-muted">
-                              {formatCoins(item.balance)}
-                            </td>
+                            <td className="px-3 text-right tabular-nums text-muted">—</td>
                             <td className="whitespace-nowrap pl-3 pr-6">
                               <Badge tone="green">Hoàn tất</Badge>
                             </td>
@@ -474,7 +513,7 @@ export function WalletPage() {
                     description={
                       records.length
                         ? 'Không có giao dịch trong nhóm này. Hãy thử bộ lọc khác.'
-                        : 'Nạp xu để mở khóa chương và ủng hộ tác giả yêu thích.'
+                        : 'Các biến động xu sẽ được hiển thị tại đây.'
                     }
                     action={
                       filter !== 'all' ? (
@@ -482,7 +521,7 @@ export function WalletPage() {
                           Xem tất cả giao dịch
                         </Button>
                       ) : (
-                        <Button size="sm" onClick={() => setSelected(coinPackages[1])}>
+                        <Button size="sm" disabled>
                           <Plus size={14} aria-hidden="true" />
                           Nạp thêm xu
                         </Button>
@@ -493,117 +532,119 @@ export function WalletPage() {
               </Card>
             </Reveal>
           </div>
-          <aside className="min-w-0 space-y-5">
-            <Card>
-              <div className="flex gap-3">
-                <span className="grid size-11 shrink-0 place-items-center rounded-2xl bg-brand/12 text-brand-strong">
-                  <BadgeDollarSign aria-hidden="true" />
-                </span>
-                <div>
-                  <h2 className="text-h3">Xu của bạn được phân bổ thế nào?</h2>
-                  <p className="mt-0.5 text-caption text-muted">Hỗ trợ trực tiếp nhà sáng tạo</p>
-                </div>
-              </div>
-              <p className="mt-5 text-sm leading-6 text-muted">
-                NovelHub xây dựng hệ sinh thái truyện dài minh bạch. Khi bạn dùng xu, khoản tiền sẽ
-                trực tiếp hỗ trợ các tác giả.
-              </p>
-              <div className="mt-4 rounded-2xl bg-elevated p-4">
-                <div className="flex justify-between gap-3 text-sm">
-                  <span>Phần chia sẻ cho tác giả độc lập</span>
-                  <strong className="text-brand-strong">70%</strong>
-                </div>
-                <div
-                  role="img"
-                  aria-label="Tác giả độc lập nhận 70% giá trị xu"
-                  className="mt-3 flex h-2 gap-0.5 overflow-hidden rounded-full"
-                >
-                  <span className="w-[70%] rounded-full bg-brand" />
-                  <span className="w-[20%] rounded-full bg-orange" />
-                  <span className="w-[10%] rounded-full bg-ink/20" />
-                </div>
-              </div>
-              <p className="mt-4 flex gap-2 rounded-2xl bg-orange/12 p-3 text-caption text-orange-strong">
-                <Heart size={15} aria-hidden="true" className="mt-0.5 shrink-0" />
-                Hơn 1,4 triệu USD tiền bản quyền nhỏ đã được trả cho các tác giả độc lập.
-              </p>
-            </Card>
-            <Card>
-              <h2 className="text-h3">Câu hỏi về Xu &amp; Ví</h2>
-              <div className="mt-3 divide-y divide-hairline">
-                {faqs.map((question, index) => {
-                  const open = faq === index
-                  return (
-                    <div key={question}>
-                      <h3>
-                        <button
-                          type="button"
-                          aria-expanded={open}
-                          aria-controls={`${ids}-faq-${index}`}
-                          onClick={() => setFaq(open ? -1 : index)}
-                          className="flex min-h-12 w-full items-center justify-between gap-3 whitespace-normal py-3 text-left text-sm font-semibold text-ink transition-colors hover:text-brand-strong"
-                        >
-                          {question}
-                          <ChevronDown
-                            size={16}
-                            aria-hidden="true"
-                            className={`shrink-0 transition-transform duration-200 ${open ? 'rotate-180' : ''}`}
-                          />
-                        </button>
-                      </h3>
-                      {open && (
-                        <p
-                          id={`${ids}-faq-${index}`}
-                          className="nh-fade-enter pb-4 text-caption text-muted"
-                        >
-                          Xu không hết hạn và luôn gắn với hồ sơ độc giả. Bộ phận hỗ trợ có thể xem
-                          xét các giao dịch đủ điều kiện.
-                        </p>
-                      )}
-                    </div>
-                  )
-                })}
-              </div>
-            </Card>
-            <Card className="flex gap-3 border-purple/20 bg-purple/8">
-              <span className="grid size-10 shrink-0 place-items-center rounded-2xl bg-orange/16 text-orange-strong">
-                <Sparkles size={18} aria-hidden="true" />
-              </span>
-              <div>
-                <strong className="text-sm">Thưởng đọc hằng ngày</strong>
-                <p className="mt-1 text-caption text-ink/70">
-                  Đọc 20 phút hôm nay để nhận 5 xu miễn phí cho chương tiếp theo.
-                </p>
-              </div>
-            </Card>
-          </aside>
         </div>
-        <Modal
-          open={Boolean(selected)}
-          title="Xác nhận giao dịch mô phỏng"
-          onClose={() => setSelected(null)}
-        >
-          {selected && (
-            <div>
-              <div className="flex items-center justify-between gap-4 rounded-2xl border border-hairline bg-surface p-4">
-                <div>
-                  <strong>{selected.label}</strong>
-                  <p className="text-caption text-muted">{formatCoins(selected.total)} xu</p>
-                </div>
-                <strong className="text-xl tabular-nums">{selected.price}</strong>
-              </div>
-              <p className="mt-4 flex items-center gap-2 text-caption text-ink/70">
-                <ShieldCheck size={18} aria-hidden="true" className="shrink-0 text-brand-strong" />
-                Đây chỉ là giao diện mô phỏng — không có thanh toán thật.
-              </p>
-              <Button onClick={purchase} className="mt-5 w-full">
-                <Check size={16} aria-hidden="true" />
-                Hoàn tất giao dịch mô phỏng
-              </Button>
-            </div>
-          )}
-        </Modal>
       </div>
+      <Modal
+        open={topUpOrder !== null}
+        title="Đơn nạp xu"
+        onClose={() => setTopUpOrder(null)}
+      >
+        {topUpOrder && (
+          <div className="space-y-4">
+            <p>
+              Trạng thái:{' '}
+              {topUpOrder.status === 'pending'
+                ? 'Chờ thanh toán'
+                : topUpOrder.status === 'expired'
+                  ? 'Đã hết hạn'
+                  : 'Đã thanh toán'}
+            </p>
+
+            <p>
+              Mã thanh toán: <strong>{topUpOrder.paymentCode}</strong>
+            </p>
+
+            <p>
+              Số tiền: <strong>{formatCoins(topUpOrder.priceVnd)} VND</strong>
+            </p>
+
+            <p>
+              Số xu: <strong>{formatCoins(topUpOrder.coinAmount)} xu</strong>
+            </p>
+
+            <p>
+              Hạn thanh toán:{' '}
+              {new Date(topUpOrder.expiresAt).toLocaleString('vi-VN', {
+                timeZone: 'Asia/Ho_Chi_Minh',
+              })}
+            </p>
+
+            {/* QR code for payment */}
+            {topUpOrder.payment && (
+              <div className="space-y-3 border-t border-border pt-4">
+                <p>
+                  Ngân hàng: <strong>{topUpOrder.payment.bankName}</strong>
+                </p>
+
+                <p>
+                  Số tài khoản:{' '}
+                  <strong className="break-all">
+                    {topUpOrder.payment.accountNumber}
+                  </strong>
+                </p>
+
+                <p>
+                  Chủ tài khoản: <strong>{topUpOrder.payment.accountName}</strong>
+                </p>
+
+                <p>
+                  Nội dung chuyển khoản:{' '}
+                  <strong>{topUpOrder.payment.content}</strong>
+                </p>
+
+                {topUpOrder.status === 'pending' &&
+                  new Date(topUpOrder.expiresAt).getTime() > Date.now() && (
+                    qrError ? (
+                      <p role="alert" className="text-sm text-muted">
+                        Không tải được QR. Bạn có thể chuyển khoản theo thông tin trên,
+                        giữ đúng số tiền và nội dung chuyển khoản.
+                        <a
+                          href={buildTopUpQrUrl(topUpOrder.payment)}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="underline"
+                        >
+                          Mở trực tiếp ảnh QR để kiểm tra
+                        </a>
+                      </p>
+                      
+                    ) : (
+                      <img
+                        src={buildTopUpQrUrl(topUpOrder.payment)}
+                        alt="Mã QR chuyển khoản thanh toán đơn nạp xu"
+                        className="mx-auto h-auto w-full max-w-72"
+                        onError={() => setQrError(true)}
+                      />
+                    )
+                  )}
+              </div>
+            )}
+
+            <p className="text-sm text-muted">
+              Xu chỉ được cộng sau khi hệ thống xác nhận thanh toán.
+            </p>
+            {topUpOrder.status === 'pending' && (
+              <Button
+                onClick={handleCheckPayment}
+                disabled={checkingOrder}
+              >
+                {checkingOrder ? 'Đang kiểm tra...' : 'Kiểm tra thanh toán'}
+                {statusMessage?.orderId === topUpOrder.id && (
+                  <p role="status" className="text-sm text-muted">
+                    {statusMessage.text}
+                  </p>
+                )}
+              </Button>
+            )}
+
+            {statusError?.orderId === topUpOrder.id && (
+              <p role="alert" className="text-sm text-muted">
+                {statusError.message}
+              </p>
+            )}
+          </div>
+        )}
+      </Modal>
     </ReaderLayout>
   )
 }

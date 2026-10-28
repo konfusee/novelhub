@@ -20,6 +20,9 @@ import { createReaderDataRouter } from './routes/reader-data.routes.js'
 import { createAuthorSubmissionsRouter } from './routes/author-submissions.routes.js'
 import { createAuthorImportRouter } from './routes/author-import.routes.js'
 import { createAuthorMediaRouter } from './routes/author-media.routes.js'
+import { createReaderWalletRouter } from './routes/reader-wallet.routes.js'
+import { createReaderTopUpsRouter } from './routes/reader-top-ups.routes.js'
+import { createSePayWebhookRouter } from './routes/sepay-webhook.routes.js'
 
 // Runtime configuration is validated by loadEnv and mapped by toAppConfig.
 export function createApp(config) {
@@ -74,6 +77,9 @@ export function createApp(config) {
   app.use('/api', createAdminAuthorStatisticsRouter(config))
   app.use('/api', createWorkspaceDataRouter(config))
   app.use('/api', createReaderDataRouter(config))
+  app.use('/api', createReaderWalletRouter(config))
+  app.use('/api', createReaderTopUpsRouter(config))
+  app.use('/api', createSePayWebhookRouter(config))
   app.use(notFound)
   app.use(errorHandler)
   return app
