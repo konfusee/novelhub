@@ -595,5 +595,17 @@
         "system": "System"
       }
     }
+  },
+  "unlock": {
+    "loading": "Checking reading access…",
+    "loadError": "Unable to load unlock information.",
+    "price": "Unlock price: {{count}} coins",
+    "balance": "Balance: {{count}} coins",
+    "buy": "Unlock for {{count}} coins",
+    "purchasing": "Unlocking…",
+    "insufficient": "You do not have enough coins to unlock this chapter.",
+    "wallet": "Go to wallet",
+    "readNow": "Read chapter",
+    "purchaseError": "Unable to unlock the chapter. Check the price and balance, then try again."
   }
 }

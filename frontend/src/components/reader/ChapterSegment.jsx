@@ -7,6 +7,7 @@ import { apiRequest } from '../../api/client'
 import { ROUTES } from '../../app/routes'
 import { useLocale } from '../../context/LocaleContext'
 import { chapterLabel } from './chapterLabel'
+import { ChapterUnlock } from './ChapterUnlock'
 
 /* Prose column of one chapter; the skeleton and error states reuse it so nothing shifts. */
 const ARTICLE_CLASS =
@@ -121,7 +122,7 @@ function ChapterDivider({ info, total, headingId }) {
 }
 
 /* Locked, signed-out and missing chapters: a title plus what the reader can do next. */
-function ChapterNotice({ status, info, storyId, onRetry }) {
+function ChapterNotice({ status, info, storyId, onRetry, chapterId }) {
   const { t } = useLocale()
   const location = useLocation()
   const storyLink = (
@@ -134,7 +135,14 @@ function ChapterNotice({ status, info, storyId, onRetry }) {
       icon: LockKeyhole,
       title: t('reader.lockedTitle', { chapter: chapterLabel(t, info) }),
       description: t('reader.lockedDescription'),
-      action: storyLink,
+      action: (
+              <ChapterUnlock
+                key={`${storyId}:${chapterId}`}
+                storyId={storyId}
+                chapterId={chapterId}
+                onUnlocked={onRetry}
+              />
+            ),
     },
     login: {
       icon: UserRound,
@@ -272,6 +280,7 @@ export function ChapterSegment({
           status={status}
           info={info}
           storyId={storyId}
+          chapterId={chapterId}
           onRetry={() => setAttempt(value => value + 1)}
         />
       )}

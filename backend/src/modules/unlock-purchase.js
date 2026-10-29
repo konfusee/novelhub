@@ -127,7 +127,7 @@ export async function executePaidUnlock(
       },
       occurredAt: now,
     })),
-    { session },
+    { session, ordered: true },
   )
 
   await RevenueAllocation.create(

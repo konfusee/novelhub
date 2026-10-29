@@ -2588,5 +2588,17 @@
       "forbidden": "Quyền của bạn đã thay đổi.",
       "saveFailed": "Không lưu được. Hãy thử lại."
     }
+  },
+  "unlock": {
+    "loading": "Đang kiểm tra quyền đọc…",
+    "loadError": "Không tải được thông tin mở khóa.",
+    "price": "Giá mở khóa: {{count}} xu",
+    "balance": "Số dư: {{count}} xu",
+    "buy": "Mở khóa với {{count}} xu",
+    "purchasing": "Đang mở khóa…",
+    "insufficient": "Bạn chưa đủ xu để mở khóa chương này.",
+    "wallet": "Đến ví nạp xu",
+    "readNow": "Đọc chương",
+    "purchaseError": "Chưa mở khóa được chương. Hãy kiểm tra lại giá và số dư rồi thử lại."
   }
 }

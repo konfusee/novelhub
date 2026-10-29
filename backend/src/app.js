@@ -20,6 +20,15 @@ import { createReaderDataRouter } from './routes/reader-data.routes.js'
 import { createAuthorSubmissionsRouter } from './routes/author-submissions.routes.js'
 import { createAuthorImportRouter } from './routes/author-import.routes.js'
 import { createAuthorMediaRouter } from './routes/author-media.routes.js'
+import { createReaderWalletRouter } from './routes/reader-wallet.routes.js'
+import { createReaderTopUpsRouter } from './routes/reader-top-ups.routes.js'
+import { createSePayWebhookRouter } from './routes/sepay-webhook.routes.js'
+import { createReaderUnlocksRouter } from './routes/reader-unlocks.routes.js'
+
+import { createModeratorRouter } from './routes/moderator.routes.js'
+import { createReaderReadingRouter } from './routes/reader-reading.routes.js'
+import { createCommunityRouter } from './routes/community.routes.js'
+import { createModeratorReportsRouter } from './routes/moderator-reports.routes.js'
 
 // Runtime configuration is validated by loadEnv and mapped by toAppConfig.
 export function createApp(config) {

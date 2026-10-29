@@ -13,6 +13,7 @@
     "db:create-indexes": "node scripts/create-indexes.js",
     "db:sync-search-indexes": "node scripts/sync-search-indexes.js",
     "db:seed-dev-account": "node scripts/seed-dev-account.js",
+    "db:seed-coins-demo": "node scripts/seed-coins-demo.js",
     "db:backfill-embeddings": "node scripts/backfill-embeddings.js",
     "ai:fail-pending": "node scripts/fail-pending-evidence.js",
     "smoke:moderation-review": "node scripts/smoke-moderation-review.js",
