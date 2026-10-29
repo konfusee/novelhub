@@ -19,7 +19,7 @@ jobs:
         uses: actions/cache@v4
         with:
           path: ~/.cache/mongodb-binaries
-          key: mongodb-binaries-8.0.32
+          key: mongodb-binaries-8.3.13
       - run: npm run format:check
       - run: npm run lint
       - name: Check translations

@@ -4,6 +4,8 @@ coverage/
 .env
 .env.*
 !.env.example
+infra/mongo/mongo-keyfile
+infra/mongo/mongot-password
 *.log
 .DS_Store
 .vscode/*
@@ -12,5 +14,6 @@ coverage/
 
 # Local uploads and Windows metadata
 backend/uploads/*
+backend/.tmp/
 !backend/uploads/.gitkeep
 Thumbs.db

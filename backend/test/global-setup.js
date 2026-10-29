@@ -4,8 +4,8 @@ import { MongoMemoryReplSet } from 'mongodb-memory-server'
 // exactly as in production, without touching the shared VPS database.
 export default async function setup({ provide }) {
   const replSet = await MongoMemoryReplSet.create({
-    // Match the VPS server (mongo:8.0) so tests exercise the same engine.
-    binary: { version: '8.0.32' },
+    // Match the VPS server (mongo:8.3.13) so tests exercise the same engine.
+    binary: { version: '8.3.13' },
     replSet: { count: 1, storageEngine: 'wiredTiger' },
   })
   provide('mongoUri', replSet.getUri('novelhub_test'))
