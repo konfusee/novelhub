@@ -38,11 +38,7 @@ it('removes dedicated reader, community, moderation and payment endpoints withou
   for (const url of ['/api/moderator/review-claims', '/api/workspace/moderator/submissions']) {
     expect((await request(app).get(url).set('Cookie', moderator.cookie)).status, url).toBe(404)
   }
-  for (const url of [
-    '/api/webhooks/sepay',
-    '/api/reader/top-up-orders',
-    `/api/reader/stories/${id}/chapters/${id}/unlock`,
-  ]) {
+  for (const url of [`/api/reader/stories/${id}/chapters/${id}/unlock`]) {
     expect(
       (await request(app).post(url).set('Cookie', reader.cookie).set('Origin', origin).send({}))
         .status,

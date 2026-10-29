@@ -135,6 +135,10 @@ export function WalletPage() {
   const [statusError, setStatusError] = useState(null)
   const [statusMessage, setStatusMessage] = useState(null)
 
+  const [currentTime, setCurrentTime] = useState(() => Date.now())
+
+  const pendingOrderId = topUpOrder?.status === 'pending' ? topUpOrder.id : null
+
   useEffect(() => {
     if (!notice) return undefined
     const timer = setTimeout(() => setNotice(''), 5000)
@@ -196,6 +200,7 @@ export function WalletPage() {
         body: { packageId: pack.id },
       })
 
+      setCurrentTime(Date.now())
       setTopUpOrder(result.order)
     } catch (error) {
       setOrderError(error.message || 'Không tạo được đơn nạp xu.')
@@ -248,7 +253,23 @@ export function WalletPage() {
     }
   }
 
+  useEffect(() => {
+  if (!pendingOrderId) return undefined
+
+  const timer = setInterval(() => {
+    setCurrentTime(Date.now())
+  }, 1000)
+
+  return () => clearInterval(timer)
+  }, [pendingOrderId])
+
+  const displayedOrderStatus =
+  topUpOrder?.status === 'pending' &&
+  new Date(topUpOrder.expiresAt).getTime() <= currentTime
+    ? 'expired'
+    : topUpOrder?.status
   return (
+    
     <ReaderLayout>
       <div className="page-reader py-7">
         <p className="text-[11px] font-semibold uppercase tracking-[.16em] text-brand-strong">
@@ -543,9 +564,9 @@ export function WalletPage() {
           <div className="space-y-4">
             <p>
               Trạng thái:{' '}
-              {topUpOrder.status === 'pending'
+              {displayedOrderStatus === 'pending'
                 ? 'Chờ thanh toán'
-                : topUpOrder.status === 'expired'
+                : displayedOrderStatus === 'expired'
                   ? 'Đã hết hạn'
                   : 'Đã thanh toán'}
             </p>
@@ -592,8 +613,7 @@ export function WalletPage() {
                   <strong>{topUpOrder.payment.content}</strong>
                 </p>
 
-                {topUpOrder.status === 'pending' &&
-                  new Date(topUpOrder.expiresAt).getTime() > Date.now() && (
+                {displayedOrderStatus === 'pending' && (
                     qrError ? (
                       <p role="alert" className="text-sm text-muted">
                         Không tải được QR. Bạn có thể chuyển khoản theo thông tin trên,

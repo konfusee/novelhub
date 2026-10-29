@@ -73,7 +73,7 @@ async function prepareCase(balance = 1000) {
     transferAmount: 50000,
   }
 
-  return { wallet, order, payload }
+  return { reader, wallet, order, payload }
 }
 
 function sendWebhook(payload) {
@@ -158,4 +158,42 @@ it('số dư vượt giới hạn thì rollback toàn bộ', async () => {
   expect(await BankTransaction.countDocuments()).toBe(0)
   expect(await LedgerEntry.countDocuments()).toBe(0)
   expect(await AuditEvent.countDocuments()).toBe(0)
+})
+it('chủ đơn xem được thông tin đơn nạp của mình', async () => {
+  const { reader, order } = await prepareCase()
+
+  const response = await request(app)
+    .get(`/api/reader/top-up-orders/${order._id}`)
+    .set('Cookie', reader.cookie)
+
+  expect(response.status).toBe(200)
+  expect(response.body.order).toMatchObject({
+    id: String(order._id),
+    paymentCode: order.paymentCode,
+    priceVnd: 50000,
+    coinAmount: 50000,
+    status: 'pending',
+  })
+})
+
+it('khách chưa đăng nhập không được xem đơn nạp', async () => {
+  const { order } = await prepareCase()
+
+  const response = await request(app).get(`/api/reader/top-up-orders/${order._id}`)
+
+  expect(response.status).toBe(401)
+  expect(response.body.order).toBeUndefined()
+})
+
+it('tài khoản khác không được xem đơn nạp của người mua', async () => {
+  const { order } = await prepareCase()
+  const otherReader = await authenticatedAccount()
+
+  const response = await request(app)
+    .get(`/api/reader/top-up-orders/${order._id}`)
+    .set('Cookie', otherReader.cookie)
+
+  expect(response.status).toBe(404)
+  expect(response.body.error.code).toBe('topup_order_not_found')
+  expect(response.body.order).toBeUndefined()
 })
