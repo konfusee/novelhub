@@ -1,5 +1,6 @@
 import { z } from 'zod'
 import path from 'node:path'
+import { envKeySource } from './load-dotenv.js'
 
 const envSchema = z.object({
   NODE_ENV: z.enum(['development', 'test', 'production']),
@@ -64,6 +65,32 @@ const envSchema = z.object({
   GOOGLE_CLIENT_ID: z.string().min(1).optional(),
   GOOGLE_CLIENT_SECRET: z.string().min(1).optional(),
   GOOGLE_REDIRECT_URI: z.string().url().optional(),
+  MODERATION_CLAIM_HOURS: z.coerce.number().int().min(1).max(168).default(24),
+  OPENAI_API_KEY: z.string().trim().min(1).optional(),
+  OPENAI_EMBEDDING_MODEL: z.string().trim().min(1).default('text-embedding-3-small'),
+  OPENAI_REVIEW_MODEL: z.string().trim().min(1).default('gpt-6-luna'),
+  OPENAI_REVIEW_REASONING_EFFORT: z
+    .enum(['none', 'minimal', 'low', 'medium', 'high', 'xhigh', 'max'])
+    .default('low'),
+  OPENAI_TIMEOUT_MS: z.coerce.number().int().min(1000).max(600000).default(60000),
+  AI_EVIDENCE_INTERVAL_SECONDS: z.coerce.number().int().min(5).max(3600).default(30),
+  SIMILARITY_TOP_K: z.coerce.number().int().min(1).max(50).default(5),
+  VECTOR_SEARCH_INDEX: z
+    .string()
+    .trim()
+    .regex(/^[A-Za-z0-9_-]+$/)
+    .default('embedding_vectors'),
+  AI_EVIDENCE_WORKER_ENABLED: z
+    .enum(['true', 'false'])
+    .default('false')
+    .transform(value => value === 'true'),
+  AI_BUDGET_USD: z.coerce.number().min(0).max(1000).default(3),
+  AI_BUDGET_WINDOW_START: z
+    .string()
+    .trim()
+    .refine(value => !Number.isNaN(Date.parse(value)), 'AI_BUDGET_WINDOW_START must be an ISO date')
+    .transform(value => new Date(value))
+    .optional(),
 })
 
 /**
@@ -86,6 +113,18 @@ export function loadEnv(source = process.env) {
     'SMTP_PASSWORD',
     'SMTP_FROM',
     'MEDIA_STORAGE_DIR',
+    'MODERATION_CLAIM_HOURS',
+    'OPENAI_API_KEY',
+    'OPENAI_EMBEDDING_MODEL',
+    'OPENAI_REVIEW_MODEL',
+    'OPENAI_REVIEW_REASONING_EFFORT',
+    'OPENAI_TIMEOUT_MS',
+    'AI_EVIDENCE_INTERVAL_SECONDS',
+    'SIMILARITY_TOP_K',
+    'VECTOR_SEARCH_INDEX',
+    'AI_EVIDENCE_WORKER_ENABLED',
+    'AI_BUDGET_USD',
+    'AI_BUDGET_WINDOW_START',
   ]) {
     if (normalized[key] === '') delete normalized[key]
   }
@@ -123,6 +162,21 @@ export function toAppConfig(env) {
     passwordResetTtlMinutes: env.PASSWORD_RESET_TTL_MINUTES,
     httpJsonLimitKb: env.HTTP_JSON_LIMIT_KB,
     mediaStorageDir: env.MEDIA_STORAGE_DIR,
+    moderationClaimHours: env.MODERATION_CLAIM_HOURS,
+    ai: {
+      openai: env.OPENAI_API_KEY ? { apiKey: env.OPENAI_API_KEY } : undefined,
+      openaiKeySource: envKeySource('OPENAI_API_KEY', env.OPENAI_API_KEY),
+      embeddingModel: env.OPENAI_EMBEDDING_MODEL,
+      reviewModel: env.OPENAI_REVIEW_MODEL,
+      reviewReasoningEffort: env.OPENAI_REVIEW_REASONING_EFFORT,
+      timeoutMs: env.OPENAI_TIMEOUT_MS,
+      intervalSeconds: env.AI_EVIDENCE_INTERVAL_SECONDS,
+      similarityTopK: env.SIMILARITY_TOP_K,
+      vectorSearchIndex: env.VECTOR_SEARCH_INDEX,
+      workerEnabled: env.AI_EVIDENCE_WORKER_ENABLED,
+      budgetUsd: env.AI_BUDGET_USD,
+      budgetWindowStart: env.AI_BUDGET_WINDOW_START ?? null,
+    },
     securityConfig: {
       emailSendAttempts: env.EMAIL_SEND_ATTEMPTS,
       windowMs: env.AUTH_RATE_LIMIT_WINDOW_MINUTES * 60000,

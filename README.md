@@ -31,16 +31,26 @@ Check the API: `curl http://localhost:4000/api/ready` should return
 See [Login setup and integration](docs/login.md) for secure development-account
 creation, authentication endpoints, role handling, testing, and troubleshooting.
 
+See [Moderation evidence worker](docs/moderation-evidence.md) for AI evidence
+configuration, the designated runner, provisioning, costs, rollback and
+troubleshooting.
+
 ## Common commands
 
-| Command                                           | What it does                                                                                                                                                          |
-| ------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `npm test`                                        | Backend and frontend tests. Backend tests start a throwaway in-memory MongoDB replica set (first run downloads MongoDB ~80 MB); they never touch the shared database. |
-| `npm run lint`                                    | ESLint for both workspaces                                                                                                                                            |
-| `npm run format` / `npm run format:check`         | Prettier                                                                                                                                                              |
-| `npm run build`                                   | Production build of the frontend                                                                                                                                      |
-| `npm run db:sync-indexes --workspace backend`     | Create collections and sync indexes on the database in `backend/.env`                                                                                                 |
-| `npm run db:seed-dev-account --workspace backend` | Idempotently create a local-development Reader account from environment variables                                                                                     |
+| Command                                                                                      | What it does                                                                                                                                                          |
+| -------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `npm test`                                                                                   | Backend and frontend tests. Backend tests start a throwaway in-memory MongoDB replica set (first run downloads MongoDB ~80 MB); they never touch the shared database. |
+| `npm run lint`                                                                               | ESLint for both workspaces                                                                                                                                            |
+| `npm run format` / `npm run format:check`                                                    | Prettier                                                                                                                                                              |
+| `npm run build`                                                                              | Production build of the frontend                                                                                                                                      |
+| `npm run db:sync-indexes --workspace backend`                                                | Sync indexes to the models. **Drops** indexes not in the models, so never run it on the shared database; use `db:diff-indexes` + `db:create-indexes` there            |
+| `npm run db:create-indexes --workspace backend -- --models <names>`                          | Non-destructive: create missing collections and indexes for the named models only                                                                                     |
+| `npm run db:seed-dev-account --workspace backend`                                            | Idempotently create a local-development Reader account from environment variables                                                                                     |
+| `npm run db:diff-indexes --workspace backend`                                                | Read-only preview of index changes; stops if anything would be dropped                                                                                                |
+| `npm run db:sync-search-indexes --workspace backend`                                         | Create or update the moderation vector index and wait until it is queryable                                                                                           |
+| `npm run db:backfill-embeddings --workspace backend -- --dry-run`                            | Plan embeddings for published chapters; the real run takes `--plan` and `--max-usd`                                                                                   |
+| `npm run ai:fail-pending --workspace backend -- --dry-run`                                   | List evidence that a rollback would send to manual review                                                                                                             |
+| `npm run smoke:moderation-review --workspace backend -- --preflight --confirm-single-runner` | Read-only readiness and budget check for the moderation pipeline                                                                                                      |
 
 ## Conventions
 
