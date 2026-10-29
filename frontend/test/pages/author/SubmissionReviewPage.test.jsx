@@ -105,7 +105,7 @@ it.each(['blocks-v1', 'blocks-v2', 'blocks-v3'])(
             storyId: 'owned',
             chapterId: 'chapter7',
             title: 'Cần sửa bản thảo',
-            status: 'revision-requested',
+            status: 'rejected',
             version: 4,
             revisionNumber: 7,
             submittedAt: '2026-10-16',

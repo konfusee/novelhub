@@ -15,7 +15,7 @@ afterEach(() => {
 const snapshot = {
   submission: {
     id: 'package-old',
-    status: 'revision-requested',
+    status: 'rejected',
     submittedAt: '2026-10-17T00:00:00Z',
   },
   story: { id: 'story', title: 'Tên truyện trong gói' },

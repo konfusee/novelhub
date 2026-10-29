@@ -22,5 +22,8 @@ export const ROUTES = {
   authorAnalytics: (storyId, chapterId) =>
     `/author/analytics${storyId ? `?storyId=${encodeURIComponent(storyId)}${chapterId ? `&chapterId=${encodeURIComponent(chapterId)}` : ''}` : ''}`,
   moderatorSubmission: id => `/moderator/submissions/${id}`,
+  moderatorSubmissions: '/moderator/submissions',
+  moderatorSimilarity: id => `/moderator/similarity-review/${id}`,
+  moderatorDecisions: '/moderator/decisions',
   adminUser: id => `/admin/users/${id}`,
 }

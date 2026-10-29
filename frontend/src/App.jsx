@@ -194,6 +194,11 @@ const SimilarityRiskReviewPage = lazy(() =>
     default: m.SimilarityRiskReviewPage,
   })),
 )
+const ModerationDecisionsPage = lazy(() =>
+  import('./pages/moderator/ModerationDecisionsPage').then(m => ({
+    default: m.ModerationDecisionsPage,
+  })),
+)
 const AdminDashboardPage = lazy(() =>
   import('./pages/admin/AdminDashboardPage').then(m => ({
     default: m.AdminDashboardPage,
@@ -568,15 +573,7 @@ function AppRoutes() {
           />
           <Route
             path="/moderator/decisions"
-            element={role(
-              'moderator',
-              <RoleUtilityPage
-                role="moderator"
-                eyebrow="Lịch sử kiểm duyệt"
-                title="Quyết định"
-                description="Xem quyết định kiểm duyệt đã hoàn tất, lý do, chính sách tham chiếu và trạng thái khiếu nại."
-              />,
-            )}
+            element={role('moderator', <ModerationDecisionsPage />)}
           />
           <Route
             path="/moderator/escalations"
