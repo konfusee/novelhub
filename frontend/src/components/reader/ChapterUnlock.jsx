@@ -11,8 +11,7 @@ export function ChapterUnlock({ storyId, chapterId, onUnlocked }) {
   const location = useLocation()
 
   const basePath =
-    `/reader/stories/${encodeURIComponent(storyId)}` +
-    `/chapters/${encodeURIComponent(chapterId)}`
+    `/reader/stories/${encodeURIComponent(storyId)}` + `/chapters/${encodeURIComponent(chapterId)}`
 
   const resource = useBackendDocument(`${basePath}/unlock-quote`, null)
   const quote = resource.data
@@ -61,10 +60,7 @@ export function ChapterUnlock({ storyId, chapterId, onUnlocked }) {
 
   if (resource.error?.status === 401) {
     return (
-      <ButtonLink
-        to={ROUTES.login}
-        state={{ from: location.pathname + location.search }}
-      >
+      <ButtonLink to={ROUTES.login} state={{ from: location.pathname + location.search }}>
         {t('reader.login')}
       </ButtonLink>
     )

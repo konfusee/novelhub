@@ -136,13 +136,13 @@ function ChapterNotice({ status, info, storyId, onRetry, chapterId }) {
       title: t('reader.lockedTitle', { chapter: chapterLabel(t, info) }),
       description: t('reader.lockedDescription'),
       action: (
-              <ChapterUnlock
-                key={`${storyId}:${chapterId}`}
-                storyId={storyId}
-                chapterId={chapterId}
-                onUnlocked={onRetry}
-              />
-            ),
+        <ChapterUnlock
+          key={`${storyId}:${chapterId}`}
+          storyId={storyId}
+          chapterId={chapterId}
+          onUnlocked={onRetry}
+        />
+      ),
     },
     login: {
       icon: UserRound,

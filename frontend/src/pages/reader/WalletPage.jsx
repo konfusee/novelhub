@@ -128,7 +128,7 @@ export function WalletPage() {
 
   const [creatingPackageId, setCreatingPackageId] = useState(null)
   const [topUpOrder, setTopUpOrder] = useState(null)
-  const [orderError, setOrderError] = useState('')  
+  const [orderError, setOrderError] = useState('')
   const [qrError, setQrError] = useState(false)
 
   const [checkingOrder, setCheckingOrder] = useState(false)
@@ -146,24 +146,24 @@ export function WalletPage() {
   }, [notice])
 
   const records = useMemo(
-  () =>
-    wallet.data.entries.map(entry => ({
-      id: entry.id,
-      date: new Date(entry.occurredAt).toLocaleString('vi-VN', {
-        timeZone: 'Asia/Ho_Chi_Minh',
-      }),
-      type:
-        entry.type === 'topup-credit'
-          ? 'added'
-          : entry.type === 'unlock-debit'
-            ? 'unlock'
-            : 'other',
-      label: transactionLabels[entry.type],
-      item: entry.id,
-      amount: entry.amount,
-    })),
-  [wallet.data.entries],
-)
+    () =>
+      wallet.data.entries.map(entry => ({
+        id: entry.id,
+        date: new Date(entry.occurredAt).toLocaleString('vi-VN', {
+          timeZone: 'Asia/Ho_Chi_Minh',
+        }),
+        type:
+          entry.type === 'topup-credit'
+            ? 'added'
+            : entry.type === 'unlock-debit'
+              ? 'unlock'
+              : 'other',
+        label: transactionLabels[entry.type],
+        item: entry.id,
+        amount: entry.amount,
+      })),
+    [wallet.data.entries],
+  )
 
   const shown = useMemo(
     () => (filter === 'all' ? records : records.filter(item => item.type === filter)),
@@ -200,7 +200,6 @@ export function WalletPage() {
         body: { packageId: pack.id },
       })
 
-      setCurrentTime(Date.now())
       setTopUpOrder(result.order)
     } catch (error) {
       setOrderError(error.message || 'Không tạo được đơn nạp xu.')
@@ -219,14 +218,10 @@ export function WalletPage() {
     setStatusError(null)
 
     try {
-      const result = await apiRequest(
-        `/reader/top-up-orders/${orderId}`,
-      )
+      const result = await apiRequest(`/reader/top-up-orders/${orderId}`)
 
       setTopUpOrder(current =>
-        current?.id === orderId
-          ? { ...current, ...result.order }
-          : current,
+        current?.id === orderId ? { ...current, ...result.order } : current,
       )
 
       setStatusMessage({
@@ -254,22 +249,20 @@ export function WalletPage() {
   }
 
   useEffect(() => {
-  if (!pendingOrderId) return undefined
+    if (!pendingOrderId) return undefined
 
-  const timer = setInterval(() => {
-    setCurrentTime(Date.now())
-  }, 1000)
+    const timer = setInterval(() => {
+      setCurrentTime(Date.now())
+    }, 1000)
 
-  return () => clearInterval(timer)
+    return () => clearInterval(timer)
   }, [pendingOrderId])
 
   const displayedOrderStatus =
-  topUpOrder?.status === 'pending' &&
-  new Date(topUpOrder.expiresAt).getTime() <= currentTime
-    ? 'expired'
-    : topUpOrder?.status
+    topUpOrder?.status === 'pending' && new Date(topUpOrder.expiresAt).getTime() <= currentTime
+      ? 'expired'
+      : topUpOrder?.status
   return (
-    
     <ReaderLayout>
       <div className="page-reader py-7">
         <p className="text-[11px] font-semibold uppercase tracking-[.16em] text-brand-strong">
@@ -294,7 +287,7 @@ export function WalletPage() {
         </div>
         <div className="nh-grid-12 mt-6 grid min-w-0 items-start gap-6 nh-layout-xl-8-4">
           <div className="min-w-0 space-y-8">
-            {wallet.status === 'error' || wallet.status === 'empty'? (
+            {wallet.status === 'error' || wallet.status === 'empty' ? (
               <Card className="p-0">
                 <EmptyState
                   tone="rose"
@@ -365,13 +358,9 @@ export function WalletPage() {
                 <div className="mt-4 grid gap-4 sm:grid-cols-2">
                   {packages.data.map(pack => (
                     <Card key={pack.id}>
-                      <h3 className="text-h3">
-                        {formatCoins(pack.coinAmount)} xu
-                      </h3>
+                      <h3 className="text-h3">{formatCoins(pack.coinAmount)} xu</h3>
 
-                      <p className="mt-2 text-sm text-muted">
-                        {formatCoins(pack.priceVnd)} VND
-                      </p>
+                      <p className="mt-2 text-sm text-muted">{formatCoins(pack.priceVnd)} VND</p>
 
                       <Button
                         className="mt-4"
@@ -379,19 +368,19 @@ export function WalletPage() {
                         onClick={() => handleCreateOrder(pack)}
                       >
                         {creatingPackageId === pack.id ? 'Đang tạo đơn...' : 'Chọn gói'}
-                    </Button>
+                      </Button>
                     </Card>
                   ))}
                 </div>
               )}
             </Reveal>
-            
+
             <Reveal>
-               {wallet.status === 'ready' && wallet.data.hasMore && (
-                  <p className="px-6 py-4 text-caption text-muted">
-                    Đang hiển thị 50 giao dịch gần nhất.
-                  </p>
-                )}
+              {wallet.status === 'ready' && wallet.data.hasMore && (
+                <p className="px-6 py-4 text-caption text-muted">
+                  Đang hiển thị 50 giao dịch gần nhất.
+                </p>
+              )}
               <Card className="p-0">
                 <div className="flex flex-wrap items-start justify-between gap-3 px-6 pt-6">
                   <div>
@@ -555,11 +544,7 @@ export function WalletPage() {
           </div>
         </div>
       </div>
-      <Modal
-        open={topUpOrder !== null}
-        title="Đơn nạp xu"
-        onClose={() => setTopUpOrder(null)}
-      >
+      <Modal open={topUpOrder !== null} title="Đơn nạp xu" onClose={() => setTopUpOrder(null)}>
         {topUpOrder && (
           <div className="space-y-4">
             <p>
@@ -599,9 +584,7 @@ export function WalletPage() {
 
                 <p>
                   Số tài khoản:{' '}
-                  <strong className="break-all">
-                    {topUpOrder.payment.accountNumber}
-                  </strong>
+                  <strong className="break-all">{topUpOrder.payment.accountNumber}</strong>
                 </p>
 
                 <p>
@@ -609,34 +592,31 @@ export function WalletPage() {
                 </p>
 
                 <p>
-                  Nội dung chuyển khoản:{' '}
-                  <strong>{topUpOrder.payment.content}</strong>
+                  Nội dung chuyển khoản: <strong>{topUpOrder.payment.content}</strong>
                 </p>
 
-                {displayedOrderStatus === 'pending' && (
-                    qrError ? (
-                      <p role="alert" className="text-sm text-muted">
-                        Không tải được QR. Bạn có thể chuyển khoản theo thông tin trên,
-                        giữ đúng số tiền và nội dung chuyển khoản.
-                        <a
-                          href={buildTopUpQrUrl(topUpOrder.payment)}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="underline"
-                        >
-                          Mở trực tiếp ảnh QR để kiểm tra
-                        </a>
-                      </p>
-                      
-                    ) : (
-                      <img
-                        src={buildTopUpQrUrl(topUpOrder.payment)}
-                        alt="Mã QR chuyển khoản thanh toán đơn nạp xu"
-                        className="mx-auto h-auto w-full max-w-72"
-                        onError={() => setQrError(true)}
-                      />
-                    )
-                  )}
+                {displayedOrderStatus === 'pending' &&
+                  (qrError ? (
+                    <p role="alert" className="text-sm text-muted">
+                      Không tải được QR. Bạn có thể chuyển khoản theo thông tin trên, giữ đúng số
+                      tiền và nội dung chuyển khoản.
+                      <a
+                        href={buildTopUpQrUrl(topUpOrder.payment)}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="underline"
+                      >
+                        Mở trực tiếp ảnh QR để kiểm tra
+                      </a>
+                    </p>
+                  ) : (
+                    <img
+                      src={buildTopUpQrUrl(topUpOrder.payment)}
+                      alt="Mã QR chuyển khoản thanh toán đơn nạp xu"
+                      className="mx-auto h-auto w-full max-w-72"
+                      onError={() => setQrError(true)}
+                    />
+                  ))}
               </div>
             )}
 
@@ -644,10 +624,7 @@ export function WalletPage() {
               Xu chỉ được cộng sau khi hệ thống xác nhận thanh toán.
             </p>
             {topUpOrder.status === 'pending' && (
-              <Button
-                onClick={handleCheckPayment}
-                disabled={checkingOrder}
-              >
+              <Button onClick={handleCheckPayment} disabled={checkingOrder}>
                 {checkingOrder ? 'Đang kiểm tra...' : 'Kiểm tra thanh toán'}
                 {statusMessage?.orderId === topUpOrder.id && (
                   <p role="status" className="text-sm text-muted">
