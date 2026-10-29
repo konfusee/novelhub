@@ -13,7 +13,13 @@ import { PrivateChapterImage } from '../../components/story/PrivateChapterImage'
 
 // Same reading font, width limits, spacing options and surface geometry as the reader.
 // Preview settings stay local; preview never records a read, view, purchase or progress.
-export function DraftReadingCanvas({ document, storyTitle, submissionId, headingLevel = 1 }) {
+export function DraftReadingCanvas({
+  document,
+  storyTitle,
+  submissionId,
+  mediaUrl,
+  headingLevel = 1,
+}) {
   const { t } = useLocale()
   const Heading = headingLevel === 2 ? 'h2' : 'h1'
   const [fontSize, setFontSize] = useState(20)
@@ -75,7 +81,14 @@ export function DraftReadingCanvas({ document, storyTitle, submissionId, heading
         >
           {document.blocks.map((block, index) => {
             if (block.type === 'image')
-              return <PrivateChapterImage key={index} block={block} submissionId={submissionId} />
+              return (
+                <PrivateChapterImage
+                  key={index}
+                  block={block}
+                  submissionId={submissionId}
+                  mediaUrl={mediaUrl}
+                />
+              )
             const className = 'mb-[22px] whitespace-pre-wrap break-words last:mb-0'
             if (
               block.type === 'scene-break' ||

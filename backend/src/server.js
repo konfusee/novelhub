@@ -6,6 +6,7 @@ import { createSmtpEmailDelivery } from './email/delivery.js'
 import { connectDatabase, disconnectDatabase } from './db/connection.js'
 import './models/index.js'
 import { startChapterScheduler } from './modules/chapter-scheduler.js'
+import { startEvidenceWorker } from './modules/ai/evidence-worker.js'
 loadDotenv()
 const env = loadEnv()
 const logger = createLogger(env.LOG_LEVEL, {
@@ -35,6 +36,9 @@ const config = {
   ...toAppConfig(env),
 }
 const stopScheduler = startChapterScheduler(config, logger)
+let stopEvidenceWorker = async () => {}
+if (config.ai.workerEnabled) stopEvidenceWorker = startEvidenceWorker(config, logger)
+else logger.info('AI evidence worker disabled (AI_EVIDENCE_WORKER_ENABLED is not true)')
 const server = createApp(config).listen(env.PORT, () => {
   logger.info(`NovelHub API listening on port ${env.PORT}`)
 })
@@ -42,8 +46,12 @@ async function shutdown(signal) {
   logger.info(`${signal} received, shutting down`)
   server.close()
   await stopScheduler()
+  await stopEvidenceWorker()
   await disconnectDatabase()
-  process.exit(0)
+  // nodemon restarts with SIGUSR2 and waits for the process to re-raise it.
+  if (signal === 'SIGUSR2') process.kill(process.pid, 'SIGUSR2')
+  else process.exit(0)
 }
 process.on('SIGINT', shutdown)
 process.on('SIGTERM', shutdown)
+process.once('SIGUSR2', shutdown)

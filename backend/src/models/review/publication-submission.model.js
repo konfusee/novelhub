@@ -5,7 +5,6 @@ export const SUBMISSION_STATUSES = [
   'decision-pending',
   'approved',
   'rejected',
-  'revision-requested',
   'cancelled',
 ]
 export const SUBMISSION_CANCELLATION_REASONS = ['author-role-removed', 'account-deleted']

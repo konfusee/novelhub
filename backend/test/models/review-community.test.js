@@ -188,4 +188,19 @@ describe('review and community models', () => {
     })
     await expect(artifact.validate()).rejects.toThrow(/vector length/)
   })
+  it('requires a batch only for evidence-batch embedding artifacts', () => {
+    const doc = {
+      revisionId: id,
+      model: 'm',
+      dimensions: 2,
+      passageId: 'p',
+      chunkingVersion: 'v1',
+      vector: [1, 0],
+    }
+    expect(new EmbeddingArtifact(doc).validateSync()?.errors.batchId).toBeDefined()
+    expect(new EmbeddingArtifact({ ...doc, source: 'backfill' }).validateSync()).toBeUndefined()
+    expect(
+      new EmbeddingArtifact({ ...doc, source: 'manual' }).validateSync()?.errors.source,
+    ).toBeDefined()
+  })
 })

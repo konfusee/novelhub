@@ -1,64 +1,78 @@
-import { Lock } from '../icons'
+import { Coins, Lock } from '../icons'
 import { Badge, ButtonLink, Skeleton } from '../ui'
+import { ROUTES } from '../../app/routes'
 import { useAuth } from '../../context/AuthContext'
 import { useLocale } from '../../context/LocaleContext'
 
-export function ChapterList({ chapters, storyId = 'demo' }) {
+/**
+ * Published chapters of one story. Each chapter carries its 1-based reading `number`.
+ * Guests may preview chapter 1 only; early-access chapters show the coin price and end date.
+ */
+export function ChapterList({ chapters, storyId }) {
   const { isAuthenticated } = useAuth()
-  const { t } = useLocale()
+  const { t, formatDate } = useLocale()
   return (
     <ol className="space-y-3">
       {chapters.map(chapter => {
-        const readable = chapter.free || isAuthenticated
+        const guestPreview = !isAuthenticated && chapter.number === 1
+        const readable = (isAuthenticated || guestPreview) && !chapter.locked
+        const readHref = ROUTES.read(storyId, chapter.id)
         return (
           <li
             className={`flex items-center justify-between gap-3 rounded-2xl border p-4 transition-[border-color,background-color] duration-200 ease-spring sm:px-5 ${readable ? 'border-hairline bg-surface hover:border-brand/40' : 'border-hairline bg-elevated'}`}
-            key={chapter.number}
+            key={chapter.id}
           >
             <div className="min-w-0">
               <div className="flex flex-wrap items-center gap-2">
                 <span className="text-xs font-semibold uppercase tracking-[.1em] text-brand-strong">
                   {t('story.chapterNumber', { number: chapter.number })}
                 </span>
-                <Badge tone={chapter.free ? 'green' : 'neutral'}>
-                  {chapter.free ? (
-                    t('story.freePreview')
-                  ) : (
-                    <>
-                      <Lock size={11} aria-hidden="true" />
-                      {t('story.locked')}
-                    </>
-                  )}
-                </Badge>
+                {chapter.locked ? (
+                  <Badge tone="orange" data-testid="chapter-lock">
+                    <Lock size={11} aria-hidden="true" />
+                    {t('story.earlyAccess')}
+                    {chapter.earlyAccess?.coinPrice != null && (
+                      <>
+                        {' · '}
+                        <Coins size={11} aria-hidden="true" />
+                        {t('story.coinPrice', { count: chapter.earlyAccess.coinPrice })}
+                      </>
+                    )}
+                  </Badge>
+                ) : (
+                  guestPreview && <Badge tone="green">{t('story.freePreview')}</Badge>
+                )}
               </div>
               <h3
                 className={`mt-1.5 text-sm font-semibold sm:text-base ${readable ? '' : 'text-ink/70'}`}
               >
                 {chapter.title}
               </h3>
-              <p className="mt-0.5 text-xs text-muted">{chapter.meta}</p>
+              <p className="mt-0.5 text-xs text-muted">
+                {chapter.locked && chapter.earlyAccess?.endsAt
+                  ? t('story.earlyAccessEnds', { date: formatDate(chapter.earlyAccess.endsAt) })
+                  : chapter.publishedAt
+                    ? formatDate(chapter.publishedAt)
+                    : ''}
+              </p>
             </div>
             <ButtonLink
               to={
                 isAuthenticated
-                  ? `/read/${storyId}/chapter-${chapter.number}`
-                  : chapter.free
-                    ? `/stories/${storyId}/preview/chapter-${chapter.number}`
-                    : '/login'
+                  ? readHref
+                  : guestPreview
+                    ? `/stories/${storyId}/preview/${chapter.id}`
+                    : ROUTES.login
               }
-              state={
-                !isAuthenticated && !chapter.free
-                  ? { from: `/read/${storyId}/chapter-${chapter.number}` }
-                  : undefined
-              }
+              state={!isAuthenticated && !guestPreview ? { from: readHref } : undefined}
               variant={readable ? 'outline' : 'secondary'}
               size="sm"
               className="shrink-0"
             >
               {!readable && <Lock size={13} aria-hidden="true" />}
               {isAuthenticated
-                ? t('story.read')
-                : chapter.free
+                ? t(chapter.locked ? 'story.unlock' : 'story.read')
+                : guestPreview
                   ? t('story.preview')
                   : t('auth.signIn')}
             </ButtonLink>

@@ -58,7 +58,7 @@ describe('exact owner submission packages', () => {
     expect(
       (await write(path, f.author.cookie, { expectedVersion: submission.version })).status,
     ).toBe(409)
-    submission.status = 'revision-requested'
+    submission.status = 'rejected'
     submission.decisionSummary = 'Cần làm rõ phần tóm tắt.'
     await submission.save()
     const input = { expectedVersion: submission.version }
@@ -355,7 +355,7 @@ it('reads the original submitted story after a new draft and denies other accoun
   const f = await fixture()
   const sent = await write('/api/author/submissions', f.author.cookie, f.body)
   const submission = await PublicationSubmission.findById(sent.body.submission.id)
-  submission.status = 'revision-requested'
+  submission.status = 'rejected'
   await submission.save()
   await write(`/api/author/submissions/${submission._id}/revise`, f.author.cookie, {
     expectedVersion: submission.version,

@@ -23,4 +23,5 @@ const schema = new Schema(
 schema.plugin(appendOnly)
 schema.index({ aggregateType: 1, aggregateId: 1, createdAt: -1 })
 schema.index({ submissionId: 1, createdAt: -1 })
+schema.index({ action: 1, occurredAt: -1 })
 export const ModerationHistory = defineModel('ModerationHistory', schema, 'moderationHistory')

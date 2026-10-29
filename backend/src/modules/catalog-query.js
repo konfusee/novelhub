@@ -4,6 +4,7 @@ import {
   Category,
   Chapter,
   ContentRevision,
+  Follow,
   Rating,
   StatisticsEvent,
   Story,
@@ -50,28 +51,37 @@ const snapshotStages = ids => [
     },
   },
 ]
-const groupLookup = (model, match, accumulator, as) => ({
+const storyLookup = (model, match, pipeline, as) => ({
   $lookup: {
     from: model.collection.name,
     let: { story: '$_id' },
-    pipeline: [
-      { $match: { ...match, $expr: { $eq: ['$storyId', '$$story'] } } },
-      { $group: { _id: null, value: accumulator } },
-    ],
+    pipeline: [{ $match: { ...match, $expr: { $eq: ['$storyId', '$$story'] } } }, ...pipeline],
     as,
   },
 })
+const POPULARITY_WINDOW_MS = 30 * 86400000
+const SORTS = {
+  newest: { publishedAt: -1, _id: -1 },
+  popular: { popularity: -1, _id: -1 },
+  rating: { average: -1, _id: -1 },
+}
 
+/**
+ * Published, visible story cards. `reads` counts every unique daily chapter view ever
+ * recorded; `popularity` counts unique (day, viewer) pairs across the story's chapters
+ * over the rolling last 30 days.
+ */
 export async function queryPublishedStories({
   ids,
   q = '',
   category,
+  status,
   page = 1,
   pageSize = 24,
   sort = 'newest',
-  viewSince,
-  publishedSince,
+  now = new Date(),
 } = {}) {
+  if (!SORTS[sort]) throw new Error(`Unsupported catalogue sort: ${sort}`)
   const stages = [
     ...snapshotStages(ids),
     {
@@ -90,10 +100,26 @@ export async function queryPublishedStories({
         from: Account.collection.name,
         localField: 'authorAccountId',
         foreignField: '_id',
+        pipeline: [{ $project: { displayName: 1, status: 1 } }],
         as: 'author',
       },
     },
     { $set: { author: { $first: '$author' } } },
+  ]
+  if (status) stages.push({ $match: { completionStatus: status } })
+  if (category) stages.push({ $match: { categoryKeys: category } })
+  if (q) {
+    const literal = { $regex: q.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), $options: 'i' }
+    stages.push({
+      $match: {
+        $or: [
+          { 'revision.content.title': literal },
+          { 'author.status': 'active', 'author.displayName': literal },
+        ],
+      },
+    })
+  }
+  const metrics = [
     {
       $lookup: {
         from: Category.collection.name,
@@ -105,47 +131,36 @@ export async function queryPublishedStories({
         as: 'categories',
       },
     },
-  ]
-  if (publishedSince) stages.push({ $match: { publishedAt: { $gte: publishedSince } } })
-  if (category) stages.push({ $match: { categoryKeys: category } })
-  if (q) {
-    const literal = q.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
-    stages.push({
-      $match: {
-        $or: [
-          'revision.content.title',
-          'revision.content.description',
-          'author.displayName',
-          'categories.name',
-        ].map(path => ({ [path]: { $regex: literal, $options: 'i' } })),
-      },
-    })
-  }
-  const metrics = [
-    groupLookup(Chapter, { status: 'published' }, { $sum: 1 }, 'chapters'),
-    groupLookup(Rating, { status: 'active' }, { $avg: '$value' }, 'ratings'),
-    groupLookup(
-      StatisticsEvent,
-      { eventType: 'view', ...(viewSince ? { occurredAt: { $gte: viewSince } } : {}) },
-      { $sum: 1 },
-      'views',
+    storyLookup(Chapter, { status: 'published' }, [{ $count: 'value' }], 'chapters'),
+    storyLookup(
+      Rating,
+      { status: 'active' },
+      [{ $group: { _id: null, average: { $avg: '$value' }, count: { $sum: 1 } } }],
+      'ratings',
     ),
+    storyLookup(StatisticsEvent, { eventType: 'view' }, [{ $count: 'value' }], 'views'),
+    storyLookup(
+      StatisticsEvent,
+      { eventType: 'view', occurredAt: { $gte: new Date(now.getTime() - POPULARITY_WINDOW_MS) } },
+      [
+        { $group: { _id: { day: '$day', type: '$viewerType', key: '$viewerKey' } } },
+        { $count: 'value' },
+      ],
+      'recentViews',
+    ),
+    storyLookup(Follow, { status: 'active' }, [{ $count: 'value' }], 'follows'),
     {
       $set: {
-        average: { $ifNull: [{ $first: '$ratings.value' }, null] },
+        average: { $ifNull: [{ $first: '$ratings.average' }, null] },
+        ratingCount: { $ifNull: [{ $first: '$ratings.count' }, 0] },
         viewCount: { $ifNull: [{ $first: '$views.value' }, 0] },
+        popularity: { $ifNull: [{ $first: '$recentViews.value' }, 0] },
+        followers: { $ifNull: [{ $first: '$follows.value' }, 0] },
       },
     },
   ]
   if (sort !== 'newest') stages.push(...metrics)
-  stages.push({
-    $sort:
-      sort === 'reads'
-        ? { viewCount: -1, _id: -1 }
-        : sort === 'rating'
-          ? { average: -1, _id: -1 }
-          : { publishedAt: -1, _id: -1 },
-  })
+  stages.push({ $sort: SORTS[sort] })
   const result = await Story.aggregate([
     ...stages,
     {
@@ -159,13 +174,14 @@ export async function queryPublishedStories({
             $project: {
               'revision.content.title': 1,
               'revision.content.description': 1,
-              'author.displayName': 1,
-              'author.status': 1,
-              'author._id': 1,
+              author: 1,
               categoryKeys: 1,
               categories: 1,
               average: 1,
+              ratingCount: 1,
               viewCount: 1,
+              popularity: 1,
+              followers: 1,
               chapters: 1,
               completionStatus: 1,
               publishedAt: 1,
@@ -188,7 +204,10 @@ export async function queryPublishedStories({
       format: 'Story',
       status: story.completionStatus === 'completed' ? 'Completed' : 'Ongoing',
       rating: story.average == null ? '—' : story.average.toFixed(1),
+      ratingCount: story.ratingCount,
       reads: String(story.viewCount),
+      popularity: story.popularity,
+      followers: story.followers,
       chapters: story.chapters[0]?.value ?? 0,
       publishedAt: story.publishedAt,
     })),
@@ -196,4 +215,22 @@ export async function queryPublishedStories({
     page,
     pageSize,
   }
+}
+
+/** Active categories by `sortKey, name` with the number of published visible stories in each. */
+export async function categoryStoryCounts() {
+  const [categories, counts] = await Promise.all([
+    Category.find({ status: 'active' }).sort({ sortKey: 1, name: 1 }).select('name').lean(),
+    Story.aggregate([
+      ...snapshotStages(),
+      { $unwind: '$revision.content.categoryIds' },
+      { $group: { _id: { $toString: '$revision.content.categoryIds' }, value: { $sum: 1 } } },
+    ]),
+  ])
+  const byCategory = new Map(counts.map(row => [row._id, row.value]))
+  return categories.map(category => ({
+    id: String(category._id),
+    name: category.name,
+    storyCount: byCategory.get(String(category._id)) ?? 0,
+  }))
 }

@@ -1,10 +1,13 @@
 # NovelHub shared MongoDB (single-node replica set so multi-document
-# transactions work). Clients connect with directConnection=true.
+# transactions work) plus mongot for MongoDB Search / Vector Search.
+# External clients connect with directConnection=true. Inside the compose
+# network the replica-set member is `mongodb:27017`, which mongot uses to
+# sync; mongod reaches mongot's gRPC endpoint at `mongot:27028`.
 name: novelhub-mongo
 
 services:
   mongodb:
-    image: mongo:8.0
+    image: mongo:8.3.13
     container_name: novelhub_mongo
     restart: unless-stopped
     ports:
@@ -25,7 +28,21 @@ services:
         chown mongodb:mongodb /data/configdb/keyfile
         exec docker-entrypoint.sh "$$@"
       - --
-    command: ['mongod', '--replSet', 'rs0', '--keyFile', '/data/configdb/keyfile', '--bind_ip_all']
+    command:
+      - mongod
+      - --replSet
+      - rs0
+      - --keyFile
+      - /data/configdb/keyfile
+      - --bind_ip_all
+      - --setParameter
+      - searchIndexManagementHostAndPort=mongot:27028
+      - --setParameter
+      - mongotHost=mongot:27028
+      - --setParameter
+      - skipAuthenticationToSearchIndexManagementServer=false
+      - --setParameter
+      - useGrpcForSearch=true
     healthcheck:
       test:
         [
@@ -46,6 +63,32 @@ services:
       retries: 10
       start_period: 20s
 
+  mongot:
+    image: mongodb/mongodb-community-search:1.70.5
+    container_name: novelhub_mongot
+    restart: unless-stopped
+    depends_on:
+      mongodb:
+        condition: service_healthy
+    entrypoint:
+      - /mongot-community/mongot
+      - --config
+      - /etc/mongot/mongot.conf
+      - --jvm-flags
+      - -Xms256m -Xmx768m
+    mem_limit: 1536m
+    volumes:
+      - mongot_data:/var/lib/mongot
+      - ./mongot.conf:/etc/mongot/mongot.conf:ro
+      - ./mongot-password:/etc/mongot/secrets/passwordFile:ro
+    healthcheck:
+      test: ['CMD-SHELL', 'curl -fsS http://mongot:8080/health | grep -q ''"SERVING"''']
+      interval: 15s
+      timeout: 5s
+      retries: 10
+      start_period: 60s
+
 volumes:
   mongodb_data:
   mongodb_config:
+  mongot_data:

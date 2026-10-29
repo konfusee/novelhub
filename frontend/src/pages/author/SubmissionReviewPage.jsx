@@ -545,7 +545,6 @@ function SubmissionEntry({ item, choose }) {
     'decision-pending',
     'approved',
     'rejected',
-    'revision-requested',
     'cancelled',
   ]
   const evidenceStatuses = [
@@ -596,7 +595,7 @@ function SubmissionEntry({ item, choose }) {
       >
         {t('submissionData.open')}
       </Button>
-      {(item.canRevise ?? ['rejected', 'revision-requested'].includes(item.status)) && (
+      {(item.canRevise ?? item.status === 'rejected') && (
         <Button size="sm" className="mt-3 sm:ml-2" onClick={() => setConfirm(true)}>
           {reviseLabel}
         </Button>

@@ -50,6 +50,21 @@ export function canReviseUnpublished(submission, target, revision, story) {
   )
 }
 
+// Mirrors the reviseSubmission guards for a rejected package (create or replay).
+export function canReviseRejected(submission, target, current, story) {
+  if (submission.status !== 'rejected' || !target || !current) return false
+  if (story.publicationStatus === 'archived') return false
+  if (submission.chapterId && story.authoringFrozen) return false
+  if (['archived', 'cancelled', 'scheduled', 'due'].includes(target.status)) return false
+  const replay =
+    String(current.parentRevisionId) === String(submission.revisionId) &&
+    current.status === 'editable' &&
+    !current.immutableAt
+  const create =
+    String(current._id) === String(submission.revisionId) && Boolean(current.immutableAt)
+  return replay || create
+}
+
 async function packageState(account, input, session, config) {
   const story = await ownStory(account, input.storyId, session)
   const target = input.chapterId
@@ -418,7 +433,7 @@ export async function submissionList(account, { page = 1 } = {}) {
       .lean(),
     Story.find({ authorAccountId: account._id })
       .sort({ updatedAt: -1 })
-      .select('title authoringFrozen publicationStatus')
+      .select('title authoringFrozen publicationStatus draftRevisionId currentRevisionId')
       .lean(),
   ])
   const revisions = await ContentRevision.find({
@@ -432,6 +447,22 @@ export async function submissionList(account, { page = 1 } = {}) {
     storyId: { $in: stories.map(story => story._id) },
   })
     .select('status publishedRevisionId draftRevisionId currentRevisionId storyId')
+    .lean()
+  const targetOf = item =>
+    item.chapterId
+      ? chapters.find(chapter => chapter._id.equals(item.chapterId))
+      : stories.find(story => story._id.equals(item.storyId))
+  const currents = await ContentRevision.find({
+    _id: {
+      $in: items
+        .map(targetOf)
+        .filter(Boolean)
+        .map(target => target.draftRevisionId ?? target.currentRevisionId)
+        .filter(Boolean),
+    },
+    authorAccountId: account._id,
+  })
+    .select('parentRevisionId status immutableAt')
     .lean()
   const history = await ModerationHistory.find({
     submissionId: { $in: items.map(item => item._id) },
@@ -452,6 +483,10 @@ export async function submissionList(account, { page = 1 } = {}) {
     items: items.map(item => {
       const revision = revisions.find(revision => revision._id.equals(item.revisionId))
       const batch = batches.find(batch => batch._id.equals(item.currentEvidenceBatchId))
+      const target = targetOf(item)
+      const current = target
+        ? currents.find(row => row._id.equals(target.draftRevisionId ?? target.currentRevisionId))
+        : undefined
       return {
         id: String(item._id),
         storyId: String(item.storyId),
@@ -460,7 +495,12 @@ export async function submissionList(account, { page = 1 } = {}) {
         revisionNumber: revision?.revisionNumber ?? null,
         status: item.status,
         canRevise:
-          ['rejected', 'revision-requested'].includes(item.status) ||
+          canReviseRejected(
+            item,
+            target,
+            current,
+            stories.find(story => story._id.equals(item.storyId)) ?? {},
+          ) ||
           canReviseUnpublished(
             item,
             chapters.find(chapter => chapter._id.equals(item.chapterId)),
@@ -483,6 +523,50 @@ export async function submissionList(account, { page = 1 } = {}) {
       }
     }),
   }
+}
+
+/** Clones a frozen revision into the next editable revision of the same target. */
+export async function createEditableRevision({
+  current,
+  storyId,
+  chapterId,
+  authorAccountId,
+  session,
+}) {
+  const last = await ContentRevision.findOne({
+    storyId,
+    contentType: current.contentType,
+    chapterId: chapterId ?? null,
+  })
+    .sort({ revisionNumber: -1 })
+    .session(session)
+  const [revision] = await ContentRevision.create(
+    [
+      {
+        contentType: current.contentType,
+        storyId,
+        ...(chapterId ? { chapterId } : {}),
+        authorAccountId,
+        parentRevisionId: current._id,
+        revisionNumber: (last?.revisionNumber ?? 0) + 1,
+        content: structuredClone(current.content),
+        formatVersion: current.formatVersion,
+        mediaIds: current.mediaIds,
+        ...(current.formatVersion === 'blocks-v3'
+          ? {
+              mediaDigest: current.mediaDigest,
+              validation: {
+                mediaManifestVersion: current.validation?.mediaManifestVersion,
+                mediaManifest: structuredClone(current.validation?.mediaManifest),
+              },
+            }
+          : {}),
+        ...(current.altText ? { altText: current.altText } : {}),
+      },
+    ],
+    { session },
+  )
+  return revision
 }
 
 /** A review result starts a new editable revision; the reviewed package stays immutable. */
@@ -525,11 +609,7 @@ export async function reviseSubmission(account, submissionId, expectedVersion) {
       current.parentRevisionId?.equals(submission.revisionId) &&
       current.status === 'editable' &&
       !current.immutableAt
-    if (
-      !['rejected', 'revision-requested'].includes(submission.status) &&
-      !unpublished &&
-      !unpublishedReplay
-    )
+    if (submission.status !== 'rejected' && !unpublished && !unpublishedReplay)
       throw new HttpError(409, 'revision_not_allowed', 'Gói chưa đủ điều kiện tạo bản sửa.')
     if (
       current.parentRevisionId?.equals(submission.revisionId) &&
@@ -546,39 +626,13 @@ export async function reviseSubmission(account, submissionId, expectedVersion) {
     if (!current._id.equals(submission.revisionId) || !current.immutableAt)
       throw new HttpError(409, 'stale_content', 'Nội dung đã chuyển sang phiên bản khác.')
     if (unpublished) await loadSubmittedPackage(account, submission._id, session)
-    const last = await ContentRevision.findOne({
+    const revision = await createEditableRevision({
+      current,
       storyId: story._id,
-      contentType: current.contentType,
-      chapterId: submission.chapterId ?? null,
+      chapterId: submission.chapterId ? target._id : null,
+      authorAccountId: account._id,
+      session,
     })
-      .sort({ revisionNumber: -1 })
-      .session(session)
-    const [revision] = await ContentRevision.create(
-      [
-        {
-          contentType: current.contentType,
-          storyId: story._id,
-          ...(submission.chapterId ? { chapterId: target._id } : {}),
-          authorAccountId: account._id,
-          parentRevisionId: current._id,
-          revisionNumber: (last?.revisionNumber ?? 0) + 1,
-          content: structuredClone(current.content),
-          formatVersion: current.formatVersion,
-          mediaIds: current.mediaIds,
-          ...(current.formatVersion === 'blocks-v3'
-            ? {
-                mediaDigest: current.mediaDigest,
-                validation: {
-                  mediaManifestVersion: current.validation?.mediaManifestVersion,
-                  mediaManifest: structuredClone(current.validation?.mediaManifest),
-                },
-              }
-            : {}),
-          ...(current.altText ? { altText: current.altText } : {}),
-        },
-      ],
-      { session },
-    )
     target.draftRevisionId = revision._id
     target.currentRevisionId = revision._id
     if (submission.chapterId) {

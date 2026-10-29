@@ -70,7 +70,7 @@ A Reader can also perform `UC-GST-01` through `UC-GST-04`.
 | UC-AUT-08 | Request AI writing assistance | Request writing, rewriting, summary, title, tag or metadata suggestions and choose whether to accept, reject or edit them. | FR-AI-AUTHOR-01 through FR-AI-AUTHOR-05 |
 | UC-AUT-09 | Configure early access | Set the eligible chapter's early-access duration and coin price within platform policy. | FR-COIN-05, FR-COIN-06, BR-04 through BR-06 |
 | UC-AUT-10 | Submit content for review | Submit a story/chapter for moderation after required content, format and rights information is complete. Submission automatically starts AI-assisted review. | FR-AUTHOR-15, FR-MOD-01 through FR-MOD-05 |
-| UC-AUT-11 | Track review and publication | View submission state, publication status, Moderator feedback and revision requests. | FR-AUTHOR-16, FR-NOTIFY-03 |
+| UC-AUT-11 | Track review and publication | View submission state, publication status and Moderator feedback, including rejection reasons; revise and resubmit rejected content. | FR-AUTHOR-16, FR-NOTIFY-03 |
 | UC-AUT-12 | View story statistics | View available statistics for the Author's published content. | FR-AUTHOR-17 |
 | UC-AUT-13 | Manage earnings and withdrawals | View eligible earnings and payout history, submit a withdrawal request and track approval/payout status. | FR-PAYOUT-01 through FR-PAYOUT-04, FR-PAYOUT-09, FR-PAYOUT-10 |
 
@@ -80,7 +80,7 @@ A Reader can also perform `UC-GST-01` through `UC-GST-04`.
 |---|---|---|---|
 | UC-MOD-01 | Manage moderation queue | View, filter and open pending publication submissions and unresolved content reports without changing their outcome. | FR-MOD-05, FR-MOD-06, FR-MOD-09 |
 | UC-MOD-02 | Review publication submission | Review the exact submitted revision, rights declaration, media, automatic AI results, similarity findings and risk flags before making a decision. | FR-MOD-02 through FR-MOD-06, FR-MOD-11 |
-| UC-MOD-03 | Decide publication submission | Approve, reject or request revision with a reasoned, auditable decision for the reviewed revision. AI evidence informs but does not make the final decision. | FR-MOD-07, FR-MOD-08, FR-MOD-10 |
+| UC-MOD-03 | Decide publication submission | Approve or reject with a reasoned, auditable decision for the reviewed revision; rejection requires actionable feedback. AI evidence informs but does not make the final decision. | FR-MOD-07, FR-MOD-08, FR-MOD-10 |
 | UC-MOD-04 | Review reported content | Inspect a Reader report, the reported content, available context and related moderation evidence before resolving the report. | FR-MOD-09 |
 | UC-MOD-05 | Resolve content report | Dismiss the report or apply a permitted content action with a recorded reason and outcome. | FR-MOD-09, FR-MOD-10 |
 | UC-MOD-06 | View moderation history | Review prior submission decisions, report resolutions and content actions without modifying the audit trail. | FR-MOD-10 |

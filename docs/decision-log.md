@@ -160,9 +160,8 @@ policy; deferred technical selections and team process gates are not approval.
    Vietnamese voice; there is no voice selection. After a chapter edit,
    resume opens the same chapter from the start with a content-updated notice.
    Email supplements in-app notifications for verification, password reset,
-   Google link, review approval/rejection/revision request, withdrawal created,
-   Paid, Failed, and missing-bank skip. Followed-story new-chapter notices are
-   in-app only.
+   Google link, review approval/rejection, withdrawal created, Paid, Failed,
+   and missing-bank skip. Followed-story new-chapter notices are in-app only.
 18. **Google linking uses email matching.** Google sign-in may link to an
    existing account by matching email only, overriding the earlier
    no-email-only-linking proposal. The accepted risk is pre-account hijack when
@@ -229,7 +228,7 @@ policy; deferred technical selections and team process gates are not approval.
    gates, required alt text, Markdown/custom-theme proposals, variable
    top-up amounts, retained-PDF/OCR assumptions, hard-delete assumptions,
    fixed-or-undefined finance wording, and incomplete report/notification
-   sets are superseded by decisions 14–31.
+   sets are superseded by decisions 14–32.
    Existing source IDs remain traceability anchors; stale wording is not an
    additional requirement.
 24. **Accounts, coins, and moderation workflow.** Reader coins never expire.
@@ -251,11 +250,12 @@ policy; deferred technical selections and team process gates are not approval.
    still cannot edit and can never become a Moderator.
 25. **Review and publication controls.** Moderators claim queue items and other
    Moderators cannot decide a claimed item. Unanswered claims release
-   automatically after a configurable period, default 24 hours. Reject and
-   Request revision both permit unlimited resubmissions, each with a new
-   revision/review cycle; reject covers substantial issues and request revision
-   minor fixes. Moderator review covers story metadata and every new/edited
-   chapter; old published chapter/metadata versions remain live until approval.
+   automatically after a configurable period, default 24 hours. Decisions are
+   approve or reject only (decision 32); rejection requires actionable
+   feedback and permits unlimited resubmissions, each with a new
+   revision/review cycle. Moderator review covers story metadata and every
+   new/edited chapter; old published chapter/metadata versions remain live
+   until approval.
    Authors may request release time at submission or schedule/publish after
    approval. Sequential order applies only to first release: chapter N+1's
    first release cannot precede N's first release. Late approval makes a
@@ -323,9 +323,33 @@ policy; deferred technical selections and team process gates are not approval.
    created, that existing withdrawal remains payable and stays on the payout
    sheet; suspension pauses only future monthly evaluations.
 
+32. **Publication decisions are approve or reject only (confirmed
+   2026-10-29).** A Moderator leaves a submission pending, approves it, or
+   rejects it. The former separate request-revision outcome, its
+   `revision-requested` submission status, and the reject-for-substantial/
+   revise-for-minor split are removed; the Moderator states severity in the
+   written feedback. Rejection requires actionable reasons. A rejected Author
+   may revise and resubmit without limit; every resubmission is a new
+   revision, submission, and evidence batch/review cycle. Rejection unlocks
+   immediately: rejecting a story-metadata submission clears the story's
+   `authoringFrozen` state held for that review and returns the story to
+   draft, or to unpublished if it previously had a published version; a
+   published story stays published with its old public version live.
+   Rejecting a chapter submission returns any non-live chapter to draft,
+   including a chapter that was published, then unpublished and revised:
+   it stays hidden, keeps its old published version and first-release
+   marker, and may be resubmitted. A published chapter stays published
+   with its old version live. A chapter decision never clears the story
+   freeze, which a metadata review may own,
+   and rejection never clears a freeze caused by Author-role removal or
+   account deletion. Revise still starts a new editable revision from the
+   rejected one but is no longer needed to unblock editing. Approval still
+   does not publish by itself, and submissions have no escalation outcome.
+
 Evidence class: user-confirmed target decisions from the requirements interview,
 including final payout correction, deleted-account email/closure, chapter-one,
-retention and suspension clarifications.
+retention and suspension clarifications, and the approve/reject decision
+change.
 Source narratives/catalogues are traceability evidence, not release proof.
 
 ## Proposed technical design (not product policy)

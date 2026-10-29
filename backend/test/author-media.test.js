@@ -708,7 +708,7 @@ it('creates a fresh illustrated draft after feedback, preserves its manifest and
   const f = await submissionWithImages()
   const sent = await chapterWrite(f.author.cookie, '/api/author/submissions', f.body)
   const submission = await PublicationSubmission.findById(sent.body.submission.id)
-  submission.status = 'revision-requested'
+  submission.status = 'rejected'
   await submission.save()
   const previous = await ContentRevision.findById(f.body.revisionId)
   const revised = await chapterWrite(
@@ -788,7 +788,7 @@ it('keeps submitted image content and declarations separate from a revised draft
   const f = await submissionWithImages()
   const sent = await chapterWrite(f.author.cookie, '/api/author/submissions', f.body)
   const submission = await PublicationSubmission.findById(sent.body.submission.id)
-  submission.status = 'revision-requested'
+  submission.status = 'rejected'
   await submission.save()
   await chapterWrite(f.author.cookie, `/api/author/submissions/${submission._id}/revise`, {
     expectedVersion: submission.version,
@@ -829,4 +829,19 @@ it('reports a missing submitted image without substituting another asset', async
   )
   expect(response.status).toBe(404)
   expect(response.body.error.code).toBe('media_unavailable')
+})
+it('serves submitted package images to moderators only through the moderator route', async () => {
+  const f = await submissionWithImages()
+  const sent = await chapterWrite(f.author.cookie, '/api/author/submissions', f.body)
+  expect(sent.status).toBe(201)
+  const submissionId = sent.body.submission.id
+  const moderator = await authenticatedAccount('moderator')
+  const base = `/api/moderator/submissions/${submissionId}/media`
+  const image = await get(moderator.cookie, `${base}/${f.asset.id}/content`)
+  expect(image.status).toBe(200)
+  expect(image.headers['content-type']).toContain('image/webp')
+  expect(image.headers['cache-control']).toBe('private, no-store')
+  expect((await get(f.author.cookie, `${base}/${f.asset.id}/content`)).status).toBe(403)
+  const randomId = crypto.randomUUID().replaceAll('-', '').slice(0, 24)
+  expect((await get(moderator.cookie, `${base}/${randomId}/content`)).status).toBe(404)
 })

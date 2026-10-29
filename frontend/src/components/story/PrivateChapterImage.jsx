@@ -1,10 +1,12 @@
 import { useState } from 'react'
 import { privateMediaUrl, submittedMediaUrl, publishedMediaUrl } from '../../api/media'
 import { useLocale } from '../../context/LocaleContext'
-export function PrivateChapterImage({ block, submissionId }) {
-  const src = submissionId
-    ? submittedMediaUrl(submissionId, block.mediaId)
-    : privateMediaUrl(block.mediaId)
+export function PrivateChapterImage({ block, submissionId, mediaUrl }) {
+  const src = mediaUrl
+    ? mediaUrl(block.mediaId)
+    : submissionId
+      ? submittedMediaUrl(submissionId, block.mediaId)
+      : privateMediaUrl(block.mediaId)
   return <ChapterImage block={block} src={src} />
 }
 export function PublishedChapterImage({ block, target }) {

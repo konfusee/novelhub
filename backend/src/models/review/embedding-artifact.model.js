@@ -2,7 +2,20 @@ import { appendOnly, appendOnlyOptions, defineModel, ObjectId, Schema } from '..
 const schema = new Schema(
   {
     revisionId: { type: ObjectId, ref: 'ContentRevision', required: true },
-    batchId: { type: ObjectId, ref: 'EvidenceBatch', required: true },
+    source: {
+      type: String,
+      enum: ['evidence-batch', 'backfill'],
+      default: 'evidence-batch',
+      required: true,
+    },
+    batchId: {
+      type: ObjectId,
+      ref: 'EvidenceBatch',
+      required() {
+        return this.source === 'evidence-batch'
+      },
+    },
+    costUsd: { type: Number, min: 0 },
     model: { type: String, required: true },
     dimensions: { type: Number, required: true, min: 1 },
     passageId: { type: String, required: true },

@@ -3,17 +3,19 @@ import { Link, useParams } from 'react-router'
 import {
   AlertTriangle,
   ArrowRight,
-  Bookmark,
   BookOpen,
   ChevronDown,
-  Headphones,
+  Flag,
   RefreshCw,
   Search,
   Share2,
   Star,
 } from '../../components/icons'
 import { PublicHeader } from '../../components/public/PublicHeader'
-import { ChapterList, ChapterListSkeleton } from '../../components/public/ChapterList'
+import { ChapterList } from '../../components/public/ChapterList'
+import { useStoryDetail } from '../../components/public/catalog'
+import { FollowButton } from '../../components/community/FollowButton'
+import { ReportDialog } from '../../components/community/ReportDialog'
 import { Pagination } from '../../components/ui/Pagination'
 import { StoryCommunity } from '../../components/story/StoryCommunity'
 import { StoryCover } from '../../components/story/StoryCover'
@@ -30,32 +32,31 @@ import {
   SkeletonText,
   Tabs,
 } from '../../components/ui'
-import { chapterPreview, storyChapterList, storyDetail } from '../../data/mock/reader'
-import { stories } from '../../data/mock/stories'
+import { ROUTES } from '../../app/routes'
 import { useAuth } from '../../context/AuthContext'
 import { useLocale } from '../../context/LocaleContext'
-import { useMockResource } from '../../context/MockDataContext'
 
 const tabs = [
   ['chapters', 'storyDetail.chapters'],
   ['synopsis', 'storyDetail.synopsis'],
   ['reviews', 'storyDetail.reviews'],
-  ['audiobooks', 'storyDetail.relatedAudiobooks'],
 ]
 const genreTones = ['green', 'orange', 'purple']
-const ratingBreakdown = [82, 12, 4, 1, 1]
-/* Detail mock has no cover; reuse the catalogue entry so StoryCover renders the real artwork. */
-const coverStory = stories.find(story => story.title === storyDetail.title) ?? storyDetail
-const featuredReview =
-  '“Văn phong ở chương 2 khiến tôi nổi da gà. Thế giới truyện rất sống động và mạch căng thẳng không hề ngắt quãng.”'
-
-const isMissing = value => !value
+const CHAPTER_PAGE_SIZE = 10
+const initials = name =>
+  (name || '?')
+    .split(/\s+/)
+    .filter(Boolean)
+    .slice(0, 2)
+    .map(part => part[0]?.toUpperCase())
+    .join('')
 
 function RetryButton({ onClick }) {
+  const { t } = useLocale()
   return (
     <Button variant="secondary" size="sm" onClick={onClick}>
       <RefreshCw size={14} aria-hidden="true" />
-      Thử lại
+      {t('search.retry')}
     </Button>
   )
 }
@@ -155,7 +156,7 @@ function StoryAsideSkeleton() {
             <Skeleton className="h-3 w-20" />
           </div>
           <div className="flex-1 space-y-2">
-            {ratingBreakdown.map(value => (
+            {[5, 4, 3, 2, 1].map(value => (
               <span key={value} className="flex h-4 items-center gap-2">
                 <Skeleton className="h-2.5 w-6" />
                 <Skeleton className="h-2 flex-1" />
@@ -172,457 +173,451 @@ function StoryAsideSkeleton() {
     </aside>
   )
 }
-export function StoryDetailPage({ embedded = false }) {
+/** Reading CTA: resume for signed-in readers, chapter 1 (preview route for Guests). */
+function ReadAction({ storyId, chapters, viewer, isAuthenticated }) {
   const { t } = useLocale()
+  const first = chapters[0]
+  const resume = viewer?.resume?.available ? viewer.resume : null
+  if (!first && !resume) return null
+  if (resume)
+    return (
+      <div className="flex flex-col items-start gap-2">
+        <ButtonLink to={ROUTES.read(storyId, resume.chapterId)} size="lg" trailingIcon={ArrowRight}>
+          <BookOpen size={18} aria-hidden="true" />
+          {t('storyDetail.continueReading', { title: resume.title })}
+        </ButtonLink>
+        {resume.contentUpdated && (
+          <p role="note" className="text-xs text-orange-strong">
+            {t('storyDetail.contentUpdated')}
+          </p>
+        )}
+      </div>
+    )
+  return (
+    <ButtonLink
+      to={
+        isAuthenticated ? ROUTES.read(storyId, first.id) : `/stories/${storyId}/preview/${first.id}`
+      }
+      size="lg"
+      trailingIcon={ArrowRight}
+    >
+      <BookOpen size={18} aria-hidden="true" />
+      {t(isAuthenticated ? 'storyDetail.startReading' : 'storyDetail.readPreview')}
+    </ButtonLink>
+  )
+}
+
+function StoryDetailView({ data, storyId }) {
+  const { t, formatNumber } = useLocale()
   const { isAuthenticated } = useAuth()
-  const { storyId = 'demo' } = useParams()
+  const { story } = data
   const [chapterPage, setChapterPage] = useState(1)
   const [tab, setTab] = useState('chapters')
-  const [bookmarked, setBookmarked] = useState(false)
-  const [following, setFollowing] = useState(false)
   const [oldestFirst, setOldestFirst] = useState(true)
   const [notice, setNotice] = useState('')
   const [synopsisOpen, setSynopsisOpen] = useState(false)
-  const story = useMockResource(`story:${storyId}`, storyDetail, { isEmpty: isMissing })
-  const chapterFeed = useMockResource(`story:${storyId}:chapters`, storyChapterList)
-  const storyLoading = story.status === 'loading'
-  const storyReady = story.status === 'ready'
-  const chapters = oldestFirst ? chapterFeed.data : [...chapterFeed.data].reverse()
+  const [reportOpen, setReportOpen] = useState(false)
+  const [follow, setFollow] = useState({
+    following: Boolean(data.viewer?.following),
+    followers: story.followers ?? 0,
+  })
+  const [rating, setRating] = useState({
+    value: data.viewer?.rating ?? null,
+    average: story.averageRating ?? null,
+    count: story.ratingCount ?? 0,
+  })
+  const numbered = data.chapters.map((chapter, index) => ({ ...chapter, number: index + 1 }))
+  const chapters = oldestFirst ? numbered : [...numbered].reverse()
+  const pageCount = Math.max(1, Math.ceil(chapters.length / CHAPTER_PAGE_SIZE))
   const share = async () => {
     try {
       await navigator.clipboard.writeText(window.location.href)
-      setNotice('Đã sao chép liên kết truyện để chia sẻ.')
+      setNotice(t('storyDetail.shareCopied'))
     } catch {
-      setNotice('Không thể sao chép liên kết. Hãy sao chép địa chỉ trang trong trình duyệt.')
+      setNotice(t('storyDetail.shareFailed'))
     }
   }
+  const breakdown = story.ratingBreakdown ?? [0, 0, 0, 0, 0]
+  return (
+    <>
+      <Card
+        bezel
+        className="nh-fade-enter -mt-4"
+        innerClassName="nh-grid-12 grid gap-y-8 p-5 sm:p-8 lg:p-10 nh-layout-lg-3-9"
+      >
+        <StoryCover
+          story={story}
+          eager
+          className="mx-auto aspect-[2/3] w-full max-w-44 self-start rounded-2xl border border-hairline shadow-soft sm:max-w-56 lg:max-w-none [@media(max-height:500px)]:max-w-36"
+        />
+        <div className="min-w-0 lg:pl-4">
+          <h1 className="text-display text-balance">{story.title}</h1>
+          <div className="mt-4 flex flex-wrap items-center gap-x-3 gap-y-2 text-sm">
+            <span
+              aria-hidden="true"
+              className="grid size-9 place-items-center rounded-full bg-brand/12 text-xs font-semibold text-brand-strong"
+            >
+              {initials(story.author)}
+            </span>
+            <strong className="font-semibold">{story.author}</strong>
+            <span className="text-muted">
+              {formatNumber(follow.followers)} {t('storyDetail.followers')}
+            </span>
+          </div>
+          <dl className="mt-6 grid grid-cols-2 gap-x-4 gap-y-3 border-y border-hairline py-4 text-sm sm:flex sm:flex-wrap sm:gap-x-6">
+            <div className="flex items-center gap-1.5">
+              <dt className="sr-only">{t('storyDetail.communityRating')}</dt>
+              <Star size={15} className="fill-orange text-orange" aria-hidden="true" />
+              <dd className="font-semibold tabular-nums">
+                {rating.average != null ? rating.average.toFixed(1) : '—'}{' '}
+                <span className="font-normal text-muted">({formatNumber(rating.count)})</span>
+              </dd>
+            </div>
+            <div className="flex gap-1.5">
+              <dd className="font-semibold tabular-nums">{story.reads}</dd>
+              <dt className="text-muted">{t('storyDetail.reads')}</dt>
+            </div>
+            <div className="flex gap-1.5">
+              <dd className="font-semibold tabular-nums">{data.chapters.length}</dd>
+              <dt className="text-muted">{t('storyDetail.chapters')}</dt>
+            </div>
+            <div className="col-span-2 flex items-center gap-1.5 max-sm:order-1">
+              <dt className="text-muted">{t('storyDetail.status')}</dt>
+              <dd>
+                <Badge tone="purple">
+                  {t(
+                    story.status === 'Completed'
+                      ? 'search.status.completed'
+                      : 'search.status.ongoing',
+                  )}
+                </Badge>
+              </dd>
+            </div>
+          </dl>
+          <div className="mt-5 flex flex-wrap gap-2">
+            {(story.genres ?? []).map((genre, index) => (
+              <Badge tone={genreTones[index] ?? 'green'} key={genre}>
+                {genre}
+              </Badge>
+            ))}
+          </div>
+          <p
+            id="story-synopsis"
+            className={`mt-5 max-w-[68ch] whitespace-pre-line text-base leading-7 text-muted lg:line-clamp-none ${synopsisOpen ? '' : 'line-clamp-4'}`}
+          >
+            {story.synopsis}
+          </p>
+          <button
+            type="button"
+            aria-expanded={synopsisOpen}
+            aria-controls="story-synopsis"
+            onClick={() => setSynopsisOpen(open => !open)}
+            className="-ml-2 mt-1 inline-flex min-h-11 items-center rounded-full px-2 text-sm font-semibold text-brand-strong hover:bg-brand/8 lg:hidden"
+          >
+            {t(synopsisOpen ? 'storyDetail.synopsisLess' : 'storyDetail.synopsisMore')}
+          </button>
+          <div className="mt-5 flex flex-wrap items-start gap-3 lg:mt-7">
+            <ReadAction
+              storyId={storyId}
+              chapters={numbered}
+              viewer={data.viewer}
+              isAuthenticated={isAuthenticated}
+            />
+            <FollowButton storyId={storyId} following={follow.following} onChange={setFollow} />
+            <IconButton label={t('storyDetail.share')} size="lg" onClick={share}>
+              <Share2 size={18} />
+            </IconButton>
+            <IconButton
+              label={t('storyDetail.report')}
+              size="lg"
+              onClick={() => setReportOpen(true)}
+            >
+              <Flag size={18} />
+            </IconButton>
+          </div>
+          <p role="status" className="mt-3 min-h-5 text-sm text-brand-strong">
+            {notice}
+          </p>
+          {!isAuthenticated && (
+            <div className="mt-3 rounded-2xl border border-brand/25 bg-brand-soft p-4 text-sm leading-6">
+              <strong className="font-semibold text-brand-strong">
+                {t('storyDetail.guestMode')}
+              </strong>{' '}
+              {t('storyDetail.guestModeDescription')}
+            </div>
+          )}
+        </div>
+      </Card>
+      <ReportDialog
+        open={reportOpen}
+        onClose={() => setReportOpen(false)}
+        targetType="story"
+        targetId={storyId}
+      />
+      <div className="nh-grid-12 grid gap-y-6 nh-layout-lg-8-4">
+        <Card as="section" className="overflow-hidden p-0" aria-label={t('storyDetail.chapters')}>
+          <div className="border-b border-hairline p-3 sm:p-4">
+            <Tabs
+              label={story.title}
+              singleRow
+              value={tab}
+              onChange={setTab}
+              items={tabs.map(([value, labelKey]) => ({
+                value,
+                label: `${t(labelKey)}${value === 'chapters' ? ` · ${data.chapters.length}` : ''}`,
+              }))}
+            />
+          </div>
+          <div className="p-4 sm:p-6">
+            {tab === 'chapters' &&
+              (chapters.length ? (
+                <>
+                  <div className="mb-4 flex flex-wrap items-center justify-between gap-2 text-sm text-muted">
+                    <span>
+                      {t('pagination.chapterRange', {
+                        start: (chapterPage - 1) * CHAPTER_PAGE_SIZE + 1,
+                        end: Math.min(chapterPage * CHAPTER_PAGE_SIZE, chapters.length),
+                        count: chapters.length,
+                      })}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setOldestFirst(value => !value)
+                        setChapterPage(1)
+                      }}
+                      className="inline-flex min-h-9 items-center gap-1.5 rounded-full px-3 font-semibold text-brand-strong transition-colors duration-200 hover:bg-brand/8 pointer-coarse:min-h-11"
+                    >
+                      {t(oldestFirst ? 'storyDetail.oldestFirst' : 'storyDetail.newestFirst')}
+                      <ChevronDown
+                        size={15}
+                        aria-hidden="true"
+                        className={`transition-transform duration-200 ease-spring ${oldestFirst ? '' : 'rotate-180'}`}
+                      />
+                    </button>
+                  </div>
+                  <ChapterList
+                    chapters={chapters.slice(
+                      (chapterPage - 1) * CHAPTER_PAGE_SIZE,
+                      chapterPage * CHAPTER_PAGE_SIZE,
+                    )}
+                    storyId={storyId}
+                  />
+                  <Pagination page={chapterPage} pageCount={pageCount} onChange={setChapterPage} />
+                </>
+              ) : (
+                <EmptyState
+                  icon={BookOpen}
+                  headingAs="h3"
+                  title={t('storyDetail.noChapters')}
+                  description={t('storyDetail.noChaptersDescription')}
+                  className="rounded-2xl border border-hairline"
+                />
+              ))}
+            {tab === 'synopsis' && (
+              <div className="whitespace-pre-line rounded-2xl bg-reader p-6 text-base leading-8 text-ink/80">
+                {story.synopsis}
+              </div>
+            )}
+            {tab === 'reviews' && (
+              <StoryCommunity storyId={storyId} rating={rating} onRatingChange={setRating} />
+            )}
+          </div>
+          {!isAuthenticated && data.chapters.length > 1 && (
+            <div className="flex flex-col items-center justify-between gap-3 border-t border-hairline bg-elevated px-5 py-4 text-sm text-ink/70 sm:flex-row">
+              <span>{t('storyDetail.signInRemaining', { count: data.chapters.length - 1 })}</span>
+              <ButtonLink to={ROUTES.register} trailingIcon={ArrowRight}>
+                {t('storyDetail.unlockFree')}
+              </ButtonLink>
+            </div>
+          )}
+        </Card>
+        <aside className="space-y-5">
+          <Reveal>
+            <Card>
+              <div className="flex items-center gap-3">
+                <span
+                  aria-hidden="true"
+                  className="grid size-12 shrink-0 place-items-center rounded-full bg-brand/12 font-semibold text-brand-strong"
+                >
+                  {initials(story.author)}
+                </span>
+                <h2 className="min-w-0 text-base font-semibold">
+                  {t('storyDetail.aboutAuthor', { name: story.author })}
+                </h2>
+              </div>
+              {story.authorBio && (
+                <p className="mt-4 whitespace-pre-line text-sm leading-6 text-muted">
+                  {story.authorBio}
+                </p>
+              )}
+              {story.authorStats && (
+                <dl className="nh-grid-12 mt-4 grid nh-cols-3 border-y border-hairline py-3 text-center">
+                  {[
+                    [story.authorStats.works, 'storyDetail.works'],
+                    [story.authorStats.followers, 'storyDetail.followers'],
+                    [story.authorStats.reads, 'storyDetail.reads'],
+                  ].map(([value, labelKey]) => (
+                    <div key={labelKey} className="flex flex-col-reverse">
+                      <dt className="text-xs text-muted">{t(labelKey)}</dt>
+                      <dd className="font-semibold tabular-nums">{formatNumber(value)}</dd>
+                    </div>
+                  ))}
+                </dl>
+              )}
+            </Card>
+          </Reveal>
+          <Reveal delay={80}>
+            <Card>
+              <div className="flex items-center justify-between gap-3">
+                <h2 className="text-base font-semibold">{t('storyDetail.communityRating')}</h2>
+                <button
+                  type="button"
+                  onClick={() => setTab('reviews')}
+                  className="min-h-9 rounded-full px-3 text-xs font-semibold text-brand-strong hover:bg-brand/8 pointer-coarse:min-h-11"
+                >
+                  {t('storyDetail.rateAndDiscuss')}
+                </button>
+              </div>
+              <div className="mt-5 flex gap-5">
+                <div className="shrink-0 text-center">
+                  <strong className="block text-4xl font-bold tabular-nums">
+                    {rating.average != null ? rating.average.toFixed(1) : '—'}
+                  </strong>
+                  <small className="mt-1 block text-xs text-muted">
+                    {t('storyDetail.ratings', { count: formatNumber(rating.count) })}
+                  </small>
+                </div>
+                <div className="flex-1 space-y-2">
+                  {breakdown.map((value, index) => (
+                    <div
+                      className="flex items-center gap-2 text-xs tabular-nums text-muted"
+                      key={5 - index}
+                    >
+                      <span className="flex w-6 shrink-0 items-center gap-0.5">
+                        {5 - index}
+                        <Star size={11} className="fill-orange text-orange" aria-hidden="true" />
+                      </span>
+                      <ProgressBar
+                        value={value}
+                        size="sm"
+                        label={`${5 - index}★: ${value}%`}
+                        className="flex-1"
+                      />
+                      <span className="w-8 shrink-0 text-right">{value}%</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+              {story.featuredReview && (
+                <figure className="mt-5 border-t border-hairline pt-4">
+                  {story.featuredReviewer && (
+                    <figcaption className="text-xs font-semibold">
+                      {story.featuredReviewer}
+                    </figcaption>
+                  )}
+                  <blockquote className="mt-2 line-clamp-4 text-sm italic leading-6 text-muted">
+                    {story.featuredReview}
+                  </blockquote>
+                </figure>
+              )}
+            </Card>
+          </Reveal>
+        </aside>
+      </div>
+    </>
+  )
+}
+
+export function StoryDetailPage({ embedded = false }) {
+  const { t } = useLocale()
+  const { isAuthenticated } = useAuth()
+  const { storyId } = useParams()
+  const detail = useStoryDetail(storyId)
   const Root = embedded ? 'div' : 'main'
+  const ready = detail.status === 'ready'
   return (
     <div className="min-h-screen bg-page text-ink">
       {!embedded && <PublicHeader />}
       <Root className="page-public space-y-10 pb-20 pt-6 lg:space-y-12">
         <nav aria-label="Breadcrumb" className="text-xs text-muted">
-          <Link to="/" className="inline-flex min-h-8 items-center hover:text-brand-strong">
-            Trang chủ
-          </Link>
-          <span aria-hidden="true"> / </span>
           <Link
-            to="/categories?genre=K%E1%BB%B3%20%E1%BA%A3o"
+            to={ROUTES.home}
             className="inline-flex min-h-8 items-center hover:text-brand-strong"
           >
-            Kỳ ảo
+            {t('navigation.home')}
           </Link>
+          {ready && detail.data.story.categoryIds?.[0] && detail.data.story.genre && (
+            <>
+              <span aria-hidden="true"> / </span>
+              <Link
+                to={`${ROUTES.categories}?category=${encodeURIComponent(detail.data.story.categoryIds[0])}`}
+                className="inline-flex min-h-8 items-center hover:text-brand-strong"
+              >
+                {detail.data.story.genre}
+              </Link>
+            </>
+          )}
           <span aria-hidden="true"> / </span>
-          {storyReady ? (
+          {ready ? (
             <strong aria-current="page" className="font-semibold text-ink">
-              {storyDetail.title}
+              {detail.data.story.title}
             </strong>
           ) : (
-            storyLoading && <Skeleton className="inline-block h-3 w-28 align-middle" />
+            detail.status === 'loading' && (
+              <Skeleton className="inline-block h-3 w-28 align-middle" />
+            )
           )}
         </nav>
-        {storyLoading && (
-          <StoryHeroSkeleton
-            note={
-              !isAuthenticated && (
-                <div className="mt-3 rounded-2xl border border-brand/25 bg-brand-soft p-4 text-sm leading-6">
-                  <strong className="font-semibold text-brand-strong">
-                    {t('storyDetail.guestMode')}
-                  </strong>{' '}
-                  {t('storyDetail.guestModeDescription')}
-                </div>
-              )
-            }
-          />
+        {detail.status === 'loading' && (
+          <>
+            <StoryHeroSkeleton
+              note={
+                !isAuthenticated && (
+                  <div className="mt-3 rounded-2xl border border-brand/25 bg-brand-soft p-4 text-sm leading-6">
+                    <strong className="font-semibold text-brand-strong">
+                      {t('storyDetail.guestMode')}
+                    </strong>{' '}
+                    {t('storyDetail.guestModeDescription')}
+                  </div>
+                )
+              }
+            />
+            <div className="nh-grid-12 grid gap-y-6 nh-layout-lg-8-4">
+              <Card className="p-6">
+                <SkeletonText lines={6} />
+              </Card>
+              <StoryAsideSkeleton />
+            </div>
+          </>
         )}
-        {story.status === 'error' && (
+        {detail.status === 'error' && (
           <Card className="-mt-4 p-0">
             <EmptyState
               tone="rose"
               icon={AlertTriangle}
-              title="Không tải được thông tin truyện"
-              description="Kết nối tới máy chủ bị gián đoạn. Hãy thử lại sau ít phút."
-              action={<RetryButton onClick={story.retry} />}
+              title={t('storyDetail.loadFailed')}
+              description={detail.error?.message}
+              action={<RetryButton onClick={detail.retry} />}
             />
           </Card>
         )}
-        {story.status === 'empty' && (
+        {detail.status === 'empty' && (
           <Card className="-mt-4 p-0">
             <EmptyState
               headingAs="h1"
               icon={Search}
-              title="Không tìm thấy truyện"
-              description="Truyện có thể đã bị gỡ hoặc đường dẫn không còn đúng. Hãy tìm một tác phẩm khác."
+              title={t('storyDetail.notFound')}
+              description={t('storyDetail.notFoundDescription')}
               action={
-                <ButtonLink to="/search" size="sm" trailingIcon={ArrowRight}>
-                  Tìm truyện
+                <ButtonLink to={ROUTES.search} size="sm" trailingIcon={ArrowRight}>
+                  {t('home.exploreStories')}
                 </ButtonLink>
               }
             />
           </Card>
         )}
-        {storyReady && (
-          <Card
-            bezel
-            className="nh-fade-enter -mt-4"
-            innerClassName="nh-grid-12 grid gap-y-8 p-5 sm:p-8 lg:p-10 nh-layout-lg-3-9"
-          >
-            <StoryCover
-              story={coverStory}
-              eager
-              className="mx-auto aspect-[2/3] w-full max-w-44 self-start rounded-2xl border border-hairline shadow-soft sm:max-w-56 lg:max-w-none [@media(max-height:500px)]:max-w-36"
-              badge={
-                <span className="absolute left-3 top-3 rounded-full bg-surface/95 px-3 py-1 text-xs font-semibold text-brand-strong shadow-whisper">
-                  {t('storyDetail.freePreview')}
-                </span>
-              }
-            />
-            <div className="min-w-0 lg:pl-4">
-              <h1 className="text-display text-balance">{storyDetail.title}</h1>
-              <div className="mt-4 flex flex-wrap items-center gap-x-3 gap-y-2 text-sm">
-                <span className="grid size-9 place-items-center rounded-full bg-brand/12 text-xs font-semibold text-brand-strong">
-                  ML
-                </span>
-                <strong className="font-semibold">{storyDetail.author}</strong>
-                <Badge tone="green">{t('storyDetail.verifiedAuthor')}</Badge>
-                <span className="text-muted">
-                  {storyDetail.followers} {t('storyDetail.followers')}
-                </span>
-              </div>
-              <dl className="mt-6 grid grid-cols-2 gap-x-4 gap-y-3 border-y border-hairline py-4 text-sm sm:flex sm:flex-wrap sm:gap-x-6">
-                <div className="flex items-center gap-1.5">
-                  <dt className="sr-only">Đánh giá</dt>
-                  <Star size={15} className="fill-orange text-orange" aria-hidden="true" />
-                  <dd className="font-semibold tabular-nums">
-                    {storyDetail.rating}{' '}
-                    <span className="font-normal text-muted">({storyDetail.ratings})</span>
-                  </dd>
-                </div>
-                <div className="flex gap-1.5">
-                  <dd className="font-semibold tabular-nums">{storyDetail.reads}</dd>
-                  <dt className="text-muted">{t('storyDetail.reads')}</dt>
-                </div>
-                <div className="flex gap-1.5">
-                  <dd className="font-semibold tabular-nums">{storyDetail.chapters}</dd>
-                  <dt className="text-muted">{t('storyDetail.chapters')}</dt>
-                </div>
-                <div className="col-span-2 flex items-center gap-1.5 max-sm:order-1">
-                  <dt className="text-muted">{t('storyDetail.status')}</dt>
-                  <dd>
-                    <Badge tone="purple">{storyDetail.status}</Badge>
-                  </dd>
-                </div>
-                <div className="flex gap-1.5">
-                  <dt className="sr-only">Ngôn ngữ</dt>
-                  <dd className="text-muted">{storyDetail.language}</dd>
-                </div>
-              </dl>
-              <div className="mt-5 flex flex-wrap gap-2">
-                {storyDetail.genres.map((genre, index) => (
-                  <Badge tone={genreTones[index] ?? 'green'} key={genre}>
-                    {genre}
-                  </Badge>
-                ))}
-              </div>
-              <p
-                id="story-synopsis"
-                className={`mt-5 max-w-[68ch] text-base leading-7 text-muted lg:line-clamp-none ${synopsisOpen ? '' : 'line-clamp-4'}`}
-              >
-                {storyDetail.synopsis}
-              </p>
-              <button
-                type="button"
-                aria-expanded={synopsisOpen}
-                aria-controls="story-synopsis"
-                onClick={() => setSynopsisOpen(open => !open)}
-                className="-ml-2 mt-1 inline-flex min-h-11 items-center rounded-full px-2 text-sm font-semibold text-brand-strong hover:bg-brand/8 lg:hidden"
-              >
-                {t(synopsisOpen ? 'storyDetail.synopsisLess' : 'storyDetail.synopsisMore')}
-              </button>
-              <div className="mt-5 flex flex-wrap items-center gap-3 lg:mt-7">
-                <ButtonLink
-                  to={
-                    isAuthenticated
-                      ? `/read/${storyId}/chapter-1`
-                      : `/stories/${storyId}/preview/chapter-1`
-                  }
-                  size="lg"
-                  trailingIcon={ArrowRight}
-                >
-                  <BookOpen size={18} aria-hidden="true" />
-                  {t('storyDetail.readPreview')}
-                </ButtonLink>
-                <ButtonLink to={`/listen/${storyId}/chapter-1`} size="lg" variant="secondary">
-                  <Headphones size={18} aria-hidden="true" />
-                  {t('storyDetail.listenPreview')}
-                </ButtonLink>
-                <IconButton
-                  label={t('storyDetail.bookmark')}
-                  tone="purple"
-                  size="lg"
-                  aria-pressed={bookmarked}
-                  onClick={() => setBookmarked(!bookmarked)}
-                >
-                  <Bookmark size={18} className={bookmarked ? 'fill-current' : ''} />
-                </IconButton>
-                <IconButton label={t('storyDetail.share')} size="lg" onClick={share}>
-                  <Share2 size={18} />
-                </IconButton>
-              </div>
-              <p role="status" className="mt-3 min-h-5 text-sm text-brand-strong">
-                {notice}
-              </p>
-              {!isAuthenticated && (
-                <div className="mt-3 rounded-2xl border border-brand/25 bg-brand-soft p-4 text-sm leading-6">
-                  <strong className="font-semibold text-brand-strong">
-                    {t('storyDetail.guestMode')}
-                  </strong>{' '}
-                  {t('storyDetail.guestModeDescription')}
-                </div>
-              )}
-            </div>
-          </Card>
-        )}
-        {(storyReady || storyLoading) && (
-          <div className="nh-grid-12 grid gap-y-6 nh-layout-lg-8-4">
-            <Card
-              as="section"
-              className="overflow-hidden p-0"
-              aria-label={t('storyDetail.chapters')}
-            >
-              <div className="border-b border-hairline p-3 sm:p-4">
-                <Tabs
-                  label={storyDetail.title}
-                  singleRow
-                  value={tab}
-                  onChange={setTab}
-                  items={tabs.map(([value, labelKey]) => ({
-                    value,
-                    label: `${t(labelKey)}${value === 'chapters' && storyReady ? ` · ${storyDetail.chapters}` : ''}`,
-                  }))}
-                />
-              </div>
-              <div className="p-4 sm:p-6">
-                {tab === 'chapters' && (
-                  <>
-                    <div className="mb-4 flex flex-wrap items-center justify-between gap-2 text-sm text-muted">
-                      <span>
-                        {t('pagination.chapterRange', {
-                          start: (chapterPage - 1) * 5 + 1,
-                          end: Math.min(chapterPage * 5, chapters.length),
-                          count: chapters.length,
-                        })}
-                      </span>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setOldestFirst(value => !value)
-                          setChapterPage(1)
-                        }}
-                        className="inline-flex min-h-9 items-center gap-1.5 rounded-full px-3 font-semibold text-brand-strong transition-colors duration-200 hover:bg-brand/8 pointer-coarse:min-h-11"
-                      >
-                        {t(oldestFirst ? 'storyDetail.oldestFirst' : 'storyDetail.newestFirst')}
-                        <ChevronDown
-                          size={15}
-                          aria-hidden="true"
-                          className={`transition-transform duration-200 ease-spring ${oldestFirst ? '' : 'rotate-180'}`}
-                        />
-                      </button>
-                    </div>
-                    {chapterFeed.status === 'loading' ? (
-                      <div aria-busy="true" aria-label="Đang tải danh sách chương">
-                        <ChapterListSkeleton count={chapterPreview.length} />
-                      </div>
-                    ) : chapterFeed.status === 'error' ? (
-                      <EmptyState
-                        tone="rose"
-                        icon={AlertTriangle}
-                        headingAs="h3"
-                        title="Không tải được danh sách chương"
-                        description="Hãy thử lại để xem các chương mới nhất."
-                        action={<RetryButton onClick={chapterFeed.retry} />}
-                        className="rounded-2xl border border-hairline"
-                      />
-                    ) : chapterFeed.status === 'empty' ? (
-                      <EmptyState
-                        icon={BookOpen}
-                        headingAs="h3"
-                        title="Truyện chưa có chương nào"
-                        description="Lưu truyện vào thư viện để nhận thông báo khi tác giả phát hành chương đầu tiên."
-                        action={
-                          <Button
-                            type="button"
-                            variant="secondary"
-                            size="sm"
-                            aria-pressed={bookmarked}
-                            onClick={() => setBookmarked(!bookmarked)}
-                          >
-                            <Bookmark
-                              size={14}
-                              aria-hidden="true"
-                              className={bookmarked ? 'fill-current' : ''}
-                            />
-                            {bookmarked ? 'Đã lưu vào thư viện' : 'Lưu vào thư viện'}
-                          </Button>
-                        }
-                        className="rounded-2xl border border-hairline"
-                      />
-                    ) : (
-                      <div className="nh-fade-enter">
-                        <ChapterList
-                          chapters={chapters.slice((chapterPage - 1) * 5, chapterPage * 5)}
-                          storyId={storyId}
-                        />
-                        <Pagination
-                          page={chapterPage}
-                          pageCount={Math.ceil(chapters.length / 5)}
-                          onChange={setChapterPage}
-                        />
-                      </div>
-                    )}
-                  </>
-                )}
-                {tab === 'synopsis' && (
-                  <div className="rounded-2xl bg-reader p-6 text-base leading-8 text-ink/80">
-                    {storyDetail.synopsis}
-                  </div>
-                )}
-                {tab === 'reviews' && <StoryCommunity key={storyId} storyId={storyId} />}
-                {tab === 'audiobooks' && (
-                  <div className="flex flex-col items-start gap-4 rounded-2xl bg-reader p-6 sm:flex-row sm:items-center sm:justify-between">
-                    <div>
-                      <p className="font-semibold">{storyDetail.title}</p>
-                      <p className="text-sm text-muted">{t('storyDetail.relatedAudiobooks')}</p>
-                    </div>
-                    <ButtonLink to={`/listen/${storyId}/chapter-1`} variant="accent" size="sm">
-                      <Headphones size={14} aria-hidden="true" />
-                      {t('storyDetail.listenPreview')}
-                    </ButtonLink>
-                  </div>
-                )}
-              </div>
-              {!isAuthenticated && (
-                <div className="flex flex-col items-center justify-between gap-3 border-t border-hairline bg-elevated px-5 py-4 text-sm text-ink/70 sm:flex-row">
-                  <span>{t('storyDetail.signInRemaining', { count: 143 })}</span>
-                  <ButtonLink to="/register" trailingIcon={ArrowRight}>
-                    {t('storyDetail.unlockFree')}
-                  </ButtonLink>
-                </div>
-              )}
-            </Card>
-            {storyLoading ? (
-              <StoryAsideSkeleton />
-            ) : (
-              <aside className="space-y-5">
-                <Reveal>
-                  <Card>
-                    <div className="flex items-center gap-3">
-                      <span className="grid size-12 shrink-0 place-items-center rounded-full bg-brand/12 font-semibold text-brand-strong">
-                        ML
-                      </span>
-                      <div className="min-w-0">
-                        <h2 className="text-base font-semibold">Giới thiệu Mira Lane</h2>
-                        <p className="text-xs text-muted">Tác giả kỳ ảo &amp; giả tưởng suy đoán</p>
-                      </div>
-                    </div>
-                    <p className="mt-4 text-sm leading-6 text-muted">
-                      Người kể chuyện kiến tạo những thế giới phủ ánh hoàng hôn và tàn tích cổ xưa.
-                      Chủ nhân Giải thưởng Hội Kỳ ảo NovelHub 2024.
-                    </p>
-                    <dl className="nh-grid-12 mt-4 grid nh-cols-3 border-y border-hairline py-3 text-center">
-                      {[
-                        ['4', 'storyDetail.works'],
-                        ['15.2K', 'storyDetail.followers'],
-                        ['3.4M', 'storyDetail.reads'],
-                      ].map(([value, labelKey]) => (
-                        <div key={labelKey} className="flex flex-col-reverse">
-                          <dt className="text-xs text-muted">{t(labelKey)}</dt>
-                          <dd className="font-semibold tabular-nums">{value}</dd>
-                        </div>
-                      ))}
-                    </dl>
-                    <Button
-                      type="button"
-                      variant={following ? 'primary' : 'secondary'}
-                      aria-pressed={following}
-                      onClick={() => setFollowing(!following)}
-                      className="mt-4 w-full"
-                    >
-                      {t(following ? 'storyDetail.following' : 'storyDetail.followAuthor')}
-                    </Button>
-                  </Card>
-                </Reveal>
-                <Reveal delay={80}>
-                  <Card>
-                    <div className="flex items-center justify-between gap-3">
-                      <h2 className="text-base font-semibold">
-                        {t('storyDetail.communityRating')}
-                      </h2>
-                      <button
-                        type="button"
-                        onClick={() => setTab('reviews')}
-                        className="min-h-9 rounded-full px-3 text-xs font-semibold text-brand-strong hover:bg-brand/8 pointer-coarse:min-h-11"
-                      >
-                        {t('storyDetail.viewAll', { count: '1.2K' })}
-                      </button>
-                    </div>
-                    <div className="mt-5 flex gap-5">
-                      <div className="shrink-0 text-center">
-                        <strong className="block text-4xl font-bold tabular-nums">4.8</strong>
-                        <span
-                          className="mt-1 flex justify-center gap-0.5 text-orange"
-                          aria-label="4.8 / 5"
-                        >
-                          {[0, 1, 2, 3, 4].map(index => (
-                            <Star
-                              key={index}
-                              size={13}
-                              className="fill-orange"
-                              aria-hidden="true"
-                            />
-                          ))}
-                        </span>
-                        <small className="mt-1 block text-xs text-muted">
-                          {t('storyDetail.ratings', { count: '12,450' })}
-                        </small>
-                      </div>
-                      <div className="flex-1 space-y-2">
-                        {ratingBreakdown.map((value, index) => (
-                          <div
-                            className="flex items-center gap-2 text-xs tabular-nums text-muted"
-                            key={5 - index}
-                          >
-                            <span className="flex w-6 shrink-0 items-center gap-0.5">
-                              {5 - index}
-                              <Star
-                                size={11}
-                                className="fill-orange text-orange"
-                                aria-hidden="true"
-                              />
-                            </span>
-                            <ProgressBar
-                              value={value}
-                              size="sm"
-                              label={`${5 - index} sao: ${value}%`}
-                              className="flex-1"
-                            />
-                            <span className="w-8 shrink-0 text-right">{value}%</span>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                    <figure className="mt-5 border-t border-hairline pt-4">
-                      <figcaption className="text-xs font-semibold">Kaelen_Reader</figcaption>
-                      <blockquote className="mt-2 text-sm italic leading-6 text-muted">
-                        {featuredReview}
-                      </blockquote>
-                    </figure>
-                  </Card>
-                </Reveal>
-              </aside>
-            )}
-          </div>
-        )}
+        {ready && <StoryDetailView key={storyId} data={detail.data} storyId={storyId} />}
       </Root>
     </div>
   )

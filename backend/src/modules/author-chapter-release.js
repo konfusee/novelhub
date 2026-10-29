@@ -2,6 +2,8 @@ import {
   AuditEvent,
   Chapter,
   EvidenceBatch,
+  Follow,
+  Notification,
   PolicyVersion,
   PublicationSubmission,
   RightsDeclaration,
@@ -13,7 +15,7 @@ import { lockAuthor, ownStory } from './author-ownership.js'
 import { loadSubmittedPackage } from './author-submitted-package.js'
 import { digest } from './submission-digests.js'
 import { inspectChapterImages, pinChapterImages } from './author-chapter-media.js'
-import { approvedReviewEvidence } from './review-evidence.js'
+import { terminalEvidenceReady } from './review-evidence.js'
 
 async function packageFor(account, story, chapterId, revisionId, session) {
   const submission = revisionId
@@ -122,7 +124,7 @@ export async function chapterReleaseState(
         .session(session ?? null)
         .lean()
     : null
-  const evidenceReady = await approvedReviewEvidence(submission, batch, session)
+  const evidenceReady = terminalEvidenceReady(batch)
   const previous = await Chapter.exists({
     storyId: story._id,
     orderKey: { $lt: chapter.orderKey },
@@ -280,6 +282,7 @@ async function commitChapterRelease(account, storyId, chapterId, input, config, 
         now.getTime() + chapter.earlyAccess.durationDays * 86400000,
       )
     }
+    const firstRelease = !chapter.firstReleasedAt
     chapter.firstReleasedAt = chapter.firstReleasedAt ?? now
     chapter.publishedAt = chapter.publishedAt ?? now
     chapter.publicationTransition = {
@@ -312,6 +315,7 @@ async function commitChapterRelease(account, storyId, chapterId, input, config, 
       ],
       { session },
     )
+    if (firstRelease) await notifyFollowers(account, story, chapter, parent, session)
     return {
       id: String(chapter._id),
       status: 'published',
@@ -319,4 +323,34 @@ async function commitChapterRelease(account, storyId, chapterId, input, config, 
       replayed: false,
     }
   })
+}
+
+/** In-app notice to every active follower (never the Author) on a chapter's first release. */
+async function notifyFollowers(account, story, chapter, parent, session) {
+  const follows = await Follow.find({
+    storyId: story._id,
+    status: 'active',
+    accountId: { $ne: account._id },
+  })
+    .select('accountId')
+    .session(session)
+    .lean()
+  if (!follows.length) return
+  const storyTitle = parent.revision.content.title ?? ''
+  const chapterTitle = chapter.title
+  await Notification.insertMany(
+    follows.map(follow => ({
+      recipientAccountId: follow.accountId,
+      eventType: 'story.chapter-released',
+      sourceEventKey: `chapter:${chapter._id}:released`,
+      payload: {
+        storyId: String(story._id),
+        chapterId: String(chapter._id),
+        title: `Chương mới: ${storyTitle} – ${chapterTitle}`,
+        body: `Truyện “${storyTitle}” vừa phát hành chương “${chapterTitle}”.`,
+      },
+      deliveryState: 'available',
+    })),
+    { session },
+  )
 }
