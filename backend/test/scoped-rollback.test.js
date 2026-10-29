@@ -16,7 +16,7 @@ useTestDatabase()
 const origin = 'http://localhost:5173'
 const app = createApp(testConfig({ cookieName: 'novelhub_session', corsOrigin: origin }))
 
-it('removes dedicated reader, community, moderation and payment endpoints without financial writes', async () => {
+it('keeps removed endpoints unavailable and rejects invalid unlocks without financial writes', async () => {
   const reader = await authenticatedAccount()
   const moderator = await authenticatedAccount('moderator')
   const id = '000000000000000000000001'
@@ -39,7 +39,7 @@ it('removes dedicated reader, community, moderation and payment endpoints withou
       (await request(app).post(url).set('Cookie', reader.cookie).set('Origin', origin).send({}))
         .status,
       url,
-    ).toBe(404)
+    ).toBe(400)
   }
   expect(await LedgerEntry.countDocuments()).toBe(0)
   expect(await TopUpOrder.countDocuments()).toBe(0)
