@@ -150,7 +150,7 @@ A Moderator manages content quality and publication decisions:
 - View reported content.
 - View similarity findings.
 - View automatic AI review results and risk flags.
-- Approve, reject or request revision.
+- Approve or reject, with actionable feedback for rejection.
 - Resolve reports and apply content actions.
 - View moderation history.
 
@@ -263,7 +263,7 @@ Priority values:
 | FR-MOD-04 | MUST | The system shall compare content using the configured similarity process and produce findings or risk signals. |
 | FR-MOD-05 | MUST | The system shall attach AI review results, similarity findings and risk flags to the pending submission. |
 | FR-MOD-06 | MUST | The Moderator shall be able to view AI review results without manually requesting the review. |
-| FR-MOD-07 | MUST | The Moderator shall be able to approve, reject or request revision after reviewing the available evidence. |
+| FR-MOD-07 | MUST | The Moderator shall be able to approve or reject after reviewing the available evidence; rejection shall include actionable feedback, and a rejected Author may revise and resubmit as a new revision and review cycle. |
 | FR-MOD-08 | MUST | AI shall not make the final publication decision. |
 | FR-MOD-09 | MUST | The system shall allow a Moderator to review reports and apply permitted content actions. |
 | FR-MOD-10 | MUST | The system shall retain moderation history for submitted decisions and content actions. |
@@ -495,7 +495,7 @@ Financial records shall be append-only or otherwise auditable; corrections shall
 
 - A submitted story appears in the pending review workflow.
 - AI review results and similarity findings are visible to the Moderator automatically.
-- The Moderator can approve, reject or request revision without asking the AI to make the decision.
+- The Moderator can approve or reject without asking the AI to make the decision.
 - A rights declaration, report and similarity result remain review evidence rather than legal conclusions.
 
 ### 11.4 Finance and Admin

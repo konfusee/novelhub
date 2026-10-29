@@ -133,18 +133,30 @@ permission-scoped. Historical finance and moderation records are not rewritten.
    AI never approves or rejects publication (`FR-MOD-06`–`FR-MOD-08`, `BR-11`,
    `BR-12`). Viewing stored results never reruns a provider.
 5. After successful analysis or reported failure, a Moderator may leave the
-   item pending, approve, reject, or request revision. Rejection/revision
-   requires actionable reasons. A decision atomically checks Moderator authority
+   item pending, approve, or reject it; there is no separate revision outcome.
+   Rejection requires actionable reasons, in which the Moderator states the
+   severity. A decision atomically checks Moderator authority
    and active authorization epoch, current pending status, exact evidence batch
    identity/version, an allowed terminal batch state (available-for-human-review
    or explicit failed stage), and the unchanged reviewed revision before
    persisting status and immutable/read-only history (`FR-MOD-07`, `FR-MOD-10`,
    `FR-MOD-12`).
    Moderator claims prevent competing decisions; unanswered claims expire to
-   queue at configurable default 24h. Reject is for substantial issues, Request
-   revision for minor fixes; both allow unlimited new revision/review cycles.
-   Metadata and every new/edited chapter are reviewed, old published versions
-   stay live until approval.
+   queue at configurable default 24h. A rejected Author may revise and
+   resubmit without limit; each resubmission is a new revision, submission,
+   and evidence/review cycle. Rejection unlocks immediately: a rejected
+   story-metadata submission clears the story's authoring freeze for that
+   review and returns the story to draft, or to unpublished if it previously
+   had a published version (a published story stays published with its old
+   public version live); a rejected chapter submission returns any non-live
+   chapter to draft, including one published, then unpublished and revised
+   (it stays hidden and keeps its old published version), while a published
+   chapter stays published with its old version live. A chapter decision
+   never clears the story freeze, and
+   rejection never clears a freeze caused by Author-role removal or account
+   deletion. Revise remains available to start a new editable revision from
+   the rejected one. Metadata and every new/edited chapter are reviewed, old
+   published versions stay live until approval.
 6. Approval does not publish by itself when no release time was requested.
    An Author may request release time at submission or schedule/publish now
    after approval. An elapsed requested time makes release due immediately on
@@ -156,9 +168,9 @@ permission-scoped. Historical finance and moderation records are not rewritten.
    separate from draft/current pointers; all public read/access/TTS/resume paths
    use the published binding.
    A publication transition records actor, preconditions, result, failure,
-   and timestamp and validates parent story/chapter consistency. A requested
-   revision is a new exact revision and new review cycle; prior results and
-   decisions remain history.
+   and timestamp and validates parent story/chapter consistency. A
+   resubmission is a new exact revision and new review cycle; prior results
+   and decisions remain history.
 
 ### Reading, access, and TTS
 
@@ -334,8 +346,8 @@ Story/chapter comment threads are separate. Admin suspension is separate from
 report resolution; no report action itself suspends an account.
 
 Email supplements in-app for verification/password reset/Google link,
-review approval/rejection/revision request, and withdrawal created/Paid/Failed/
-missing-bank skip. Followed-story new chapters are in-app only.
+review approval/rejection, and withdrawal created/Paid/Failed/missing-bank
+skip. Followed-story new chapters are in-app only.
 Committed business results create one source-event-keyed outbox intent;
 delivery failure cannot erase the business outcome.
 Email retries up to three attempts with backoff, then marks failed; the in-app

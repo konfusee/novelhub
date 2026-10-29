@@ -38,7 +38,8 @@ closure (closure condition in the Finance aggregate); Reader coins are forfeited
 4. **Human decisions enter** from a Moderator for publication/report actions
    and an Admin for Author-access applications. Shared review items are
    claimable with confirmed configurable expiry (default 24 hours); stale
-   claims release. Reject and Request revision both permit resubmission.
+   claims release. Decisions are approve or reject only; rejection requires
+   actionable feedback and permits unlimited resubmission.
    Metadata edits use the same review/old-version-live rule as chapter edits.
 5. **Published content exits** through Guest chapter-one locked preview
    (title and login/unlock prompt only, no text or view count) during early
@@ -113,6 +114,14 @@ The following are proposed domain aggregates. An aggregate owner is the authorit
   submitted text/structure snapshot, rights facts, and media-reference package.
 - **Lifecycle:** Story `draft → submitted/under-review → approved → published
   → unpublished/archived`, with `authoringFrozen` after Author-role removal.
+  Rejecting a story-metadata submission clears the freeze held for that review
+  and returns the story to draft (unpublished if it previously had a published
+  version; a published story stays published with its old version live);
+  rejecting a chapter submission returns any non-live chapter to draft
+  (including one published, then unpublished and revised: it stays hidden and
+  keeps its old published version), and a published chapter stays published
+  with its old version live. A chapter decision never clears the story freeze,
+  and rejection never clears a role-removal or account-deletion freeze.
   Chapter status enum: `draft`, `submitted`, `approved`, `scheduled`, `due`,
   `published`, `unpublished`, `archived`, `cancelled`. Approval with future
   requested release → scheduled; elapsed request → due; no request → approved
@@ -151,8 +160,8 @@ The following are proposed domain aggregates. An aggregate owner is the authorit
 - **Entities:** `PublicationSubmission`, `EvidenceBatch`, `EmbeddingArtifact`, `SimilarityFinding`, `EvidencePassage`, `LLMReviewResult`, `ProcessingAttempt`, `StageLease`.
 - **Owner:** the submission service opens a cycle; provider adapters claim and append attempt results; Moderator reads evidence and owns the human decision. Evidence is scoped to the exact `revisionId` and submission cycle.
 - **Lifecycle:** Submission `validated → pending-review → decision-pending
-  → approved/rejected/revision-requested`; account deletion and Author-role
-  removal cancel unreleased work. Pending submissions leave the Moderator queue;
+  → approved/rejected`; account deletion and Author-role removal cancel
+  unreleased work. Pending submissions leave the Moderator queue;
   approved/scheduled/due chapters never release; cancelled/unreleased content
   is excluded from similarity sources. Cancellation reasons include
   `author-role-removed` and `account-deleted`. Authors cannot retract a pending
@@ -181,13 +190,14 @@ The following are proposed domain aggregates. An aggregate owner is the authorit
 - **Entities:** `PublicationDecision`, `ModerationHistoryEntry`, `ContentReport`,
   `ReportResolution`, `ContentAction`, `Comment`, `CommentLike`, `Rating`, `Follow`.
 - **Owner:** Reader creates own interaction/report records; Moderator owns publication decisions, report resolutions and permitted actions. History is read-only to consumers after append.
-- **Lifecycle/invariants:** Decision `pending → approved/rejected/revision-requested`;
+- **Lifecycle/invariants:** Decision `pending → approved/rejected`;
   Report `open → under-review → dismissed/actioned/closed`; Comment
   `visible → hidden/soft-deleted`; Follow `active → removed`; Rating
   `submitted → replaced/removed`. Queue claims block other Moderators and
-  expire after configurable time (default 24 hours). Reject and Request
-  revision both permit resubmission. Reports target story/chapter/comment;
-  actions are Dismiss, Hide comment, Unpublish chapter/story, or Warn Author.
+  expire after configurable time (default 24 hours). Reject requires
+  actionable feedback and permits resubmission. Reports target
+  story/chapter/comment; actions are Dismiss, Hide comment, Unpublish
+  chapter/story, or Warn Author.
   Comments support one-level replies, likes, own edit (shown “edited”), and
   soft delete retained for reports/audit. Locked early-access chapters reject
   comments.
