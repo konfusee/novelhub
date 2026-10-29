@@ -46,7 +46,13 @@ describe('moderator review queue', () => {
     expect((await api.get(author.cookie, '/api/moderator/summary')).status).toBe(403)
     const allowed = await api.get(moderator.cookie, '/api/moderator/summary')
     expect(allowed.status).toBe(200)
-    expect(allowed.body).toEqual({ queue: 0, mine: 0, processing: 0, decidedToday: 0 })
+    expect(allowed.body).toEqual({
+      queue: 0,
+      mine: 0,
+      processing: 0,
+      decidedToday: 0,
+      openReports: 0,
+    })
   })
 
   it('keeps validated submissions in processing and blocks claims until evidence is terminal', async () => {

@@ -1,13 +1,11 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useState } from 'react'
 import {
   AlertTriangle,
   Bell,
   BookOpen,
   CheckCheck,
-  Headphones,
   MessageCircle,
   RefreshCw,
-  Settings,
   Trash2,
   UserRound,
   WalletCards,
@@ -23,17 +21,18 @@ import {
   Skeleton,
   Tabs,
 } from '../../components/ui'
-import { useMockResource } from '../../context/MockDataContext'
-import { notifications as initialNotifications } from '../../data/mock/notifications'
+import { apiRequest } from '../../api/client'
+import { formatWhen } from '../../components/reader/readerLinks'
+import { useLocale } from '../../context/LocaleContext'
 
-const filters = [
-  ['all', 'Tất cả', Bell],
-  ['story', 'Cập nhật truyện', BookOpen],
-  ['author', 'Tác giả', UserRound],
-  ['comment', 'Bình luận & phản hồi', MessageCircle],
-  ['system', 'Hệ thống & xu', WalletCards],
+/* Filters map to the `type` of each notification (see notificationView on the backend). */
+const FILTERS = [
+  ['all', Bell],
+  ['story', BookOpen],
+  ['author', UserRound],
+  ['comment', MessageCircle],
+  ['system', WalletCards],
 ]
-
 const typeStyles = {
   story: { tone: 'green', tile: 'bg-brand/12 text-brand-strong', icon: BookOpen },
   author: { tone: 'purple', tile: 'bg-purple/12 text-purple-strong', icon: UserRound },
@@ -41,45 +40,26 @@ const typeStyles = {
   system: { tone: 'orange', tile: 'bg-orange/16 text-orange-strong', icon: WalletCards },
 }
 
-/* Destination of each notification's primary action (derived from the mock entry). */
-const actionTarget = item => {
-  if (item.type === 'system') return '/reader/wallet'
-  if (item.type === 'author') return '/stories/silent-forest'
-  if (item.type === 'comment') return '/read/silent-forest/chapter-14'
-  return /âm thanh/i.test(item.label)
-    ? '/listen/whispers-of-you/chapter-7'
-    : '/read/silent-forest/chapter-15'
-}
-
-/* Notification card frame: icon tile, badge row, title, body, action footer (wraps on phones). */
 function NotificationSkeleton() {
   return (
     <Card as="div" aria-hidden="true" className="p-4 sm:p-5">
       <div className="flex gap-3 sm:gap-4">
         <Skeleton className="size-11 shrink-0 rounded-2xl sm:size-14" />
         <div className="min-w-0 flex-1">
-          <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
+          <div className="flex flex-wrap items-center gap-2">
             <Skeleton className="h-6 w-28" />
-            <Skeleton className="h-3 w-16" />
-            <span className="flex h-4 items-center max-sm:basis-full sm:ml-auto">
-              <Skeleton className="h-3 w-14" />
-            </span>
+            <Skeleton className="h-3 w-24" />
           </div>
-          <span className="mt-2 flex flex-col justify-center gap-2 py-1 sm:h-7 sm:py-0">
-            <Skeleton className="h-4 w-3/5 sm:h-5" />
-            <Skeleton className="h-4 w-2/5 sm:hidden" />
+          <span className="mt-2 flex h-7 items-center">
+            <Skeleton className="h-5 w-3/5" />
           </span>
           <span className="mt-1 flex max-w-prose flex-col gap-3 py-1.5">
             <Skeleton className="h-3 w-full" />
-            <Skeleton className="h-3 w-full sm:w-2/3" />
-            <Skeleton className="h-3 w-1/2 sm:hidden" />
+            <Skeleton className="h-3 w-2/3" />
           </span>
-          <div className="mt-4 flex flex-wrap items-center gap-x-3 gap-y-2 border-t border-hairline pt-3">
+          <div className="mt-4 flex items-center gap-3 border-t border-hairline pt-3">
             <Skeleton className="h-9 w-28" />
-            <span className="ml-auto flex items-center justify-end gap-3 max-sm:basis-full">
-              <Skeleton className="h-3 w-28" />
-              <Skeleton className="size-11 shrink-0" />
-            </span>
+            <Skeleton className="ml-auto size-11 shrink-0" />
           </div>
         </div>
       </div>
@@ -88,147 +68,198 @@ function NotificationSkeleton() {
 }
 
 export function NotificationsPage() {
-  const feed = useMockResource('reader:notifications', initialNotifications)
-  const loading = feed.status === 'loading'
-  const [local, setLocal] = useState(null)
-  const items = useMemo(
-    () => (feed.status === 'ready' ? (local ?? feed.data) : []),
-    [feed.status, feed.data, local],
-  )
-  const setItems = change => setLocal(current => change(current ?? feed.data))
+  const { t } = useLocale()
+  /* Pages loaded so far are kept in one list; "load more" appends the next page. */
+  const [feed, setFeed] = useState({ status: 'loading', items: [], page: 1, hasMore: false })
+  const [unread, setUnread] = useState(0)
+  const [attempt, setAttempt] = useState(0)
+  const [loadingMore, setLoadingMore] = useState(false)
   const [filter, setFilter] = useState('all')
-  const [settings, setSettings] = useState(false)
   const [removed, setRemoved] = useState(null)
-  const [olderChecked, setOlderChecked] = useState(false)
-  const shown = useMemo(
-    () => (filter === 'all' ? items : items.filter(item => item.type === filter)),
-    [filter, items],
-  )
-  const unreadCount = items.filter(i => i.unread).length
-  const markAll = () => setItems(current => current.map(item => ({ ...item, unread: false })))
-  const setRead = (id, unread) =>
-    setItems(current => current.map(item => (item.id === id ? { ...item, unread } : item)))
-  const remove = item => {
-    setRemoved({ item, index: items.indexOf(item) })
-    setItems(current => current.filter(entry => entry.id !== item.id))
+  const [error, setError] = useState('')
+  useEffect(() => {
+    const controller = new AbortController()
+    apiRequest('/reader/notifications?page=1', { signal: controller.signal })
+      .then(response => {
+        if (controller.signal.aborted) return
+        setFeed({ status: 'ready', items: response.items, page: 1, hasMore: response.hasMore })
+        setUnread(response.unreadCount)
+      })
+      .catch(failure => {
+        if (!controller.signal.aborted)
+          setFeed({ status: 'error', items: [], page: 1, hasMore: false, error: failure })
+      })
+    return () => controller.abort()
+  }, [attempt])
+  const retry = () => {
+    setFeed({ status: 'loading', items: [], page: 1, hasMore: false })
+    setAttempt(value => value + 1)
   }
+  const act = async (request, apply) => {
+    setError('')
+    try {
+      await request()
+      apply()
+    } catch (failure) {
+      setError(failure.message)
+    }
+  }
+  const setRead = (item, read) =>
+    act(
+      () =>
+        apiRequest(`/reader/notifications/${encodeURIComponent(item.id)}`, {
+          method: 'PUT',
+          body: { read },
+        }),
+      () => {
+        setFeed(current => ({
+          ...current,
+          items: current.items.map(entry =>
+            entry.id === item.id ? { ...entry, read, unread: !read } : entry,
+          ),
+        }))
+        if (item.unread === read) setUnread(count => Math.max(0, count + (read ? -1 : 1)))
+      },
+    )
+  const markAll = () =>
+    act(
+      () => apiRequest('/reader/notifications/read-all', { method: 'POST' }),
+      () => {
+        setFeed(current => ({
+          ...current,
+          items: current.items.map(entry => ({ ...entry, read: true, unread: false })),
+        }))
+        setUnread(0)
+      },
+    )
+  const remove = item =>
+    act(
+      () =>
+        apiRequest(`/reader/notifications/${encodeURIComponent(item.id)}`, { method: 'DELETE' }),
+      () => {
+        setRemoved({ item, index: feed.items.indexOf(item) })
+        setFeed(current => ({
+          ...current,
+          items: current.items.filter(entry => entry.id !== item.id),
+        }))
+        if (item.unread) setUnread(count => Math.max(0, count - 1))
+      },
+    )
   const undoRemove = () => {
-    setItems(current => {
-      const next = [...current]
-      next.splice(Math.min(removed.index, next.length), 0, removed.item)
-      return next
-    })
-    setRemoved(null)
+    const { item, index } = removed
+    act(
+      () =>
+        apiRequest(`/reader/notifications/${encodeURIComponent(item.id)}/restore`, {
+          method: 'POST',
+        }),
+      () => {
+        setFeed(current => {
+          const items = [...current.items]
+          items.splice(Math.min(index, items.length), 0, item)
+          return { ...current, items }
+        })
+        if (item.unread) setUnread(count => count + 1)
+        setRemoved(null)
+      },
+    )
   }
+  const loadMore = async () => {
+    setLoadingMore(true)
+    setError('')
+    try {
+      const next = feed.page + 1
+      const response = await apiRequest(`/reader/notifications?page=${next}`)
+      setFeed(current => {
+        const seen = new Set(current.items.map(entry => entry.id))
+        return {
+          ...current,
+          items: [...current.items, ...response.items.filter(entry => !seen.has(entry.id))],
+          page: next,
+          hasMore: response.hasMore,
+        }
+      })
+      setUnread(response.unreadCount)
+    } catch (failure) {
+      setError(failure.message)
+    } finally {
+      setLoadingMore(false)
+    }
+  }
+  const items = feed.items
+  const shown = filter === 'all' ? items : items.filter(item => item.type === filter)
+  const ready = feed.status === 'ready'
   return (
     <ReaderLayout>
       <div className="page-reader py-7">
         <div className="flex flex-col justify-between gap-4 border-b border-hairline pb-6 lg:flex-row lg:items-end">
           <div className="min-w-0">
-            <p className="text-[11px] font-semibold uppercase tracking-[.14em] text-brand-strong">
-              Trung tâm hoạt động · Bảng tin độc giả
-            </p>
-            <h1 className="mt-2 text-h2 sm:text-h1">Trung tâm thông báo</h1>
+            <h1 className="text-h2 sm:text-h1">{t('readerData.notifications.title')}</h1>
             <p className="mt-2 max-w-prose text-sm text-muted">
-              Theo dõi chương mới, thảo luận cộng đồng và tác phẩm mới từ tác giả.
+              {t('readerData.notifications.description')}
             </p>
           </div>
-          <div className="flex flex-wrap gap-2">
-            <Button variant="secondary" size="sm" onClick={markAll} disabled={!unreadCount}>
-              <CheckCheck size={16} />
-              Đánh dấu tất cả đã đọc
-            </Button>
-            <Button
-              variant="ghost"
-              size="sm"
-              aria-expanded={settings}
-              aria-controls="notification-settings"
-              onClick={() => setSettings(!settings)}
-            >
-              <Settings size={16} />
-              Cài đặt
-            </Button>
-          </div>
+          <Button variant="secondary" size="sm" onClick={markAll} disabled={!unread}>
+            <CheckCheck size={16} />
+            {t('readerData.notifications.markAll')}
+          </Button>
         </div>
-        {settings && (
-          <Card
-            id="notification-settings"
-            className="nh-dialog-enter mt-4 flex flex-wrap items-center justify-between gap-3 bg-elevated p-5"
-          >
-            <div>
-              <h2 className="text-sm font-semibold">Tùy chọn thông báo</h2>
-              <p className="mt-1 text-xs text-ink/70">Đã bật thông báo truyện và tác giả.</p>
-            </div>
-            <div className="flex flex-wrap gap-2">
-              <Badge tone="green">Đã bật email</Badge>
-              <Badge tone="green">Đã bật thông báo đẩy</Badge>
-            </div>
-          </Card>
-        )}
         <div className="mt-5">
           <Tabs
-            label="Lọc thông báo"
+            label={t('readerData.notifications.filterLabel')}
             value={filter}
             onChange={setFilter}
-            items={filters.map(([value, label, Icon]) => ({
-              value,
-              icon: Icon,
-              label:
-                feed.status === 'ready'
-                  ? `${label} (${value === 'all' ? items.length : items.filter(i => i.type === value).length})`
-                  : label,
-            }))}
+            items={FILTERS.map(([value, Icon]) => {
+              const label = t(`readerData.notifications.filter.${value}`)
+              const count =
+                value === 'all' ? items.length : items.filter(item => item.type === value).length
+              return { value, icon: Icon, label: ready ? `${label} (${count})` : label }
+            })}
           />
         </div>
-        {loading ? (
+        {ready && (
           <div
-            aria-hidden="true"
-            className="mt-4 flex flex-wrap items-center justify-between gap-2 rounded-2xl border border-hairline bg-surface px-4 py-3"
+            role="status"
+            className="mt-4 flex flex-wrap items-center justify-between gap-2 rounded-2xl border border-hairline bg-surface px-4 py-3 text-sm"
           >
-            <span className="flex h-5 items-center gap-2">
-              <Skeleton className="size-2" />
-              <Skeleton className="h-3 w-56 max-w-[60vw]" />
+            <span className="flex items-center gap-2">
+              <span
+                aria-hidden="true"
+                className={`size-2 shrink-0 rounded-full ${unread ? 'bg-brand' : 'bg-ink/25'}`}
+              />
+              {unread
+                ? t('readerData.notifications.unreadCount', { count: unread })
+                : t('readerData.notifications.allRead')}
             </span>
-            <Skeleton className="h-3 w-20" />
-          </div>
-        ) : (
-          feed.status === 'ready' && (
-            <div
-              role="status"
-              className="mt-4 flex flex-wrap items-center justify-between gap-2 rounded-2xl border border-hairline bg-surface px-4 py-3 text-sm"
-            >
-              <span className="flex items-center gap-2">
-                <span
-                  aria-hidden="true"
-                  className={`size-2 shrink-0 rounded-full ${unreadCount ? 'bg-brand' : 'bg-ink/25'}`}
-                />
-                {unreadCount
-                  ? `Bạn có ${unreadCount} thông báo chưa đọc cần xem.`
-                  : 'Bạn đã đọc hết thông báo.'}
+            {removed && (
+              <span className="flex items-center gap-2 text-xs text-muted">
+                {t('readerData.notifications.deleted')}
+                <button
+                  type="button"
+                  onClick={undoRemove}
+                  className="min-h-9 font-semibold text-brand-strong underline-offset-4 hover:underline"
+                >
+                  {t('readerData.notifications.undo')}
+                </button>
               </span>
-              {removed ? (
-                <span className="flex items-center gap-2 text-xs text-muted">
-                  Đã xóa một thông báo.
-                  <button
-                    type="button"
-                    onClick={undoRemove}
-                    className="font-semibold text-brand-strong underline-offset-4 hover:underline"
-                  >
-                    Hoàn tác
-                  </button>
-                </span>
-              ) : (
-                <span className="text-xs text-muted">
-                  Hiển thị {shown.length} / {items.length}
-                </span>
-              )}
-            </div>
-          )
+            )}
+          </div>
         )}
-        {loading ? (
-          <section aria-busy="true" aria-label="Đang tải thông báo" className="mt-5 space-y-3">
-            {initialNotifications.map(item => (
-              <NotificationSkeleton key={item.id} />
+        {error && (
+          <p
+            role="alert"
+            className="mt-4 rounded-2xl bg-rose/10 px-4 py-3 text-sm text-rose-strong"
+          >
+            {error}
+          </p>
+        )}
+        {feed.status === 'loading' ? (
+          <section
+            aria-busy="true"
+            aria-label={t('readerData.notifications.loading')}
+            className="mt-5 space-y-3"
+          >
+            {Array.from({ length: 4 }, (_, index) => (
+              <NotificationSkeleton key={index} />
             ))}
           </section>
         ) : feed.status === 'error' ? (
@@ -236,21 +267,24 @@ export function NotificationsPage() {
             <EmptyState
               tone="rose"
               icon={AlertTriangle}
-              title="Không tải được thông báo"
-              description="Kết nối tới máy chủ bị gián đoạn. Hãy thử lại sau ít phút."
+              title={t('readerData.notifications.error')}
+              description={feed.error?.message}
               action={
-                <Button variant="secondary" size="sm" onClick={feed.retry}>
+                <Button variant="secondary" size="sm" onClick={retry}>
                   <RefreshCw size={14} aria-hidden="true" />
-                  Thử lại
+                  {t('readerData.notifications.retry')}
                 </Button>
               }
             />
           </Card>
         ) : (
-          <section aria-label="Danh sách thông báo" className="nh-fade-enter mt-5 space-y-3">
+          <section
+            aria-label={t('readerData.notifications.listLabel')}
+            className="nh-fade-enter mt-5 space-y-3"
+          >
             {shown.map(item => {
-              const style = typeStyles[item.type] || typeStyles.story
-              const Icon = /âm thanh/i.test(item.label) ? Headphones : style.icon
+              const style = typeStyles[item.type] || typeStyles.system
+              const Icon = style.icon
               return (
                 <Card
                   as="article"
@@ -269,33 +303,49 @@ export function NotificationsPage() {
                     <div className="min-w-0 flex-1">
                       <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
                         <Badge tone={style.tone}>{item.label}</Badge>
-                        <span className="text-xs text-muted">{item.time}</span>
+                        <span className="text-xs text-muted">{formatWhen(item.createdAt)}</span>
                         <span
                           className={`ml-auto text-xs ${item.unread ? 'font-semibold text-brand-strong' : 'text-muted'}`}
                         >
-                          {item.unread ? 'Chưa đọc' : 'Đã đọc'}
+                          {t(
+                            item.unread
+                              ? 'readerData.notifications.unread'
+                              : 'readerData.notifications.read',
+                          )}
                         </span>
                       </div>
-                      <h2 className="mt-2 text-base font-semibold sm:text-h3">{item.title}</h2>
-                      <p className="mt-1 max-w-prose text-sm leading-6 text-muted">{item.body}</p>
+                      <h2 className="mt-2 break-words text-base font-semibold sm:text-h3">
+                        {item.title}
+                      </h2>
+                      {item.body && (
+                        <p className="mt-1 max-w-prose whitespace-pre-wrap break-words text-sm leading-6 text-muted">
+                          {item.body}
+                        </p>
+                      )}
                       <div className="mt-4 flex flex-wrap items-center gap-x-3 gap-y-2 border-t border-hairline pt-3">
                         <ButtonLink
-                          to={actionTarget(item)}
+                          to={item.href}
                           size="sm"
-                          onClick={() => setRead(item.id, false)}
+                          onClick={() => {
+                            if (item.unread) setRead(item, true)
+                          }}
                         >
                           {item.action}
                         </ButtonLink>
                         <div className="ml-auto flex items-center gap-3">
                           <button
                             type="button"
-                            onClick={() => setRead(item.id, !item.unread)}
+                            onClick={() => setRead(item, item.unread)}
                             className="min-h-9 rounded-full px-3 text-xs font-medium text-muted transition-colors hover:text-ink pointer-coarse:min-h-11"
                           >
-                            {item.unread ? 'Đánh dấu đã đọc' : 'Đánh dấu chưa đọc'}
+                            {t(
+                              item.unread
+                                ? 'readerData.notifications.markRead'
+                                : 'readerData.notifications.markUnread',
+                            )}
                           </button>
                           <IconButton
-                            label={`Xóa thông báo: ${item.title}`}
+                            label={t('readerData.notifications.delete', { title: item.title })}
                             tone="rose"
                             shape="circle"
                             size="md"
@@ -314,23 +364,25 @@ export function NotificationsPage() {
               <Card className="p-0">
                 <EmptyState
                   icon={Bell}
-                  title={items.length ? 'Bạn đã xem hết thông báo' : 'Chưa có thông báo nào'}
-                  description={
+                  title={t(
                     items.length
-                      ? 'Không có thông báo trong nhóm này.'
-                      : 'Theo dõi truyện và tác giả để nhận chương mới, phản hồi và tin từ cộng đồng.'
-                  }
+                      ? 'readerData.notifications.filterEmpty'
+                      : 'readerData.notifications.empty',
+                  )}
+                  description={t(
+                    items.length
+                      ? 'readerData.notifications.filterEmptyDescription'
+                      : 'readerData.notifications.emptyDescription',
+                  )}
                   action={
                     filter !== 'all' ? (
                       <Button variant="secondary" size="sm" onClick={() => setFilter('all')}>
-                        Xem tất cả thông báo
+                        {t('readerData.notifications.showAll')}
                       </Button>
                     ) : (
-                      !items.length && (
-                        <ButtonLink to="/reader/following" variant="secondary" size="sm">
-                          Quản lý theo dõi
-                        </ButtonLink>
-                      )
+                      <ButtonLink to="/reader/following" variant="secondary" size="sm">
+                        {t('readerData.notifications.manageFollowing')}
+                      </ButtonLink>
                     )
                   }
                 />
@@ -338,22 +390,18 @@ export function NotificationsPage() {
             )}
           </section>
         )}
-        <div className="mt-6 flex flex-col justify-between gap-3 border-t border-hairline pt-5 text-xs text-muted sm:flex-row sm:items-center">
-          <span role="status" aria-busy={loading || undefined}>
-            {loading && <Skeleton className="h-3 w-56" />}
-            {feed.status === 'ready' &&
-              (olderChecked
-                ? 'Không còn thông báo cũ hơn trong 30 ngày qua.'
-                : `Hiển thị ${shown.length} thông báo trong 30 ngày qua`)}
-          </span>
-          <Button
-            variant="secondary"
-            disabled={olderChecked || feed.status !== 'ready'}
-            onClick={() => setOlderChecked(true)}
-          >
-            Tải thông báo trước đó
-          </Button>
-        </div>
+        {ready && (
+          <div className="mt-6 flex flex-col justify-between gap-3 border-t border-hairline pt-5 text-xs text-muted sm:flex-row sm:items-center">
+            <span>
+              {feed.hasMore
+                ? t('readerData.notifications.loaded', { count: items.length })
+                : t('readerData.notifications.noMore')}
+            </span>
+            <Button variant="secondary" disabled={!feed.hasMore || loadingMore} onClick={loadMore}>
+              {t('readerData.notifications.loadMore')}
+            </Button>
+          </div>
+        )}
       </div>
     </ReaderLayout>
   )

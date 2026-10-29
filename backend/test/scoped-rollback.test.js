@@ -23,14 +23,10 @@ it('removes dedicated reader, community, moderation and payment endpoints withou
   for (const url of [
     '/api/reader/wallet',
     '/api/reader/home',
-    '/api/reader/library',
-    '/api/reader/history',
     `/api/reader/stories/${id}/chapters/${id}/unlock`,
     '/api/catalog/home',
-    '/api/catalog/categories',
     '/api/catalog/rankings',
     '/api/catalog/discovery',
-    `/api/community/stories/${id}/comments`,
     '/api/workspace/reader/wallet',
   ]) {
     expect((await request(app).get(url).set('Cookie', reader.cookie)).status, url).toBe(404)

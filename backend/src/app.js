@@ -21,6 +21,9 @@ import { createAuthorSubmissionsRouter } from './routes/author-submissions.route
 import { createAuthorImportRouter } from './routes/author-import.routes.js'
 import { createAuthorMediaRouter } from './routes/author-media.routes.js'
 import { createModeratorRouter } from './routes/moderator.routes.js'
+import { createReaderReadingRouter } from './routes/reader-reading.routes.js'
+import { createCommunityRouter } from './routes/community.routes.js'
+import { createModeratorReportsRouter } from './routes/moderator-reports.routes.js'
 
 // Runtime configuration is validated by loadEnv and mapped by toAppConfig.
 export function createApp(config) {
@@ -76,6 +79,9 @@ export function createApp(config) {
   app.use('/api', createWorkspaceDataRouter(config))
   app.use('/api', createReaderDataRouter(config))
   app.use('/api', createModeratorRouter(config))
+  app.use('/api', createReaderReadingRouter(config))
+  app.use('/api', createCommunityRouter(config))
+  app.use('/api', createModeratorReportsRouter(config))
   app.use(notFound)
   app.use(errorHandler)
   return app

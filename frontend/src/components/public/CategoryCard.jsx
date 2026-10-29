@@ -1,5 +1,6 @@
 import * as icons from '../icons'
 import { Skeleton } from '../ui'
+import { useLocale } from '../../context/LocaleContext'
 
 const toneClasses = {
   purple: 'bg-purple/12 text-purple-strong',
@@ -10,12 +11,13 @@ const toneClasses = {
   neutral: 'bg-ink/5 text-ink/75',
 }
 export function CategoryCard({ category, selected = false, onSelect }) {
+  const { t } = useLocale()
   const Icon = icons[category.icon] || icons.BookOpen
   return (
     <button
       type="button"
       aria-pressed={selected}
-      onClick={() => onSelect?.(category.name)}
+      onClick={() => onSelect?.(category.id)}
       className={`group flex h-full w-full min-w-0 items-start gap-4 whitespace-normal rounded-3xl border bg-surface p-5 text-left shadow-whisper transition-[transform,border-color,box-shadow] duration-[420ms] ease-spring hover:-translate-y-0.5 hover:shadow-lift ${selected ? 'border-brand ring-2 ring-brand/20' : 'border-line hover:border-brand/60'}`}
     >
       <span
@@ -28,11 +30,15 @@ export function CategoryCard({ category, selected = false, onSelect }) {
           <strong className="text-base font-semibold transition-colors duration-200 group-hover:text-brand-strong">
             {category.name}
           </strong>
-          <span className="shrink-0 text-xs tabular-nums text-muted">{category.count} truyện</span>
+          <span className="shrink-0 text-xs tabular-nums text-muted">
+            {t('search.storyCount', { count: category.storyCount })}
+          </span>
         </span>
-        <span className="mt-1 line-clamp-2 block text-xs leading-5 text-muted">
-          {category.description}
-        </span>
+        {category.description && (
+          <span className="mt-1 line-clamp-2 block text-xs leading-5 text-muted">
+            {category.description}
+          </span>
+        )}
       </span>
     </button>
   )

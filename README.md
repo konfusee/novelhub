@@ -35,6 +35,9 @@ See [Moderation evidence worker](docs/moderation-evidence.md) for AI evidence
 configuration, the designated runner, provisioning, costs, rollback and
 troubleshooting.
 
+See [Reading and community](docs/reading-community.md) for chapter access,
+progress, follows, ratings, comments, reports and the Moderator report queue.
+
 ## Common commands
 
 | Command                                                                                      | What it does                                                                                                                                                          |

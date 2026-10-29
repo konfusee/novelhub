@@ -9,68 +9,51 @@ import {
   Rating,
   StatisticsEvent,
   Story,
-  UnlockEntitlement,
 } from '../models/index.js'
 import mongoose from 'mongoose'
-import { readCookie, resolveSession } from '../auth/session.js'
 import { HttpError } from '../middleware/errors.js'
-import { queryPublishedStories } from '../modules/catalog-query.js'
+import { categoryStoryCounts, queryPublishedStories } from '../modules/catalog-query.js'
 import { catalogPresentation } from '../modules/catalog-presentation.js'
 import { readRichChapter } from '../modules/rich-chapter-document.js'
 import { submittedImage } from '../modules/author-submitted-package.js'
 import { PublicationSubmission } from '../models/index.js'
+import { optionalAccount, publishedCards, readableChapter } from '../modules/reading/access.js'
+import { chapterListItem, publishedChapterRows } from '../modules/reading/chapters.js'
+import { resumeFor } from '../modules/reading/progress.js'
+import { recordChapterView } from '../modules/reading/views.js'
 
 const filters = z
   .object({
     q: z.string().trim().max(200).default(''),
-    sort: z.enum(['newest', 'reads', 'rating']).default('newest'),
+    sort: z.enum(['newest', 'popular', 'rating']).default('newest'),
     category: z
       .string()
       .regex(/^[a-f\d]{24}$/i)
       .optional(),
+    status: z.enum(['ongoing', 'completed']).optional(),
     page: z.coerce.number().int().min(1).max(100000).default(1),
     pageSize: z.coerce.number().int().min(1).max(100).default(24),
   })
   .strict()
 
-// Only the published revision is authoritative on public surfaces. Story.title may
-// already contain an author's next draft and must not be used as a fallback.
-export async function publishedCards(options) {
-  return (await queryPublishedStories(options)).items
+async function visibleChapter(config, req) {
+  const account = await optionalAccount(req, config)
+  const { story, chapter } = await readableChapter({
+    storyId: req.params.storyId,
+    chapterId: req.params.chapterId,
+    account,
+  })
+  return { story, chapter, account }
 }
 
-async function visibleChapter(config, params, cookie) {
-  const story = (await publishedCards({ ids: [params.storyId] }))[0]
-  const chapter =
-    story &&
-    (await Chapter.findOne({
-      _id: params.chapterId,
-      storyId: params.storyId,
-      status: 'published',
-      publishedRevisionId: { $ne: null },
-    }).lean())
-  if (!chapter) throw new HttpError(404, 'not_found', 'Không tìm thấy chương đã xuất bản.')
-  const auth = await resolveSession(readCookie(cookie, config.cookieName))
-  if (chapter.orderKey !== 1 && !auth)
-    throw new HttpError(401, 'authentication_required', 'Đăng nhập để đọc các chương tiếp theo.')
-  if (chapter.earlyAccess?.enabled) {
-    if (!chapter.earlyAccess.endsAt)
-      throw new HttpError(403, 'chapter_locked', 'Chương chưa mở để đọc.')
-    if (chapter.earlyAccess.endsAt > new Date()) {
-      const entitlement =
-        auth &&
-        (await UnlockEntitlement.exists({
-          accountId: auth.account._id,
-          chapterId: chapter._id,
-          publishedRevisionId: chapter.publishedRevisionId,
-          status: 'active',
-          expiresAt: { $gt: new Date() },
-        }))
-      if (!entitlement)
-        throw new HttpError(403, 'chapter_locked', 'Chương đang trong thời gian đọc sớm.')
-    }
-  }
-  return chapter
+async function storyViewer(account, storyId) {
+  if (!account) return null
+  const [follow, rating, resume] = await Promise.all([
+    Follow.exists({ accountId: account._id, storyId, status: 'active' }),
+    Rating.findOne({ accountId: account._id, storyId, status: 'active' }).select('value').lean(),
+    resumeFor(account, storyId),
+  ])
+  return { following: Boolean(follow), rating: rating?.value ?? null, resume }
 }
 
 export function createCatalogRouter(config) {
@@ -117,29 +100,19 @@ export function createCatalogRouter(config) {
       next(error)
     }
   })
+  router.get('/catalog/categories', async (_req, res, next) => {
+    try {
+      res.json({ items: await categoryStoryCounts() })
+    } catch (error) {
+      next(error)
+    }
+  })
   router.get('/catalog/stories/:storyId', async (req, res, next) => {
     try {
       const story = (await publishedCards({ ids: [req.params.storyId] }))[0]
       if (!story) throw new HttpError(404, 'not_found', 'Không tìm thấy truyện đã xuất bản.')
-      const chapters = await Chapter.find({
-        storyId: req.params.storyId,
-        status: 'published',
-        publishedRevisionId: { $ne: null },
-      })
-        .sort({ orderKey: 1 })
-        .select('publishedRevisionId earlyAccess orderKey')
-        .lean()
-      const revisions = await ContentRevision.find({
-        _id: { $in: chapters.map(chapter => chapter.publishedRevisionId) },
-        storyId: req.params.storyId,
-        contentType: 'chapter',
-        status: { $in: ['approved', 'immutable'] },
-      })
-        .select('chapterId content.title')
-        .lean()
-      const titles = new Map(revisions.map(revision => [String(revision._id), revision]))
-      const [followers, ratings, author, works, latestComment] = await Promise.all([
-        Follow.countDocuments({ storyId: req.params.storyId, status: 'active' }),
+      const [chapters, ratings, author, works, latestComment, viewer] = await Promise.all([
+        publishedChapterRows([story.id]),
         Rating.aggregate([
           {
             $match: { storyId: new mongoose.Types.ObjectId(req.params.storyId), status: 'active' },
@@ -155,8 +128,10 @@ export function createCatalogRouter(config) {
           .select('body authorAccountId')
           .populate('authorAccountId', 'displayName status')
           .lean(),
+        optionalAccount(req, config).then(account => storyViewer(account, story.id)),
       ])
       const ratingCount = ratings.reduce((count, item) => count + item.count, 0)
+      const ratingTotal = ratings.reduce((sum, item) => sum + item._id * item.count, 0)
       const [authorFollowers, authorReads] = await Promise.all([
         Follow.countDocuments({
           storyId: { $in: works.map(item => item._id) },
@@ -172,8 +147,9 @@ export function createCatalogRouter(config) {
           ...story,
           synopsis: story.description,
           language: 'Tiếng Việt',
-          followers,
           ratings: ratingCount,
+          ratingCount,
+          averageRating: ratingCount ? Math.round((10 * ratingTotal) / ratingCount) / 10 : null,
           authorBio: author?.profile?.bio ?? '',
           authorStats: { works: works.length, followers: authorFollowers, reads: authorReads },
           ratingBreakdown: [5, 4, 3, 2, 1].map(value =>
@@ -191,21 +167,8 @@ export function createCatalogRouter(config) {
                 ? latestComment.authorAccountId.displayName
                 : '',
         },
-        chapters: chapters.flatMap(chapter => {
-          const revision = titles.get(String(chapter.publishedRevisionId))
-          if (!revision || String(revision.chapterId) !== String(chapter._id)) return []
-          return [
-            {
-              id: String(chapter._id),
-              title: revision.content?.title ?? '',
-              orderKey: chapter.orderKey,
-              locked: Boolean(
-                chapter.earlyAccess?.enabled &&
-                (!chapter.earlyAccess.endsAt || chapter.earlyAccess.endsAt > new Date()),
-              ),
-            },
-          ]
-        }),
+        chapters: chapters.get(story.id).map(chapterListItem),
+        viewer,
       })
     } catch (error) {
       next(error)
@@ -214,7 +177,7 @@ export function createCatalogRouter(config) {
   router.get('/catalog/stories/:storyId/chapters/:chapterId', async (req, res, next) => {
     res.set('Cache-Control', 'private, no-store').vary('Cookie')
     try {
-      const chapter = await visibleChapter(config, req.params, req.headers.cookie)
+      const { story, chapter, account } = await visibleChapter(config, req)
       const revision = await ContentRevision.findOne({
         _id: chapter.publishedRevisionId,
         storyId: chapter.storyId,
@@ -232,12 +195,25 @@ export function createCatalogRouter(config) {
         if (!(error instanceof HttpError)) throw error
         throw new HttpError(404, 'not_found', 'Chương chưa sẵn sàng.')
       }
+      const [neighbours, commentCount] = await Promise.all([
+        publishedChapterRows([chapter.storyId]),
+        Comment.countDocuments({ targetType: 'chapter', targetId: chapter._id, status: 'visible' }),
+      ])
+      const rows = neighbours.get(String(chapter.storyId))
+      const link = row =>
+        row ? { id: row.id, orderKey: row.orderKey, title: row.title, locked: row.locked } : null
+      await recordChapterView({ req, res, config, account, chapter })
       res.json({
         chapter: {
           id: String(chapter._id),
           title: revision.content.title ?? '',
+          orderKey: chapter.orderKey,
           publishedAt: chapter.publishedAt ?? null,
           revisionId: String(revision._id),
+          story: { id: story.id, title: story.title, author: story.author },
+          prev: link(rows.findLast(row => row.orderKey < chapter.orderKey)),
+          next: link(rows.find(row => row.orderKey > chapter.orderKey)),
+          commentCount,
           blocks:
             revision.formatVersion === 'blocks-v1'
               ? revision.content.blocks
@@ -255,7 +231,7 @@ export function createCatalogRouter(config) {
     async (req, res, next) => {
       res.set('Cache-Control', 'private, no-store').vary('Cookie')
       try {
-        const chapter = await visibleChapter(config, req.params, req.headers.cookie)
+        const { chapter } = await visibleChapter(config, req)
         if (String(chapter.publishedRevisionId) !== req.params.revisionId)
           throw new HttpError(404, 'not_found', 'Ảnh không thuộc phiên bản công khai hiện tại.')
         const submission = await PublicationSubmission.findOne({

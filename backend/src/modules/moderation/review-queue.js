@@ -2,6 +2,7 @@ import { withTransaction } from '../../db/connection.js'
 import { HttpError } from '../../middleware/errors.js'
 import {
   Account,
+  ContentReport,
   ContentRevision,
   EvidenceBatch,
   LlmReview,
@@ -12,6 +13,7 @@ import {
 } from '../../models/index.js'
 import { terminalEvidenceReady } from '../review-evidence.js'
 import { lockModerator } from './moderator-access.js'
+import { claimableReportFilter } from './report-queue.js'
 
 export const PAGE_SIZE = 20
 
@@ -112,7 +114,7 @@ export async function evidenceSummaries(batchIds) {
 
 export async function moderatorSummary(account, now = new Date()) {
   const scope = await activeAuthorScope()
-  const [queue, mine, processing, decidedToday] = await Promise.all([
+  const [queue, mine, processing, decidedToday, openReports] = await Promise.all([
     PublicationSubmission.countDocuments({ ...queueFilter(now), ...scope }),
     PublicationSubmission.countDocuments({ ...mineFilter(account, now), ...scope }),
     PublicationSubmission.countDocuments({ ...processingFilter, ...scope }),
@@ -121,8 +123,9 @@ export async function moderatorSummary(account, now = new Date()) {
       actorAccountId: account._id,
       occurredAt: { $gte: startOfVietnamDay(now) },
     }),
+    ContentReport.countDocuments(claimableReportFilter(now)),
   ])
-  return { queue, mine, processing, decidedToday }
+  return { queue, mine, processing, decidedToday, openReports }
 }
 
 export async function listModeratorSubmissions(account, { view, page }, now = new Date()) {
