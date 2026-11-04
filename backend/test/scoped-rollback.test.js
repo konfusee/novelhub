@@ -54,8 +54,6 @@ it('removes author/admin payouts, revenue agreements and cash-flow history witho
     '/api/author/payouts',
     `/api/author/payouts/${id}`,
     '/api/author/transactions',
-    '/api/author/earnings',
-    '/api/author/bank-details',
     '/api/reader/author-finance/payouts',
     '/api/workspace/author/earnings',
   ]) {

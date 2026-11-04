@@ -1,0 +1,836 @@
+<?xml version='1.0' encoding='utf-8'?>
+<mxfile host="app.diagrams.net" version="24.7.17" type="device">
+  <diagram id="01" name="01 Nạp xu và ví">
+    <mxGraphModel dx="1400" dy="900" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1550" pageHeight="1240" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="3" value="COINS — NẠP XU VÀ VÍ" style="rounded=0;whiteSpace=wrap;html=0;fillColor=#ffffff;strokeColor=none;fontColor=#111111;fontFamily=Arial;fontSize=24;align=center;verticalAlign=middle;spacing=8;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry as="geometry" x="40" y="24" width="1470" height="45" />
+        </mxCell>
+        <mxCell id="4" value="Các lớp dùng chung được lặp ở từng trang để tránh dây nối kéo xuyên toàn sơ đồ." style="rounded=0;whiteSpace=wrap;html=0;fillColor=#ffffff;strokeColor=none;fontColor=#111111;fontFamily=Arial;fontSize=14;align=center;verticalAlign=middle;spacing=8;fontStyle=0;" vertex="1" parent="1">
+          <mxGeometry as="geometry" x="40" y="78" width="1470" height="38" />
+        </mxCell>
+        <mxCell id="class_Account" value="" style="rounded=0;whiteSpace=wrap;html=0;fillColor=#ffffff;strokeColor=#111111;fontColor=#111111;fontFamily=Arial;fontSize=14;align=center;verticalAlign=middle;spacing=8;fontStyle=0;" vertex="1" parent="1">
+          <mxGeometry as="geometry" x="80" y="180" width="300" height="176" />
+        </mxCell>
+        <mxCell id="5" value="«model»&#10;Account" style="rounded=0;whiteSpace=wrap;html=0;fillColor=#ffffff;strokeColor=#111111;fontColor=#111111;fontFamily=Arial;fontSize=15;align=center;verticalAlign=middle;spacing=8;fontStyle=1;" vertex="1" parent="class_Account">
+          <mxGeometry as="geometry" x="0" y="0" width="300" height="48" />
+        </mxCell>
+        <mxCell id="6" value="+_id: ObjectId&#10;+email: String&#10;+displayName: String&#10;+status: String" style="rounded=0;whiteSpace=wrap;html=0;fillColor=#ffffff;strokeColor=none;fontColor=#111111;fontFamily=Arial;fontSize=12;align=left;verticalAlign=middle;spacing=8;fontStyle=0;" vertex="1" parent="class_Account">
+          <mxGeometry as="geometry" x="1" y="48" width="298" height="102" />
+        </mxCell>
+        <mxCell id="7" value="" style="rounded=0;whiteSpace=wrap;html=0;fillColor=#ffffff;strokeColor=none;fontColor=#111111;fontFamily=Arial;fontSize=12;align=left;verticalAlign=middle;spacing=8;fontStyle=0;" vertex="1" parent="class_Account">
+          <mxGeometry as="geometry" x="2" y="150" width="296" height="24" />
+        </mxCell>
+        <mxCell id="8" value="" style="rounded=0;whiteSpace=wrap;html=0;fillColor=#111111;strokeColor=none;fontColor=#111111;fontFamily=Arial;fontSize=14;align=center;verticalAlign=middle;spacing=8;fontStyle=0;" vertex="1" parent="class_Account">
+          <mxGeometry as="geometry" x="0" y="150" width="300" height="1" />
+        </mxCell>
+        <mxCell id="class_Wallet" value="" style="rounded=0;whiteSpace=wrap;html=0;fillColor=#ffffff;strokeColor=#111111;fontColor=#111111;fontFamily=Arial;fontSize=14;align=center;verticalAlign=middle;spacing=8;fontStyle=0;" vertex="1" parent="1">
+          <mxGeometry as="geometry" x="600" y="180" width="300" height="242" />
+        </mxCell>
+        <mxCell id="9" value="«model»&#10;Wallet" style="rounded=0;whiteSpace=wrap;html=0;fillColor=#ffffff;strokeColor=#111111;fontColor=#111111;fontFamily=Arial;fontSize=15;align=center;verticalAlign=middle;spacing=8;fontStyle=1;" vertex="1" parent="class_Wallet">
+          <mxGeometry as="geometry" x="0" y="0" width="300" height="48" />
+        </mxCell>
+        <mxCell id="10" value="+_id: ObjectId&#10;+ownerType: String&#10;+ownerId: ObjectId&#10;+purpose: String&#10;+unit: String&#10;+availableBalance: Number&#10;+balanceVersion: Number" style="rounded=0;whiteSpace=wrap;html=0;fillColor=#ffffff;strokeColor=none;fontColor=#111111;fontFamily=Arial;fontSize=12;align=left;verticalAlign=middle;spacing=8;fontStyle=0;" vertex="1" parent="class_Wallet">
+          <mxGeometry as="geometry" x="1" y="48" width="298" height="168" />
+        </mxCell>
+        <mxCell id="11" value="" style="rounded=0;whiteSpace=wrap;html=0;fillColor=#ffffff;strokeColor=none;fontColor=#111111;fontFamily=Arial;fontSize=12;align=left;verticalAlign=middle;spacing=8;fontStyle=0;" vertex="1" parent="class_Wallet">
+          <mxGeometry as="geometry" x="2" y="216" width="296" height="24" />
+        </mxCell>
+        <mxCell id="12" value="" style="rounded=0;whiteSpace=wrap;html=0;fillColor=#111111;strokeColor=none;fontColor=#111111;fontFamily=Arial;fontSize=14;align=center;verticalAlign=middle;spacing=8;fontStyle=0;" vertex="1" parent="class_Wallet">
+          <mxGeometry as="geometry" x="0" y="216" width="300" height="1" />
+        </mxCell>
+        <mxCell id="class_LedgerEntry" value="" style="rounded=0;whiteSpace=wrap;html=0;fillColor=#ffffff;strokeColor=#111111;fontColor=#111111;fontFamily=Arial;fontSize=14;align=center;verticalAlign=middle;spacing=8;fontStyle=0;" vertex="1" parent="1">
+          <mxGeometry as="geometry" x="1120" y="180" width="300" height="286" />
+        </mxCell>
+        <mxCell id="13" value="«model»&#10;LedgerEntry" style="rounded=0;whiteSpace=wrap;html=0;fillColor=#ffffff;strokeColor=#111111;fontColor=#111111;fontFamily=Arial;fontSize=15;align=center;verticalAlign=middle;spacing=8;fontStyle=1;" vertex="1" parent="class_LedgerEntry">
+          <mxGeometry as="geometry" x="0" y="0" width="300" height="48" />
+        </mxCell>
+        <mxCell id="14" value="+_id: ObjectId&#10;+walletId: ObjectId&#10;+ledgerType: String&#10;+direction: String&#10;+amount: Number&#10;+sourceType: String&#10;+sourceId: ObjectId&#10;+idempotencyScope: Object&#10;+occurredAt: Date" style="rounded=0;whiteSpace=wrap;html=0;fillColor=#ffffff;strokeColor=none;fontColor=#111111;fontFamily=Arial;fontSize=12;align=left;verticalAlign=middle;spacing=8;fontStyle=0;" vertex="1" parent="class_LedgerEntry">
+          <mxGeometry as="geometry" x="1" y="48" width="298" height="212" />
+        </mxCell>
+        <mxCell id="15" value="" style="rounded=0;whiteSpace=wrap;html=0;fillColor=#ffffff;strokeColor=none;fontColor=#111111;fontFamily=Arial;fontSize=12;align=left;verticalAlign=middle;spacing=8;fontStyle=0;" vertex="1" parent="class_LedgerEntry">
+          <mxGeometry as="geometry" x="2" y="260" width="296" height="24" />
+        </mxCell>
+        <mxCell id="16" value="" style="rounded=0;whiteSpace=wrap;html=0;fillColor=#111111;strokeColor=none;fontColor=#111111;fontFamily=Arial;fontSize=14;align=center;verticalAlign=middle;spacing=8;fontStyle=0;" vertex="1" parent="class_LedgerEntry">
+          <mxGeometry as="geometry" x="0" y="260" width="300" height="1" />
+        </mxCell>
+        <mxCell id="class_BankTransaction" value="" style="rounded=0;whiteSpace=wrap;html=0;fillColor=#ffffff;strokeColor=#111111;fontColor=#111111;fontFamily=Arial;fontSize=14;align=center;verticalAlign=middle;spacing=8;fontStyle=0;" vertex="1" parent="1">
+          <mxGeometry as="geometry" x="80" y="760" width="300" height="242" />
+        </mxCell>
+        <mxCell id="17" value="«model»&#10;BankTransaction" style="rounded=0;whiteSpace=wrap;html=0;fillColor=#ffffff;strokeColor=#111111;fontColor=#111111;fontFamily=Arial;fontSize=15;align=center;verticalAlign=middle;spacing=8;fontStyle=1;" vertex="1" parent="class_BankTransaction">
+          <mxGeometry as="geometry" x="0" y="0" width="300" height="48" />
+        </mxCell>
+        <mxCell id="18" value="+_id: ObjectId&#10;+sePayTransactionId: String&#10;+amountVnd: Number&#10;+extractedPaymentCode: String&#10;+matchStatus: String&#10;+matchedOrderId: ObjectId&#10;+apiKeyAuthenticated: Boolean" style="rounded=0;whiteSpace=wrap;html=0;fillColor=#ffffff;strokeColor=none;fontColor=#111111;fontFamily=Arial;fontSize=12;align=left;verticalAlign=middle;spacing=8;fontStyle=0;" vertex="1" parent="class_BankTransaction">
+          <mxGeometry as="geometry" x="1" y="48" width="298" height="168" />
+        </mxCell>
+        <mxCell id="19" value="" style="rounded=0;whiteSpace=wrap;html=0;fillColor=#ffffff;strokeColor=none;fontColor=#111111;fontFamily=Arial;fontSize=12;align=left;verticalAlign=middle;spacing=8;fontStyle=0;" vertex="1" parent="class_BankTransaction">
+          <mxGeometry as="geometry" x="2" y="216" width="296" height="24" />
+        </mxCell>
+        <mxCell id="20" value="" style="rounded=0;whiteSpace=wrap;html=0;fillColor=#111111;strokeColor=none;fontColor=#111111;fontFamily=Arial;fontSize=14;align=center;verticalAlign=middle;spacing=8;fontStyle=0;" vertex="1" parent="class_BankTransaction">
+          <mxGeometry as="geometry" x="0" y="216" width="300" height="1" />
+        </mxCell>
+        <mxCell id="class_TopUpOrder" value="" style="rounded=0;whiteSpace=wrap;html=0;fillColor=#ffffff;strokeColor=#111111;fontColor=#111111;fontFamily=Arial;fontSize=14;align=center;verticalAlign=middle;spacing=8;fontStyle=0;" vertex="1" parent="1">
+          <mxGeometry as="geometry" x="600" y="760" width="300" height="308" />
+        </mxCell>
+        <mxCell id="21" value="«model»&#10;TopUpOrder" style="rounded=0;whiteSpace=wrap;html=0;fillColor=#ffffff;strokeColor=#111111;fontColor=#111111;fontFamily=Arial;fontSize=15;align=center;verticalAlign=middle;spacing=8;fontStyle=1;" vertex="1" parent="class_TopUpOrder">
+          <mxGeometry as="geometry" x="0" y="0" width="300" height="48" />
+        </mxCell>
+        <mxCell id="22" value="+_id: ObjectId&#10;+accountId: ObjectId&#10;+walletId: ObjectId&#10;+packageId: ObjectId&#10;+packageSnapshot: Object&#10;+paymentCode: String&#10;+coinAmount: Number&#10;+status: String&#10;+expiresAt: Date&#10;+bankTransactionId: ObjectId" style="rounded=0;whiteSpace=wrap;html=0;fillColor=#ffffff;strokeColor=none;fontColor=#111111;fontFamily=Arial;fontSize=12;align=left;verticalAlign=middle;spacing=8;fontStyle=0;" vertex="1" parent="class_TopUpOrder">
+          <mxGeometry as="geometry" x="1" y="48" width="298" height="234" />
+        </mxCell>
+        <mxCell id="23" value="" style="rounded=0;whiteSpace=wrap;html=0;fillColor=#ffffff;strokeColor=none;fontColor=#111111;fontFamily=Arial;fontSize=12;align=left;verticalAlign=middle;spacing=8;fontStyle=0;" vertex="1" parent="class_TopUpOrder">
+          <mxGeometry as="geometry" x="2" y="282" width="296" height="24" />
+        </mxCell>
+        <mxCell id="24" value="" style="rounded=0;whiteSpace=wrap;html=0;fillColor=#111111;strokeColor=none;fontColor=#111111;fontFamily=Arial;fontSize=14;align=center;verticalAlign=middle;spacing=8;fontStyle=0;" vertex="1" parent="class_TopUpOrder">
+          <mxGeometry as="geometry" x="0" y="282" width="300" height="1" />
+        </mxCell>
+        <mxCell id="class_TopUpPackage" value="" style="rounded=0;whiteSpace=wrap;html=0;fillColor=#ffffff;strokeColor=#111111;fontColor=#111111;fontFamily=Arial;fontSize=14;align=center;verticalAlign=middle;spacing=8;fontStyle=0;" vertex="1" parent="1">
+          <mxGeometry as="geometry" x="1120" y="760" width="300" height="176" />
+        </mxCell>
+        <mxCell id="25" value="«model»&#10;TopUpPackage" style="rounded=0;whiteSpace=wrap;html=0;fillColor=#ffffff;strokeColor=#111111;fontColor=#111111;fontFamily=Arial;fontSize=15;align=center;verticalAlign=middle;spacing=8;fontStyle=1;" vertex="1" parent="class_TopUpPackage">
+          <mxGeometry as="geometry" x="0" y="0" width="300" height="48" />
+        </mxCell>
+        <mxCell id="26" value="+_id: ObjectId&#10;+priceVnd: Number&#10;+coinAmount: Number&#10;+status: String" style="rounded=0;whiteSpace=wrap;html=0;fillColor=#ffffff;strokeColor=none;fontColor=#111111;fontFamily=Arial;fontSize=12;align=left;verticalAlign=middle;spacing=8;fontStyle=0;" vertex="1" parent="class_TopUpPackage">
+          <mxGeometry as="geometry" x="1" y="48" width="298" height="102" />
+        </mxCell>
+        <mxCell id="27" value="" style="rounded=0;whiteSpace=wrap;html=0;fillColor=#ffffff;strokeColor=none;fontColor=#111111;fontFamily=Arial;fontSize=12;align=left;verticalAlign=middle;spacing=8;fontStyle=0;" vertex="1" parent="class_TopUpPackage">
+          <mxGeometry as="geometry" x="2" y="150" width="296" height="24" />
+        </mxCell>
+        <mxCell id="28" value="" style="rounded=0;whiteSpace=wrap;html=0;fillColor=#111111;strokeColor=none;fontColor=#111111;fontFamily=Arial;fontSize=14;align=center;verticalAlign=middle;spacing=8;fontStyle=0;" vertex="1" parent="class_TopUpPackage">
+          <mxGeometry as="geometry" x="0" y="150" width="300" height="1" />
+        </mxCell>
+        <mxCell id="29" value="ownerId (account)" style="edgeStyle=none;rounded=0;html=0;endArrow=open;endFill=0;strokeColor=#222222;strokeWidth=1.5;dashed=0;fontFamily=Arial;fontSize=12;fontColor=#111111;labelBackgroundColor=#ffffff;exitX=1.0;exitY=0.5;exitPerimeter=0;entryX=0.0;entryY=0.36363636363636365;entryPerimeter=0;" edge="1" parent="1" source="class_Account" target="class_Wallet">
+          <mxGeometry as="geometry" relative="1" x="0.0" y="-13">
+            <Array as="points">
+              <mxPoint x="600" y="268" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="30" value="0..1" style="edgeLabel;html=0;fontFamily=Arial;fontSize=13;align=center;verticalAlign=middle;labelBackgroundColor=#ffffff;" vertex="1" connectable="0" parent="29">
+          <mxGeometry as="geometry" x="-0.7545454545454545" y="13" relative="1">
+            <mxPoint as="offset" x="0" y="0" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="31" value="0..*" style="edgeLabel;html=0;fontFamily=Arial;fontSize=13;align=center;verticalAlign=middle;labelBackgroundColor=#ffffff;" vertex="1" connectable="0" parent="29">
+          <mxGeometry as="geometry" x="0.7545454545454546" y="13" relative="1">
+            <mxPoint as="offset" x="0" y="0" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="32" value="walletId" style="edgeStyle=none;rounded=0;html=0;endArrow=open;endFill=0;strokeColor=#222222;strokeWidth=1.5;dashed=0;fontFamily=Arial;fontSize=12;fontColor=#111111;labelBackgroundColor=#ffffff;exitX=0.0;exitY=0.4195804195804196;exitPerimeter=0;entryX=1.0;entryY=0.49586776859504134;entryPerimeter=0;" edge="1" parent="1" source="class_LedgerEntry" target="class_Wallet">
+          <mxGeometry as="geometry" relative="1" x="0.0" y="-13" />
+        </mxCell>
+        <mxCell id="33" value="0..*" style="edgeLabel;html=0;fontFamily=Arial;fontSize=13;align=center;verticalAlign=middle;labelBackgroundColor=#ffffff;" vertex="1" connectable="0" parent="32">
+          <mxGeometry as="geometry" x="-0.7545454545454545" y="13" relative="1">
+            <mxPoint as="offset" x="0" y="0" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="34" value="1" style="edgeLabel;html=0;fontFamily=Arial;fontSize=13;align=center;verticalAlign=middle;labelBackgroundColor=#ffffff;" vertex="1" connectable="0" parent="32">
+          <mxGeometry as="geometry" x="0.7545454545454546" y="13" relative="1">
+            <mxPoint as="offset" x="0" y="0" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="35" value="walletId" style="edgeStyle=none;rounded=0;html=0;endArrow=open;endFill=0;strokeColor=#222222;strokeWidth=1.5;dashed=0;fontFamily=Arial;fontSize=12;fontColor=#111111;labelBackgroundColor=#ffffff;exitX=0.5;exitY=0.0;exitPerimeter=0;entryX=0.5;entryY=1.0;entryPerimeter=0;" edge="1" parent="1" source="class_TopUpOrder" target="class_Wallet">
+          <mxGeometry as="geometry" relative="1" x="0.0" y="-13" />
+        </mxCell>
+        <mxCell id="36" value="0..*" style="edgeLabel;html=0;fontFamily=Arial;fontSize=13;align=center;verticalAlign=middle;labelBackgroundColor=#ffffff;" vertex="1" connectable="0" parent="35">
+          <mxGeometry as="geometry" x="-0.8402366863905325" y="13" relative="1">
+            <mxPoint as="offset" x="0" y="0" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="37" value="1" style="edgeLabel;html=0;fontFamily=Arial;fontSize=13;align=center;verticalAlign=middle;labelBackgroundColor=#ffffff;" vertex="1" connectable="0" parent="35">
+          <mxGeometry as="geometry" x="0.8402366863905326" y="13" relative="1">
+            <mxPoint as="offset" x="0" y="0" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="38" value="accountId" style="edgeStyle=none;rounded=0;html=0;endArrow=open;endFill=0;strokeColor=#222222;strokeWidth=1.5;dashed=0;fontFamily=Arial;fontSize=12;fontColor=#111111;labelBackgroundColor=#ffffff;exitX=0.0;exitY=0.16233766233766234;exitPerimeter=0;entryX=0.5;entryY=1.0;entryPerimeter=0;" edge="1" parent="1" source="class_TopUpOrder" target="class_Account">
+          <mxGeometry as="geometry" relative="1" x="0.3349514563106797" y="-13">
+            <Array as="points">
+              <mxPoint x="450" y="810" />
+              <mxPoint x="450" y="520" />
+              <mxPoint x="230" y="520" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="39" value="0..*" style="edgeLabel;html=0;fontFamily=Arial;fontSize=13;align=center;verticalAlign=middle;labelBackgroundColor=#ffffff;" vertex="1" connectable="0" parent="38">
+          <mxGeometry as="geometry" x="-0.9344660194174758" y="13" relative="1">
+            <mxPoint as="offset" x="0" y="0" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="40" value="1" style="edgeLabel;html=0;fontFamily=Arial;fontSize=13;align=center;verticalAlign=middle;labelBackgroundColor=#ffffff;" vertex="1" connectable="0" parent="38">
+          <mxGeometry as="geometry" x="0.9344660194174756" y="13" relative="1">
+            <mxPoint as="offset" x="0" y="0" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="41" value="matchedOrderId" style="edgeStyle=none;rounded=0;html=0;endArrow=open;endFill=0;strokeColor=#222222;strokeWidth=1.5;dashed=0;fontFamily=Arial;fontSize=12;fontColor=#111111;labelBackgroundColor=#ffffff;exitX=1.0;exitY=0.7024793388429752;exitPerimeter=0;entryX=0.0;entryY=0.551948051948052;entryPerimeter=0;" edge="1" parent="1" source="class_BankTransaction" target="class_TopUpOrder">
+          <mxGeometry as="geometry" relative="1" x="0.0" y="-13" />
+        </mxCell>
+        <mxCell id="42" value="0..*" style="edgeLabel;html=0;fontFamily=Arial;fontSize=13;align=center;verticalAlign=middle;labelBackgroundColor=#ffffff;" vertex="1" connectable="0" parent="41">
+          <mxGeometry as="geometry" x="-0.7545454545454545" y="13" relative="1">
+            <mxPoint as="offset" x="0" y="0" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="43" value="0..1" style="edgeLabel;html=0;fontFamily=Arial;fontSize=13;align=center;verticalAlign=middle;labelBackgroundColor=#ffffff;" vertex="1" connectable="0" parent="41">
+          <mxGeometry as="geometry" x="0.7545454545454546" y="13" relative="1">
+            <mxPoint as="offset" x="0" y="0" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="44" value="packageId" style="edgeStyle=none;rounded=0;html=0;endArrow=open;endFill=0;strokeColor=#222222;strokeWidth=1.5;dashed=0;fontFamily=Arial;fontSize=12;fontColor=#111111;labelBackgroundColor=#ffffff;exitX=1.0;exitY=0.2597402597402597;exitPerimeter=0;entryX=0.0;entryY=0.45454545454545453;entryPerimeter=0;" edge="1" parent="1" source="class_TopUpOrder" target="class_TopUpPackage">
+          <mxGeometry as="geometry" relative="1" x="0.0" y="-13" />
+        </mxCell>
+        <mxCell id="45" value="0..*" style="edgeLabel;html=0;fontFamily=Arial;fontSize=13;align=center;verticalAlign=middle;labelBackgroundColor=#ffffff;" vertex="1" connectable="0" parent="44">
+          <mxGeometry as="geometry" x="-0.7545454545454545" y="13" relative="1">
+            <mxPoint as="offset" x="0" y="0" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="46" value="1" style="edgeLabel;html=0;fontFamily=Arial;fontSize=13;align=center;verticalAlign=middle;labelBackgroundColor=#ffffff;" vertex="1" connectable="0" parent="44">
+          <mxGeometry as="geometry" x="0.7545454545454546" y="13" relative="1">
+            <mxPoint as="offset" x="0" y="0" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="47" value="sourceType / sourceId" style="edgeStyle=none;rounded=0;html=0;endArrow=open;endFill=0;strokeColor=#222222;strokeWidth=1.5;dashed=1;fontFamily=Arial;fontSize=12;fontColor=#111111;labelBackgroundColor=#ffffff;exitX=0.5;exitY=1.0;exitPerimeter=0;entryX=0.7333333333333333;entryY=0.0;entryPerimeter=0;" edge="1" parent="1" source="class_LedgerEntry" target="class_TopUpOrder">
+          <mxGeometry as="geometry" relative="1" x="-0.14247311827956988" y="-13">
+            <Array as="points">
+              <mxPoint x="1270" y="560" />
+              <mxPoint x="820" y="560" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="48" value="Ví hệ thống không thuộc Account. Mỗi ví duy nhất theo (ownerId, purpose).&#10;Nạp xu: 1 VND = 1 coin. Đường nét đứt biểu diễn nguồn phát sinh ledger." style="rounded=0;whiteSpace=wrap;html=0;fillColor=#ffffff;strokeColor=none;fontColor=#111111;fontFamily=Arial;fontSize=14;align=center;verticalAlign=middle;spacing=8;fontStyle=0;" vertex="1" parent="1">
+          <mxGeometry as="geometry" x="80" y="1140" width="1340" height="65" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+  <diagram id="02" name="02 Mua chương và doanh thu">
+    <mxGraphModel dx="1400" dy="900" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1720" pageHeight="2040" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="3" value="COINS — MUA CHƯƠNG VÀ DOANH THU" style="rounded=0;whiteSpace=wrap;html=0;fillColor=#ffffff;strokeColor=none;fontColor=#111111;fontFamily=Arial;fontSize=24;align=center;verticalAlign=middle;spacing=8;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry as="geometry" x="40" y="24" width="1640" height="45" />
+        </mxCell>
+        <mxCell id="4" value="Bố trí theo tầng: tài khoản → nội dung → yêu cầu/quyền → phân bổ và lịch sử." style="rounded=0;whiteSpace=wrap;html=0;fillColor=#ffffff;strokeColor=none;fontColor=#111111;fontFamily=Arial;fontSize=14;align=center;verticalAlign=middle;spacing=8;fontStyle=0;" vertex="1" parent="1">
+          <mxGeometry as="geometry" x="40" y="78" width="1640" height="38" />
+        </mxCell>
+        <mxCell id="class_Account" value="" style="rounded=0;whiteSpace=wrap;html=0;fillColor=#ffffff;strokeColor=#111111;fontColor=#111111;fontFamily=Arial;fontSize=14;align=center;verticalAlign=middle;spacing=8;fontStyle=0;" vertex="1" parent="1">
+          <mxGeometry as="geometry" x="650" y="170" width="300" height="176" />
+        </mxCell>
+        <mxCell id="5" value="«model»&#10;Account" style="rounded=0;whiteSpace=wrap;html=0;fillColor=#ffffff;strokeColor=#111111;fontColor=#111111;fontFamily=Arial;fontSize=15;align=center;verticalAlign=middle;spacing=8;fontStyle=1;" vertex="1" parent="class_Account">
+          <mxGeometry as="geometry" x="0" y="0" width="300" height="48" />
+        </mxCell>
+        <mxCell id="6" value="+_id: ObjectId&#10;+email: String&#10;+displayName: String&#10;+status: String" style="rounded=0;whiteSpace=wrap;html=0;fillColor=#ffffff;strokeColor=none;fontColor=#111111;fontFamily=Arial;fontSize=12;align=left;verticalAlign=middle;spacing=8;fontStyle=0;" vertex="1" parent="class_Account">
+          <mxGeometry as="geometry" x="1" y="48" width="298" height="102" />
+        </mxCell>
+        <mxCell id="7" value="" style="rounded=0;whiteSpace=wrap;html=0;fillColor=#ffffff;strokeColor=none;fontColor=#111111;fontFamily=Arial;fontSize=12;align=left;verticalAlign=middle;spacing=8;fontStyle=0;" vertex="1" parent="class_Account">
+          <mxGeometry as="geometry" x="2" y="150" width="296" height="24" />
+        </mxCell>
+        <mxCell id="8" value="" style="rounded=0;whiteSpace=wrap;html=0;fillColor=#111111;strokeColor=none;fontColor=#111111;fontFamily=Arial;fontSize=14;align=center;verticalAlign=middle;spacing=8;fontStyle=0;" vertex="1" parent="class_Account">
+          <mxGeometry as="geometry" x="0" y="150" width="300" height="1" />
+        </mxCell>
+        <mxCell id="class_Story" value="" style="rounded=0;whiteSpace=wrap;html=0;fillColor=#ffffff;strokeColor=#111111;fontColor=#111111;fontFamily=Arial;fontSize=14;align=center;verticalAlign=middle;spacing=8;fontStyle=0;" vertex="1" parent="1">
+          <mxGeometry as="geometry" x="100" y="570" width="300" height="176" />
+        </mxCell>
+        <mxCell id="9" value="«model»&#10;Story" style="rounded=0;whiteSpace=wrap;html=0;fillColor=#ffffff;strokeColor=#111111;fontColor=#111111;fontFamily=Arial;fontSize=15;align=center;verticalAlign=middle;spacing=8;fontStyle=1;" vertex="1" parent="class_Story">
+          <mxGeometry as="geometry" x="0" y="0" width="300" height="48" />
+        </mxCell>
+        <mxCell id="10" value="+_id: ObjectId&#10;+authorAccountId: ObjectId&#10;+publicationStatus: String&#10;+publishedRevisionId: ObjectId" style="rounded=0;whiteSpace=wrap;html=0;fillColor=#ffffff;strokeColor=none;fontColor=#111111;fontFamily=Arial;fontSize=12;align=left;verticalAlign=middle;spacing=8;fontStyle=0;" vertex="1" parent="class_Story">
+          <mxGeometry as="geometry" x="1" y="48" width="298" height="102" />
+        </mxCell>
+        <mxCell id="11" value="" style="rounded=0;whiteSpace=wrap;html=0;fillColor=#ffffff;strokeColor=none;fontColor=#111111;fontFamily=Arial;fontSize=12;align=left;verticalAlign=middle;spacing=8;fontStyle=0;" vertex="1" parent="class_Story">
+          <mxGeometry as="geometry" x="2" y="150" width="296" height="24" />
+        </mxCell>
+        <mxCell id="12" value="" style="rounded=0;whiteSpace=wrap;html=0;fillColor=#111111;strokeColor=none;fontColor=#111111;fontFamily=Arial;fontSize=14;align=center;verticalAlign=middle;spacing=8;fontStyle=0;" vertex="1" parent="class_Story">
+          <mxGeometry as="geometry" x="0" y="150" width="300" height="1" />
+        </mxCell>
+        <mxCell id="class_Chapter" value="" style="rounded=0;whiteSpace=wrap;html=0;fillColor=#ffffff;strokeColor=#111111;fontColor=#111111;fontFamily=Arial;fontSize=14;align=center;verticalAlign=middle;spacing=8;fontStyle=0;" vertex="1" parent="1">
+          <mxGeometry as="geometry" x="650" y="570" width="300" height="198" />
+        </mxCell>
+        <mxCell id="13" value="«model»&#10;Chapter" style="rounded=0;whiteSpace=wrap;html=0;fillColor=#ffffff;strokeColor=#111111;fontColor=#111111;fontFamily=Arial;fontSize=15;align=center;verticalAlign=middle;spacing=8;fontStyle=1;" vertex="1" parent="class_Chapter">
+          <mxGeometry as="geometry" x="0" y="0" width="300" height="48" />
+        </mxCell>
+        <mxCell id="14" value="+_id: ObjectId&#10;+storyId: ObjectId&#10;+status: String&#10;+publishedRevisionId: ObjectId&#10;+earlyAccess: Object" style="rounded=0;whiteSpace=wrap;html=0;fillColor=#ffffff;strokeColor=none;fontColor=#111111;fontFamily=Arial;fontSize=12;align=left;verticalAlign=middle;spacing=8;fontStyle=0;" vertex="1" parent="class_Chapter">
+          <mxGeometry as="geometry" x="1" y="48" width="298" height="124" />
+        </mxCell>
+        <mxCell id="15" value="" style="rounded=0;whiteSpace=wrap;html=0;fillColor=#ffffff;strokeColor=none;fontColor=#111111;fontFamily=Arial;fontSize=12;align=left;verticalAlign=middle;spacing=8;fontStyle=0;" vertex="1" parent="class_Chapter">
+          <mxGeometry as="geometry" x="2" y="172" width="296" height="24" />
+        </mxCell>
+        <mxCell id="16" value="" style="rounded=0;whiteSpace=wrap;html=0;fillColor=#111111;strokeColor=none;fontColor=#111111;fontFamily=Arial;fontSize=14;align=center;verticalAlign=middle;spacing=8;fontStyle=0;" vertex="1" parent="class_Chapter">
+          <mxGeometry as="geometry" x="0" y="172" width="300" height="1" />
+        </mxCell>
+        <mxCell id="class_ContentRevision" value="" style="rounded=0;whiteSpace=wrap;html=0;fillColor=#ffffff;strokeColor=#111111;fontColor=#111111;fontFamily=Arial;fontSize=14;align=center;verticalAlign=middle;spacing=8;fontStyle=0;" vertex="1" parent="1">
+          <mxGeometry as="geometry" x="1200" y="570" width="300" height="176" />
+        </mxCell>
+        <mxCell id="17" value="«model»&#10;ContentRevision" style="rounded=0;whiteSpace=wrap;html=0;fillColor=#ffffff;strokeColor=#111111;fontColor=#111111;fontFamily=Arial;fontSize=15;align=center;verticalAlign=middle;spacing=8;fontStyle=1;" vertex="1" parent="class_ContentRevision">
+          <mxGeometry as="geometry" x="0" y="0" width="300" height="48" />
+        </mxCell>
+        <mxCell id="18" value="+_id: ObjectId&#10;+contentType: String&#10;+status: String&#10;+content: Object" style="rounded=0;whiteSpace=wrap;html=0;fillColor=#ffffff;strokeColor=none;fontColor=#111111;fontFamily=Arial;fontSize=12;align=left;verticalAlign=middle;spacing=8;fontStyle=0;" vertex="1" parent="class_ContentRevision">
+          <mxGeometry as="geometry" x="1" y="48" width="298" height="102" />
+        </mxCell>
+        <mxCell id="19" value="" style="rounded=0;whiteSpace=wrap;html=0;fillColor=#ffffff;strokeColor=none;fontColor=#111111;fontFamily=Arial;fontSize=12;align=left;verticalAlign=middle;spacing=8;fontStyle=0;" vertex="1" parent="class_ContentRevision">
+          <mxGeometry as="geometry" x="2" y="150" width="296" height="24" />
+        </mxCell>
+        <mxCell id="20" value="" style="rounded=0;whiteSpace=wrap;html=0;fillColor=#111111;strokeColor=none;fontColor=#111111;fontFamily=Arial;fontSize=14;align=center;verticalAlign=middle;spacing=8;fontStyle=0;" vertex="1" parent="class_ContentRevision">
+          <mxGeometry as="geometry" x="0" y="150" width="300" height="1" />
+        </mxCell>
+        <mxCell id="class_UnlockRequest" value="" style="rounded=0;whiteSpace=wrap;html=0;fillColor=#ffffff;strokeColor=#111111;fontColor=#111111;fontFamily=Arial;fontSize=14;align=center;verticalAlign=middle;spacing=8;fontStyle=0;" vertex="1" parent="1">
+          <mxGeometry as="geometry" x="100" y="1120" width="300" height="286" />
+        </mxCell>
+        <mxCell id="21" value="«model»&#10;UnlockRequest" style="rounded=0;whiteSpace=wrap;html=0;fillColor=#ffffff;strokeColor=#111111;fontColor=#111111;fontFamily=Arial;fontSize=15;align=center;verticalAlign=middle;spacing=8;fontStyle=1;" vertex="1" parent="class_UnlockRequest">
+          <mxGeometry as="geometry" x="0" y="0" width="300" height="48" />
+        </mxCell>
+        <mxCell id="22" value="+_id: ObjectId&#10;+accountId: ObjectId&#10;+chapterId: ObjectId&#10;+requestedPriceCoins: Number&#10;+effectivePriceCoins: Number&#10;+idempotencyScope: Object&#10;+status: String&#10;+entitlementId: ObjectId&#10;+policySnapshot: Object" style="rounded=0;whiteSpace=wrap;html=0;fillColor=#ffffff;strokeColor=none;fontColor=#111111;fontFamily=Arial;fontSize=12;align=left;verticalAlign=middle;spacing=8;fontStyle=0;" vertex="1" parent="class_UnlockRequest">
+          <mxGeometry as="geometry" x="1" y="48" width="298" height="212" />
+        </mxCell>
+        <mxCell id="23" value="" style="rounded=0;whiteSpace=wrap;html=0;fillColor=#ffffff;strokeColor=none;fontColor=#111111;fontFamily=Arial;fontSize=12;align=left;verticalAlign=middle;spacing=8;fontStyle=0;" vertex="1" parent="class_UnlockRequest">
+          <mxGeometry as="geometry" x="2" y="260" width="296" height="24" />
+        </mxCell>
+        <mxCell id="24" value="" style="rounded=0;whiteSpace=wrap;html=0;fillColor=#111111;strokeColor=none;fontColor=#111111;fontFamily=Arial;fontSize=14;align=center;verticalAlign=middle;spacing=8;fontStyle=0;" vertex="1" parent="class_UnlockRequest">
+          <mxGeometry as="geometry" x="0" y="260" width="300" height="1" />
+        </mxCell>
+        <mxCell id="class_UnlockEntitlement" value="" style="rounded=0;whiteSpace=wrap;html=0;fillColor=#ffffff;strokeColor=#111111;fontColor=#111111;fontFamily=Arial;fontSize=14;align=center;verticalAlign=middle;spacing=8;fontStyle=0;" vertex="1" parent="1">
+          <mxGeometry as="geometry" x="1200" y="1120" width="300" height="264" />
+        </mxCell>
+        <mxCell id="25" value="«model»&#10;UnlockEntitlement" style="rounded=0;whiteSpace=wrap;html=0;fillColor=#ffffff;strokeColor=#111111;fontColor=#111111;fontFamily=Arial;fontSize=15;align=center;verticalAlign=middle;spacing=8;fontStyle=1;" vertex="1" parent="class_UnlockEntitlement">
+          <mxGeometry as="geometry" x="0" y="0" width="300" height="48" />
+        </mxCell>
+        <mxCell id="26" value="+_id: ObjectId&#10;+accountId: ObjectId&#10;+chapterId: ObjectId&#10;+publishedRevisionId: ObjectId&#10;+status: String&#10;+purchasedAt: Date&#10;+expiresAt: Date&#10;+priceCoins: Number" style="rounded=0;whiteSpace=wrap;html=0;fillColor=#ffffff;strokeColor=none;fontColor=#111111;fontFamily=Arial;fontSize=12;align=left;verticalAlign=middle;spacing=8;fontStyle=0;" vertex="1" parent="class_UnlockEntitlement">
+          <mxGeometry as="geometry" x="1" y="48" width="298" height="190" />
+        </mxCell>
+        <mxCell id="27" value="" style="rounded=0;whiteSpace=wrap;html=0;fillColor=#ffffff;strokeColor=none;fontColor=#111111;fontFamily=Arial;fontSize=12;align=left;verticalAlign=middle;spacing=8;fontStyle=0;" vertex="1" parent="class_UnlockEntitlement">
+          <mxGeometry as="geometry" x="2" y="238" width="296" height="24" />
+        </mxCell>
+        <mxCell id="28" value="" style="rounded=0;whiteSpace=wrap;html=0;fillColor=#111111;strokeColor=none;fontColor=#111111;fontFamily=Arial;fontSize=14;align=center;verticalAlign=middle;spacing=8;fontStyle=0;" vertex="1" parent="class_UnlockEntitlement">
+          <mxGeometry as="geometry" x="0" y="238" width="300" height="1" />
+        </mxCell>
+        <mxCell id="class_RevenueAllocation" value="" style="rounded=0;whiteSpace=wrap;html=0;fillColor=#ffffff;strokeColor=#111111;fontColor=#111111;fontFamily=Arial;fontSize=14;align=center;verticalAlign=middle;spacing=8;fontStyle=0;" vertex="1" parent="1">
+          <mxGeometry as="geometry" x="100" y="1620" width="300" height="242" />
+        </mxCell>
+        <mxCell id="29" value="«model»&#10;RevenueAllocation" style="rounded=0;whiteSpace=wrap;html=0;fillColor=#ffffff;strokeColor=#111111;fontColor=#111111;fontFamily=Arial;fontSize=15;align=center;verticalAlign=middle;spacing=8;fontStyle=1;" vertex="1" parent="class_RevenueAllocation">
+          <mxGeometry as="geometry" x="0" y="0" width="300" height="48" />
+        </mxCell>
+        <mxCell id="30" value="+_id: ObjectId&#10;+unlockRequestId: ObjectId&#10;+ledgerEntryIds: ObjectId[]&#10;+beneficiaries: ObjectId[]&#10;+amount: Number&#10;+policySnapshot: Object&#10;+negotiatedAllocationSnapshot: Object" style="rounded=0;whiteSpace=wrap;html=0;fillColor=#ffffff;strokeColor=none;fontColor=#111111;fontFamily=Arial;fontSize=12;align=left;verticalAlign=middle;spacing=8;fontStyle=0;" vertex="1" parent="class_RevenueAllocation">
+          <mxGeometry as="geometry" x="1" y="48" width="298" height="168" />
+        </mxCell>
+        <mxCell id="31" value="" style="rounded=0;whiteSpace=wrap;html=0;fillColor=#ffffff;strokeColor=none;fontColor=#111111;fontFamily=Arial;fontSize=12;align=left;verticalAlign=middle;spacing=8;fontStyle=0;" vertex="1" parent="class_RevenueAllocation">
+          <mxGeometry as="geometry" x="2" y="216" width="296" height="24" />
+        </mxCell>
+        <mxCell id="32" value="" style="rounded=0;whiteSpace=wrap;html=0;fillColor=#111111;strokeColor=none;fontColor=#111111;fontFamily=Arial;fontSize=14;align=center;verticalAlign=middle;spacing=8;fontStyle=0;" vertex="1" parent="class_RevenueAllocation">
+          <mxGeometry as="geometry" x="0" y="216" width="300" height="1" />
+        </mxCell>
+        <mxCell id="class_LedgerEntry" value="" style="rounded=0;whiteSpace=wrap;html=0;fillColor=#ffffff;strokeColor=#111111;fontColor=#111111;fontFamily=Arial;fontSize=14;align=center;verticalAlign=middle;spacing=8;fontStyle=0;" vertex="1" parent="1">
+          <mxGeometry as="geometry" x="650" y="1620" width="300" height="286" />
+        </mxCell>
+        <mxCell id="33" value="«model»&#10;LedgerEntry" style="rounded=0;whiteSpace=wrap;html=0;fillColor=#ffffff;strokeColor=#111111;fontColor=#111111;fontFamily=Arial;fontSize=15;align=center;verticalAlign=middle;spacing=8;fontStyle=1;" vertex="1" parent="class_LedgerEntry">
+          <mxGeometry as="geometry" x="0" y="0" width="300" height="48" />
+        </mxCell>
+        <mxCell id="34" value="+_id: ObjectId&#10;+walletId: ObjectId&#10;+ledgerType: String&#10;+direction: String&#10;+amount: Number&#10;+sourceType: String&#10;+sourceId: ObjectId&#10;+idempotencyScope: Object&#10;+occurredAt: Date" style="rounded=0;whiteSpace=wrap;html=0;fillColor=#ffffff;strokeColor=none;fontColor=#111111;fontFamily=Arial;fontSize=12;align=left;verticalAlign=middle;spacing=8;fontStyle=0;" vertex="1" parent="class_LedgerEntry">
+          <mxGeometry as="geometry" x="1" y="48" width="298" height="212" />
+        </mxCell>
+        <mxCell id="35" value="" style="rounded=0;whiteSpace=wrap;html=0;fillColor=#ffffff;strokeColor=none;fontColor=#111111;fontFamily=Arial;fontSize=12;align=left;verticalAlign=middle;spacing=8;fontStyle=0;" vertex="1" parent="class_LedgerEntry">
+          <mxGeometry as="geometry" x="2" y="260" width="296" height="24" />
+        </mxCell>
+        <mxCell id="36" value="" style="rounded=0;whiteSpace=wrap;html=0;fillColor=#111111;strokeColor=none;fontColor=#111111;fontFamily=Arial;fontSize=14;align=center;verticalAlign=middle;spacing=8;fontStyle=0;" vertex="1" parent="class_LedgerEntry">
+          <mxGeometry as="geometry" x="0" y="260" width="300" height="1" />
+        </mxCell>
+        <mxCell id="class_Wallet" value="" style="rounded=0;whiteSpace=wrap;html=0;fillColor=#ffffff;strokeColor=#111111;fontColor=#111111;fontFamily=Arial;fontSize=14;align=center;verticalAlign=middle;spacing=8;fontStyle=0;" vertex="1" parent="1">
+          <mxGeometry as="geometry" x="1200" y="1620" width="300" height="242" />
+        </mxCell>
+        <mxCell id="37" value="«model»&#10;Wallet" style="rounded=0;whiteSpace=wrap;html=0;fillColor=#ffffff;strokeColor=#111111;fontColor=#111111;fontFamily=Arial;fontSize=15;align=center;verticalAlign=middle;spacing=8;fontStyle=1;" vertex="1" parent="class_Wallet">
+          <mxGeometry as="geometry" x="0" y="0" width="300" height="48" />
+        </mxCell>
+        <mxCell id="38" value="+_id: ObjectId&#10;+ownerType: String&#10;+ownerId: ObjectId&#10;+purpose: String&#10;+unit: String&#10;+availableBalance: Number&#10;+balanceVersion: Number" style="rounded=0;whiteSpace=wrap;html=0;fillColor=#ffffff;strokeColor=none;fontColor=#111111;fontFamily=Arial;fontSize=12;align=left;verticalAlign=middle;spacing=8;fontStyle=0;" vertex="1" parent="class_Wallet">
+          <mxGeometry as="geometry" x="1" y="48" width="298" height="168" />
+        </mxCell>
+        <mxCell id="39" value="" style="rounded=0;whiteSpace=wrap;html=0;fillColor=#ffffff;strokeColor=none;fontColor=#111111;fontFamily=Arial;fontSize=12;align=left;verticalAlign=middle;spacing=8;fontStyle=0;" vertex="1" parent="class_Wallet">
+          <mxGeometry as="geometry" x="2" y="216" width="296" height="24" />
+        </mxCell>
+        <mxCell id="40" value="" style="rounded=0;whiteSpace=wrap;html=0;fillColor=#111111;strokeColor=none;fontColor=#111111;fontFamily=Arial;fontSize=14;align=center;verticalAlign=middle;spacing=8;fontStyle=0;" vertex="1" parent="class_Wallet">
+          <mxGeometry as="geometry" x="0" y="216" width="300" height="1" />
+        </mxCell>
+        <mxCell id="41" value="accountId" style="edgeStyle=none;rounded=0;html=0;endArrow=open;endFill=0;strokeColor=#222222;strokeWidth=1.5;dashed=0;fontFamily=Arial;fontSize=12;fontColor=#111111;labelBackgroundColor=#ffffff;exitX=0.0;exitY=0.27972027972027974;exitPerimeter=0;entryX=0.0;entryY=0.45454545454545453;entryPerimeter=0;" edge="1" parent="1" source="class_UnlockRequest" target="class_Account">
+          <mxGeometry as="geometry" relative="1" x="0.625" y="-13">
+            <Array as="points">
+              <mxPoint x="50" y="1200" />
+              <mxPoint x="50" y="250" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="42" value="0..*" style="edgeLabel;html=0;fontFamily=Arial;fontSize=13;align=center;verticalAlign=middle;labelBackgroundColor=#ffffff;" vertex="1" connectable="0" parent="41">
+          <mxGeometry as="geometry" x="-0.96625" y="13" relative="1">
+            <mxPoint as="offset" x="0" y="0" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="43" value="1" style="edgeLabel;html=0;fontFamily=Arial;fontSize=13;align=center;verticalAlign=middle;labelBackgroundColor=#ffffff;" vertex="1" connectable="0" parent="41">
+          <mxGeometry as="geometry" x="0.96625" y="13" relative="1">
+            <mxPoint as="offset" x="0" y="0" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="44" value="accountId" style="edgeStyle=none;rounded=0;html=0;endArrow=open;endFill=0;strokeColor=#222222;strokeWidth=1.5;dashed=0;fontFamily=Arial;fontSize=12;fontColor=#111111;labelBackgroundColor=#ffffff;exitX=1.0;exitY=0.30303030303030304;exitPerimeter=0;entryX=1.0;entryY=0.45454545454545453;entryPerimeter=0;" edge="1" parent="1" source="class_UnlockEntitlement" target="class_Account">
+          <mxGeometry as="geometry" relative="1" x="0.6111111111111112" y="-13">
+            <Array as="points">
+              <mxPoint x="1650" y="1200" />
+              <mxPoint x="1650" y="250" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="45" value="0..*" style="edgeLabel;html=0;fontFamily=Arial;fontSize=13;align=center;verticalAlign=middle;labelBackgroundColor=#ffffff;" vertex="1" connectable="0" parent="44">
+          <mxGeometry as="geometry" x="-0.97" y="13" relative="1">
+            <mxPoint as="offset" x="0" y="0" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="46" value="1" style="edgeLabel;html=0;fontFamily=Arial;fontSize=13;align=center;verticalAlign=middle;labelBackgroundColor=#ffffff;" vertex="1" connectable="0" parent="44">
+          <mxGeometry as="geometry" x="0.97" y="13" relative="1">
+            <mxPoint as="offset" x="0" y="0" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="47" value="authorAccountId" style="edgeStyle=none;rounded=0;html=0;endArrow=open;endFill=0;strokeColor=#222222;strokeWidth=1.5;dashed=0;fontFamily=Arial;fontSize=12;fontColor=#111111;labelBackgroundColor=#ffffff;exitX=0.5;exitY=0.0;exitPerimeter=0;entryX=0.0;entryY=0.7386363636363636;entryPerimeter=0;" edge="1" parent="1" source="class_Story" target="class_Account">
+          <mxGeometry as="geometry" relative="1" x="-0.14925373134328357" y="-13">
+            <Array as="points">
+              <mxPoint x="250" y="420" />
+              <mxPoint x="520" y="420" />
+              <mxPoint x="520" y="300" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="48" value="0..*" style="edgeLabel;html=0;fontFamily=Arial;fontSize=13;align=center;verticalAlign=middle;labelBackgroundColor=#ffffff;" vertex="1" connectable="0" parent="47">
+          <mxGeometry as="geometry" x="-0.9194029850746268" y="13" relative="1">
+            <mxPoint as="offset" x="0" y="0" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="49" value="1" style="edgeLabel;html=0;fontFamily=Arial;fontSize=13;align=center;verticalAlign=middle;labelBackgroundColor=#ffffff;" vertex="1" connectable="0" parent="47">
+          <mxGeometry as="geometry" x="0.9194029850746268" y="13" relative="1">
+            <mxPoint as="offset" x="0" y="0" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="50" value="storyId" style="edgeStyle=none;rounded=0;html=0;endArrow=open;endFill=0;strokeColor=#222222;strokeWidth=1.5;dashed=0;fontFamily=Arial;fontSize=12;fontColor=#111111;labelBackgroundColor=#ffffff;exitX=0.0;exitY=0.40404040404040403;exitPerimeter=0;entryX=1.0;entryY=0.45454545454545453;entryPerimeter=0;" edge="1" parent="1" source="class_Chapter" target="class_Story">
+          <mxGeometry as="geometry" relative="1" x="0.0" y="-13" />
+        </mxCell>
+        <mxCell id="51" value="0..*" style="edgeLabel;html=0;fontFamily=Arial;fontSize=13;align=center;verticalAlign=middle;labelBackgroundColor=#ffffff;" vertex="1" connectable="0" parent="50">
+          <mxGeometry as="geometry" x="-0.784" y="13" relative="1">
+            <mxPoint as="offset" x="0" y="0" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="52" value="1" style="edgeLabel;html=0;fontFamily=Arial;fontSize=13;align=center;verticalAlign=middle;labelBackgroundColor=#ffffff;" vertex="1" connectable="0" parent="50">
+          <mxGeometry as="geometry" x="0.784" y="13" relative="1">
+            <mxPoint as="offset" x="0" y="0" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="53" value="publishedRevisionId" style="edgeStyle=none;rounded=0;html=0;endArrow=open;endFill=0;strokeColor=#222222;strokeWidth=1.5;dashed=0;fontFamily=Arial;fontSize=12;fontColor=#111111;labelBackgroundColor=#ffffff;exitX=1.0;exitY=0.40404040404040403;exitPerimeter=0;entryX=0.0;entryY=0.45454545454545453;entryPerimeter=0;" edge="1" parent="1" source="class_Chapter" target="class_ContentRevision">
+          <mxGeometry as="geometry" relative="1" x="0.0" y="-13" />
+        </mxCell>
+        <mxCell id="54" value="0..*" style="edgeLabel;html=0;fontFamily=Arial;fontSize=13;align=center;verticalAlign=middle;labelBackgroundColor=#ffffff;" vertex="1" connectable="0" parent="53">
+          <mxGeometry as="geometry" x="-0.784" y="13" relative="1">
+            <mxPoint as="offset" x="0" y="0" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="55" value="0..1" style="edgeLabel;html=0;fontFamily=Arial;fontSize=13;align=center;verticalAlign=middle;labelBackgroundColor=#ffffff;" vertex="1" connectable="0" parent="53">
+          <mxGeometry as="geometry" x="0.784" y="13" relative="1">
+            <mxPoint as="offset" x="0" y="0" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="56" value="chapterId" style="edgeStyle=none;rounded=0;html=0;endArrow=open;endFill=0;strokeColor=#222222;strokeWidth=1.5;dashed=0;fontFamily=Arial;fontSize=12;fontColor=#111111;labelBackgroundColor=#ffffff;exitX=0.5;exitY=0.0;exitPerimeter=0;entryX=0.16666666666666666;entryY=1.0;entryPerimeter=0;" edge="1" parent="1" source="class_UnlockRequest" target="class_Chapter">
+          <mxGeometry as="geometry" relative="1" x="-0.06483790523690769" y="-13">
+            <Array as="points">
+              <mxPoint x="250" y="970" />
+              <mxPoint x="700" y="970" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="57" value="0..*" style="edgeLabel;html=0;fontFamily=Arial;fontSize=13;align=center;verticalAlign=middle;labelBackgroundColor=#ffffff;" vertex="1" connectable="0" parent="56">
+          <mxGeometry as="geometry" x="-0.9326683291770573" y="13" relative="1">
+            <mxPoint as="offset" x="0" y="0" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="58" value="1" style="edgeLabel;html=0;fontFamily=Arial;fontSize=13;align=center;verticalAlign=middle;labelBackgroundColor=#ffffff;" vertex="1" connectable="0" parent="56">
+          <mxGeometry as="geometry" x="0.9326683291770574" y="13" relative="1">
+            <mxPoint as="offset" x="0" y="0" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="59" value="chapterId" style="edgeStyle=none;rounded=0;html=0;endArrow=open;endFill=0;strokeColor=#222222;strokeWidth=1.5;dashed=0;fontFamily=Arial;fontSize=12;fontColor=#111111;labelBackgroundColor=#ffffff;exitX=0.16666666666666666;exitY=0.0;exitPerimeter=0;entryX=0.8333333333333334;entryY=1.0;entryPerimeter=0;" edge="1" parent="1" source="class_UnlockEntitlement" target="class_Chapter">
+          <mxGeometry as="geometry" relative="1" x="-0.07407407407407407" y="-13">
+            <Array as="points">
+              <mxPoint x="1250" y="970" />
+              <mxPoint x="900" y="970" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="60" value="0..*" style="edgeLabel;html=0;fontFamily=Arial;fontSize=13;align=center;verticalAlign=middle;labelBackgroundColor=#ffffff;" vertex="1" connectable="0" parent="59">
+          <mxGeometry as="geometry" x="-0.9230769230769231" y="13" relative="1">
+            <mxPoint as="offset" x="0" y="0" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="61" value="1" style="edgeLabel;html=0;fontFamily=Arial;fontSize=13;align=center;verticalAlign=middle;labelBackgroundColor=#ffffff;" vertex="1" connectable="0" parent="59">
+          <mxGeometry as="geometry" x="0.9230769230769231" y="13" relative="1">
+            <mxPoint as="offset" x="0" y="0" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="62" value="publishedRevisionId" style="edgeStyle=none;rounded=0;html=0;endArrow=open;endFill=0;strokeColor=#222222;strokeWidth=1.5;dashed=0;fontFamily=Arial;fontSize=12;fontColor=#111111;labelBackgroundColor=#ffffff;exitX=0.7333333333333333;exitY=0.0;exitPerimeter=0;entryX=0.7333333333333333;entryY=1.0;entryPerimeter=0;" edge="1" parent="1" source="class_UnlockEntitlement" target="class_ContentRevision">
+          <mxGeometry as="geometry" relative="1" x="0.0" y="-13" />
+        </mxCell>
+        <mxCell id="63" value="0..*" style="edgeLabel;html=0;fontFamily=Arial;fontSize=13;align=center;verticalAlign=middle;labelBackgroundColor=#ffffff;" vertex="1" connectable="0" parent="62">
+          <mxGeometry as="geometry" x="-0.8556149732620321" y="13" relative="1">
+            <mxPoint as="offset" x="0" y="0" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="64" value="1" style="edgeLabel;html=0;fontFamily=Arial;fontSize=13;align=center;verticalAlign=middle;labelBackgroundColor=#ffffff;" vertex="1" connectable="0" parent="62">
+          <mxGeometry as="geometry" x="0.8556149732620322" y="13" relative="1">
+            <mxPoint as="offset" x="0" y="0" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="65" value="entitlementId" style="edgeStyle=none;rounded=0;html=0;endArrow=open;endFill=0;strokeColor=#222222;strokeWidth=1.5;dashed=0;fontFamily=Arial;fontSize=12;fontColor=#111111;labelBackgroundColor=#ffffff;exitX=1.0;exitY=0.5244755244755245;exitPerimeter=0;entryX=0.0;entryY=0.5681818181818182;entryPerimeter=0;" edge="1" parent="1" source="class_UnlockRequest" target="class_UnlockEntitlement">
+          <mxGeometry as="geometry" relative="1" x="0.0" y="-13" />
+        </mxCell>
+        <mxCell id="66" value="0..*" style="edgeLabel;html=0;fontFamily=Arial;fontSize=13;align=center;verticalAlign=middle;labelBackgroundColor=#ffffff;" vertex="1" connectable="0" parent="65">
+          <mxGeometry as="geometry" x="-0.9325" y="13" relative="1">
+            <mxPoint as="offset" x="0" y="0" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="67" value="0..1" style="edgeLabel;html=0;fontFamily=Arial;fontSize=13;align=center;verticalAlign=middle;labelBackgroundColor=#ffffff;" vertex="1" connectable="0" parent="65">
+          <mxGeometry as="geometry" x="0.9325000000000001" y="13" relative="1">
+            <mxPoint as="offset" x="0" y="0" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="68" value="unlockRequestId" style="edgeStyle=none;rounded=0;html=0;endArrow=open;endFill=0;strokeColor=#222222;strokeWidth=1.5;dashed=0;fontFamily=Arial;fontSize=12;fontColor=#111111;labelBackgroundColor=#ffffff;exitX=0.5;exitY=0.0;exitPerimeter=0;entryX=0.5;entryY=1.0;entryPerimeter=0;" edge="1" parent="1" source="class_RevenueAllocation" target="class_UnlockRequest">
+          <mxGeometry as="geometry" relative="1" x="0.0" y="-13" />
+        </mxCell>
+        <mxCell id="69" value="0..1" style="edgeLabel;html=0;fontFamily=Arial;fontSize=13;align=center;verticalAlign=middle;labelBackgroundColor=#ffffff;" vertex="1" connectable="0" parent="68">
+          <mxGeometry as="geometry" x="-0.7476635514018692" y="13" relative="1">
+            <mxPoint as="offset" x="0" y="0" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="70" value="1" style="edgeLabel;html=0;fontFamily=Arial;fontSize=13;align=center;verticalAlign=middle;labelBackgroundColor=#ffffff;" vertex="1" connectable="0" parent="68">
+          <mxGeometry as="geometry" x="0.7476635514018692" y="13" relative="1">
+            <mxPoint as="offset" x="0" y="0" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="71" value="ledgerEntryIds" style="edgeStyle=none;rounded=0;html=0;endArrow=open;endFill=0;strokeColor=#222222;strokeWidth=1.5;dashed=0;fontFamily=Arial;fontSize=12;fontColor=#111111;labelBackgroundColor=#ffffff;exitX=1.0;exitY=0.45454545454545453;exitPerimeter=0;entryX=0.0;entryY=0.38461538461538464;entryPerimeter=0;" edge="1" parent="1" source="class_RevenueAllocation" target="class_LedgerEntry">
+          <mxGeometry as="geometry" relative="1" x="0.0" y="-13" />
+        </mxCell>
+        <mxCell id="72" value="0..*" style="edgeLabel;html=0;fontFamily=Arial;fontSize=13;align=center;verticalAlign=middle;labelBackgroundColor=#ffffff;" vertex="1" connectable="0" parent="71">
+          <mxGeometry as="geometry" x="-0.784" y="13" relative="1">
+            <mxPoint as="offset" x="0" y="0" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="73" value="1..*" style="edgeLabel;html=0;fontFamily=Arial;fontSize=13;align=center;verticalAlign=middle;labelBackgroundColor=#ffffff;" vertex="1" connectable="0" parent="71">
+          <mxGeometry as="geometry" x="0.784" y="13" relative="1">
+            <mxPoint as="offset" x="0" y="0" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="74" value="walletId" style="edgeStyle=none;rounded=0;html=0;endArrow=open;endFill=0;strokeColor=#222222;strokeWidth=1.5;dashed=0;fontFamily=Arial;fontSize=12;fontColor=#111111;labelBackgroundColor=#ffffff;exitX=1.0;exitY=0.38461538461538464;exitPerimeter=0;entryX=0.0;entryY=0.45454545454545453;entryPerimeter=0;" edge="1" parent="1" source="class_LedgerEntry" target="class_Wallet">
+          <mxGeometry as="geometry" relative="1" x="0.0" y="-13" />
+        </mxCell>
+        <mxCell id="75" value="0..*" style="edgeLabel;html=0;fontFamily=Arial;fontSize=13;align=center;verticalAlign=middle;labelBackgroundColor=#ffffff;" vertex="1" connectable="0" parent="74">
+          <mxGeometry as="geometry" x="-0.784" y="13" relative="1">
+            <mxPoint as="offset" x="0" y="0" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="76" value="1" style="edgeLabel;html=0;fontFamily=Arial;fontSize=13;align=center;verticalAlign=middle;labelBackgroundColor=#ffffff;" vertex="1" connectable="0" parent="74">
+          <mxGeometry as="geometry" x="0.784" y="13" relative="1">
+            <mxPoint as="offset" x="0" y="0" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="77" value="sourceType / sourceId" style="edgeStyle=none;rounded=0;html=0;endArrow=open;endFill=0;strokeColor=#222222;strokeWidth=1.5;dashed=1;fontFamily=Arial;fontSize=12;fontColor=#111111;labelBackgroundColor=#ffffff;exitX=0.5;exitY=0.0;exitPerimeter=0;entryX=0.7666666666666667;entryY=1.0;entryPerimeter=0;" edge="1" parent="1" source="class_LedgerEntry" target="class_UnlockRequest">
+          <mxGeometry as="geometry" relative="1" x="0.03801169590643272" y="-13">
+            <Array as="points">
+              <mxPoint x="800" y="1500" />
+              <mxPoint x="330" y="1500" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="78" value="Quyền đọc duy nhất theo (accountId, chapterId), gắn đúng bản xuất bản và thời hạn.&#10;Ledger lưu lịch sử; Wallet lưu số dư. Chính sách phân bổ được trình bày ở trang 03." style="rounded=0;whiteSpace=wrap;html=0;fillColor=#ffffff;strokeColor=none;fontColor=#111111;fontFamily=Arial;fontSize=14;align=center;verticalAlign=middle;spacing=8;fontStyle=0;" vertex="1" parent="1">
+          <mxGeometry as="geometry" x="100" y="1950" width="1400" height="60" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+  <diagram id="03" name="03 Chính sách phân bổ">
+    <mxGraphModel dx="1400" dy="900" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1620" pageHeight="1210" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="3" value="COINS — CHÍNH SÁCH PHÂN BỔ" style="rounded=0;whiteSpace=wrap;html=0;fillColor=#ffffff;strokeColor=none;fontColor=#111111;fontFamily=Arial;fontSize=24;align=center;verticalAlign=middle;spacing=8;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry as="geometry" x="40" y="24" width="1540" height="45" />
+        </mxCell>
+        <mxCell id="4" value="Quan hệ snapshot và chính sách được tách riêng để không chồng lên dây của luồng mua." style="rounded=0;whiteSpace=wrap;html=0;fillColor=#ffffff;strokeColor=none;fontColor=#111111;fontFamily=Arial;fontSize=14;align=center;verticalAlign=middle;spacing=8;fontStyle=0;" vertex="1" parent="1">
+          <mxGeometry as="geometry" x="40" y="78" width="1540" height="38" />
+        </mxCell>
+        <mxCell id="class_Account" value="" style="rounded=0;whiteSpace=wrap;html=0;fillColor=#ffffff;strokeColor=#111111;fontColor=#111111;fontFamily=Arial;fontSize=14;align=center;verticalAlign=middle;spacing=8;fontStyle=0;" vertex="1" parent="1">
+          <mxGeometry as="geometry" x="80" y="180" width="300" height="176" />
+        </mxCell>
+        <mxCell id="5" value="«model»&#10;Account" style="rounded=0;whiteSpace=wrap;html=0;fillColor=#ffffff;strokeColor=#111111;fontColor=#111111;fontFamily=Arial;fontSize=15;align=center;verticalAlign=middle;spacing=8;fontStyle=1;" vertex="1" parent="class_Account">
+          <mxGeometry as="geometry" x="0" y="0" width="300" height="48" />
+        </mxCell>
+        <mxCell id="6" value="+_id: ObjectId&#10;+email: String&#10;+displayName: String&#10;+status: String" style="rounded=0;whiteSpace=wrap;html=0;fillColor=#ffffff;strokeColor=none;fontColor=#111111;fontFamily=Arial;fontSize=12;align=left;verticalAlign=middle;spacing=8;fontStyle=0;" vertex="1" parent="class_Account">
+          <mxGeometry as="geometry" x="1" y="48" width="298" height="102" />
+        </mxCell>
+        <mxCell id="7" value="" style="rounded=0;whiteSpace=wrap;html=0;fillColor=#ffffff;strokeColor=none;fontColor=#111111;fontFamily=Arial;fontSize=12;align=left;verticalAlign=middle;spacing=8;fontStyle=0;" vertex="1" parent="class_Account">
+          <mxGeometry as="geometry" x="2" y="150" width="296" height="24" />
+        </mxCell>
+        <mxCell id="8" value="" style="rounded=0;whiteSpace=wrap;html=0;fillColor=#111111;strokeColor=none;fontColor=#111111;fontFamily=Arial;fontSize=14;align=center;verticalAlign=middle;spacing=8;fontStyle=0;" vertex="1" parent="class_Account">
+          <mxGeometry as="geometry" x="0" y="150" width="300" height="1" />
+        </mxCell>
+        <mxCell id="class_AuthorRevenueRate" value="" style="rounded=0;whiteSpace=wrap;html=0;fillColor=#ffffff;strokeColor=#111111;fontColor=#111111;fontFamily=Arial;fontSize=14;align=center;verticalAlign=middle;spacing=8;fontStyle=0;" vertex="1" parent="1">
+          <mxGeometry as="geometry" x="650" y="180" width="300" height="176" />
+        </mxCell>
+        <mxCell id="9" value="«model»&#10;AuthorRevenueRate" style="rounded=0;whiteSpace=wrap;html=0;fillColor=#ffffff;strokeColor=#111111;fontColor=#111111;fontFamily=Arial;fontSize=15;align=center;verticalAlign=middle;spacing=8;fontStyle=1;" vertex="1" parent="class_AuthorRevenueRate">
+          <mxGeometry as="geometry" x="0" y="0" width="300" height="48" />
+        </mxCell>
+        <mxCell id="10" value="+_id: ObjectId&#10;+authorAccountId: ObjectId&#10;+percentage: Number&#10;+effectiveAt: Date" style="rounded=0;whiteSpace=wrap;html=0;fillColor=#ffffff;strokeColor=none;fontColor=#111111;fontFamily=Arial;fontSize=12;align=left;verticalAlign=middle;spacing=8;fontStyle=0;" vertex="1" parent="class_AuthorRevenueRate">
+          <mxGeometry as="geometry" x="1" y="48" width="298" height="102" />
+        </mxCell>
+        <mxCell id="11" value="" style="rounded=0;whiteSpace=wrap;html=0;fillColor=#ffffff;strokeColor=none;fontColor=#111111;fontFamily=Arial;fontSize=12;align=left;verticalAlign=middle;spacing=8;fontStyle=0;" vertex="1" parent="class_AuthorRevenueRate">
+          <mxGeometry as="geometry" x="2" y="150" width="296" height="24" />
+        </mxCell>
+        <mxCell id="12" value="" style="rounded=0;whiteSpace=wrap;html=0;fillColor=#111111;strokeColor=none;fontColor=#111111;fontFamily=Arial;fontSize=14;align=center;verticalAlign=middle;spacing=8;fontStyle=0;" vertex="1" parent="class_AuthorRevenueRate">
+          <mxGeometry as="geometry" x="0" y="150" width="300" height="1" />
+        </mxCell>
+        <mxCell id="class_PolicyVersion" value="" style="rounded=0;whiteSpace=wrap;html=0;fillColor=#ffffff;strokeColor=#111111;fontColor=#111111;fontFamily=Arial;fontSize=14;align=center;verticalAlign=middle;spacing=8;fontStyle=0;" vertex="1" parent="1">
+          <mxGeometry as="geometry" x="1220" y="180" width="300" height="220" />
+        </mxCell>
+        <mxCell id="13" value="«model»&#10;PolicyVersion" style="rounded=0;whiteSpace=wrap;html=0;fillColor=#ffffff;strokeColor=#111111;fontColor=#111111;fontFamily=Arial;fontSize=15;align=center;verticalAlign=middle;spacing=8;fontStyle=1;" vertex="1" parent="class_PolicyVersion">
+          <mxGeometry as="geometry" x="0" y="0" width="300" height="48" />
+        </mxCell>
+        <mxCell id="14" value="+_id: ObjectId&#10;+status: String&#10;+effectiveAt: Date&#10;+authorSharePercent: Number&#10;+platformSharePercent: Number&#10;+orderExpiryHours: Number" style="rounded=0;whiteSpace=wrap;html=0;fillColor=#ffffff;strokeColor=none;fontColor=#111111;fontFamily=Arial;fontSize=12;align=left;verticalAlign=middle;spacing=8;fontStyle=0;" vertex="1" parent="class_PolicyVersion">
+          <mxGeometry as="geometry" x="1" y="48" width="298" height="146" />
+        </mxCell>
+        <mxCell id="15" value="" style="rounded=0;whiteSpace=wrap;html=0;fillColor=#ffffff;strokeColor=none;fontColor=#111111;fontFamily=Arial;fontSize=12;align=left;verticalAlign=middle;spacing=8;fontStyle=0;" vertex="1" parent="class_PolicyVersion">
+          <mxGeometry as="geometry" x="2" y="194" width="296" height="24" />
+        </mxCell>
+        <mxCell id="16" value="" style="rounded=0;whiteSpace=wrap;html=0;fillColor=#111111;strokeColor=none;fontColor=#111111;fontFamily=Arial;fontSize=14;align=center;verticalAlign=middle;spacing=8;fontStyle=0;" vertex="1" parent="class_PolicyVersion">
+          <mxGeometry as="geometry" x="0" y="194" width="300" height="1" />
+        </mxCell>
+        <mxCell id="class_RevenueAllocation" value="" style="rounded=0;whiteSpace=wrap;html=0;fillColor=#ffffff;strokeColor=#111111;fontColor=#111111;fontFamily=Arial;fontSize=14;align=center;verticalAlign=middle;spacing=8;fontStyle=0;" vertex="1" parent="1">
+          <mxGeometry as="geometry" x="650" y="730" width="300" height="242" />
+        </mxCell>
+        <mxCell id="17" value="«model»&#10;RevenueAllocation" style="rounded=0;whiteSpace=wrap;html=0;fillColor=#ffffff;strokeColor=#111111;fontColor=#111111;fontFamily=Arial;fontSize=15;align=center;verticalAlign=middle;spacing=8;fontStyle=1;" vertex="1" parent="class_RevenueAllocation">
+          <mxGeometry as="geometry" x="0" y="0" width="300" height="48" />
+        </mxCell>
+        <mxCell id="18" value="+_id: ObjectId&#10;+unlockRequestId: ObjectId&#10;+ledgerEntryIds: ObjectId[]&#10;+beneficiaries: ObjectId[]&#10;+amount: Number&#10;+policySnapshot: Object&#10;+negotiatedAllocationSnapshot: Object" style="rounded=0;whiteSpace=wrap;html=0;fillColor=#ffffff;strokeColor=none;fontColor=#111111;fontFamily=Arial;fontSize=12;align=left;verticalAlign=middle;spacing=8;fontStyle=0;" vertex="1" parent="class_RevenueAllocation">
+          <mxGeometry as="geometry" x="1" y="48" width="298" height="168" />
+        </mxCell>
+        <mxCell id="19" value="" style="rounded=0;whiteSpace=wrap;html=0;fillColor=#ffffff;strokeColor=none;fontColor=#111111;fontFamily=Arial;fontSize=12;align=left;verticalAlign=middle;spacing=8;fontStyle=0;" vertex="1" parent="class_RevenueAllocation">
+          <mxGeometry as="geometry" x="2" y="216" width="296" height="24" />
+        </mxCell>
+        <mxCell id="20" value="" style="rounded=0;whiteSpace=wrap;html=0;fillColor=#111111;strokeColor=none;fontColor=#111111;fontFamily=Arial;fontSize=14;align=center;verticalAlign=middle;spacing=8;fontStyle=0;" vertex="1" parent="class_RevenueAllocation">
+          <mxGeometry as="geometry" x="0" y="216" width="300" height="1" />
+        </mxCell>
+        <mxCell id="class_TopUpPackage" value="" style="rounded=0;whiteSpace=wrap;html=0;fillColor=#ffffff;strokeColor=#111111;fontColor=#111111;fontFamily=Arial;fontSize=14;align=center;verticalAlign=middle;spacing=8;fontStyle=0;" vertex="1" parent="1">
+          <mxGeometry as="geometry" x="1220" y="730" width="300" height="176" />
+        </mxCell>
+        <mxCell id="21" value="«model»&#10;TopUpPackage" style="rounded=0;whiteSpace=wrap;html=0;fillColor=#ffffff;strokeColor=#111111;fontColor=#111111;fontFamily=Arial;fontSize=15;align=center;verticalAlign=middle;spacing=8;fontStyle=1;" vertex="1" parent="class_TopUpPackage">
+          <mxGeometry as="geometry" x="0" y="0" width="300" height="48" />
+        </mxCell>
+        <mxCell id="22" value="+_id: ObjectId&#10;+priceVnd: Number&#10;+coinAmount: Number&#10;+status: String" style="rounded=0;whiteSpace=wrap;html=0;fillColor=#ffffff;strokeColor=none;fontColor=#111111;fontFamily=Arial;fontSize=12;align=left;verticalAlign=middle;spacing=8;fontStyle=0;" vertex="1" parent="class_TopUpPackage">
+          <mxGeometry as="geometry" x="1" y="48" width="298" height="102" />
+        </mxCell>
+        <mxCell id="23" value="" style="rounded=0;whiteSpace=wrap;html=0;fillColor=#ffffff;strokeColor=none;fontColor=#111111;fontFamily=Arial;fontSize=12;align=left;verticalAlign=middle;spacing=8;fontStyle=0;" vertex="1" parent="class_TopUpPackage">
+          <mxGeometry as="geometry" x="2" y="150" width="296" height="24" />
+        </mxCell>
+        <mxCell id="24" value="" style="rounded=0;whiteSpace=wrap;html=0;fillColor=#111111;strokeColor=none;fontColor=#111111;fontFamily=Arial;fontSize=14;align=center;verticalAlign=middle;spacing=8;fontStyle=0;" vertex="1" parent="class_TopUpPackage">
+          <mxGeometry as="geometry" x="0" y="150" width="300" height="1" />
+        </mxCell>
+        <mxCell id="25" value="authorAccountId" style="edgeStyle=none;rounded=0;html=0;endArrow=open;endFill=0;strokeColor=#222222;strokeWidth=1.5;dashed=0;fontFamily=Arial;fontSize=12;fontColor=#111111;labelBackgroundColor=#ffffff;exitX=0.0;exitY=0.5113636363636364;exitPerimeter=0;entryX=1.0;entryY=0.5113636363636364;entryPerimeter=0;" edge="1" parent="1" source="class_AuthorRevenueRate" target="class_Account">
+          <mxGeometry as="geometry" relative="1" x="0.0" y="-13" />
+        </mxCell>
+        <mxCell id="26" value="0..*" style="edgeLabel;html=0;fontFamily=Arial;fontSize=13;align=center;verticalAlign=middle;labelBackgroundColor=#ffffff;" vertex="1" connectable="0" parent="25">
+          <mxGeometry as="geometry" x="-0.8" y="13" relative="1">
+            <mxPoint as="offset" x="0" y="0" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="27" value="1" style="edgeLabel;html=0;fontFamily=Arial;fontSize=13;align=center;verticalAlign=middle;labelBackgroundColor=#ffffff;" vertex="1" connectable="0" parent="25">
+          <mxGeometry as="geometry" x="0.8" y="13" relative="1">
+            <mxPoint as="offset" x="0" y="0" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="28" value="policyVersionId" style="edgeStyle=none;rounded=0;html=0;endArrow=open;endFill=0;strokeColor=#222222;strokeWidth=1.5;dashed=0;fontFamily=Arial;fontSize=12;fontColor=#111111;labelBackgroundColor=#ffffff;exitX=1.0;exitY=0.5113636363636364;exitPerimeter=0;entryX=0.0;entryY=0.4090909090909091;entryPerimeter=0;" edge="1" parent="1" source="class_AuthorRevenueRate" target="class_PolicyVersion">
+          <mxGeometry as="geometry" relative="1" x="0.0" y="-13" />
+        </mxCell>
+        <mxCell id="29" value="0..*" style="edgeLabel;html=0;fontFamily=Arial;fontSize=13;align=center;verticalAlign=middle;labelBackgroundColor=#ffffff;" vertex="1" connectable="0" parent="28">
+          <mxGeometry as="geometry" x="-0.8" y="13" relative="1">
+            <mxPoint as="offset" x="0" y="0" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="30" value="0..1" style="edgeLabel;html=0;fontFamily=Arial;fontSize=13;align=center;verticalAlign=middle;labelBackgroundColor=#ffffff;" vertex="1" connectable="0" parent="28">
+          <mxGeometry as="geometry" x="0.8" y="13" relative="1">
+            <mxPoint as="offset" x="0" y="0" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="31" value="policyVersionId" style="edgeStyle=none;rounded=0;html=0;endArrow=open;endFill=0;strokeColor=#222222;strokeWidth=1.5;dashed=0;fontFamily=Arial;fontSize=12;fontColor=#111111;labelBackgroundColor=#ffffff;exitX=0.5;exitY=0.0;exitPerimeter=0;entryX=0.5;entryY=1.0;entryPerimeter=0;" edge="1" parent="1" source="class_TopUpPackage" target="class_PolicyVersion">
+          <mxGeometry as="geometry" relative="1" x="0.0" y="-13" />
+        </mxCell>
+        <mxCell id="32" value="0..*" style="edgeLabel;html=0;fontFamily=Arial;fontSize=13;align=center;verticalAlign=middle;labelBackgroundColor=#ffffff;" vertex="1" connectable="0" parent="31">
+          <mxGeometry as="geometry" x="-0.8363636363636364" y="13" relative="1">
+            <mxPoint as="offset" x="0" y="0" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="33" value="0..1" style="edgeLabel;html=0;fontFamily=Arial;fontSize=13;align=center;verticalAlign=middle;labelBackgroundColor=#ffffff;" vertex="1" connectable="0" parent="31">
+          <mxGeometry as="geometry" x="0.8363636363636364" y="13" relative="1">
+            <mxPoint as="offset" x="0" y="0" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="34" value="negotiated snapshot" style="edgeStyle=none;rounded=0;html=0;endArrow=open;endFill=0;strokeColor=#222222;strokeWidth=1.5;dashed=1;fontFamily=Arial;fontSize=12;fontColor=#111111;labelBackgroundColor=#ffffff;exitX=0.5;exitY=0.0;exitPerimeter=0;entryX=0.5;entryY=1.0;entryPerimeter=0;" edge="1" parent="1" source="class_RevenueAllocation" target="class_AuthorRevenueRate">
+          <mxGeometry as="geometry" relative="1" x="0.0" y="-13" />
+        </mxCell>
+        <mxCell id="35" value="policy snapshot" style="edgeStyle=none;rounded=0;html=0;endArrow=open;endFill=0;strokeColor=#222222;strokeWidth=1.5;dashed=1;fontFamily=Arial;fontSize=12;fontColor=#111111;labelBackgroundColor=#ffffff;exitX=1.0;exitY=0.45454545454545453;exitPerimeter=0;entryX=0.0;entryY=0.6818181818181818;entryPerimeter=0;" edge="1" parent="1" source="class_RevenueAllocation" target="class_PolicyVersion">
+          <mxGeometry as="geometry" relative="1" x="0.8205128205128205" y="-13">
+            <Array as="points">
+              <mxPoint x="1080" y="840" />
+              <mxPoint x="1080" y="330" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="36" value="Ưu tiên tỷ lệ riêng của tác giả đang có hiệu lực; nếu không có thì dùng PolicyVersion.&#10;Snapshot lưu thông tin tại lúc mua. Cùng tên lớp ở các trang là cùng một model, không phải lớp mới." style="rounded=0;whiteSpace=wrap;html=0;fillColor=#ffffff;strokeColor=none;fontColor=#111111;fontFamily=Arial;fontSize=14;align=center;verticalAlign=middle;spacing=8;fontStyle=0;" vertex="1" parent="1">
+          <mxGeometry as="geometry" x="80" y="1090" width="1440" height="70" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+  <diagram id="04" name="04 Các module nghiệp vụ">
+    <mxGraphModel dx="1400" dy="900" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1300" pageHeight="1860" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="3" value="COINS — CÁC HÀM NGHIỆP VỤ" style="rounded=0;whiteSpace=wrap;html=0;fillColor=#ffffff;strokeColor=none;fontColor=#111111;fontFamily=Arial;fontSize=24;align=center;verticalAlign=middle;spacing=8;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry as="geometry" x="40" y="24" width="1220" height="45" />
+        </mxCell>
+        <mxCell id="4" value="Giữ đúng tên module và hàm trong source code; không tạo thêm interface/repository." style="rounded=0;whiteSpace=wrap;html=0;fillColor=#ffffff;strokeColor=none;fontColor=#111111;fontFamily=Arial;fontSize=14;align=center;verticalAlign=middle;spacing=8;fontStyle=0;" vertex="1" parent="1">
+          <mxGeometry as="geometry" x="40" y="78" width="1220" height="38" />
+        </mxCell>
+        <mxCell id="module_reader-wallet" value="" style="rounded=0;whiteSpace=wrap;html=0;fillColor=#ffffff;strokeColor=#111111;fontColor=#111111;fontFamily=Arial;fontSize=14;align=center;verticalAlign=middle;spacing=8;fontStyle=0;" vertex="1" parent="1">
+          <mxGeometry as="geometry" x="70" y="180" width="500" height="113" />
+        </mxCell>
+        <mxCell id="5" value="«module»&#10;reader-wallet.js" style="rounded=0;whiteSpace=wrap;html=0;fillColor=#ffffff;strokeColor=#111111;fontColor=#111111;fontFamily=Arial;fontSize=15;align=center;verticalAlign=middle;spacing=8;fontStyle=1;" vertex="1" parent="module_reader-wallet">
+          <mxGeometry as="geometry" x="0" y="0" width="500" height="48" />
+        </mxCell>
+        <mxCell id="6" value="" style="rounded=0;whiteSpace=wrap;html=0;fillColor=#ffffff;strokeColor=none;fontColor=#111111;fontFamily=Arial;fontSize=12;align=left;verticalAlign=middle;spacing=8;fontStyle=0;" vertex="1" parent="module_reader-wallet">
+          <mxGeometry as="geometry" x="1" y="48" width="498" height="26" />
+        </mxCell>
+        <mxCell id="7" value="+getReaderWallet(accountId)" style="rounded=0;whiteSpace=wrap;html=0;fillColor=#ffffff;strokeColor=none;fontColor=#111111;fontFamily=Arial;fontSize=12;align=left;verticalAlign=middle;spacing=8;fontStyle=0;" vertex="1" parent="module_reader-wallet">
+          <mxGeometry as="geometry" x="2" y="74" width="496" height="37" />
+        </mxCell>
+        <mxCell id="8" value="" style="rounded=0;whiteSpace=wrap;html=0;fillColor=#111111;strokeColor=none;fontColor=#111111;fontFamily=Arial;fontSize=14;align=center;verticalAlign=middle;spacing=8;fontStyle=0;" vertex="1" parent="module_reader-wallet">
+          <mxGeometry as="geometry" x="0" y="74" width="500" height="1" />
+        </mxCell>
+        <mxCell id="module_reader-top-ups" value="" style="rounded=0;whiteSpace=wrap;html=0;fillColor=#ffffff;strokeColor=#111111;fontColor=#111111;fontFamily=Arial;fontSize=14;align=center;verticalAlign=middle;spacing=8;fontStyle=0;" vertex="1" parent="1">
+          <mxGeometry as="geometry" x="700" y="180" width="500" height="113" />
+        </mxCell>
+        <mxCell id="9" value="«module»&#10;reader-top-ups.js" style="rounded=0;whiteSpace=wrap;html=0;fillColor=#ffffff;strokeColor=#111111;fontColor=#111111;fontFamily=Arial;fontSize=15;align=center;verticalAlign=middle;spacing=8;fontStyle=1;" vertex="1" parent="module_reader-top-ups">
+          <mxGeometry as="geometry" x="0" y="0" width="500" height="48" />
+        </mxCell>
+        <mxCell id="10" value="" style="rounded=0;whiteSpace=wrap;html=0;fillColor=#ffffff;strokeColor=none;fontColor=#111111;fontFamily=Arial;fontSize=12;align=left;verticalAlign=middle;spacing=8;fontStyle=0;" vertex="1" parent="module_reader-top-ups">
+          <mxGeometry as="geometry" x="1" y="48" width="498" height="26" />
+        </mxCell>
+        <mxCell id="11" value="+getTopUpPackages()" style="rounded=0;whiteSpace=wrap;html=0;fillColor=#ffffff;strokeColor=none;fontColor=#111111;fontFamily=Arial;fontSize=12;align=left;verticalAlign=middle;spacing=8;fontStyle=0;" vertex="1" parent="module_reader-top-ups">
+          <mxGeometry as="geometry" x="2" y="74" width="496" height="37" />
+        </mxCell>
+        <mxCell id="12" value="" style="rounded=0;whiteSpace=wrap;html=0;fillColor=#111111;strokeColor=none;fontColor=#111111;fontFamily=Arial;fontSize=14;align=center;verticalAlign=middle;spacing=8;fontStyle=0;" vertex="1" parent="module_reader-top-ups">
+          <mxGeometry as="geometry" x="0" y="74" width="500" height="1" />
+        </mxCell>
+        <mxCell id="module_reader-top-up-orders" value="" style="rounded=0;whiteSpace=wrap;html=0;fillColor=#ffffff;strokeColor=#111111;fontColor=#111111;fontFamily=Arial;fontSize=14;align=center;verticalAlign=middle;spacing=8;fontStyle=0;" vertex="1" parent="1">
+          <mxGeometry as="geometry" x="70" y="520" width="500" height="188" />
+        </mxCell>
+        <mxCell id="13" value="«module»&#10;reader-top-up-orders.js" style="rounded=0;whiteSpace=wrap;html=0;fillColor=#ffffff;strokeColor=#111111;fontColor=#111111;fontFamily=Arial;fontSize=15;align=center;verticalAlign=middle;spacing=8;fontStyle=1;" vertex="1" parent="module_reader-top-up-orders">
+          <mxGeometry as="geometry" x="0" y="0" width="500" height="48" />
+        </mxCell>
+        <mxCell id="14" value="" style="rounded=0;whiteSpace=wrap;html=0;fillColor=#ffffff;strokeColor=none;fontColor=#111111;fontFamily=Arial;fontSize=12;align=left;verticalAlign=middle;spacing=8;fontStyle=0;" vertex="1" parent="module_reader-top-up-orders">
+          <mxGeometry as="geometry" x="1" y="48" width="498" height="26" />
+        </mxCell>
+        <mxCell id="15" value="+prepareTopUpOrder(packageId, session, now)&#10;+createTopUpOrder(account, packageId)&#10;+getReaderTopUpOrder(accountId, orderId)&#10;+topUpOrderView(order, now)" style="rounded=0;whiteSpace=wrap;html=0;fillColor=#ffffff;strokeColor=none;fontColor=#111111;fontFamily=Arial;fontSize=12;align=left;verticalAlign=middle;spacing=8;fontStyle=0;" vertex="1" parent="module_reader-top-up-orders">
+          <mxGeometry as="geometry" x="2" y="74" width="496" height="112" />
+        </mxCell>
+        <mxCell id="16" value="" style="rounded=0;whiteSpace=wrap;html=0;fillColor=#111111;strokeColor=none;fontColor=#111111;fontFamily=Arial;fontSize=14;align=center;verticalAlign=middle;spacing=8;fontStyle=0;" vertex="1" parent="module_reader-top-up-orders">
+          <mxGeometry as="geometry" x="0" y="74" width="500" height="1" />
+        </mxCell>
+        <mxCell id="module_sepay-webhook" value="" style="rounded=0;whiteSpace=wrap;html=0;fillColor=#ffffff;strokeColor=#111111;fontColor=#111111;fontFamily=Arial;fontSize=14;align=center;verticalAlign=middle;spacing=8;fontStyle=0;" vertex="1" parent="1">
+          <mxGeometry as="geometry" x="700" y="520" width="500" height="238" />
+        </mxCell>
+        <mxCell id="17" value="«module»&#10;sepay-webhook.js" style="rounded=0;whiteSpace=wrap;html=0;fillColor=#ffffff;strokeColor=#111111;fontColor=#111111;fontFamily=Arial;fontSize=15;align=center;verticalAlign=middle;spacing=8;fontStyle=1;" vertex="1" parent="module_sepay-webhook">
+          <mxGeometry as="geometry" x="0" y="0" width="500" height="48" />
+        </mxCell>
+        <mxCell id="18" value="" style="rounded=0;whiteSpace=wrap;html=0;fillColor=#ffffff;strokeColor=none;fontColor=#111111;fontFamily=Arial;fontSize=12;align=left;verticalAlign=middle;spacing=8;fontStyle=0;" vertex="1" parent="module_sepay-webhook">
+          <mxGeometry as="geometry" x="1" y="48" width="498" height="26" />
+        </mxCell>
+        <mxCell id="19" value="+parseSePayPayload(body)&#10;+extractPaymentCode(payload)&#10;+classifyTopUpOrder(order, amount, now)&#10;+findTopUpMatch(payload, session, now)&#10;+creditTopUpOrder(order, bankTransaction, session, now)&#10;+processSePayWebhook(payload, config)" style="rounded=0;whiteSpace=wrap;html=0;fillColor=#ffffff;strokeColor=none;fontColor=#111111;fontFamily=Arial;fontSize=12;align=left;verticalAlign=middle;spacing=8;fontStyle=0;" vertex="1" parent="module_sepay-webhook">
+          <mxGeometry as="geometry" x="2" y="74" width="496" height="162" />
+        </mxCell>
+        <mxCell id="20" value="" style="rounded=0;whiteSpace=wrap;html=0;fillColor=#111111;strokeColor=none;fontColor=#111111;fontFamily=Arial;fontSize=14;align=center;verticalAlign=middle;spacing=8;fontStyle=0;" vertex="1" parent="module_sepay-webhook">
+          <mxGeometry as="geometry" x="0" y="74" width="500" height="1" />
+        </mxCell>
+        <mxCell id="module_reader-unlocks" value="" style="rounded=0;whiteSpace=wrap;html=0;fillColor=#ffffff;strokeColor=#111111;fontColor=#111111;fontFamily=Arial;fontSize=14;align=center;verticalAlign=middle;spacing=8;fontStyle=0;" vertex="1" parent="1">
+          <mxGeometry as="geometry" x="70" y="1030" width="500" height="163" />
+        </mxCell>
+        <mxCell id="21" value="«module»&#10;reader-unlocks.js" style="rounded=0;whiteSpace=wrap;html=0;fillColor=#ffffff;strokeColor=#111111;fontColor=#111111;fontFamily=Arial;fontSize=15;align=center;verticalAlign=middle;spacing=8;fontStyle=1;" vertex="1" parent="module_reader-unlocks">
+          <mxGeometry as="geometry" x="0" y="0" width="500" height="48" />
+        </mxCell>
+        <mxCell id="22" value="" style="rounded=0;whiteSpace=wrap;html=0;fillColor=#ffffff;strokeColor=none;fontColor=#111111;fontFamily=Arial;fontSize=12;align=left;verticalAlign=middle;spacing=8;fontStyle=0;" vertex="1" parent="module_reader-unlocks">
+          <mxGeometry as="geometry" x="1" y="48" width="498" height="26" />
+        </mxCell>
+        <mxCell id="23" value="+getReaderUnlockQuote(accountId, storyId, chapterId)&#10;+purchaseReaderChapter(req, storyId, chapterId, input)&#10;-lockUnlockTarget(storyId, chapterId, session)" style="rounded=0;whiteSpace=wrap;html=0;fillColor=#ffffff;strokeColor=none;fontColor=#111111;fontFamily=Arial;fontSize=12;align=left;verticalAlign=middle;spacing=8;fontStyle=0;" vertex="1" parent="module_reader-unlocks">
+          <mxGeometry as="geometry" x="2" y="74" width="496" height="87" />
+        </mxCell>
+        <mxCell id="24" value="" style="rounded=0;whiteSpace=wrap;html=0;fillColor=#111111;strokeColor=none;fontColor=#111111;fontFamily=Arial;fontSize=14;align=center;verticalAlign=middle;spacing=8;fontStyle=0;" vertex="1" parent="module_reader-unlocks">
+          <mxGeometry as="geometry" x="0" y="74" width="500" height="1" />
+        </mxCell>
+        <mxCell id="module_unlock-revenue" value="" style="rounded=0;whiteSpace=wrap;html=0;fillColor=#ffffff;strokeColor=#111111;fontColor=#111111;fontFamily=Arial;fontSize=14;align=center;verticalAlign=middle;spacing=8;fontStyle=0;" vertex="1" parent="1">
+          <mxGeometry as="geometry" x="700" y="1030" width="500" height="138" />
+        </mxCell>
+        <mxCell id="25" value="«module»&#10;unlock-revenue.js" style="rounded=0;whiteSpace=wrap;html=0;fillColor=#ffffff;strokeColor=#111111;fontColor=#111111;fontFamily=Arial;fontSize=15;align=center;verticalAlign=middle;spacing=8;fontStyle=1;" vertex="1" parent="module_unlock-revenue">
+          <mxGeometry as="geometry" x="0" y="0" width="500" height="48" />
+        </mxCell>
+        <mxCell id="26" value="" style="rounded=0;whiteSpace=wrap;html=0;fillColor=#ffffff;strokeColor=none;fontColor=#111111;fontFamily=Arial;fontSize=12;align=left;verticalAlign=middle;spacing=8;fontStyle=0;" vertex="1" parent="module_unlock-revenue">
+          <mxGeometry as="geometry" x="1" y="48" width="498" height="26" />
+        </mxCell>
+        <mxCell id="27" value="+calculateUnlockSplit(priceCoins, authorPercent)&#10;+getUnlockRevenueSplit(authorId, priceCoins, session, now)" style="rounded=0;whiteSpace=wrap;html=0;fillColor=#ffffff;strokeColor=none;fontColor=#111111;fontFamily=Arial;fontSize=12;align=left;verticalAlign=middle;spacing=8;fontStyle=0;" vertex="1" parent="module_unlock-revenue">
+          <mxGeometry as="geometry" x="2" y="74" width="496" height="62" />
+        </mxCell>
+        <mxCell id="28" value="" style="rounded=0;whiteSpace=wrap;html=0;fillColor=#111111;strokeColor=none;fontColor=#111111;fontFamily=Arial;fontSize=14;align=center;verticalAlign=middle;spacing=8;fontStyle=0;" vertex="1" parent="module_unlock-revenue">
+          <mxGeometry as="geometry" x="0" y="74" width="500" height="1" />
+        </mxCell>
+        <mxCell id="module_unlock-purchase" value="" style="rounded=0;whiteSpace=wrap;html=0;fillColor=#ffffff;strokeColor=#111111;fontColor=#111111;fontFamily=Arial;fontSize=14;align=center;verticalAlign=middle;spacing=8;fontStyle=0;" vertex="1" parent="1">
+          <mxGeometry as="geometry" x="70" y="1460" width="500" height="113" />
+        </mxCell>
+        <mxCell id="29" value="«module»&#10;unlock-purchase.js" style="rounded=0;whiteSpace=wrap;html=0;fillColor=#ffffff;strokeColor=#111111;fontColor=#111111;fontFamily=Arial;fontSize=15;align=center;verticalAlign=middle;spacing=8;fontStyle=1;" vertex="1" parent="module_unlock-purchase">
+          <mxGeometry as="geometry" x="0" y="0" width="500" height="48" />
+        </mxCell>
+        <mxCell id="30" value="" style="rounded=0;whiteSpace=wrap;html=0;fillColor=#ffffff;strokeColor=none;fontColor=#111111;fontFamily=Arial;fontSize=12;align=left;verticalAlign=middle;spacing=8;fontStyle=0;" vertex="1" parent="module_unlock-purchase">
+          <mxGeometry as="geometry" x="1" y="48" width="498" height="26" />
+        </mxCell>
+        <mxCell id="31" value="+executePaidUnlock(input, session, now)" style="rounded=0;whiteSpace=wrap;html=0;fillColor=#ffffff;strokeColor=none;fontColor=#111111;fontFamily=Arial;fontSize=12;align=left;verticalAlign=middle;spacing=8;fontStyle=0;" vertex="1" parent="module_unlock-purchase">
+          <mxGeometry as="geometry" x="2" y="74" width="496" height="37" />
+        </mxCell>
+        <mxCell id="32" value="" style="rounded=0;whiteSpace=wrap;html=0;fillColor=#111111;strokeColor=none;fontColor=#111111;fontFamily=Arial;fontSize=14;align=center;verticalAlign=middle;spacing=8;fontStyle=0;" vertex="1" parent="module_unlock-purchase">
+          <mxGeometry as="geometry" x="0" y="74" width="500" height="1" />
+        </mxCell>
+        <mxCell id="module_unlock-wallets" value="" style="rounded=0;whiteSpace=wrap;html=0;fillColor=#ffffff;strokeColor=#111111;fontColor=#111111;fontFamily=Arial;fontSize=14;align=center;verticalAlign=middle;spacing=8;fontStyle=0;" vertex="1" parent="1">
+          <mxGeometry as="geometry" x="700" y="1460" width="500" height="163" />
+        </mxCell>
+        <mxCell id="33" value="«module»&#10;unlock-wallets.js" style="rounded=0;whiteSpace=wrap;html=0;fillColor=#ffffff;strokeColor=#111111;fontColor=#111111;fontFamily=Arial;fontSize=15;align=center;verticalAlign=middle;spacing=8;fontStyle=1;" vertex="1" parent="module_unlock-wallets">
+          <mxGeometry as="geometry" x="0" y="0" width="500" height="48" />
+        </mxCell>
+        <mxCell id="34" value="" style="rounded=0;whiteSpace=wrap;html=0;fillColor=#ffffff;strokeColor=none;fontColor=#111111;fontFamily=Arial;fontSize=12;align=left;verticalAlign=middle;spacing=8;fontStyle=0;" vertex="1" parent="module_unlock-wallets">
+          <mxGeometry as="geometry" x="1" y="48" width="498" height="26" />
+        </mxCell>
+        <mxCell id="35" value="+transferUnlockCoins(readerId, authorId, priceCoins, split,&#10;  session)&#10;-creditEarningsWallet(identity, amount, session)" style="rounded=0;whiteSpace=wrap;html=0;fillColor=#ffffff;strokeColor=none;fontColor=#111111;fontFamily=Arial;fontSize=12;align=left;verticalAlign=middle;spacing=8;fontStyle=0;" vertex="1" parent="module_unlock-wallets">
+          <mxGeometry as="geometry" x="2" y="74" width="496" height="87" />
+        </mxCell>
+        <mxCell id="36" value="" style="rounded=0;whiteSpace=wrap;html=0;fillColor=#111111;strokeColor=none;fontColor=#111111;fontFamily=Arial;fontSize=14;align=center;verticalAlign=middle;spacing=8;fontStyle=0;" vertex="1" parent="module_unlock-wallets">
+          <mxGeometry as="geometry" x="0" y="74" width="500" height="1" />
+        </mxCell>
+        <mxCell id="37" value="tính tỷ lệ" style="edgeStyle=none;rounded=0;html=0;endArrow=open;endFill=0;strokeColor=#222222;strokeWidth=1.5;dashed=1;fontFamily=Arial;fontSize=12;fontColor=#111111;labelBackgroundColor=#ffffff;exitX=1.0;exitY=0.36809815950920244;exitPerimeter=0;entryX=0.0;entryY=0.43478260869565216;entryPerimeter=0;" edge="1" parent="1" source="module_reader-unlocks" target="module_unlock-revenue">
+          <mxGeometry as="geometry" relative="1" x="0.0" y="-13" />
+        </mxCell>
+        <mxCell id="38" value="thực hiện mua" style="edgeStyle=none;rounded=0;html=0;endArrow=open;endFill=0;strokeColor=#222222;strokeWidth=1.5;dashed=1;fontFamily=Arial;fontSize=12;fontColor=#111111;labelBackgroundColor=#ffffff;exitX=0.5;exitY=1.0;exitPerimeter=0;entryX=0.5;entryY=0.0;entryPerimeter=0;" edge="1" parent="1" source="module_reader-unlocks" target="module_unlock-purchase">
+          <mxGeometry as="geometry" relative="1" x="0.0" y="-13" />
+        </mxCell>
+        <mxCell id="39" value="chuyển xu" style="edgeStyle=none;rounded=0;html=0;endArrow=open;endFill=0;strokeColor=#222222;strokeWidth=1.5;dashed=1;fontFamily=Arial;fontSize=12;fontColor=#111111;labelBackgroundColor=#ffffff;exitX=1.0;exitY=0.5309734513274337;exitPerimeter=0;entryX=0.0;entryY=0.36809815950920244;entryPerimeter=0;" edge="1" parent="1" source="module_unlock-purchase" target="module_unlock-wallets">
+          <mxGeometry as="geometry" relative="1" x="0.0" y="-13" />
+        </mxCell>
+        <mxCell id="40" value="+ = hàm export; - = hàm nội bộ module. Các module không phải class JavaScript có kế thừa.&#10;Các model chỉ có thuộc tính schema nên ngăn hàm để trống. Thuộc tính/hàm được chọn lọc theo Coins." style="rounded=0;whiteSpace=wrap;html=0;fillColor=#ffffff;strokeColor=none;fontColor=#111111;fontFamily=Arial;fontSize=13;align=center;verticalAlign=middle;spacing=8;fontStyle=0;" vertex="1" parent="1">
+          <mxGeometry as="geometry" x="55" y="1740" width="1190" height="70" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

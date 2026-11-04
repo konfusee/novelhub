@@ -1,0 +1,40 @@
+sequenceDiagram
+autonumber
+actor Reader as Người đọc
+participant UI as Giao diện
+participant BE as Backend
+participant DB as Database
+
+Reader->>UI: Mở chương trả phí
+UI->>BE: Lấy giá và thông tin quyền đọc
+BE->>DB: Đọc giá, số dư và quyền hiện có
+DB-->>BE: Thông tin mua chương
+BE-->>UI: Hiển thị giá và số dư
+Reader->>UI: Xác nhận mua
+UI->>BE: Gửi yêu cầu mở khóa chương
+BE->>DB: Bắt đầu transaction và kiểm tra lại dữ liệu
+
+alt Đã có quyền hoặc chương đã miễn phí
+  BE->>DB: Kết thúc transaction, không thu xu
+  BE-->>UI: Cho phép tải lại chương
+else Chưa có quyền và số dư không đủ
+  BE->>DB: Hủy transaction
+  BE-->>UI: Thông báo không đủ xu
+else Yêu cầu hợp lệ và đủ xu
+  BE->>DB: Lấy chính sách chia doanh thu
+  BE->>DB: Tạo yêu cầu mua
+  BE->>DB: Trừ xu reader, cộng xu tác giả và nền tảng
+  BE->>DB: Lưu quyền đọc, lịch sử và phân bổ doanh thu
+  BE->>DB: Hoàn tất yêu cầu mua và lưu audit
+  BE->>DB: Commit transaction
+  BE-->>UI: Mua thành công
+end
+
+opt Đã được phép đọc
+  UI->>BE: Yêu cầu nội dung chương
+  BE->>DB: Kiểm tra quyền đọc hiện tại
+  DB-->>BE: Có quyền hợp lệ hoặc chương miễn phí
+  BE-->>UI: Trả nội dung chương
+  UI-->>Reader: Hiển thị chương
+end
+Note over BE,DB: Bất kỳ lỗi nào trong transaction đều rollback toàn bộ.

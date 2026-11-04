@@ -29,6 +29,12 @@ import { createModeratorRouter } from './routes/moderator.routes.js'
 import { createReaderReadingRouter } from './routes/reader-reading.routes.js'
 import { createCommunityRouter } from './routes/community.routes.js'
 import { createModeratorReportsRouter } from './routes/moderator-reports.routes.js'
+import { createAuthorEarningsRouter } from './routes/author-earnings.routes.js'
+import { createAuthorBankDetailsRouter } from './routes/author-bank-details.routes.js'
+import { createAdminMonthlyPayoutsRouter } from './routes/admin-monthly-payouts.routes.js'
+import { createAdminPayoutPreviewRouter } from './routes/admin-payout-preview.routes.js'
+import { createAdminAuthorRevenueRouter } from './routes/admin-author-revenue.routes.js'
+import { createAuthorPayoutsRouter } from './routes/author-payouts.routes.js'
 
 // Runtime configuration is validated by loadEnv and mapped by toAppConfig.
 export function createApp(config) {
@@ -92,6 +98,13 @@ export function createApp(config) {
   app.use('/api', createReaderReadingRouter(config))
   app.use('/api', createCommunityRouter(config))
   app.use('/api', createModeratorReportsRouter(config))
+  app.use('/api', createAuthorEarningsRouter(config))
+  app.use('/api', createAuthorBankDetailsRouter(config))
+  app.use('/api', createAdminMonthlyPayoutsRouter(config))
+  app.use('/api', createAdminPayoutPreviewRouter(config))
+  app.use('/api', createAdminAuthorRevenueRouter(config))
+  app.use('/api', createAuthorPayoutsRouter(config))
+
   app.use(notFound)
   app.use(errorHandler)
   return app

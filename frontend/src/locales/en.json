@@ -607,5 +607,45 @@
     "wallet": "Go to wallet",
     "readNow": "Read chapter",
     "purchaseError": "Unable to unlock the chapter. Check the price and balance, then try again."
+  },
+  "authorFinance": {
+    "eyebrow": "Author earnings · Creator account",
+    "wallet": {
+      "title": "Author earnings",
+      "description": "View your author earnings balance and coin transactions.",
+      "refresh": "Refresh",
+      "loading": "Loading earnings",
+      "loginRequired": "Please sign in to view earnings",
+      "forbidden": "You do not have permission to view author earnings",
+      "loadError": "Unable to load earnings",
+      "balance": "Available earnings balance",
+      "balanceHint": "Your author earnings wallet is separate from your reading wallet.",
+      "history": "Earnings transactions",
+      "historyHint": "Showing up to 50 recent transactions, newest first.",
+      "empty": "No earnings transactions yet",
+      "date": "Date",
+      "type": "Transaction type",
+      "amount": "Coins",
+      "allocation": "Allocated earnings",
+      "withdrawal": "Coins deducted for payout",
+      "adjustment": "Adjustment",
+      "reversal": "Reversal",
+      "other": "Other transaction",
+      "hasMore": "Older transactions are not displayed."
+    },
+    "bank": {
+      "title": "Earnings bank account",
+      "description": "Updated details apply to future payout evaluations.",
+      "loading": "Loading bank details…",
+      "loadError": "Unable to load bank details.",
+      "bankName": "Bank name",
+      "accountNumber": "Account number",
+      "accountHolder": "Account holder name",
+      "discard": "Discard changes",
+      "save": "Save details",
+      "saving": "Saving…",
+      "saved": "Bank details saved.",
+      "saveError": "Saving could not be confirmed. Your entered details have been kept; please try again."
+    }
   }
 }

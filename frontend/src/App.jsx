@@ -274,6 +274,11 @@ const ProfileAccountPage = lazy(() =>
     default: m.ProfileAccountPage,
   })),
 )
+const MonthlyPayoutsPage = lazy(() =>
+  import('./pages/admin/MonthlyPayoutsPage').then(module => ({
+    default: module.MonthlyPayoutsPage,
+  })),
+)
 const pages = [
   GuestHomePage,
   CategoriesPage,
@@ -698,6 +703,10 @@ function AppRoutes() {
           <Route
             path="/admin/author-statistics"
             element={role('admin', <AuthorStatisticsPage />)}
+          />
+          <Route
+            path="/admin/payouts"
+            element={role('admin', <MonthlyPayoutsPage />)}
           />
 
           <Route path="/403" element={<ForbiddenPage />} />

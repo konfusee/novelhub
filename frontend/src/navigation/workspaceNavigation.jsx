@@ -135,6 +135,7 @@ export const workspaceNavigation = {
         ['navigation.roles', '/admin/roles', UserCog],
         ['navigation.categories', '/admin/categories', FolderTree],
         ['navigation.content', '/admin/content', SlidersHorizontal],
+        ['adminPayouts.title', '/admin/payouts', WalletCards],
       ],
     },
     {

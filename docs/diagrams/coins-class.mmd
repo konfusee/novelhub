@@ -1,0 +1,160 @@
+classDiagram
+direction LR
+class Account {
+  <<model>>
+  +ObjectId _id
+  +String email
+  +String displayName
+  +String status
+}
+class Story {
+  <<model>>
+  +ObjectId _id
+  +ObjectId authorAccountId
+  +String publicationStatus
+  +ObjectId publishedRevisionId
+}
+class Chapter {
+  <<model>>
+  +ObjectId _id
+  +ObjectId storyId
+  +String status
+  +ObjectId publishedRevisionId
+  +Object earlyAccess
+}
+class ContentRevision {
+  <<model>>
+  +ObjectId _id
+  +String contentType
+  +String status
+  +Object content
+}
+class Wallet {
+  <<model>>
+  +ObjectId _id
+  +String ownerType
+  +ObjectId ownerId
+  +String purpose
+  +String unit
+  +Number availableBalance
+  +Number balanceVersion
+}
+class LedgerEntry {
+  <<model>>
+  +ObjectId _id
+  +ObjectId walletId
+  +String ledgerType
+  +String direction
+  +Number amount
+  +String sourceType
+  +ObjectId sourceId
+  +Object idempotencyScope
+  +Date occurredAt
+}
+class TopUpPackage {
+  <<model>>
+  +ObjectId _id
+  +Number priceVnd
+  +Number coinAmount
+  +String status
+}
+class TopUpOrder {
+  <<model>>
+  +ObjectId _id
+  +ObjectId accountId
+  +ObjectId walletId
+  +ObjectId packageId
+  +Object packageSnapshot
+  +String paymentCode
+  +Number coinAmount
+  +String status
+  +Date expiresAt
+  +ObjectId bankTransactionId
+}
+class BankTransaction {
+  <<model>>
+  +ObjectId _id
+  +String sePayTransactionId
+  +Number amountVnd
+  +String extractedPaymentCode
+  +String matchStatus
+  +ObjectId matchedOrderId
+  +Boolean apiKeyAuthenticated
+}
+class UnlockRequest {
+  <<model>>
+  +ObjectId _id
+  +ObjectId accountId
+  +ObjectId chapterId
+  +Number requestedPriceCoins
+  +Number effectivePriceCoins
+  +Object idempotencyScope
+  +String status
+  +ObjectId entitlementId
+  +Object policySnapshot
+}
+class UnlockEntitlement {
+  <<model>>
+  +ObjectId _id
+  +ObjectId accountId
+  +ObjectId chapterId
+  +ObjectId publishedRevisionId
+  +String status
+  +Date purchasedAt
+  +Date expiresAt
+  +Number priceCoins
+}
+class RevenueAllocation {
+  <<model>>
+  +ObjectId _id
+  +ObjectId unlockRequestId
+  +ObjectId[] ledgerEntryIds
+  +ObjectId[] beneficiaries
+  +Number amount
+  +Object policySnapshot
+  +Object negotiatedAllocationSnapshot
+}
+class PolicyVersion {
+  <<model>>
+  +ObjectId _id
+  +String status
+  +Date effectiveAt
+  +Number authorSharePercent
+  +Number platformSharePercent
+  +Number orderExpiryHours
+}
+class AuthorRevenueRate {
+  <<model>>
+  +ObjectId _id
+  +ObjectId authorAccountId
+  +Number percentage
+  +Date effectiveAt
+}
+Account "0..1" --> "0..*" Wallet : owns account wallets
+Wallet "1" <-- "0..*" LedgerEntry : walletId
+Account "1" <-- "0..*" TopUpOrder : accountId
+Wallet "1" <-- "0..*" TopUpOrder : walletId
+TopUpPackage "1" <-- "0..*" TopUpOrder : packageId
+BankTransaction "0..*" --> "0..1" TopUpOrder : matchedOrderId
+Account "1" <-- "0..*" Story : authorAccountId
+Story "1" <-- "0..*" Chapter : storyId
+Chapter "0..*" --> "0..1" ContentRevision : publishedRevisionId
+Account "1" <-- "0..*" UnlockRequest : accountId
+Chapter "1" <-- "0..*" UnlockRequest : chapterId
+Account "1" <-- "0..*" UnlockEntitlement : accountId
+Chapter "1" <-- "0..*" UnlockEntitlement : chapterId
+ContentRevision "1" <-- "0..*" UnlockEntitlement : publishedRevisionId
+UnlockRequest "0..*" --> "0..1" UnlockEntitlement : entitlementId
+UnlockRequest "1" <-- "0..1" RevenueAllocation : unlockRequestId
+RevenueAllocation "0..*" --> "1..*" LedgerEntry : ledgerEntryIds
+Account "1" <-- "0..*" AuthorRevenueRate : authorAccountId
+TopUpPackage "0..*" --> "0..1" PolicyVersion : policyVersionId
+AuthorRevenueRate "0..*" --> "0..1" PolicyVersion : policyVersionId
+RevenueAllocation ..> PolicyVersion : copies policy snapshot
+RevenueAllocation ..> AuthorRevenueRate : copies negotiated snapshot
+LedgerEntry ..> TopUpOrder : sourceType and sourceId
+LedgerEntry ..> UnlockRequest : sourceType and sourceId
+note for Wallet "purpose: reader-coins / author-earnings / system-earnings\nSystem wallet has no Account owner.\nUnique: ownerId + purpose."
+note for Chapter "earlyAccess contains enabled, coinPrice, endsAt and policyVersionId."
+note for UnlockEntitlement "Unique: accountId + chapterId.\nAccess must match the published revision and remain unexpired."
+note for TopUpPackage "Fixed exchange: priceVnd = coinAmount."

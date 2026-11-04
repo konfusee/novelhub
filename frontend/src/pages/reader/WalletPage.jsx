@@ -326,7 +326,14 @@ export function WalletPage() {
                     <p className="mt-3 text-caption text-muted">Xu không hết hạn.</p>
                   </div>
                   <div className="sm:shrink-0 sm:text-right">
-                    <Button disabled>
+                    <Button
+                      type="button"
+                      onClick={() => {
+                        document.getElementById('coin-packages')?.scrollIntoView({
+                          block: 'start',
+                        })
+                      }}
+                    >
                       <Plus size={16} aria-hidden="true" />
                       Nạp thêm xu
                     </Button>
@@ -335,7 +342,11 @@ export function WalletPage() {
               </Card>
             )}
 
-            <Reveal as="section">
+            <Reveal
+              as="section"
+              id="coin-packages"
+              className="scroll-mt-24"
+            >
               <h2 className="text-h3">Các gói nạp xu</h2>
               {orderError && (
                 <p role="alert" className="mt-3 text-sm text-red-600">
