@@ -2,14 +2,14 @@ import { Router } from 'express'
 import { z } from 'zod'
 import { requireAuth } from '../middleware/auth.js'
 import { HttpError } from '../middleware/errors.js'
-import { LIBRARY_TABS, readerLibrary } from '../modules/reading/library.js'
+import { LIBRARY_TABS, readerLibrary } from '../modules/reading-community/reading/library.js'
 import {
   clearHistory,
   deleteHistoryEntry,
   readingHistory,
   resumeFor,
   saveProgress,
-} from '../modules/reading/progress.js'
+} from '../modules/reading-community/reading/progress.js'
 
 const id = z.string().regex(/^[a-f\d]{24}$/i)
 const page = z.coerce.number().int().min(1).max(100000).default(1)

@@ -144,7 +144,7 @@ export function CreateStoryPage() {
       return setCoverError('Ảnh bìa phải là tệp hình ảnh (JPG, PNG hoặc WebP).')
     if (file.size > MAX_COVER_BYTES) return setCoverError('Ảnh bìa tối đa 5 MB.')
     setCoverError('')
-    setCover({ name: file.name, url: URL.createObjectURL(file) })
+    setCover({ name: file.name, url: URL.createObjectURL(file), file })
     touch()
   }
   const persist = async asDraft => {
@@ -168,6 +168,30 @@ export function CreateStoryPage() {
         body: { title: title.trim(), description: synopsis.trim(), categoryIds: [genre] },
       })
       if (!result.story?.id) throw new Error(t('createData.saveError'))
+      if (cover?.file) {
+        const query = new URLSearchParams({
+          name: cover.name,
+          kind: 'cover',
+          storyId: result.story.id,
+        })
+        const uploaded = await apiRequest(`/author/media?${query.toString()}`, {
+          method: 'POST',
+          body: cover.file,
+          binary: true,
+        })
+        if (!uploaded.asset?.id) throw new Error(t('createData.coverUploadError'))
+        const updated = await apiRequest(`/author/stories/${result.story.id}`, {
+          method: 'PUT',
+          body: {
+            title: title.trim(),
+            description: synopsis.trim(),
+            categoryIds: [genre],
+            coverMediaId: uploaded.asset.id,
+            expectedVersion: result.story.version,
+          },
+        })
+        if (!updated.story?.id) throw new Error(t('createData.coverUploadError'))
+      }
       setCreatedId(result.story.id)
       setDraftState('saved')
       setSubmitState('done')
@@ -321,7 +345,6 @@ export function CreateStoryPage() {
                       ref={fileRef}
                       id="story-cover"
                       type="file"
-                      disabled
                       accept="image/jpeg,image/png,image/webp"
                       onChange={chooseCover}
                       className="sr-only"
@@ -331,7 +354,6 @@ export function CreateStoryPage() {
                       <Button
                         type="button"
                         variant="secondary"
-                        disabled
                         title={t('createData.noCover')}
                         onClick={() => fileRef.current?.click()}
                       >

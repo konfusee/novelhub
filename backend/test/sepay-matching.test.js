@@ -1,5 +1,8 @@
 import { expect, it } from 'vitest'
-import { extractPaymentCode, classifyTopUpOrder } from '../src/modules/sepay-webhook.js'
+import {
+  extractPaymentCode,
+  classifyTopUpOrder,
+} from '../src/modules/coins-payouts/finance/sepay-webhook.js'
 
 const now = new Date('2026-10-28T07:00:00Z')
 

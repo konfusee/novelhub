@@ -2,8 +2,8 @@ import { Router } from 'express'
 import { z } from 'zod'
 import { requireAuth, requireRole } from '../middleware/auth.js'
 import { HttpError } from '../middleware/errors.js'
-import { adminAuthorStatistics } from '../modules/admin-author-statistics.js'
-import { adminDashboard } from '../modules/admin-dashboard.js'
+import { adminAuthorStatistics } from '../modules/accounts-administration/admin/admin-author-statistics.js'
+import { adminDashboard } from '../modules/accounts-administration/admin/admin-dashboard.js'
 export function createAdminAuthorStatisticsRouter(config) {
   const router = Router()
   router.get(

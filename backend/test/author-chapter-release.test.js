@@ -18,7 +18,7 @@ import {
 import { authenticatedAccount } from './fixtures/accounts.js'
 import { testConfig } from './config.js'
 import { useTestDatabase } from './db.js'
-import { releaseDueChapters } from '../src/modules/chapter-scheduler.js'
+import { releaseDueChapters } from '../src/modules/authoring-publishing/content/chapter-scheduler.js'
 useTestDatabase()
 afterEach(() => vi.restoreAllMocks())
 const origin = 'http://localhost:5173'

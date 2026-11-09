@@ -13,8 +13,8 @@ import {
   prepareRevisionEmbeddings,
   processEvidenceBatches,
   startEvidenceWorker,
-} from '../src/modules/ai/evidence-worker.js'
-import { StageError } from '../src/modules/ai/stage-error.js'
+} from '../src/modules/moderation-ai/ai/evidence-worker.js'
+import { StageError } from '../src/modules/moderation-ai/ai/stage-error.js'
 import { authenticatedAccount } from './fixtures/accounts.js'
 import {
   apiClient,

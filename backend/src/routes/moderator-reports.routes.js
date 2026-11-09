@@ -4,12 +4,12 @@ import { z } from 'zod'
 import { requireAuth, requireRole } from '../middleware/auth.js'
 import { HttpError } from '../middleware/errors.js'
 import { REPORT_TARGET_TYPES } from '../models/index.js'
-import { resolveReport } from '../modules/moderation/report-decision.js'
+import { resolveReport } from '../modules/moderation-ai/moderation/report-decision.js'
 import {
   claimReport,
   listModeratorReports,
   releaseReport,
-} from '../modules/moderation/report-queue.js'
+} from '../modules/moderation-ai/moderation/report-queue.js'
 
 const id = z.string().regex(/^[a-f\d]{24}$/i)
 const versionBody = z.object({ expectedVersion: z.number().int().min(0) }).strict()

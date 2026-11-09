@@ -28,7 +28,10 @@ import {
   unavailableEmailDelivery,
 } from '../email/delivery.js'
 import { createGoogleProvider } from '../auth/google-oidc.js'
-import { applicationView, submitApplication } from '../modules/author-access/service.js'
+import {
+  applicationView,
+  submitApplication,
+} from '../modules/accounts-administration/author-access/service.js'
 
 const credentialsSchema = z
   .object({

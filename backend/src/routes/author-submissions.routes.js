@@ -2,13 +2,16 @@ import { Router } from 'express'
 import { z } from 'zod'
 import { requireAuth, requireRole } from '../middleware/auth.js'
 import { HttpError } from '../middleware/errors.js'
-import { submittedImage, submittedPackage } from '../modules/author-submitted-package.js'
+import {
+  submittedImage,
+  submittedPackage,
+} from '../modules/authoring-publishing/author/author-submitted-package.js'
 import {
   prepareSubmission,
   submitContent,
   submissionList,
   reviseSubmission,
-} from '../modules/author-submissions.js'
+} from '../modules/authoring-publishing/author/author-submissions.js'
 const id = z.string().regex(/^[a-f\d]{24}$/i)
 const target = z.object({ storyId: id, chapterId: id.optional() }).strict()
 const input = z

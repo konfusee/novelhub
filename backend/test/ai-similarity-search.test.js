@@ -6,7 +6,7 @@ import {
   createSimilaritySearch,
   syncVectorSearchIndex,
   vectorIndexDefinition,
-} from '../src/modules/ai/similarity-search.js'
+} from '../src/modules/moderation-ai/ai/similarity-search.js'
 import { testConfig } from './config.js'
 
 // No database connection: index sync uses a fake Model and retrieval stops at the index check.

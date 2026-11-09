@@ -8,7 +8,7 @@ import { EmbeddingArtifact } from '../src/models/index.js'
 import {
   syncVectorSearchIndex,
   vectorIndexDefinition,
-} from '../src/modules/ai/similarity-search.js'
+} from '../src/modules/moderation-ai/ai/similarity-search.js'
 
 loadDotenv()
 const env = loadEnv()

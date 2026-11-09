@@ -1,9 +1,12 @@
 import { Router } from 'express'
 import { requireAuth } from '../middleware/auth.js'
-import { getTopUpPackages } from '../modules/reader-top-ups.js'
+import { getTopUpPackages } from '../modules/coins-payouts/finance/reader-top-ups.js'
 import { z } from 'zod'
 import { HttpError } from '../middleware/errors.js'
-import { createTopUpOrder, getReaderTopUpOrder } from '../modules/reader-top-up-orders.js'
+import {
+  createTopUpOrder,
+  getReaderTopUpOrder,
+} from '../modules/coins-payouts/finance/reader-top-up-orders.js'
 
 export function createReaderTopUpsRouter(config) {
   const router = Router()

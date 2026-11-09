@@ -1,511 +1,387 @@
-import { useMemo, useState } from 'react'
-import {
-  AlertTriangle,
-  ArrowRight,
-  BadgeDollarSign,
-  BookOpen,
-  CalendarDays,
-  Coins,
-  RefreshCw,
-  Save,
-  UsersRound,
-} from '../../components/icons'
+import { useEffect, useMemo, useState } from 'react'
+import { AlertTriangle, Check, Coins, RefreshCw, Save, WalletCards } from '../../components/icons'
 import { AuthorLayout } from '../../layouts'
-import { ROUTES } from '../../app/routes'
-import { useMockResource } from '../../context/MockDataContext'
-import {
-  Badge,
-  Button,
-  ButtonLink,
-  Card,
-  EmptyState,
-  Input,
-  Select,
-  Skeleton,
-  Tabs,
-} from '../../components/ui'
+import { apiRequest } from '../../api/client'
+import { useBackendDocument } from '../../api/useBackendResource'
 import { useLocale } from '../../context/LocaleContext'
+import { Badge, Button, Card, EmptyState, Input, Skeleton } from '../../components/ui'
 
-const earningsData = {
-  periods: {
-    day: {
-      buyers: 38,
-      subscriptions: 7,
-      coins: 1380,
-      payout: 9.66,
-      bars: [18, 28, 22, 45, 32, 58, 72],
-    },
-    week: {
-      buyers: 246,
-      subscriptions: 42,
-      coins: 9620,
-      payout: 67.34,
-      bars: [42, 56, 48, 72, 63, 84, 76],
-    },
-    month: {
-      buyers: 984,
-      subscriptions: 168,
-      coins: 41750,
-      payout: 292.25,
-      bars: [54, 61, 58, 76, 69, 88, 82],
-    },
-  },
-  sales: [
-    ['The Silent Forest', 'Chương 16', 25, 184, 3220],
-    ['The Silent Forest', 'Chương 15', 25, 143, 2502],
-    ['Echoes of Eldoria', 'Chương 3', 20, 96, 1344],
-  ],
-}
-const isEarningsEmpty = value => value.sales.length === 0
-const days = ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun']
-/* Fixed, varied bar heights (%) for the revenue chart skeleton, one per weekday. */
-const revenueSkeletonBars = [48, 66, 54, 78, 62, 88, 72]
-
-const toPrice = value => Math.max(0, Number(value) || 0)
-
-export function AuthorEarningsPage() {
-  const { t, formatNumber } = useLocale()
-  const [period, setPeriod] = useState('month')
-  const [story, setStory] = useState('silent-forest')
-  const [chapterPrice, setChapterPrice] = useState(25)
-  const [subscriptionPrice, setSubscriptionPrice] = useState(199)
-  const [savedPrices, setSavedPrices] = useState({ chapterPrice: 25, subscriptionPrice: 199 })
-  const earnings = useMockResource(`author:earnings:${period}`, earningsData, {
-    isEmpty: isEarningsEmpty,
-  })
-  const loading = earnings.status === 'loading'
-  const hasData = loading || earnings.status === 'ready'
-  const data = earnings.data.periods[period]
-  const sales = earnings.data.sales
-  const changed =
-    chapterPrice !== savedPrices.chapterPrice || subscriptionPrice !== savedPrices.subscriptionPrice
-  const projectedPayout = useMemo(
-    () => data.payout * (period === 'day' ? 30 : period === 'week' ? 4.3 : 1),
-    [data, period],
-  )
-  const peak = Math.max(...data.bars)
-  const metrics = [
-    { icon: BookOpen, label: t('authorFinance.chapterBuyers'), value: formatNumber(data.buyers) },
-    {
-      icon: UsersRound,
-      label: t('authorFinance.newSubscribers'),
-      value: formatNumber(data.subscriptions),
-      tone: 'purple',
-    },
-    {
-      icon: Coins,
-      label: t('authorFinance.coinsEarned'),
-      value: formatNumber(data.coins),
-      tone: 'orange',
-    },
-    {
-      icon: BadgeDollarSign,
-      label: t('authorFinance.netRevenue'),
-      value: `$${data.payout.toFixed(2)}`,
-    },
-  ]
-
-  return (
-    <AuthorLayout>
-      <div className="page-author py-7">
-        <header className="flex flex-col justify-between gap-5 lg:flex-row lg:items-end">
-          <div className="min-w-0">
-            <p className="nh-eyebrow">{t('authorFinance.eyebrow')}</p>
-            <h1 className="mt-3 text-h2 sm:text-h1">{t('authorFinance.title')}</h1>
-            <p className="mt-2 max-w-[65ch] text-sm leading-6 text-muted">
-              {t('authorFinance.description')}
-            </p>
-          </div>
-          <div className="shrink-0">
-            <Tabs
-              singleRow
-              value={period}
-              onChange={setPeriod}
-              items={[
-                { value: 'day', label: t('authorFinance.today') },
-                { value: 'week', label: t('authorFinance.thisWeek') },
-                { value: 'month', label: t('authorFinance.thisMonth') },
-              ]}
-            />
-          </div>
-        </header>
-
-        {loading ? (
-          <section
-            aria-busy="true"
-            aria-label="Đang tải chỉ số doanh thu"
-            className="mt-6 grid grid-cols-2 gap-3 xl:grid-cols-4"
-          >
-            {metrics.map(metric => (
-              <MetricSkeleton key={`metric-skeleton-${metric.label}`} label={metric.label} />
-            ))}
-          </section>
-        ) : earnings.status === 'ready' ? (
-          <section className="nh-fade-enter mt-6 grid grid-cols-2 gap-3 xl:grid-cols-4">
-            {metrics.map(metric => (
-              <Metric key={metric.label} {...metric} />
-            ))}
-          </section>
-        ) : null}
-
-        <div className="nh-grid-12 mt-6 grid items-start gap-6 nh-layout-xl-8-4">
-          <div className="min-w-0 space-y-6">
-            {earnings.status === 'error' ? (
-              <Card className="p-0">
-                <EmptyState
-                  tone="rose"
-                  icon={AlertTriangle}
-                  title="Không tải được dữ liệu doanh thu"
-                  description="Kết nối tới máy chủ bị gián đoạn. Hãy thử tải lại sau ít phút."
-                  action={<RetryButton onClick={earnings.retry} />}
-                />
-              </Card>
-            ) : earnings.status === 'empty' ? (
-              <Card className="p-0">
-                <EmptyState
-                  icon={Coins}
-                  title="Chưa có doanh thu"
-                  description="Doanh thu từ chương trả phí và lượt đăng ký sẽ xuất hiện khi độc giả mua chương đầu tiên. Hãy đặt giá chương trong phần thiết lập giá."
-                  action={
-                    <ButtonLink to={ROUTES.authorStory('demo')} size="sm" trailingIcon={ArrowRight}>
-                      Quản lý chương trả phí
-                    </ButtonLink>
-                  }
-                />
-              </Card>
-            ) : (
-              <>
-                <Card>
-                  <div className="flex flex-wrap items-start justify-between gap-3">
-                    <div className="min-w-0">
-                      <h2 className="text-h3">{t('authorFinance.revenueTrend')}</h2>
-                      <p className="mt-1 text-sm text-muted">
-                        {t('authorFinance.revenueTrendDescription')}
-                      </p>
-                    </div>
-                    <Badge tone="green">{t('authorFinance.creatorShare')}</Badge>
-                  </div>
-                  {loading ? (
-                    <RevenueChartSkeleton />
-                  ) : (
-                    <div className="nh-fade-enter relative mt-8">
-                      <RevenueGridLines />
-                      <ol
-                        aria-label={t('authorFinance.revenueTrend')}
-                        className="relative grid grid-cols-7 gap-2 sm:gap-4"
-                      >
-                        {data.bars.map((height, index) => (
-                          <li key={days[index]} className="flex min-w-0 flex-col items-center">
-                            <div className="flex h-52 w-full items-end border-b border-line">
-                              <div
-                                className={`mx-auto w-full max-w-14 rounded-t-xl transition-[transform,background-color] duration-[420ms] ${height === peak ? 'bg-orange' : 'bg-orange/55'}`}
-                                style={{ height: `${height}%` }}
-                              />
-                            </div>
-                            <span className="mt-2 text-xs text-ink/70">
-                              {t(`authorFinance.days.${days[index]}`)}
-                            </span>
-                            <span className="sr-only">: {height}%</span>
-                          </li>
-                        ))}
-                      </ol>
-                    </div>
-                  )}
-                </Card>
-
-                <Card className="overflow-hidden p-0">
-                  <div className="p-6 pb-4">
-                    <h2 className="text-h3">{t('authorFinance.salesByChapter')}</h2>
-                    <p className="mt-1 text-sm text-muted">{t('authorFinance.salesDescription')}</p>
-                  </div>
-                  <div className="overflow-x-auto">
-                    <table className="w-full min-w-[560px] text-left text-sm">
-                      <thead className="whitespace-nowrap border-y border-hairline bg-elevated text-xs text-ink/70">
-                        <tr>
-                          <th scope="col" className="px-6 py-3 font-semibold">
-                            {t('authorFinance.story')}
-                          </th>
-                          <th scope="col" className="px-3 py-3 font-semibold">
-                            {t('authorFinance.chapter')}
-                          </th>
-                          <th scope="col" className="px-3 py-3 text-right font-semibold">
-                            {t('authorFinance.price')}
-                          </th>
-                          <th scope="col" className="px-3 py-3 text-right font-semibold">
-                            {t('authorFinance.buyers')}
-                          </th>
-                          <th scope="col" className="py-3 pl-3 pr-6 text-right font-semibold">
-                            {t('authorFinance.authorCoins')}
-                          </th>
-                        </tr>
-                      </thead>
-                      {loading ? (
-                        <tbody
-                          aria-busy="true"
-                          aria-label="Đang tải doanh số theo chương"
-                          className="divide-y divide-hairline"
-                        >
-                          {[0, 1, 2].map(item => (
-                            <SalesRowSkeleton key={`sales-skeleton-${item}`} />
-                          ))}
-                        </tbody>
-                      ) : (
-                        <tbody className="nh-fade-enter divide-y divide-hairline">
-                          {sales.map(([title, chapter, price, buyers, coins]) => (
-                            <tr key={`${title}-${chapter}`}>
-                              <th scope="row" className="px-6 py-4 text-left font-semibold">
-                                {title}
-                              </th>
-                              <td className="px-3 py-4 text-muted">{chapter}</td>
-                              <td className="px-3 py-4 text-right tabular-nums">
-                                {price} {t('wallet.coinUnit')}
-                              </td>
-                              <td className="px-3 py-4 text-right tabular-nums">
-                                {formatNumber(buyers)}
-                              </td>
-                              <td className="py-4 pl-3 pr-6 text-right font-semibold text-orange-strong tabular-nums">
-                                +{formatNumber(coins)}
-                              </td>
-                            </tr>
-                          ))}
-                        </tbody>
-                      )}
-                    </table>
-                  </div>
-                </Card>
-              </>
-            )}
-          </div>
-
-          <aside className="min-w-0 space-y-6">
-            {hasData && (
-              <Card className="border-orange/40 bg-orange/10">
-                <span className="grid size-10 place-items-center rounded-2xl bg-orange/20 text-orange-strong">
-                  <CalendarDays size={18} aria-hidden="true" />
-                </span>
-                <p className="mt-4 text-sm text-ink/80">{t('authorFinance.estimatedPayout')}</p>
-                {loading ? (
-                  <span
-                    aria-busy="true"
-                    aria-label="Đang tải khoản thanh toán dự kiến"
-                    className="mt-1 flex h-10 items-center"
-                  >
-                    <Skeleton className="h-8 w-36 rounded-lg" />
-                  </span>
-                ) : (
-                  <strong className="nh-fade-enter mt-1 block text-h1 tabular-nums">
-                    ${projectedPayout.toFixed(2)}
-                  </strong>
-                )}
-                <p className="mt-2 text-xs leading-5 text-ink/70">
-                  {t('authorFinance.payoutDate')}
-                </p>
-              </Card>
-            )}
-
-            <Card>
-              <h2 className="text-h3">{t('authorFinance.pricingTitle')}</h2>
-              <p className="mt-1 text-sm leading-6 text-muted">
-                {t('authorFinance.pricingDescription')}
-              </p>
-              <label htmlFor="pricing-story" className="mt-5 block text-sm font-semibold">
-                {t('authorFinance.story')}
-              </label>
-              <Select
-                id="pricing-story"
-                className="mt-2 w-full"
-                value={story}
-                onChange={event => setStory(event.target.value)}
-              >
-                <option value="silent-forest">The Silent Forest</option>
-                <option value="echoes">Echoes of Eldoria</option>
-              </Select>
-              <label htmlFor="pricing-chapter" className="mt-4 block text-sm font-semibold">
-                {t('authorFinance.chapterPrice')}
-              </label>
-              <Input
-                id="pricing-chapter"
-                className="mt-2"
-                type="number"
-                inputMode="numeric"
-                min="0"
-                max="500"
-                value={chapterPrice}
-                aria-describedby="pricing-chapter-hint"
-                onChange={event => setChapterPrice(toPrice(event.target.value))}
-              />
-              <p id="pricing-chapter-hint" className="mt-2 text-xs text-muted">
-                {t('authorFinance.priceHint')}
-              </p>
-              <label htmlFor="pricing-subscription" className="mt-4 block text-sm font-semibold">
-                {t('authorFinance.subscriptionPrice')}
-              </label>
-              <Input
-                id="pricing-subscription"
-                className="mt-2"
-                type="number"
-                inputMode="numeric"
-                min="0"
-                max="5000"
-                value={subscriptionPrice}
-                onChange={event => setSubscriptionPrice(toPrice(event.target.value))}
-              />
-              {changed && (
-                <div className="mt-5 flex flex-wrap justify-end gap-2 border-t border-hairline pt-5">
-                  <Button
-                    variant="secondary"
-                    onClick={() => {
-                      setChapterPrice(savedPrices.chapterPrice)
-                      setSubscriptionPrice(savedPrices.subscriptionPrice)
-                    }}
-                  >
-                    {t('common.discard')}
-                  </Button>
-                  <Button onClick={() => setSavedPrices({ chapterPrice, subscriptionPrice })}>
-                    <Save size={16} aria-hidden="true" />
-                    {t('common.saveChanges')}
-                  </Button>
-                </div>
-              )}
-            </Card>
-          </aside>
-        </div>
-      </div>
-    </AuthorLayout>
-  )
+const emptyFinance = {
+  balance: 0,
+  entries: [],
+  hasMoreEntries: false,
+  paymentDetails: null,
+  payouts: [],
 }
 
-const iconTones = {
-  brand: 'bg-brand/12 text-brand-strong',
-  orange: 'bg-orange/16 text-orange-strong',
-  purple: 'bg-purple/12 text-purple-strong',
+const ledgerLabels = {
+  'allocation-credit': 'Phân bổ doanh thu',
+  'withdrawal-debit': 'Trừ cho khoản chi trả',
+  adjustment: 'Điều chỉnh ví',
+  reversal: 'Đảo giao dịch',
+  'deletion-forfeiture': 'Thu hồi khi đóng tài khoản',
 }
 
-function Metric({ icon: Icon, label, value, tone = 'brand' }) {
-  return (
-    <Card className="p-4 sm:p-5">
-      <div className="flex flex-col-reverse items-start gap-2 sm:flex-row sm:justify-between sm:gap-3">
-        <span className="text-sm text-muted">{label}</span>
-        <span className={`grid size-9 shrink-0 place-items-center rounded-xl ${iconTones[tone]}`}>
-          <Icon size={17} aria-hidden="true" />
-        </span>
-      </div>
-      <strong className="mt-3 block text-h3 tabular-nums sm:mt-4 sm:text-h2">{value}</strong>
-    </Card>
-  )
-}
-
-function RevenueGridLines() {
-  return (
-    <div
-      aria-hidden="true"
-      className="pointer-events-none absolute inset-x-0 top-0 flex h-52 flex-col justify-between"
-    >
-      {[0, 1, 2, 3].map(line => (
-        <span key={line} className="border-t border-dashed border-hairline" />
-      ))}
-    </div>
-  )
-}
+const payoutLabels = { pending: 'Đang chờ xử lý', paid: 'Đã thanh toán' }
 
 function RetryButton({ onClick }) {
   return (
     <Button variant="secondary" size="sm" onClick={onClick}>
       <RefreshCw size={14} aria-hidden="true" />
-      Thử lại
+      Tải lại
     </Button>
   )
 }
 
-/*
- * Sizes skeleton text by an invisible copy of the real markup, so responsive wrapping (and the
- * loading → ready height) is identical; the pills are painted on top, first line top, last bottom.
- */
-function GhostText({ className = '', ghost, children }) {
+function formatCoins(value) {
+  return `${new Intl.NumberFormat('vi-VN').format(value)} xu`
+}
+
+function FinanceSkeleton() {
   return (
-    <div className={`relative min-w-0 ${className}`}>
-      <div className="invisible">{ghost}</div>
-      <div className="absolute inset-0 flex flex-col justify-between overflow-hidden">
-        {children}
-      </div>
+    <div
+      aria-busy="true"
+      className="mt-6 grid gap-6 lg:grid-cols-[minmax(0,1.45fr)_minmax(18rem,0.8fr)]"
+    >
+      <Card>
+        <Skeleton className="h-7 w-52" />
+        <Skeleton className="mt-4 h-12 w-64" />
+        <Skeleton className="mt-7 h-48 w-full rounded-2xl" />
+      </Card>
+      <Card>
+        <Skeleton className="h-7 w-44" />
+        <Skeleton className="mt-5 h-10 w-full" />
+        <Skeleton className="mt-3 h-10 w-full" />
+        <Skeleton className="mt-3 h-10 w-full" />
+      </Card>
     </div>
   )
 }
 
-/* Mirrors Metric: wrapped label + icon tile, then the h3/h2 value line box. */
-function MetricSkeleton({ label }) {
-  return (
-    <Card as="div" aria-hidden="true" className="p-4 sm:p-5">
-      <div className="flex flex-col-reverse items-start gap-2 sm:flex-row sm:justify-between sm:gap-3">
-        <GhostText ghost={<span className="block text-sm">{label}</span>}>
-          <span className="flex h-5 items-center">
-            <Skeleton className="h-3.5 w-full" />
-          </span>
-          <span className="flex h-5 items-center">
-            <Skeleton className="h-3.5 w-2/3" />
-          </span>
-        </GhostText>
-        <Skeleton className="size-9 shrink-0 rounded-xl" />
-      </div>
-      <div className="mt-3 flex h-7 items-center sm:mt-4 sm:h-8">
-        <Skeleton className="h-5 w-24 rounded-lg sm:h-6" />
-      </div>
-    </Card>
-  )
-}
+export function AuthorEarningsPage() {
+  const { formatDate, formatNumber } = useLocale()
+  const finance = useBackendDocument('/author/earnings', emptyFinance)
+  const [details, setDetails] = useState(null)
+  const [savedDetails, setSavedDetails] = useState(null)
+  const [saving, setSaving] = useState(false)
+  const [notice, setNotice] = useState('')
+  const [error, setError] = useState('')
 
-/* Same 7-column grid, h-52 bar wells and 16px weekday labels as the ready chart. */
-function RevenueChartSkeleton() {
+  useEffect(() => {
+    if (finance.status === 'ready') {
+      const next = finance.data.paymentDetails ?? {
+        bankName: '',
+        accountNumber: '',
+        accountHolder: '',
+      }
+      // The form mirrors the latest server snapshot when the resource changes.
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setDetails(next)
+      setSavedDetails(next)
+    }
+  }, [finance.status, finance.data.paymentDetails])
+
+  const changed = useMemo(
+    () => JSON.stringify(details ?? {}) !== JSON.stringify(savedDetails ?? {}),
+    [details, savedDetails],
+  )
+
+  const saveDetails = async event => {
+    event.preventDefault()
+    setSaving(true)
+    setNotice('')
+    setError('')
+    try {
+      const result = await apiRequest('/author/earnings/payment-details', {
+        method: 'PUT',
+        body: details,
+      })
+      setDetails(result.paymentDetails)
+      setSavedDetails(result.paymentDetails)
+      setNotice('Đã lưu thông tin ngân hàng cho kỳ chi trả tiếp theo.')
+    } catch (failure) {
+      setError(failure.message || 'Không lưu được thông tin ngân hàng.')
+    } finally {
+      setSaving(false)
+    }
+  }
+
   return (
-    <div aria-busy="true" aria-label="Đang tải biểu đồ doanh thu" className="relative mt-8">
-      <RevenueGridLines />
-      <div aria-hidden="true" className="relative grid grid-cols-7 gap-2 sm:gap-4">
-        {revenueSkeletonBars.map((height, index) => (
-          <div key={`revenue-skeleton-${index}`} className="flex min-w-0 flex-col items-center">
-            <div className="flex h-52 w-full items-end border-b border-line">
-              <div className="mx-auto w-full max-w-14" style={{ height: `${height}%` }}>
-                <Skeleton className="h-full w-full rounded-none rounded-t-xl" />
+    <AuthorLayout>
+      <div className="page-author py-7">
+        <header className="flex flex-col gap-3">
+          <p className="nh-eyebrow">Doanh thu tác giả · dữ liệu máy chủ</p>
+          <h1 className="text-h2 sm:text-h1">Doanh thu và chi trả</h1>
+          <p className="max-w-[70ch] text-sm leading-6 text-muted">
+            Theo dõi số dư nhuận bút, giao dịch phân bổ từ lượt mở khóa và các kỳ chi trả đã ghi
+            nhận. Thông tin ngân hàng chỉ áp dụng cho những kỳ đánh giá tiếp theo.
+          </p>
+        </header>
+        {finance.status === 'loading' ? (
+          <FinanceSkeleton />
+        ) : finance.status === 'error' ? (
+          <Card className="mt-6 p-0">
+            <EmptyState
+              tone="rose"
+              icon={AlertTriangle}
+              title="Không tải được dữ liệu doanh thu"
+              description="Kết nối tới máy chủ bị gián đoạn. Hãy tải lại để xem số dư và lịch sử chi trả."
+              action={<RetryButton onClick={finance.retry} />}
+            />
+          </Card>
+        ) : (
+          <div className="mt-6 space-y-6">
+            <section className="grid gap-4 sm:grid-cols-2">
+              <Card className="border-brand/30 bg-brand/8">
+                <div className="flex items-center gap-3">
+                  <span className="grid size-11 place-items-center rounded-2xl bg-brand/15 text-brand-strong">
+                    <Coins size={20} aria-hidden="true" />
+                  </span>
+                  <div>
+                    <p className="text-sm text-muted">Số dư nhuận bút khả dụng</p>
+                    <strong className="mt-1 block text-h2 tabular-nums">
+                      {formatCoins(finance.data.balance)}
+                    </strong>
+                  </div>
+                </div>
+                <p className="mt-5 text-sm leading-6 text-muted">
+                  Số dư này tách biệt với ví xu độc giả. Các khoản chi trả hàng tháng được tạo theo
+                  chính sách hiện hành.
+                </p>
+              </Card>
+              <Card>
+                <div className="flex items-center gap-3">
+                  <span className="grid size-11 place-items-center rounded-2xl bg-orange/15 text-orange-strong">
+                    <WalletCards size={20} aria-hidden="true" />
+                  </span>
+                  <div>
+                    <p className="text-sm text-muted">Giao dịch đang hiển thị</p>
+                    <strong className="mt-1 block text-h2 tabular-nums">
+                      {formatNumber(finance.data.entries.length)}
+                    </strong>
+                  </div>
+                </div>
+                <p className="mt-5 text-sm leading-6 text-muted">
+                  Tối đa 50 bút toán gần nhất. Bút toán là lịch sử bất biến và không thể sửa trực
+                  tiếp.
+                </p>
+              </Card>
+            </section>
+            <div className="grid items-start gap-6 lg:grid-cols-[minmax(0,1.45fr)_minmax(18rem,0.8fr)]">
+              <div className="min-w-0 space-y-6">
+                <Card className="overflow-hidden p-0">
+                  <div className="p-6 pb-4">
+                    <h2 className="text-h3">Lịch sử giao dịch thu nhập</h2>
+                    <p className="mt-1 text-sm text-muted">
+                      Các khoản phân bổ, chi trả và điều chỉnh gắn với ví nhuận bút.
+                    </p>
+                  </div>
+                  {finance.data.entries.length ? (
+                    <div className="overflow-x-auto">
+                      <table className="w-full min-w-[620px] text-left text-sm">
+                        <thead className="border-y border-hairline bg-elevated text-xs text-muted">
+                          <tr>
+                            <th scope="col" className="px-6 py-3 font-semibold">
+                              Thời gian
+                            </th>
+                            <th scope="col" className="px-3 py-3 font-semibold">
+                              Loại giao dịch
+                            </th>
+                            <th scope="col" className="px-3 py-3 text-right font-semibold">
+                              Số xu
+                            </th>
+                            <th scope="col" className="px-3 py-3 font-semibold">
+                              Mã tham chiếu
+                            </th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-hairline">
+                          {finance.data.entries.map(entry => (
+                            <tr key={entry.id}>
+                              <td className="whitespace-nowrap px-6 py-4 text-muted">
+                                {formatDate(entry.occurredAt)}
+                              </td>
+                              <th scope="row" className="px-3 py-4 font-semibold">
+                                {ledgerLabels[entry.type] ?? entry.type}
+                              </th>
+                              <td
+                                className={`px-3 py-4 text-right font-semibold tabular-nums ${entry.amount >= 0 ? 'text-brand-strong' : 'text-rose-strong'}`}
+                              >
+                                {entry.amount >= 0 ? '+' : ''}
+                                {formatNumber(entry.amount)}
+                              </td>
+                              <td
+                                className="max-w-48 truncate px-3 py-4 font-mono text-xs text-muted"
+                                title={entry.sourceId ?? ''}
+                              >
+                                {entry.sourceId ?? '—'}
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  ) : (
+                    <EmptyState
+                      icon={Coins}
+                      title="Chưa có giao dịch thu nhập"
+                      description="Các khoản phân bổ từ lượt mở khóa sẽ xuất hiện tại đây sau khi có giao dịch hợp lệ."
+                    />
+                  )}
+                </Card>
+                <Card className="overflow-hidden p-0">
+                  <div className="p-6 pb-4">
+                    <h2 className="text-h3">Lịch sử chi trả</h2>
+                    <p className="mt-1 text-sm text-muted">
+                      Mỗi dòng giữ lại kỳ chi trả, số xu đã trừ và kết quả xử lý mới nhất.
+                    </p>
+                  </div>
+                  {finance.data.payouts.length ? (
+                    <div className="overflow-x-auto">
+                      <table className="w-full min-w-[620px] text-left text-sm">
+                        <thead className="border-y border-hairline bg-elevated text-xs text-muted">
+                          <tr>
+                            <th scope="col" className="px-6 py-3 font-semibold">
+                              Kỳ
+                            </th>
+                            <th scope="col" className="px-3 py-3 text-right font-semibold">
+                              Số xu
+                            </th>
+                            <th scope="col" className="px-3 py-3 font-semibold">
+                              Trạng thái
+                            </th>
+                            <th scope="col" className="px-3 py-3 font-semibold">
+                              Kết quả gần nhất
+                            </th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-hairline">
+                          {finance.data.payouts.map(payout => (
+                            <tr key={payout.id}>
+                              <th scope="row" className="px-6 py-4 font-semibold">
+                                {payout.periodId}
+                              </th>
+                              <td className="px-3 py-4 text-right tabular-nums">
+                                {formatNumber(payout.amountCoins)}
+                              </td>
+                              <td className="px-3 py-4">
+                                <Badge tone={payout.status === 'paid' ? 'green' : 'neutral'}>
+                                  {payoutLabels[payout.status] ?? payout.status}
+                                </Badge>
+                              </td>
+                              <td className="px-3 py-4 text-muted">
+                                {payout.result
+                                  ? `${payout.result}${payout.resultAt ? ` · ${formatDate(payout.resultAt)}` : ''}`
+                                  : 'Chưa có kết quả'}
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  ) : (
+                    <EmptyState
+                      icon={WalletCards}
+                      title="Chưa có kỳ chi trả"
+                      description="Kỳ chi trả đầu tiên sẽ xuất hiện sau khi số dư và thông tin ngân hàng đủ điều kiện."
+                    />
+                  )}
+                </Card>
               </div>
+              <Card as="form" onSubmit={saveDetails} className="min-w-0">
+                <h2 className="text-h3">Ngân hàng nhận chi trả</h2>
+                <p className="mt-2 text-sm leading-6 text-muted">
+                  Thay đổi chỉ áp dụng cho những kỳ đánh giá sau. Thông tin ngân hàng đã chụp trong
+                  khoản chi trả cũ không bị sửa.
+                </p>
+                {notice && (
+                  <p
+                    className="mt-4 rounded-2xl bg-brand/10 px-4 py-3 text-sm text-brand-strong"
+                    role="status"
+                  >
+                    <Check size={16} className="mr-2 inline" aria-hidden="true" />
+                    {notice}
+                  </p>
+                )}
+                {error && (
+                  <p
+                    className="mt-4 rounded-2xl bg-rose/10 px-4 py-3 text-sm text-rose-strong"
+                    role="alert"
+                  >
+                    {error}
+                  </p>
+                )}
+                <div className="mt-5 space-y-4">
+                  <label className="block text-sm font-semibold" htmlFor="author-bank-name">
+                    Tên ngân hàng
+                    <Input
+                      id="author-bank-name"
+                      className="mt-2"
+                      value={details?.bankName ?? ''}
+                      onChange={event =>
+                        setDetails(current => ({
+                          ...(current ?? {}),
+                          bankName: event.target.value,
+                        }))
+                      }
+                      required
+                    />
+                  </label>
+                  <label className="block text-sm font-semibold" htmlFor="author-bank-account">
+                    Số tài khoản
+                    <Input
+                      id="author-bank-account"
+                      className="mt-2"
+                      value={details?.accountNumber ?? ''}
+                      onChange={event =>
+                        setDetails(current => ({
+                          ...(current ?? {}),
+                          accountNumber: event.target.value,
+                        }))
+                      }
+                      required
+                    />
+                  </label>
+                  <label className="block text-sm font-semibold" htmlFor="author-bank-holder">
+                    Tên chủ tài khoản
+                    <Input
+                      id="author-bank-holder"
+                      className="mt-2"
+                      value={details?.accountHolder ?? ''}
+                      onChange={event =>
+                        setDetails(current => ({
+                          ...(current ?? {}),
+                          accountHolder: event.target.value,
+                        }))
+                      }
+                      required
+                    />
+                  </label>
+                </div>
+                {changed && (
+                  <div className="mt-5 flex flex-wrap justify-end gap-2 border-t border-hairline pt-5">
+                    <Button
+                      type="button"
+                      variant="secondary"
+                      onClick={() => {
+                        setDetails(savedDetails)
+                        setError('')
+                        setNotice('')
+                      }}
+                    >
+                      Hủy thay đổi
+                    </Button>
+                    <Button type="submit" disabled={saving}>
+                      <Save size={16} aria-hidden="true" />
+                      {saving ? 'Đang lưu…' : 'Lưu thông tin'}
+                    </Button>
+                  </div>
+                )}
+              </Card>
             </div>
-            <span className="mt-2 flex h-4 items-center">
-              <Skeleton className="h-2.5 w-7" />
-            </span>
           </div>
-        ))}
+        )}
       </div>
-    </div>
-  )
-}
-
-/* Sales row: single text-sm line in every cell (row = 52px), same five columns. */
-function SalesRowSkeleton() {
-  return (
-    <tr aria-hidden="true">
-      <td className="px-6 py-4">
-        <div className="flex h-5 items-center">
-          <Skeleton className="h-3.5 w-32" />
-        </div>
-      </td>
-      <td className="px-3 py-4">
-        <div className="flex h-5 items-center">
-          <Skeleton className="h-3.5 w-20" />
-        </div>
-      </td>
-      <td className="px-3 py-4">
-        <div className="flex h-5 items-center justify-end">
-          <Skeleton className="h-3.5 w-12" />
-        </div>
-      </td>
-      <td className="px-3 py-4">
-        <div className="flex h-5 items-center justify-end">
-          <Skeleton className="h-3.5 w-10" />
-        </div>
-      </td>
-      <td className="py-4 pl-3 pr-6">
-        <div className="flex h-5 items-center justify-end">
-          <Skeleton className="h-3.5 w-14" />
-        </div>
-      </td>
-    </tr>
+    </AuthorLayout>
   )
 }

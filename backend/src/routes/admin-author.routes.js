@@ -4,25 +4,28 @@ import {
   adminPolicyHistory,
   cancelFuturePolicy,
   rescheduleFuturePolicy,
-} from '../modules/admin-policy.js'
+} from '../modules/accounts-administration/admin/admin-policy.js'
 import { Router } from 'express'
 import { z } from 'zod'
 import { requireAuth, requireRole } from '../middleware/auth.js'
 import { HttpError } from '../middleware/errors.js'
-import { adminUsers, adminUserDetail } from '../modules/admin-users.js'
-import { adminAudit, auditQuery } from '../modules/admin-audit.js'
-import { changeAuthorAccount } from '../modules/admin-author-account.js'
-import { closeAuthorAccount } from '../modules/admin-close-author-account.js'
+import {
+  adminUsers,
+  adminUserDetail,
+} from '../modules/accounts-administration/admin/admin-users.js'
+import { adminAudit, auditQuery } from '../modules/accounts-administration/admin/admin-audit.js'
+import { changeAuthorAccount } from '../modules/accounts-administration/admin/admin-author-account.js'
+import { closeAuthorAccount } from '../modules/accounts-administration/admin/admin-close-author-account.js'
 import {
   authorRoleView,
   revokeAuthorRole,
   listActiveAuthors,
-} from '../modules/author-access/revocation.js'
+} from '../modules/accounts-administration/author-access/revocation.js'
 import {
   decideApplication,
   getApplication,
   listApplications,
-} from '../modules/author-access/service.js'
+} from '../modules/accounts-administration/author-access/service.js'
 const querySchema = z
   .object({
     status: z.enum(['submitted', 'approved', 'rejected', 'all']).default('submitted'),

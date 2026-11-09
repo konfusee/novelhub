@@ -6,11 +6,11 @@ import {
   adminPolicy,
   adminPolicyHistory,
   rescheduleFuturePolicy,
-} from '../src/modules/admin-policy.js'
+} from '../src/modules/accounts-administration/admin/admin-policy.js'
 import { authenticatedAccount } from './fixtures/accounts.js'
 import { testConfig } from './config.js'
 import { useTestDatabase } from './db.js'
-import { digest } from '../src/modules/submission-digests.js'
+import { digest } from '../src/modules/authoring-publishing/submissions/submission-digests.js'
 useTestDatabase()
 const app = createApp(testConfig({ cookieName: 'novelhub_session' }))
 const body = {

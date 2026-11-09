@@ -9,13 +9,13 @@ import {
   worstCaseBacklogUsd,
   worstCaseEmbeddingUsd,
   worstCaseReviewUsd,
-} from '../src/modules/ai/budget.js'
-import { costUsd, estimateTokens } from '../src/modules/ai/pricing.js'
+} from '../src/modules/moderation-ai/ai/budget.js'
+import { costUsd, estimateTokens } from '../src/modules/moderation-ai/ai/pricing.js'
 import {
   MAX_REVIEW_OUTPUT_TOKENS,
   MAX_REVIEW_TEXT_CHARS,
   REVIEW_INSTRUCTIONS,
-} from '../src/modules/ai/review-criteria.js'
+} from '../src/modules/moderation-ai/ai/review-criteria.js'
 import { authenticatedAccount } from './fixtures/accounts.js'
 import { apiClient, approvedStory, origin, submitChapter } from './fixtures/submissions.js'
 import { testConfig } from './config.js'

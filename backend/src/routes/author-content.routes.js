@@ -1,29 +1,49 @@
 import { Router } from 'express'
 import { z } from 'zod'
-import { Category, ContentRevision, Story, Chapter } from '../models/index.js'
+import { Category, ContentRevision, MediaAsset, Story, Chapter } from '../models/index.js'
 import { requireAuth, requireRole } from '../middleware/auth.js'
 import { HttpError } from '../middleware/errors.js'
 import { withTransaction } from '../db/connection.js'
-import { authorDashboard } from '../modules/author-dashboard.js'
-import { authorStoryWorkspace } from '../modules/author-story-workspace.js'
-import { authorDrafts } from '../modules/author-drafts.js'
-import { authorAnalytics } from '../modules/author-analytics.js'
-import { prepareEarlyAccess, changeEarlyAccess } from '../modules/author-early-access.js'
-import { lockAuthor, ownStory, editable } from '../modules/author-ownership.js'
-import { assertTextEditorRevision, chapterParagraphText } from '../modules/chapter-document.js'
+import { authorDashboard } from '../modules/authoring-publishing/author/author-dashboard.js'
+import { authorStoryList } from '../modules/authoring-publishing/author/author-story-list.js'
+import { authorStoryWorkspace } from '../modules/authoring-publishing/author/author-story-workspace.js'
+import { authorDrafts } from '../modules/authoring-publishing/author/author-drafts.js'
+import { authorAnalytics } from '../modules/authoring-publishing/author/author-analytics.js'
+import {
+  prepareEarlyAccess,
+  changeEarlyAccess,
+} from '../modules/authoring-publishing/author/author-early-access.js'
+import {
+  lockAuthor,
+  ownStory,
+  editable,
+} from '../modules/authoring-publishing/author/author-ownership.js'
+import {
+  assertTextEditorRevision,
+  chapterParagraphText,
+} from '../modules/authoring-publishing/content/chapter-document.js'
 import {
   readRichChapter,
   editableChapterDocument,
   chapterDocumentFormat,
-} from '../modules/rich-chapter-document.js'
-import { pinChapterImages } from '../modules/author-chapter-media.js'
-import { changeDraftLifecycle } from '../modules/author-story-lifecycle.js'
-import { prepareStoryRelease, publishStory } from '../modules/author-story-release.js'
-import { prepareChapterRelease, publishChapter } from '../modules/author-chapter-release.js'
-import { changeChapterSchedule, prepareChapterSchedule } from '../modules/chapter-scheduler.js'
-import { reorderDraftChapters } from '../modules/author-chapter-order.js'
-import { unpublishStory } from '../modules/author-story-unpublish.js'
-import { changeChapterDraftLifecycle } from '../modules/author-chapter-lifecycle.js'
+} from '../modules/authoring-publishing/content/rich-chapter-document.js'
+import { pinChapterImages } from '../modules/authoring-publishing/author/author-chapter-media.js'
+import { changeDraftLifecycle } from '../modules/authoring-publishing/author/author-story-lifecycle.js'
+import {
+  prepareStoryRelease,
+  publishStory,
+} from '../modules/authoring-publishing/author/author-story-release.js'
+import {
+  prepareChapterRelease,
+  publishChapter,
+} from '../modules/authoring-publishing/author/author-chapter-release.js'
+import {
+  changeChapterSchedule,
+  prepareChapterSchedule,
+} from '../modules/authoring-publishing/content/chapter-scheduler.js'
+import { reorderDraftChapters } from '../modules/authoring-publishing/author/author-chapter-order.js'
+import { unpublishStory } from '../modules/authoring-publishing/author/author-story-unpublish.js'
+import { changeChapterDraftLifecycle } from '../modules/authoring-publishing/author/author-chapter-lifecycle.js'
 const objectId = z.string().regex(/^[a-f\d]{24}$/i)
 const storyInput = z
   .object({
@@ -54,6 +74,10 @@ function view(story) {
     title: story.title,
     description: story.description ?? '',
     categoryIds: story.categoryIds.map(String),
+    coverMediaId: story.coverMediaId ? String(story.coverMediaId) : null,
+    coverBannerMediaId: story.theme?.coverBannerMediaId
+      ? String(story.theme.coverBannerMediaId)
+      : null,
     status: story.publicationStatus,
     version: story.version,
     updatedAt: story.updatedAt,
@@ -272,16 +296,7 @@ export function createAuthorContentRouter(config) {
   })
   router.get('/author/stories', async (req, res, next) => {
     try {
-      const stories = await Story.find({
-        authorAccountId: req.account._id,
-      })
-        .sort({
-          updatedAt: -1,
-        })
-        .lean()
-      res.json({
-        items: stories.map(view),
-      })
+      res.json(await authorStoryList(req.account._id))
     } catch (error) {
       next(error)
     }
@@ -437,7 +452,7 @@ export function createAuthorContentRouter(config) {
         z.union([
           z
             .object({
-              action: z.enum(['archive', 'restore']),
+              action: z.enum(['archive', 'restore', 'delete']),
               expectedVersion: z.number().int().min(0),
             })
             .strict(),
@@ -467,6 +482,8 @@ export function createAuthorContentRouter(config) {
       const input = parse(
         storyInput.extend({
           categoryIds: storyInput.shape.categoryIds.optional(),
+          coverMediaId: objectId.nullable().optional(),
+          coverBannerMediaId: objectId.nullable().optional(),
           expectedVersion: z.number().int().min(0),
         }),
         req.body,
@@ -482,6 +499,32 @@ export function createAuthorContentRouter(config) {
             'Truyện đã thay đổi. Hãy tải lại trước khi lưu.',
           )
         const categoryIds = input.categoryIds ?? current.categoryIds.map(String)
+        const requestedCoverIds = [input.coverMediaId, input.coverBannerMediaId].filter(
+          value => value !== undefined && value !== null,
+        )
+        if (requestedCoverIds.length) {
+          const media = await MediaAsset.find({
+            _id: { $in: requestedCoverIds },
+            ownerAccountId: req.account._id,
+            storyId: current._id,
+            status: 'available',
+          })
+            .select('_id kind')
+            .session(session)
+            .lean()
+          if (
+            media.length !== requestedCoverIds.length ||
+            (input.coverMediaId &&
+              !media.some(
+                item => String(item._id) === input.coverMediaId && item.kind === 'cover',
+              )) ||
+            (input.coverBannerMediaId &&
+              !media.some(
+                item => String(item._id) === input.coverBannerMediaId && item.kind === 'banner',
+              ))
+          )
+            throw new HttpError(400, 'invalid_story_media', 'Ảnh bìa hoặc banner không hợp lệ.')
+        }
         if (input.categoryIds) {
           const count = await Category.countDocuments({
             _id: {
@@ -523,6 +566,13 @@ export function createAuthorContentRouter(config) {
         current.title = input.title
         current.description = input.description
         current.categoryIds = categoryIds
+        if (input.coverMediaId !== undefined) current.coverMediaId = input.coverMediaId
+        if (input.coverBannerMediaId !== undefined) {
+          current.theme = {
+            ...(current.theme?.toObject?.() ?? current.theme ?? {}),
+            coverBannerMediaId: input.coverBannerMediaId ?? undefined,
+          }
+        }
         current.draftRevisionId = revision._id
         current.currentRevisionId = revision._id
         await current.save({

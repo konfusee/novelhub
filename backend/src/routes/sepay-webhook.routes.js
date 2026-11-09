@@ -1,6 +1,9 @@
 import { Router } from 'express'
 import { requireSePayApiKey } from '../middleware/sepay-auth.js'
-import { parseSePayPayload, processSePayWebhook } from '../modules/sepay-webhook.js'
+import {
+  parseSePayPayload,
+  processSePayWebhook,
+} from '../modules/coins-payouts/finance/sepay-webhook.js'
 
 export function createSePayWebhookRouter(config) {
   const router = Router()

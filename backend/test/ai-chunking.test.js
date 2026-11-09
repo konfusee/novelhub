@@ -3,7 +3,7 @@ import {
   chunkParagraphs,
   embeddingRequestBatches,
   revisionPassages,
-} from '../src/modules/ai/chunking.js'
+} from '../src/modules/moderation-ai/ai/chunking.js'
 
 // Exactly `length` characters of words, with no leading or trailing space.
 const words = length => 'abcd '.repeat(Math.ceil(length / 5)).slice(0, length - 1) + 'e'

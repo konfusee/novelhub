@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { extractDocument } from '../src/modules/document-extraction.js'
+import { extractDocument } from '../src/modules/authoring-publishing/imports/document-extraction.js'
 import { pdfDocument, docxDocument } from './fixtures/documents.js'
 
 describe('real document extraction', () => {

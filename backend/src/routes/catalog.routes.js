@@ -12,15 +12,25 @@ import {
 } from '../models/index.js'
 import mongoose from 'mongoose'
 import { HttpError } from '../middleware/errors.js'
-import { categoryStoryCounts, queryPublishedStories } from '../modules/catalog-query.js'
-import { catalogPresentation } from '../modules/catalog-presentation.js'
-import { readRichChapter } from '../modules/rich-chapter-document.js'
-import { submittedImage } from '../modules/author-submitted-package.js'
+import {
+  categoryStoryCounts,
+  queryPublishedStories,
+} from '../modules/reading-community/catalog/catalog-query.js'
+import { catalogPresentation } from '../modules/reading-community/catalog/catalog-presentation.js'
+import { readRichChapter } from '../modules/authoring-publishing/content/rich-chapter-document.js'
+import { submittedImage } from '../modules/authoring-publishing/author/author-submitted-package.js'
 import { PublicationSubmission } from '../models/index.js'
-import { optionalAccount, publishedCards, readableChapter } from '../modules/reading/access.js'
-import { chapterListItem, publishedChapterRows } from '../modules/reading/chapters.js'
-import { resumeFor } from '../modules/reading/progress.js'
-import { recordChapterView } from '../modules/reading/views.js'
+import {
+  optionalAccount,
+  publishedCards,
+  readableChapter,
+} from '../modules/reading-community/reading/access.js'
+import {
+  chapterListItem,
+  publishedChapterRows,
+} from '../modules/reading-community/reading/chapters.js'
+import { resumeFor } from '../modules/reading-community/reading/progress.js'
+import { recordChapterView } from '../modules/reading-community/reading/views.js'
 
 const filters = z
   .object({

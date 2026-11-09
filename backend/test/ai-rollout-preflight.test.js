@@ -5,7 +5,10 @@ import path from 'node:path'
 import mongoose from 'mongoose'
 import { afterEach, describe, expect, it } from 'vitest'
 import { Category, ProcessingAttempt } from '../src/models/index.js'
-import { moderationPreflight, preflightBlockers } from '../src/modules/ai/rollout-preflight.js'
+import {
+  moderationPreflight,
+  preflightBlockers,
+} from '../src/modules/moderation-ai/ai/rollout-preflight.js'
 import { testConfig } from './config.js'
 import { useTestDatabase } from './db.js'
 

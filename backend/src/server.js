@@ -5,8 +5,8 @@ import { createLogger } from './config/logger.js'
 import { createSmtpEmailDelivery } from './email/delivery.js'
 import { connectDatabase, disconnectDatabase } from './db/connection.js'
 import './models/index.js'
-import { startChapterScheduler } from './modules/chapter-scheduler.js'
-import { startEvidenceWorker } from './modules/ai/evidence-worker.js'
+import { startChapterScheduler } from './modules/authoring-publishing/content/chapter-scheduler.js'
+import { startEvidenceWorker } from './modules/moderation-ai/ai/evidence-worker.js'
 loadDotenv()
 const env = loadEnv()
 const logger = createLogger(env.LOG_LEVEL, {
