@@ -2,7 +2,10 @@ import { Router } from 'express'
 import { z } from 'zod'
 import { requireAuth } from '../middleware/auth.js'
 import { HttpError } from '../middleware/errors.js'
-import { getReaderUnlockQuote, purchaseReaderChapter } from '../modules/reader-unlocks.js'
+import {
+  getReaderUnlockQuote,
+  purchaseReaderChapter,
+} from '../modules/coins-payouts/finance/reader-unlocks.js'
 
 const paramsSchema = z.object({
   storyId: z.string().regex(/^[a-f\d]{24}$/i),

@@ -11,8 +11,8 @@ import {
   WithdrawalRequest,
 } from '../src/models/index.js'
 import { withTransaction } from '../src/db/connection.js'
-import { buildMonthlyPayoutPreview } from '../src/modules/admin-payout-preview.js'
-import { generateMonthlyPayouts } from '../src/modules/admin-monthly-payouts.js'
+import { buildMonthlyPayoutPreview } from '../src/modules/coins-payouts/finance/admin-payout-preview.js'
+import { generateMonthlyPayouts } from '../src/modules/coins-payouts/finance/admin-monthly-payouts.js'
 import { authenticatedAccount } from './fixtures/accounts.js'
 import { testConfig } from './config.js'
 import { useTestDatabase } from './db.js'

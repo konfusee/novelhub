@@ -9,7 +9,7 @@ import {
   readAuthorMedia,
   deleteAuthorMedia,
   MEDIA_UPLOAD_BYTES,
-} from '../modules/author-media.js'
+} from '../modules/authoring-publishing/author/author-media.js'
 const oid = z.string().regex(/^[a-f\d]{24}$/iu)
 function parse(schema, input) {
   const result = schema.safeParse(input)

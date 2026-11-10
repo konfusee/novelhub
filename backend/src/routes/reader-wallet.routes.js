@@ -1,6 +1,6 @@
 import { Router } from 'express'
 import { requireAuth } from '../middleware/auth.js'
-import { getReaderWallet } from '../modules/reader-wallet.js'
+import { getReaderWallet } from '../modules/coins-payouts/finance/reader-wallet.js'
 
 export function createReaderWalletRouter(config) {
   const router = Router()

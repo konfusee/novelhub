@@ -9,7 +9,7 @@ import { AuthorApplication } from '../src/models/identity/author-application.mod
 import { RoleAssignment } from '../src/models/identity/role-assignment.model.js'
 import { AuditEvent } from '../src/models/audit/audit-event.model.js'
 import { Notification } from '../src/models/notifications/notification.model.js'
-import { decideApplication } from '../src/modules/author-access/service.js'
+import { decideApplication } from '../src/modules/accounts-administration/author-access/service.js'
 import { issueSession } from '../src/auth/session.js'
 import { Category, Story } from '../src/models/index.js'
 

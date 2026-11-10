@@ -6,9 +6,13 @@ import { requireAuth, requireRole } from '../middleware/auth.js'
 import { HttpError } from '../middleware/errors.js'
 import { Story, Chapter, ContentRevision, ContentImport, AuditEvent } from '../models/index.js'
 import { withTransaction } from '../db/connection.js'
-import { lockAuthor, ownStory, editable } from '../modules/author-ownership.js'
-import { extractDocument } from '../modules/document-extraction.js'
-import { chapterParagraphText } from '../modules/chapter-document.js'
+import {
+  lockAuthor,
+  ownStory,
+  editable,
+} from '../modules/authoring-publishing/author/author-ownership.js'
+import { extractDocument } from '../modules/authoring-publishing/imports/document-extraction.js'
+import { chapterParagraphText } from '../modules/authoring-publishing/content/chapter-document.js'
 
 const digest = value => createHash('sha256').update(value).digest('hex')
 const inputSchema = z

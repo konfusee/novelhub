@@ -2,7 +2,7 @@ import { Router } from 'express'
 import { z } from 'zod'
 import { requireAuth, requireRole } from '../middleware/auth.js'
 import { HttpError } from '../middleware/errors.js'
-import { getMonthlyPayoutPreview } from '../modules/admin-payout-preview.js'
+import { getMonthlyPayoutPreview } from '../modules/coins-payouts/finance/admin-payout-preview.js'
 
 const previewSchema = z
   .object({

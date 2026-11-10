@@ -26,7 +26,7 @@ import {
   MAX_BACKLOG_SUBMISSIONS,
   moderationPreflight,
   preflightBlockers,
-} from '../src/modules/ai/rollout-preflight.js'
+} from '../src/modules/moderation-ai/ai/rollout-preflight.js'
 
 // Marks every account and role change the smoke makes in auditEvents.
 const MARKER = 'novelhub-smoke-v1'

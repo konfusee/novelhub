@@ -12,7 +12,10 @@ import { loadEnv, toAppConfig } from '../src/config/env.js'
 import { loadDotenv } from '../src/config/load-dotenv.js'
 import { connectDatabase, disconnectDatabase } from '../src/db/connection.js'
 import '../src/models/index.js'
-import { backfillEmbeddings, backfillSummaryLine } from '../src/modules/ai/embedding-backfill.js'
+import {
+  backfillEmbeddings,
+  backfillSummaryLine,
+} from '../src/modules/moderation-ai/ai/embedding-backfill.js'
 
 const DEFAULT_PLAN = fileURLToPath(new URL('../.tmp/backfill-plan.json', import.meta.url))
 const { values } = parseArgs({

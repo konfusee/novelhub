@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { createOpenAIProvider } from '../src/modules/ai/openai-provider.js'
-import { resolveAiProviders } from '../src/modules/ai/providers.js'
+import { createOpenAIProvider } from '../src/modules/moderation-ai/ai/openai-provider.js'
+import { resolveAiProviders } from '../src/modules/moderation-ai/ai/providers.js'
 import { testConfig } from './config.js'
 
 // Never uses vi.mock('openai'): the real SDK parses every recorded HTTP shape.

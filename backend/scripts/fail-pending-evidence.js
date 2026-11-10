@@ -6,7 +6,7 @@ import { loadEnv } from '../src/config/env.js'
 import { loadDotenv } from '../src/config/load-dotenv.js'
 import { connectDatabase, disconnectDatabase } from '../src/db/connection.js'
 import '../src/models/index.js'
-import { failPendingEvidence } from '../src/modules/ai/fail-pending-evidence.js'
+import { failPendingEvidence } from '../src/modules/moderation-ai/ai/fail-pending-evidence.js'
 
 const { values } = parseArgs({
   options: {

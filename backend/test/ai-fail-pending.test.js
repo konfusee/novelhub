@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from 'vitest'
 import { createApp } from '../src/app.js'
 import { EvidenceBatch, ProcessingAttempt, PublicationSubmission } from '../src/models/index.js'
-import { failPendingEvidence } from '../src/modules/ai/fail-pending-evidence.js'
+import { failPendingEvidence } from '../src/modules/moderation-ai/ai/fail-pending-evidence.js'
 import { authenticatedAccount } from './fixtures/accounts.js'
 import { apiClient, approvedStory, origin, submitChapter } from './fixtures/submissions.js'
 import { testConfig } from './config.js'

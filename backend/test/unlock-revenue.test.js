@@ -1,5 +1,5 @@
 import { expect, it } from 'vitest'
-import { calculateUnlockSplit } from '../src/modules/unlock-revenue.js'
+import { calculateUnlockSplit } from '../src/modules/coins-payouts/finance/unlock-revenue.js'
 
 it.each([
   [1000, 70, 700, 300],

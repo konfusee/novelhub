@@ -2,8 +2,8 @@ import { Router } from 'express'
 import { z } from 'zod'
 import { requireAuth, requireRole } from '../middleware/auth.js'
 import { HttpError } from '../middleware/errors.js'
-import { getAdminAuthorRevenue } from '../modules/admin-author-revenue.js'
-import { getAuthorRevenueDetails } from '../modules/admin-author-revenue-details.js'
+import { getAdminAuthorRevenue } from '../modules/coins-payouts/finance/admin-author-revenue.js'
+import { getAuthorRevenueDetails } from '../modules/coins-payouts/finance/admin-author-revenue-details.js'
 
 const querySchema = z
   .object({

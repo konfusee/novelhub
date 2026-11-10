@@ -1,6 +1,6 @@
 import { Router } from 'express'
 import { requireAuth, requireRole } from '../middleware/auth.js'
-import { getAuthorEarnings } from '../modules/author-earnings.js'
+import { getAuthorEarnings } from '../modules/coins-payouts/finance/author-earnings.js'
 
 export function createAuthorEarningsRouter(config) {
   const router = Router()

@@ -58,21 +58,30 @@ A Reader can also perform `UC-GST-01` through `UC-GST-04`.
 
 ## 5. Author use cases
 
-| ID | Use case | Goal and successful outcome | Requirement references |
+This section follows the latest SRS Author diagram and specifications. The earlier grouped catalogue is superseded by these atomic use cases. Author retains permitted Reader operations.
+
+| ID | Use case | Goal and successful outcome | SRS reference |
 |---|---|---|---|
-| UC-AUT-01 | Apply for Author access | Submit an Author application and receive its decision/status. | FR-AUTHOR-01 |
-| UC-AUT-02 | Manage stories | Create and edit story-level information such as title, description, cover and category. | FR-AUTHOR-02 |
-| UC-AUT-03 | Manage chapters and drafts | Create, edit, reorder and save chapters, including incomplete drafts. | FR-AUTHOR-03, FR-AUTHOR-06 |
-| UC-AUT-04 | Format and validate content | Use the required story/chapter template and receive validation or formatting feedback before submission. | FR-AUTHOR-04, FR-AUTHOR-05 |
-| UC-AUT-05 | Import PDF as editable draft | Upload a supported text-layer PDF, obtain extracted draft content and review/correct it before submission. | FR-AUTHOR-09 through FR-AUTHOR-11 |
-| UC-AUT-06 | Manage story multimedia | Upload and associate permitted image/audio media with story or chapter content. Video remains conditional scope. | FR-AUTHOR-07 through FR-AUTHOR-09, FR-MEDIA-01 through FR-MEDIA-03 |
-| UC-AUT-07 | Declare content rights | Declare the ownership, license, public-domain or other authorized basis for submitted text and media. | FR-AUTHOR-13, FR-AUTHOR-14 |
-| UC-AUT-08 | Request AI writing assistance | Request writing, rewriting, summary, title, tag or metadata suggestions and choose whether to accept, reject or edit them. | FR-AI-AUTHOR-01 through FR-AI-AUTHOR-05 |
-| UC-AUT-09 | Configure early access | Set the eligible chapter's early-access duration and coin price within platform policy. | FR-COIN-05, FR-COIN-06, BR-04 through BR-06 |
-| UC-AUT-10 | Submit content for review | Submit a story/chapter for moderation after required content, format and rights information is complete. Submission automatically starts AI-assisted review. | FR-AUTHOR-15, FR-MOD-01 through FR-MOD-05 |
-| UC-AUT-11 | Track review and publication | View submission state, publication status and Moderator feedback, including rejection reasons; revise and resubmit rejected content. | FR-AUTHOR-16, FR-NOTIFY-03 |
-| UC-AUT-12 | View story statistics | View available statistics for the Author's published content. | FR-AUTHOR-17 |
-| UC-AUT-13 | Manage earnings and withdrawals | View eligible earnings and payout history, submit a withdrawal request and track approval/payout status. | FR-PAYOUT-01 through FR-PAYOUT-04, FR-PAYOUT-09, FR-PAYOUT-10 |
+| UC-AUT-02 | View owned story list | Open, search, filter and sort the Author’s stories and inspect status, categories, chapters and review state. | SRS 2.3.1 |
+| UC-AUT-02.1 | Create story | Create a draft story with title, description, one to ten active categories and optional cover/banner. | SRS 2.3.2 |
+| UC-AUT-02.2 | Update story | Update editable story metadata and cover/banner media. | SRS 2.3.3 |
+| UC-AUT-02.3 | Delete story | Delete a never-published story with no open submission. | SRS 2.3.4 |
+| UC-AUT-12 | View story statistics | View reading, reader, completion, follower, rating, unlock, earnings and comment metrics. | SRS 2.3.5 |
+| UC-AUT-03 | View chapter list | Filter chapters by lifecycle state and inspect release state. | SRS 2.3.6 |
+| UC-AUT-03.1 | Create chapter | Create a private draft with text and images. | SRS 2.3.7 |
+| UC-AUT-03.2 | Update chapter | Edit an editable draft and its images with version checks. | SRS 2.3.8 |
+| UC-AUT-03.3 | Delete chapter | Delete a never-published chapter with no open submission. | SRS 2.3.9 |
+| UC-AUT-03.4 | Reorder chapters | Save a new order while all chapters remain drafts and unchanged. | SRS 2.3.10 |
+| UC-AUT-08 | Configure early access | Set price and duration for an unreleased chapter within Admin policy limits. | SRS 2.3.11 |
+| UC-AUT-05 | Import chapters from PDF | Extract a text-layer PDF, split or merge chapters and save editable drafts. | SRS 2.3.12 |
+| UC-AUT-09 | Submit content for review | Validate content, categories, media and rights, then freeze and submit the package. | SRS 2.3.13 |
+| UC-AUT-10 | Track review and publication | Follow submission status, publication state and Moderator feedback. | SRS 2.3.14 |
+| UC-AUT-10.1 | Release approved content | Publish an approved story/chapter now or schedule a chapter release. | SRS 2.3.15 |
+| UC-AUT-11 | Revise and resubmit content | Create a new editable revision for rejected or approved-but-unreleased content and submit it again. | SRS 2.3.16 |
+| UC-AUT-13 | View earnings | View the earnings balance, unlock revenue, earnings ledger and payout status. | SRS 2.3.17 |
+| UC-AUT-17 | Update payment details | Add or change the bank account used for future payouts. | SRS 2.3.18 |
+| UC-AUT-18 | View payout history | View completed and pending payouts with their stored results. | SRS 2.3.19 |
+| UC-AUT-14 | View transaction history | View the append-only transactions that make up Author earnings. | SRS 2.3.20 |
 
 ## 6. Moderator use cases
 
@@ -106,7 +115,7 @@ A Reader can also perform `UC-GST-01` through `UC-GST-04`.
 | Authentication Provider (Google OAuth) | UC-GST-06 | Returns a verified identity result. NovelHub remains responsible for account linking, roles and authorization. |
 | Payment Gateway | UC-RDR-09, UC-AUT-13, UC-ADM-06 | Processes top-up payments and approved payouts; returns provider status and references. |
 | TTS Service | UC-GST-04, UC-RDR-02 | Generates narration from permitted chapter text and speech settings. |
-| OpenAI LLM Service | UC-AUT-08, UC-AUT-10, UC-MOD-02 | Returns writing suggestions or moderation assistance. It does not control Author content or publication decisions. |
+| OpenAI LLM Service | UC-AUT-09, UC-MOD-02 | Returns advisory review assistance. It does not control Author content or publication decisions. |
 | OpenAI Embedding Service | UC-AUT-10, UC-MOD-02 | Returns vectors used by NovelHub's similarity analysis. |
 | VPSTTT Object Storage | UC-GST-04, UC-RDR-02, UC-AUT-05, UC-AUT-06, UC-MOD-02 | Stores and retrieves permitted media and documents using NovelHub-controlled references and authorization. |
 | Gmail SMTP Service | UC-RDR-08, UC-AUT-11, UC-AUT-13, UC-ADM-06 | Delivers permitted outgoing email and returns SMTP acceptance/error status. |
@@ -120,7 +129,6 @@ A Reader can also perform `UC-GST-01` through `UC-GST-04`.
 | UC-RDR-09 Manage coin balance | Includes for top-up | Process top-up through Payment Gateway and apply a confirmed result exactly once. |
 | UC-RDR-10 Unlock early-access chapter | Includes | Verify chapter eligibility, entitlement and sufficient balance; deduct coins and allocate revenue atomically. |
 | UC-AUT-05 Import PDF as editable draft | Includes | Store the uploaded object and extract text from a supported text-layer PDF. |
-| UC-AUT-08 Request AI writing assistance | Includes | Request suggestions from OpenAI LLM Service while preserving Author control. |
 | UC-AUT-10 Submit content for review | Includes | Validate submission data and automatically start AI-assisted review/similarity processing. |
 | UC-MOD-03 Decide publication submission | Requires | A pending submission and the available review evidence; AI availability does not transfer the final decision. |
 | UC-ADM-06 Process Author withdrawal | Includes on approval | Send the approved payout request to Payment Gateway and record the result. |
@@ -128,7 +136,7 @@ A Reader can also perform `UC-GST-01` through `UC-GST-04`.
 ## 10. Modelling constraints
 
 - Do not model external services as decision-makers for NovelHub business rules.
-- Do not model AI review as a manual Moderator-triggered use case; it starts from Author submission.
+- Do not model AI review as a manual Moderator-triggered use case; it starts from Author submission (UC-AUT-09).
 - Do not model the system wallet as an external actor. It is internal NovelHub financial state.
 - Do not merge top-up revenue with Author earnings. Author/System allocation occurs on eligible paid chapter unlocks.
 - Do not give Guest any persistent personal state or coin operation.

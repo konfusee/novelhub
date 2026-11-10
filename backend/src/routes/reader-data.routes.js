@@ -3,7 +3,7 @@ import { z } from 'zod'
 import { Notification } from '../models/index.js'
 import { requireAuth } from '../middleware/auth.js'
 import { HttpError } from '../middleware/errors.js'
-import { ownerWrite } from '../modules/reading/owner-write.js'
+import { ownerWrite } from '../modules/reading-community/reading/owner-write.js'
 
 const id = z.string().regex(/^[a-f\d]{24}$/i)
 const profileInput = z

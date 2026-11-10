@@ -3,7 +3,7 @@ import os from 'node:os'
 import { expect, it } from 'vitest'
 import { testEnv } from './config.js'
 import { loadEnv, toAppConfig } from '../src/config/env.js'
-import { mediaRoot } from '../src/modules/author-media.js'
+import { mediaRoot } from '../src/modules/authoring-publishing/author/author-media.js'
 it('retains the existing default when storage is unset or empty', () => {
   const unset = toAppConfig(loadEnv(testEnv))
   const empty = toAppConfig(loadEnv({ ...testEnv, MEDIA_STORAGE_DIR: '' }))

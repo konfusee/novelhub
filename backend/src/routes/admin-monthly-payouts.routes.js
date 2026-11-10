@@ -2,9 +2,9 @@ import { Router } from 'express'
 import { z } from 'zod'
 import { requireAuth, requireRole } from '../middleware/auth.js'
 import { HttpError } from '../middleware/errors.js'
-import { generateMonthlyPayouts } from '../modules/admin-monthly-payouts.js'
-import { recordSimulatedPayoutResult } from '../modules/admin-payout-results.js'
-import { listMonthlyPayouts } from '../modules/admin-payout-list.js'
+import { generateMonthlyPayouts } from '../modules/coins-payouts/finance/admin-monthly-payouts.js'
+import { recordSimulatedPayoutResult } from '../modules/coins-payouts/finance/admin-payout-results.js'
+import { listMonthlyPayouts } from '../modules/coins-payouts/finance/admin-payout-list.js'
 
 const generateSchema = z
   .object({

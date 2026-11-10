@@ -12,10 +12,13 @@ import {
   PublicationSubmission,
   Story,
 } from '../src/models/index.js'
-import { spentUsd } from '../src/modules/ai/budget.js'
-import { backfillEmbeddings, backfillSummaryLine } from '../src/modules/ai/embedding-backfill.js'
-import { costUsd } from '../src/modules/ai/pricing.js'
-import { StageError } from '../src/modules/ai/stage-error.js'
+import { spentUsd } from '../src/modules/moderation-ai/ai/budget.js'
+import {
+  backfillEmbeddings,
+  backfillSummaryLine,
+} from '../src/modules/moderation-ai/ai/embedding-backfill.js'
+import { costUsd } from '../src/modules/moderation-ai/ai/pricing.js'
+import { StageError } from '../src/modules/moderation-ai/ai/stage-error.js'
 import { authenticatedAccount } from './fixtures/accounts.js'
 import { apiClient, approvedStory, origin, submitChapter } from './fixtures/submissions.js'
 import { testConfig } from './config.js'

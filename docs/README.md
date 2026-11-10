@@ -12,6 +12,8 @@ it does not require access to the external source directory.
   technical/process-gate pointers.
 - [Decision log](./decision-log.md) — confirmed decisions, proposed technical
   design, and the remaining technical/process gates.
+- [Authoring and publishing](./authoring-publishing.md) — traceability for
+  Author screens and the MVC boundary for Field 2.
 - [Active working plan](../plans/261007-1022-novelhub-requirements-to-database/plan.md)
   — the staged requirements-to-database plan and foundation gate.
 - [Phase 1 start](../plans/261007-1022-novelhub-requirements-to-database/phase-01-start.md)

@@ -9,11 +9,11 @@ import {
   editComment,
   likeComment,
   listComments,
-} from '../modules/community/comments.js'
-import { setFollow } from '../modules/community/follows.js'
-import { setRating } from '../modules/community/ratings.js'
-import { submitReport } from '../modules/community/reports.js'
-import { optionalAccount } from '../modules/reading/access.js'
+} from '../modules/reading-community/community/comments.js'
+import { setFollow } from '../modules/reading-community/community/follows.js'
+import { setRating } from '../modules/reading-community/community/ratings.js'
+import { submitReport } from '../modules/reading-community/community/reports.js'
+import { optionalAccount } from '../modules/reading-community/reading/access.js'
 
 const id = z.string().regex(/^[a-f\d]{24}$/i)
 const commentBody = z.string().trim().min(1).max(2000)

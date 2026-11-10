@@ -15,7 +15,10 @@ import { testConfig } from './config.js'
 import { useTestDatabase } from './db.js'
 
 import { withTransaction } from '../src/db/connection.js'
-import { PLATFORM_OWNER_ID, transferUnlockCoins } from '../src/modules/unlock-wallets.js'
+import {
+  PLATFORM_OWNER_ID,
+  transferUnlockCoins,
+} from '../src/modules/coins-payouts/finance/unlock-wallets.js'
 
 useTestDatabase()
 

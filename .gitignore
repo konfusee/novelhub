@@ -15,5 +15,4 @@ infra/mongo/mongot-password
 # Local uploads and Windows metadata
 backend/uploads/*
 backend/.tmp/
-!backend/uploads/.gitkeep
 Thumbs.db

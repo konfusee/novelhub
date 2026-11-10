@@ -10,14 +10,20 @@ import {
   PublicationSubmission,
   SimilarityFinding,
 } from '../src/models/index.js'
-import { spentUsd } from '../src/modules/ai/budget.js'
-import { embeddingRequestBatches, revisionPassages } from '../src/modules/ai/chunking.js'
-import { processEvidenceBatches, startEvidenceWorker } from '../src/modules/ai/evidence-worker.js'
-import { createOpenAIProvider } from '../src/modules/ai/openai-provider.js'
-import { costUsd, estimateTokens } from '../src/modules/ai/pricing.js'
-import { REVIEW_INSTRUCTIONS } from '../src/modules/ai/review-criteria.js'
-import { RUNNER_ID } from '../src/modules/ai/runner-id.js'
-import { StageError } from '../src/modules/ai/stage-error.js'
+import { spentUsd } from '../src/modules/moderation-ai/ai/budget.js'
+import {
+  embeddingRequestBatches,
+  revisionPassages,
+} from '../src/modules/moderation-ai/ai/chunking.js'
+import {
+  processEvidenceBatches,
+  startEvidenceWorker,
+} from '../src/modules/moderation-ai/ai/evidence-worker.js'
+import { createOpenAIProvider } from '../src/modules/moderation-ai/ai/openai-provider.js'
+import { costUsd, estimateTokens } from '../src/modules/moderation-ai/ai/pricing.js'
+import { REVIEW_INSTRUCTIONS } from '../src/modules/moderation-ai/ai/review-criteria.js'
+import { RUNNER_ID } from '../src/modules/moderation-ai/ai/runner-id.js'
+import { StageError } from '../src/modules/moderation-ai/ai/stage-error.js'
 import { authenticatedAccount } from './fixtures/accounts.js'
 import { apiClient, approvedStory, origin, submitChapter } from './fixtures/submissions.js'
 import { testConfig } from './config.js'

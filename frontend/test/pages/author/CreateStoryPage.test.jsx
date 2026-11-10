@@ -69,13 +69,13 @@ it('does not claim success when persistence fails and retains the entered fields
     ),
   )
 })
-it('requires an active category before writing and disables unsupported persistence controls', async () => {
+it('requires an active category before writing and allows selecting a cover for the new draft', async () => {
   mocks.apiRequest.mockResolvedValue(categories)
   view()
   await screen.findByRole('button', { name: 'Kỳ ảo trong DB', exact: true })
   fireEvent.click(screen.getByRole('button', { name: 'Lưu làm bản nháp', exact: true }))
   expect(mocks.apiRequest.mock.calls.every(([, options]) => options?.method !== 'POST')).toBe(true)
-  expect(screen.getByRole('button', { name: 'Tải ảnh bìa lên', exact: true }).disabled).toBe(true)
+  expect(screen.getByRole('button', { name: 'Tải ảnh bìa lên', exact: true }).disabled).toBe(false)
   expect(screen.getByRole('combobox', { name: 'Ngôn ngữ bản thảo gốc' }).textContent).toContain(
     'Tiếng Việt',
   )

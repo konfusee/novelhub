@@ -17,7 +17,7 @@ import {
   Wallet,
   WithdrawalRequest,
 } from '../src/models/index.js'
-import { createMonthlyPayoutRecords } from '../src/modules/monthly-payout-records.js'
+import { createMonthlyPayoutRecords } from '../src/modules/coins-payouts/finance/monthly-payout-records.js'
 
 const namespace = 'novelhub-payouts-demo-v1'
 const id = key =>

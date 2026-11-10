@@ -7,7 +7,7 @@ import {
   formerStoryDetail,
   formerStoryInput,
   formerStoryList,
-} from '../modules/admin-former-author-stories.js'
+} from '../modules/accounts-administration/admin/admin-former-author-stories.js'
 export function createAdminFormerAuthorRouter(config) {
   const router = Router()
   router.use('/admin/former-author-stories', requireAuth(config), requireRole('admin'))

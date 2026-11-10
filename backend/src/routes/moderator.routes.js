@@ -3,18 +3,18 @@ import { Router } from 'express'
 import { z } from 'zod'
 import { requireAuth, requireRole } from '../middleware/auth.js'
 import { HttpError } from '../middleware/errors.js'
-import { decideSubmission } from '../modules/moderation/review-decision.js'
+import { decideSubmission } from '../modules/moderation-ai/moderation/review-decision.js'
 import {
   moderatorSubmissionDetail,
   moderatorSubmittedImage,
-} from '../modules/moderation/review-detail.js'
+} from '../modules/moderation-ai/moderation/review-detail.js'
 import {
   claimSubmission,
   listModeratorDecisions,
   listModeratorSubmissions,
   moderatorSummary,
   releaseSubmission,
-} from '../modules/moderation/review-queue.js'
+} from '../modules/moderation-ai/moderation/review-queue.js'
 
 const id = z.string().regex(/^[a-f\d]{24}$/i)
 const versionBody = z.object({ expectedVersion: z.number().int().min(0) }).strict()

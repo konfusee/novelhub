@@ -2,7 +2,7 @@ import { Router } from 'express'
 import { z } from 'zod'
 import { requireAuth, requireRole } from '../middleware/auth.js'
 import { HttpError } from '../middleware/errors.js'
-import { getAuthorBankDetails, updateAuthorBankDetails } from '../modules/author-bank-details.js'
+import { getAuthorBankDetails, updateAuthorBankDetails } from '../modules/coins-payouts/finance/author-bank-details.js'
 
 const bankDetailsSchema = z
   .object({

@@ -6,7 +6,7 @@ import {
   adminPolicyHistory,
   cancelFuturePolicy,
   activatePolicy,
-} from '../src/modules/admin-policy.js'
+} from '../src/modules/accounts-administration/admin/admin-policy.js'
 import { authenticatedAccount } from './fixtures/accounts.js'
 import { testConfig } from './config.js'
 import { useTestDatabase } from './db.js'

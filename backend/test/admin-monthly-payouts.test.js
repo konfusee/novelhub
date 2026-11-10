@@ -6,7 +6,7 @@ import {
   Wallet,
   WithdrawalRequest,
 } from '../src/models/index.js'
-import { generateMonthlyPayouts } from '../src/modules/admin-monthly-payouts.js'
+import { generateMonthlyPayouts } from '../src/modules/coins-payouts/finance/admin-monthly-payouts.js'
 import { authenticatedAccount } from './fixtures/accounts.js'
 import { useTestDatabase } from './db.js'
 import request from 'supertest'

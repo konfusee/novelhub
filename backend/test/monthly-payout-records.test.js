@@ -9,7 +9,7 @@ import {
   WithdrawalRequest,
 } from '../src/models/index.js'
 import { withTransaction } from '../src/db/connection.js'
-import { createMonthlyPayoutRecords } from '../src/modules/monthly-payout-records.js'
+import { createMonthlyPayoutRecords } from '../src/modules/coins-payouts/finance/monthly-payout-records.js'
 import { authenticatedAccount } from './fixtures/accounts.js'
 import { useTestDatabase } from './db.js'
 

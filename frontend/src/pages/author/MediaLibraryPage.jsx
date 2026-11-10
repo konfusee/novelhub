@@ -120,7 +120,7 @@ export function MediaLibraryPage() {
       [...previous, ...resource.data.items].map(asset => ({
         ...asset,
         type: asset.kind === 'cover' ? 'Story Covers' : 'Chapter Art & Maps',
-        kind: 'image',
+        kind: asset.kind,
         color: 'var(--primary)',
         icon: 'IMG',
         size: asset.sizeBytes == null ? '—' : formatSize(asset.sizeBytes),
@@ -237,6 +237,36 @@ export function MediaLibraryPage() {
       setUploadNotice({ tone: 'success', text: t('mediaData.deleted') })
     } catch (failure) {
       setDeleteError(failure.message)
+    } finally {
+      busyRef.current = false
+      setBusy(false)
+    }
+  }
+
+  const setStoryMedia = async () => {
+    if (!selected?.storyId || !['cover', 'banner'].includes(selected.kind) || busyRef.current)
+      return
+    busyRef.current = true
+    setBusy(true)
+    try {
+      const current = await apiRequest(`/author/stories/${selected.storyId}`)
+      const story = current.story
+      const response = await apiRequest(`/author/stories/${selected.storyId}`, {
+        method: 'PUT',
+        body: {
+          title: story.title,
+          description: story.description,
+          categoryIds: story.categoryIds,
+          expectedVersion: story.version,
+          coverMediaId: selected.kind === 'cover' ? selected.id : story.coverMediaId,
+          coverBannerMediaId: selected.kind === 'banner' ? selected.id : story.coverBannerMediaId,
+        },
+      })
+      if (!response.story?.id) throw new Error(t('mediaData.assignError'))
+      setUploadNotice({ tone: 'success', text: t('mediaData.assigned') })
+      reload()
+    } catch (failure) {
+      setUploadNotice({ tone: 'error', text: failure.message || t('mediaData.assignError') })
     } finally {
       busyRef.current = false
       setBusy(false)
@@ -624,6 +654,7 @@ export function MediaLibraryPage() {
                   setDeleteError('')
                   setConfirmDelete(true)
                 }}
+                onSetStoryMedia={setStoryMedia}
                 busy={busy}
               />
             )}
@@ -779,7 +810,7 @@ function AssetCard({ asset, selected, view, onSelect }) {
   )
 }
 
-function AssetInspector({ asset, copied, onCopy, onClose, onDelete, busy }) {
+function AssetInspector({ asset, copied, onCopy, onClose, onDelete, onSetStoryMedia, busy }) {
   const { t } = useLocale()
   if (!asset)
     return (
@@ -833,11 +864,21 @@ function AssetInspector({ asset, copied, onCopy, onClose, onDelete, busy }) {
             </div>
           </div>
           <p className="mt-3 text-xs text-muted">{t('mediaData.privateUrl')}</p>
+          {asset.storyId && ['cover', 'banner'].includes(asset.kind) && (
+            <Button
+              disabled={busy}
+              variant="secondary"
+              onClick={onSetStoryMedia}
+              className="mt-5 w-full"
+            >
+              {asset.kind === 'cover' ? t('mediaData.setCover') : t('mediaData.setBanner')}
+            </Button>
+          )}
           <Button
             disabled={busy || !asset.url}
             variant="secondary"
             onClick={onCopy}
-            className="mt-5 w-full"
+            className="mt-2 w-full"
           >
             {copied ? (
               <Check size={16} aria-hidden="true" />

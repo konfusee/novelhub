@@ -2,7 +2,7 @@ import { Router } from 'express'
 import { z } from 'zod'
 import { requireAuth, requireRole } from '../middleware/auth.js'
 import { HttpError } from '../middleware/errors.js'
-import { getAuthorPayouts } from '../modules/author-payouts.js'
+import { getAuthorPayouts } from '../modules/coins-payouts/finance/author-payouts.js'
 
 const querySchema = z
   .object({
