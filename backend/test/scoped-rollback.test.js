@@ -46,12 +46,11 @@ it('keeps removed endpoints unavailable and rejects invalid unlocks without fina
   expect(await UnlockRequest.countDocuments()).toBe(0)
 })
 
-it('removes author/admin payouts, revenue agreements and cash-flow history without creating records', async () => {
+it('keeps legacy finance endpoints removed while restored payout endpoints remain read-only', async () => {
   const author = await authenticatedAccount('author')
   const admin = await authenticatedAccount('admin')
   const id = String(author.account._id)
   for (const url of [
-    '/api/author/payouts',
     `/api/author/payouts/${id}`,
     '/api/author/transactions',
     '/api/reader/author-finance/payouts',
@@ -60,7 +59,6 @@ it('removes author/admin payouts, revenue agreements and cash-flow history witho
     expect((await request(app).get(url).set('Cookie', author.cookie)).status, url).toBe(404)
   }
   for (const url of [
-    '/api/admin/monthly-payouts',
     '/api/admin/account-closures',
     '/api/admin/payout-operations',
     '/api/admin/finance-report',
@@ -71,6 +69,17 @@ it('removes author/admin payouts, revenue agreements and cash-flow history witho
   ]) {
     expect((await request(app).get(url).set('Cookie', admin.cookie)).status, url).toBe(404)
   }
+  expect((await request(app).get('/api/author/payouts').set('Cookie', author.cookie)).status).toBe(
+    200,
+  )
+  expect(
+    (
+      await request(app)
+        .get('/api/admin/monthly-payouts')
+        .set('Cookie', admin.cookie)
+        .query({ periodId: '2026-11' })
+    ).status,
+  ).toBe(200)
   for (const url of [
     `/api/admin/account-closures/${id}/evaluate`,
     `/api/admin/authors/${id}/agreement`,

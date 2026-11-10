@@ -128,8 +128,10 @@ describe('exact owner submission packages', () => {
     f.category.status = 'active'
     await f.category.save()
     const story = await Story.findById(f.storyId)
-    story.theme = { coverBannerMediaId: f.category._id }
-    await story.save()
+    // Covers are supported now. Unsupported references must be placed in the submitted revision.
+    const revision = await ContentRevision.findById(f.body.revisionId)
+    revision.mediaIds = [f.category._id]
+    await revision.save()
     expect((await f.prepare()).body.checks.find(row => row.code === 'media').ok).toBe(false)
     expect(
       (

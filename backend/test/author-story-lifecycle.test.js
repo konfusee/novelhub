@@ -97,7 +97,7 @@ describe('private author draft lifecycle', () => {
     expect(
       (await request(app).post(f.path).set('Cookie', f.author.cookie).send(input)).status,
     ).toBe(403)
-    expect((await write(f.path, f.author.cookie, { ...input, action: 'delete' })).status).toBe(400)
+    expect((await write(f.path, f.author.cookie, { ...input, action: 'purge' })).status).toBe(400)
     const results = await Promise.all([
       write(f.path, f.author.cookie, input),
       write(f.path, f.author.cookie, input),
