@@ -1,31 +1,22 @@
 import { Account, LedgerEntry, Wallet } from '../models/index.js'
 import { withTransaction } from '../db/connection.js'
-import { HttpError } from '../middleware/errors.js'
+import {
+  assertReportAmounts,
+  matchesAuthorName,
+  monthRange,
+  paginateReport,
+  shiftMonth,
+} from './finance-reporting.js'
 
-function monthRange(periodId) {
-  const [year, month] = periodId.split('-').map(Number)
-
-  const nextYear = month === 12 ? year + 1 : year
-  const nextMonth = month === 12 ? 1 : month + 1
-
-  const nextPeriod = [String(nextYear).padStart(4, '0'), String(nextMonth).padStart(2, '0')].join(
-    '-',
-  )
-
-  // Khoảng tháng theo giờ Việt Nam.
-  const start = new Date(`${periodId}-01T00:00:00+07:00`)
-  const end = new Date(`${nextPeriod}-01T00:00:00+07:00`)
-
-  if (!Number.isFinite(start.getTime()) || !Number.isFinite(end.getTime())) {
-    throw new HttpError(400, 'invalid_revenue_period', 'Kỳ thống kê không hợp lệ.')
-  }
-
-  return { start, end }
-}
-
-export async function getAdminAuthorRevenue({ periodId, page = 1 }) {
+export async function getAdminAuthorRevenue({
+  periodId,
+  page = 1,
+  search = '',
+  activity = 'all',
+  sort = 'revenue',
+  all = false,
+}) {
   const { start, end } = monthRange(periodId)
-  const pageSize = 20
 
   return withTransaction(async session => {
     // Bao gồm cả tác giả từng hoạt động để giữ dữ liệu lịch sử.
@@ -98,18 +89,52 @@ export async function getAdminAuthorRevenue({ periodId, page = 1 }) {
 
     const totalRevenueCoins = rows.reduce((total, row) => total + row.monthlyRevenueCoins, 0)
 
-    if (
-      !Number.isSafeInteger(totalRevenueCoins) ||
-      rows.some(
-        row => !Number.isSafeInteger(row.monthlyRevenueCoins) || row.monthlyRevenueCoins < 0,
-      )
-    ) {
-      throw new HttpError(409, 'invalid_revenue_total', 'Số liệu doanh thu vượt giới hạn xử lý.')
-    }
+    assertReportAmounts([
+      totalRevenueCoins,
+      ...rows.flatMap(row => [row.monthlyRevenueCoins, row.balanceCoins]),
+    ])
 
     const earningAuthors = rows.filter(row => row.monthlyRevenueCoins > 0)
 
-    const offset = (page - 1) * pageSize
+    const filtered = rows.filter(
+      row =>
+        matchesAuthorName(row.displayName, search) &&
+        (activity !== 'earning' || row.monthlyRevenueCoins > 0),
+    )
+    const sortRows = {
+      revenue: (a, b) => b.monthlyRevenueCoins - a.monthlyRevenueCoins,
+      balance: (a, b) => b.balanceCoins - a.balanceCoins,
+      name: (a, b) => a.displayName.localeCompare(b.displayName, 'vi'),
+    }
+    filtered.sort((a, b) => sortRows[sort](a, b) || a.accountId.localeCompare(b.accountId))
+
+    // The trend and headline metrics cover the whole period, independently of table filters.
+    const firstPeriod = shiftMonth(periodId, -5)
+    const trendRows = await LedgerEntry.aggregate([
+      {
+        $match: {
+          walletId: { $in: wallets.map(wallet => wallet._id) },
+          ledgerType: 'allocation-credit',
+          direction: 'credit',
+          sourceType: 'UnlockRequest',
+          occurredAt: { $gte: monthRange(firstPeriod).start, $lt: end },
+        },
+      },
+      {
+        $group: {
+          _id: {
+            $dateToString: { format: '%Y-%m', date: '$occurredAt', timezone: 'Asia/Ho_Chi_Minh' },
+          },
+          revenueCoins: { $sum: '$amount' },
+        },
+      },
+    ]).session(session)
+    const revenueByMonth = new Map(trendRows.map(row => [row._id, row.revenueCoins]))
+    const trend = Array.from({ length: 6 }, (_, index) => {
+      const month = shiftMonth(firstPeriod, index)
+      return { periodId: month, revenueCoins: revenueByMonth.get(month) ?? 0 }
+    })
+    assertReportAmounts(trend.map(row => row.revenueCoins))
 
     return {
       periodId,
@@ -119,11 +144,8 @@ export async function getAdminAuthorRevenue({ periodId, page = 1 }) {
         totalRevenueCoins,
       },
       topAuthors: earningAuthors.slice(0, 5),
-      page,
-      pageSize,
-      totalItems: rows.length,
-      hasMore: offset + pageSize < rows.length,
-      items: rows.slice(offset, offset + pageSize),
+      trend,
+      ...paginateReport(filtered, page, all),
     }
   })
 }

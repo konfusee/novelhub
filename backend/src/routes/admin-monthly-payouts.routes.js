@@ -32,6 +32,9 @@ const listSchema = z
     periodId: z.string().regex(/^\d{4}-(0[1-9]|1[0-2])$/),
     status: z.enum(['pending', 'paid']).optional(),
     page: z.coerce.number().int().min(1).max(10000).default(1),
+    search: z.string().trim().max(100).default(''),
+    latestResult: z.literal('Failed').optional(),
+    export: z.literal('csv').optional(),
   })
   .strict()
 
@@ -102,7 +105,10 @@ export function createAdminMonthlyPayoutsRouter(config) {
           throw new HttpError(400, 'validation_error', 'Bộ lọc danh sách chi trả không hợp lệ.')
         }
 
-        const result = await listMonthlyPayouts(parsed.data)
+        const result = await listMonthlyPayouts({
+          ...parsed.data,
+          all: parsed.data.export === 'csv',
+        })
 
         res.set('Cache-Control', 'private, no-store').json(result)
       } catch (error) {

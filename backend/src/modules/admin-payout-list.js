@@ -1,64 +1,57 @@
 import { PayoutResultEntry, WithdrawalRequest } from '../models/index.js'
+import { withTransaction } from '../db/connection.js'
+import { assertReportAmounts, matchesAuthorName, paginateReport } from './finance-reporting.js'
 
-export async function listMonthlyPayouts({ periodId, status, page = 1 }) {
-  const pageSize = 20
-  const filter = { periodId }
+export async function listMonthlyPayouts({
+  periodId,
+  status,
+  search = '',
+  latestResult,
+  page = 1,
+  all = false,
+}) {
+  return withTransaction(async session => {
+    const rows = await WithdrawalRequest.find({ periodId })
+      .select(
+        'accountId periodId amountCoins payoutSlipAmountVnd status createdAt +bankDetailsSnapshot',
+      )
+      .populate({
+        path: 'accountId',
+        select: 'displayName',
+      })
+      .sort({ createdAt: -1, _id: -1 })
+      .session(session)
+      .lean()
 
-  if (status) {
-    filter.status = status
-  }
-
-  const withdrawals = await WithdrawalRequest.find(filter)
-    .select(
-      'accountId periodId amountCoins payoutSlipAmountVnd status createdAt +bankDetailsSnapshot',
-    )
-    .populate({
-      path: 'accountId',
-      select: 'displayName',
-    })
-    .sort({ createdAt: -1, _id: -1 })
-    .skip((page - 1) * pageSize)
-    .limit(pageSize + 1)
-    .lean()
-
-  // Lấy dư một bản ghi để biết còn trang tiếp theo không.
-  const hasMore = withdrawals.length > pageSize
-  const rows = withdrawals.slice(0, pageSize)
-
-  const latestResults = rows.length
-    ? await PayoutResultEntry.aggregate([
-        {
-          $match: {
-            withdrawalRequestId: {
-              $in: rows.map(row => row._id),
+    const latestResults = rows.length
+      ? await PayoutResultEntry.aggregate([
+          {
+            $match: {
+              withdrawalRequestId: {
+                $in: rows.map(row => row._id),
+              },
             },
           },
-        },
-        {
-          $sort: {
-            occurredAt: -1,
-            _id: -1,
+          {
+            $sort: {
+              occurredAt: -1,
+              _id: -1,
+            },
           },
-        },
-        {
-          $group: {
-            _id: '$withdrawalRequestId',
-            result: { $first: '$result' },
-            note: { $first: '$note' },
-            occurredAt: { $first: '$occurredAt' },
+          {
+            $group: {
+              _id: '$withdrawalRequestId',
+              result: { $first: '$result' },
+              note: { $first: '$note' },
+              occurredAt: { $first: '$occurredAt' },
+            },
           },
-        },
-      ])
-    : []
+        ]).session(session)
+      : []
 
-  const resultByWithdrawal = new Map(latestResults.map(result => [String(result._id), result]))
+    const resultByWithdrawal = new Map(latestResults.map(result => [String(result._id), result]))
 
-  return {
-    periodId,
-    page,
-    pageSize,
-    hasMore,
-    items: rows.map(row => {
+    const items = rows.map(row => {
       const latest = resultByWithdrawal.get(String(row._id))
       const bank = row.bankDetailsSnapshot
 
@@ -86,6 +79,35 @@ export async function listMonthlyPayouts({ periodId, status, page = 1 }) {
             }
           : null,
       }
-    }),
-  }
+    })
+
+    const summary = {
+      totalAmountVnd: 0,
+      paidAmountVnd: 0,
+      pendingAmountVnd: 0,
+      failedCount: 0,
+      failedAmountVnd: 0,
+      totalCount: items.length,
+    }
+    for (const row of items) {
+      summary.totalAmountVnd += row.payoutSlipAmountVnd
+      if (row.status === 'paid') summary.paidAmountVnd += row.payoutSlipAmountVnd
+      else {
+        summary.pendingAmountVnd += row.payoutSlipAmountVnd
+        if (row.latestResult?.result === 'Failed') {
+          summary.failedCount++
+          summary.failedAmountVnd += row.payoutSlipAmountVnd
+        }
+      }
+    }
+    assertReportAmounts(Object.values(summary))
+    const filtered = items.filter(
+      row =>
+        (!status || row.status === status) &&
+        matchesAuthorName(row.displayName, search) &&
+        (!latestResult || (row.status === 'pending' && row.latestResult?.result === latestResult)),
+    )
+
+    return { periodId, summary, ...paginateReport(filtered, page, all) }
+  })
 }

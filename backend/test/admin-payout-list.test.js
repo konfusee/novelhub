@@ -1,12 +1,7 @@
 import request from 'supertest'
 import { expect, it } from 'vitest'
 import { createApp } from '../src/app.js'
-import {
-  Account,
-  PayoutResultEntry,
-  Wallet,
-  WithdrawalRequest,
-} from '../src/models/index.js'
+import { Account, PayoutResultEntry, Wallet, WithdrawalRequest } from '../src/models/index.js'
 import { authenticatedAccount } from './fixtures/accounts.js'
 import { testConfig } from './config.js'
 import { useTestDatabase } from './db.js'
@@ -58,18 +53,13 @@ async function prepareWithdrawal(overrides = {}) {
 }
 
 function getList(cookie, query = { periodId }) {
-  return request(app)
-    .get(endpoint)
-    .set('Cookie', cookie)
-    .query(query)
+  return request(app).get(endpoint).set('Cookie', cookie).query(query)
 }
 
 it('khách, reader và author không được xem danh sách', async () => {
   await prepareWithdrawal()
 
-  const guest = await request(app)
-    .get(endpoint)
-    .query({ periodId })
+  const guest = await request(app).get(endpoint).query({ periodId })
 
   expect(guest.status).toBe(401)
   expect(guest.body.items).toBeUndefined()
@@ -158,12 +148,10 @@ it('lấy kết quả mới nhất và không trả mã chuyển khoản riêng 
     occurredAt: '2026-12-01T02:00:00.000Z',
   })
 
-  expect(JSON.stringify(response.body)).not.toContain(
-    'PRIVATE-REFERENCE',
-  )
+  expect(JSON.stringify(response.body)).not.toContain('PRIVATE-REFERENCE')
 })
 
-it('21 khoản được chia thành hai trang, không lặp bản ghi', async () => {
+it('21 khoản được chia thành các trang 7 bản ghi, không lặp bản ghi', async () => {
   const admin = await authenticatedAccount('admin')
 
   for (let index = 0; index < 21; index++) {
@@ -180,21 +168,83 @@ it('21 khoản được chia thành hai trang, không lặp bản ghi', async ()
     page: 2,
   })
 
+  const third = await getList(admin.cookie, {
+    periodId,
+    page: 3,
+  })
+
   expect(first.status).toBe(200)
   expect(second.status).toBe(200)
+  expect(third.status).toBe(200)
 
-  expect(first.body.items).toHaveLength(20)
+  expect(first.body.pageSize).toBe(7)
+  expect(first.body.items).toHaveLength(7)
   expect(first.body.hasMore).toBe(true)
 
-  expect(second.body.items).toHaveLength(1)
-  expect(second.body.hasMore).toBe(false)
+  expect(second.body.items).toHaveLength(7)
+  expect(second.body.hasMore).toBe(true)
 
-  const ids = [
-    ...first.body.items,
-    ...second.body.items,
-  ].map(item => item.withdrawalId)
+  expect(third.body.items).toHaveLength(7)
+  expect(third.body.hasMore).toBe(false)
+
+  const ids = [...first.body.items, ...second.body.items, ...third.body.items].map(
+    item => item.withdrawalId,
+  )
 
   expect(new Set(ids).size).toBe(21)
+  const exported = await getList(admin.cookie, { periodId, export: 'csv', page: 3 })
+  expect(exported.body.items).toHaveLength(21)
+  expect(exported.body.summary.totalAmountVnd).toBe(21 * 150000)
+})
+
+it('tìm tác giả và lọc kết quả mới nhất; tổng kỳ không đổi, không đếm trùng lần thất bại', async () => {
+  const admin = await authenticatedAccount('admin')
+  const pending = await prepareWithdrawal()
+  const paid = await prepareWithdrawal({ status: 'paid' })
+  const untouched = await prepareWithdrawal()
+  await Account.updateOne({ _id: pending.account._id }, { $set: { displayName: 'Đặng Ngọc Anh' } })
+  for (const [index, result] of ['Failed', 'Failed'].entries()) {
+    await PayoutResultEntry.create({
+      withdrawalRequestId: pending.withdrawal._id,
+      resultEntryKey: crypto.randomUUID(),
+      result,
+      occurredAt: new Date(`2026-12-01T0${index}:00:00Z`),
+    })
+  }
+  await PayoutResultEntry.create([
+    {
+      withdrawalRequestId: paid.withdrawal._id,
+      resultEntryKey: crypto.randomUUID(),
+      result: 'Failed',
+      occurredAt: new Date('2026-12-01T00:00:00Z'),
+    },
+    {
+      withdrawalRequestId: paid.withdrawal._id,
+      resultEntryKey: crypto.randomUUID(),
+      result: 'Paid',
+      occurredAt: new Date('2026-12-01T01:00:00Z'),
+    },
+  ])
+  const response = await getList(admin.cookie, {
+    periodId,
+    search: 'dang ngoc',
+    latestResult: 'Failed',
+  })
+  expect(response.body.items.map(row => row.withdrawalId)).toEqual([String(pending.withdrawal._id)])
+  expect(response.body.summary).toEqual({
+    totalCount: 3,
+    totalAmountVnd: 450000,
+    paidAmountVnd: 150000,
+    pendingAmountVnd: 300000,
+    failedCount: 1,
+    failedAmountVnd: 150000,
+  })
+  const none = await getList(admin.cookie, { periodId, search: 'not-found' })
+  expect(none.body.items).toEqual([])
+  expect(none.body.summary).toEqual(response.body.summary)
+  expect(
+    response.body.items.some(row => row.withdrawalId === String(untouched.withdrawal._id)),
+  ).toBe(false)
 })
 
 it('từ chối bộ lọc không hợp lệ', async () => {

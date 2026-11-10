@@ -2,7 +2,7 @@ import request from 'supertest'
 import { Types } from 'mongoose'
 import { expect, it } from 'vitest'
 import { createApp } from '../src/app.js'
-import { LedgerEntry, Wallet } from '../src/models/index.js'
+import { Account, LedgerEntry, Wallet } from '../src/models/index.js'
 import { getAdminAuthorRevenue } from '../src/modules/admin-author-revenue.js'
 import { authenticatedAccount } from './fixtures/accounts.js'
 import { testConfig } from './config.js'
@@ -168,11 +168,20 @@ it('phân trang không làm thay đổi tổng và top 5', async () => {
     page: 2,
   })
 
-  expect(first.items).toHaveLength(20)
+  const third = await getAdminAuthorRevenue({
+    periodId,
+    page: 3,
+  })
+
+  expect(first.pageSize).toBe(7)
+  expect(first.items).toHaveLength(7)
   expect(first.hasMore).toBe(true)
 
-  expect(second.items).toHaveLength(1)
-  expect(second.hasMore).toBe(false)
+  expect(second.items).toHaveLength(7)
+  expect(second.hasMore).toBe(true)
+
+  expect(third.items).toHaveLength(7)
+  expect(third.hasMore).toBe(false)
 
   expect(first.summary).toEqual({
     totalAuthors: 21,
@@ -182,13 +191,56 @@ it('phân trang không làm thay đổi tổng và top 5', async () => {
 
   expect(second.summary).toEqual(first.summary)
   expect(second.topAuthors).toEqual(first.topAuthors)
+  expect(third.summary).toEqual(first.summary)
+  expect(third.topAuthors).toEqual(first.topAuthors)
 
   expect(first.topAuthors.map(item => item.monthlyRevenueCoins)).toEqual([21, 20, 19, 18, 17])
 
-  const ids = [...first.items, ...second.items].map(item => item.accountId)
+  const ids = [...first.items, ...second.items, ...third.items].map(item => item.accountId)
 
   expect(new Set(ids).size).toBe(21)
+  const exported = await getAdminAuthorRevenue({ periodId, page: 3, all: true })
+  expect(exported.items).toHaveLength(21)
+  expect(exported.hasMore).toBe(false)
 }, 15000)
+
+it('tìm không dấu, lọc và sắp xếp trước khi phân trang; tổng và biểu đồ vẫn theo cả kỳ', async () => {
+  const first = await prepareAuthor()
+  const second = await prepareAuthor()
+  const zero = await prepareAuthor()
+  await Account.updateOne({ _id: first.account._id }, { $set: { displayName: 'Đặng Ngọc Anh' } })
+  await Account.updateOne({ _id: second.account._id }, { $set: { displayName: 'Nguyễn Lan Chi' } })
+  await Account.updateOne({ _id: zero.account._id }, { $set: { displayName: 'Đặng Minh An' } })
+  await addEntry(first.wallet, { amount: 100 })
+  await addEntry(second.wallet, { amount: 200 })
+  await addEntry(first.wallet, { amount: 50, occurredAt: new Date('2026-06-01T00:00:00+07:00') })
+  await addEntry(first.wallet, { amount: 999, occurredAt: new Date('2026-05-31T23:59:59+07:00') })
+
+  const result = await getAdminAuthorRevenue({ periodId, search: 'DANG', activity: 'earning' })
+  expect(result.items.map(row => row.displayName)).toEqual(['Đặng Ngọc Anh'])
+  expect(result.summary.totalRevenueCoins).toBe(300)
+  expect(result.totalItems).toBe(1)
+  expect(result.trend.map(row => row.periodId)).toEqual([
+    '2026-06',
+    '2026-07',
+    '2026-08',
+    '2026-09',
+    '2026-10',
+    '2026-11',
+  ])
+  expect(result.trend.map(row => row.revenueCoins)).toEqual([50, 0, 0, 0, 0, 300])
+  const balance = await getAdminAuthorRevenue({ periodId, sort: 'balance' })
+  expect(balance.items[0].accountId).toBe(String(first.account._id))
+  const name = await getAdminAuthorRevenue({ periodId, sort: 'name' })
+  expect(name.items.map(row => row.displayName)).toEqual([
+    'Đặng Minh An',
+    'Đặng Ngọc Anh',
+    'Nguyễn Lan Chi',
+  ])
+  const empty = await getAdminAuthorRevenue({ periodId, search: '.*' })
+  expect(empty.items).toEqual([])
+  expect(empty.summary).toEqual(result.summary)
+})
 
 it('API chỉ cho admin xem và không cho cache kết quả', async () => {
   const guest = await request(app).get(endpoint).query({ periodId })
@@ -221,6 +273,9 @@ it('API từ chối tháng và phân trang không hợp lệ', async () => {
     { periodId, page: 0 },
     { periodId, page: 1.5 },
     { periodId, unexpected: 'value' },
+    { periodId, sort: 'invalid' },
+    { periodId, activity: 'invalid' },
+    { periodId, search: 'a'.repeat(101) },
   ]
 
   for (const query of invalidQueries) {
