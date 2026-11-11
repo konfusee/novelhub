@@ -14,7 +14,7 @@ This document records the implementation boundary for Field 2 and maps the lates
 
 Submitted revisions are frozen. A rejected revision is revised into a new editable draft, while a published revision remains live until an approved replacement is released. Rights declarations and media digests are checked when a package is submitted and retained with the submitted package.
 
-The owned story list now returns category labels, chapter counts, latest review status,
+The owned story list now returns each story's main category, chapter counts, latest review status,
 updated time and the safe-delete flag. Delete is an append-only lifecycle transition:
 only a never-published draft with no open submission can be marked as deleted, so the
 audit trail remains available while the story disappears from the Author workspace.

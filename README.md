@@ -53,6 +53,7 @@ progress, follows, ratings, comments, reports and the Moderator report queue.
 | `npm run db:sync-search-indexes --workspace backend`                                         | Create or update the moderation vector index and wait until it is queryable                                                                                           |
 | `npm run db:backfill-embeddings --workspace backend -- --dry-run`                            | Plan embeddings for published chapters; the real run takes `--plan` and `--max-usd`                                                                                   |
 | `npm run ai:fail-pending --workspace backend -- --dry-run`                                   | List evidence that a rollback would send to manual review                                                                                                             |
+| `npm run db:migrate-story-single-category --workspace backend`                               | Dry run of the one-main-category story migration; `-- --apply` writes. The shared database was migrated on 2026-11-11; run it on older local copies                   |
 | `npm run smoke:moderation-review --workspace backend -- --preflight --confirm-single-runner` | Read-only readiness and budget check for the moderation pipeline                                                                                                      |
 
 ## Conventions

@@ -319,10 +319,12 @@ content is excluded from similarity sources, and cancellation uses
 and directly republish an unpublished former-Author story, audited without
 Moderator/AI review as an explicit exception only for former-Author stories.
 
-Categories are Admin-managed; each story selects one or more. Authors set
-story status Ongoing/Completed and may reopen it. Search covers title and
-Author name; filters cover category and status; sorting covers popularity,
-rating, and newest. Popularity is unique daily views over a rolling 30 days.
+Categories are Admin-managed; each story has exactly one main category. Authors
+may add 0–10 free-form tags of 2–30 letters, digits, `-` or `_`, unique
+regardless of case. Authors set story status Ongoing/Completed and may reopen
+it. Search covers title, Author name and tags; filters cover category, tag and
+status; sorting covers popularity, rating, and newest. Popularity is unique
+daily views over a rolling 30 days.
 Author V1 statistics cover views per story/chapter, followers, average rating,
 unlocks and earnings per chapter/month, and comment counts. A view is unique
 Reader/chapter/day, or unique guest device/chapter-one/day after free-text
