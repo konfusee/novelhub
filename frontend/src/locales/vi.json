@@ -782,7 +782,11 @@
     "progressError": "Chưa lưu được tiến độ đọc.",
     "reportChapter": "Báo cáo chương",
     "retry": "Thử lại",
-    "storyProgress": "Đã đi qua {{percent}}% truyện"
+    "storyProgress": "Đã đi qua {{percent}}% truyện",
+    "modeSwitch": "Chuyển giữa đọc và nghe",
+    "modeRead": "Đọc",
+    "modeListen": "Nghe",
+    "listenChapter": "Nghe chương này"
   },
   "auth": {
     "accountType": "Loại tài khoản",
@@ -964,7 +968,9 @@
     "previewMissing": "Không tìm thấy chương",
     "chapterNavigation": "Điều hướng chương",
     "previousChapter": "Chương trước",
-    "nextChapter": "Chương sau"
+    "nextChapter": "Chương sau",
+    "continueListening": "Nghe tiếp: {{title}}",
+    "startListening": "Nghe"
   },
   "readerHome": {
     "becauseFantasy": "Vì bạn đã đọc Fantasy",
@@ -1277,7 +1283,8 @@
     "unfollowStory": "Bỏ theo dõi {{title}}",
     "unfollowed": "Đã bỏ theo dõi {{title}}.",
     "upToDate": "Bạn đã đọc đến chương mới nhất.",
-    "viewStory": "Xem truyện"
+    "viewStory": "Xem truyện",
+    "continueListening": "Nghe tiếp"
   },
   "history": {
     "eyebrow": "Bản ghi thư viện cá nhân · đồng bộ 4 phút trước",
@@ -1337,7 +1344,11 @@
     "removed": "Đã xóa khỏi lịch sử đọc.",
     "retry": "Thử lại",
     "unavailable": "Không còn khả dụng",
-    "viewStory": "Xem truyện"
+    "viewStory": "Xem truyện",
+    "modeText": "Đọc",
+    "modeAudio": "Nghe",
+    "resumeListening": "Nghe tiếp",
+    "relisten": "Nghe lại"
   },
   "authorFinance": {
     "eyebrow": "Doanh thu tác giả · tài khoản sáng tác",
@@ -1459,7 +1470,8 @@
       "reading": "Chưa có truyện đang đọc",
       "following": "Bạn chưa theo dõi truyện nào",
       "completed": "Chưa có truyện đã đọc xong"
-    }
+    },
+    "continueListening": "Nghe tiếp"
   },
   "workspace": {
     "openItems": "Mục đang mở",
@@ -2816,5 +2828,69 @@
     "pages": "Phân trang tài khoản",
     "confirmHint": "Xác nhận cấp hoặc thu hồi quyền. Tài khoản sẽ đăng xuất và các hồ sơ đang nhận sẽ trở về hàng đợi chung.",
     "confirm": "Xác nhận thay đổi"
+  },
+  "listen": {
+    "audioLabel": "Audio {{chapter}}",
+    "autoContinue": "Tự động nghe chương tiếp theo",
+    "backToStory": "Về trang truyện",
+    "breadcrumb": "Đường dẫn",
+    "chapterEnded": "Bạn đã nghe hết chương này.",
+    "chapterErrorTitle": "Không tải được chương",
+    "contentUpdated": "Nội dung chương đã cập nhật, nghe lại từ đầu.",
+    "controls": "Điều khiển phát",
+    "dismiss": "Ẩn thông báo",
+    "errorDescription": "Kết nối tới máy chủ bị gián đoạn. Vui lòng thử lại.",
+    "errorTitle": "Không tải được audio",
+    "failedDescription": "Chưa tạo được audio cho chương này.",
+    "failedTitle": "Không tạo được audio",
+    "firstPlayHint": "Phát — audio được tạo ở lần phát đầu tiên",
+    "generating": "Đang tạo audio…",
+    "generatingHint": "Chương dài có thể mất vài chục giây. Audio sẽ tự phát khi sẵn sàng.",
+    "linkCopied": "Đã sao chép liên kết",
+    "listenNext": "Nghe chương tiếp",
+    "loadingChapter": "Đang tải chương…",
+    "loadingStatus": "Đang kiểm tra audio…",
+    "lockedDescription": "Chương này đang trong thời gian truy cập sớm. Mở khóa chương để đọc và nghe.",
+    "lockedTitle": "Chương đang khóa",
+    "login": "Đăng nhập",
+    "loginDescription": "Chức năng nghe chỉ dành cho tài khoản đã đăng nhập.",
+    "loginTitle": "Đăng nhập để nghe",
+    "missingDescription": "Chương có thể đã bị gỡ hoặc đường dẫn không đúng.",
+    "missingTitle": "Không tìm thấy chương",
+    "mute": "Tắt tiếng",
+    "next": "Chương tiếp theo",
+    "nextLocked": "Chương sau đang khóa",
+    "nextLockedNote": "Đã nghe hết chương. {{chapter}} đang khóa.",
+    "pause": "Tạm dừng",
+    "paused": "Tạm dừng",
+    "play": "Phát",
+    "playing": "Đang phát",
+    "position": "{{current}} / {{total}}",
+    "previous": "Chương trước",
+    "previousLocked": "Chương trước đang khóa",
+    "progress": "Tiến độ âm thanh",
+    "progressError": "Chưa lưu được tiến độ nghe.",
+    "queue": "Danh sách chương",
+    "queueCount": "{{count}} chương",
+    "queueCurrent": "Đang chọn",
+    "queueError": "Không tải được danh sách chương",
+    "queueLocked": "Đang khóa",
+    "queueReady": "Có thể nghe",
+    "readInstead": "Đọc chương này",
+    "ready": "Sẵn sàng phát",
+    "retry": "Thử lại",
+    "room": "Phòng nghe",
+    "share": "Chia sẻ",
+    "skipBack": "Lùi {{seconds}} giây",
+    "skipForward": "Tiến {{seconds}} giây",
+    "speed": "Tốc độ",
+    "storyEnd": "Bạn đã nghe hết các chương hiện có.",
+    "unavailableDescription": "Bạn vẫn có thể đọc chương này bình thường.",
+    "unavailableTitle": "Chức năng nghe chưa sẵn sàng.",
+    "unlockInReader": "Mở khóa trong trình đọc",
+    "unmute": "Bật tiếng",
+    "voice": "Giọng đọc tiếng Việt",
+    "voiceNote": "Giọng đọc tiếng Việt mặc định, tạo tự động từ nội dung chương.",
+    "volume": "Âm lượng"
   }
 }

@@ -58,12 +58,13 @@ async function visibleChapter(config, req) {
 
 async function storyViewer(account, storyId) {
   if (!account) return null
-  const [follow, rating, resume] = await Promise.all([
+  const [follow, rating, resume, listenResume] = await Promise.all([
     Follow.exists({ accountId: account._id, storyId, status: 'active' }),
     Rating.findOne({ accountId: account._id, storyId, status: 'active' }).select('value').lean(),
-    resumeFor(account, storyId),
+    resumeFor(account, storyId, 'text'),
+    resumeFor(account, storyId, 'audio'),
   ])
-  return { following: Boolean(follow), rating: rating?.value ?? null, resume }
+  return { following: Boolean(follow), rating: rating?.value ?? null, resume, listenResume }
 }
 
 export function createCatalogRouter(config) {

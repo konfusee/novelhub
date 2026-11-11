@@ -1,16 +1,17 @@
 import { Link } from 'react-router'
-import { ArrowRight, BellOff } from '../icons'
+import { ArrowRight, BellOff, Headphones } from '../icons'
 import { Badge, Button, ButtonLink, Card, Skeleton } from '../ui'
 import { StoryCover } from '../story/StoryCover'
-import { resumeHref } from './readerLinks'
+import { listenHref, resumeHref } from './readerLinks'
 import { ROUTES } from '../../app/routes'
 import { useLocale } from '../../context/LocaleContext'
 
 /* A followed story (`LibraryItem`): new chapters since the last read, resume and unfollow. */
 export function SavedStoryCard({ item, onUnfollow, busy = false }) {
   const { t } = useLocale()
-  const { story, resume } = item
+  const { story, resume, listenResume } = item
   const href = ROUTES.story(story.id)
+  const listenTo = listenHref(story.id, listenResume)
   return (
     <Card as="article" className="group flex gap-4 p-4">
       <Link to={href} tabIndex={-1} aria-hidden="true" className="shrink-0 self-start">
@@ -51,9 +52,22 @@ export function SavedStoryCard({ item, onUnfollow, busy = false }) {
             <BellOff size={15} aria-hidden="true" />
             {t('following.unfollow')}
           </Button>
-          <ButtonLink to={resumeHref(story.id, resume)} size="sm" trailingIcon={ArrowRight}>
-            {t(resume?.available ? 'following.readNext' : 'following.viewStory')}
-          </ButtonLink>
+          <span className="flex flex-wrap items-center gap-2">
+            {listenTo && (
+              <ButtonLink
+                to={listenTo}
+                size="sm"
+                variant="secondary"
+                aria-label={`${t('following.continueListening')}: ${story.title}`}
+              >
+                <Headphones size={15} aria-hidden="true" />
+                {t('following.continueListening')}
+              </ButtonLink>
+            )}
+            <ButtonLink to={resumeHref(story.id, resume)} size="sm" trailingIcon={ArrowRight}>
+              {t(resume?.available ? 'following.readNext' : 'following.viewStory')}
+            </ButtonLink>
+          </span>
         </div>
       </div>
     </Card>

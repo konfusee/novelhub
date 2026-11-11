@@ -14,6 +14,7 @@ import {
   Copy,
   Flag,
   Focus,
+  Headphones,
   Highlighter,
   Info,
   List,
@@ -43,6 +44,7 @@ import { ReaderRange, ReaderSettings } from '../../components/reader/ReaderSetti
 import { ChapterSegment } from '../../components/reader/ChapterSegment'
 import { chapterLabel } from '../../components/reader/chapterLabel'
 import { ChapterInlineText } from '../../components/reader/ChapterInlineText'
+import { ReadListenSwitch } from '../../components/reader/ReadListenSwitch'
 import { useChapterSwipe } from '../../components/reader/useChapterSwipe'
 import {
   DEFAULT_CHAPTER_MODE,
@@ -111,6 +113,9 @@ const freshView = (id, direction = null, jump = 0) => ({
   jump,
 })
 
+const TOOL_CLASS =
+  'grid size-9 shrink-0 place-items-center rounded-full text-xs font-semibold transition-[background-color,color,transform] duration-200 active:scale-[0.96] disabled:pointer-events-none disabled:opacity-40 pointer-coarse:size-11'
+
 function ToolButton({ active, label, children, onClick, disabled, className = '' }) {
   return (
     <button
@@ -120,10 +125,25 @@ function ToolButton({ active, label, children, onClick, disabled, className = ''
       aria-pressed={active === undefined ? undefined : active}
       disabled={disabled}
       onClick={onClick}
-      className={`grid size-9 shrink-0 place-items-center rounded-full text-xs font-semibold transition-[background-color,color,transform] duration-200 active:scale-[0.96] disabled:pointer-events-none disabled:opacity-40 pointer-coarse:size-11 ${active ? 'bg-brand text-on-brand' : 'text-ink/70 hover:bg-ink/6 hover:text-ink'} ${className}`}
+      className={`${TOOL_CLASS} ${active ? 'bg-brand text-on-brand' : 'text-ink/70 hover:bg-ink/6 hover:text-ink'} ${className}`}
     >
       {children}
     </button>
+  )
+}
+
+/* Same chapter in the audio player: a link (navigation), styled like the toolbar buttons. */
+function ListenToolLink({ to, t, className = '' }) {
+  const label = t('reader.listenChapter')
+  return (
+    <Link
+      to={to}
+      title={label}
+      aria-label={label}
+      className={`${TOOL_CLASS} text-ink/70 hover:bg-ink/6 hover:text-ink ${className}`}
+    >
+      <Headphones size={16} aria-hidden="true" />
+    </Link>
   )
 }
 
@@ -147,6 +167,7 @@ function ReaderToolbar({
   openReport,
   commentCount,
   interactive,
+  listenTo,
   t,
 }) {
   const fontIndex = READER_FONT_SIZES.indexOf(settings.fontSize)
@@ -213,6 +234,7 @@ function ReaderToolbar({
           <ToolButton label={t('reader.chapters')} onClick={openChapters}>
             <List size={17} />
           </ToolButton>
+          <ListenToolLink to={listenTo} t={t} />
           <ToolButton
             label={t('reader.commentsCount', { count: commentCount })}
             disabled={!interactive}
@@ -343,6 +365,8 @@ function ReaderToolbar({
             <ToolButton label={t('reader.chapters')} onClick={openChapters}>
               <List size={17} />
             </ToolButton>
+            {/* Phones switch to listening from the "Đọc | Nghe" control in the chapter header. */}
+            <ListenToolLink to={listenTo} t={t} className="max-sm:hidden" />
             <ToolButton
               label={t('reader.commentsCount', { count: commentCount })}
               disabled={!interactive}
@@ -1114,13 +1138,16 @@ export function FullChapterReaderPage() {
         </p>
         <header className="px-4 pb-5 pt-6 sm:px-6 sm:pt-8">
           <div className="mx-auto max-w-[1100px] px-1">
-            <Link
-              to={ROUTES.library}
-              className="inline-flex min-h-9 items-center gap-2 rounded-full text-sm text-ink/70 transition-colors hover:text-brand-strong"
-            >
-              <ArrowLeft size={15} aria-hidden="true" />
-              {t('reader.back')}
-            </Link>
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <Link
+                to={ROUTES.library}
+                className="inline-flex min-h-9 items-center gap-2 rounded-full text-sm text-ink/70 transition-colors hover:text-brand-strong"
+              >
+                <ArrowLeft size={15} aria-hidden="true" />
+                {t('reader.back')}
+              </Link>
+              <ReadListenSwitch storyId={storyId} chapterId={activeChapterId} mode="read" />
+            </div>
             <div
               key={headerId}
               className={headerEnter ? `nh-chapter-enter-${headerEnter}` : undefined}
@@ -1156,6 +1183,7 @@ export function FullChapterReaderPage() {
           openReport={() => currentChapter && setReportTarget(currentChapter.id)}
           commentCount={currentChapter?.commentCount ?? 0}
           interactive={Boolean(currentChapter)}
+          listenTo={ROUTES.listen(storyId, activeChapterId)}
           focus={focus}
           toggleFocus={() => setFocus(value => !value)}
           t={t}

@@ -179,7 +179,11 @@
     "authorInvitationTitle": "Have a story of your own to tell?",
     "authorInvitationDescription": "Apply to become an Author to write stories, submit drafts and manage your works on NovelHub.",
     "progressLabel": "Chapter reading progress",
-    "toolbarLabel": "Reading toolbar"
+    "toolbarLabel": "Reading toolbar",
+    "modeSwitch": "Switch between reading and listening",
+    "modeRead": "Read",
+    "modeListen": "Listen",
+    "listenChapter": "Listen to this chapter"
   },
   "community": {
     "title": "Comments",
@@ -422,7 +426,9 @@
     "previewMissing": "Chapter not found",
     "chapterNavigation": "Chapter navigation",
     "previousChapter": "Previous chapter",
-    "nextChapter": "Next chapter"
+    "nextChapter": "Next chapter",
+    "continueListening": "Keep listening: {{title}}",
+    "startListening": "Listen"
   },
   "story": {
     "earlyAccess": "Early access",
@@ -466,7 +472,8 @@
     "recentlyUpdated": "Recently updated",
     "sanctuary": "Your reading space",
     "seeAll": "See all",
-    "welcome": "Welcome back, {{name}}"
+    "welcome": "Welcome back, {{name}}",
+    "continueListening": "Keep listening"
   },
   "library": {
     "chaptersRead": "{{read}}/{{total}} chapters",
@@ -506,7 +513,8 @@
       "reading": "No stories in progress",
       "following": "You are not following any story",
       "completed": "No finished stories yet"
-    }
+    },
+    "continueListening": "Keep listening"
   },
   "history": {
     "cancel": "Cancel",
@@ -536,7 +544,11 @@
     "viewStory": "View story",
     "clear": "Clear history",
     "reread": "Read again",
-    "resume": "Continue"
+    "resume": "Continue",
+    "modeText": "Read",
+    "modeAudio": "Listen",
+    "resumeListening": "Keep listening",
+    "relisten": "Listen again"
   },
   "following": {
     "completed": "Completed",
@@ -557,7 +569,8 @@
     "unfollowed": "Unfollowed {{title}}.",
     "upToDate": "You are up to date with the latest chapter.",
     "viewStory": "View story",
-    "readNext": "Continue reading"
+    "readNext": "Continue reading",
+    "continueListening": "Keep listening"
   },
   "readerData": {
     "notifications": {
@@ -647,5 +660,69 @@
       "saved": "Bank details saved.",
       "saveError": "Saving could not be confirmed. Your entered details have been kept; please try again."
     }
+  },
+  "listen": {
+    "audioLabel": "Audio for {{chapter}}",
+    "autoContinue": "Auto-play the next chapter",
+    "backToStory": "Back to story",
+    "breadcrumb": "Breadcrumb",
+    "chapterEnded": "You finished this chapter.",
+    "chapterErrorTitle": "Unable to load the chapter",
+    "contentUpdated": "This chapter was updated; listening restarts from the beginning.",
+    "controls": "Playback controls",
+    "dismiss": "Dismiss",
+    "errorDescription": "The connection to the server was interrupted. Please try again.",
+    "errorTitle": "Unable to load the audio",
+    "failedDescription": "The audio for this chapter could not be generated.",
+    "failedTitle": "Audio generation failed",
+    "firstPlayHint": "Play — the audio is generated on first play",
+    "generating": "Generating audio…",
+    "generatingHint": "Long chapters can take a few dozen seconds. Playback starts when it is ready.",
+    "linkCopied": "Link copied",
+    "listenNext": "Listen to the next chapter",
+    "loadingChapter": "Loading chapter…",
+    "loadingStatus": "Checking audio…",
+    "lockedDescription": "This chapter is in early access. Unlock it to read and listen.",
+    "lockedTitle": "Chapter locked",
+    "login": "Log in",
+    "loginDescription": "Listening is available to signed-in accounts only.",
+    "loginTitle": "Log in to listen",
+    "missingDescription": "The chapter may have been removed or the link is wrong.",
+    "missingTitle": "Chapter not found",
+    "mute": "Mute",
+    "next": "Next chapter",
+    "nextLocked": "Next chapter locked",
+    "nextLockedNote": "Chapter finished. {{chapter}} is locked.",
+    "pause": "Pause",
+    "paused": "Paused",
+    "play": "Play",
+    "playing": "Playing",
+    "position": "{{current}} / {{total}}",
+    "previous": "Previous chapter",
+    "previousLocked": "Previous chapter locked",
+    "progress": "Audio progress",
+    "progressError": "Listening progress was not saved.",
+    "queue": "Chapters",
+    "queueCount": "{{count}} chapters",
+    "queueCurrent": "Selected",
+    "queueError": "Unable to load the chapter list",
+    "queueLocked": "Locked",
+    "queueReady": "Available",
+    "readInstead": "Read this chapter",
+    "ready": "Ready to play",
+    "retry": "Try again",
+    "room": "Listening room",
+    "share": "Share",
+    "skipBack": "Back {{seconds}} seconds",
+    "skipForward": "Forward {{seconds}} seconds",
+    "speed": "Speed",
+    "storyEnd": "You have listened to every available chapter.",
+    "unavailableDescription": "You can still read this chapter as usual.",
+    "unavailableTitle": "Listening is not available yet.",
+    "unlockInReader": "Unlock in the reader",
+    "unmute": "Unmute",
+    "voice": "Vietnamese voice",
+    "voiceNote": "Default Vietnamese voice, generated automatically from the chapter text.",
+    "volume": "Volume"
   }
 }

@@ -1,6 +1,13 @@
 import { useState } from 'react'
 import { Link } from 'react-router'
-import { AlertTriangle, BookOpen, History, RefreshCw, Trash2 } from '../../components/icons'
+import {
+  AlertTriangle,
+  BookOpen,
+  Headphones,
+  History,
+  RefreshCw,
+  Trash2,
+} from '../../components/icons'
 import { ReaderLayout } from '../../layouts'
 import { StoryCover } from '../../components/story/StoryCover'
 import { chapterLabel } from '../../components/reader/chapterLabel'
@@ -50,13 +57,19 @@ function EntrySkeleton() {
   )
 }
 
-/* One history row (GET /reader/history): chapter, position, badges, resume and remove. */
+/* One history row (GET /reader/history): mode, chapter, progress, badges, resume and remove. */
 function HistoryEntry({ entry, onRemove, t }) {
   const { story, chapter } = entry
-  const percent = Math.round(entry.position * 100)
-  const href = chapter.available
-    ? `${ROUTES.read(story.id, chapter.id)}${entry.contentUpdated ? '?updated=1' : ''}`
-    : ROUTES.story(story.id)
+  const audio = entry.mode === 'audio'
+  /* `fraction` is the share of the chapter read or heard; text positions are fractions too. */
+  const fraction = entry.fraction ?? (audio ? 0 : entry.position)
+  const percent = Math.round(Math.min(1, Math.max(0, fraction || 0)) * 100)
+  const href = !chapter.available
+    ? ROUTES.story(story.id)
+    : audio
+      ? ROUTES.listen(story.id, chapter.id)
+      : `${ROUTES.read(story.id, chapter.id)}${entry.contentUpdated ? '?updated=1' : ''}`
+  const ModeIcon = audio ? Headphones : BookOpen
   return (
     <li>
       <Card as="article" className="flex gap-4 p-4">
@@ -84,6 +97,10 @@ function HistoryEntry({ entry, onRemove, t }) {
             </span>
           </div>
           <div className="mt-2 flex flex-wrap items-center gap-1.5">
+            <Badge tone={audio ? 'purple' : 'neutral'}>
+              <ModeIcon size={12} aria-hidden="true" />
+              {t(audio ? 'history.modeAudio' : 'history.modeText')}
+            </Badge>
             <span className="mr-1 text-xs text-muted">
               {t('history.lastRead', { when: formatWhen(entry.lastReadAt) })}
             </span>
@@ -103,10 +120,12 @@ function HistoryEntry({ entry, onRemove, t }) {
             <Trash2 size={15} />
           </IconButton>
           <ButtonLink to={href} size="sm" variant={chapter.available ? 'primary' : 'secondary'}>
-            <BookOpen size={14} aria-hidden="true" />
+            <ModeIcon size={14} aria-hidden="true" />
             <span className="hidden sm:inline">
               {chapter.available
-                ? t(entry.completed ? 'history.reread' : 'history.resume')
+                ? audio
+                  ? t(entry.completed ? 'history.relisten' : 'history.resumeListening')
+                  : t(entry.completed ? 'history.reread' : 'history.resume')
                 : t('history.viewStory')}
             </span>
           </ButtonLink>

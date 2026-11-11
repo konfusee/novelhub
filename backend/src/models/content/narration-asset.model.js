@@ -9,9 +9,13 @@ const schema = new Schema(
     provider: String,
     status: { type: String, enum: NARRATION_STATUSES, default: 'requested', required: true },
     audioReference: { type: String, select: false },
+    providerRequestId: String,
+    sizeBytes: { type: Number, min: 0 },
     failureCode: String,
     retryable: Boolean,
     attempts: { type: Number, min: 0, default: 0 },
+    leaseExpiresAt: Date,
+    checkedAt: Date,
     requestedAt: Date,
     completedAt: Date,
   },
@@ -19,4 +23,5 @@ const schema = new Schema(
 )
 schema.index({ revisionId: 1, voiceId: 1 }, { unique: true })
 schema.index({ chapterId: 1, status: 1 })
+schema.index({ providerRequestId: 1 }, { sparse: true })
 export const NarrationAsset = defineModel('NarrationAsset', schema, 'narrationAssets')
