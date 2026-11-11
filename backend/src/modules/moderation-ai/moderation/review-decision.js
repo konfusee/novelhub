@@ -32,7 +32,8 @@ export async function decideSubmission(
     await lockModerator(account, session)
     const submission = await PublicationSubmission.findById(submissionId).session(session)
     if (!submission) throw new HttpError(404, 'not_found', 'Không tìm thấy hồ sơ.')
-    if (['approved', 'rejected', 'cancelled'].includes(submission.status)) throw submissionChanged()
+    if (['approved', 'superseded', 'rejected', 'cancelled'].includes(submission.status))
+      throw submissionChanged()
     if (
       submission.status !== 'decision-pending' ||
       String(submission.claimOwnerAccountId) !== String(account._id) ||

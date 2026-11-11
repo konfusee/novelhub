@@ -177,7 +177,6 @@ function EarlyAccessForm({ data, path, busy, setBusy, onClose, onSaved, onReload
       </div>
       {policy && <p className="mt-3 text-caption text-muted">{t('earlyAccess.bounds', policy)}</p>}
       {!valid && <p className="mt-3 text-sm text-rose-strong">{t('earlyAccess.invalid')}</p>}
-      <p className="mt-4 text-sm leading-6 text-muted">{t('earlyAccess.releaseLimit')}</p>
       {error && (
         <p role="alert" className="mt-3 text-sm text-rose-strong">
           {error} {t('earlyAccess.retryHint')}

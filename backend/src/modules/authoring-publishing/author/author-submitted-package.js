@@ -83,6 +83,8 @@ export async function loadSubmittedPackage(account, submissionId, session) {
         description: z.string().min(1).max(10000),
         categoryId: oid,
         tags: storedTags.optional(),
+        coverMediaId: oid.nullable().optional(),
+        coverBannerMediaId: oid.nullable().optional(),
       })
       .strict()
       .safeParse(revision.content).success

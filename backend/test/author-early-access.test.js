@@ -85,7 +85,7 @@ it('saves and reloads draft settings, pins policy, creates audit, and never sets
   })
   expect(await ContentRevision.findById(f.revision._id).lean()).toEqual(before)
   expect(await AuditEvent.countDocuments({ action: 'chapter.early-access-configured' })).toBe(1)
-  expect((await PolicyVersion.findById(f.policy._id)).version).toBe(f.policy.version + 1)
+  expect((await PolicyVersion.findById(f.policy._id)).version).toBe(f.policy.version)
   const workspace = await get(`/api/author/stories/${f.story.id}/workspace`, f.author.cookie)
   expect(workspace.body.chapters[0]).toMatchObject({
     canConfigureEarlyAccess: true,

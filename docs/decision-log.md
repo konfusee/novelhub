@@ -519,6 +519,21 @@ All business rules are confirmed. The only remaining items are:
 | Team acceptance/process gates | Integration/review (member TBD), with all five lanes | Explicit baseline/domain/database review and freeze; draft status is not approval. |
 | Local tooling prerequisites | Integration/review (member TBD) | Agreed local entry points and replica-set-capable MongoDB before transaction-dependent work; no guessed commands or downgraded invariants. |
 
+## Media storage implementation decision (2026-11-12)
+
+Story and chapter images continue to use the existing `MediaAsset` ownership,
+checksum, audit and content-serving contract. The current demo adapter stores
+the processed WebP bytes under the configured `MEDIA_STORAGE_DIR` so local
+development and review remain deterministic. The provider boundary is kept at
+the media module (`uploadAuthorMedia`, `readAuthorMedia`, and cleanup), so a
+VPSTTT adapter can replace the file operations without changing routes,
+revisions, rights declarations or authorization checks.
+
+The VPSTTT endpoint, credentials, bucket and lifecycle policy are not available
+in this environment. Production deployment must configure that adapter before
+claiming VPSTTT-backed storage. Until then, local storage is the explicit demo
+decision and uploaded media remains private, audited and checksum-verified.
+
 ## Reconciliation notes
 
 - The canonical use-case catalogue is goal-based: `UC-GST-*`, `UC-RDR-*`,

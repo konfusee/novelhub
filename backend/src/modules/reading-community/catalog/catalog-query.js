@@ -171,6 +171,8 @@ export async function queryPublishedStories({
               'revision.content.title': 1,
               'revision.content.description': 1,
               'revision.content.tags': 1,
+              'revision.content.coverMediaId': 1,
+              'revision.content.coverBannerMediaId': 1,
               author: 1,
               categoryKey: 1,
               category: 1,
@@ -198,6 +200,18 @@ export async function queryPublishedStories({
       categoryId: story.categoryKey,
       genre: story.category?.name ?? '',
       tags: story.revision.content.tags ?? [],
+      coverMediaId: story.revision.content.coverMediaId
+        ? String(story.revision.content.coverMediaId)
+        : null,
+      coverUrl: story.revision.content.coverMediaId
+        ? `/catalog/stories/${String(story._id)}/media/${String(story.revision.content.coverMediaId)}`
+        : null,
+      coverBannerMediaId: story.revision.content.coverBannerMediaId
+        ? String(story.revision.content.coverBannerMediaId)
+        : null,
+      bannerUrl: story.revision.content.coverBannerMediaId
+        ? `/catalog/stories/${String(story._id)}/media/${String(story.revision.content.coverBannerMediaId)}`
+        : null,
       format: 'Story',
       status: story.completionStatus === 'completed' ? 'Completed' : 'Ongoing',
       rating: story.average == null ? '—' : story.average.toFixed(1),

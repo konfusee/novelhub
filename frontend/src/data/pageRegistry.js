@@ -21,7 +21,6 @@ const pages = [
   ['P20', 'Trình soạn chương', 'Tác giả', '/author/stories/demo/chapters/chapter-1/edit'],
   ['P21', 'Bản nháp', 'Tác giả', '/author/drafts'],
   ['P22', 'Nhập PDF', 'Tác giả', '/author/import'],
-  ['P23', 'Thư viện media', 'Tác giả', '/author/media'],
   ['P25', 'Gửi xét duyệt', 'Tác giả', '/author/submissions'],
   ['P26', 'Phân tích tác giả', 'Tác giả', '/author/analytics'],
   ['P27', 'Tổng quan kiểm duyệt', 'Kiểm duyệt viên', '/moderator'],

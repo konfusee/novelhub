@@ -188,6 +188,14 @@ export async function publishStory(account, storyId, input) {
     story.description = snapshot.revision.content.description
     story.categoryId = snapshot.revision.content.categoryId
     story.set(storyTagFields(snapshot.revision.content.tags ?? []))
+    if (Object.hasOwn(snapshot.revision.content, 'coverMediaId'))
+      story.coverMediaId = snapshot.revision.content.coverMediaId ?? undefined
+    if (Object.hasOwn(snapshot.revision.content, 'coverBannerMediaId')) {
+      story.theme = {
+        ...(story.theme?.toObject?.() ?? story.theme ?? {}),
+        coverBannerMediaId: snapshot.revision.content.coverBannerMediaId ?? undefined,
+      }
+    }
     story.publicationStatus = 'published'
     story.publishedRevisionId = snapshot.revision._id
     story.currentRevisionId = snapshot.revision._id

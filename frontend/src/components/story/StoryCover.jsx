@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { API_BASE } from '../../api/client'
 import {
   Archive,
   BookOpen,
@@ -60,22 +61,28 @@ const fallbackBackground = tint => ({
 })
 
 export function StoryCover({ story, className = '', eager = false, badge }) {
-  const [failed, setFailed] = useState(false)
+  const [failedSrc, setFailedSrc] = useState(null)
   const key = story?.id || slugify(story?.title)
-  const src = story?.cover || covers[key] || covers[slugify(story?.title)]
+  const backendUrl =
+    story?.coverUrl && /^\/(?:author|catalog)\//u.test(story.coverUrl)
+      ? `${API_BASE}${story.coverUrl}`
+      : story?.coverUrl
+  const privateMedia = Boolean(story?.coverUrl && /^\/author\//u.test(story.coverUrl))
+  const src = backendUrl || story?.cover || covers[key] || covers[slugify(story?.title)]
   const label = story?.title ? `Ảnh bìa của ${story.title}` : 'Ảnh bìa truyện NovelHub'
   const title = story?.title?.trim() || 'NovelHub'
   const [, GenreIcon, genreTint] = motifFor(story?.genre)
 
   return (
     <div className={`relative overflow-hidden bg-elevated ${className}`}>
-      {src && !failed ? (
+      {src && failedSrc !== src ? (
         <img
           src={src}
           alt={label}
+          crossOrigin={privateMedia ? 'use-credentials' : undefined}
           loading={eager ? 'eager' : 'lazy'}
           decoding="async"
-          onError={() => setFailed(true)}
+          onError={() => setFailedSrc(src)}
           className="h-full w-full object-cover transition-transform duration-700 ease-spring group-hover:scale-[1.03]"
         />
       ) : (

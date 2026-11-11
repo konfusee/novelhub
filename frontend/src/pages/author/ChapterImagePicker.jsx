@@ -1,97 +1,85 @@
-import { useState } from 'react'
-import { useBackendDocument } from '../../api/useBackendResource'
+import { useRef, useState } from 'react'
+import { apiRequest } from '../../api/client'
 import { privateMediaUrl } from '../../api/media'
 import { useLocale } from '../../context/LocaleContext'
-import { Button, ButtonLink, Input, Modal } from '../../components/ui'
-const empty = { items: [], nextCursor: null }
+import { Button, Input, Modal } from '../../components/ui'
+
+const MAX_UPLOAD_BYTES = 10 * 1024 * 1024
+
 export function ChapterImagePicker({ storyId, onClose, onAdd }) {
   const { t } = useLocale()
-  const [cursor, setCursor] = useState('')
-  const [previous, setPrevious] = useState([])
-  const resource = useBackendDocument(`/author/media${cursor ? `?cursor=${cursor}` : ''}`, empty)
+  const fileRef = useRef(null)
   const [selected, setSelected] = useState(null)
   const [alt, setAlt] = useState('')
   const [caption, setCaption] = useState('')
+  const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
-  const items = [...previous, ...resource.data.items].filter(
-    asset => asset.url && (!asset.storyId || asset.storyId === storyId),
-  )
+
+  const chooseFile = async event => {
+    const file = event.target.files?.[0]
+    event.target.value = ''
+    if (!file) return
+    if (!['image/jpeg', 'image/png', 'image/webp'].includes(file.type) || file.size > MAX_UPLOAD_BYTES) {
+      setError(t('chapterImages.invalidFile'))
+      return
+    }
+    setBusy(true)
+    setError('')
+    try {
+      const query = new URLSearchParams({ name: file.name, kind: 'image', storyId })
+      const result = await apiRequest(`/author/media?${query}`, {
+        method: 'POST',
+        body: file,
+        binary: true,
+      })
+      if (!result.asset?.id) throw new Error(t('chapterImages.uploadError'))
+      setSelected({ id: result.asset.id, name: file.name })
+    } catch (failure) {
+      setError(failure.message || t('chapterImages.uploadError'))
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  const add = () => {
+    if (!selected) return
+    if (!alt.trim()) {
+      setError(t('chapterImages.altRequired'))
+      return
+    }
+    if (!onAdd({ type: 'image', mediaId: selected.id, alt: alt.trim(), caption }))
+      setError(t('chapterImages.limit'))
+  }
+
   return (
     <Modal open title={t('chapterImages.title')} onClose={onClose}>
       <p className="text-sm leading-6 text-muted">{t('chapterImages.hint')}</p>
-      <div className="mt-3 flex flex-wrap gap-2">
-        <ButtonLink
-          to={`/author/media?storyId=${storyId}`}
-          target="_blank"
-          rel="noopener noreferrer"
-          variant="secondary"
-          size="sm"
-        >
-          {t('chapterImages.library')}
-        </ButtonLink>
-        <Button
-          variant="secondary"
-          size="sm"
-          disabled={resource.status === 'loading'}
-          onClick={() => {
-            setPrevious([])
-            setCursor('')
-            setSelected(null)
-            resource.retry()
-          }}
-        >
-          {t('mediaData.refresh')}
-        </Button>
-      </div>
-      {resource.status === 'loading' && (
-        <p role="status" className="mt-3 text-sm">
-          {t('chapterImages.loading')}
-        </p>
-      )}
-      {resource.status === 'error' && (
-        <p role="alert" className="mt-3 text-sm text-rose-strong">
-          {resource.error?.message}
-        </p>
-      )}
-      <div className="mt-4 grid max-h-64 grid-cols-2 gap-3 overflow-y-auto sm:grid-cols-3">
-        {items.map(asset => (
-          <button
-            key={asset.id}
-            type="button"
-            aria-label={t('chapterImages.pick', { name: asset.name })}
-            aria-pressed={selected === asset.id}
-            onClick={() => {
-              setSelected(asset.id)
-              setError('')
-            }}
-            className={`min-w-0 rounded-2xl border p-2 text-left ${selected === asset.id ? 'border-brand bg-brand-soft' : 'border-line bg-elevated'}`}
-          >
-            <img
-              src={privateMediaUrl(asset.id)}
-              crossOrigin="use-credentials"
-              alt=""
-              loading="lazy"
-              className="h-24 w-full object-contain"
-            />
-            <span className="mt-2 block truncate text-xs">{asset.name}</span>
-          </button>
-        ))}
-      </div>
-      {resource.status === 'ready' && !items.length && (
-        <p className="mt-3 text-sm text-muted">{t('chapterImages.empty')}</p>
-      )}
-      {resource.data.nextCursor && (
-        <Button
-          variant="secondary"
-          size="sm"
-          className="mt-3"
-          onClick={() => {
-            setPrevious([...previous, ...resource.data.items])
-            setCursor(resource.data.nextCursor)
-          }}
-        >
-          {t('mediaData.more')}
-        </Button>
+      <input
+        ref={fileRef}
+        type="file"
+        accept="image/jpeg,image/png,image/webp"
+        onChange={chooseFile}
+        className="sr-only"
+      />
+      <Button
+        type="button"
+        variant="secondary"
+        className="mt-4"
+        disabled={busy}
+        onClick={() => fileRef.current?.click()}
+      >
+        {busy ? t('chapterImages.uploading') : t('chapterImages.upload')}
+      </Button>
+      {selected && (
+        <div className="mt-4 overflow-hidden rounded-2xl border border-line bg-elevated p-2">
+          <img
+            src={privateMediaUrl(selected.id)}
+            crossOrigin="use-credentials"
+            alt=""
+            className="max-h-64 w-full object-contain"
+          />
+          <p className="mt-2 truncate text-xs text-muted">{selected.name}</p>
+        </div>
       )}
       <label className="mt-4 block text-sm font-semibold">
         {t('chapterImages.alt')}
@@ -121,17 +109,7 @@ export function ChapterImagePicker({ storyId, onClose, onAdd }) {
         <Button variant="secondary" onClick={onClose}>
           {t('mediaData.cancel')}
         </Button>
-        <Button
-          disabled={!selected || resource.status === 'loading'}
-          onClick={() => {
-            if (!alt.trim()) {
-              setError(t('chapterImages.altRequired'))
-              return
-            }
-            if (!onAdd({ type: 'image', mediaId: selected, alt: alt.trim(), caption }))
-              setError(t('chapterImages.limit'))
-          }}
-        >
+        <Button disabled={!selected || busy} onClick={add}>
           {t('chapterImages.add')}
         </Button>
       </div>

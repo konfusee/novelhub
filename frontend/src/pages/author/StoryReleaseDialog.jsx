@@ -41,7 +41,7 @@ function ReleaseDialog({ storyId, chapterId, onClose, onReleased }) {
     order: { to: `${manager}?tab=chapters`, label: 'order' },
     free: { to: `${manager}?tab=chapters`, label: 'free' },
     format: { to: review, label: 'format' },
-    media: { to: chapter ? review : `${manager}?tab=media`, label: 'media' },
+    media: { to: chapter ? review : `${manager}?tab=details`, label: 'media' },
     editable: { to: `${manager}?tab=reviews`, label: 'status' },
   }
   const ready =

@@ -17,7 +17,6 @@ import {
   Headphones,
   History,
   Home,
-  Images,
   LayoutDashboard,
   Library,
   MessageCircle,
@@ -91,7 +90,6 @@ export const workspaceNavigation = {
       items: [
         ['navigation.chapterEditor', '/author/editor', PenLine],
         ['navigation.importPdf', '/author/import', FileText],
-        ['navigation.mediaLibrary', '/author/media', Images],
       ],
     },
     {

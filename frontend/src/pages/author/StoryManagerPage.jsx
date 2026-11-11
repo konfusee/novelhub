@@ -13,7 +13,7 @@ import {
   Eye,
   FileText,
   Headphones,
-  Images,
+  ImagePlus,
   Plus,
   RefreshCw,
   Save,
@@ -21,10 +21,12 @@ import {
   Send,
   Sparkles,
   Star,
+  Trash2,
 } from '../../components/icons'
 import { AuthorLayout } from '../../layouts'
 import { useBackendDocument, useBackendResource } from '../../api/useBackendResource'
 import { apiRequest } from '../../api/client'
+import { privateMediaUrl } from '../../api/media'
 import { useLocale } from '../../context/LocaleContext'
 import { StoryCover } from '../../components/story/StoryCover'
 import { StoryTagEditor } from '../../components/author/StoryTagEditor'
@@ -48,6 +50,7 @@ import {
 } from '../../components/ui'
 
 const PAGE_SIZE = 5
+const MAX_MEDIA_BYTES = 10 * 1024 * 1024
 const emptyWorkspace = {
   story: { id: null, title: '—', description: '', genre: '', canEdit: false, version: 0 },
   chapters: [],
@@ -68,18 +71,10 @@ const normalStatus = value =>
 const tabItems = [
   { value: 'chapters', label: 'Chương' },
   { value: 'details', label: 'Thông tin và tóm tắt truyện' },
-  { value: 'media', label: 'Media và bản âm thanh' },
   { value: 'reviews', label: 'Bản gửi và đánh giá' },
   { value: 'analytics', label: 'Phân tích truyện' },
 ]
 const linkedTabs = {
-  media: {
-    icon: Images,
-    titleKey: 'managerData.mediaTitle',
-    descriptionKey: 'managerData.mediaHint',
-    to: '/author/media',
-    action: 'Mở thư viện media',
-  },
   reviews: {
     icon: Send,
     title: 'Bản gửi và kết quả xét duyệt',
@@ -100,6 +95,7 @@ const filters = [
   { value: 'Published', label: 'Đã xuất bản' },
   { value: 'Scheduled', label: 'Đã lên lịch' },
   { value: 'In Review', label: 'Đang xét duyệt' },
+  { value: 'Approved', label: 'Đã duyệt' },
   { value: 'Draft', label: 'Bản nháp' },
 ]
 const statusLabels = {
@@ -392,7 +388,7 @@ export function StoryManagerPage() {
                   to={
                     tab === 'analytics'
                       ? ROUTES.authorAnalytics(storyId)
-                      : ['reviews', 'media'].includes(tab)
+                      : tab === 'reviews'
                         ? `${linked.to}?storyId=${storyId}`
                         : linked.to
                   }
@@ -879,14 +875,27 @@ function StoryDetails({ story, onSaved, onLifecycle }) {
   const [lifecycleBusy, setLifecycleBusy] = useState(false)
   const [unpublishOpen, setUnpublishOpen] = useState(false)
   const [tags, setTags] = useState(story.tags ?? [])
+  const [coverMediaId, setCoverMediaId] = useState(story.coverMediaId ?? null)
+  const [coverUrl, setCoverUrl] = useState(story.coverUrl ?? null)
+  const [coverBannerMediaId, setCoverBannerMediaId] = useState(story.coverBannerMediaId ?? null)
+  const [bannerUrl, setBannerUrl] = useState(story.bannerUrl ?? null)
+  const [coverBusy, setCoverBusy] = useState(false)
+  const [bannerBusy, setBannerBusy] = useState(false)
+  const coverInputRef = useRef(null)
+  const bannerInputRef = useRef(null)
   const tagsChanged = JSON.stringify(tags) !== JSON.stringify(story.tags ?? [])
   const dirty =
-    title !== story.title || synopsis !== story.description || categoryChanged || tagsChanged
+    title !== story.title ||
+    synopsis !== story.description ||
+    categoryChanged ||
+    tagsChanged ||
+    coverMediaId !== (story.coverMediaId ?? null) ||
+    coverBannerMediaId !== (story.coverBannerMediaId ?? null)
   const titleError = !title.trim()
-  const synopsisError = synopsis.trim().length < 40
+  const synopsisError = false
   const submit = async event => {
     event.preventDefault()
-    if (!story.canEdit || status === 'saving' || lifecycleBusy) return
+    if (!story.canEdit || status === 'saving' || lifecycleBusy || coverBusy || bannerBusy) return
     if (titleError || synopsisError || (categoryChanged && !categoryId)) {
       setStatus('invalid')
       return
@@ -902,6 +911,8 @@ function StoryDetails({ story, onSaved, onLifecycle }) {
           expectedVersion: version,
           ...(categoryChanged ? { categoryId } : {}),
           ...(tagsChanged ? { tags } : {}),
+          coverMediaId,
+          coverBannerMediaId,
         },
       })
       setVersion(result.story.version)
@@ -918,6 +929,74 @@ function StoryDetails({ story, onSaved, onLifecycle }) {
       setSaveError(error.message || t('managerData.saveError'))
     }
   }
+  const chooseCover = async event => {
+    const file = event.target.files?.[0]
+    event.target.value = ''
+    if (!file) return
+    if (!['image/jpeg', 'image/png', 'image/webp'].includes(file.type)) {
+      setSaveError(t('createData.coverInvalid'))
+      setStatus('error')
+      return
+    }
+    if (file.size > MAX_MEDIA_BYTES) {
+      setSaveError(t('createData.coverTooLarge'))
+      setStatus('error')
+      return
+    }
+    setCoverBusy(true)
+    setSaveError('')
+    try {
+      const query = new URLSearchParams({ name: file.name, kind: 'cover', storyId: story.id })
+      const result = await apiRequest(`/author/media?${query}`, {
+        method: 'POST',
+        body: file,
+        binary: true,
+      })
+      if (!result.asset?.id) throw new Error(t('managerData.coverUploadError'))
+      setCoverMediaId(result.asset.id)
+      setCoverUrl(privateMediaUrl(result.asset.id))
+      setStatus('idle')
+    } catch (error) {
+      setSaveError(error.message || t('managerData.coverUploadError'))
+      setStatus('error')
+    } finally {
+      setCoverBusy(false)
+    }
+  }
+  const chooseBanner = async event => {
+    const file = event.target.files?.[0]
+    event.target.value = ''
+    if (!file) return
+    if (!['image/jpeg', 'image/png', 'image/webp'].includes(file.type)) {
+      setSaveError(t('createData.bannerInvalid'))
+      setStatus('error')
+      return
+    }
+    if (file.size > MAX_MEDIA_BYTES) {
+      setSaveError(t('createData.bannerTooLarge'))
+      setStatus('error')
+      return
+    }
+    setBannerBusy(true)
+    setSaveError('')
+    try {
+      const query = new URLSearchParams({ name: file.name, kind: 'banner', storyId: story.id })
+      const result = await apiRequest(`/author/media?${query}`, {
+        method: 'POST',
+        body: file,
+        binary: true,
+      })
+      if (!result.asset?.id) throw new Error(t('managerData.bannerUploadError'))
+      setCoverBannerMediaId(result.asset.id)
+      setBannerUrl(privateMediaUrl(result.asset.id))
+      setStatus('idle')
+    } catch (error) {
+      setSaveError(error.message || t('managerData.bannerUploadError'))
+      setStatus('error')
+    } finally {
+      setBannerBusy(false)
+    }
+  }
   const showErrors = status === 'invalid'
   return (
     <Card as="form" noValidate onSubmit={submit} className="mt-5 max-w-3xl">
@@ -930,7 +1009,7 @@ function StoryDetails({ story, onSaved, onLifecycle }) {
         id="story-title"
         value={title}
         disabled={!story.canEdit || status === 'saving' || lifecycleBusy}
-        maxLength={100}
+        maxLength={200}
         onChange={event => {
           setTitle(event.target.value)
           setStatus('idle')
@@ -946,13 +1025,13 @@ function StoryDetails({ story, onSaved, onLifecycle }) {
       )}
       <label htmlFor="story-synopsis" className="mt-5 flex justify-between text-sm font-semibold">
         <span>Tóm tắt truyện</span>
-        <span className="font-normal text-muted tabular-nums">{synopsis.length}/2000</span>
+        <span className="font-normal text-muted tabular-nums">{synopsis.length}/10000</span>
       </label>
       <textarea
         id="story-synopsis"
         value={synopsis}
         disabled={!story.canEdit || status === 'saving' || lifecycleBusy}
-        maxLength={2000}
+        maxLength={10000}
         onChange={event => {
           setSynopsis(event.target.value)
           setStatus('idle')
@@ -965,9 +1044,9 @@ function StoryDetails({ story, onSaved, onLifecycle }) {
         id="story-synopsis-hint"
         className={`mt-2 text-xs ${showErrors && synopsisError ? 'text-rose-strong' : 'text-muted'}`}
       >
-        Tóm tắt cần ít nhất 40 ký tự.
+        Tóm tắt là tùy chọn khi lưu bản nháp và tối đa 10.000 ký tự.
       </p>
-      <fieldset disabled={!story.canEdit || status === 'saving' || lifecycleBusy} className="mt-5">
+      <fieldset disabled={!story.canEdit || status === 'saving' || lifecycleBusy || coverBusy || bannerBusy} className="mt-5">
         <legend className="text-sm font-semibold">{t('managerData.categories')}</legend>
         <p className="mt-2 text-xs text-muted">{t('managerData.categoriesHint')}</p>
         {categories.status === 'loading' ? (
@@ -1021,6 +1100,105 @@ function StoryDetails({ story, onSaved, onLifecycle }) {
         )}
       </fieldset>
       <div className="mt-5">
+        <h3 className="text-sm font-semibold">{t('managerData.coverTitle')}</h3>
+        <div className="mt-3 flex flex-wrap items-center gap-4">
+          <StoryCover
+            story={{ ...story, coverUrl: coverUrl || undefined, cover: undefined }}
+            className="aspect-[2/3] w-20 rounded-xl"
+          />
+          <div className="flex flex-wrap gap-2">
+            <input
+              ref={coverInputRef}
+              type="file"
+              accept="image/jpeg,image/png,image/webp"
+              onChange={chooseCover}
+              className="sr-only"
+            />
+            <Button
+              type="button"
+              variant="secondary"
+              size="sm"
+              disabled={!story.canEdit || coverBusy || bannerBusy || status === 'saving' || lifecycleBusy}
+              onClick={() => coverInputRef.current?.click()}
+            >
+              {coverBusy
+                ? t('chapterImages.uploading')
+                : t(coverMediaId ? 'managerData.replaceCover' : 'managerData.uploadCover')}
+            </Button>
+            {coverMediaId && (
+              <Button
+                type="button"
+                variant="danger"
+                size="sm"
+                disabled={coverBusy || status === 'saving' || lifecycleBusy}
+                onClick={() => {
+                  setCoverMediaId(null)
+                  setCoverUrl(null)
+                  setStatus('idle')
+                }}
+              >
+                {t('managerData.removeCover')}
+              </Button>
+            )}
+          </div>
+        </div>
+      </div>
+      <div className="mt-5">
+        <h3 className="text-sm font-semibold">{t('managerData.bannerTitle')}</h3>
+        <div className="mt-3 flex flex-col gap-4 sm:flex-row sm:items-center">
+          <div className="relative aspect-[3/1] w-full max-w-sm overflow-hidden rounded-xl border border-line bg-elevated">
+            {bannerUrl ? (
+              <img
+                src={bannerUrl}
+                crossOrigin="use-credentials"
+                alt={t('managerData.bannerAlt', { title: story.title })}
+                className="h-full w-full object-cover"
+              />
+            ) : (
+              <div className="flex h-full items-center justify-center text-muted">
+                <ImagePlus size={22} aria-hidden="true" />
+              </div>
+            )}
+          </div>
+          <div className="flex flex-wrap gap-2">
+            <input
+              ref={bannerInputRef}
+              type="file"
+              accept="image/jpeg,image/png,image/webp"
+              onChange={chooseBanner}
+              className="sr-only"
+            />
+            <Button
+              type="button"
+              variant="secondary"
+              size="sm"
+              disabled={!story.canEdit || coverBusy || bannerBusy || status === 'saving' || lifecycleBusy}
+              onClick={() => bannerInputRef.current?.click()}
+            >
+              {bannerBusy
+                ? t('chapterImages.uploading')
+                : t(coverBannerMediaId ? 'managerData.replaceBanner' : 'managerData.uploadBanner')}
+            </Button>
+            {coverBannerMediaId && (
+              <Button
+                type="button"
+                variant="danger"
+                size="sm"
+                disabled={coverBusy || bannerBusy || status === 'saving' || lifecycleBusy}
+                onClick={() => {
+                  setCoverBannerMediaId(null)
+                  setBannerUrl(null)
+                  setStatus('idle')
+                }}
+              >
+                <Trash2 size={14} aria-hidden="true" />
+                {t('managerData.removeBanner')}
+              </Button>
+            )}
+          </div>
+        </div>
+      </div>
+      <div className="mt-5">
         <StoryTagEditor
           id="story-manager-tag"
           tags={tags}
@@ -1038,11 +1216,14 @@ function StoryDetails({ story, onSaved, onLifecycle }) {
       )}
       <div className="mt-6 flex flex-wrap items-center justify-end gap-3">
         <p role="status" className="mr-auto text-xs text-brand-strong">
-          {status === 'saved' ? 'Đã lưu thông tin truyện.' : ''}
+          {status === 'saved' ? t('managerData.saved') : ''}
         </p>
-        <Button type="submit" disabled={status === 'saving' || !story.canEdit || lifecycleBusy}>
+        <Button
+          type="submit"
+          disabled={status === 'saving' || !story.canEdit || lifecycleBusy || coverBusy || bannerBusy}
+        >
           <Save size={16} aria-hidden="true" />
-          {status === 'saving' ? 'Đang lưu...' : 'Lưu thông tin'}
+          {status === 'saving' ? t('managerData.saving') : t('managerData.save')}
         </Button>
       </div>
       {story.canUnpublish && (

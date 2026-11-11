@@ -1,12 +1,12 @@
 import { StatisticsEvent } from '../../../models/index.js'
 
 // First observed view in the selected story/chapter scope, including history before the report.
-export async function authorCohortRetention(scope, startDay, today) {
+export async function authorCohortRetention(scope, startDay, endDay) {
   const offsets = [1, 7]
   const facets = Object.fromEntries(
     offsets.map(day => {
       // Only completed Vietnam calendar days are eligible, never today's partial observations.
-      const cutoff = new Date(Date.parse(`${today}T00:00:00Z`) - (day + 1) * 86400000)
+      const cutoff = new Date(Date.parse(`${endDay}T00:00:00Z`) - (day + 1) * 86400000)
         .toISOString()
         .slice(0, 10)
       const returnDay = {
@@ -40,7 +40,7 @@ export async function authorCohortRetention(scope, startDay, today) {
     }),
   )
   const [result] = await StatisticsEvent.aggregate([
-    { $match: { ...scope, day: { $lte: today } } },
+    { $match: { ...scope, day: { $lte: endDay } } },
     {
       $group: {
         _id: { type: '$viewerType', key: '$viewerKey' },
