@@ -1,3 +1,4 @@
+import { notifyMany } from '../../accounts-administration/notifications.js'
 import { withTransaction } from '../../../db/connection.js'
 import { HttpError } from '../../../middleware/errors.js'
 import {
@@ -6,7 +7,6 @@ import {
   ContentRevision,
   EvidenceBatch,
   ModerationHistory,
-  Notification,
   PublicationSubmission,
   Story,
 } from '../../../models/index.js'
@@ -181,7 +181,7 @@ export async function decideSubmission(
       ],
       { session },
     )
-    await Notification.create(
+    await notifyMany(
       [
         {
           recipientAccountId: author._id,

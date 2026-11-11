@@ -1,3 +1,4 @@
+import { startNotificationWorker } from './modules/accounts-administration/email-worker.js'
 import { createApp } from './app.js'
 import { loadEnv, toAppConfig } from './config/env.js'
 import { loadDotenv } from './config/load-dotenv.js'
@@ -35,6 +36,7 @@ const config = {
   emailDelivery,
   ...toAppConfig(env),
 }
+const stopNotifications = startNotificationWorker(config)
 const stopScheduler = startChapterScheduler(config, logger)
 let stopEvidenceWorker = async () => {}
 if (config.ai.workerEnabled) stopEvidenceWorker = startEvidenceWorker(config, logger)
@@ -45,6 +47,7 @@ const server = createApp(config).listen(env.PORT, () => {
 async function shutdown(signal) {
   logger.info(`${signal} received, shutting down`)
   server.close()
+  await stopNotifications()
   await stopScheduler()
   await stopEvidenceWorker()
   await disconnectDatabase()

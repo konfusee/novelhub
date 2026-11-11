@@ -1,12 +1,6 @@
+import { policy as policies } from '../../accounts-administration/service.js'
 import { randomInt } from 'node:crypto'
-import {
-  Account,
-  AuditEvent,
-  PolicyVersion,
-  TopUpOrder,
-  TopUpPackage,
-  Wallet,
-} from '../../../models/index.js'
+import { Account, AuditEvent, TopUpOrder, TopUpPackage, Wallet } from '../../../models/index.js'
 import { withTransaction } from '../../../db/connection.js'
 import { HttpError } from '../../../middleware/errors.js'
 
@@ -29,12 +23,7 @@ export async function prepareTopUpOrder(packageId, session, now = new Date()) {
     throw new HttpError(409, 'invalid_package', 'Giá hoặc số xu của gói nạp không hợp lệ.')
   }
 
-  const policy = await PolicyVersion.findOne({
-    status: 'effective',
-    effectiveAt: { $lte: now },
-  })
-    .sort({ effectiveAt: -1, _id: -1 })
-    .session(session)
+  const policy = await policies.getEffective({ now, session, required: false })
 
   const hours = policy?.orderExpiryHours
 

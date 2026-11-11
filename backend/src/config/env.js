@@ -48,7 +48,7 @@ const envSchema = z.object({
   SMTP_CONNECTION_TIMEOUT_MS: z.coerce.number().int().min(1).max(120000),
   SMTP_GREETING_TIMEOUT_MS: z.coerce.number().int().min(1).max(120000),
   SMTP_SOCKET_TIMEOUT_MS: z.coerce.number().int().min(1).max(120000),
-  EMAIL_SEND_ATTEMPTS: z.coerce.number().int().min(1).max(5),
+  EMAIL_SEND_ATTEMPTS: z.coerce.number().int().min(1).max(3),
   GOOGLE_HTTP_TIMEOUT_MS: z.coerce.number().int().min(1).max(120000),
   SMTP_HOST: z.string().trim().min(1).optional(),
   SMTP_PORT: z.coerce.number().int().min(1).max(65535),

@@ -1,3 +1,4 @@
+import { notifyMany } from '../../accounts-administration/notifications.js'
 import { withTransaction } from '../../../db/connection.js'
 import { HttpError } from '../../../middleware/errors.js'
 import {
@@ -6,7 +7,6 @@ import {
   Comment,
   ContentReport,
   ModerationHistory,
-  Notification,
   ReportResolution,
   Story,
 } from '../../../models/index.js'
@@ -218,7 +218,7 @@ export async function resolveReport(
       ],
       { session },
     )
-    await Notification.create(
+    await notifyMany(
       [
         ...notices.map(({ role, ...notice }) => ({
           ...notice,

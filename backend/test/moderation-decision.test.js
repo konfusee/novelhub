@@ -361,7 +361,9 @@ describe('moderator decisions', () => {
     const { storyId, submissionId } = await submitStory(api)
     await readyAndClaimed(moderator, submissionId)
     const before = await PublicationSubmission.findById(submissionId)
-    vi.spyOn(Notification, 'create').mockRejectedValueOnce(new Error('notification unavailable'))
+    vi.spyOn(Notification, 'findOneAndUpdate').mockRejectedValueOnce(
+      new Error('notification unavailable'),
+    )
     expect((await reject(moderator, submissionId)).status).toBe(500)
     const submission = await PublicationSubmission.findById(submissionId)
     expect(submission.status).toBe('decision-pending')

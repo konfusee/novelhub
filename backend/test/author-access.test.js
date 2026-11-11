@@ -295,7 +295,9 @@ describe('author application decisions', () => {
 
   it('rolls back the grant and application if a transactional notification write fails', async () => {
     const application = await pending()
-    vi.spyOn(Notification, 'create').mockRejectedValueOnce(new Error('notification insert failed'))
+    vi.spyOn(Notification, 'findOneAndUpdate').mockRejectedValueOnce(
+      new Error('notification insert failed'),
+    )
     expect((await decide(application)).status).toBe(500)
     expect((await AuthorApplication.findById(application.id)).status).toBe('submitted')
     expect((await Account.findById(reader.account._id)).everAuthor).toBe(false)

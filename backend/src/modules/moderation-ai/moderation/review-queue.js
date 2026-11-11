@@ -1,3 +1,4 @@
+import { policy } from '../../accounts-administration/service.js'
 import { withTransaction } from '../../../db/connection.js'
 import { HttpError } from '../../../middleware/errors.js'
 import {
@@ -236,7 +237,10 @@ export async function claimSubmission(
       })
     submission.status = 'decision-pending'
     submission.claimOwnerAccountId = account._id
-    submission.claimExpiresAt = new Date(now.getTime() + config.moderationClaimHours * 3600000)
+    const effective = await policy.getEffective({ session, now, required: false })
+    submission.claimExpiresAt = new Date(
+      now.getTime() + (effective?.claimExpiryHours ?? config.moderationClaimHours) * 3600000,
+    )
     submission.claimVersion += 1
     await submission.save({ session })
     return {

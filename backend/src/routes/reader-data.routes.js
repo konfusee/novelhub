@@ -25,6 +25,13 @@ const profile = account => ({
 })
 function notificationView(item) {
   const text = (value, max = 4000) => (typeof value === 'string' ? value.slice(0, max) : '')
+  const eventTitles = {
+    'google.linked': 'Đã liên kết tài khoản Google',
+    'monthly-payout.created': 'Khoản chi trả đã được lập',
+    'monthly-payout.bank-details-missing': 'Cần bổ sung thông tin ngân hàng',
+    'monthly-payout.Paid': 'Khoản chi trả đã thanh toán',
+    'monthly-payout.Failed': 'Chi trả chưa thành công',
+  }
   const decided = item.eventType === 'author-application.decided'
   const publication = item.eventType === 'publication.decided'
   const candidate = item.eventType.replace(/^reference\./, '').split('.')[0]
@@ -82,7 +89,7 @@ function notificationView(item) {
     text(item.payload?.body) || text(item.payload?.reason) || text(item.payload?.feedback)
   return {
     id: String(item._id),
-    title,
+    title: eventTitles[item.eventType] ?? title,
     description,
     body: description,
     status: text(item.payload?.status ?? item.payload?.outcome, 40),
@@ -91,7 +98,11 @@ function notificationView(item) {
     createdAt: item.createdAt,
     type,
     label: `${text(item.payload?.label, 80) || labels[type]}${item.eventType.startsWith('reference.') ? ' · Tham khảo' : ''}`,
-    href,
+    href: item.eventType.startsWith('monthly-payout.')
+      ? '/author/earnings'
+      : item.eventType === 'google.linked'
+        ? '/reader/account'
+        : href,
     action:
       decided || publication
         ? 'Xem kết quả'

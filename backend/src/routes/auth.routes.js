@@ -1,3 +1,5 @@
+import { notify } from '../modules/accounts-administration/notifications.js'
+import { ensureReaderWallet } from '../modules/coins-payouts/account-lifecycle.js'
 import { createSecurityService, installSecurityRoutes } from '../auth/security.js'
 import { createCaptchaStore } from '../auth/captcha.js'
 import { Router } from 'express'
@@ -213,6 +215,7 @@ export function createAuthRouter(config) {
           ],
           { session },
         )
+        await ensureReaderWallet(account._id, session)
         const token = await issueEmailToken({
           accountId: account._id,
           purpose: 'email-verification',
@@ -602,6 +605,16 @@ export function createAuthRouter(config) {
           target.emailVerifiedAt = new Date()
           await target.save({ session })
         }
+        await ensureReaderWallet(target._id, session)
+        await notify(
+          {
+            recipientAccountId: target._id,
+            eventType: 'google.linked',
+            sourceEventKey: `google-linked:${identity.sub}`,
+            payload: {},
+          },
+          { session },
+        )
         await ExternalIdentity.create(
           [
             {

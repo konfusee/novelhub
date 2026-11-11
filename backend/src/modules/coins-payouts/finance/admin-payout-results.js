@@ -7,6 +7,7 @@ import {
 } from '../../../models/index.js'
 import { withTransaction } from '../../../db/connection.js'
 import { HttpError } from '../../../middleware/errors.js'
+import { notify } from '../../accounts-administration/service.js'
 
 export async function recordSimulatedPayoutResult(admin, withdrawalId, input, now = new Date()) {
   return withTransaction(async session => {
@@ -112,6 +113,22 @@ export async function recordSimulatedPayoutResult(admin, withdrawalId, input, no
           occurredAt: now,
         },
       ],
+      { session },
+    )
+
+    await notify(
+      {
+        recipientAccountId: withdrawal.accountId,
+        eventType: `monthly-payout.${input.result}`,
+        sourceEventKey: `payout-result:${entry._id}`,
+        payload: {
+          withdrawalId: String(withdrawal._id),
+          periodId: withdrawal.periodId,
+          amountCoins: withdrawal.amountCoins,
+          outcome: input.result,
+          reason: note,
+        },
+      },
       { session },
     )
 

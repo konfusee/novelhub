@@ -1,10 +1,10 @@
+import { notifyMany } from '../notifications.js'
 import { withTransaction } from '../../../db/connection.js'
 import { HttpError } from '../../../middleware/errors.js'
 import { Account } from '../../../models/identity/account.model.js'
 import { AuthorApplication } from '../../../models/identity/author-application.model.js'
 import { RoleAssignment } from '../../../models/identity/role-assignment.model.js'
 import { AuditEvent } from '../../../models/audit/audit-event.model.js'
-import { Notification } from '../../../models/notifications/notification.model.js'
 
 export const applicationView = application =>
   application
@@ -152,7 +152,7 @@ export async function decideApplication(admin, id, { decision, reason, expectedV
       ],
       { session },
     )
-    await Notification.create(
+    await notifyMany(
       [
         {
           recipientAccountId: applicant._id,

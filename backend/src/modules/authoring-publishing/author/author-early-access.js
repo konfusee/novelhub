@@ -1,3 +1,4 @@
+import { policy as policies } from '../../accounts-administration/service.js'
 import {
   Chapter,
   ContentRevision,
@@ -52,12 +53,7 @@ async function state(account, storyId, chapterId, session) {
   const revision = await ContentRevision.findById(
     chapter.draftRevisionId ?? chapter.currentRevisionId,
   ).session(session ?? null)
-  const policy = await PolicyVersion.findOne({
-    status: 'effective',
-    effectiveAt: { $lte: new Date() },
-  })
-    .sort({ effectiveAt: -1, _id: -1 })
-    .session(session ?? null)
+  const policy = await policies.getEffective({ session, required: false })
   return { story, chapter, revision, policy }
 }
 const policyView = policy =>

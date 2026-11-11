@@ -1,3 +1,4 @@
+import { policy } from '../../accounts-administration/service.js'
 import { withTransaction } from '../../../db/connection.js'
 import { HttpError } from '../../../middleware/errors.js'
 import {
@@ -200,7 +201,10 @@ export async function claimReport(
       })
     report.status = 'under-review'
     report.claimOwnerAccountId = account._id
-    report.claimExpiresAt = new Date(now.getTime() + config.moderationClaimHours * 3600000)
+    const effective = await policy.getEffective({ session, now, required: false })
+    report.claimExpiresAt = new Date(
+      now.getTime() + (effective?.claimExpiryHours ?? config.moderationClaimHours) * 3600000,
+    )
     report.claimVersion += 1
     await report.save({ session })
     return report

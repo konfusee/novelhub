@@ -1,4 +1,5 @@
-import { AuthorRevenueRate, PolicyVersion } from '../../../models/index.js'
+import { policy as policies } from '../../accounts-administration/service.js'
+import { AuthorRevenueRate } from '../../../models/index.js'
 import { HttpError } from '../../../middleware/errors.js'
 
 export function calculateUnlockSplit(priceCoins, authorPercent) {
@@ -26,13 +27,7 @@ export function calculateUnlockSplit(priceCoins, authorPercent) {
 }
 
 export async function getUnlockRevenueSplit(authorId, priceCoins, session, now = new Date()) {
-  const policy = await PolicyVersion.findOne({
-    status: 'effective',
-    effectiveAt: { $lte: now },
-  })
-    .sort({ effectiveAt: -1, _id: -1 })
-    .session(session ?? null)
-    .lean()
+  const policy = await policies.getEffective({ now, session, required: false })
 
   if (!policy) {
     throw new HttpError(409, 'policy_required', 'Chưa có chính sách phân bổ doanh thu có hiệu lực.')
