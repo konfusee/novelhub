@@ -28,7 +28,7 @@ describe('MongoDB catalogue and author drafts', () => {
     const body = {
       title: 'Truyện thể loại',
       description: 'Tóm tắt.',
-      categoryIds: [String(first._id)],
+      categoryId: String(first._id),
     }
     const created = await write('post', '/api/author/stories', author.cookie, body)
     const story = await Story.findById(created.body.story.id)
@@ -43,22 +43,40 @@ describe('MongoDB catalogue and author drafts', () => {
     const updated = await write('put', path, author.cookie, {
       title: body.title,
       description: body.description,
-      categoryIds: [String(second._id)],
+      categoryId: String(second._id),
       expectedVersion: story.version,
     })
     expect(updated.status).toBe(200)
-    expect(updated.body.story.categoryIds).toEqual([String(second._id)])
+    expect(updated.body.story.categoryId).toBe(String(second._id))
     const changed = await Story.findById(story._id)
+    expect(String(changed.categoryId)).toBe(String(second._id))
     expect(String(changed.publishedRevisionId)).toBe(String(publicRevision._id))
-    expect((await ContentRevision.findById(changed.currentRevisionId)).content.categoryIds).toEqual(
-      [String(second._id)],
+    expect((await ContentRevision.findById(changed.currentRevisionId)).content.categoryId).toBe(
+      String(second._id),
     )
-    expect((await ContentRevision.findById(publicRevision._id)).content.categoryIds).toEqual([
+    expect((await ContentRevision.findById(publicRevision._id)).content.categoryId).toBe(
       String(first._id),
-    ])
-    expect((await request(app).get(`/api/catalog/stories?category=${first._id}`)).body.total).toBe(
-      1,
     )
+    const catalog = await request(app).get(`/api/catalog/stories?category=${first._id}`)
+    expect(catalog.body.items).toMatchObject([
+      { id: String(story._id), categoryId: String(first._id), genre: first.name },
+    ])
+    expect(catalog.body.items[0]).not.toHaveProperty('genres')
+    expect((await request(app).get('/api/catalog/categories')).body.items).toEqual(
+      expect.arrayContaining([
+        { id: String(first._id), name: first.name, storyCount: 1 },
+        { id: String(second._id), name: second.name, storyCount: 0 },
+      ]),
+    )
+    expect(
+      (
+        await write('put', path, author.cookie, {
+          title: 'Giữ thể loại',
+          description: body.description,
+          expectedVersion: changed.version,
+        })
+      ).body.story.categoryId,
+    ).toBe(String(second._id))
     expect((await request(app).get(`/api/catalog/stories?category=${second._id}`)).body.total).toBe(
       0,
     )
@@ -69,12 +87,12 @@ describe('MongoDB catalogue and author drafts', () => {
         await write('put', path, author.cookie, {
           title: body.title,
           description: body.description,
-          categoryIds: [String(second._id)],
-          expectedVersion: changed.version,
+          categoryId: String(second._id),
+          expectedVersion: changed.version + 1,
         })
       ).status,
     ).toBe(400)
-    expect(await ContentRevision.countDocuments({ storyId: story._id })).toBe(2)
+    expect(await ContentRevision.countDocuments({ storyId: story._id })).toBe(3)
   })
   it('returns truly empty collections without demo records', async () => {
     expect((await request(app).get('/api/catalog/stories')).body).toMatchObject({
@@ -90,7 +108,7 @@ describe('MongoDB catalogue and author drafts', () => {
     const input = {
       title: 'Truyện thật',
       description: 'Nội dung của tác giả',
-      categoryIds: [String(category._id)],
+      categoryId: String(category._id),
     }
     expect((await write('post', '/api/author/stories', reader.cookie, input)).status).toBe(403)
     const created = await write('post', '/api/author/stories', author.cookie, input)
@@ -98,9 +116,13 @@ describe('MongoDB catalogue and author drafts', () => {
     const id = created.body.story.id
     expect(await Story.countDocuments()).toBe(1)
     expect(
-      (await request(app).get('/api/author/stories').set('Cookie', author.cookie)).body.items[0]
-        .title,
-    ).toBe(input.title)
+      (await request(app).get('/api/author/stories').set('Cookie', author.cookie)).body.items[0],
+    ).toMatchObject({
+      title: input.title,
+      categoryId: input.categoryId,
+      genre: category.name,
+      category: { id: input.categoryId, name: category.name, status: 'active' },
+    })
     expect(
       (await request(app).get(`/api/author/stories/${id}`).set('Cookie', other.cookie)).status,
     ).toBe(404)
@@ -129,7 +151,7 @@ describe('MongoDB catalogue and author drafts', () => {
   it('rejects invalid categories, forged owners/status and requests without CSRF origin', async () => {
     const author = await authenticatedAccount('author')
     const category = await categoryFor(author.account)
-    const input = { title: 'Test', description: '', categoryIds: [String(category._id)] }
+    const input = { title: 'Test', description: '', categoryId: String(category._id) }
     expect(
       (
         await write('post', '/api/author/stories', author.cookie, {
@@ -138,11 +160,28 @@ describe('MongoDB catalogue and author drafts', () => {
         })
       ).status,
     ).toBe(400)
+    const unknown = await write('post', '/api/author/stories', author.cookie, {
+      ...input,
+      categoryId: '000000000000000000000000',
+    })
+    expect(unknown.status).toBe(400)
+    expect(unknown.body.error).toMatchObject({
+      code: 'invalid_category',
+      message: 'Hãy chọn một thể loại đang hoạt động.',
+    })
     expect(
       (
         await write('post', '/api/author/stories', author.cookie, {
           ...input,
-          categoryIds: ['000000000000000000000000'],
+          categoryId: [String(category._id)],
+        })
+      ).status,
+    ).toBe(400)
+    expect(
+      (
+        await write('post', '/api/author/stories', author.cookie, {
+          title: 'Test',
+          description: '',
         })
       ).status,
     ).toBe(400)
@@ -158,7 +197,7 @@ describe('MongoDB catalogue and author drafts', () => {
     const story = await Story.create({
       authorAccountId: author.account._id,
       title: 'SECRET draft title',
-      categoryIds: [category._id],
+      categoryId: category._id,
       publicationStatus: 'published',
     })
     const revision = await ContentRevision.create({
@@ -171,7 +210,7 @@ describe('MongoDB catalogue and author drafts', () => {
       content: {
         title: 'Public title',
         description: 'Published synopsis',
-        categoryIds: [String(category._id)],
+        categoryId: String(category._id),
       },
     })
     story.publishedRevisionId = revision._id

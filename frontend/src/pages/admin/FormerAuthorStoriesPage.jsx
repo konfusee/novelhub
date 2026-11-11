@@ -145,7 +145,7 @@ function FormerStoryDialog({ id, onClose, onChanged }) {
                   ? {
                       title: String(form.get('title')).trim(),
                       description: String(form.get('description')).trim(),
-                      categoryIds: form.getAll('categoryIds'),
+                      categoryId: String(form.get('categoryId') ?? ''),
                     }
                   : {}),
               }
@@ -208,28 +208,31 @@ function FormerStoryDialog({ id, onClose, onChanged }) {
                 disabled={busy}
               />
             </label>
-            <fieldset disabled={busy}>
-              <legend className="text-sm font-medium">{m('categories')}</legend>
-              {categories.status === 'ready' ? (
-                <div className="mt-2 grid gap-2 sm:grid-cols-2">
+            {categories.status === 'ready' ? (
+              <label className="block text-sm font-medium">
+                {m('categories')}
+                <Select
+                  className="mt-2"
+                  name="categoryId"
+                  defaultValue={story.categoryId}
+                  required={action === 'correct'}
+                  disabled={busy}
+                >
                   {categories.data.map(category => (
-                    <label key={category.id} className="flex items-start gap-2 text-sm">
-                      <input
-                        type="checkbox"
-                        name="categoryIds"
-                        value={category.id}
-                        defaultChecked={story.categoryIds.includes(category.id)}
-                      />
+                    <option key={category.id} value={category.id}>
                       {category.name}
-                    </label>
+                    </option>
                   ))}
-                </div>
-              ) : (
+                </Select>
+              </label>
+            ) : (
+              <div>
+                <p className="text-sm font-medium">{m('categories')}</p>
                 <p role="status" className="mt-2 text-sm text-muted">
                   {m('categoriesUnavailable')}
                 </p>
-              )}
-            </fieldset>
+              </div>
+            )}
           </div>
           <label className="mt-4 block text-sm font-medium">
             {m('reason')}

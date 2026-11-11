@@ -52,17 +52,17 @@ describe('author dashboard', () => {
     const first = await Story.create({
       title: 'Truyện của tôi',
       authorAccountId: author.account._id,
-      categoryIds: [category._id],
+      categoryId: category._id,
     })
     const second = await Story.create({
       title: 'Truyện thứ hai',
       authorAccountId: author.account._id,
-      categoryIds: [category._id],
+      categoryId: category._id,
     })
     const privateStory = await Story.create({
       title: 'OTHER PRIVATE',
       authorAccountId: other.account._id,
-      categoryIds: [category._id],
+      categoryId: category._id,
     })
     for (const story of [first, second])
       await Follow.create({

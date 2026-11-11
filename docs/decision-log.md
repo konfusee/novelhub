@@ -212,11 +212,13 @@ policy; deferred technical selections and team process gates are not approval.
    immediately in the deletion transaction. Keep its email Admin-only until financial closure, and send withdrawal-created, Failed, and Paid-slip
    emails to it before removal.
    Authors cannot hard-delete published stories with unlocks; they
-   may only unpublish/archive, with no refunds. Admin-managed categories require
-   one or more per story. Authors set Ongoing/Completed status and may
-   reopen it. Search covers title and Author name; filters cover category and
-   status; sorting covers popularity, rating, and newest. Popularity is unique
-   daily views over a rolling 30 days.
+   may only unpublish/archive, with no refunds. Categories are Admin-managed;
+   each story has exactly one main category (decision 33 supersedes the
+   earlier one-or-more rule). Authors set Ongoing/Completed status and may
+   reopen it. Search covers title, Author name and story tags; filters cover
+   category, tag and status (decision 34 adds tags); sorting covers
+   popularity, rating, and newest. Popularity is unique daily views over a
+   rolling 30 days.
 22. **Early-access bounds and revenue default.** The default price bounds are
    200–5,000 coins and duration bounds are 1–14 days, both Admin-configurable
    afterwards. The default revenue split is 70% Author/30% platform only when
@@ -227,8 +229,8 @@ policy; deferred technical selections and team process gates are not approval.
    publication ambiguity, multi-role alternatives, generic similarity/TTS
    gates, required alt text, Markdown/custom-theme proposals, variable
    top-up amounts, retained-PDF/OCR assumptions, hard-delete assumptions,
-   fixed-or-undefined finance wording, and incomplete report/notification
-   sets are superseded by decisions 14–32.
+   fixed-or-undefined finance wording, multi-category story selection, and
+   incomplete report/notification sets are superseded by decisions 14–33.
    Existing source IDs remain traceability anchors; stale wording is not an
    additional requirement.
 24. **Accounts, coins, and moderation workflow.** Reader coins never expire.
@@ -346,10 +348,34 @@ policy; deferred technical selections and team process gates are not approval.
    rejected one but is no longer needed to unblock editing. Approval still
    does not publish by itself, and submissions have no escalation outcome.
 
+33. **Each story has exactly one main category (confirmed 2026-11-11).**
+   This supersedes the earlier rule in decision 21 that a story requires one
+   or more Admin-managed categories. An Author picks exactly one active
+   category when creating a story and may change it while the story is
+   editable. The category is part of the story metadata, so a change is
+   reviewed and released like a title or synopsis change; submitting story
+   metadata and releasing an approved version both require that category to
+   be active. Catalogue cards show it as the story's genre, the category
+   filter matches it, and each published story counts once toward its
+   category. Stories recorded earlier with several categories keep the first
+   one as their main category.
+
+34. **Authors may add free-form story tags (confirmed 2026-11-11).** This
+   extends the search and filter scope of decision 21. Besides its main
+   category, a story has 0–10 tags. A tag has 2–30 letters, digits, hyphens
+   or underscores, without `#` or spaces; a story's tags are unique
+   regardless of letter case, and the first spelling is kept. Tags are story
+   metadata: they are part of the reviewed story-metadata revision, and a
+   published story's public tags change only when a newly approved version is
+   released. Keyword search also matches a story's tags, with or without a
+   leading `#`, and Readers can filter stories by one tag. Tags are not
+   Admin-managed: Admin sees a read-only list of tags with their published
+   and total story counts, and there is no new use case.
+
 Evidence class: user-confirmed target decisions from the requirements interview,
 including final payout correction, deleted-account email/closure, chapter-one,
-retention and suspension clarifications, and the approve/reject decision
-change.
+retention and suspension clarifications, the approve/reject decision change,
+the single-main-category change, and the story-tags addition.
 Source narratives/catalogues are traceability evidence, not release proof.
 
 ## Proposed technical design (not product policy)

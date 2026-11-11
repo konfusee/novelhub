@@ -5,9 +5,9 @@ export const CATALOG_STATUSES = ['ongoing', 'completed']
 export const CATALOG_PAGE_SIZE = 12
 
 /** Builds `/catalog/stories?...` from the supported filters; blank values are omitted. */
-export function catalogStoriesPath({ q, sort, category, status, page, pageSize } = {}) {
+export function catalogStoriesPath({ q, sort, category, tag, status, page, pageSize } = {}) {
   const params = new URLSearchParams()
-  for (const [key, value] of Object.entries({ q, sort, category, status, page, pageSize }))
+  for (const [key, value] of Object.entries({ q, sort, category, tag, status, page, pageSize }))
     if (value !== undefined && value !== null && value !== '') params.set(key, String(value))
   const query = params.toString()
   return `/catalog/stories${query ? `?${query}` : ''}`

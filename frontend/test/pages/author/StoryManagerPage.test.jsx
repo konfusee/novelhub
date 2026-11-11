@@ -13,7 +13,7 @@ const workspace = {
     id: 'owned',
     title: 'Truyện thuộc tài khoản',
     description: 'Tóm tắt được lưu thực tế và đủ dài để kiểm tra việc sửa thông tin.',
-    genres: ['Kỳ ảo'],
+    genre: 'Kỳ ảo',
     author: 'Tác giả thật',
     status: 'published',
     version: 7,
@@ -199,7 +199,7 @@ it('prevents archiving unsaved edits and retains the form when archive conflicts
   expect(title.value).toBe(workspace.story.title)
   expect(screen.queryByRole('button', { name: 'Khôi phục bản nháp', exact: true })).toBeNull()
 })
-it('loads real categories and saves the selected IDs in the next draft revision', async () => {
+it('loads real categories and saves the single selected main category in the next draft revision', async () => {
   mocks.apiRequest.mockImplementation(async (path, options) => {
     if (path === '/catalog/categories')
       return {
@@ -209,14 +209,15 @@ it('loads real categories and saves the selected IDs in the next draft revision'
         ],
       }
     if (options?.method === 'PUT')
-      return { story: { ...workspace.story, categoryIds: options.body.categoryIds, version: 8 } }
-    return { ...workspace, story: { ...workspace.story, categoryIds: ['fantasy'] } }
+      return { story: { ...workspace.story, categoryId: options.body.categoryId, version: 8 } }
+    return { ...workspace, story: { ...workspace.story, categoryId: 'fantasy' } }
   })
   view()
   fireEvent.click(await screen.findByRole('button', { name: 'Sửa thông tin' }))
-  const mystery = await screen.findByRole('checkbox', { name: 'Bí ẩn', exact: true })
+  const mystery = await screen.findByRole('radio', { name: 'Bí ẩn', exact: true })
+  expect(screen.getByRole('radio', { name: 'Kỳ ảo', exact: true }).checked).toBe(true)
   fireEvent.click(mystery)
-  fireEvent.click(screen.getByRole('checkbox', { name: 'Kỳ ảo', exact: true }))
+  expect(screen.getByRole('radio', { name: 'Kỳ ảo', exact: true }).checked).toBe(false)
   fireEvent.click(screen.getByRole('button', { name: 'Lưu thông tin' }))
   await screen.findByText('Đã lưu thông tin truyện.')
   expect(mocks.apiRequest).toHaveBeenCalledWith('/author/stories/owned', {
@@ -225,7 +226,39 @@ it('loads real categories and saves the selected IDs in the next draft revision'
       title: workspace.story.title,
       description: workspace.story.description,
       expectedVersion: 7,
-      categoryIds: ['mystery'],
+      categoryId: 'mystery',
+    },
+  })
+})
+it('edits tags with the shared rules and sends them only when they changed', async () => {
+  mocks.apiRequest.mockImplementation(async (path, options) => {
+    if (path === '/catalog/categories') return { items: [{ id: 'fantasy', name: 'Kỳ ảo' }] }
+    if (options?.method === 'PUT')
+      return { story: { ...workspace.story, tags: options.body.tags, version: 8 } }
+    return {
+      ...workspace,
+      story: { ...workspace.story, categoryId: 'fantasy', tags: ['CoDai', 'slow-burn'] },
+    }
+  })
+  view()
+  fireEvent.click(await screen.findByRole('button', { name: 'Sửa thông tin' }))
+  await screen.findByRole('radio', { name: 'Kỳ ảo', exact: true })
+  fireEvent.click(screen.getByRole('button', { name: 'Xóa thẻ slow-burn' }))
+  const tagInput = screen.getByRole('textbox', { name: 'Thẻ khám phá' })
+  fireEvent.change(tagInput, { target: { value: 'codai' } })
+  fireEvent.keyDown(tagInput, { key: 'Enter' })
+  expect(screen.getByRole('alert').textContent).toBe('Thẻ này đã có trong danh sách.')
+  fireEvent.change(tagInput, { target: { value: '#Hồi Hộp' } })
+  fireEvent.keyDown(tagInput, { key: 'Enter' })
+  fireEvent.click(screen.getByRole('button', { name: 'Lưu thông tin' }))
+  await screen.findByText('Đã lưu thông tin truyện.')
+  expect(mocks.apiRequest).toHaveBeenCalledWith('/author/stories/owned', {
+    method: 'PUT',
+    body: {
+      title: workspace.story.title,
+      description: workspace.story.description,
+      expectedVersion: 7,
+      tags: ['CoDai', 'HồiHộp'],
     },
   })
 })

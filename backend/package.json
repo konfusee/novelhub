@@ -16,6 +16,7 @@
     "db:seed-coins-demo": "node scripts/seed-coins-demo.js",
     "db:backfill-embeddings": "node scripts/backfill-embeddings.js",
     "ai:fail-pending": "node scripts/fail-pending-evidence.js",
+    "db:migrate-story-single-category": "node scripts/migrate-story-single-category.js",
     "smoke:moderation-review": "node scripts/smoke-moderation-review.js",
     "lint": "eslint .",
     "test": "vitest run",

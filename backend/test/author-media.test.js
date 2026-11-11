@@ -115,7 +115,7 @@ it('rolls back metadata and removes written files when ownership or audit valida
     authorAccountId: other.account._id,
     title: 'Khác',
     description: 'Tóm tắt',
-    categoryIds: [category._id],
+    categoryId: category._id,
   })
   const before = await readdir(root)
   expect((await upload(author.cookie, { storyId: String(story._id) })).status).toBe(404)
@@ -190,7 +190,7 @@ const makeStory = async (owner, name = 'Truyện nhận ảnh') => {
     authorAccountId: owner.account._id,
     title: name,
     description: 'Tóm tắt',
-    categoryIds: [category._id],
+    categoryId: category._id,
   })
 }
 it('organizes private images atomically, persists versions and supports removing the story grouping', async () => {
@@ -522,7 +522,7 @@ async function submissionWithImages() {
     content: {
       title: story.title,
       description: story.description,
-      categoryIds: story.categoryIds.map(String),
+      categoryId: String(story.categoryId),
     },
   })
   const parentSubmission = await PublicationSubmission.create({

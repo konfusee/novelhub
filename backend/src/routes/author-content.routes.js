@@ -44,16 +44,18 @@ import {
 import { reorderDraftChapters } from '../modules/authoring-publishing/author/author-chapter-order.js'
 import { unpublishStory } from '../modules/authoring-publishing/author/author-story-unpublish.js'
 import { changeChapterDraftLifecycle } from '../modules/authoring-publishing/author/author-chapter-lifecycle.js'
+import {
+  metadataTags,
+  parseStoryTags,
+  storyTagFields,
+} from '../modules/authoring-publishing/content/story-tags.js'
 const objectId = z.string().regex(/^[a-f\d]{24}$/i)
 const storyInput = z
   .object({
     title: z.string().trim().min(1).max(200),
     description: z.string().trim().max(10000),
-    categoryIds: z
-      .array(objectId)
-      .min(1)
-      .max(10)
-      .transform(ids => [...new Set(ids)]),
+    categoryId: objectId,
+    tags: z.unknown().optional(),
   })
   .strict()
 const chapterInput = z
@@ -67,13 +69,18 @@ function parse(schema, value) {
   if (!parsed.success) throw new HttpError(400, 'validation_error', 'Thông tin không hợp lệ.')
   return parsed.data
 }
-function view(story) {
+async function assertActiveCategory(categoryId, session) {
+  if (!(await Category.exists({ _id: categoryId, status: 'active' }).session(session)))
+    throw new HttpError(400, 'invalid_category', 'Hãy chọn một thể loại đang hoạt động.')
+}
+function view(story, tags) {
   return {
     id: String(story._id),
     publishedRevisionId: story.publishedRevisionId ? String(story.publishedRevisionId) : null,
     title: story.title,
     description: story.description ?? '',
-    categoryIds: story.categoryIds.map(String),
+    categoryId: String(story.categoryId),
+    tags,
     coverMediaId: story.coverMediaId ? String(story.coverMediaId) : null,
     coverBannerMediaId: story.theme?.coverBannerMediaId
       ? String(story.theme.coverBannerMediaId)
@@ -316,20 +323,20 @@ export function createAuthorContentRouter(config) {
   router.post('/author/stories', async (req, res, next) => {
     try {
       const input = parse(storyInput, req.body)
+      const metadata = {
+        title: input.title,
+        description: input.description,
+        categoryId: input.categoryId,
+        tags: input.tags === undefined ? [] : parseStoryTags(input.tags),
+      }
       const story = await withTransaction(async session => {
         await lockAuthor(req.account, session)
-        const count = await Category.countDocuments({
-          _id: {
-            $in: input.categoryIds,
-          },
-          status: 'active',
-        }).session(session)
-        if (count !== input.categoryIds.length)
-          throw new HttpError(400, 'invalid_categories', 'Hãy chọn thể loại đang hoạt động.')
+        await assertActiveCategory(input.categoryId, session)
         const [created] = await Story.create(
           [
             {
-              ...input,
+              ...metadata,
+              ...storyTagFields(metadata.tags),
               authorAccountId: req.account._id,
             },
           ],
@@ -345,7 +352,7 @@ export function createAuthorContentRouter(config) {
               authorAccountId: req.account._id,
               revisionNumber: 1,
               formatVersion: 'story-v1',
-              content: input,
+              content: metadata,
             },
           ],
           {
@@ -360,7 +367,7 @@ export function createAuthorContentRouter(config) {
         return created
       })
       res.status(201).json({
-        story: view(story),
+        story: view(story, metadata.tags),
       })
     } catch (error) {
       next(error)
@@ -481,14 +488,15 @@ export function createAuthorContentRouter(config) {
     try {
       const input = parse(
         storyInput.extend({
-          categoryIds: storyInput.shape.categoryIds.optional(),
+          categoryId: storyInput.shape.categoryId.optional(),
           coverMediaId: objectId.nullable().optional(),
           coverBannerMediaId: objectId.nullable().optional(),
           expectedVersion: z.number().int().min(0),
         }),
         req.body,
       )
-      const story = await withTransaction(async session => {
+      const requestedTags = input.tags === undefined ? undefined : parseStoryTags(input.tags)
+      const { story, tags } = await withTransaction(async session => {
         await lockAuthor(req.account, session)
         const current = await ownStory(req.account, req.params.storyId, session)
         editable(current)
@@ -498,7 +506,8 @@ export function createAuthorContentRouter(config) {
             'stale_content',
             'Truyện đã thay đổi. Hãy tải lại trước khi lưu.',
           )
-        const categoryIds = input.categoryIds ?? current.categoryIds.map(String)
+        const categoryId = input.categoryId ?? String(current.categoryId)
+        const tags = requestedTags ?? (await metadataTags(current, session))
         const requestedCoverIds = [input.coverMediaId, input.coverBannerMediaId].filter(
           value => value !== undefined && value !== null,
         )
@@ -525,16 +534,7 @@ export function createAuthorContentRouter(config) {
           )
             throw new HttpError(400, 'invalid_story_media', 'Ảnh bìa hoặc banner không hợp lệ.')
         }
-        if (input.categoryIds) {
-          const count = await Category.countDocuments({
-            _id: {
-              $in: categoryIds,
-            },
-            status: 'active',
-          }).session(session)
-          if (count !== categoryIds.length)
-            throw new HttpError(400, 'invalid_categories', 'Hãy chọn thể loại đang hoạt động.')
-        }
+        if (input.categoryId) await assertActiveCategory(categoryId, session)
         const last = await ContentRevision.findOne({
           storyId: current._id,
           contentType: 'story',
@@ -555,7 +555,8 @@ export function createAuthorContentRouter(config) {
               content: {
                 title: input.title,
                 description: input.description,
-                categoryIds,
+                categoryId,
+                tags,
               },
             },
           ],
@@ -565,7 +566,9 @@ export function createAuthorContentRouter(config) {
         )
         current.title = input.title
         current.description = input.description
-        current.categoryIds = categoryIds
+        current.categoryId = categoryId
+        // Public tags change only by release once the story has been released.
+        if (!current.publishedRevisionId) current.set(storyTagFields(tags))
         if (input.coverMediaId !== undefined) current.coverMediaId = input.coverMediaId
         if (input.coverBannerMediaId !== undefined) {
           current.theme = {
@@ -578,10 +581,10 @@ export function createAuthorContentRouter(config) {
         await current.save({
           session,
         })
-        return current
+        return { story: current, tags }
       })
       res.json({
-        story: view(story),
+        story: view(story, tags),
       })
     } catch (error) {
       next(error)
@@ -589,8 +592,9 @@ export function createAuthorContentRouter(config) {
   })
   router.get('/author/stories/:storyId', async (req, res, next) => {
     try {
+      const story = await ownStory(req.account, req.params.storyId)
       res.json({
-        story: view(await ownStory(req.account, req.params.storyId)),
+        story: view(story, await metadataTags(story)),
       })
     } catch (error) {
       next(error)

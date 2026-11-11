@@ -91,7 +91,50 @@ it('keeps entered values when saving fails and shows unsupported groups without 
   expect((await screen.findByRole('alert')).textContent).toBe('Tên thể loại đã tồn tại.')
   expect(screen.getByLabelText('Tên thể loại').value).toBe('Bản mới')
   fireEvent.click(screen.getByRole('button', { name: 'Hủy', exact: true }))
-  fireEvent.click(screen.getByRole('button', { name: 'Thể loại phụ và thẻ', exact: true }))
+  fireEvent.click(screen.getByRole('button', { name: 'Xếp hạng nội dung', exact: true }))
   await screen.findByText('Chức năng chưa được triển khai')
   expect(screen.queryByText('#SlowBurn')).toBeNull()
+})
+it('lists read-only tag usage with search and paging and no edit actions', async () => {
+  api.mockImplementation(async path =>
+    path.startsWith('/admin/taxonomy/tags')
+      ? {
+          items: [{ key: 'slow-burn', label: 'Slow-Burn', publishedStories: 3, totalStories: 5 }],
+          total: 21,
+          page: 1,
+          pageSize: 20,
+        }
+      : { items: [category], total: 1, page: 1, pageSize: 20 },
+  )
+  view()
+  await screen.findByText(category.name)
+  fireEvent.click(screen.getByRole('button', { name: 'Thẻ truyện', exact: true }))
+  const row = (await screen.findByText('#Slow-Burn')).closest('tr')
+  expect(row.textContent).toContain('3')
+  expect(row.textContent).toContain('5')
+  expect(screen.queryByRole('button', { name: 'Thêm danh mục' })).toBeNull()
+  expect(screen.queryByRole('button', { name: 'Sửa danh mục' })).toBeNull()
+  fireEvent.change(screen.getByRole('searchbox', { name: 'Lọc thẻ' }), {
+    target: { value: 'slow' },
+  })
+  fireEvent.click(screen.getByRole('button', { name: 'Lọc', exact: true }))
+  await waitFor(() =>
+    expect(
+      api.mock.calls.some(
+        ([path]) =>
+          path.startsWith('/admin/taxonomy/tags?') &&
+          new URLSearchParams(path.split('?')[1]).get('q') === 'slow',
+      ),
+    ).toBe(true),
+  )
+  fireEvent.click(await screen.findByRole('button', { name: 'Trang sau' }))
+  await waitFor(() =>
+    expect(
+      api.mock.calls.some(
+        ([path]) =>
+          path.startsWith('/admin/taxonomy/tags?') &&
+          new URLSearchParams(path.split('?')[1]).get('page') === '2',
+      ),
+    ).toBe(true),
+  )
 })

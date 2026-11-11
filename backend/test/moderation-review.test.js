@@ -162,6 +162,7 @@ describe('moderator review queue', () => {
     expect(detail.status).toBe(200)
     expect(detail.headers['cache-control']).toBe('private, no-store')
     expect(detail.body.metadata.title).toBe('Truyện chờ kiểm duyệt')
+    expect(detail.body.metadata.category).toMatchObject({ name: 'Kỳ ảo', status: 'active' })
     expect(detail.body.rights.basis).toBe('original')
     expect(detail.body.evidence.batch.status).toBe('available-for-human-review')
     expect(detail.body.evidence.findingsCount).toBe(0)

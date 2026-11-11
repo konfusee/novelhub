@@ -16,16 +16,15 @@ import { chapterTextProjection } from '../content/rich-chapter-document.js'
 import { canReviseUnpublished } from './author-submissions.js'
 import { storyCanUnpublish } from './author-story-unpublish.js'
 import { canReleaseStoryVersion } from './author-story-release.js'
+import { metadataTags } from '../content/story-tags.js'
 
 export async function authorStoryWorkspace(account, storyId) {
   const story = await Story.findOne({ _id: storyId, authorAccountId: account._id }).lean()
   if (!story) throw new HttpError(404, 'not_found', 'Không tìm thấy truyện.')
   const lifecycle = await draftLifecycle(story)
   const metadataRevisionId = story.draftRevisionId ?? story.currentRevisionId
-  const [categories, chapters, views, ratings, approvedMetadata] = await Promise.all([
-    Category.find({ _id: { $in: story.categoryIds } })
-      .select('name status')
-      .lean(),
+  const [category, chapters, views, ratings, approvedMetadata, tags] = await Promise.all([
+    Category.findById(story.categoryId).select('name status').lean(),
     Chapter.find({
       storyId: story._id,
       'publicationTransition.result': { $ne: 'author-draft-deleted' },
@@ -49,6 +48,7 @@ export async function authorStoryWorkspace(account, storyId) {
           status: 'approved',
         })
       : Promise.resolve(null),
+    metadataTags(story),
   ])
   const revisionIds = chapters
     .map(
@@ -146,13 +146,12 @@ export async function authorStoryWorkspace(account, storyId) {
       canUnpublish: storyCanUnpublish(story),
       title: story.title,
       description: story.description ?? '',
-      genres: categories.map(item => item.name),
-      categories: categories.map(item => ({
-        id: String(item._id),
-        name: item.name,
-        status: item.status,
-      })),
-      categoryIds: story.categoryIds.map(String),
+      genre: category?.name ?? '',
+      category: category
+        ? { id: String(category._id), name: category.name, status: category.status }
+        : null,
+      categoryId: String(story.categoryId),
+      tags,
       author: account.displayName,
       status: story.publicationStatus,
       version: story.version,

@@ -38,7 +38,7 @@ it('suspends and restores an Author, hides public stories, invalidates sessions 
     .send({
       title: 'Truyện công khai',
       description: 'Mô tả.',
-      categoryIds: [String(category._id)],
+      categoryId: String(category._id),
     })
   const story = await Story.findById(created.body.story.id)
   const revision = await ContentRevision.findById(story.currentRevisionId)

@@ -4,7 +4,7 @@ import { useBackendDocument } from '../../api/useBackendResource'
 import { apiRequest } from '../../api/client'
 import { useLocale } from '../../context/LocaleContext'
 import { Badge, Button, Card, EmptyState, Input, Modal, Select, Tabs } from '../../components/ui'
-import { FolderTree, Plus, Search } from '../../components/icons'
+import { FolderTree, Hash, Plus, Search } from '../../components/icons'
 
 const empty = { items: [], total: 0, page: 1, pageSize: 20 }
 export function CategoriesConfigurationPage() {
@@ -35,15 +35,17 @@ export function CategoriesConfigurationPage() {
             <p className="text-caption text-ink/70">{m('breadcrumb')}</p>
             <h1 className="mt-1 text-h2 sm:text-h1">{m('title')}</h1>
           </div>
-          <div className="flex flex-wrap gap-2">
-            <Button variant="secondary" disabled={loading} onClick={feed.retry}>
-              {m('reload')}
-            </Button>
-            <Button onClick={() => open()}>
-              <Plus size={16} />
-              {m('add')}
-            </Button>
-          </div>
+          {active === 'categories' && (
+            <div className="flex flex-wrap gap-2">
+              <Button variant="secondary" disabled={loading} onClick={feed.retry}>
+                {m('reload')}
+              </Button>
+              <Button onClick={() => open()}>
+                <Plus size={16} />
+                {m('add')}
+              </Button>
+            </div>
+          )}
         </header>
         <div className="mt-6">
           <Tabs
@@ -57,7 +59,9 @@ export function CategoriesConfigurationPage() {
             }))}
           />
         </div>
-        {active !== 'categories' ? (
+        {active === 'tags' ? (
+          <TagUsagePanel />
+        ) : active !== 'categories' ? (
           <Card className="mt-6">
             <EmptyState title={m('unsupported')} description={m('unsupportedHint')} />
           </Card>
@@ -285,5 +289,109 @@ export function CategoriesConfigurationPage() {
         )}
       </div>
     </AdminLayout>
+  )
+}
+
+/** Read-only usage of free-form author tags; tags are never created, edited or deleted here. */
+function TagUsagePanel() {
+  const { t, formatNumber } = useLocale()
+  const m = key => t(`adminTaxonomy.${key}`)
+  const [filter, setFilter] = useState({ q: '', page: 1 })
+  const [query, setQuery] = useState('')
+  const feed = useBackendDocument(
+    `/admin/taxonomy/tags?${new URLSearchParams({ q: filter.q, page: String(filter.page) })}`,
+    empty,
+  )
+  const ready = feed.status === 'ready'
+  return (
+    <Card className="mt-6 overflow-hidden p-0">
+      <div className="p-5">
+        <h2 className="flex items-center gap-2 text-h3">
+          <Hash size={20} />
+          {m('tagsTitle')}
+        </h2>
+        <p className="mt-1 text-sm text-muted">{m('tagsDescription')}</p>
+        <form
+          className="mt-4 flex flex-col gap-3 sm:flex-row"
+          onSubmit={event => {
+            event.preventDefault()
+            setFilter({ q: query.trim(), page: 1 })
+          }}
+        >
+          <Input
+            icon={Search}
+            className="min-w-0 flex-1"
+            type="search"
+            aria-label={m('tagSearch')}
+            value={query}
+            onChange={event => setQuery(event.target.value)}
+            maxLength={31}
+          />
+          <Button type="submit" variant="secondary">
+            {m('filter')}
+          </Button>
+        </form>
+      </div>
+      {feed.status === 'loading' ? (
+        <p role="status" className="p-5">
+          {m('tagLoading')}
+        </p>
+      ) : !ready ? (
+        <div className="flex flex-wrap items-center gap-3 p-5">
+          <p role="alert">{m('tagLoadError')}</p>
+          <Button size="sm" variant="secondary" onClick={feed.retry}>
+            {m('reload')}
+          </Button>
+        </div>
+      ) : !feed.data.items.length ? (
+        <EmptyState icon={Hash} title={m('tagEmpty')} description={m('tagEmptyHint')} />
+      ) : (
+        <div className="overflow-x-auto">
+          <table className="w-full min-w-[560px] text-left text-sm">
+            <thead className="bg-elevated">
+              <tr>
+                {['tagLabel', 'tagPublished', 'tagStories'].map(key => (
+                  <th key={key} scope="col" className="px-5 py-3">
+                    {m(key)}
+                  </th>
+                ))}
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-hairline">
+              {feed.data.items.map(item => (
+                <tr key={item.key}>
+                  <td className="max-w-sm break-words px-5 py-4 font-semibold">#{item.label}</td>
+                  <td className="px-5 py-4">{formatNumber(item.publishedStories)}</td>
+                  <td className="px-5 py-4">{formatNumber(item.totalStories)}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+      {ready && (
+        <div className="flex flex-wrap items-center justify-between gap-3 border-t border-hairline p-5">
+          <p className="text-sm text-muted">
+            {m('tagTotal')}: {formatNumber(feed.data.total)}
+          </p>
+          <div className="flex gap-2">
+            <Button
+              variant="secondary"
+              disabled={filter.page <= 1}
+              onClick={() => setFilter({ ...filter, page: filter.page - 1 })}
+            >
+              {m('previous')}
+            </Button>
+            <Button
+              variant="secondary"
+              disabled={filter.page * feed.data.pageSize >= feed.data.total}
+              onClick={() => setFilter({ ...filter, page: filter.page + 1 })}
+            >
+              {m('next')}
+            </Button>
+          </div>
+        </div>
+      )}
+    </Card>
   )
 }

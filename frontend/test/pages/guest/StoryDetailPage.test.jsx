@@ -23,9 +23,9 @@ const detail = viewer => ({
     title: 'Rừng Im Lặng',
     author: 'Mira Lane',
     authorId: 'a1',
-    categoryIds: [],
-    genres: ['Kỳ ảo'],
+    categoryId: '',
     genre: 'Kỳ ảo',
+    tags: ['BiAnCoDai', 'slow-burn'],
     status: 'Ongoing',
     rating: '4.5',
     ratingCount: 2,
@@ -81,6 +81,16 @@ it('loads the story and marks early-access chapters with a lock badge and coin p
   expect(
     screen.getByText('Bí mật').closest('li').querySelector('[data-testid="chapter-lock"]'),
   ).toBe(badges[0])
+})
+
+it('shows author tags as #tag links to the tag search', async () => {
+  mocks.auth = { isAuthenticated: false }
+  view(detail(null))
+  const tag = await screen.findByRole('link', { name: '#BiAnCoDai' })
+  expect(tag.getAttribute('href')).toBe('/search?tag=BiAnCoDai')
+  expect(screen.getByRole('link', { name: '#slow-burn' }).getAttribute('href')).toBe(
+    '/search?tag=slow-burn',
+  )
 })
 
 it('sends Guests to the chapter-1 preview', async () => {

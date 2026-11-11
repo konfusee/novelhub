@@ -32,6 +32,9 @@
     "reload": "Tải lại",
     "status": "Trạng thái",
     "rights": "Khai báo quyền",
+    "storyCategory": "Thể loại chính:",
+    "storyTags": "Thẻ truyện:",
+    "storyNoTags": "Không có thẻ",
     "original": "Nội dung do tác giả sáng tác",
     "licensed": "Nội dung có giấy phép",
     "digest": "Dấu kiểm tra toàn vẹn",
@@ -256,7 +259,7 @@
     "unpublish": "Ngừng công khai truyện",
     "republish": "Công khai lại truyện",
     "summary": "Mô tả",
-    "categories": "Thể loại đang hoạt động",
+    "categories": "Thể loại chính",
     "categoriesUnavailable": "Chưa tải được thể loại. Hãy đóng và mở lại để thử tiếp.",
     "reason": "Lý do quản trị",
     "cancel": "Hủy",
@@ -268,7 +271,18 @@
     "title": "Cấu hình danh mục, thẻ và nội dung",
     "groups": "Nhóm cấu hình",
     "categories": "Danh mục",
-    "tags": "Thể loại phụ và thẻ",
+    "tags": "Thẻ truyện",
+    "tagsTitle": "Thẻ do tác giả gắn",
+    "tagsDescription": "Thẻ tự do do tác giả gắn cho truyện, gộp không phân biệt hoa thường. Danh sách chỉ để theo dõi mức sử dụng; thẻ không được tạo, sửa hay xóa tại đây.",
+    "tagSearch": "Lọc thẻ",
+    "tagLoading": "Đang tải thẻ…",
+    "tagLoadError": "Không tải được danh sách thẻ. Hãy thử tải lại.",
+    "tagEmpty": "Không có thẻ phù hợp",
+    "tagEmptyHint": "Thử từ khóa khác. Thẻ xuất hiện khi tác giả gắn thẻ cho truyện.",
+    "tagLabel": "Thẻ",
+    "tagPublished": "Truyện đang công khai",
+    "tagStories": "Tổng số truyện",
+    "tagTotal": "Tổng thẻ",
     "ratings": "Xếp hạng nội dung",
     "lifecycle": "Vòng đời truyện",
     "core": "Danh mục xuất bản cốt lõi",
@@ -914,6 +928,7 @@
     "emailRegisteredDeliveryFailed": "Tài khoản đã được tạo nhưng email xác minh chưa gửi được. Hãy gửi lại email xác minh trước khi đăng nhập."
   },
   "storyDetail": {
+    "tags": "Thể loại và thẻ",
     "bookmark": "Đánh dấu",
     "chapters": "Chương",
     "communityRating": "Đánh giá cộng đồng",
@@ -1184,6 +1199,8 @@
     "applyFilters": "Áp dụng bộ lọc",
     "resetFilters": "Đặt lại bộ lọc",
     "results": "Kết quả tìm kiếm",
+    "tagFilter": "Thẻ #{{tag}}",
+    "clearTag": "Bỏ lọc thẻ {{tag}}",
     "showingFor": "Hiển thị {{count}} kết quả cho “{{query}}”",
     "allStories": "tất cả truyện",
     "sortResults": "Sắp xếp kết quả",
@@ -1229,7 +1246,7 @@
     "noCategories": "Chưa có thể loại nào",
     "noCategoriesDescription": "Bạn vẫn có thể tìm truyện theo tên truyện hoặc tác giả.",
     "allStoriesTitle": "Tất cả truyện",
-    "queryLabel": "Tìm theo tên truyện hoặc tác giả"
+    "queryLabel": "Tìm theo tên truyện, tác giả hoặc thẻ"
   },
   "following": {
     "title": "Danh sách & Đang theo dõi",
@@ -1962,7 +1979,6 @@
     "noTagline": "Tiêu đề phụ chưa được hỗ trợ lưu. Bạn có thể đưa lời giới thiệu vào tóm tắt.",
     "noCover": "Bạn có thể tải ảnh bìa JPG, PNG hoặc WebP tối đa 5 MB. Ảnh sẽ được lưu trong thư viện media của truyện.",
     "coverUploadError": "Truyện đã tạo nhưng chưa lưu được ảnh bìa. Mở thư viện media để thử lại.",
-    "noTags": "Thẻ tùy chỉnh chưa được hỗ trợ lưu. Hãy chọn thể loại chính ở trên.",
     "noAgeRating": "Phân loại độ tuổi chưa được lưu trong quy trình tạo bản nháp này.",
     "language": "Bản thảo hiện được lưu bằng tiếng Việt.",
     "rightsHint": "Bước này tạo bản nháp riêng tư. Tuyên bố quyền tác giả gắn với phiên bản gửi duyệt sẽ được xác nhận trong quy trình xuất bản.",
@@ -2041,11 +2057,11 @@
     "audioUnknown": "Chưa có thống kê âm thanh",
     "adviceTitle": "Lời khuyên biên tập viên",
     "adviceUnknown": "Chưa có phản hồi biên tập cho truyện này.",
-    "categories": "Thể loại truyện",
-    "categoriesHint": "Chọn từ 1 đến 10 thể loại đang hoạt động. Thay đổi được lưu vào bản nháp, không thay phiên bản đang công khai.",
+    "categories": "Thể loại chính",
+    "categoriesHint": "Chọn một thể loại đang hoạt động. Thay đổi được lưu vào bản nháp, không thay phiên bản đang công khai.",
     "categoriesError": "Không tải được danh sách thể loại. Thông tin hiện có được giữ nguyên.",
     "categoriesEmpty": "Chưa có thể loại đang hoạt động.",
-    "categoriesRequired": "Hãy chọn ít nhất một thể loại đang hoạt động.",
+    "categoriesRequired": "Hãy chọn một thể loại đang hoạt động.",
     "retiredCategory": "Ngừng hoạt động",
     "retryCategories": "Tải lại thể loại",
     "lifecycleTitle": "Lưu trữ bản nháp",
@@ -2242,8 +2258,8 @@
         "hint": "Thông tin truyện hoặc chương phải hợp lệ và có nội dung. Hỗ trợ đoạn văn, tiêu đề, trích dẫn, ngắt cảnh và định dạng chữ trong chế độ soạn thảo có định dạng. Các khối ngoài phạm vi hỗ trợ cần được xử lý trước khi gửi."
       },
       "categories": {
-        "title": "Thể loại đang hoạt động",
-        "hint": "Truyện cần ít nhất một thể loại hợp lệ đang hoạt động, không trùng lặp."
+        "title": "Thể loại chính đang hoạt động",
+        "hint": "Truyện cần một thể loại chính hợp lệ đang hoạt động."
       },
       "media": {
         "title": "Ảnh và tệp trong gói gửi",

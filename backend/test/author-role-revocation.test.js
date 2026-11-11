@@ -58,7 +58,7 @@ async function fixture({ rich = false, preceding = false } = {}) {
   const created = await write(cookie, '/api/author/stories', {
     title: 'Truyện công khai',
     description: 'Mô tả truyện thật.',
-    categoryIds: [String(category._id)],
+    categoryId: String(category._id),
   })
   const storyId = created.body.story.id
   const prep = (await get(cookie, `/api/author/submissions/prepare?storyId=${storyId}`)).body

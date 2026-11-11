@@ -20,7 +20,7 @@ export async function publishedStory({
     authorAccountId,
     title,
     description,
-    categoryIds: [category._id],
+    categoryId: category._id,
     publicationStatus: 'published',
     publishedAt: new Date(),
   })
@@ -30,7 +30,7 @@ export async function publishedStory({
     authorAccountId,
     revisionNumber: 1,
     formatVersion: 'story-v1',
-    content: { title, description, categoryIds: [String(category._id)] },
+    content: { title, description, categoryId: String(category._id) },
     status: 'approved',
     immutableAt: new Date(),
   })

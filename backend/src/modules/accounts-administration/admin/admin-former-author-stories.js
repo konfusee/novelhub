@@ -12,6 +12,7 @@ import { withTransaction } from '../../../db/connection.js'
 import { HttpError } from '../../../middleware/errors.js'
 import { loadSubmittedPackage } from '../../authoring-publishing/author/author-submitted-package.js'
 import { digest } from '../../authoring-publishing/submissions/submission-digests.js'
+import { storedTags, storyTagFields } from '../../authoring-publishing/content/story-tags.js'
 
 const oid = z.string().regex(/^[a-f\d]{24}$/i)
 export const formerStoryInput = z.discriminatedUnion('action', [
@@ -20,11 +21,7 @@ export const formerStoryInput = z.discriminatedUnion('action', [
       action: z.literal('correct'),
       title: z.string().trim().min(1).max(200),
       description: z.string().trim().min(1).max(10000),
-      categoryIds: z
-        .array(oid)
-        .min(1)
-        .max(10)
-        .refine(ids => new Set(ids).size === ids.length),
+      categoryId: oid,
       expectedVersion: z.number().int().min(0),
       expectedPublishedRevisionId: oid,
       reason: z.string().trim().min(1).max(1000),
@@ -43,7 +40,8 @@ const metadata = z
   .object({
     title: z.string().trim().min(1).max(200),
     description: z.string().max(10000).optional(),
-    categoryIds: z.array(oid).min(1).max(10),
+    categoryId: oid,
+    tags: storedTags.optional(),
   })
   .strict()
 const unavailable = () =>
@@ -121,7 +119,7 @@ const view = ({ story, source, owner }) => ({
   id: String(story._id),
   title: source.content.title,
   description: source.content.description ?? '',
-  categoryIds: source.content.categoryIds,
+  categoryId: source.content.categoryId,
   status: story.publicationStatus,
   version: story.version,
   publishedRevisionId: String(source._id),
@@ -188,18 +186,12 @@ export async function changeFormerStory(admin, id, input) {
       (input.action === 'republish' && story.publicationStatus !== 'unpublished')
     )
       throw new HttpError(409, 'state_changed', 'Trạng thái truyện không phù hợp. Hãy tải lại.')
-    const categories = input.action === 'correct' ? input.categoryIds : source.content.categoryIds
+    const categoryId = input.action === 'correct' ? input.categoryId : source.content.categoryId
     if (
       input.action !== 'unpublish' &&
-      (await Category.countDocuments({ _id: { $in: categories }, status: 'active' }).session(
-        session,
-      )) !== categories.length
+      !(await Category.exists({ _id: categoryId, status: 'active' }).session(session))
     )
-      throw new HttpError(
-        409,
-        'invalid_categories',
-        'Cần thể loại đang hoạt động trước khi công khai.',
-      )
+      throw new HttpError(400, 'invalid_category', 'Hãy chọn một thể loại đang hoạt động.')
     const now = new Date(),
       before = story.publicationStatus,
       previous = String(source._id)
@@ -210,7 +202,8 @@ export async function changeFormerStory(admin, id, input) {
       const content = {
         title: input.title,
         description: input.description,
-        categoryIds: input.categoryIds,
+        categoryId: input.categoryId,
+        tags: source.content.tags ?? [],
       }
       const correction = {
         rootRevisionId: String(root.revision._id),
@@ -242,7 +235,8 @@ export async function changeFormerStory(admin, id, input) {
       story.currentRevisionId = revision._id
       story.title = input.title
       story.description = input.description
-      story.categoryIds = input.categoryIds
+      story.categoryId = input.categoryId
+      story.set(storyTagFields(content.tags))
     }
     story.publicationStatus = input.action === 'unpublish' ? 'unpublished' : 'published'
     story.publicationTransition = {

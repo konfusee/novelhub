@@ -324,7 +324,7 @@ export async function seedCoinsDemo({ password, now = new Date() } = {}) {
           authorAccountId: authorId,
           title: story.title,
           description: story.description,
-          categoryIds: [demoId(`category:${story.category}`)],
+          categoryId: demoId(`category:${story.category}`),
           publicationStatus: 'published',
           publishedRevisionId: revisionId,
           currentRevisionId: revisionId,
@@ -344,7 +344,7 @@ export async function seedCoinsDemo({ password, now = new Date() } = {}) {
           content: {
             title: story.title,
             description: story.description,
-            categoryIds: [String(demoId(`category:${story.category}`))],
+            categoryId: String(demoId(`category:${story.category}`)),
           },
         },
         session,

@@ -27,7 +27,7 @@ export async function submitStory(
   const created = await api.write(author.cookie, '/api/author/stories', {
     title,
     description,
-    categoryIds: [String(category._id)],
+    categoryId: String(category._id),
   })
   expect(created.status).toBe(201)
   const storyId = created.body.story.id

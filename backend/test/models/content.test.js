@@ -38,7 +38,7 @@ describe('content models', () => {
     const story = await Story.create({
       authorAccountId: id,
       title: 'Story',
-      categoryIds: [id],
+      categoryId: id,
       authoringFrozen: true,
       theme: { accentColor: '#fff', fontFamily: 'system', headingDividerPreset: 'simple' },
     })
@@ -46,10 +46,10 @@ describe('content models', () => {
     expect(story.theme.headingDividerPreset).toBe('simple')
   })
 
-  it('requires at least one category and scopes revision numbers to content', async () => {
-    await expect(
-      Story.create({ authorAccountId: id, title: 'No categories', categoryIds: [] }),
-    ).rejects.toThrow(/at least one category/)
+  it('requires exactly one category and scopes revision numbers to content', async () => {
+    await expect(Story.create({ authorAccountId: id, title: 'No category' })).rejects.toThrow(
+      /categoryId.*required/,
+    )
     const base = {
       storyId: id,
       authorAccountId: id,

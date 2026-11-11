@@ -23,7 +23,7 @@ it('projects only current editable owner chapter drafts and their actual revisio
     const story = await write('/api/author/stories', cookie, {
       title,
       description: 'Tóm tắt',
-      categoryIds: [String(category._id)],
+      categoryId: String(category._id),
     })
     const chapter = await write(`/api/author/stories/${story.body.story.id}/chapters`, cookie, {
       title: 'Chương của chủ sở hữu',

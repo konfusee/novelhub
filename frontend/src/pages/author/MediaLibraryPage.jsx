@@ -256,7 +256,7 @@ export function MediaLibraryPage() {
         body: {
           title: story.title,
           description: story.description,
-          categoryIds: story.categoryIds,
+          categoryId: story.categoryId,
           expectedVersion: story.version,
           coverMediaId: selected.kind === 'cover' ? selected.id : story.coverMediaId,
           coverBannerMediaId: selected.kind === 'banner' ? selected.id : story.coverBannerMediaId,
