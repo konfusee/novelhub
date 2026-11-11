@@ -109,7 +109,7 @@ it('enforces permission, CSRF, status/version and protected-account guards', asy
     409,
   )
   expect((await change(admin, author.account._id, { ...body, action: 'restore' })).status).toBe(409)
-  expect((await change(admin, reader.account._id, body)).status).toBe(409)
+  expect((await change(admin, reader.account._id, body)).status).toBe(200)
   expect((await change(admin, admin.account._id, body)).status).toBe(409)
   const results = await Promise.all([
     change(admin, author.account._id, body),

@@ -101,11 +101,11 @@ it('keeps legacy finance endpoints removed while restored payout endpoints remai
       durationMaxDays: 30,
       expectedPolicyId: null,
       expectedPolicyVersion: null,
-      reason: 'Finance changes are outside this scope',
+      reason: 'Configure revenue and payout defaults through Field 1',
       authorSharePercent: 80,
       withdrawalThresholdCoins: 100000,
     })
-  expect(changedPolicy.status).toBe(400)
+  expect(changedPolicy.status).toBe(201)
   expect(await WithdrawalRequest.countDocuments()).toBe(0)
   expect(await RevenueAllocation.countDocuments()).toBe(0)
   expect(await LedgerEntry.countDocuments()).toBe(0)

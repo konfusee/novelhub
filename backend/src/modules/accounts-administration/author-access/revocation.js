@@ -1,15 +1,8 @@
 import { withTransaction } from '../../../db/connection.js'
 import { HttpError } from '../../../middleware/errors.js'
-import {
-  Account,
-  AuditEvent,
-  Chapter,
-  ModerationHistory,
-  PublicationSubmission,
-  RoleAssignment,
-  Story,
-} from '../../../models/index.js'
+import { Account, AuditEvent, RoleAssignment } from '../../../models/index.js'
 import { digest } from '../../authoring-publishing/submissions/submission-digests.js'
+import { runLifecycleHooks } from '../lifecycle.js'
 
 export async function listActiveAuthors({ page, pageSize, query }) {
   const literal = query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
@@ -106,100 +99,20 @@ export async function revokeAuthorRole(admin, accountId, input) {
     role.status = 'revoked'
     role.revokedAt = now
     await role.save({ session })
-    const stories = await Story.find({ authorAccountId: accountId }).session(session)
-    const storyIds = stories.map(story => story._id)
-    const chapters = await Chapter.find({ storyId: { $in: storyIds } }).session(session)
-    const published = [...stories, ...chapters]
-      .map(item => item.publishedRevisionId)
-      .filter(Boolean)
-    let cancelledChapters = 0
-    for (const story of stories) {
-      story.authoringFrozen = true
-      story.publicationTransition = {
-        actorAccountId: admin._id,
-        occurredAt: now,
-        from: story.publicationStatus,
-        to: story.publicationStatus,
-        result: 'author-role-removed',
-      }
-      await story.save({ session })
-    }
-    for (const chapter of chapters) {
-      if (chapter.publicationTransition?.result === 'author-draft-deleted') continue
-      if (
-        !['draft', 'submitted', 'approved', 'scheduled', 'due', 'archived'].includes(chapter.status)
-      )
-        continue
-      const from = chapter.status
-      chapter.status = 'cancelled'
-      chapter.cancelledAt = now
-      chapter.cancellationReason = 'author-role-removed'
-      chapter.publicationTransition = {
-        actorAccountId: admin._id,
-        occurredAt: now,
-        from,
-        to: 'cancelled',
-        result: 'author-role-removed',
-      }
-      await chapter.save({ session })
-      await audit('chapter.cancelled', 'Chapter', chapter, {
-        from,
-        revisionId: chapter.draftRevisionId ?? chapter.currentRevisionId,
-      })
-      cancelledChapters++
-    }
-    const submissions = await PublicationSubmission.find({
-      authorAccountId: accountId,
-      status: { $in: ['validated', 'pending-review', 'decision-pending', 'approved'] },
-      revisionId: { $nin: published },
-    }).session(session)
-    for (const submission of submissions) {
-      const before = submission.status
-      submission.status = 'cancelled'
-      submission.cancelledAt = now
-      submission.cancellationReason = 'author-role-removed'
-      if (submission.claimOwnerAccountId)
-        submission.claimReleaseHistory.push({
-          ownerAccountId: submission.claimOwnerAccountId,
-          claimVersion: submission.claimVersion,
-          expiresAt: submission.claimExpiresAt ?? null,
-          releasedAt: now,
-          reason: 'author-role-removed',
-          actorAccountId: admin._id,
-        })
-      submission.claimOwnerAccountId = undefined
-      submission.claimExpiresAt = undefined
-      submission.claimVersion++
-      await submission.save({ session })
-      await ModerationHistory.create(
-        [
-          {
-            aggregateType: 'PublicationSubmission',
-            aggregateId: submission._id,
-            submissionId: submission._id,
-            revisionId: submission.revisionId,
-            action: 'submission.cancelled',
-            outcome: 'cancelled',
-            reason: 'author-role-removed',
-            actorAccountId: admin._id,
-            actorAuthorizationEpoch: admin.authorizationEpoch,
-            occurredAt: now,
-            beforeStateDigest: digest({ status: before }),
-            afterStateDigest: digest({ status: 'cancelled' }),
-          },
-        ],
-        { session },
-      )
-      await audit('submission.cancelled', 'PublicationSubmission', submission, {
-        from: before,
-        revisionId: submission.revisionId,
-      })
-    }
+    const results = await runLifecycleHooks('onAuthorRoleRevoked', {
+      accountId: target._id,
+      actorAccountId: admin._id,
+      session,
+      now,
+      reason: 'author-role-removed',
+    })
+    const { frozenStories, cancelledChapters, cancelledSubmissions } =
+      results['authoring-publishing']
     await audit('author-role.revoked', 'Account', target, {
       roleId: role._id,
-      frozenStories: stories.length,
+      frozenStories,
       cancelledChapters,
-      cancelledSubmissions: submissions.length,
+      cancelledSubmissions,
     })
     return {
       accountId: String(target._id),
@@ -207,9 +120,9 @@ export async function revokeAuthorRole(admin, accountId, input) {
       status: 'revoked',
       accountVersion: target.version,
       roleVersion: role.version,
-      frozenStories: stories.length,
+      frozenStories,
       cancelledChapters,
-      cancelledSubmissions: submissions.length,
+      cancelledSubmissions,
     }
 
     async function audit(action, targetType, entity, data) {

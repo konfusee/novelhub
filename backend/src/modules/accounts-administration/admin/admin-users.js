@@ -17,6 +17,7 @@ const identity = {
     ],
   },
   status: 1,
+  version: 1,
   createdAt: 1,
   roles: 1,
   storyCount: 1,

@@ -383,12 +383,20 @@ export async function activatePolicy(admin, input) {
               : {}),
             ...inherited,
             ...Object.fromEntries(
-              ['orderExpiryHours', 'claimExpiryHours']
+              [
+                'orderExpiryHours',
+                'claimExpiryHours',
+                'withdrawalThresholdCoins',
+                'authorSharePercent',
+              ]
                 .filter(field => input[field] !== undefined)
                 .map(field => [field, input[field]]),
             ),
             status: 'effective',
             effectiveAt,
+            ...(input.authorSharePercent !== undefined
+              ? { platformSharePercent: 100 - input.authorSharePercent }
+              : {}),
             actorAccountId: admin._id,
             priceMinCoins: input.priceMinCoins,
             priceMaxCoins: input.priceMaxCoins,

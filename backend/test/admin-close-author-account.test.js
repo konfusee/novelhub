@@ -79,14 +79,19 @@ it('anonymizes zero-balance identity and revokes access without financial writes
     (await request(app).get('/api/author/dashboard').set('Cookie', f.author.cookie)).status,
   ).toBe(401)
 })
-it('blocks closing an account with unsettled balances without moving money or anonymizing identity', async () => {
+it('anonymizes an account with unpaid earnings and retains private final payout contact', async () => {
   const f = await fixture(500)
   const response = await f.close()
-  expect(response.status).toBe(409)
-  expect(response.body.error.code).toBe('financial_close_required')
-  expect((await Account.findById(f.author.account._id)).status).toBe('active')
+  expect(response.status).toBe(200)
+  const account = await Account.findById(f.author.account._id).select(
+    '+retainedPayoutEmail +finalPayoutBankDetailsSnapshot',
+  )
+  expect(account.status).toBe('anonymized')
+  expect(account.email).toBeUndefined()
+  expect(account.retainedPayoutEmail).toBe(f.author.account.email)
+  expect(account.finalPayoutBankDetailsSnapshot.bankName).toBe('Test bank')
+  expect(account.finalPayoutEvaluatedAt).toBeUndefined()
   expect((await Wallet.findById(f.earnings._id)).availableBalance).toBe(500)
-  expect(await LedgerEntry.countDocuments()).toBe(0)
   expect(await WithdrawalRequest.countDocuments()).toBe(0)
 })
 it('unpublishes live stories and cancels unreleased chapters and claimed submissions without deleting revisions', async () => {

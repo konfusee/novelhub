@@ -1,6 +1,7 @@
 import { Account, AuditEvent, RoleAssignment, Session } from '../../../models/index.js'
 import { withTransaction } from '../../../db/connection.js'
 import { HttpError } from '../../../middleware/errors.js'
+import { runLifecycleHooks } from '../lifecycle.js'
 
 export async function changeAuthorAccount(admin, accountId, input) {
   return withTransaction(async session => {
@@ -25,17 +26,6 @@ export async function changeAuthorAccount(admin, accountId, input) {
       throw new HttpError(409, 'protected_account', 'Không thể tự khóa tài khoản.')
     const target = await Account.findById(accountId).session(session)
     if (!target) throw new HttpError(404, 'not_found', 'Không tìm thấy tài khoản.')
-    const privileged = await RoleAssignment.exists({
-      accountId,
-      role: { $in: ['admin', 'moderator'] },
-      status: 'active',
-    }).session(session)
-    if (!target.everAuthor || privileged)
-      throw new HttpError(
-        409,
-        'protected_account',
-        'Thao tác này chỉ áp dụng cho tài khoản Author không có quyền nhân viên.',
-      )
     const from = input.action === 'suspend' ? 'active' : 'suspended'
     if (target.version !== input.expectedVersion || target.status !== from)
       throw new HttpError(
@@ -48,6 +38,14 @@ export async function changeAuthorAccount(admin, accountId, input) {
     if (input.action === 'suspend') target.suspendedAt = now
     target.authorizationEpoch++
     await target.save({ session })
+    if (input.action === 'suspend')
+      await runLifecycleHooks('onAccountSuspended', {
+        accountId: target._id,
+        actorAccountId: admin._id,
+        session,
+        now,
+        reason: 'account-suspended',
+      })
     await Session.updateMany(
       { accountId, status: 'active' },
       { $set: { status: 'revoked', revokedAt: now }, $inc: { version: 1 } },
