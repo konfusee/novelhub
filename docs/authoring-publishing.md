@@ -10,7 +10,7 @@ This document records the implementation boundary for Field 2 and maps the lates
 | UC-AUT-08 | `ChapterEarlyAccessDialog` | `author-early-access.js` and policy lookup |
 | UC-AUT-09–11 | `SubmissionReviewPage`, `SubmittedPackagePage`, `AuthorPreviewPage` | `author-submissions.routes.js`, moderation submission contract |
 | UC-AUT-12 | `AuthorAnalyticsPage` | `/author/analytics`, `author-analytics.js` |
-| UC-AUT-13, UC-AUT-14, UC-AUT-17, UC-AUT-18 | `AuthorEarningsPage` | `/author/earnings`, `controllers/author/finance.controller.js`, `services/author/finance.service.js` |
+| UC-AUT-13, UC-AUT-14, UC-AUT-17, UC-AUT-18 | `AuthorEarningsPage` | `/author/earnings`, `modules/coins-payouts/finance/author-earnings.js`, `modules/coins-payouts/finance/author-payouts.js` |
 
 Submitted revisions are frozen. A rejected revision is revised into a new editable draft, while a published revision remains live until an approved replacement is released. Rights declarations and media digests are checked when a package is submitted and retained with the submitted package.
 

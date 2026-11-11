@@ -20,7 +20,6 @@ import { createReaderDataRouter } from './routes/reader-data.routes.js'
 import { createAuthorSubmissionsRouter } from './routes/author-submissions.routes.js'
 import { createAuthorImportRouter } from './routes/author-import.routes.js'
 import { createAuthorMediaRouter } from './routes/author-media.routes.js'
-import { createAuthorFinanceRouter } from './routes/author-finance.routes.js'
 import { createReaderWalletRouter } from './routes/reader-wallet.routes.js'
 import { createReaderTopUpsRouter } from './routes/reader-top-ups.routes.js'
 import { createSePayWebhookRouter } from './routes/sepay-webhook.routes.js'
@@ -84,7 +83,6 @@ export function createApp(config) {
   app.use('/api', createAuthorSubmissionsRouter(config))
   app.use('/api', createAuthorImportRouter(config))
   app.use('/api', createAuthorMediaRouter(config))
-  app.use('/api', createAuthorFinanceRouter(config))
   app.use('/api', createAdminCategoryRouter(config))
   app.use('/api', createAdminTaxonomyRouter(config))
   app.use('/api', createAdminFormerAuthorRouter(config))
