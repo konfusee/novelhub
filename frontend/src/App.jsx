@@ -393,6 +393,34 @@ function AppRoutes() {
           <Route path="/reader/history" element={role('reader', <ReadingHistoryPage />)} />
           <Route path="/reader/notifications" element={role('reader', <NotificationsPage />)} />
           <Route
+            path="/author/notifications"
+            element={role(
+              'author',
+              <AuthorLayout>
+                <NotificationsPage embedded workspace="author" />
+              </AuthorLayout>,
+              true,
+            )}
+          />
+          <Route
+            path="/moderator/notifications"
+            element={role(
+              'moderator',
+              <ModeratorLayout>
+                <NotificationsPage embedded workspace="moderator" />
+              </ModeratorLayout>,
+            )}
+          />
+          <Route
+            path="/admin/notifications"
+            element={role(
+              'admin',
+              <AdminLayout>
+                <NotificationsPage embedded workspace="admin" />
+              </AdminLayout>,
+            )}
+          />
+          <Route
             path="/reader/profile"
             element={role('reader', <ProfileAccountPage workspace="reader" />)}
           />
@@ -516,7 +544,10 @@ function AppRoutes() {
             path="/author/profile"
             element={role('author', <ProfileAccountPage workspace="author" />, true)}
           />
-          <Route path="/author/wallet" element={role('author', <AuthorEarningsPage />, true)} />
+          <Route
+            path="/author/wallet"
+            element={role('author', <Navigate to={ROUTES.authorEarnings} replace />, true)}
+          />
           <Route
             path="/author/settings"
             element={role('author', <ReaderProfilePage workspace="author" />, true)}
@@ -704,10 +735,7 @@ function AppRoutes() {
             path="/admin/author-statistics"
             element={role('admin', <AuthorStatisticsPage />)}
           />
-          <Route
-            path="/admin/payouts"
-            element={role('admin', <MonthlyPayoutsPage />)}
-          />
+          <Route path="/admin/payouts" element={role('admin', <MonthlyPayoutsPage />)} />
 
           <Route path="/403" element={<ForbiddenPage />} />
 

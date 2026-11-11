@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { Fragment, useEffect, useState } from 'react'
 import {
   AlertTriangle,
   Bell,
@@ -67,8 +67,9 @@ function NotificationSkeleton() {
   )
 }
 
-export function NotificationsPage() {
+export function NotificationsPage({ embedded = false, workspace = 'reader' }) {
   const { t } = useLocale()
+  const Layout = embedded ? Fragment : ReaderLayout
   /* Pages loaded so far are kept in one list; "load more" appends the next page. */
   const [feed, setFeed] = useState({ status: 'loading', items: [], page: 1, hasMore: false })
   const [unread, setUnread] = useState(0)
@@ -189,8 +190,8 @@ export function NotificationsPage() {
   const shown = filter === 'all' ? items : items.filter(item => item.type === filter)
   const ready = feed.status === 'ready'
   return (
-    <ReaderLayout>
-      <div className="page-reader py-7">
+    <Layout>
+      <div className={`page-${workspace} py-7`}>
         <div className="flex flex-col justify-between gap-4 border-b border-hairline pb-6 lg:flex-row lg:items-end">
           <div className="min-w-0">
             <h1 className="text-h2 sm:text-h1">{t('readerData.notifications.title')}</h1>
@@ -403,6 +404,6 @@ export function NotificationsPage() {
           </div>
         )}
       </div>
-    </ReaderLayout>
+    </Layout>
   )
 }

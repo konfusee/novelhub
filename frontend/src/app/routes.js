@@ -27,4 +27,6 @@ export const ROUTES = {
   moderatorDecisions: '/moderator/decisions',
   adminUser: id => `/admin/users/${id}`,
   wallet: '/reader/wallet',
+  authorEarnings: '/author/earnings',
+  workspaceNotifications: workspace => `/${workspace}/notifications`,
 }
