@@ -26,7 +26,7 @@ it('counts actual daily events and distinct identities in the selected Vietnam c
     Story.create({
       title: 'Truyện',
       authorAccountId: account._id,
-      categoryIds: [category._id],
+      categoryId: category._id,
     })
   const story = await create(author.account)
   const foreign = await create(other.account)
@@ -106,7 +106,7 @@ it('filters actual views and distinct readers by an owned chapter without changi
   const story = await Story.create({
     title: 'Truyện có hai chương',
     authorAccountId: author.account._id,
-    categoryIds: [category._id],
+    categoryId: category._id,
   })
   const [one, two, empty] = await Chapter.create(
     [1, 2, 3].map(number => ({
@@ -224,7 +224,7 @@ it('rejects cross-story and foreign chapters, malformed filters and chapter-only
     Story.create({
       title,
       authorAccountId: owner._id,
-      categoryIds: [category._id],
+      categoryId: category._id,
     })
   const a = await create(author.account, 'Truyện A'),
     b = await create(author.account, 'Truyện B'),
@@ -263,7 +263,7 @@ it('counts returners on distinct days, separates guest/account identities and re
   const story = await Story.create({
     title: 'Truyện',
     authorAccountId: author.account._id,
-    categoryIds: [category._id],
+    categoryId: category._id,
   })
   const [one, two, empty] = await Chapter.create(
     [1, 2, 3].map(orderKey => ({
@@ -334,12 +334,12 @@ it('measures only current text progress active in the Vietnam range without chan
   const story = await Story.create({
     title: 'Completion',
     authorAccountId: author.account._id,
-    categoryIds: [category._id],
+    categoryId: category._id,
   })
   const foreign = await Story.create({
     title: 'Foreign',
     authorAccountId: other.account._id,
-    categoryIds: [category._id],
+    categoryId: category._id,
   })
   const [one, two, deleted] = await Chapter.create(
     [1, 2, 3].map(orderKey => ({
@@ -460,7 +460,7 @@ it('measures exact day-1/day-7 returns only for mature new cohorts using all sco
   const story = await Story.create({
     title: 'Cohort',
     authorAccountId: author.account._id,
-    categoryIds: [category._id],
+    categoryId: category._id,
   })
   const [one, two] = await Chapter.create(
     [1, 2].map(orderKey => ({

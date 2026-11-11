@@ -29,7 +29,7 @@ async function fixture() {
   const story = await Story.create({
     authorAccountId: author.account._id,
     title: 'Truyện thử',
-    categoryIds: [category._id],
+    categoryId: category._id,
   })
   const chapter = await Chapter.create({ storyId: story._id, orderKey: 1, title: 'Chương nháp' })
   const revision = await ContentRevision.create({

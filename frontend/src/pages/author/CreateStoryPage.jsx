@@ -9,12 +9,10 @@ import {
   Eye,
   ImagePlus,
   Lightbulb,
-  Plus,
   RefreshCw,
   Save,
   Tags,
   Trash2,
-  X,
 } from '../../components/icons'
 import { AuthorLayout } from '../../layouts'
 import { useBackendResource } from '../../api/useBackendResource'
@@ -22,6 +20,7 @@ import { apiRequest } from '../../api/client'
 import { useAuth } from '../../context/AuthContext'
 import { useLocale } from '../../context/LocaleContext'
 import { StoryCover } from '../../components/story/StoryCover'
+import { StoryTagEditor } from '../../components/author/StoryTagEditor'
 import {
   Badge,
   Button,
@@ -52,7 +51,6 @@ const ratings = [
   ['18+', 'Trưởng thành (18+)', 'Có miêu tả tình cảm trực diện hoặc chủ đề u tối.'],
 ]
 const MAX_COVER_BYTES = 5 * 1024 * 1024
-const MAX_TAGS = 10
 const MIN_SYNOPSIS = 100
 
 export function CreateStoryPage() {
@@ -70,8 +68,6 @@ export function CreateStoryPage() {
   const [synopsis, setSynopsis] = useState('')
   const [genre, setGenre] = useState('')
   const [tags, setTags] = useState([])
-  const [tagDraft, setTagDraft] = useState('')
-  const [tagError, setTagError] = useState('')
   const [rating, setRating] = useState('')
   const [language, setLanguage] = useState('vi')
   const [cover, setCover] = useState(null)
@@ -123,19 +119,6 @@ export function CreateStoryPage() {
     setDraftState('idle')
     setSubmitState('idle')
   }
-  const addTag = () => {
-    const value = tagDraft.trim().replace(/^#/, '').replace(/\s+/g, '')
-    if (!value) return setTagError('Hãy nhập nội dung thẻ.')
-    if (!/^[\p{L}\p{N}_-]{2,30}$/u.test(value))
-      return setTagError('Thẻ dài 2–30 ký tự, chỉ gồm chữ, số, gạch nối hoặc gạch dưới.')
-    if (tags.some(tag => tag.toLowerCase() === value.toLowerCase()))
-      return setTagError('Thẻ này đã có trong danh sách.')
-    if (tags.length >= MAX_TAGS) return setTagError(`Tối đa ${MAX_TAGS} thẻ cho mỗi truyện.`)
-    setTags(current => [...current, value])
-    setTagDraft('')
-    setTagError('')
-    touch()
-  }
   const chooseCover = event => {
     const file = event.target.files?.[0]
     event.target.value = ''
@@ -165,7 +148,7 @@ export function CreateStoryPage() {
     try {
       const result = await apiRequest('/author/stories', {
         method: 'POST',
-        body: { title: title.trim(), description: synopsis.trim(), categoryIds: [genre] },
+        body: { title: title.trim(), description: synopsis.trim(), categoryId: genre, tags },
       })
       if (!result.story?.id) throw new Error(t('createData.saveError'))
       if (cover?.file) {
@@ -185,7 +168,8 @@ export function CreateStoryPage() {
           body: {
             title: title.trim(),
             description: synopsis.trim(),
-            categoryIds: [genre],
+            categoryId: genre,
+            tags,
             coverMediaId: uploaded.asset.id,
             expectedVersion: result.story.version,
           },
@@ -436,12 +420,17 @@ export function CreateStoryPage() {
                       />
                     </div>
                   ) : (
-                    <div className="nh-fade-enter mt-3 flex flex-wrap gap-2">
+                    <div
+                      role="radiogroup"
+                      aria-label="Thể loại chính"
+                      className="nh-fade-enter mt-3 flex flex-wrap gap-2"
+                    >
                       {genreOptions.data.map(item => (
                         <button
                           key={item.id}
                           type="button"
-                          aria-pressed={genre === item.id}
+                          role="radio"
+                          aria-checked={genre === item.id}
                           onClick={() => {
                             setGenre(item.id)
                             touch()
@@ -456,64 +445,14 @@ export function CreateStoryPage() {
                 </fieldset>
 
                 <div className="mt-6">
-                  <label htmlFor="story-tag-input" className="text-sm font-semibold">
-                    Thể loại phụ và thẻ độc giả
-                  </label>
-                  <div className="mt-2 rounded-3xl border border-line bg-surface p-3">
-                    <ul className="flex flex-wrap gap-2" aria-label="Thẻ đã thêm">
-                      {tags.map(tag => (
-                        <li key={tag}>
-                          <Badge tone="green" className="pr-1.5">
-                            #{tag}
-                            <button
-                              type="button"
-                              aria-label={`Xóa thẻ ${tag}`}
-                              onClick={() => {
-                                setTags(current => current.filter(item => item !== tag))
-                                touch()
-                              }}
-                              className="-my-1.5 -mr-1 grid size-8 place-items-center rounded-full transition-colors hover:bg-brand/20 pointer-coarse:-my-2.5 pointer-coarse:-mr-2 pointer-coarse:size-11"
-                            >
-                              <X size={12} aria-hidden="true" />
-                            </button>
-                          </Badge>
-                        </li>
-                      ))}
-                    </ul>
-                    <div className="mt-3 flex flex-col gap-2 sm:flex-row">
-                      <Input
-                        id="story-tag-input"
-                        disabled
-                        value={tagDraft}
-                        placeholder="Ví dụ: BiAnCoDai"
-                        maxLength={31}
-                        aria-invalid={Boolean(tagError)}
-                        aria-describedby="story-tag-hint"
-                        onChange={event => {
-                          setTagDraft(event.target.value)
-                          setTagError('')
-                        }}
-                        onKeyDown={event => {
-                          if (event.key === 'Enter') {
-                            event.preventDefault()
-                            addTag()
-                          }
-                        }}
-                        className="flex-1"
-                      />
-                      <Button type="button" variant="outline" disabled onClick={addTag}>
-                        <Plus size={16} aria-hidden="true" />
-                        Thêm thẻ tùy chỉnh
-                      </Button>
-                    </div>
-                  </div>
-                  <p
-                    id="story-tag-hint"
-                    role={tagError ? 'alert' : undefined}
-                    className={`mt-2 text-xs ${tagError ? 'text-rose-strong' : 'text-muted'}`}
-                  >
-                    {tagError || t('createData.noTags')}
-                  </p>
+                  <StoryTagEditor
+                    id="story-tag"
+                    tags={tags}
+                    onChange={next => {
+                      setTags(next)
+                      touch()
+                    }}
+                  />
                 </div>
 
                 <div className="nh-grid-12 mt-6 grid gap-5 nh-sm-cols-2">

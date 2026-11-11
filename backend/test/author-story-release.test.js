@@ -29,7 +29,7 @@ async function fixture({ approved = true, evidence = 'available-for-human-review
   const created = await write(author.cookie, '/api/author/stories', {
     title: 'Thông tin đã duyệt',
     description: 'Mô tả của gói gửi được duyệt.',
-    categoryIds: [String(category._id)],
+    categoryId: String(category._id),
   })
   const storyId = created.body.story.id
   const prepared = (
@@ -113,7 +113,7 @@ it('publishes only the approved metadata snapshot and keeps a later editable dra
           expectedVersion: story.version,
           title: 'Tên nháp mới',
           description: 'Mô tả sửa chưa được duyệt',
-          categoryIds: [String(f.category._id)],
+          categoryId: String(f.category._id),
         },
         'put',
       )
@@ -250,7 +250,7 @@ it('serializes draft edits and publication so an unapproved edit cannot become p
         expectedVersion: f.body.expectedVersion,
         title: 'Chưa duyệt',
         description: 'Nội dung sửa riêng tư',
-        categoryIds: [String(f.category._id)],
+        categoryId: String(f.category._id),
       },
       'put',
     ),
@@ -274,7 +274,7 @@ it('publishes an approved metadata update while keeping the previous public snap
       expectedVersion: first.version,
       title: 'Thông tin mới đã duyệt',
       description: 'Phiên bản mô tả được chỉnh sửa.',
-      categoryIds: [String(f.category._id)],
+      categoryId: String(f.category._id),
     },
     'put',
   )

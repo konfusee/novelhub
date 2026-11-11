@@ -36,7 +36,7 @@ async function fixture(format = 'txt') {
   const created = await write('/api/author/stories', author.cookie, {
     title: 'Truyện nhập',
     description: '',
-    categoryIds: [String(category._id)],
+    categoryId: String(category._id),
   })
   const story = await Story.findById(created.body.story.id)
   const extracted = await preview(

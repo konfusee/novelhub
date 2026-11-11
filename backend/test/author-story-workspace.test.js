@@ -23,7 +23,7 @@ describe('owned story workspace and metadata edits', () => {
     const created = await write('post', '/api/author/stories', author.cookie, {
       title: 'Original title',
       description: 'Original synopsis',
-      categoryIds: [String(category._id)],
+      categoryId: String(category._id),
     })
     const storyId = created.body.story.id
     const base = `/api/author/stories/${storyId}`
@@ -75,7 +75,7 @@ describe('owned story workspace and metadata edits', () => {
       content: {
         title: 'Public original',
         description: 'Public synopsis',
-        categoryIds: [String(category._id)],
+        categoryId: String(category._id),
       },
     })
     story.publicationStatus = 'published'
@@ -86,7 +86,9 @@ describe('owned story workspace and metadata edits', () => {
     expect(workspace.story).toMatchObject({
       id: storyId,
       title: 'Original title',
-      genres: ['Kỳ ảo'],
+      genre: 'Kỳ ảo',
+      categoryId: String(category._id),
+      category: { id: String(category._id), name: 'Kỳ ảo', status: 'active' },
       canEdit: true,
     })
     expect(workspace.chapters[0]).toMatchObject({

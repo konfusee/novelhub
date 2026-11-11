@@ -29,7 +29,7 @@ async function fixture() {
   await Story.create({
     authorAccountId: author.account._id,
     title: 'Truyện thật',
-    categoryIds: [category._id],
+    categoryId: category._id,
   })
   await Wallet.create({
     ownerType: 'account',

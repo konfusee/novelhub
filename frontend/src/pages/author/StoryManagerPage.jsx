@@ -27,6 +27,7 @@ import { useBackendDocument, useBackendResource } from '../../api/useBackendReso
 import { apiRequest } from '../../api/client'
 import { useLocale } from '../../context/LocaleContext'
 import { StoryCover } from '../../components/story/StoryCover'
+import { StoryTagEditor } from '../../components/author/StoryTagEditor'
 import { ChapterOrderDialog } from './ChapterOrderDialog'
 import { ChapterLifecycleDialog } from './ChapterLifecycleDialog'
 import { ChapterReleaseDialog, StoryReleaseDialog } from './StoryReleaseDialog'
@@ -48,7 +49,7 @@ import {
 
 const PAGE_SIZE = 5
 const emptyWorkspace = {
-  story: { id: null, title: '—', description: '', genres: [], canEdit: false, version: 0 },
+  story: { id: null, title: '—', description: '', genre: '', canEdit: false, version: 0 },
   chapters: [],
   stats: { availableWords: 0, publishedChapters: 0, reads: 0, rating: '—', ratings: 0 },
 }
@@ -247,7 +248,7 @@ export function StoryManagerPage() {
                 <Badge tone="green">
                   {story.status ? (statusLabels[normalStatus(story.status)] ?? story.status) : '—'}
                 </Badge>
-                <Badge tone="orange">{story.genres.join(', ') || '—'}</Badge>
+                <Badge tone="orange">{story.genre || '—'}</Badge>
               </div>
               <p className="mt-2 max-w-[65ch] text-sm leading-6 text-muted">{story.description}</p>
               <ul className="mt-3 flex flex-wrap gap-x-5 gap-y-2 text-sm text-muted">
@@ -860,15 +861,15 @@ function ChapterRow({ chapter, storyId, onLifecycle, onRelease, onSchedule, onEa
 function StoryDetails({ story, onSaved, onLifecycle }) {
   const { t } = useLocale()
   const categories = useBackendResource('/catalog/categories')
-  const [categoryIds, setCategoryIds] = useState(story.categoryIds ?? [])
-  const categoriesChanged = JSON.stringify(categoryIds) !== JSON.stringify(story.categoryIds ?? [])
-  const retired = categoryIds
-    .filter(id =>
-      ['ready', 'empty'].includes(categories.status)
-        ? !categories.data.some(item => item.id === id)
-        : story.categories?.some(item => item.id === id && item.status === 'retired'),
-    )
-    .map(id => story.categories?.find(item => item.id === id) ?? { id, name: id })
+  const [categoryId, setCategoryId] = useState(story.categoryId ?? '')
+  const categoryChanged = categoryId !== (story.categoryId ?? '')
+  const listed = ['ready', 'empty'].includes(categories.status)
+  const currentRetired = listed
+    ? categoryId && !categories.data.some(item => item.id === categoryId)
+    : story.category?.id === categoryId && story.category.status === 'retired'
+  const retired = currentRetired
+    ? [story.category?.id === categoryId ? story.category : { id: categoryId, name: categoryId }]
+    : []
   const genreOptions = [...categories.data, ...retired]
   const [version, setVersion] = useState(story.version)
   const [saveError, setSaveError] = useState('')
@@ -877,13 +878,16 @@ function StoryDetails({ story, onSaved, onLifecycle }) {
   const [status, setStatus] = useState('idle')
   const [lifecycleBusy, setLifecycleBusy] = useState(false)
   const [unpublishOpen, setUnpublishOpen] = useState(false)
-  const dirty = title !== story.title || synopsis !== story.description || categoriesChanged
+  const [tags, setTags] = useState(story.tags ?? [])
+  const tagsChanged = JSON.stringify(tags) !== JSON.stringify(story.tags ?? [])
+  const dirty =
+    title !== story.title || synopsis !== story.description || categoryChanged || tagsChanged
   const titleError = !title.trim()
   const synopsisError = synopsis.trim().length < 40
   const submit = async event => {
     event.preventDefault()
     if (!story.canEdit || status === 'saving' || lifecycleBusy) return
-    if (titleError || synopsisError || (categoriesChanged && !categoryIds.length)) {
+    if (titleError || synopsisError || (categoryChanged && !categoryId)) {
       setStatus('invalid')
       return
     }
@@ -896,17 +900,17 @@ function StoryDetails({ story, onSaved, onLifecycle }) {
           title: title.trim(),
           description: synopsis.trim(),
           expectedVersion: version,
-          ...(categoriesChanged ? { categoryIds } : {}),
+          ...(categoryChanged ? { categoryId } : {}),
+          ...(tagsChanged ? { tags } : {}),
         },
       })
       setVersion(result.story.version)
       setStatus('saved')
       onSaved({
         ...result.story,
-        ...(categoriesChanged
-          ? {
-              genres: categoryIds.map(id => genreOptions.find(item => item.id === id)?.name ?? id),
-            }
+        ...(tagsChanged ? { tags } : {}),
+        ...(categoryChanged
+          ? { genre: genreOptions.find(item => item.id === categoryId)?.name ?? categoryId }
           : {}),
       })
     } catch (error) {
@@ -986,22 +990,19 @@ function StoryDetails({ story, onSaved, onLifecycle }) {
         ) : categories.status === 'empty' && !retired.length ? (
           <p className="mt-3 text-sm text-muted">{t('managerData.categoriesEmpty')}</p>
         ) : null}
-        <div className="mt-3 flex flex-wrap gap-2">
+        <div role="radiogroup" className="mt-3 flex flex-wrap gap-2">
           {genreOptions.map(item => (
             <label
               key={item.id}
               className="flex min-h-11 items-center gap-2 rounded-full border border-line bg-elevated px-3 py-2 text-sm"
             >
               <input
-                type="checkbox"
-                checked={categoryIds.includes(item.id)}
-                disabled={!categoryIds.includes(item.id) && categoryIds.length >= 10}
-                onChange={event => {
-                  setCategoryIds(current =>
-                    event.target.checked
-                      ? [...current, item.id]
-                      : current.filter(id => id !== item.id),
-                  )
+                type="radio"
+                name="story-category"
+                value={item.id}
+                checked={categoryId === item.id}
+                onChange={() => {
+                  setCategoryId(item.id)
                   setStatus('idle')
                 }}
                 className="size-4 accent-brand"
@@ -1013,12 +1014,23 @@ function StoryDetails({ story, onSaved, onLifecycle }) {
             </label>
           ))}
         </div>
-        {showErrors && !categoryIds.length && (
+        {showErrors && !categoryId && (
           <p role="alert" className="mt-2 text-xs text-rose-strong">
             {t('managerData.categoriesRequired')}
           </p>
         )}
       </fieldset>
+      <div className="mt-5">
+        <StoryTagEditor
+          id="story-manager-tag"
+          tags={tags}
+          disabled={!story.canEdit || status === 'saving' || lifecycleBusy}
+          onChange={next => {
+            setTags(next)
+            setStatus('idle')
+          }}
+        />
+      </div>
       {saveError && (
         <p role="alert" className="mt-3 text-sm text-rose-strong">
           {saveError}

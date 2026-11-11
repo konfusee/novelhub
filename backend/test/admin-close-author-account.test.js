@@ -105,7 +105,7 @@ it('unpublishes live stories and cancels unreleased chapters and claimed submiss
     .post('/api/author/stories')
     .set('Cookie', f.author.cookie)
     .set('Origin', origin)
-    .send({ title: 'Truyện', description: 'Mô tả', categoryIds: [String(category._id)] })
+    .send({ title: 'Truyện', description: 'Mô tả', categoryId: String(category._id) })
   const story = await Story.findById(created.body.story.id)
   const revision = await ContentRevision.findById(story.currentRevisionId)
   story.publicationStatus = 'published'

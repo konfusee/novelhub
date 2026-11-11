@@ -31,6 +31,7 @@ import {
 } from '../modules/reading-community/reading/chapters.js'
 import { resumeFor } from '../modules/reading-community/reading/progress.js'
 import { recordChapterView } from '../modules/reading-community/reading/views.js'
+import { searchTagKey } from '../modules/authoring-publishing/content/story-tags.js'
 
 const filters = z
   .object({
@@ -40,6 +41,7 @@ const filters = z
       .string()
       .regex(/^[a-f\d]{24}$/i)
       .optional(),
+    tag: z.string().max(100).transform(searchTagKey).pipe(z.string()).optional(),
     status: z.enum(['ongoing', 'completed']).optional(),
     page: z.coerce.number().int().min(1).max(100000).default(1),
     pageSize: z.coerce.number().int().min(1).max(100).default(24),

@@ -37,7 +37,7 @@ async function prepareCase(balance = 5000) {
   const story = await Story.create({
     authorAccountId: author.account._id,
     title: 'Truyện kiểm thử',
-    categoryIds: [category._id],
+    categoryId: category._id,
     publicationStatus: 'published',
   })
 
@@ -51,7 +51,7 @@ async function prepareCase(balance = 5000) {
     content: {
       title: 'Truyện kiểm thử',
       description: 'Dữ liệu test.',
-      categoryIds: [String(category._id)],
+      categoryId: String(category._id),
     },
   })
 

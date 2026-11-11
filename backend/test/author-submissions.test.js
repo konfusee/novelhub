@@ -33,7 +33,7 @@ async function fixture() {
   const created = await write('/api/author/stories', author.cookie, {
     title: 'Bản nháp của tôi',
     description: 'Tóm tắt thật để gửi duyệt.',
-    categoryIds: [String(category._id)],
+    categoryId: String(category._id),
   })
   const storyId = created.body.story.id
   const prepare = () =>
@@ -119,7 +119,7 @@ describe('exact owner submission packages', () => {
     expect((await Story.findById(f.storyId)).authoringFrozen).toBe(true)
     expect(await ModerationHistory.countDocuments({ action: 'revision-created' })).toBe(0)
   })
-  it('blocks inactive genres and unhandled media without freezing or creating evidence', async () => {
+  it('blocks an inactive category and unhandled media without freezing or creating evidence', async () => {
     const f = await fixture()
     f.category.status = 'retired'
     await f.category.save()
@@ -158,7 +158,7 @@ describe('exact owner submission packages', () => {
       content: {
         title: 'Tên đang công khai',
         description: 'Public snapshot',
-        categoryIds: [String(f.category._id)],
+        categoryId: String(f.category._id),
       },
     })
     story.publicationStatus = 'published'

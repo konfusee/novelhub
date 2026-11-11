@@ -22,7 +22,7 @@ it('creates, renames, retires and restores categories without rewriting story re
   const story = await Story.create({
     title: 'Truyện',
     authorAccountId: author.account._id,
-    categoryIds: [category.id],
+    categoryId: category.id,
   })
   const before = await Story.findById(story._id).lean()
   const list = await request(app).get(path).set('Cookie', admin.cookie)
@@ -49,7 +49,7 @@ it('creates, renames, retires and restores categories without rewriting story re
         .post('/api/author/stories')
         .set('Cookie', author.cookie)
         .set('Origin', origin)
-        .send({ title: 'Truyện mới', description: '', categoryIds: [category.id] })
+        .send({ title: 'Truyện mới', description: '', categoryId: category.id })
       expect(draft.status).toBe(400)
     }
   }
