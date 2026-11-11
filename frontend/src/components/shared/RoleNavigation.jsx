@@ -19,6 +19,9 @@ import { ROLE_HOME, useAuth } from '../../context/AuthContext'
 import { useTheme } from '../../context/ThemeContext'
 import { Avatar, IconButton, Input } from '../ui'
 import { useLocale } from '../../context/LocaleContext'
+import { workspaceHeaderNavigation, workspaceWallets } from '../../navigation/workspaceNavigation'
+import { useWorkspaceBalance } from '../../api/useWorkspaceBalance'
+import { ROUTES } from '../../app/routes'
 
 const roleMeta = {
   reader: ['navigation.reader', BookOpen],
@@ -84,35 +87,30 @@ export function WorkspaceSwitcher({ currentRole, compact = false }) {
 export function RoleHeaderLinks({ includeWallet = false, currentRole = 'reader' }) {
   const { t } = useLocale()
   const { pathname } = useLocation()
-  const suffix = `?workspace=${currentRole}`
-  const walletPath = currentRole === 'author' ? '/author/earnings' : '/reader/wallet'
-  // Third value: visibility. Explore duplicates the header search field and Wallet duplicates the
-  // coin pill, so both appear only once the header has room (2xl).
-  const items = [
-    ['navigation.discover', `/?workspace=${currentRole}`, ['/', '/discover'], 'flex'],
-    ['navigation.categories', `/categories${suffix}`, ['/categories', '/browse'], 'flex'],
-    ['navigation.rankings', `/rankings${suffix}`, ['/rankings'], 'flex'],
-    ['navigation.explore', `/search${suffix}`, ['/search', '/reader/explore'], 'hidden 2xl:flex'],
-    ['navigation.library', '/reader/library', ['/reader/library', '/library'], 'flex'],
-  ]
-  if (includeWallet)
+  const wallet = workspaceWallets[currentRole]
+  const items = [...(workspaceHeaderNavigation[currentRole] ?? [])]
+  if (includeWallet && wallet)
     items.push([
-      'navigation.wallet',
-      walletPath,
-      currentRole === 'author' ? ['/author/earnings', '/author/wallet'] : ['/reader/wallet'],
-      'hidden 2xl:flex',
+      wallet.labelKey,
+      wallet.path,
+      currentRole === 'author' ? [wallet.path, '/author/wallet'] : [wallet.path],
+      true,
     ])
   return (
-    <nav className="hidden shrink-0 items-center gap-1 text-xs font-medium text-muted xl:flex">
-      {items.map(([label, path, matches, visibility]) => {
+    <nav
+      aria-label={t('workspaceHeader.navigation')}
+      className="hidden shrink-0 items-center gap-1 text-xs font-medium text-muted xl:flex"
+    >
+      {items.map(([label, path, matches, wideOnly, exact]) => {
         const active = matches.some(
-          match => pathname === match || (match !== '/' && pathname.startsWith(`${match}/`)),
+          match =>
+            pathname === match || (!exact && match !== '/' && pathname.startsWith(`${match}/`)),
         )
         return (
           <Link
             key={label}
             aria-current={active ? 'page' : undefined}
-            className={`${visibility} h-9 items-center border-b-2 px-2.5 transition-colors ${active ? 'border-brand font-semibold text-brand-strong' : 'border-transparent hover:text-ink'}`}
+            className={`${wideOnly ? 'hidden 2xl:flex' : 'flex'} h-9 items-center border-b-2 px-2.5 transition-colors ${active ? 'border-brand font-semibold text-brand-strong' : 'border-transparent hover:text-ink'}`}
             to={path}
           >
             {t(label)}
@@ -156,10 +154,15 @@ export function SharedWorkspaceHeader({
   offsetClass = '',
   children,
 }) {
-  const { t } = useLocale()
+  const { t, formatNumber } = useLocale()
   const { resolvedTheme, setTheme } = useTheme()
+  const { pathname } = useLocation()
   const navigate = useNavigate()
-  const walletPath = currentRole === 'author' ? '/author/wallet' : '/reader/wallet'
+  const wallet = workspaceWallets[currentRole]
+  const balance = useWorkspaceBalance(currentRole)
+  const walletActive =
+    wallet &&
+    (pathname === wallet.path || (currentRole === 'author' && pathname === '/author/wallet'))
   return (
     <header
       data-app-header
@@ -188,15 +191,43 @@ export function SharedWorkspaceHeader({
         <div className="ml-auto flex shrink-0 items-center">
           <RoleHeaderLinks includeWallet currentRole={currentRole} />
         </div>
-        <Link
-          to={walletPath}
-          className="hidden h-11 shrink-0 items-center gap-2 rounded-full border border-line bg-surface pl-3 pr-1.5 text-xs font-semibold text-ink transition-colors hover:border-brand md:flex"
-        >
-          <Coins size={16} className="text-orange" /> {t('wallet.coins', { count: 450 })}
-          <span className="grid size-7 place-items-center rounded-full bg-brand/10 text-brand-strong">
-            <Plus size={14} />
-          </span>
-        </Link>
+        {wallet && (
+          <Link
+            to={wallet.path}
+            aria-current={walletActive ? 'page' : undefined}
+            aria-busy={balance.status === 'loading'}
+            aria-label={t(
+              balance.status === 'ready'
+                ? 'workspaceHeader.balance'
+                : balance.status === 'error'
+                  ? 'workspaceHeader.balanceError'
+                  : 'workspaceHeader.balanceLoading',
+              {
+                wallet: t(wallet.labelKey),
+                count: balance.balance === null ? '—' : formatNumber(balance.balance),
+              },
+            )}
+            className={`hidden h-11 shrink-0 items-center gap-2 rounded-full border pl-3 text-xs font-semibold transition-colors md:flex ${wallet.topUp ? 'pr-1.5' : 'pr-3'} ${walletActive ? 'border-brand bg-brand/10 text-brand-strong' : 'border-line bg-surface text-ink hover:border-brand'}`}
+          >
+            <Coins size={16} className="text-orange" aria-hidden="true" />
+            <span aria-live="polite">
+              {balance.status === 'ready'
+                ? t('wallet.coins', { count: formatNumber(balance.balance) })
+                : balance.status === 'loading'
+                  ? '…'
+                  : '—'}
+            </span>
+            {wallet.topUp && (
+              <span
+                data-wallet-top-up
+                aria-hidden="true"
+                className="grid size-7 place-items-center rounded-full bg-brand/10 text-brand-strong"
+              >
+                <Plus size={14} />
+              </span>
+            )}
+          </Link>
+        )}
         <IconButton
           label={t('common.toggleTheme')}
           shape="circle"
@@ -209,7 +240,7 @@ export function SharedWorkspaceHeader({
           label={t('common.notifications')}
           shape="circle"
           className="relative"
-          onClick={() => navigate('/reader/notifications')}
+          onClick={() => navigate(ROUTES.workspaceNotifications(currentRole))}
         >
           <Bell size={18} />
           <span className="absolute right-2.5 top-2.5 size-2 rounded-full bg-rose ring-2 ring-surface" />

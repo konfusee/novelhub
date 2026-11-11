@@ -2816,5 +2816,11 @@
     "pages": "Phân trang tài khoản",
     "confirmHint": "Xác nhận cấp hoặc thu hồi quyền. Tài khoản sẽ đăng xuất và các hồ sơ đang nhận sẽ trở về hàng đợi chung.",
     "confirm": "Xác nhận thay đổi"
+  },
+  "workspaceHeader": {
+    "navigation": "Điều hướng workspace",
+    "balance": "{{wallet}}: {{count}} xu",
+    "balanceLoading": "{{wallet}}: đang tải số dư",
+    "balanceError": "{{wallet}}: không tải được số dư"
   }
 }
