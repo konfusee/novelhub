@@ -19,7 +19,8 @@
     "smoke:moderation-review": "node scripts/smoke-moderation-review.js",
     "lint": "eslint .",
     "test": "vitest run",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "db:seed-field1": "node scripts/seed-field1.js"
   },
   "dependencies": {
     "cors": "^2.8.6",
