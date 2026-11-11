@@ -51,6 +51,8 @@ export function PolicySettingsPanel() {
               'durationMaxDays',
               'orderExpiryHours',
               'claimExpiryHours',
+              'withdrawalThresholdCoins',
+              'authorSharePercent',
             ].map(key => (
               <div key={key} className="rounded-2xl bg-elevated p-4">
                 <dt className="text-caption text-muted">{t(`policy.${key}`)}</dt>

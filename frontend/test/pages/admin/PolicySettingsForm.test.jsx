@@ -67,6 +67,8 @@ it('requires a changed bound and reason, sends exact policy tokens and accepts a
       durationMaxDays: 14,
       orderExpiryHours: 12,
       claimExpiryHours: 48,
+      withdrawalThresholdCoins: 100000,
+      authorSharePercent: 70,
       reason: 'Điều chỉnh mới',
       expectedPolicyId: policy.id,
       expectedPolicyVersion: 7,

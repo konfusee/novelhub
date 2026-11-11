@@ -26,7 +26,7 @@ it.each([
   api.mockResolvedValue({ account: { id: account.id, status: expected, version: 4 } })
   const callbacks = view({ ...account, status })
   const submit = screen.getByRole('button', {
-    name: action === 'suspend' ? 'Khóa tài khoản Author' : 'Mở lại tài khoản Author',
+    name: action === 'suspend' ? 'Khóa tài khoản' : 'Mở lại tài khoản',
   })
   expect(submit.disabled).toBe(true)
   fireEvent.change(screen.getByLabelText('Lý do'), { target: { value: ' Lý do kiểm tra ' } })
@@ -41,11 +41,11 @@ it('keeps the reason and requires reload on an inconsistent response', async () 
   api.mockResolvedValue({ account: { id: 'wrong-id', status: 'suspended', version: 4 } })
   const callbacks = view()
   fireEvent.change(screen.getByLabelText('Lý do'), { target: { value: 'Lý do giữ nguyên' } })
-  fireEvent.click(screen.getByRole('button', { name: 'Khóa tài khoản Author' }))
+  fireEvent.click(screen.getByRole('button', { name: 'Khóa tài khoản' }))
   expect((await screen.findByRole('alert')).textContent).toContain('tải lại')
   expect(callbacks.onChanged).not.toHaveBeenCalled()
   expect(screen.getByLabelText('Lý do').value).toBe('Lý do giữ nguyên')
-  expect(screen.getByRole('button', { name: 'Khóa tài khoản Author' }).disabled).toBe(true)
+  expect(screen.getByRole('button', { name: 'Khóa tài khoản' }).disabled).toBe(true)
 })
 it('requires explicit acknowledgement and a reason before closing permanently', async () => {
   api.mockResolvedValue({ account: { id: account.id, status: 'anonymized', version: 4 } })

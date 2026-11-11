@@ -423,15 +423,17 @@ function UserInspector({ user, titleRef, onClose, onChanged }) {
         )}
         <div className="mt-5 grid gap-2 sm:grid-cols-2">
           {detail.status === 'ready' &&
-            detail.data.account.everAuthor &&
-            !user.roles.some(role => ['admin', 'moderator'].includes(role)) &&
-            ['active', 'suspended'].includes(detail.data.account.status) && (
+            ['active', 'suspended', 'pending-verification'].includes(
+              detail.data.account.status,
+            ) && (
               <>
-                <Button variant="secondary" size="sm" onClick={() => setStatusDialog('status')}>
-                  {t(
-                    `authorAccountStatus.${detail.data.account.status === 'active' ? 'suspend' : 'restore'}`,
-                  )}
-                </Button>
+                {detail.data.account.status !== 'pending-verification' && (
+                  <Button variant="secondary" size="sm" onClick={() => setStatusDialog('status')}>
+                    {t(
+                      `authorAccountStatus.${detail.data.account.status === 'active' ? 'suspend' : 'restore'}`,
+                    )}
+                  </Button>
+                )}
                 <Button variant="danger" size="sm" onClick={() => setStatusDialog('close')}>
                   {t('authorAccountStatus.close')}
                 </Button>

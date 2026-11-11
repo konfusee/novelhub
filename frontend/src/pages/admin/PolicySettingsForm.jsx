@@ -9,10 +9,17 @@ const fields = [
   'durationMaxDays',
   'orderExpiryHours',
   'claimExpiryHours',
+  'withdrawalThresholdCoins',
+  'authorSharePercent',
 ]
 const initialValue = (policy, field) =>
   String(
     policy?.[field] ??
+      (field === 'withdrawalThresholdCoins'
+        ? 100000
+        : field === 'authorSharePercent'
+          ? 70
+          : undefined) ??
       (!policy && ['orderExpiryHours', 'claimExpiryHours'].includes(field) ? 24 : ''),
   )
 // Read the clock only for initialization and user actions, never while rendering.
@@ -49,6 +56,7 @@ export function PolicySettingsForm({ policy, onSaved, onBusy }) {
         Number.isSafeInteger(numbers[field]) &&
         numbers[field] >= (field.startsWith('duration') ? 1 : 0),
     ) &&
+    numbers.authorSharePercent <= 100 &&
     numbers.priceMinCoins <= numbers.priceMaxCoins &&
     numbers.durationMinDays <= numbers.durationMaxDays
   async function submit(event) {
@@ -117,7 +125,7 @@ export function PolicySettingsForm({ policy, onSaved, onBusy }) {
               id={`${id}-${field}`}
               type="number"
               min={field.startsWith('duration') ? 1 : 0}
-              max={Number.MAX_SAFE_INTEGER}
+              max={field === 'authorSharePercent' ? 100 : Number.MAX_SAFE_INTEGER}
               step="1"
               required
               value={values[field]}
