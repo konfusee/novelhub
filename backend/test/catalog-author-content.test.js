@@ -261,17 +261,10 @@ describe('MongoDB catalogue and author drafts', () => {
     await published.save()
     expect((await request(app).get(path)).body.chapter.blocks).toEqual(published.content.blocks)
   })
-  it('allows only Admin to create real categories', async () => {
+  it('does not allow creating categories through the retired endpoint', async () => {
     const admin = await authenticatedAccount('admin')
-    const reader = await authenticatedAccount()
-    expect(
-      (await write('post', '/api/admin/categories', reader.cookie, { name: 'Kỳ ảo' })).status,
-    ).toBe(403)
     expect(
       (await write('post', '/api/admin/categories', admin.cookie, { name: 'Kỳ ảo' })).status,
-    ).toBe(201)
-    expect(
-      (await write('post', '/api/admin/categories', admin.cookie, { name: 'KỲ ẢO' })).status,
-    ).toBe(409)
+    ).toBe(404)
   })
 })

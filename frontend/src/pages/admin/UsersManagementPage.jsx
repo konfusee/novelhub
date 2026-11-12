@@ -3,11 +3,9 @@ import {
   AlertTriangle,
   BookOpen,
   CheckCircle2,
-  Download,
   RefreshCw,
   Search,
   ShieldCheck,
-  UserPlus,
   UsersRound,
   X,
 } from '../../components/icons'
@@ -109,16 +107,6 @@ export function UsersManagementPage() {
                     : '—',
               })}
             </p>
-          </div>
-          <div className="flex flex-wrap gap-2">
-            <Button variant="secondary" disabled title={t('adminAccounts.unavailable')}>
-              <Download size={16} />
-              {t('adminAccounts.export')}
-            </Button>
-            <Button disabled title={t('adminAccounts.unavailable')}>
-              <UserPlus size={16} />
-              {t('adminAccounts.invite')}
-            </Button>
           </div>
         </header>
         <AuthorApplications />

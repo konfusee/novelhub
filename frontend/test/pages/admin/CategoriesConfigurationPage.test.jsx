@@ -77,7 +77,7 @@ it('saves an edited category with its current version and required reason', asyn
   )
   await waitFor(() => expect(screen.queryByRole('textbox', { name: 'Lý do thay đổi' })).toBeNull())
 })
-it('keeps entered values when saving fails and shows unsupported groups without fabricated data', async () => {
+it('keeps entered values when saving fails and hides unsupported groups', async () => {
   api.mockImplementation(async (path, options) => {
     if (options?.method) throw new Error('Tên thể loại đã tồn tại.')
     return { items: [], total: 0, page: 1, pageSize: 20 }
@@ -91,8 +91,7 @@ it('keeps entered values when saving fails and shows unsupported groups without 
   expect((await screen.findByRole('alert')).textContent).toBe('Tên thể loại đã tồn tại.')
   expect(screen.getByLabelText('Tên thể loại').value).toBe('Bản mới')
   fireEvent.click(screen.getByRole('button', { name: 'Hủy', exact: true }))
-  fireEvent.click(screen.getByRole('button', { name: 'Xếp hạng nội dung', exact: true }))
-  await screen.findByText('Chức năng chưa được triển khai')
+  expect(screen.queryByRole('button', { name: 'Xếp hạng nội dung', exact: true })).toBeNull()
   expect(screen.queryByText('#SlowBurn')).toBeNull()
 })
 it('lists read-only tag usage with search and paging and no edit actions', async () => {

@@ -57,16 +57,8 @@ it('renders actual counts and values without legacy accounts or fake action succ
   await screen.findByText(author.name)
   expect(screen.getByText('12 tài khoản · 1 tác giả · 1 nhân viên/kiểm duyệt viên')).toBeTruthy()
   expect(screen.queryByText('Elena Rostova')).toBeNull()
-  expect(
-    screen.getByRole('button', {
-      name: 'Xuất danh bạ',
-    }).disabled,
-  ).toBe(true)
-  expect(
-    screen.getByRole('button', {
-      name: 'Mời nhân viên',
-    }).disabled,
-  ).toBe(true)
+  expect(screen.queryByRole('button', { name: 'Xuất danh bạ' })).toBeNull()
+  expect(screen.queryByRole('button', { name: 'Mời nhân viên' })).toBeNull()
 })
 it('requests server-side search and pagination', async () => {
   mocks.apiRequest.mockResolvedValue(feed)

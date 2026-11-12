@@ -153,8 +153,8 @@ policy; deferred technical selections and team process gates are not approval.
    Any account that ever held Author is permanently barred from Moderator.
    A suspended Author cannot log in or submit, their stories are hidden, and
    future monthly evaluations pause; existing withdrawals remain payable.
-   Suspended Moderators/Admins release claimed reviews/reports back to the
-   shared queue; past decisions remain.
+   Active Moderator and Admin accounts are protected from suspension.
+   Past decisions remain.
 16. **Moderation and community.** Similarity compares only NovelHub published
    and pending chapters, excluding the submitting Author's own work. It has no
    cutoff or flag threshold and remains advisory; score and matched passages
@@ -461,7 +461,7 @@ rationale, without reopening confirmed business rules.
   confirmed V1 metrics without becoming entitlement or finance truth.
 - **Revocation and revision behavior:** suspended Authors cannot log in or
   submit and stories hide. Future monthly evaluations pause; existing payouts
-  remain payable. Suspended Moderators/Admins release claims to the shared queue;
+  remain payable. Active Moderator and Admin accounts are protected from suspension;
   past decisions remain. Removing the Author role leaves published stories
   live and earning, freezes them against Author edits/unpublishing, and
   continues allocation and withdrawals; Admin/Moderator may unpublish.

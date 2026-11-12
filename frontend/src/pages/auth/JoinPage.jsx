@@ -736,12 +736,6 @@ export function JoinPage({ initialMode }) {
                   </>
                 )}
               </form>
-
-              {isLogin && (
-                <p className="mt-4 text-center text-xs leading-5 text-muted">
-                  Tài khoản phát triển được tạo an toàn bằng lệnh seed của backend.
-                </p>
-              )}
             </div>
           </Card>
 

@@ -53,7 +53,7 @@ export function CategoriesConfigurationPage() {
             singleRow
             value={active}
             onChange={setActive}
-            items={['categories', 'tags', 'ratings', 'lifecycle'].map(value => ({
+            items={['categories', 'tags'].map(value => ({
               value,
               label: m(value),
             }))}
@@ -61,10 +61,6 @@ export function CategoriesConfigurationPage() {
         </div>
         {active === 'tags' ? (
           <TagUsagePanel />
-        ) : active !== 'categories' ? (
-          <Card className="mt-6">
-            <EmptyState title={m('unsupported')} description={m('unsupportedHint')} />
-          </Card>
         ) : (
           <Card className="mt-6 overflow-hidden p-0">
             <div className="p-5">

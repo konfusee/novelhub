@@ -29,7 +29,6 @@ import { IconGallery } from '../../components/icons/IconGallery'
 const statusTone = { TODO: 'neutral', IN_PROGRESS: 'orange', DONE: 'green', BLOCKED: 'red' }
 const workflows = [
   ['Đăng ký làm tác giả', '/author/apply'],
-  ['Thỏa thuận doanh thu', '/admin/users/user-author'],
   ['403 Không có quyền', '/403'],
   ['404 Không tìm thấy', '/route-not-found'],
 ]
