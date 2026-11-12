@@ -182,7 +182,12 @@ export async function evaluateDeletedAccountPayouts(now = new Date()) {
               eventType: 'monthly-payout.created',
               sourceEventKey,
               deliveryState: 'available',
-              payload: { periodId, withdrawalId: String(withdrawal._id), amountCoins: amount },
+              payload: {
+                periodId,
+                withdrawalId: String(withdrawal._id),
+                amountCoins: amount,
+                executionMode: 'simulation',
+              },
             },
           ],
           { session },

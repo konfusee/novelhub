@@ -8,6 +8,7 @@ import {
   BankTransaction,
 } from '../../../models/index.js'
 import { withTransaction } from '../../../db/connection.js'
+import { notify } from '../../accounts-administration/notifications.js'
 
 const positiveInteger = z.number().int().positive().max(Number.MAX_SAFE_INTEGER)
 
@@ -154,6 +155,15 @@ export async function creditTopUpOrder(order, bankTransaction, session, now = ne
     ],
     { session },
   )
+  await notify(
+    {
+      recipientAccountId: order.accountId,
+      eventType: 'wallet.topup-credited',
+      sourceEventKey: `topup-credit:${order._id}`,
+      payload: { orderId: String(order._id), amountCoins: coins, paymentCode: order.paymentCode },
+    },
+    { session },
+  )
 }
 
 export async function processSePayWebhook(payload, config) {
@@ -213,6 +223,20 @@ export async function processSePayWebhook(payload, config) {
 
       if (match.matchStatus === 'matched') {
         await creditTopUpOrder(match.order, bankTransaction, session, now)
+      } else if (match.order) {
+        await notify(
+          {
+            recipientAccountId: match.order.accountId,
+            eventType: 'wallet.topup-needs-review',
+            sourceEventKey: `topup-review:${bankTransaction._id}`,
+            payload: {
+              orderId: String(match.order._id),
+              amountVnd: payload.transferAmount,
+              matchStatus: match.matchStatus,
+            },
+          },
+          { session },
+        )
       }
 
       await AuditEvent.create(

@@ -9,6 +9,7 @@ import {
   TopUpOrder,
   TopUpPackage,
   Wallet,
+  Notification,
 } from '../src/models/index.js'
 import { authenticatedAccount } from './fixtures/accounts.js'
 import { testConfig } from './config.js'
@@ -131,7 +132,7 @@ it('rehearses order creation, payment instructions and webhook replay on a tempo
 })
 
 it('gửi đồng thời và gửi lại cùng giao dịch chỉ cộng xu một lần', async () => {
-  const { wallet, order, payload } = await prepareCase()
+  const { reader, wallet, order, payload } = await prepareCase()
 
   const responses = await Promise.all([sendWebhook(payload), sendWebhook(payload)])
 
@@ -155,6 +156,17 @@ it('gửi đồng thời và gửi lại cùng giao dịch chỉ cộng xu một
   expect(String(savedOrder.bankTransactionId)).toBe(String(receipt._id))
   expect(receipt.matchStatus).toBe('matched')
   expect(await BankTransaction.countDocuments()).toBe(1)
+  expect(
+    await Notification.countDocuments({
+      eventType: 'wallet.topup-credited',
+      recipientAccountId: order.accountId,
+    }),
+  ).toBe(1)
+  const feed = await request(app).get('/api/reader/notifications').set('Cookie', reader.cookie)
+  expect(feed.body.items.find(row => row.title === 'Nạp xu thành công')).toMatchObject({
+    href: '/reader/wallet',
+    description: expect.stringContaining('50.000 xu'),
+  })
   expect(
     await LedgerEntry.countDocuments({
       walletId: wallet._id,
@@ -187,6 +199,13 @@ it('sai số tiền thì lưu giao dịch nhưng không cộng xu', async () => 
   expect(receipt.matchStatus).toBe('amount-mismatch')
   expect(await LedgerEntry.countDocuments()).toBe(0)
   expect(await AuditEvent.countDocuments()).toBe(1)
+  expect(
+    await Notification.countDocuments({
+      eventType: 'wallet.topup-needs-review',
+      recipientAccountId: order.accountId,
+    }),
+  ).toBe(1)
+  expect(await Notification.countDocuments({ eventType: 'wallet.topup-credited' })).toBe(0)
 })
 
 it('số dư vượt giới hạn thì rollback toàn bộ', async () => {
@@ -205,6 +224,7 @@ it('số dư vượt giới hạn thì rollback toàn bộ', async () => {
   expect(await BankTransaction.countDocuments()).toBe(0)
   expect(await LedgerEntry.countDocuments()).toBe(0)
   expect(await AuditEvent.countDocuments()).toBe(0)
+  expect(await Notification.countDocuments()).toBe(0)
 })
 it('chủ đơn xem được thông tin đơn nạp của mình', async () => {
   const { reader, order } = await prepareCase()

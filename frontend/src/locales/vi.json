@@ -2123,7 +2123,8 @@
         "author": "Tác giả",
         "comment": "Bình luận & phản hồi",
         "system": "Hệ thống"
-      }
+      },
+      "countUnavailable": "Chưa tải được số thông báo chưa đọc"
     }
   },
   "authorData": {
