@@ -110,7 +110,7 @@ it('admin lọc đúng kỳ và trạng thái, xem ngân hàng đã chốt', asy
     periodId,
     status: 'pending',
     amountCoins: 150000,
-    bankDetails: bank,
+    bankDetails: { ...bank, accountNumber: '••••' + bank.accountNumber.slice(-4) },
     latestResult: null,
   })
 })

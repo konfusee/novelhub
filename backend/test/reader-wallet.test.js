@@ -101,6 +101,7 @@ it('chưa có ví thì trả 0 và không tự tạo ví', async () => {
 
   expect(response.status).toBe(200)
   expect(response.body).toEqual({
+    netAmount: 0,
     page: 1,
     pageSize: 50,
     balance: 0,

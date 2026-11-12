@@ -11,11 +11,11 @@ const schema = new Schema(
     },
     periodId: { type: String, required: true },
     // Required unless the row is a deleted account's final payout with no bank
-    // details on file; Admin then enters support-supplied details as a correction.
+    // details on file; Admin can auditably correct them from verified support details.
     bankDetailsSnapshot: { type: Schema.Types.Mixed, select: false },
     bankDetailsMissing: { type: Boolean, default: false },
     amountCoins: coinAmount,
-    // Admin-only service mutation; never overwrite the evaluation snapshot.
+    // Audited correction by Admin/support or the active owner; original snapshot stays immutable.
     correctedBankDetailsSnapshot: { type: Schema.Types.Mixed, select: false },
     correctedBy: { type: ObjectId, ref: 'Account' },
     correctedAt: Date,

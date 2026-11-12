@@ -556,11 +556,25 @@ export function WalletPage() {
                     }
                     action={
                       filter !== 'all' ? (
-                        <Button variant="secondary" size="sm" onClick={() => setFilter('all')}>
+                        <Button
+                          variant="secondary"
+                          size="sm"
+                          onClick={() => {
+                            setFilter('all')
+                            setPage(1)
+                          }}
+                        >
                           Xem tất cả giao dịch
                         </Button>
                       ) : (
-                        <Button size="sm" disabled>
+                        <Button
+                          size="sm"
+                          onClick={() => {
+                            document
+                              .getElementById('coin-packages')
+                              ?.scrollIntoView({ behavior: 'smooth' })
+                          }}
+                        >
                           <Plus size={14} aria-hidden="true" />
                           Nạp thêm xu
                         </Button>
@@ -680,14 +694,14 @@ export function WalletPage() {
             {topUpOrder.status === 'pending' && (
               <Button onClick={handleCheckPayment} disabled={checkingOrder}>
                 {checkingOrder ? 'Đang kiểm tra...' : 'Kiểm tra thanh toán'}
-                {statusMessage?.orderId === topUpOrder.id && (
-                  <p role="status" className="text-sm text-muted">
-                    {statusMessage.text}
-                  </p>
-                )}
               </Button>
             )}
 
+            {statusMessage?.orderId === topUpOrder.id && (
+              <p role="status" className="text-sm text-muted">
+                {statusMessage.text}
+              </p>
+            )}
             {statusError?.orderId === topUpOrder.id && (
               <p role="alert" className="text-sm text-muted">
                 {statusError.message}

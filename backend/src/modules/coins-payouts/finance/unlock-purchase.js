@@ -137,7 +137,6 @@ export async function executePaidUnlock(
         ledgerEntryIds: entries.map(entry => entry._id),
         beneficiaries: [wallets.authorWallet.ownerId, wallets.platformWallet.ownerId],
         amount: priceCoins,
-        negotiatedAllocationSnapshot: split.negotiatedAllocationSnapshot,
         policySnapshot,
       },
     ],

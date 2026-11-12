@@ -2,15 +2,8 @@ import { Account, AuditEvent } from '../../../models/index.js'
 import { HttpError } from '../../../middleware/errors.js'
 import { ownerWrite } from '../../reading-community/reading/owner-write.js'
 
-function bankDetailsView(details) {
-  if (!details) return null
-
-  return {
-    bankName: details.bankName,
-    accountNumber: details.accountNumber,
-    accountHolder: details.accountHolder,
-  }
-}
+import { maskedBankDetails as bankDetailsView } from './bank-details.js'
+import { correctAuthorPendingPayoutBanks } from './payout-bank-correction.js'
 
 export async function getAuthorBankDetails(accountId) {
   const account = await Account.findOne({
@@ -38,6 +31,7 @@ export async function updateAuthorBankDetails(req, input) {
     }
 
     await account.save({ session })
+    await correctAuthorPendingPayoutBanks(account, session)
 
     await AuditEvent.create(
       [

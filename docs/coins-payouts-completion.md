@@ -73,6 +73,9 @@ these distinctions explicit; top-up receipts are not counted as Author revenue.
 
 ## Automatic monthly simulated payout
 
+Only the designated backend opts in with `PAYOUT_WORKER_ENABLED=true` (default false).
+Legacy/external pending rows are never selected.
+
 At the first worker tick after 00:00 on the 1st in `Asia/Ho_Chi_Minh`, the system:
 
 1. Opens/reuses the unique processing-period run and its cutoff.
@@ -91,7 +94,11 @@ period. Deleted-account final earnings bypass the normal threshold through the
 retained final-payout path. The backend must be running for scheduled execution.
 No bank-transfer API is called and no actual money is sent to Authors.
 
-Admin only reads runs, lists, statistics, history and CSV. Manual generate/result
+Admin views runs, lists, statistics, history and CSV. Admin may auditably correct
+failed/invalid simulated payout bank details, with an expected-version check;
+`PUT /api/admin/monthly-payouts/:withdrawalId/payment-details` never debits coins
+or records a payment result. The next worker tick retries the corrected snapshot.
+An active Author bank update also repairs their failed/invalid simulated rows. Manual generate/result
 POST endpoints return 405. The read-only result-history endpoints are:
 
 - `GET /api/admin/monthly-payouts/:withdrawalId/history?page=1`

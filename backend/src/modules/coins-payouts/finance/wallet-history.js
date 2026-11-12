@@ -1,3 +1,4 @@
+import { authorStorySources } from './author-finance-summary.js'
 import {
   Wallet,
   LedgerEntry,
@@ -19,7 +20,7 @@ const newerThan = entry => ({
 
 export async function getWalletHistory(
   accountId,
-  { page = 1, type = 'all', from, to } = {},
+  { page = 1, type = 'all', from, to, storyId } = {},
   purpose = 'reader-coins',
 ) {
   return withTransaction(async session => {
@@ -42,6 +43,29 @@ export async function getWalletHistory(
     if (type === 'added') match.ledgerType = 'topup-credit'
     if (type === 'unlock') match.ledgerType = 'unlock-debit'
     if (type === 'other') match.ledgerType = { $nin: ['topup-credit', 'unlock-debit'] }
+    if (storyId && purpose === 'author-earnings') {
+      match.sourceType = 'UnlockRequest'
+      match.sourceId = { $in: await authorStorySources(accountId, storyId, session) }
+    }
+    const net = wallet
+      ? await LedgerEntry.aggregate([
+          { $match: match },
+          {
+            $group: {
+              _id: null,
+              value: {
+                $sum: {
+                  $cond: [
+                    { $eq: ['$direction', 'credit'] },
+                    '$amount',
+                    { $multiply: ['$amount', -1] },
+                  ],
+                },
+              },
+            },
+          },
+        ]).session(session)
+      : []
     const entries = wallet
       ? await LedgerEntry.find(match)
           .sort({ occurredAt: -1, _id: -1 })
@@ -118,6 +142,7 @@ export async function getWalletHistory(
       : {}
     return {
       balance: wallet?.availableBalance ?? 0,
+      netAmount: net[0]?.value ?? 0,
       page,
       pageSize: PAGE_SIZE,
       hasMore: entries.length > PAGE_SIZE,

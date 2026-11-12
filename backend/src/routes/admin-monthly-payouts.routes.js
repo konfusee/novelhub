@@ -6,6 +6,9 @@ import { HttpError } from '../middleware/errors.js'
 import { listMonthlyPayouts } from '../modules/coins-payouts/finance/admin-payout-list.js'
 import { getPayoutDetails } from '../modules/coins-payouts/finance/payout-details.js'
 
+import { correctPayoutBank } from '../modules/coins-payouts/finance/payout-bank-correction.js'
+import { bankDetailsSchema } from '../modules/coins-payouts/finance/bank-details.js'
+
 const listSchema = z
   .object({
     periodId: z.string().regex(/^\d{4}-(0[1-9]|1[0-2])$/),
@@ -19,6 +22,30 @@ const listSchema = z
 
 export function createAdminMonthlyPayoutsRouter(config) {
   const router = Router()
+  router.put(
+    '/admin/monthly-payouts/:withdrawalId/payment-details',
+    requireAuth(config),
+    requireRole('admin'),
+    async (req, res, next) => {
+      try {
+        const parsed = z
+          .object({
+            expectedVersion: z.number().int().min(0),
+            reason: z.string().trim().min(1).max(1000),
+            bankDetails: bankDetailsSchema,
+          })
+          .strict()
+          .safeParse(req.body)
+        if (!parsed.success || !/^[a-fA-F0-9]{24}$/.test(req.params.withdrawalId))
+          throw new HttpError(400, 'validation_error', 'Thông tin sửa ngân hàng không hợp lệ.')
+        res
+          .set('Cache-Control', 'private, no-store')
+          .json(await correctPayoutBank(req.account, req.params.withdrawalId, parsed.data))
+      } catch (error) {
+        next(error)
+      }
+    },
+  )
   router.get(
     '/admin/monthly-payouts/:withdrawalId/history',
     requireAuth(config),

@@ -5,6 +5,7 @@ import {
   AuditEvent,
   BankTransaction,
   LedgerEntry,
+  PolicyVersion,
   TopUpOrder,
   TopUpPackage,
   Wallet,
@@ -82,6 +83,52 @@ function sendWebhook(payload) {
     .set('Authorization', `Apikey ${key}`)
     .send(payload)
 }
+
+it('rehearses order creation, payment instructions and webhook replay on a temporary database', async () => {
+  const reader = await authenticatedAccount()
+  const admin = await authenticatedAccount('admin')
+  await PolicyVersion.create({
+    status: 'effective',
+    effectiveAt: new Date(0),
+    actorAccountId: admin.account._id,
+  })
+  const pack = await TopUpPackage.create({ priceVnd: 50000, coinAmount: 50000, status: 'active' })
+  const created = await request(app)
+    .post('/api/reader/top-up-orders')
+    .set('Cookie', reader.cookie)
+    .set('Origin', 'http://localhost:5173')
+    .send({ packageId: String(pack._id) })
+  expect(created.status).toBe(201)
+  const order = created.body.order
+  expect(order.payment).toMatchObject({
+    bankBin: bank.bin,
+    content: order.paymentCode,
+    amount: 50000,
+  })
+  const payload = {
+    id: 10001,
+    gateway: bank.name,
+    accountNumber: bank.accountNumber,
+    transactionDate: '2026-11-12 10:00:00',
+    transferType: 'in',
+    transferAmount: 50000,
+    content: order.paymentCode,
+    code: order.paymentCode,
+    subAccount: null,
+  }
+  expect((await sendWebhook(payload)).status).toBe(200)
+  expect((await sendWebhook(payload)).status).toBe(200)
+  const status = await request(app)
+    .get(`/api/reader/top-up-orders/${order.id}`)
+    .set('Cookie', reader.cookie)
+  expect(status.body.order).toMatchObject({ status: 'paid', reviewState: 'settled' })
+  expect(status.body.order.payment).toBeUndefined()
+  const wallet = await Wallet.findOne({ ownerId: reader.account._id, purpose: 'reader-coins' })
+  expect(wallet.availableBalance).toBe(50000)
+  expect(
+    await LedgerEntry.countDocuments({ walletId: wallet._id, ledgerType: 'topup-credit' }),
+  ).toBe(1)
+})
 
 it('gửi đồng thời và gửi lại cùng giao dịch chỉ cộng xu một lần', async () => {
   const { wallet, order, payload } = await prepareCase()

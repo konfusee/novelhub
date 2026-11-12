@@ -54,6 +54,34 @@ it('reports actual debit and allocation legs, with snapshot chapter titles and p
   const authorWallet = await Wallet.findOne({ purpose: 'author-earnings' })
   const earnings = await getAuthorEarnings(authorWallet.ownerId)
   expect(earnings.entries[0].description).toContain(report.unlocks[0].label)
+  expect(earnings.summary).toMatchObject({ revenueCoins: 700, paidUnlockCount: 1 })
+  expect(earnings.entries[0].balanceAfter).toBe(700)
+  const filteredEarnings = await getAuthorEarnings(authorWallet.ownerId, {
+    storyId: story.id,
+    type: 'allocation-credit',
+  })
+  expect(filteredEarnings.netAmount).toBe(700)
+  expect(filteredEarnings.summary.revenueCoins).toBe(700)
+  const unrelatedEarnings = await getAuthorEarnings(authorWallet.ownerId, {
+    storyId: String(reader._id),
+  })
+  expect(unrelatedEarnings.entries).toEqual([])
+  expect(unrelatedEarnings.summary.revenueCoins).toBe(0)
+  const ledgerReport = await getPlatformFinanceReport({
+    ...range(),
+    walletPurpose: 'author-earnings',
+    ledgerType: 'allocation-credit',
+    groupBy: 'day',
+  })
+  expect(ledgerReport.ledger).toHaveLength(1)
+  expect(ledgerReport.ledger[0]).toMatchObject({
+    purpose: 'author-earnings',
+    type: 'allocation-credit',
+    creditCoins: 700,
+    debitCoins: 0,
+    netCoins: 700,
+  })
+  expect(ledgerReport.balances.every(row => row.purpose === 'author-earnings')).toBe(true)
 })
 
 it('keeps registration statuses, bank states and live balances distinct', async () => {
@@ -79,9 +107,13 @@ it('keeps registration statuses, bank states and live balances distinct', async 
   const report = await getPlatformFinanceReport({ ...range(), groupBy: 'day' })
   expect(report.summary.registeredAccounts).toBe(2)
   expect(report.registrations.find(row => row.status === 'pending-verification').count).toBe(1)
-  expect(report.bank).toContainEqual({ status: 'unmatched', count: 1, amountVnd: 50000 })
+  expect(report.bank).toContainEqual(
+    expect.objectContaining({ status: 'unmatched', count: 1, amountVnd: 50000 }),
+  )
   expect(report.balances).toContainEqual({ purpose: 'reader-coins', count: 1, balanceCoins: 99 })
   expect(report.summary.topUpCoins).toBe(0)
+  const noBank = await getPlatformFinanceReport({ ...range(), bankState: 'matched' })
+  expect(noBank.bank).toEqual([])
 })
 
 it('API restricts reports/options to admins and rejects invalid or excessive date ranges', async () => {

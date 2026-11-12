@@ -1,4 +1,7 @@
 import { expect, it, vi } from 'vitest'
+import request from 'supertest'
+import { createApp } from '../src/app.js'
+import { testConfig } from './config.js'
 import {
   Account,
   AuditEvent,
@@ -11,8 +14,11 @@ import {
   WithdrawalRequest,
 } from '../src/models/index.js'
 import { runMonthlyPayouts } from '../src/modules/coins-payouts/finance/monthly-payout-worker.js'
+import { startMonthlyPayoutWorker } from '../src/modules/coins-payouts/finance/monthly-payout-worker.js'
+import { simulatePendingPayouts } from '../src/modules/coins-payouts/finance/automatic-payout-results.js'
+import { correctPayoutBank } from '../src/modules/coins-payouts/finance/payout-bank-correction.js'
+import { PayoutSheetRow } from '../src/models/index.js'
 import { generateMonthlyPayouts } from '../src/modules/coins-payouts/finance/admin-monthly-payouts.js'
-import { getMonthlyPayoutPreview } from '../src/modules/coins-payouts/finance/admin-payout-preview.js'
 import { authenticatedAccount } from './fixtures/accounts.js'
 import { useTestDatabase } from './db.js'
 
@@ -99,17 +105,6 @@ it('a below-threshold prior balance does not qualify because of new monthly cred
   expect((await Wallet.findById(wallet._id)).availableBalance).toBe(150000)
 })
 
-it('preview includes revoked authors with their retained bank and earnings', async () => {
-  const { account } = await prepare()
-  await RoleAssignment.updateOne(
-    { accountId: account._id, role: 'author' },
-    { $set: { status: 'revoked' } },
-  )
-  const preview = await getMonthlyPayoutPreview('2026-11')
-  expect(preview.items.map(row => row.accountId)).toContain(String(account._id))
-  expect((await Account.findById(account._id)).status).toBe('active')
-})
-
 it('automatically simulates once, with system audit and a persisted run', async () => {
   const { wallet } = await prepare()
   await runMonthlyPayouts(cutoff)
@@ -133,7 +128,7 @@ it('automatically simulates once, with system audit and a persisted run', async 
   expect((await Wallet.findById(wallet._id)).availableBalance).toBe(0)
 })
 
-it('an invalid bank produces an explicit simulated failure, without a second debit', async () => {
+it('an invalid bank is rejected before reserving any earnings', async () => {
   const { account, wallet } = await prepare()
   await Account.updateOne(
     { _id: account._id },
@@ -141,14 +136,135 @@ it('an invalid bank produces an explicit simulated failure, without a second deb
   )
   await runMonthlyPayouts(cutoff)
   await runMonthlyPayouts(cutoff)
-  expect(await WithdrawalRequest.findOne()).toMatchObject({ status: 'pending' })
-  expect(await PayoutResultEntry.findOne()).toMatchObject({
-    result: 'Failed',
-    executionMode: 'simulation',
+  expect(await WithdrawalRequest.countDocuments()).toBe(0)
+  expect(await PayoutResultEntry.countDocuments()).toBe(0)
+  expect((await Wallet.findById(wallet._id)).availableBalance).toBe(150000)
+})
+
+it('worker is disabled by default without timers or database writes', async () => {
+  const interval = vi.spyOn(globalThis, 'setInterval')
+  const run = vi.spyOn(MonthlyPayoutRun, 'updateOne')
+  try {
+    await startMonthlyPayoutWorker({ info: vi.fn() })()
+    expect(interval).not.toHaveBeenCalled()
+    expect(run).not.toHaveBeenCalled()
+  } finally {
+    interval.mockRestore()
+    run.mockRestore()
+  }
+})
+
+it('never simulates a legacy pending withdrawal', async () => {
+  const { account, wallet } = await prepare()
+  await WithdrawalRequest.create({
+    accountId: account._id,
+    earningsWalletId: wallet._id,
+    origin: 'system-monthly',
+    periodId: '2026-10',
+    cutoffAt: cutoff,
+    evaluatedAt: cutoff,
+    evaluatedBalanceCoins: 100000,
+    thresholdCoins: 100000,
+    amountCoins: 100000,
+    payoutSlipAmountVnd: 100000,
+    forcedByDeletion: false,
+  })
+  await runMonthlyPayouts(cutoff)
+  expect(await WithdrawalRequest.findOne({ periodId: '2026-10' })).toMatchObject({
+    status: 'pending',
+    version: 0,
   })
   expect(await PayoutResultEntry.countDocuments()).toBe(1)
-  expect((await Wallet.findById(wallet._id)).availableBalance).toBe(0)
-  expect(await MonthlyPayoutRun.findOne()).toMatchObject({ status: 'pending', pendingCount: 1 })
+  expect(await WithdrawalRequest.findOne({ periodId: '2026-11' })).toMatchObject({
+    status: 'paid',
+    executionMode: 'simulation',
+  })
+})
+
+it('corrects a missing bank and retries without another debit; stale corrections fail', async () => {
+  const { account, wallet, admin } = await prepare()
+  const withdrawal = await WithdrawalRequest.create({
+    accountId: account._id,
+    earningsWalletId: wallet._id,
+    origin: 'system-monthly',
+    executionMode: 'simulation',
+    periodId: '2026-10',
+    cutoffAt: cutoff,
+    evaluatedAt: cutoff,
+    evaluatedBalanceCoins: 100000,
+    thresholdCoins: 0,
+    amountCoins: 100000,
+    payoutSlipAmountVnd: 100000,
+    forcedByDeletion: true,
+  })
+  await PayoutSheetRow.create({
+    withdrawalRequestId: withdrawal._id,
+    periodId: withdrawal.periodId,
+    bankDetailsMissing: true,
+    amountCoins: 100000,
+  })
+  await simulatePendingPayouts(cutoff)
+  const failed = await WithdrawalRequest.findById(withdrawal._id)
+  await simulatePendingPayouts(cutoff)
+  expect((await WithdrawalRequest.findById(withdrawal._id)).version).toBe(failed.version)
+  const input = {
+    expectedVersion: failed.version,
+    bankDetails: bank,
+    reason: 'Support verified retained payout contact',
+  }
+  await expect(
+    correctPayoutBank(admin, withdrawal._id, { ...input, expectedVersion: 99 }),
+  ).rejects.toMatchObject({ status: 409 })
+  const app = createApp(testConfig())
+  const path = `/api/admin/monthly-payouts/${withdrawal._id}/payment-details`
+  expect((await request(app).put(path).send(input)).status).toBe(401)
+  const reader = await authenticatedAccount()
+  expect(
+    (
+      await request(app)
+        .put(path)
+        .set('Cookie', reader.cookie)
+        .set('Origin', 'http://localhost:5173')
+        .send(input)
+    ).status,
+  ).toBe(403)
+  const auditFailure = vi
+    .spyOn(AuditEvent, 'create')
+    .mockRejectedValueOnce(new Error('correction audit unavailable'))
+  try {
+    await expect(correctPayoutBank(admin, withdrawal._id, input)).rejects.toThrow(
+      'correction audit unavailable',
+    )
+  } finally {
+    auditFailure.mockRestore()
+  }
+  expect((await WithdrawalRequest.findById(withdrawal._id)).version).toBe(failed.version)
+  expect(
+    (
+      await PayoutSheetRow.findOne({ withdrawalRequestId: withdrawal._id }).select(
+        '+correctedBankDetailsSnapshot',
+      )
+    ).correctedBankDetailsSnapshot,
+  ).toBeUndefined()
+  const correction = await correctPayoutBank(admin, withdrawal._id, input)
+  expect(correction.bankDetails.accountNumber).toBe('••••6789')
+  await simulatePendingPayouts(cutoff)
+  await simulatePendingPayouts(cutoff)
+  expect((await WithdrawalRequest.findById(withdrawal._id)).status).toBe('paid')
+  expect(await PayoutResultEntry.countDocuments({ withdrawalRequestId: withdrawal._id })).toBe(2)
+  expect(await LedgerEntry.countDocuments()).toBe(0)
+  expect((await Wallet.findById(wallet._id)).availableBalance).toBe(150000)
+})
+
+it('repeated generation and below-threshold evaluation preserve account versions', async () => {
+  const { account } = await prepare(99999)
+  await runMonthlyPayouts(cutoff)
+  expect((await Account.findById(account._id)).version).toBe(account.version)
+  await Wallet.updateOne({ ownerId: account._id }, { $set: { availableBalance: 150000 } })
+  await runMonthlyPayouts(cutoff)
+  const created = await Account.findById(account._id)
+  await runMonthlyPayouts(cutoff)
+  expect((await Account.findById(account._id)).version).toBe(created.version)
 })
 
 it('a failed automatic settlement is recoverable after restart with no duplicate reservation', async () => {

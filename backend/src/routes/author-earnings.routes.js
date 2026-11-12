@@ -1,3 +1,4 @@
+import { Story } from '../models/index.js'
 import { z } from 'zod'
 import { HttpError } from '../middleware/errors.js'
 import { Router } from 'express'
@@ -6,6 +7,36 @@ import { getAuthorEarnings } from '../modules/coins-payouts/finance/author-earni
 
 export function createAuthorEarningsRouter(config) {
   const router = Router()
+  router.get(
+    '/author/earnings/stories',
+    requireAuth(config),
+    requireRole('author'),
+    async (req, res, next) => {
+      try {
+        const query = z
+          .object({ search: z.string().trim().max(100).default('') })
+          .strict()
+          .safeParse(req.query)
+        if (!query.success)
+          throw new HttpError(400, 'validation_error', 'Tìm kiếm truyện không hợp lệ.')
+        const literal = query.data.search.replace(
+          /[.*+?^${}()|[\]\\]/g,
+          character => '\\' + character,
+        )
+        const items = await Story.find({
+          authorAccountId: req.account._id,
+          ...(literal ? { title: { $regex: literal, $options: 'i' } } : {}),
+        })
+          .select('title')
+          .sort({ title: 1, _id: 1 })
+          .limit(50)
+          .lean()
+        res.set('Cache-Control', 'private, no-store').json({ items })
+      } catch (error) {
+        next(error)
+      }
+    },
+  )
 
   router.get(
     '/author/earnings',
@@ -19,6 +50,10 @@ export function createAuthorEarningsRouter(config) {
             type: z
               .enum(['all', 'allocation-credit', 'withdrawal-debit', 'adjustment', 'reversal'])
               .default('all'),
+            storyId: z
+              .string()
+              .regex(/^[a-fA-F0-9]{24}$/)
+              .optional(),
             from: z.string().datetime({ offset: true }).optional(),
             to: z.string().datetime({ offset: true }).optional(),
           })

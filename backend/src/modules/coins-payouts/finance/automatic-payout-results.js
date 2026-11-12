@@ -4,13 +4,19 @@ import {
   PayoutSheetRow,
   WithdrawalRequest,
 } from '../../../models/index.js'
+import { createHash } from 'node:crypto'
+import { validBankDetails } from './bank-details.js'
 import { withTransaction } from '../../../db/connection.js'
 import { notify } from '../../accounts-administration/service.js'
 
 // This provider is deliberately simulated: no bank request is made. The receipt
 // and result explicitly identify simulation instead of claiming a real transfer.
 export async function simulatePendingPayouts(now = new Date()) {
-  const pending = await WithdrawalRequest.find({ status: 'pending', evaluatedAt: { $lte: now } })
+  const pending = await WithdrawalRequest.find({
+    executionMode: 'simulation',
+    status: 'pending',
+    evaluatedAt: { $lte: now },
+  })
     .select('_id')
     .sort({ _id: 1 })
     .lean()
@@ -18,13 +24,22 @@ export async function simulatePendingPayouts(now = new Date()) {
   for (const candidate of pending) {
     results.push(
       await withTransaction(async session => {
-        const withdrawal = await WithdrawalRequest.findOneAndUpdate(
-          { _id: candidate._id, status: 'pending' },
-          { $inc: { version: 1 } },
-          { session, returnDocument: 'after' },
-        )
+        const withdrawal = await WithdrawalRequest.findOne({
+          _id: candidate._id,
+          status: 'pending',
+          executionMode: 'simulation',
+        }).session(session)
         if (!withdrawal) return { reused: true }
-        const resultEntryKey = `automatic-simulation:${withdrawal._id}`
+        const sheet = await PayoutSheetRow.findOne({ withdrawalRequestId: withdrawal._id })
+          .select('+bankDetailsSnapshot +correctedBankDetailsSnapshot')
+          .session(session)
+          .lean()
+        const bank = sheet?.correctedBankDetailsSnapshot ?? sheet?.bankDetailsSnapshot
+        // One attempt per bank snapshot: a correction creates a new attempt, never a new debit.
+        const bankFingerprint = createHash('sha256')
+          .update(JSON.stringify(bank ?? null))
+          .digest('hex')
+        const resultEntryKey = `automatic-simulation:${withdrawal._id}:${bankFingerprint}`
         if (
           await PayoutResultEntry.exists({
             withdrawalRequestId: withdrawal._id,
@@ -32,16 +47,19 @@ export async function simulatePendingPayouts(now = new Date()) {
           }).session(session)
         )
           return { reused: true }
-        const sheet = await PayoutSheetRow.findOne({ withdrawalRequestId: withdrawal._id })
-          .select('+bankDetailsSnapshot +correctedBankDetailsSnapshot')
-          .session(session)
-          .lean()
-        const bank = sheet?.correctedBankDetailsSnapshot ?? sheet?.bankDetailsSnapshot
-        const validBank = Boolean(
-          bank?.bankName?.trim() &&
-          /^\d{6,34}$/.test(bank?.accountNumber ?? '') &&
-          bank?.accountHolder?.trim(),
+        const locked = await WithdrawalRequest.updateOne(
+          {
+            _id: withdrawal._id,
+            status: 'pending',
+            executionMode: 'simulation',
+            version: withdrawal.version,
+          },
+          { $inc: { version: 1 } },
+          { session },
         )
+        if (locked.matchedCount !== 1) return { reused: true }
+        withdrawal.version += 1
+        const validBank = validBankDetails(bank)
         const result = validBank ? 'Paid' : 'Failed'
         const note = validBank
           ? 'Hệ thống giả lập thanh toán thành công; không có chuyển khoản ngân hàng thực tế.'
@@ -53,6 +71,7 @@ export async function simulatePendingPayouts(now = new Date()) {
               resultEntryKey,
               occurredAt: now,
               executionMode: 'simulation',
+              correctedBankDetailsSnapshot: sheet?.correctedBankDetailsSnapshot,
               result,
               note,
               ...(validBank

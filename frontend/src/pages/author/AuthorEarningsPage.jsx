@@ -16,6 +16,11 @@ const entryLabels = {
 
 export function AuthorEarningsPage() {
   const { t, formatNumber, formatDate } = useLocale()
+  const [storySearch, setStorySearch] = useState('')
+  const stories = useBackendDocument(
+    `/author/earnings/stories?${new URLSearchParams({ search: storySearch })}`,
+    null,
+  )
   const [filters, setFilters] = useState({ type: 'all', page: 1 })
   const earnings = useBackendDocument(`/author/earnings?${new URLSearchParams(filters)}`, null)
 
@@ -51,6 +56,7 @@ export function AuthorEarningsPage() {
             onSubmit={event => {
               event.preventDefault()
               const values = Object.fromEntries(new FormData(event.currentTarget))
+              if (!values.storyId) delete values.storyId
               if (values.from) values.from = new Date(values.from + 'T00:00:00+07:00').toISOString()
               else delete values.from
               if (values.to)
@@ -79,6 +85,26 @@ export function AuthorEarningsPage() {
             <label className="flex min-w-0 flex-col gap-2 text-sm">
               {t('financialTransactions.to')}
               <Input type="date" name="to" />
+            </label>
+            <label className="flex min-w-0 flex-col gap-2 text-sm">
+              {copy('storySearch')}
+              <Input
+                type="search"
+                value={storySearch}
+                maxLength={100}
+                onChange={event => setStorySearch(event.target.value)}
+              />
+            </label>
+            <label className="flex min-w-0 flex-col gap-2 text-sm">
+              {copy('story')}
+              <Select name="storyId" defaultValue="">
+                <option value="">{t('financialTransactions.all')}</option>
+                {(stories.data?.items ?? []).map(story => (
+                  <option key={story._id} value={story._id}>
+                    {story.title}
+                  </option>
+                ))}
+              </Select>
             </label>
             <Button type="submit" className="self-end">
               {t('financialTransactions.apply')}
@@ -115,12 +141,47 @@ export function AuthorEarningsPage() {
               <p className="mt-2 text-sm text-muted">{copy('balanceHint')}</p>
             </Card>
 
+            <div className="mt-6 grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+              {[
+                'monthRevenue',
+                'paidUnlockCount',
+                'payoutPending',
+                'payoutPaid',
+                'payoutFailed',
+                'nextEvaluation',
+              ].map(key => {
+                const summary = data.summary ?? {}
+                const value = {
+                  monthRevenue: summary.revenueCoins,
+                  paidUnlockCount: summary.paidUnlockCount,
+                  payoutPending: summary.payoutSummary?.pending,
+                  payoutPaid: summary.payoutSummary?.paid,
+                  payoutFailed: summary.payoutSummary?.failed,
+                }[key]
+                return (
+                  <Card key={key}>
+                    <h2 className="text-sm text-muted">{copy(key)}</h2>
+                    <p className="mt-3 text-h3 tabular-nums">
+                      {key === 'nextEvaluation'
+                        ? summary.nextEvaluationAt
+                          ? formatDate(summary.nextEvaluationAt)
+                          : '—'
+                        : formatNumber(value ?? 0)}
+                    </p>
+                  </Card>
+                )
+              })}
+            </div>
             <div className="mt-6 grid items-start gap-6 xl:grid-cols-12">
               <div className="min-w-0 xl:col-span-8">
                 <Card className=" overflow-hidden p-0">
                   <div className="p-6">
                     <h2 className="text-h3">{copy('history')}</h2>
                     <p className="mt-1 text-sm text-muted">{copy('historyHint')}</p>
+                    <p className="mt-3 text-sm font-semibold">
+                      {copy('netAmount')}: {formatNumber(data.netAmount ?? 0)}{' '}
+                      {t('wallet.coinUnit')}
+                    </p>
                   </div>
                   {data.entries.length === 0 ? (
                     <EmptyState icon={Coins} title={copy('empty')} />
@@ -137,6 +198,9 @@ export function AuthorEarningsPage() {
                             </th>
                             <th scope="col" className="px-6 py-3 text-right">
                               {copy('amount')}
+                            </th>
+                            <th scope="col" className="px-6 py-3 text-right">
+                              {copy('balanceAfter')}
                             </th>
                           </tr>
                         </thead>
@@ -157,6 +221,9 @@ export function AuthorEarningsPage() {
                               <td className="px-6 py-4 text-right font-semibold tabular-nums">
                                 {entry.amount > 0 ? '+' : ''}
                                 {formatNumber(entry.amount)} {t('wallet.coinUnit')}
+                              </td>
+                              <td className="px-6 py-4 text-right tabular-nums">
+                                {formatNumber(entry.balanceAfter ?? 0)}
                               </td>
                             </tr>
                           ))}

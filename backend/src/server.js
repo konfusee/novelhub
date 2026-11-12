@@ -37,7 +37,7 @@ const config = {
   emailDelivery,
   ...toAppConfig(env),
 }
-const stopMonthlyPayouts = startMonthlyPayoutWorker(logger)
+const stopMonthlyPayouts = startMonthlyPayoutWorker(logger, config.payoutWorkerEnabled)
 const stopNotifications = startNotificationWorker(config)
 const stopScheduler = startChapterScheduler(config, logger)
 let stopEvidenceWorker = async () => {}

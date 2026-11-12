@@ -25,9 +25,11 @@ ledger adjustment mang nhãn demo; tổng ledger khớp số dư ví.
 
 Ngân hàng và số tài khoản đều là giả lập. Không gọi SePay, không chuyển tiền,
 không gửi email. Script tạo fixture trực tiếp qua helper transaction nên không
-cần chờ cuối tháng; API admin vẫn giữ kiểm tra chỉ lập danh sách cuối tháng.
+cần chờ lịch. Các khoản mới luôn ghi executionMode=simulation; kết quả và mã SIM-DEMO
+chỉ là bằng chứng giả lập. Worker mặc định tắt qua PAYOUT_WORKER_ENABLED=false.
+Nếu bật worker, khoản giả lập chờ sẽ được tự xử lý; admin không lập hay trả thủ công.
 Không mô phỏng doanh thu mua chương hoặc phân bổ cho platform.
 
 Mở `/admin/payouts`, chọn kỳ tháng đã seed và trạng thái Tất cả.
 Ngưỡng lấy từ chính sách hiện hành; không thay đổi chính sách để tạo demo.
-Chạy lại giữ nguyên dữ liệu ngay cả khi admin đã xử lý các khoản demo.
+Chạy lại giữ nguyên dữ liệu ngay cả khi worker đã xử lý các khoản demo.

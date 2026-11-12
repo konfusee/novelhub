@@ -37,6 +37,7 @@ function notificationView(item) {
   const eventTitles = {
     'system.role-changed': 'Vai trò tài khoản của bạn đã thay đổi',
     'google.linked': 'Đã liên kết tài khoản Google',
+    'wallet.reconciliation-credited': 'Đã cộng xu sau đối soát ngân hàng',
     'monthly-payout.created': 'Khoản chi trả đã được lập',
     'monthly-payout.bank-details-missing': 'Cần bổ sung thông tin ngân hàng',
     'monthly-payout.Paid': 'Khoản chi trả đã thanh toán',

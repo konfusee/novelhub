@@ -16,6 +16,26 @@ import { useTestDatabase } from './db.js'
 
 useTestDatabase()
 
+it('hides unpaid expired orders but retains expired orders needing review', async () => {
+  const { reader, pack } = await prepareCase()
+  const created = await createOrder(reader, pack._id)
+  const orderId = created.body.order.id
+  await TopUpOrder.updateOne({ _id: orderId }, { $set: { expiresAt: new Date(0) } })
+  const list = () => request(app).get('/api/reader/top-up-orders').set('Cookie', reader.cookie)
+  expect((await list()).body.items).toHaveLength(0)
+  await BankTransaction.create({
+    sePayTransactionId: 'expired-with-receipt',
+    amountVnd: 49000,
+    matchStatus: 'expired',
+    matchedOrderId: orderId,
+    receivedAt: new Date(),
+    apiKeyAuthenticated: true,
+  })
+  const response = await list()
+  expect(response.body.items).toHaveLength(1)
+  expect(response.body.items[0]).toMatchObject({ status: 'expired', reviewState: 'pending-review' })
+})
+
 const origin = 'http://localhost:5173'
 
 const app = createApp(
