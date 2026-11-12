@@ -10,6 +10,7 @@ import { withTransaction } from '../../../db/connection.js'
 import { HttpError } from '../../../middleware/errors.js'
 import { lockAuthor, ownStory } from './author-ownership.js'
 import { loadSubmittedPackage } from './author-submitted-package.js'
+import { storyImageRefs } from './author-story-media.js'
 import { digest } from '../submissions/submission-digests.js'
 import { storyTagFields } from '../content/story-tags.js'
 import { terminalEvidenceReady } from '../../moderation-ai/review-evidence.js'
@@ -67,18 +68,31 @@ async function releaseState(account, storyId, session) {
   const categoryActive = categoryId
     ? Boolean(await Category.exists({ _id: categoryId, status: 'active' }).session(session ?? null))
     : false
-  const storyMediaIds = [story.coverMediaId, story.theme?.coverBannerMediaId].filter(Boolean)
-  const storyMedia = storyMediaIds.length
+  // Release copies the approved revision's cover and banner, so those are what must still be
+  // available, of their kind and, when digested at submission, the exact reviewed bytes.
+  const imageRefs = snapshot ? storyImageRefs(snapshot.revision.content) : []
+  const storyMedia = imageRefs.length
     ? await MediaAsset.find({
-        _id: { $in: storyMediaIds },
+        _id: { $in: imageRefs.map(ref => ref.mediaId) },
         ownerAccountId: account._id,
         storyId: story._id,
         status: 'available',
       })
-        .select('_id kind')
+        .select('_id kind checksum sizeBytes')
         .session(session ?? null)
         .lean()
     : []
+  const imagesReady = imageRefs.every(ref => {
+    const asset = storyMedia.find(item => String(item._id) === ref.mediaId)
+    const entry = snapshot.manifest.find(item => item.role === ref.role)
+    return Boolean(
+      asset?.kind === ref.role &&
+      (!entry ||
+        (entry.mediaId === ref.mediaId &&
+          entry.checksum === asset.checksum &&
+          entry.sizeBytes === asset.sizeBytes)),
+    )
+  })
   const checks = [
     {
       code: 'approval',
@@ -92,20 +106,7 @@ async function releaseState(account, storyId, session) {
     { code: 'evidence', ok: Boolean(evidenceReady) },
     { code: 'rights', ok: snapshot?.rights.status === 'asserted' },
     { code: 'categories', ok: categoryActive },
-    {
-      code: 'media',
-      ok:
-        storyMedia.length === storyMediaIds.length &&
-        (!story.coverMediaId ||
-          storyMedia.some(
-            item => String(item._id) === String(story.coverMediaId) && item.kind === 'cover',
-          )) &&
-        (!story.theme?.coverBannerMediaId ||
-          storyMedia.some(
-            item =>
-              String(item._id) === String(story.theme.coverBannerMediaId) && item.kind === 'banner',
-          )),
-    },
+    { code: 'media', ok: Boolean(snapshot) && imagesReady },
     {
       code: 'editable',
       ok: canReleaseStoryVersion(story, revisionId),

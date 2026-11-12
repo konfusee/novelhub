@@ -12,7 +12,7 @@ import {
 } from '../../components/icons'
 import { ModeratorLayout } from '../../layouts'
 import { ROUTES } from '../../app/routes'
-import { apiRequest } from '../../api/client'
+import { API_BASE, apiRequest } from '../../api/client'
 import { moderatorMediaUrl } from '../../api/media'
 import { useBackendDocument } from '../../api/useBackendResource'
 import { useLocale } from '../../context/LocaleContext'
@@ -38,6 +38,23 @@ const decisionKeys = { approve: 'manualReview.approve', reject: 'manualReview.re
 const decisionMessages = {
   'SYS-MSG-PUB-07': 'manualReview.approvedNotice',
   'SYS-MSG-PUB-08': 'manualReview.rejectedNotice',
+}
+// Literal keys keep the moderator locale-key test able to verify them.
+const storyImageKeys = {
+  cover: {
+    label: 'manualReview.images.cover',
+    alt: 'manualReview.images.coverAlt',
+    none: 'manualReview.images.noCover',
+    figure: 'w-32',
+    frame: 'aspect-[2/3]',
+  },
+  banner: {
+    label: 'manualReview.images.banner',
+    alt: 'manualReview.images.bannerAlt',
+    none: 'manualReview.images.noBanner',
+    figure: 'w-full max-w-md',
+    frame: 'aspect-[3/1]',
+  },
 }
 
 export function ContentReviewDetailPage() {
@@ -395,6 +412,10 @@ function StoryMetadata({ metadata }) {
   return (
     <Card>
       <h2 className="break-words text-h2">{metadata.title}</h2>
+      <div className="mt-4 flex flex-wrap items-start gap-4">
+        <SubmittedStoryImage role="cover" image={metadata.cover} title={metadata.title} />
+        <SubmittedStoryImage role="banner" image={metadata.banner} title={metadata.title} />
+      </div>
       <p className="mt-4 whitespace-pre-wrap break-words leading-7">{metadata.description}</p>
       <dl className="mt-4 grid gap-2 text-sm">
         <div className="flex flex-wrap gap-1.5">
@@ -415,6 +436,46 @@ function StoryMetadata({ metadata }) {
         </div>
       </dl>
     </Card>
+  )
+}
+
+/**
+ * The exact cover or banner frozen with the submission, served by the claim-protected image
+ * route. A legacy package references an image without a digest (no URL), so it is explained
+ * instead of showing the current, possibly different file.
+ */
+function SubmittedStoryImage({ role, image, title }) {
+  const { t } = useLocale()
+  const [failedSrc, setFailedSrc] = useState(null)
+  const keys = storyImageKeys[role]
+  const src = image?.url ? `${API_BASE}${image.url}` : null
+  return (
+    <figure className={`min-w-0 ${keys.figure}`}>
+      <figcaption className="text-sm text-muted">{t(keys.label)}</figcaption>
+      <div
+        className={`mt-2 grid place-items-center overflow-hidden rounded-xl border border-hairline bg-elevated ${keys.frame}`}
+      >
+        {src && failedSrc !== src ? (
+          <img
+            src={src}
+            crossOrigin="use-credentials"
+            alt={t(keys.alt, { title })}
+            onError={() => setFailedSrc(src)}
+            className="h-full w-full object-contain"
+          />
+        ) : (
+          <p className="p-3 text-center text-xs leading-5 text-muted">
+            {t(
+              !image
+                ? keys.none
+                : src
+                  ? 'manualReview.images.unavailable'
+                  : 'manualReview.images.legacy',
+            )}
+          </p>
+        )}
+      </div>
+    </figure>
   )
 }
 

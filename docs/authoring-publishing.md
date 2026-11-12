@@ -14,6 +14,16 @@ This document records the implementation boundary for Field 2 and maps the lates
 
 Submitted revisions are frozen. A rejected revision is revised into a new editable draft, while a published revision remains live until an approved replacement is released. Rights declarations and media digests are checked when a package is submitted and retained with the submitted package.
 
+A story package includes its cover and banner. At prepare, `imageRights` lists the digest of the
+`story-media-v1` manifest (`mediaId`, `role` cover/banner, checksum, size, type, storage), and the
+submission must echo it as `imageManifestDigest`. Submit rechecks each image (owned, scoped to the
+story, of its kind, available, matching bytes), pins it and folds the manifest digest into the
+rights and package digests; a mismatch returns 409 `media_changed`. Moderators see exactly those
+images through the claim-protected `GET /moderator/submissions/:id/images/:mediaId`
+(`metadata.cover`/`metadata.banner`), release checks the approved revision's images, and cleanup
+keeps every image referenced by a revision or its frozen manifest. Story packages frozen before
+this format keep their empty manifest and original digests; their cover is listed without a URL.
+
 The owned story list now returns each story's main category, chapter counts, latest review status,
 updated time and the safe-delete flag. Delete is an append-only lifecycle transition:
 only a never-published draft with no open submission can be marked as deleted, so the

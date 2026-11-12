@@ -128,6 +128,22 @@ async function storedEvidence(batch, session) {
   }
 }
 
+/**
+ * The submitted cover or banner, served by the claim-protected image route from the frozen
+ * manifest. A legacy package frozen before story images were digested references the image
+ * without a manifest entry, so it has no URL rather than the current mutable file.
+ */
+function submittedStoryImage(submission, revision, manifest, role) {
+  const entry = manifest.find(item => item.role === role)
+  if (entry)
+    return {
+      mediaId: entry.mediaId,
+      url: `/moderator/submissions/${submission._id}/images/${entry.mediaId}`,
+    }
+  const legacy = revision.content[role === 'cover' ? 'coverMediaId' : 'coverBannerMediaId']
+  return legacy ? { mediaId: String(legacy), url: null } : null
+}
+
 /** Exact submitted package, rights, stored evidence and history; holder of the live claim only. */
 async function reviewPackage(submission, batch, session) {
   const { revision, rights, parent, manifest, document } = await loadModeratorPackage(
@@ -167,6 +183,8 @@ async function reviewPackage(submission, batch, session) {
             category: category
               ? { id: String(category._id), name: category.name, status: category.status }
               : null,
+            cover: submittedStoryImage(submission, revision, manifest, 'cover'),
+            banner: submittedStoryImage(submission, revision, manifest, 'banner'),
           },
         }),
     evidence,

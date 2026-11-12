@@ -253,6 +253,16 @@
     "storyCategory": "Thể loại chính:",
     "storyTags": "Thẻ truyện:",
     "storyNoTags": "Không có thẻ",
+    "images": {
+      "cover": "Ảnh bìa đã gửi",
+      "banner": "Banner đã gửi",
+      "coverAlt": "Ảnh bìa đã gửi của truyện {{title}}",
+      "bannerAlt": "Banner đã gửi của truyện {{title}}",
+      "noCover": "Gói gửi không có ảnh bìa.",
+      "noBanner": "Gói gửi không có banner.",
+      "legacy": "Gói này được gửi trước khi ảnh được lưu kèm dấu kiểm tra, nên không thể hiển thị đúng ảnh đã gửi.",
+      "unavailable": "Không tải được ảnh đã gửi. Ảnh có thể không còn khớp gói hoặc claim đã hết hạn; hãy tải lại hồ sơ."
+    },
     "original": "Nội dung do tác giả sáng tác",
     "licensed": "Nội dung có giấy phép",
     "digest": "Dấu kiểm tra toàn vẹn",
@@ -783,7 +793,7 @@
     "parent": "Hoàn thiện và gửi duyệt truyện cha",
     "editableHint": "Nếu đang chờ duyệt, hãy theo dõi kết quả. Nếu có yêu cầu sửa, mở phản hồi để tạo bản nháp chỉnh sửa mới.",
     "parentHint": "Mở gói thông tin truyện để kiểm tra nội dung, khai báo quyền và gửi duyệt. Chương chỉ gửi được khi truyện cha đã được phê duyệt.",
-    "mediaHint": "Luồng gửi duyệt hiện chưa hỗ trợ gói có media. Mở mục media để xem phạm vi và trạng thái hỗ trợ; cần xử lý media trước khi gửi.",
+    "mediaHint": "Ảnh bìa và banner phải thuộc truyện này, đúng loại ảnh và còn đọc được. Mở thông tin truyện để tải lại hoặc gỡ ảnh, lưu rồi kiểm tra lại.",
     "chapterMedia": "Chỉnh ảnh trong bản nháp",
     "chapterMediaHint": "Mở đúng chương có định dạng để gỡ ảnh khỏi bản nháp nếu muốn gửi bản văn bản, hoặc giữ nháp có ảnh để chỉnh sửa tiếp. Ảnh và lịch sử trong thư viện được giữ nguyên."
   },
@@ -2503,7 +2513,7 @@
       "evidence": "Bằng chứng đã xử lý hoặc có lỗi đã ghi nhận để duyệt thủ công",
       "rights": "Khai báo quyền vẫn có hiệu lực",
       "categories": "Thể loại đang hoạt động",
-      "media": "Không có ảnh bìa hoặc banner chưa được hỗ trợ",
+      "media": "Ảnh bìa và banner của bản đã duyệt còn sẵn sàng",
       "editable": "Truyện không bị khóa và phiên bản đủ điều kiện phát hành"
     },
     "restoreTitle": "Phát hành lại thông tin truyện",
@@ -2549,6 +2559,8 @@
     "assertion": "Tôi xác nhận có quyền gửi và xuất bản nội dung này theo cơ sở đã chọn.",
     "imageAssertion": "Tôi xác nhận có quyền gửi và xuất bản nội dung chương cùng toàn bộ ảnh trong phiên bản này theo cơ sở đã chọn.",
     "imageRightsHint": "Khai báo áp dụng cho nội dung chương và {{count}} ảnh trong bản nháp này. Việc tải ảnh lên không chứng minh quyền sử dụng. Quyền của truyện cha vẫn phải hợp lệ.",
+    "storyImageAssertion": "Tôi xác nhận có quyền gửi và xuất bản thông tin truyện cùng ảnh bìa và banner trong phiên bản này theo cơ sở đã chọn.",
+    "storyImageRightsHint": "Khai báo áp dụng cho thông tin truyện và {{count}} ảnh (ảnh bìa, banner) trong bản nháp này. Việc tải ảnh lên không chứng minh quyền sử dụng; kiểm duyệt viên xem đúng các ảnh được gửi.",
     "requiredLicenceNote": "Nguồn và phạm vi cấp phép cho nội dung và ảnh (bắt buộc)",
     "licenceNote": "Ghi chú nguồn hoặc giấy phép (không bắt buộc)",
     "rightsHint": "Khai báo này được lưu cùng đúng phiên bản gửi duyệt và không thể sửa sau khi gửi.",
@@ -2582,7 +2594,7 @@
       },
       "media": {
         "title": "Ảnh và tệp trong gói gửi",
-        "hint": "Ảnh trong chương phải thuộc bạn, còn đọc được và khớp danh sách đã lưu cùng bản nháp. Bản nháp có ảnh cũ cần lưu lại trước khi gửi. Ảnh bìa và banner được kiểm tra cùng gói thông tin truyện."
+        "hint": "Ảnh trong chương phải thuộc bạn, còn đọc được và khớp danh sách đã lưu cùng bản nháp; bản nháp có ảnh cũ cần lưu lại trước khi gửi. Ảnh bìa và banner của truyện phải thuộc bạn, thuộc truyện này, đúng loại ảnh và còn đọc được; chúng được đóng băng cùng gói để kiểm duyệt viên xem đúng ảnh đã gửi."
       },
       "parent": {
         "title": "Điều kiện truyện cha",

@@ -105,9 +105,10 @@ async function state(storyId, session, lockOwner = false) {
     .lean()
   if (!submission) throw unavailable()
   const root = await loadSubmittedPackage({ _id: owner._id }, submission._id, session)
+  // A story root may carry its digested cover and banner (story-media-v1); the loader yields only
+  // those role entries for a story package.
   if (
     root.revision.formatVersion !== 'story-v1' ||
-    root.manifest.length ||
     root.rights.status !== 'asserted' ||
     !root.rights.asserted ||
     (correction &&
