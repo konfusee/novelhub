@@ -502,10 +502,12 @@ export async function submitContent(account, input, config) {
     return { id: String(submissionId), status: 'validated', replayed: false }
   })
 }
-export async function submissionList(account, { page = 1, storyId, status } = {}) {
+export async function submissionList(account, { page = 1, storyId, targetType, status } = {}) {
   const filter = {
     authorAccountId: account._id,
     ...(storyId ? { storyId } : {}),
+    ...(targetType === 'story' ? { chapterId: null } : {}),
+    ...(targetType === 'chapter' ? { chapterId: { $ne: null } } : {}),
     ...(status ? { status } : {}),
   }
   const [total, items, stories] = await Promise.all([

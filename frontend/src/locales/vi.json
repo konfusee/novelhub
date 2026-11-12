@@ -683,6 +683,9 @@
     "search": "Tìm tên, email hoặc mã tài khoản",
     "statusFilter": "Lọc theo trạng thái",
     "allStatuses": "Tất cả trạng thái",
+    "targetFilter": "Lọc theo loại bản gửi",
+    "allTargets": "Cả truyện và chương",
+    "totalCount": "{{count}} bản gửi",
     "sortLabel": "Sắp xếp danh sách",
     "sort": {
       "newest": "Tham gia mới nhất",

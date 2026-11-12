@@ -29,8 +29,9 @@ export function SubmissionReviewPage() {
   const storyId = params.get('storyId') || ''
   const chapterId = params.get('chapterId') || ''
   const status = params.get('status') || ''
+  const targetType = params.get('targetType') || ''
   const feed = useBackendDocument(
-    `/author/submissions?page=${page}${storyId ? `&storyId=${encodeURIComponent(storyId)}` : ''}${status ? `&status=${encodeURIComponent(status)}` : ''}`,
+    `/author/submissions?page=${page}${storyId ? `&storyId=${encodeURIComponent(storyId)}` : ''}${status ? `&status=${encodeURIComponent(status)}` : ''}${targetType ? `&targetType=${targetType}` : ''}`,
     emptyFeed,
   )
   const choose = (story, chapter = '') => {
@@ -39,6 +40,7 @@ export function SubmissionReviewPage() {
       ...(story ? { storyId: story } : {}),
       ...(chapter ? { chapterId: chapter } : {}),
       ...(status ? { status } : {}),
+      ...(targetType ? { targetType } : {}),
     })
   }
   const updateStatus = next => {
@@ -46,6 +48,7 @@ export function SubmissionReviewPage() {
     setParams({
       ...(storyId ? { storyId } : {}),
       ...(status || next ? { status: next } : {}),
+      ...(targetType ? { targetType } : {}),
     })
   }
   return (
@@ -81,6 +84,27 @@ export function SubmissionReviewPage() {
                 {story.title}
               </option>
             ))}
+          </Select>
+          <label className="mt-4 block text-sm font-semibold" htmlFor="submission-target">
+            {t('submissionData.targetFilter')}
+          </label>
+          <Select
+            id="submission-target"
+            className="mt-3 w-full"
+            value={targetType}
+            onChange={event => {
+              setPage(1)
+              setParams({
+                ...(storyId ? { storyId } : {}),
+                ...(status ? { status } : {}),
+                ...(event.target.value ? { targetType: event.target.value } : {}),
+              })
+            }}
+            disabled={feed.status !== 'ready'}
+          >
+            <option value="">{t('submissionData.allTargets')}</option>
+            <option value="story">{t('submissionData.storySubmission')}</option>
+            <option value="chapter">{t('submissionData.chapterSubmission')}</option>
           </Select>
           <label className="mt-4 block text-sm font-semibold" htmlFor="submission-status">
             {t('submissionData.statusFilter')}
@@ -134,7 +158,14 @@ export function SubmissionReviewPage() {
           </Card>
         )}
         <Card className="mt-5">
-          <h2 className="text-h3">{t('submissionData.history')}</h2>
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <h2 className="text-h3">{t('submissionData.history')}</h2>
+            {feed.status === 'ready' && (
+              <span className="text-sm text-muted">
+                {t('submissionData.totalCount', { count: feed.data.total })}
+              </span>
+            )}
+          </div>
           {feed.status === 'loading' ? (
             <StatusSkeleton />
           ) : feed.status === 'error' ? (
@@ -600,11 +631,31 @@ function SubmissionEntry({ item }) {
   ]
   const historyActions = ['submitted', 'decided', 'publication.superseded']
   const historyOutcomes = ['validated', 'approved', 'rejected', 'superseded', 'cancelled']
+  const statusTones = {
+    validated: 'blue',
+    'pending-review': 'orange',
+    'decision-pending': 'orange',
+    approved: 'green',
+    superseded: 'neutral',
+    rejected: 'red',
+    cancelled: 'neutral',
+  }
   return (
     <article className="rounded-2xl border border-hairline p-4">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <h3 className="text-sm font-semibold">{item.title || item.id}</h3>
-        <Badge>{known.includes(item.status) ? t(statusKey) : item.status}</Badge>
+        <div className="flex flex-wrap justify-end gap-2">
+          <Badge tone={item.chapterId ? 'purple' : 'brand'}>
+            {t(
+              item.chapterId
+                ? 'submissionData.chapterSubmission'
+                : 'submissionData.storySubmission',
+            )}
+          </Badge>
+          <Badge tone={statusTones[item.status] ?? 'neutral'}>
+            {known.includes(item.status) ? t(statusKey) : item.status}
+          </Badge>
+        </div>
       </div>
       <p className="mt-2 text-xs text-muted">
         {item.submittedAt ? formatDate(item.submittedAt) : '—'} · {t('submissionData.revision')}{' '}
