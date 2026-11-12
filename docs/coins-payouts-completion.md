@@ -42,6 +42,28 @@ Order reads are owner-scoped. Bank API keys, raw audit notes and other accounts'
 receipts are not serialized to the Reader. Current bank configuration supplies the
 payment instructions; no banking password/PIN is required.
 
+## Financial notifications
+
+Committed financial transactions create owner-scoped in-app notifications:
+
+- Reader: top-up credited (one notice includes both success and credited coins),
+  top-up received but needing review, reconciliation credit, and purchased access.
+- Author: a chapter purchase with its title and the actual Author share credited;
+  payout reservation, missing/invalid bank destination, and Paid/Failed results.
+  Simulated payouts explicitly state that no real bank transfer occurred.
+
+Top-up and unlock notifications commit in the same MongoDB transaction as the
+financial evidence. Retries reuse the business event key, so webhook replay and
+repeat purchase do not generate another success notice. No Reader identity,
+account number or private staff note is shown in the financial notification body.
+
+The header uses the authenticated unread-count API instead of a permanent red
+dot. It refreshes on navigation, focus, visibility and successful local wallet or
+notification changes; visible pages poll every 30 seconds. The notifications page
+also refreshes while open and retains already loaded history when adding newer
+items. This is polling, not a WebSocket/push integration. Existing payout emails
+are retained; new top-up/purchase events are in-app notifications only.
+
 ## Chapter purchase and revenue
 
 Quote → confirm expected revision and price → transactional wallet debit →

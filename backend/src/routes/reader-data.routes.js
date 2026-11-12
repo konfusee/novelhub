@@ -4,6 +4,7 @@ import { Notification } from '../models/index.js'
 import { requireAuth } from '../middleware/auth.js'
 import { HttpError } from '../middleware/errors.js'
 import { ownerWrite } from '../modules/reading-community/reading/owner-write.js'
+import { financeNotificationView } from '../modules/coins-payouts/finance/finance-notifications.js'
 
 const id = z.string().regex(/^[a-f\d]{24}$/i)
 const preferenceFields = ['spacing', 'canvas', 'speed', 'skip', 'autoplay']
@@ -33,15 +34,11 @@ const profile = account => ({
   ...Object.fromEntries(preferenceFields.map(field => [field, account.preferences?.[field]])),
 })
 function notificationView(item) {
+  const finance = financeNotificationView(item)
   const text = (value, max = 4000) => (typeof value === 'string' ? value.slice(0, max) : '')
   const eventTitles = {
     'system.role-changed': 'Vai trò tài khoản của bạn đã thay đổi',
     'google.linked': 'Đã liên kết tài khoản Google',
-    'wallet.reconciliation-credited': 'Đã cộng xu sau đối soát ngân hàng',
-    'monthly-payout.created': 'Khoản chi trả đã được lập',
-    'monthly-payout.bank-details-missing': 'Cần bổ sung thông tin ngân hàng',
-    'monthly-payout.Paid': 'Khoản chi trả đã thanh toán',
-    'monthly-payout.Failed': 'Chi trả chưa thành công',
   }
   const decided = item.eventType === 'author-application.decided'
   const publication = item.eventType === 'publication.decided'
@@ -138,6 +135,7 @@ function notificationView(item) {
       href: `/moderator/submissions/${item.payload.submissionId}`,
       action: 'Mở hồ sơ',
     }),
+    ...(finance ? { ...finance, body: finance.description } : {}),
   }
 }
 export function createReaderDataRouter(config) {
@@ -171,7 +169,7 @@ export function createReaderDataRouter(config) {
   })
   router.get('/reader/notifications/unread-count', async (req, res, next) => {
     try {
-      res.json({
+      res.set('Cache-Control', 'private, no-store').json({
         count: await Notification.countDocuments({
           recipientAccountId: req.account._id,
           deliveryState: { $ne: 'deleted' },
@@ -196,7 +194,7 @@ export function createReaderDataRouter(config) {
         .skip((parsed.page - 1) * 50)
         .limit(51)
         .lean()
-      res.json({
+      res.set('Cache-Control', 'private, no-store').json({
         items: items.slice(0, 50).map(notificationView),
         hasMore: items.length > 50,
         unreadCount: await Notification.countDocuments({

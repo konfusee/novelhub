@@ -23,9 +23,9 @@ import {
   Tabs,
 } from '../../components/ui'
 import { apiRequest } from '../../api/client'
-import { notifyNotificationsChanged } from '../../api/useUnreadNotifications'
 import { formatWhen } from '../../components/reader/readerLinks'
 import { useLocale } from '../../context/LocaleContext'
+import { notifyNotificationsChanged } from '../../api/notificationEvents'
 
 /* Filters map to the `type` of each notification (see notificationView on the backend). */
 const FILTERS = [
@@ -84,18 +84,48 @@ export function NotificationsPage({ embedded = false, workspace = 'reader' }) {
   const [removed, setRemoved] = useState(null)
   const [error, setError] = useState('')
   useEffect(() => {
-    const controller = new AbortController()
-    apiRequest('/reader/notifications?page=1', { signal: controller.signal })
-      .then(response => {
-        if (controller.signal.aborted) return
-        setFeed({ status: 'ready', items: response.items, page: 1, hasMore: response.hasMore })
-        setUnread(response.unreadCount)
-      })
-      .catch(failure => {
-        if (!controller.signal.aborted)
-          setFeed({ status: 'error', items: [], page: 1, hasMore: false, error: failure })
-      })
-    return () => controller.abort()
+    let controller
+    const refresh = () => {
+      controller?.abort()
+      controller = new AbortController()
+      const { signal } = controller
+      apiRequest('/reader/notifications?page=1', { signal })
+        .then(response => {
+          if (signal.aborted) return
+          setFeed(current => {
+            if (current.status === 'ready' && current.page > 1) {
+              const newest = new Set(response.items.map(item => item.id))
+              return {
+                ...current,
+                items: [...response.items, ...current.items.filter(item => !newest.has(item.id))],
+              }
+            }
+            return { status: 'ready', items: response.items, page: 1, hasMore: response.hasMore }
+          })
+          setUnread(response.unreadCount)
+        })
+        .catch(failure => {
+          if (!signal.aborted)
+            setFeed(current =>
+              current.status === 'ready'
+                ? current
+                : { status: 'error', items: [], page: 1, hasMore: false, error: failure },
+            )
+        })
+    }
+    const refreshVisible = () => {
+      if (document.visibilityState === 'visible') refresh()
+    }
+    refresh()
+    window.addEventListener('focus', refresh)
+    document.addEventListener('visibilitychange', refreshVisible)
+    const timer = window.setInterval(refreshVisible, 30000)
+    return () => {
+      controller?.abort()
+      window.clearInterval(timer)
+      window.removeEventListener('focus', refresh)
+      document.removeEventListener('visibilitychange', refreshVisible)
+    }
   }, [attempt])
   const retry = () => {
     setFeed({ status: 'loading', items: [], page: 1, hasMore: false })

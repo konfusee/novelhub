@@ -875,7 +875,6 @@
     "search": "Tìm kiếm",
     "mainNavigation": "Điều hướng chính",
     "notifications": "Thông báo",
-    "notificationsUnread": "Thông báo, {{count}} chưa đọc",
     "openMenu": "Mở menu",
     "openProfile": "Mở hồ sơ",
     "save": "Lưu",
@@ -2136,7 +2135,8 @@
         "comment": "Bình luận & phản hồi",
         "system": "Hệ thống",
         "moderation": "Kiểm duyệt"
-      }
+      },
+      "countUnavailable": "Chưa tải được số thông báo chưa đọc"
     }
   },
   "authorData": {

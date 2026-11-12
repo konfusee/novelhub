@@ -1,17 +1,14 @@
 import { useEffect, useState } from 'react'
+import { useLocation } from 'react-router'
 import { useAuth } from '../context/AuthContext'
 import { apiRequest } from './client'
+import { NOTIFICATIONS_CHANGED } from './notificationEvents'
+import { WALLET_BALANCE_CHANGED } from './walletEvents'
 
-export const NOTIFICATIONS_CHANGED = 'novelhub:notifications-changed'
-
-export function notifyNotificationsChanged() {
-  window.dispatchEvent(new Event(NOTIFICATIONS_CHANGED))
-}
-
-/** Account-scoped unread notification count for the header bell; null until known. */
 export function useUnreadNotifications() {
   const { currentUser } = useAuth()
-  const accountId = currentUser?.id ?? null
+  const { pathname } = useLocation()
+  const accountId = currentUser?.id
   const [state, setState] = useState({ accountId: null, count: null })
 
   useEffect(() => {
@@ -29,7 +26,9 @@ export function useUnreadNotifications() {
             throw new Error('Invalid unread count')
           setState({ accountId, count: response.count })
         })
-        .catch(() => {})
+        .catch(() => {
+          if (!stopped && !signal.aborted) setState({ accountId, count: null })
+        })
     }
     const refreshVisible = () => {
       if (document.visibilityState === 'visible') refresh()
@@ -37,6 +36,7 @@ export function useUnreadNotifications() {
     refresh()
     window.addEventListener('focus', refresh)
     window.addEventListener(NOTIFICATIONS_CHANGED, refresh)
+    window.addEventListener(WALLET_BALANCE_CHANGED, refresh)
     document.addEventListener('visibilitychange', refreshVisible)
     const timer = window.setInterval(refreshVisible, 30000)
     return () => {
@@ -45,9 +45,10 @@ export function useUnreadNotifications() {
       window.clearInterval(timer)
       window.removeEventListener('focus', refresh)
       window.removeEventListener(NOTIFICATIONS_CHANGED, refresh)
+      window.removeEventListener(WALLET_BALANCE_CHANGED, refresh)
       document.removeEventListener('visibilitychange', refreshVisible)
     }
-  }, [accountId])
+  }, [accountId, pathname])
 
   return state.accountId === accountId ? state.count : null
 }

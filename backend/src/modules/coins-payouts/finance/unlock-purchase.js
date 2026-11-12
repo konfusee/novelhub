@@ -4,9 +4,11 @@ import {
   RevenueAllocation,
   UnlockEntitlement,
   UnlockRequest,
+  ContentRevision,
 } from '../../../models/index.js'
 import { HttpError } from '../../../middleware/errors.js'
 import { transferUnlockCoins } from './unlock-wallets.js'
+import { notifyMany } from '../../accounts-administration/notifications.js'
 
 export async function executePaidUnlock(
   { accountId, authorId, chapter, priceCoins, split, requestKey },
@@ -158,6 +160,34 @@ export async function executePaidUnlock(
         targetVersion: unlockRequest.version,
         result: 'committed',
         occurredAt: now,
+      },
+    ],
+    { session },
+  )
+
+  const revision = await ContentRevision.findById(chapter.publishedRevisionId)
+    .select('content.title')
+    .session(session)
+    .lean()
+  const purchase = {
+    storyId: String(chapter.storyId),
+    chapterId: String(chapter._id),
+    chapterTitle: revision?.content?.title ?? 'Chương đã mua',
+    priceCoins,
+  }
+  await notifyMany(
+    [
+      {
+        recipientAccountId: accountId,
+        eventType: 'wallet.chapter-unlocked',
+        sourceEventKey: `chapter-unlocked:${unlockRequest._id}`,
+        payload: purchase,
+      },
+      {
+        recipientAccountId: authorId,
+        eventType: 'author.chapter-purchased',
+        sourceEventKey: `chapter-revenue:${unlockRequest._id}`,
+        payload: { ...purchase, amountCoins: split.authorCoins },
       },
     ],
     { session },

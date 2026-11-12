@@ -14,7 +14,7 @@ import {
   UserRound,
 } from '../icons'
 import { Link, useLocation, useNavigate } from 'react-router'
-import { useState } from 'react'
+import { useId, useState } from 'react'
 import { ROLE_HOME, useAuth } from '../../context/AuthContext'
 import { useTheme } from '../../context/ThemeContext'
 import { Avatar, IconButton, Input } from '../ui'
@@ -161,7 +161,8 @@ export function SharedWorkspaceHeader({
   const navigate = useNavigate()
   const wallet = workspaceWallets[currentRole]
   const balance = useWorkspaceBalance(currentRole)
-  const unread = useUnreadNotifications()
+  const unreadCount = useUnreadNotifications()
+  const unreadDescriptionId = useId()
   const walletActive =
     wallet &&
     (pathname === wallet.path || (currentRole === 'author' && pathname === '/author/wallet'))
@@ -239,24 +240,30 @@ export function SharedWorkspaceHeader({
         </IconButton>
         {children}
         <IconButton
-          label={
-            unread ? t('common.notificationsUnread', { count: unread }) : t('common.notifications')
-          }
+          label={t('common.notifications')}
           shape="circle"
           className="relative"
+          aria-describedby={unreadDescriptionId}
           onClick={() => navigate(ROUTES.workspaceNotifications(currentRole))}
         >
           <Bell size={18} />
-          {unread > 0 && (
+          {unreadCount > 0 && (
             <span
-              data-unread-count
               aria-hidden="true"
-              className="absolute right-1 top-1 grid h-4 min-w-4 place-items-center rounded-full bg-rose px-1 text-[10px] font-semibold leading-none text-white ring-2 ring-surface"
+              data-notification-count
+              className="absolute -right-1 -top-1 flex h-5 min-w-5 items-center justify-center rounded-full bg-rose px-1 text-[10px] font-bold leading-none text-on-rose ring-2 ring-surface"
             >
-              {unread > 99 ? '99+' : unread}
+              {unreadCount > 99 ? '99+' : unreadCount}
             </span>
           )}
         </IconButton>
+        <span id={unreadDescriptionId} className="sr-only">
+          {unreadCount === null
+            ? t('readerData.notifications.countUnavailable')
+            : unreadCount
+              ? t('readerData.notifications.unreadCount', { count: unreadCount })
+              : t('readerData.notifications.allRead')}
+        </span>
         <WorkspaceHeaderAccount currentRole={currentRole} />
       </div>
       <div className="h-14 px-4 sm:hidden">

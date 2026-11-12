@@ -1,5 +1,5 @@
 import request from 'supertest'
-import { expect, it } from 'vitest'
+import { expect, it, vi } from 'vitest'
 import { createApp } from '../src/app.js'
 import {
   Account,
@@ -10,6 +10,8 @@ import {
   UnlockEntitlement,
   UnlockRequest,
   Wallet,
+  Notification,
+  Story,
 } from '../src/models/index.js'
 import { issueSession } from '../src/auth/session.js'
 import { demoId, seedCoinsDemo } from '../scripts/lib/coins-demo.js'
@@ -81,6 +83,27 @@ it('mua xong đọc được; gửi lại hoặc dùng mã mới không trừ th
   expect(await UnlockEntitlement.countDocuments()).toBe(1)
   expect(await UnlockRequest.countDocuments()).toBe(1)
   expect(await RevenueAllocation.countDocuments()).toBe(1)
+  expect(await Notification.countDocuments({ eventType: 'wallet.chapter-unlocked' })).toBe(1)
+  expect(await Notification.countDocuments({ eventType: 'author.chapter-purchased' })).toBe(1)
+  const readerFeed = await request(app).get('/api/reader/notifications').set('Cookie', cookie)
+  expect(
+    readerFeed.body.items.find(row => row.title === 'Mở khóa chương thành công'),
+  ).toMatchObject({
+    href: `/read/${story.id}/${chapter.id}`,
+    description: expect.stringContaining('1.000 xu'),
+  })
+  const owner = await Story.findById(story.id)
+  const author = await Account.findById(owner.authorAccountId)
+  const { token } = await issueSession(author, 1)
+  const authorFeed = await request(app)
+    .get('/api/reader/notifications')
+    .set('Cookie', `${config.cookieName}=${token}`)
+  expect(
+    authorFeed.body.items.find(row => row.title === 'Có độc giả mua chương của bạn'),
+  ).toMatchObject({
+    href: '/author/earnings',
+    description: expect.stringContaining('700 xu'),
+  })
   expect(
     await LedgerEntry.countDocuments({
       sourceType: 'UnlockRequest',
@@ -100,10 +123,33 @@ it('thiếu xu thì không tạo quyền hoặc ghi nhận lần mua thành côn
   expect(await UnlockRequest.countDocuments()).toBe(0)
   expect(await RevenueAllocation.countDocuments()).toBe(0)
   expect(
+    await Notification.countDocuments({
+      eventType: { $in: ['wallet.chapter-unlocked', 'author.chapter-purchased'] },
+    }),
+  ).toBe(0)
+  expect(
     await LedgerEntry.countDocuments({
       sourceType: 'UnlockRequest',
     }),
   ).toBe(0)
+})
+
+it('rolls back the purchase when its notification cannot be persisted, then retries safely', async () => {
+  const { buy } = await preparePurchase()
+  const failure = vi
+    .spyOn(Notification, 'findOneAndUpdate')
+    .mockRejectedValueOnce(new Error('notification unavailable'))
+  try {
+    expect((await buy()).status).toBe(500)
+  } finally {
+    failure.mockRestore()
+  }
+  expect((await Wallet.findById(demoId('wallet:rich'))).availableBalance).toBe(5000)
+  expect(await UnlockEntitlement.countDocuments()).toBe(0)
+  expect(await RevenueAllocation.countDocuments()).toBe(0)
+  expect(await Notification.countDocuments()).toBe(0)
+  expect((await buy()).status).toBe(201)
+  expect(await Notification.countDocuments()).toBe(2)
 })
 
 it('tái xuất bản không làm mất quyền, không trừ lại xu và danh sách hiển thị đã mở', async () => {

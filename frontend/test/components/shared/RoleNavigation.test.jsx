@@ -4,7 +4,7 @@ import { MemoryRouter, useLocation } from 'react-router'
 import { AppShell } from '../../../src/components/shell/AppShell'
 import { LocaleProvider } from '../../../src/context/LocaleContext'
 import { notifyWalletBalanceChanged } from '../../../src/api/walletEvents'
-import { notifyNotificationsChanged } from '../../../src/api/useUnreadNotifications'
+import { notifyNotificationsChanged } from '../../../src/api/notificationEvents'
 
 const mocks = vi.hoisted(() => ({ apiRequest: vi.fn(), user: null }))
 vi.mock('../../../src/api/client', () => ({ apiRequest: mocks.apiRequest }))
@@ -26,7 +26,11 @@ beforeEach(() => {
   mocks.user = { id: 'account-a', name: 'Account A', roles: ['reader', 'author'] }
   mocks.apiRequest
     .mockReset()
-    .mockImplementation(async path => ({ balance: path === '/author/earnings' ? 9000 : 1250 }))
+    .mockImplementation(async path =>
+      path === '/reader/notifications/unread-count'
+        ? { count: 2 }
+        : { balance: path === '/author/earnings' ? 9000 : 1250 },
+    )
 })
 afterEach(cleanup)
 
@@ -115,7 +119,11 @@ it('clears the previous account balance immediately and ignores its late respons
       }),
   )
   const page = view('/reader')
-  await waitFor(() => expect(resolveOld).toBeTypeOf('function'))
+  await waitFor(() =>
+    expect(mocks.apiRequest.mock.calls.filter(([path]) => path === '/reader/wallet')).toHaveLength(
+      1,
+    ),
+  )
   mocks.user = { id: 'account-b', name: 'Account B', roles: ['reader'] }
   mocks.apiRequest.mockResolvedValue({ balance: 55 })
   page.rerender(
@@ -150,9 +158,9 @@ it.each(['moderator', 'admin'])(
     for (const link of within(nav).getAllByRole('link'))
       expect(link.getAttribute('href').startsWith(`/${role}`)).toBe(true)
     expect(header().queryByRole('link', { name: 'Ví' })).toBeNull()
-    expect(mocks.apiRequest.mock.calls.map(([path]) => path)).toEqual([
-      '/reader/notifications/unread-count',
-    ])
+    expect(
+      mocks.apiRequest.mock.calls.every(([path]) => path === '/reader/notifications/unread-count'),
+    ).toBe(true)
   },
 )
 
@@ -164,16 +172,43 @@ it('opens notifications in the active workspace', () => {
   expect(screen.getByText('Workspace admin')).toBeTruthy()
 })
 
-it('shows the unread count on the bell and clears it after notifications change', async () => {
-  mocks.user = { id: 'moderator', name: 'Moderator', roles: ['reader', 'moderator'] }
-  mocks.apiRequest.mockResolvedValue({ count: 3 })
-  view('/moderator')
-  const bell = await header().findByRole('button', { name: 'Thông báo, 3 chưa đọc' })
-  expect(bell.querySelector('[data-unread-count]').textContent).toBe('3')
-  mocks.apiRequest.mockResolvedValue({ count: 0 })
+it('shows the actual unread badge, then removes it after notifications are read', async () => {
+  const page = view('/reader')
+  await waitFor(() =>
+    expect(page.container.querySelector('[data-notification-count]')?.textContent).toBe('2'),
+  )
+  mocks.apiRequest.mockImplementation(async path =>
+    path === '/reader/notifications/unread-count' ? { count: 0 } : { balance: 1250 },
+  )
   notifyNotificationsChanged()
-  await header().findByRole('button', { name: 'Thông báo' })
-  expect(
-    header().getByRole('button', { name: 'Thông báo' }).querySelector('[data-unread-count]'),
-  ).toBeNull()
+  await waitFor(() => expect(page.container.querySelector('[data-notification-count]')).toBeNull())
+})
+
+it('does not expose a previous account unread count after switching accounts', async () => {
+  let resolveOld
+  mocks.apiRequest.mockImplementation(path => {
+    if (path !== '/reader/notifications/unread-count') return Promise.resolve({ balance: 0 })
+    return mocks.user.id === 'account-a'
+      ? new Promise(resolve => {
+          resolveOld = resolve
+        })
+      : Promise.resolve({ count: 1 })
+  })
+  const page = view('/reader')
+  await waitFor(() => expect(resolveOld).toBeTypeOf('function'))
+  mocks.user = { id: 'account-b', name: 'Account B', roles: ['reader'] }
+  page.rerender(
+    <LocaleProvider>
+      <MemoryRouter initialEntries={['/reader']}>
+        <Surface />
+      </MemoryRouter>
+    </LocaleProvider>,
+  )
+  await waitFor(() =>
+    expect(page.container.querySelector('[data-notification-count]')?.textContent).toBe('1'),
+  )
+  resolveOld({ count: 99 })
+  await waitFor(() =>
+    expect(page.container.querySelector('[data-notification-count]')?.textContent).toBe('1'),
+  )
 })
