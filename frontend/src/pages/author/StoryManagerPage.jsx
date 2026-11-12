@@ -972,13 +972,24 @@ function StoryAnalyticsSummary({ storyId }) {
                 <div className="flex h-28 items-end gap-1 rounded-2xl bg-elevated px-3 py-3">
                   {data.daily.map((value, index) => {
                     const peak = Math.max(1, ...data.daily)
+                    const barHeight = (value / peak) * 100
                     return (
                       <span
                         key={`${data.labels?.[index] ?? index}`}
                         title={`${data.labels?.[index] ?? ''}: ${value} ${t('analyticsData.readCountUnit')}`}
-                        className="min-w-0 flex-1 rounded-t bg-brand/75"
-                        style={{ height: `${(value / peak) * 100}%` }}
-                      />
+                        className="relative h-full min-w-0 flex-1"
+                      >
+                        <strong
+                          className="pointer-events-none absolute left-1/2 z-10 -translate-x-1/2 whitespace-nowrap text-[10px] font-semibold tabular-nums text-ink"
+                          style={{ bottom: `${Math.min(100, barHeight + 3)}%` }}
+                        >
+                          {value.toLocaleString('vi-VN')}
+                        </strong>
+                        <span
+                          className="absolute inset-x-0 bottom-0 rounded-t bg-brand/75"
+                          style={{ height: `${barHeight}%` }}
+                        />
+                      </span>
                     )
                   })}
                 </div>

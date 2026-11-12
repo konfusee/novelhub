@@ -485,16 +485,27 @@ export function AuthorAnalyticsPage() {
                                 event.pointerType === 'mouse' && setDay(null)
                               }
                             >
-                              {daily.map((height, index) => (
-                                <div
-                                  key={index}
-                                  title={`${labels[index]}: ${height} lượt đọc`}
-                                  className={`min-w-0 flex-1 rounded-t-[4px] transition-opacity duration-200 ${daily[day] !== undefined && day !== index ? 'opacity-50' : ''} bg-brand/75`}
-                                  style={{
-                                    height: `${dailyPeak ? (height / dailyPeak) * 100 : 0}%`,
-                                  }}
-                                />
-                              ))}
+                              {daily.map((height, index) => {
+                                const barHeight = dailyPeak ? (height / dailyPeak) * 100 : 0
+                                return (
+                                  <div
+                                    key={index}
+                                    className={`relative h-full min-w-0 flex-1 transition-opacity duration-200 ${daily[day] !== undefined && day !== index ? 'opacity-50' : ''}`}
+                                    title={`${labels[index]}: ${height} lượt đọc`}
+                                  >
+                                    <span
+                                      className="pointer-events-none absolute left-1/2 z-10 -translate-x-1/2 whitespace-nowrap text-[10px] font-semibold tabular-nums text-ink"
+                                      style={{ bottom: `${Math.min(100, barHeight + 2)}%` }}
+                                    >
+                                      {height.toLocaleString('vi-VN')}
+                                    </span>
+                                    <div
+                                      className="absolute inset-x-0 bottom-0 rounded-t-[4px] bg-brand/75"
+                                      style={{ height: `${barHeight}%` }}
+                                    />
+                                  </div>
+                                )
+                              })}
                             </div>
                           </div>
                           <div className="mt-3 flex justify-between text-xs text-ink/70 tabular-nums">
