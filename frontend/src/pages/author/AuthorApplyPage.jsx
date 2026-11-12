@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { apiRequest } from '../../api/client'
-import { authorAgreements } from '../../data/authorAgreements'
+import { authorAgreements } from '../../content/authorAgreements'
 import { ROUTES } from '../../app/routes'
 import { LegalContent } from '../system/LegalPage'
 import { useLocale } from '../../context/LocaleContext'

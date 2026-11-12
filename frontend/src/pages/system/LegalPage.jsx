@@ -1,6 +1,6 @@
 import { Link } from 'react-router'
 import { ROUTES } from '../../app/routes'
-import { authorAgreements } from '../../data/authorAgreements'
+import { authorAgreements } from '../../content/authorAgreements'
 import { ShieldCheck } from '../../components/icons'
 import { PublicHeader } from '../../components/public/PublicHeader'
 import { Card } from '../../components/ui'
