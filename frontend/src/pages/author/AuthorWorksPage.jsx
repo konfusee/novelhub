@@ -166,7 +166,6 @@ export function AuthorWorksPage({ editor = false }) {
                       </div>
                     </div>
                   </div>
-                  </div>
                   <div className="flex flex-wrap items-center gap-2">
                     {editor ? (
                       <Button variant="secondary" onClick={() => setSelected(story)}>

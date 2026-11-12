@@ -10,6 +10,7 @@ import {
   ChevronRight,
   Coins,
   Edit3,
+  Ellipsis,
   Eye,
   FileText,
   Headphones,
@@ -713,6 +714,7 @@ function ChapterRowSkeleton() {
 
 function ChapterRow({ chapter, storyId, onLifecycle, onRelease, onSchedule, onEarlyAccess }) {
   const { t, formatDate, formatNumber } = useLocale()
+  const [menuOpen, setMenuOpen] = useState(false)
   const note =
     chapter.status === 'Scheduled' && chapter.requestedReleaseAt
       ? t('managerData.scheduledOn', { date: formatDate(chapter.requestedReleaseAt) })
@@ -777,80 +779,64 @@ function ChapterRow({ chapter, storyId, onLifecycle, onRelease, onSchedule, onEa
               {t('chapterRelease.title')}
             </Button>
           )}
-          {chapter.canConfigureEarlyAccess && (
-            <Button variant="secondary" size="sm" onClick={onEarlyAccess}>
-              {t('earlyAccess.title')}
-            </Button>
-          )}
-          {chapter.canManageSchedule && (
-            <Button variant="secondary" size="sm" onClick={onSchedule}>
-              {t(
-                chapter.status === 'Scheduled' ? 'chapterSchedule.manage' : 'chapterSchedule.title',
-              )}
-            </Button>
-          )}
-          <ButtonLink
-            to={`/author/stories/${storyId}/chapters/${chapter.id}/edit`}
-            variant={draft ? 'primary' : 'secondary'}
-            size="sm"
-          >
-            {chapter.status === 'Archived'
-              ? t('chapterLifecycle.view')
-              : draft
-                ? 'Viết tiếp'
-                : chapter.status === 'Scheduled'
-                  ? t('chapterLifecycle.view')
-                  : 'Chỉnh sửa'}
-          </ButtonLink>
-          {(chapter.canArchive || chapter.canRestore) && (
-            <Button
-              variant="secondary"
-              size="sm"
-              aria-label={t(
-                chapter.canRestore
-                  ? 'chapterLifecycle.restoreNamed'
-                  : 'chapterLifecycle.archiveNamed',
-                { title: chapter.title },
-              )}
-              onClick={() => onLifecycle(chapter.canRestore ? 'restore' : 'archive')}
-            >
-              {t(chapter.canRestore ? 'chapterLifecycle.restore' : 'chapterLifecycle.archive')}
-            </Button>
-          )}
-          {chapter.canDelete && (
-            <Button variant="danger" size="sm" onClick={() => onLifecycle('delete')}>
-              {t('chapterLifecycle.delete')}
-            </Button>
-          )}
-          {chapter.canUnpublish && (
-            <Button variant="danger" size="sm" onClick={() => onLifecycle('unpublish')}>
-              {t('chapterLifecycle.unpublish')}
-            </Button>
-          )}
-          {chapter.reviseSource && (
-            <Button size="sm" onClick={() => onLifecycle('reviseUnpublished')}>
-              {t('chapterLifecycle.reviseUnpublished')}
-            </Button>
-          )}
-          <ButtonLink
-            to={`/author/stories/${storyId}/chapters/${chapter.id}/preview`}
-            variant="secondary"
-            size="sm"
-          >
-            {t('authorDraftActions.preview')}
-          </ButtonLink>
-          <ButtonLink
-            to={ROUTES.authorAnalytics(storyId, chapter.id)}
-            variant="secondary"
-            size="sm"
-            aria-label={`Xem phân tích chương ${chapter.number}: ${chapter.title}`}
-            className="w-9 px-0 pointer-coarse:w-11"
-          >
-            <BarChart3 size={15} aria-hidden="true" />
-          </ButtonLink>
+          <ChapterActionsMenu
+            open={menuOpen}
+            onToggle={() => setMenuOpen(value => !value)}
+            onClose={() => setMenuOpen(false)}
+            items={[
+              {
+                show: true,
+                content: (
+                  <ButtonLink to={`/author/stories/${storyId}/chapters/${chapter.id}/edit`} variant={draft ? 'primary' : 'secondary'} size="sm" onClick={() => setMenuOpen(false)}>
+                    {chapter.status === 'Archived' ? t('chapterLifecycle.view') : draft ? 'Viết tiếp' : chapter.status === 'Scheduled' ? t('chapterLifecycle.view') : 'Chỉnh sửa'}
+                  </ButtonLink>
+                ),
+              },
+              { show: chapter.canConfigureEarlyAccess, content: <Button variant="secondary" size="sm" onClick={() => { setMenuOpen(false); onEarlyAccess() }}>{t('earlyAccess.title')}</Button> },
+              { show: chapter.canManageSchedule, content: <Button variant="secondary" size="sm" onClick={() => { setMenuOpen(false); onSchedule() }}>{t(chapter.status === 'Scheduled' ? 'chapterSchedule.manage' : 'chapterSchedule.title')}</Button> },
+              { show: chapter.canArchive || chapter.canRestore, content: <Button variant="secondary" size="sm" onClick={() => { setMenuOpen(false); onLifecycle(chapter.canRestore ? 'restore' : 'archive') }}>{t(chapter.canRestore ? 'chapterLifecycle.restore' : 'chapterLifecycle.archive')}</Button> },
+              { show: chapter.canDelete, content: <Button variant="danger" size="sm" onClick={() => { setMenuOpen(false); onLifecycle('delete') }}>{t('chapterLifecycle.delete')}</Button> },
+              { show: chapter.canUnpublish, content: <Button variant="danger" size="sm" onClick={() => { setMenuOpen(false); onLifecycle('unpublish') }}>{t('chapterLifecycle.unpublish')}</Button> },
+              { show: Boolean(chapter.reviseSource), content: <Button size="sm" onClick={() => { setMenuOpen(false); onLifecycle('reviseUnpublished') }}>{t('chapterLifecycle.reviseUnpublished')}</Button> },
+              { show: true, content: <ButtonLink to={`/author/stories/${storyId}/chapters/${chapter.id}/preview`} variant="secondary" size="sm" onClick={() => setMenuOpen(false)}>{t('authorDraftActions.preview')}</ButtonLink> },
+              { show: true, content: <ButtonLink to={ROUTES.authorAnalytics(storyId, chapter.id)} variant="secondary" size="sm" onClick={() => setMenuOpen(false)} aria-label={`Xem phân tích chương ${chapter.number}: ${chapter.title}`}><BarChart3 size={15} aria-hidden="true" /> Phân tích</ButtonLink> },
+            ]}
+          />
         </div>
       </td>
     </tr>
+  )
+}
+
+function ChapterActionsMenu({ open, onToggle, onClose, items }) {
+  const visible = items.filter(item => item.show)
+  return (
+    <div className="relative">
+      <Button
+        type="button"
+        variant="secondary"
+        size="sm"
+        aria-label="Thao tác khác cho chương"
+        aria-expanded={open}
+        aria-haspopup="menu"
+        onClick={onToggle}
+        className="w-10 px-0 pointer-coarse:w-11"
+      >
+        <Ellipsis size={17} aria-hidden="true" />
+      </Button>
+      {open && (
+        <>
+          <button type="button" aria-label="Đóng menu thao tác" className="fixed inset-0 z-20 cursor-default" onClick={onClose} />
+          <div role="menu" className="absolute right-0 top-full z-30 mt-2 grid min-w-44 gap-1 rounded-2xl border border-line bg-surface p-2 shadow-float">
+            {visible.map((item, index) => (
+              <div key={index} role="none" className="[&>a]:w-full [&>a]:justify-start [&>button]:w-full [&>button]:justify-start">
+                {item.content}
+              </div>
+            ))}
+          </div>
+        </>
+      )}
+    </div>
   )
 }
 

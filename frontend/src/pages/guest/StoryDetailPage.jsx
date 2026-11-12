@@ -14,6 +14,7 @@ import {
 import { PublicHeader } from '../../components/public/PublicHeader'
 import { ChapterList } from '../../components/public/ChapterList'
 import { useStoryDetail } from '../../components/public/catalog'
+import { API_BASE } from '../../api/client'
 import { FollowButton } from '../../components/community/FollowButton'
 import { ReportDialog } from '../../components/community/ReportDialog'
 import { Pagination } from '../../components/ui/Pagination'
@@ -237,8 +238,23 @@ function StoryDetailView({ data, storyId }) {
     }
   }
   const breakdown = story.ratingBreakdown ?? [0, 0, 0, 0, 0]
+  const bannerSrc =
+    story.bannerUrl && /^\/catalog\//u.test(story.bannerUrl)
+      ? `${API_BASE}${story.bannerUrl}`
+      : story.bannerUrl
   return (
     <>
+      {bannerSrc && (
+        <div className="nh-fade-enter -mt-4 mb-5 overflow-hidden rounded-3xl border border-hairline bg-elevated shadow-soft">
+          <img
+            src={bannerSrc}
+            alt={t('storyDetail.bannerAlt', { title: story.title })}
+            loading="eager"
+            decoding="async"
+            className="max-h-64 w-full object-cover sm:max-h-80"
+          />
+        </div>
+      )}
       <Card
         bezel
         className="nh-fade-enter -mt-4"

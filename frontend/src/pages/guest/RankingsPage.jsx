@@ -117,11 +117,29 @@ export function RankingsPage({ embedded = false }) {
           </Card>
         ) : (
           <section aria-label={t(`rankings.tabs.${sort}`)}>
+            {board.data.page === 1 && board.data.items.length > 0 && (
+              <div className="mb-6">
+                <h2 className="mb-3 text-h3">{t('rankings.topFive')}</h2>
+                <ol className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
+                  {board.data.items.slice(0, 5).map((story, index) => (
+                    <li key={story.id}>
+                      <RankingRow
+                        rank={index + 1}
+                        story={story}
+                        metric={metricFor(story)}
+                        featured
+                      />
+                    </li>
+                  ))}
+                </ol>
+              </div>
+            )}
+            <h2 className="mb-3 text-h3">{t('rankings.remaining')}</h2>
             <Card as="ol" className="divide-y divide-hairline overflow-hidden p-0">
-              {board.data.items.map((story, index) => (
+              {(board.data.page === 1 ? board.data.items.slice(5) : board.data.items).map((story, index) => (
                 <li key={story.id}>
                   <RankingRow
-                    rank={(board.data.page - 1) * board.data.pageSize + index + 1}
+                    rank={(board.data.page - 1) * board.data.pageSize + (board.data.page === 1 ? index + 6 : index + 1)}
                     story={story}
                     metric={metricFor(story)}
                   />

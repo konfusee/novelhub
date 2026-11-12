@@ -963,6 +963,7 @@
     "startReading": "Bắt đầu đọc",
     "shareCopied": "Đã sao chép liên kết truyện để chia sẻ.",
     "shareFailed": "Không thể sao chép liên kết. Hãy sao chép địa chỉ trang trong trình duyệt.",
+    "bannerAlt": "Banner của {{title}}",
     "report": "Báo cáo truyện",
     "noChapters": "Truyện chưa có chương nào",
     "noChaptersDescription": "Theo dõi truyện để nhận thông báo khi tác giả phát hành chương đầu tiên.",
@@ -1767,6 +1768,8 @@
     "noHistory": "Chưa có dữ liệu so sánh hạng",
     "ratingTab": "Đánh giá cao",
     "listTitle": "Danh sách xếp hạng",
+    "topFive": "Top 5 nổi bật",
+    "remaining": "Các truyện còn lại",
     "eyebrow": "Những câu chuyện độc giả yêu thích",
     "title": "Bảng xếp hạng",
     "tabs": {
@@ -1898,6 +1901,12 @@
     "agreementUnavailable": "Chưa tải được thỏa thuận hiện tại. Không dùng tỷ lệ mẫu để thay thế."
   },
   "analyticsData": {
+    "sectionsLabel": "Nhóm phân tích",
+    "sections": {
+      "overview": "Tổng quan",
+      "retention": "Giữ chân",
+      "audience": "Độc giả"
+    },
     "returningReaders": "Định danh độc giả quay lại trong kỳ",
     "returnRate": "Tỷ lệ quay lại trong kỳ",
     "returningHint": "Định danh tài khoản hoặc thiết bị khách có lượt đọc trên ít nhất hai ngày Việt Nam khác nhau trong bộ lọc hiện tại.",
@@ -2194,7 +2203,18 @@
     "loadError": "Không tải được nội dung chương. Hãy kiểm tra kết nối và thử lại.",
     "backToManager": "Về trang quản lý truyện",
     "unsupportedTitle": "Chưa hỗ trợ định dạng nội dung này",
-    "loadErrorTitle": "Không tải được chương"
+    "loadErrorTitle": "Không tải được chương",
+    "status": {
+      "draft": "Bản nháp",
+      "submitted": "Đã gửi duyệt",
+      "approved": "Đã duyệt",
+      "scheduled": "Đã lên lịch",
+      "due": "Đến lịch phát hành",
+      "published": "Đã công khai",
+      "unpublished": "Đã gỡ công khai",
+      "archived": "Đã lưu trữ",
+      "cancelled": "Đã hủy"
+    }
   },
   "chapterRelease": {
     "title": "Phát hành chương",

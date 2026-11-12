@@ -8,14 +8,14 @@ const columns =
   'grid grid-cols-[1.5rem_2.5rem_minmax(0,1fr)_auto] items-center gap-2.5 px-4 py-3 sm:grid-cols-[2.5rem_3rem_minmax(0,1fr)_7rem_auto] sm:gap-4 sm:px-5'
 
 /** One ranked story card; `metric` is the value the board is ordered by. */
-export function RankingRow({ rank, story, metric }) {
+export function RankingRow({ rank, story, metric, featured = false }) {
   const { t } = useLocale()
   return (
-    <div className={`${columns} transition-colors duration-200 hover:bg-elevated/60`}>
-      <strong className="text-base font-bold tabular-nums text-orange-strong">
+    <div className={`${featured ? 'flex h-full flex-col gap-3 rounded-3xl border border-orange/30 bg-surface p-4 shadow-soft' : columns} transition-colors duration-200 hover:bg-elevated/60`}>
+      <strong className={`${featured ? 'text-2xl' : 'text-base'} font-bold tabular-nums text-orange-strong`}>
         {String(rank).padStart(2, '0')}
       </strong>
-      <StoryCover story={story} className="aspect-[2/3] w-full rounded-xl border border-hairline" />
+      <StoryCover story={story} className={`${featured ? 'w-full' : 'w-full'} aspect-[2/3] rounded-xl border border-hairline`} />
       <div className="min-w-0">
         <h3 className="line-clamp-2 text-sm font-semibold" title={story.title}>
           {story.title}
@@ -25,7 +25,7 @@ export function RankingRow({ rank, story, metric }) {
           {story.genre ? ` · ${story.genre}` : ''}
         </p>
       </div>
-      <div className="hidden text-right text-xs tabular-nums sm:block">
+      <div className={`${featured ? 'mt-auto' : 'hidden text-right sm:block'} text-xs tabular-nums`}>
         <strong className="block font-semibold">{metric}</strong>
         <span className="flex items-center justify-end gap-1 text-muted">
           <Star size={11} className="fill-orange text-orange" aria-hidden="true" />

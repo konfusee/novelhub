@@ -779,6 +779,21 @@ button[data-state='success'] {
   .nh-grid-12.nh-layout-xl-8-4 > :nth-child(2) {
     grid-column: span 4 / span 4;
   }
+  .nh-grid-12.nh-editor-left-hidden > :nth-child(1) {
+    display: none;
+  }
+  .nh-grid-12.nh-editor-left-hidden > :nth-child(2) {
+    grid-column: span 9 / span 9;
+  }
+  .nh-grid-12.nh-editor-right-hidden > :nth-child(3) {
+    display: none;
+  }
+  .nh-grid-12.nh-editor-right-hidden > :nth-child(2) {
+    grid-column: span 9 / span 9;
+  }
+  .nh-grid-12.nh-editor-left-hidden.nh-editor-right-hidden > :nth-child(2) {
+    grid-column: span 12 / span 12;
+  }
 }
 @media (min-width: 1536px) {
   .nh-grid-12.nh-2xl-cols-1 > * {

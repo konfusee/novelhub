@@ -26,6 +26,7 @@ import {
   ProgressBar,
   Select,
   Skeleton,
+  Tabs,
 } from '../../components/ui'
 const emptyAnalytics = {
   daily: [],
@@ -85,6 +86,7 @@ export function AuthorAnalyticsPage() {
   const [fromDate, setFromDate] = useState('')
   const [toDate, setToDate] = useState('')
   const [exported, setExported] = useState(false)
+  const [section, setSection] = useState('overview')
   // Per-day readout for touch: the bars are too thin to target, so the plot maps the pointer x to a day.
   const [day, setDay] = useState(null)
   const days = {
@@ -479,7 +481,20 @@ export function AuthorAnalyticsPage() {
                 {t('analyticsData.completionScope')}
               </p>
             )}
-            <div className="nh-grid-12 mt-6 grid items-start gap-5 nh-layout-xl-8-4">
+            <div className="mt-6 overflow-x-auto">
+              <Tabs
+                label={t('analyticsData.sectionsLabel')}
+                singleRow
+                value={section}
+                onChange={setSection}
+                items={[
+                  { value: 'overview', label: t('analyticsData.sections.overview') },
+                  { value: 'retention', label: t('analyticsData.sections.retention') },
+                  { value: 'audience', label: t('analyticsData.sections.audience') },
+                ]}
+              />
+            </div>
+            {section === 'overview' && <div className="nh-grid-12 mt-6 grid items-start gap-5 nh-layout-xl-8-4">
               <Card className="min-w-0">
                 <div className="flex flex-wrap items-start justify-between gap-3">
                   <div className="min-w-0 max-w-[60ch]">
@@ -565,9 +580,9 @@ export function AuthorAnalyticsPage() {
                   </div>
                 )}
               </Card>
-            </div>
+            </div>}
 
-            <Card className="mt-6">
+            {section === 'retention' && <Card className="mt-6">
               <h2 className="text-h3 md:text-h2">{t('analyticsData.returningReaders')}</h2>
               <p className="mt-2 text-sm text-muted">{t('analyticsData.returningHint')}</p>
               {loading ? (
@@ -618,9 +633,9 @@ export function AuthorAnalyticsPage() {
                   </dl>
                 </section>
               )}
-            </Card>
+            </Card>}
 
-            <div className="nh-grid-12 mt-6 grid items-start gap-5 nh-layout-xl-7-5">
+            {section === 'audience' && <div className="nh-grid-12 mt-6 grid items-start gap-5 nh-layout-xl-7-5">
               <Card className="min-w-0 overflow-hidden p-0">
                 <div className="p-6 pb-4">
                   <h2 className="text-h3">Đặc điểm độc giả và kênh khám phá</h2>
@@ -756,7 +771,7 @@ export function AuthorAnalyticsPage() {
                   </figcaption>
                 </figure>
               </Card>
-            </div>
+            </div>}
           </>
         )}
       </div>

@@ -30,7 +30,6 @@ import {
   Input,
   Modal,
   SectionHeader,
-  Select,
   Skeleton,
 } from '../../components/ui'
 
@@ -41,14 +40,6 @@ const steps = [
   ['create-cover', 'Bìa và hình ảnh'],
   ['create-genre', 'Phân loại'],
   ['create-rights', 'Xuất bản và bản quyền'],
-]
-const ratings = [
-  [
-    'PG-13',
-    'Độc giả phổ thông (PG-13)',
-    'Phù hợp với thanh thiếu niên và độc giả truyện phổ thông.',
-  ],
-  ['18+', 'Trưởng thành (18+)', 'Có miêu tả tình cảm trực diện hoặc chủ đề u tối.'],
 ]
 const MAX_COVER_BYTES = 10 * 1024 * 1024
 
@@ -68,8 +59,6 @@ export function CreateStoryPage() {
   const [synopsis, setSynopsis] = useState('')
   const [genre, setGenre] = useState('')
   const [tags, setTags] = useState([])
-  const [rating, setRating] = useState('')
-  const [language, setLanguage] = useState('vi')
   const [cover, setCover] = useState(null)
   const [coverError, setCoverError] = useState('')
   const [banner, setBanner] = useState(null)
@@ -525,56 +514,6 @@ export function CreateStoryPage() {
                   />
                 </div>
 
-                <div className="nh-grid-12 mt-6 grid gap-5 nh-sm-cols-2">
-                  <fieldset>
-                    <legend className="text-sm font-semibold">Phân loại nội dung hướng đến</legend>
-                    <div className="mt-2 space-y-2">
-                      {ratings.map(([value, label, note]) => (
-                        <label
-                          key={value}
-                          className={`flex cursor-pointer items-start gap-3 rounded-3xl border p-4 transition-[background-color,border-color] duration-200 ${rating === value ? 'border-brand bg-brand/8' : 'border-line hover:border-brand/60'}`}
-                        >
-                          <input
-                            type="radio"
-                            disabled
-                            name="story-rating"
-                            value={value}
-                            checked={rating === value}
-                            onChange={() => {
-                              setRating(value)
-                              touch()
-                            }}
-                            className="mt-0.5 size-4 shrink-0 accent-[var(--primary)]"
-                          />
-                          <span>
-                            <strong className="block text-sm">{label}</strong>
-                            <span className="mt-1 block text-xs leading-5 text-muted">{note}</span>
-                          </span>
-                        </label>
-                      ))}
-                    </div>
-                  </fieldset>
-                  <p className="text-xs text-muted">{t('createData.noAgeRating')}</p>
-                  <Field id="story-language" label="Ngôn ngữ bản thảo gốc">
-                    <Select
-                      id="story-language"
-                      disabled
-                      value={language}
-                      onChange={event => {
-                        setLanguage(event.target.value)
-                        touch()
-                      }}
-                      className="w-full"
-                    >
-                      <option value="en-US">Tiếng Anh (Mỹ)</option>
-                      <option value="vi">Tiếng Việt</option>
-                      <option value="ja">Tiếng Nhật</option>
-                    </Select>
-                    <p className="mt-3 rounded-2xl bg-purple/10 p-3 text-xs leading-5 text-purple-strong">
-                      {t('createData.language')}
-                    </p>
-                  </Field>
-                </div>
               </Card>
 
               <Card

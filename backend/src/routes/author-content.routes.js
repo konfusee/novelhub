@@ -790,7 +790,7 @@ export function createAuthorContentRouter(config) {
         .sort({
           orderKey: 1,
         })
-        .select('title orderKey')
+        .select('title orderKey status')
         .lean()
       const canCreate =
         !story.authoringFrozen &&
@@ -811,6 +811,7 @@ export function createAuthorContentRouter(config) {
             id: String(item._id),
             number: item.orderKey,
             title: item.title,
+            status: item.status,
           })),
           title: revision.content.title,
           version: chapter.version,
