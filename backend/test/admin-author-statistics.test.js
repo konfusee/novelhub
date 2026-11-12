@@ -1,7 +1,12 @@
 import request from 'supertest'
 import { expect, it } from 'vitest'
 import { createApp } from '../src/app.js'
-import { Account, AuthorApplication, UnlockEntitlement } from '../src/models/index.js'
+import {
+  Account,
+  AuthorApplication,
+  UnlockEntitlement,
+  UnlockRequest,
+} from '../src/models/index.js'
 import { adminAuthorStatistics } from '../src/modules/accounts-administration/admin/admin-author-statistics.js'
 import { authenticatedAccount } from './fixtures/accounts.js'
 import { testConfig } from './config.js'
@@ -47,7 +52,7 @@ it('counts real application decisions, current eligible Authors at Vietnam bound
       decidedBy: author.account._id,
     },
   ])
-  await UnlockEntitlement.create({
+  const entitlement = await UnlockEntitlement.create({
     accountId: buyer.account._id,
     storyId: author.account._id,
     chapterId: author.account._id,
@@ -57,9 +62,21 @@ it('counts real application decisions, current eligible Authors at Vietnam bound
     expiresAt: new Date('2026-10-02T17:00:00Z'),
     priceCoins: 3,
   })
+  await UnlockRequest.create(
+    ['committed', 'requested', 'rejected'].map(status => ({
+      accountId: buyer.account._id,
+      chapterId: author.account._id,
+      idempotencyScope: { operation: 'unlock', ownerId: buyer.account._id, key: status },
+      status,
+      entitlementId: status === 'committed' ? entitlement._id : undefined,
+      createdAt: new Date('2026-09-30T17:00:00Z'),
+    })),
+  )
   const result = await adminAuthorStatistics('2026-10', new Date('2026-11-02'))
   expect(result.summary).toMatchObject({
     unlocks: 1,
+    requestedUnlocks: 1,
+    rejectedUnlocks: 1,
     applications: 2,
     approvedApplications: 1,
     rejectedApplications: 1,
@@ -81,9 +98,16 @@ it('enforces Admin access, strict periods and private responses without fabricat
   const response = await request(app).get(path).set('Cookie', admin.cookie)
   expect(response.status).toBe(200)
   expect(response.headers['cache-control']).toContain('no-store')
+  const filtered = await request(app)
+    .get(`${path}?accountStatus=suspended`)
+    .set('Cookie', admin.cookie)
+  expect(filtered.status).toBe(200)
+  expect(filtered.body.summary.registrations).toBe(0)
   expect(response.body.summary).toEqual({
     registrations: 2,
     unlocks: 0,
+    requestedUnlocks: 0,
+    rejectedUnlocks: 0,
     applications: 0,
     approvedApplications: 0,
     rejectedApplications: 0,

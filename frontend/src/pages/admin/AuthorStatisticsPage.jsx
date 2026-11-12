@@ -6,6 +6,8 @@ import { Button, Card, Input } from '../../components/ui'
 const metrics = [
   'registrations',
   'unlocks',
+  'requestedUnlocks',
+  'rejectedUnlocks',
   'applications',
   'approvedApplications',
   'rejectedApplications',
@@ -29,9 +31,11 @@ export function AuthorStatisticsPage() {
     m = key => t(`adminAuthorStats.${key}`)
   const [params, setParams] = useSearchParams()
   const period = params.get('period') || 'all'
+  const accountStatus = params.get('accountStatus') || 'all'
   const feed = useBackendResource(
     `/admin/author-statistics?${new URLSearchParams({
       period,
+      accountStatus,
     })}`,
     empty,
     validate,
@@ -47,18 +51,16 @@ export function AuthorStatisticsPage() {
         </div>
         <Card className="mt-6">
           <form
-            key={period}
+            key={`${period}:${accountStatus}`}
             className="flex flex-wrap items-end gap-3"
             onSubmit={event => {
               event.preventDefault()
-              const value = String(new FormData(event.currentTarget).get('period') ?? '')
-              setParams(
-                value
-                  ? {
-                      period: value,
-                    }
-                  : {},
-              )
+              const form = new FormData(event.currentTarget)
+              const filters = new URLSearchParams()
+              if (form.get('period')) filters.set('period', form.get('period'))
+              if (form.get('accountStatus') !== 'all')
+                filters.set('accountStatus', form.get('accountStatus'))
+              setParams(filters)
             }}
           >
             <label className="text-sm font-medium">
@@ -69,6 +71,22 @@ export function AuthorStatisticsPage() {
                 name="period"
                 defaultValue={period === 'all' ? '' : period}
               />
+            </label>
+            <label className="text-sm font-medium">
+              {m('registrationStatus')}
+              <select
+                name="accountStatus"
+                defaultValue={accountStatus}
+                className="mt-1 block rounded-xl border border-line bg-surface px-3 py-2"
+              >
+                {['all', 'pending-verification', 'active', 'suspended', 'anonymized'].map(
+                  status => (
+                    <option key={status} value={status}>
+                      {m(`status_${status}`)}
+                    </option>
+                  ),
+                )}
+              </select>
             </label>
             <Button type="submit">{m('apply')}</Button>
             <Button type="button" variant="secondary" onClick={() => setParams({})}>

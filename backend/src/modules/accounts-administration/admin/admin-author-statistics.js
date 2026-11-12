@@ -1,9 +1,4 @@
-import {
-  Account,
-  AuthorApplication,
-  RoleAssignment,
-  UnlockEntitlement,
-} from '../../../models/index.js'
+import { Account, AuthorApplication, RoleAssignment, UnlockRequest } from '../../../models/index.js'
 import { withTransaction } from '../../../db/connection.js'
 function statisticsPeriod(period) {
   if (period === 'all') return null
@@ -14,7 +9,7 @@ function statisticsPeriod(period) {
   }
 }
 import { HttpError } from '../../../middleware/errors.js'
-export async function adminAuthorStatistics(period, now = new Date()) {
+export async function adminAuthorStatistics(period, now = new Date(), accountStatus = 'all') {
   const range = {
     ...(statisticsPeriod(period) ?? {}),
     $lte: now,
@@ -63,13 +58,36 @@ export async function adminAuthorStatistics(period, now = new Date()) {
         $count: 'count',
       },
     ]).session(session)
-    const registrations = await Account.countDocuments({ createdAt: range }).session(session)
-    const unlocks = await UnlockEntitlement.countDocuments({
-      purchasedAt: range,
+    const registrations = await Account.countDocuments({
+      createdAt: range,
+      ...(accountStatus === 'all' ? {} : { status: accountStatus }),
     }).session(session)
+    const unlockCounts = await UnlockRequest.aggregate([
+      { $match: { createdAt: range } },
+      {
+        $lookup: {
+          from: 'unlockEntitlements',
+          localField: 'entitlementId',
+          foreignField: '_id',
+          as: 'entitlement',
+        },
+      },
+      {
+        $match: {
+          $or: [
+            { status: { $in: ['requested', 'rejected'] } },
+            { status: 'committed', 'entitlement.0': { $exists: true } },
+          ],
+        },
+      },
+      { $group: { _id: '$status', count: { $sum: 1 } } },
+    ]).session(session)
+    const count = status => unlockCounts.find(row => row._id === status)?.count ?? 0
     const summary = {
       registrations,
-      unlocks,
+      unlocks: count('committed'),
+      requestedUnlocks: count('requested'),
+      rejectedUnlocks: count('rejected'),
       applications,
       approvedApplications,
       rejectedApplications,

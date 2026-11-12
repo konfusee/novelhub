@@ -1,5 +1,6 @@
 import { Router } from 'express'
 import { z } from 'zod'
+import { ACCOUNT_STATUSES } from '../models/identity/account.model.js'
 import { requireAuth, requireRole } from '../middleware/auth.js'
 import { HttpError } from '../middleware/errors.js'
 import { adminAuthorStatistics } from '../modules/accounts-administration/admin/admin-author-statistics.js'
@@ -29,6 +30,7 @@ export function createAdminAuthorStatisticsRouter(config) {
             period: z
               .union([z.literal('all'), z.string().regex(/^(?:19|20|21)\d{2}-(?:0[1-9]|1[0-2])$/)])
               .default('all'),
+            accountStatus: z.enum(['all', ...ACCOUNT_STATUSES]).default('all'),
           })
           .strict()
           .safeParse(req.query)
@@ -36,7 +38,9 @@ export function createAdminAuthorStatisticsRouter(config) {
           throw new HttpError(400, 'validation_error', 'Kỳ thống kê không hợp lệ.')
         res
           .set('Cache-Control', 'private, no-store')
-          .json(await adminAuthorStatistics(parsed.data.period))
+          .json(
+            await adminAuthorStatistics(parsed.data.period, new Date(), parsed.data.accountStatus),
+          )
       } catch (error) {
         next(error)
       }

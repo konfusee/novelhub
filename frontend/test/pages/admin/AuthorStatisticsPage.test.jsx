@@ -27,6 +27,8 @@ it('renders real counts and sends the selected period to the backend', async () 
     summary: {
       registrations: 2,
       unlocks: 1,
+      requestedUnlocks: 0,
+      rejectedUnlocks: 0,
       applications: 2,
       approvedApplications: 1,
       rejectedApplications: 1,
@@ -42,6 +44,9 @@ it('renders real counts and sends the selected period to the backend', async () 
       value: '2026-09',
     },
   })
+  fireEvent.change(screen.getByLabelText('Trạng thái tài khoản đăng ký'), {
+    target: { value: 'active' },
+  })
   fireEvent.click(
     screen.getByRole('button', {
       name: 'Áp dụng',
@@ -49,7 +54,9 @@ it('renders real counts and sends the selected period to the backend', async () 
   )
   await waitFor(() =>
     expect(
-      api.mock.calls.some(([path]) => path === '/admin/author-statistics?period=2026-09'),
+      api.mock.calls.some(
+        ([path]) => path === '/admin/author-statistics?period=2026-09&accountStatus=active',
+      ),
     ).toBe(true),
   )
 })

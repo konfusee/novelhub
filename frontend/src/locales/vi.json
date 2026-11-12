@@ -604,6 +604,15 @@
     "unavailable": "Chưa có dữ liệu"
   },
   "adminAuthorStats": {
+    "financeReport": "Báo cáo tài chính",
+    "requestedUnlocks": "Yêu cầu mở khóa đang chờ",
+    "rejectedUnlocks": "Yêu cầu mở khóa bị từ chối",
+    "registrationStatus": "Trạng thái tài khoản đăng ký",
+    "status_all": "Mọi trạng thái",
+    "status_pending-verification": "Chờ xác minh",
+    "status_active": "Đang hoạt động",
+    "status_suspended": "Tạm khóa",
+    "status_anonymized": "Đã ẩn danh",
     "registrations": "Tài khoản đăng ký",
     "unlocks": "Lượt mở khóa chương thành công",
     "title": "Thống kê tác giả",

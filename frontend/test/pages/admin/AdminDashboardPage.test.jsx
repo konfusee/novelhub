@@ -63,13 +63,12 @@ it('shows API KPI/audit and unavailable telemetry without sample totals or fake 
   expect(screen.getByText('author.monthly-payout.evaluated')).toBeTruthy()
   expect(screen.queryByText('1.84M')).toBeNull()
   expect(screen.queryByText('6,4 TB / 12 TB')).toBeNull()
-  expect(screen.getByText('Chưa có dịch vụ được giám sát')).toBeTruthy()
-  for (const control of screen.getAllByRole('switch')) expect(control.disabled).toBe(true)
-  expect(
-    screen.getByRole('button', {
-      name: 'Xóa bộ nhớ đệm CDN biên toàn cầu',
-    }).disabled,
-  ).toBe(true)
+  expect(screen.queryByText('Tình trạng dịch vụ')).toBeNull()
+  expect(screen.queryAllByRole('switch')).toHaveLength(0)
+  expect(screen.queryByRole('button', { name: 'Xóa bộ nhớ đệm CDN biên toàn cầu' })).toBeNull()
+  expect(screen.getByRole('link', { name: 'Báo cáo tài chính' }).getAttribute('href')).toBe(
+    '/admin/payouts',
+  )
   fireEvent.click(
     screen.getByRole('button', {
       name: 'Tải KPI hiện tại',
