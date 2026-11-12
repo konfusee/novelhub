@@ -143,6 +143,7 @@ export async function formerStoryList(page) {
       .skip((page - 1) * 20)
       .limit(20)
       .select('title publicationStatus authorAccountId')
+      .populate('authorAccountId', 'displayName')
       .lean(),
     Story.countDocuments(match),
   ])
@@ -151,7 +152,8 @@ export async function formerStoryList(page) {
       id: String(item._id),
       title: item.title,
       status: item.publicationStatus,
-      authorId: String(item.authorAccountId),
+      authorId: item.authorAccountId ? String(item.authorAccountId._id) : null,
+      ownerName: item.authorAccountId?.displayName ?? null,
     })),
     total,
     page,

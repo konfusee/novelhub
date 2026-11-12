@@ -51,7 +51,7 @@ export function FormerAuthorStoriesPage() {
                         {story.title}
                       </td>
                       <td className="px-5 py-4">{m(`statuses.${story.status}`)}</td>
-                      <td className="px-5 py-4 break-all">{story.authorId}</td>
+                      <td className="px-5 py-4 break-all">{story.ownerName ?? '—'}</td>
                       <td className="px-5 py-4">
                         {story.status === 'published' && (
                           <ButtonLink to={ROUTES.story(story.id)} variant="ghost" size="sm">
@@ -155,7 +155,8 @@ function FormerStoryDialog({ id, onClose, onChanged }) {
               })
               if (
                 result?.story?.id !== id ||
-                result.story.status !== (action === 'unpublish' ? 'unpublished' : 'published') ||
+                result.story.status !==
+                  ({ unpublish: 'unpublished', republish: 'published' }[action] ?? story.status) ||
                 !Number.isSafeInteger(result.story.version) ||
                 result.story.version <= story.version
               )

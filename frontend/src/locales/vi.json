@@ -502,7 +502,7 @@
     "next": "Trang sau",
     "hint": "Đây là ngoại lệ dành riêng cho cựu Author đã bị thu hồi quyền. Sửa thông tin tạo bản công khai mới có audit, giữ gói duyệt và khai báo quyền gốc. Không tự mở khóa tác giả, không thay đổi chương hoặc số dư.",
     "action": "Thao tác quản trị",
-    "correct": "Lưu sửa và công khai",
+    "correct": "Lưu chỉnh sửa",
     "unpublish": "Ngừng công khai truyện",
     "republish": "Công khai lại truyện",
     "summary": "Mô tả",

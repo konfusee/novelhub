@@ -20,18 +20,19 @@ const story = {
   publishedRevisionId: 'source-revision',
   categoryId: 'category-id',
 }
-function setup({ saveError = false, blocked = false } = {}) {
+function setup({ saveError = false, blocked = false, status = 'published' } = {}) {
+  const current = { ...story, status }
   api.mockImplementation(async (path, options) => {
     if (options?.method) {
       if (saveError) throw new Error('Truyện đã thay đổi')
-      return { story: { id: story.id, status: 'published', version: 9 } }
+      return { story: { id: story.id, status, version: 9 } }
     }
     if (path === '/catalog/categories') return { items: [{ id: 'category-id', name: 'Kỳ ảo' }] }
     if (path.endsWith(story.id)) {
       if (blocked) throw new Error('Không còn đủ điều kiện cựu Author')
-      return { story }
+      return { story: current }
     }
-    return { items: [story], total: 1, page: 1, pageSize: 20 }
+    return { items: [current], total: 1, page: 1, pageSize: 20 }
   })
   render(
     <LocaleProvider>
@@ -41,32 +42,35 @@ function setup({ saveError = false, blocked = false } = {}) {
     </LocaleProvider>,
   )
 }
-it('loads the frozen story and saves an explicit versioned correction with a reason', async () => {
-  setup()
-  await screen.findByText(story.title)
-  fireEvent.click(screen.getByRole('button', { name: 'Quản trị truyện' }))
-  await screen.findByLabelText('Tên truyện')
-  fireEvent.change(screen.getByLabelText('Tên truyện'), { target: { value: 'Tên đã sửa' } })
-  fireEvent.change(screen.getByLabelText('Lý do quản trị'), { target: { value: 'Sửa metadata' } })
-  expect((await screen.findByRole('combobox', { name: /Thể loại chính/ })).textContent).toContain(
-    'Kỳ ảo',
-  )
-  fireEvent.click(screen.getByRole('button', { name: 'Lưu sửa và công khai' }))
-  await waitFor(() =>
-    expect(
-      api.mock.calls.some(
-        ([path, options]) =>
-          path.endsWith(story.id) &&
-          options?.body?.expectedVersion === 8 &&
-          options.body.expectedPublishedRevisionId === 'source-revision' &&
-          options.body.title === 'Tên đã sửa' &&
-          options.body.reason === 'Sửa metadata' &&
-          options.body.categoryId === 'category-id',
-      ),
-    ).toBe(true),
-  )
-  await waitFor(() => expect(screen.queryByLabelText('Lý do quản trị')).toBeNull())
-})
+it.each(['published', 'unpublished'])(
+  'saves a correction and preserves status %s',
+  async status => {
+    setup({ status })
+    await screen.findByText(story.title)
+    fireEvent.click(screen.getByRole('button', { name: 'Quản trị truyện' }))
+    await screen.findByLabelText('Tên truyện')
+    fireEvent.change(screen.getByLabelText('Tên truyện'), { target: { value: 'Tên đã sửa' } })
+    fireEvent.change(screen.getByLabelText('Lý do quản trị'), { target: { value: 'Sửa metadata' } })
+    expect((await screen.findByRole('combobox', { name: /Thể loại chính/ })).textContent).toContain(
+      'Kỳ ảo',
+    )
+    fireEvent.click(screen.getByRole('button', { name: 'Lưu chỉnh sửa' }))
+    await waitFor(() =>
+      expect(
+        api.mock.calls.some(
+          ([path, options]) =>
+            path.endsWith(story.id) &&
+            options?.body?.expectedVersion === 8 &&
+            options.body.expectedPublishedRevisionId === 'source-revision' &&
+            options.body.title === 'Tên đã sửa' &&
+            options.body.reason === 'Sửa metadata' &&
+            options.body.categoryId === 'category-id',
+        ),
+      ).toBe(true),
+    )
+    await waitFor(() => expect(screen.queryByLabelText('Lý do quản trị')).toBeNull())
+  },
+)
 it('preserves the entered correction when the server refuses a stale write', async () => {
   setup({ saveError: true })
   await screen.findByText(story.title)
@@ -75,7 +79,7 @@ it('preserves the entered correction when the server refuses a stale write', asy
   fireEvent.change(screen.getByLabelText('Tên truyện'), { target: { value: 'Bản đang sửa' } })
   fireEvent.change(screen.getByLabelText('Lý do quản trị'), { target: { value: 'Lý do' } })
   await screen.findByRole('combobox', { name: /Thể loại chính/ })
-  fireEvent.click(screen.getByRole('button', { name: 'Lưu sửa và công khai' }))
+  fireEvent.click(screen.getByRole('button', { name: 'Lưu chỉnh sửa' }))
   expect((await screen.findByRole('alert')).textContent).toBe('Truyện đã thay đổi')
   expect(screen.getByLabelText('Tên truyện').value).toBe('Bản đang sửa')
 })
