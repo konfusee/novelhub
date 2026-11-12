@@ -12,6 +12,7 @@ import {
   RoleAssignment,
   Wallet,
   WithdrawalRequest,
+  Notification,
 } from '../src/models/index.js'
 import { runMonthlyPayouts } from '../src/modules/coins-payouts/finance/monthly-payout-worker.js'
 import { startMonthlyPayoutWorker } from '../src/modules/coins-payouts/finance/monthly-payout-worker.js'
@@ -114,6 +115,8 @@ it('automatically simulates once, with system audit and a persisted run', async 
   expect(result.transferReference).toMatch(/^SIM-AUTO-/)
   expect(result.actorAccountId).toBeUndefined()
   expect(await PayoutResultEntry.countDocuments()).toBe(1)
+  expect(await Notification.countDocuments({ eventType: 'monthly-payout.created' })).toBe(1)
+  expect(await Notification.countDocuments({ eventType: 'monthly-payout.Paid' })).toBe(1)
   expect(
     await AuditEvent.countDocuments({ actorType: 'system', action: 'monthly-payout.simulated' }),
   ).toBe(1)
