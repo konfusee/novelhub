@@ -60,12 +60,13 @@ async function visibleChapter(config, req) {
 
 async function storyViewer(account, storyId) {
   if (!account) return null
-  const [follow, rating, resume] = await Promise.all([
+  const [follow, rating, resume, listenResume] = await Promise.all([
     Follow.exists({ accountId: account._id, storyId, status: 'active' }),
     Rating.findOne({ accountId: account._id, storyId, status: 'active' }).select('value').lean(),
-    resumeFor(account, storyId),
+    resumeFor(account, storyId, 'text'),
+    resumeFor(account, storyId, 'audio'),
   ])
-  return { following: Boolean(follow), rating: rating?.value ?? null, resume }
+  return { following: Boolean(follow), rating: rating?.value ?? null, resume, listenResume }
 }
 
 export function createCatalogRouter(config) {
@@ -181,7 +182,7 @@ export function createCatalogRouter(config) {
                 ? latestComment.authorAccountId.displayName
                 : '',
         },
-        chapters: chapters.get(story.id).map(chapterListItem),
+        chapters: chapters.map(chapterListItem),
         viewer,
       })
     } catch (error) {
@@ -213,9 +214,17 @@ export function createCatalogRouter(config) {
         publishedChapterRows([chapter.storyId], new Date(), account?._id),
         Comment.countDocuments({ targetType: 'chapter', targetId: chapter._id, status: 'visible' }),
       ])
-      const rows = neighbours.get(String(chapter.storyId))
+      const rows = neighbours
       const link = row =>
-        row ? { id: row.id, orderKey: row.orderKey, title: row.title, locked: row.locked } : null
+        row
+          ? {
+              id: row.id,
+              orderKey: row.orderKey,
+              title: row.title,
+              locked: row.locked,
+              unlocked: Boolean(row.unlocked),
+            }
+          : null
       await recordChapterView({ req, res, config, account, chapter })
       res.json({
         chapter: {

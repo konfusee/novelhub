@@ -1,16 +1,17 @@
 import { Link } from 'react-router'
-import { BookOpen } from '../icons'
+import { BookOpen, Headphones } from '../icons'
 import { Badge, ButtonLink, Card, ProgressBar, Skeleton } from '../ui'
 import { StoryCover } from '../story/StoryCover'
 import { chapterLabel } from './chapterLabel'
-import { resumeHref, storyPercent } from './readerLinks'
+import { listenHref, resumeHref, storyPercent } from './readerLinks'
 import { ROUTES } from '../../app/routes'
 import { useLocale } from '../../context/LocaleContext'
 
 /* A story in progress (`LibraryItem` of GET /reader/library): saved chapter and story progress. */
 export function ContinueCard({ item }) {
   const { t } = useLocale()
-  const { story, resume } = item
+  const { story, resume, listenResume } = item
+  const listenTo = listenHref(story.id, listenResume)
   const percent = storyPercent(item)
   return (
     <Card as="article" className="flex flex-col p-4 sm:p-5">
@@ -34,7 +35,9 @@ export function ContinueCard({ item }) {
             {story.author}
           </p>
           <p className="mt-auto truncate pt-3 text-xs text-muted">
-            {resume ? chapterLabel(t, resume) : t('readerHome.notStarted')}
+            {resume || listenResume
+              ? chapterLabel(t, resume ?? listenResume)
+              : t('readerHome.notStarted')}
           </p>
           {resume?.contentUpdated && (
             <Badge tone="orange" className="mt-1.5 self-start">
@@ -57,10 +60,26 @@ export function ContinueCard({ item }) {
           </div>
         </div>
       </div>
-      <ButtonLink to={resumeHref(story.id, resume)} size="sm" className="mt-4 w-full">
-        <BookOpen size={15} />
-        {resume?.available === false ? t('readerHome.openStory') : t('readerHome.continueReading')}
-      </ButtonLink>
+      <div className="mt-4 flex flex-wrap gap-2">
+        <ButtonLink to={resumeHref(story.id, resume)} size="sm" className="min-w-0 flex-1">
+          <BookOpen size={15} />
+          {resume?.available === false
+            ? t('readerHome.openStory')
+            : t('readerHome.continueReading')}
+        </ButtonLink>
+        {listenTo && (
+          <ButtonLink
+            to={listenTo}
+            size="sm"
+            variant="secondary"
+            className="min-w-0 flex-1"
+            aria-label={`${t('readerHome.continueListening')}: ${story.title}`}
+          >
+            <Headphones size={15} aria-hidden="true" />
+            {t('readerHome.continueListening')}
+          </ButtonLink>
+        )}
+      </div>
     </Card>
   )
 }

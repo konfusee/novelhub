@@ -97,6 +97,16 @@ const envSchema = z.object({
     .enum(['true', 'false'])
     .default('false')
     .transform(value => value === 'true'),
+  VBEE_APP_ID: z.string().trim().min(1).max(200).optional(),
+  VBEE_TOKEN: z.string().trim().min(1).max(5000).optional(),
+  VBEE_VOICE_CODE: z
+    .string()
+    .trim()
+    .regex(/^[A-Za-z0-9_.-]+$/)
+    .default('hn_female_hermer_stor_48k-fhg'),
+  VBEE_API_URL: z.string().url().default('https://api.vbee.vn/v1'),
+  VBEE_TIMEOUT_MS: z.coerce.number().int().min(1000).max(120000).default(20000),
+  TTS_CALLBACK_URL: z.string().url().optional(),
   AI_BUDGET_USD: z.coerce.number().min(0).max(1000).default(3),
   AI_BUDGET_WINDOW_START: z
     .string()
@@ -143,9 +153,18 @@ export function loadEnv(source = process.env) {
     'AI_EVIDENCE_WORKER_ENABLED',
     'AI_BUDGET_USD',
     'AI_BUDGET_WINDOW_START',
+    'VBEE_APP_ID',
+    'VBEE_TOKEN',
+    'VBEE_VOICE_CODE',
+    'VBEE_API_URL',
+    'VBEE_TIMEOUT_MS',
+    'TTS_CALLBACK_URL',
   ]) {
     if (normalized[key] === '') delete normalized[key]
   }
+  const vbeeKeys = ['VBEE_APP_ID', 'VBEE_TOKEN']
+  if (vbeeKeys.some(key => normalized[key]) && !vbeeKeys.every(key => normalized[key]))
+    throw new Error('Invalid environment configuration: VBEE_APP_ID and VBEE_TOKEN go together')
   const result = envSchema.safeParse(normalized)
   if (!result.success) {
     const issues = result.error.issues.map(i => `${i.path.join('.')}: ${i.message}`).join('; ')
@@ -223,5 +242,18 @@ export function toAppConfig(env) {
       accountName: env.TOPUP_BANK_ACCOUNT_NAME,
     },
     sePayWebhookApiKey: env.SEPAY_WEBHOOK_API_KEY,
+    tts: {
+      vbee:
+        env.VBEE_APP_ID && env.VBEE_TOKEN
+          ? {
+              appId: env.VBEE_APP_ID,
+              token: env.VBEE_TOKEN,
+              apiUrl: env.VBEE_API_URL,
+              timeoutMs: env.VBEE_TIMEOUT_MS,
+            }
+          : undefined,
+      voiceCode: env.VBEE_VOICE_CODE,
+      callbackUrl: env.TTS_CALLBACK_URL ?? new URL('/api/tts/vbee/callback', env.FRONTEND_URL).href,
+    },
   }
 }

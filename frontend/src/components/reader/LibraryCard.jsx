@@ -1,9 +1,9 @@
 import { Link } from 'react-router'
-import { BellOff, BookOpen } from '../icons'
+import { BellOff, BookOpen, Headphones } from '../icons'
 import { Badge, Button, ButtonLink, Card, ProgressBar, Skeleton } from '../ui'
 import { StoryCover } from '../story/StoryCover'
 import { chapterLabel } from './chapterLabel'
-import { formatWhen, resumeHref, storyPercent } from './readerLinks'
+import { formatWhen, listenHref, resumeHref, storyPercent } from './readerLinks'
 import { ROUTES } from '../../app/routes'
 import { useLocale } from '../../context/LocaleContext'
 
@@ -26,11 +26,29 @@ function ItemBadges({ item, t }) {
 /* One `LibraryItem` of GET /reader/library: progress, resume link and unfollow. */
 export function LibraryCard({ item, view = 'grid', onUnfollow, busy = false }) {
   const { t } = useLocale()
-  const { story, resume } = item
+  const { story, resume, listenResume } = item
   const href = resumeHref(story.id, resume)
+  const listenTo = listenHref(story.id, listenResume)
   const percent = storyPercent(item)
   const actionLabel = resume?.available ? t('library.continue') : t('library.openStory')
-  const chapter = resume ? chapterLabel(t, resume) : t('library.notStarted')
+  const listenLabel = t('library.continueListening')
+  const chapter = resume
+    ? chapterLabel(t, resume)
+    : listenResume
+      ? chapterLabel(t, listenResume)
+      : t('library.notStarted')
+  const listen = listenTo && (
+    <ButtonLink
+      to={listenTo}
+      size="sm"
+      variant="secondary"
+      aria-label={`${listenLabel}: ${story.title}`}
+      title={chapterLabel(t, listenResume)}
+    >
+      <Headphones size={14} aria-hidden="true" />
+      <span className="hidden sm:inline">{listenLabel}</span>
+    </ButtonLink>
+  )
   const progress = (
     <div className="flex items-center gap-3">
       <ProgressBar
@@ -91,6 +109,7 @@ export function LibraryCard({ item, view = 'grid', onUnfollow, busy = false }) {
         </div>
         <div className="flex shrink-0 flex-col items-end gap-1 sm:flex-row sm:items-center">
           {unfollow}
+          {listen}
           <ButtonLink to={href} size="sm" aria-label={`${actionLabel}: ${story.title}`}>
             <BookOpen size={14} aria-hidden="true" />
             <span className="hidden sm:inline">{actionLabel}</span>
@@ -119,9 +138,12 @@ export function LibraryCard({ item, view = 'grid', onUnfollow, busy = false }) {
       </div>
       <div className="mt-auto flex flex-wrap items-center justify-between gap-2 border-t border-hairline pt-2">
         {unfollow || <span />}
-        <ButtonLink to={href} size="sm" aria-label={`${actionLabel}: ${story.title}`}>
-          {actionLabel}
-        </ButtonLink>
+        <span className="flex flex-wrap items-center justify-end gap-2">
+          {listen}
+          <ButtonLink to={href} size="sm" aria-label={`${actionLabel}: ${story.title}`}>
+            {actionLabel}
+          </ButtonLink>
+        </span>
       </div>
     </Card>
   )

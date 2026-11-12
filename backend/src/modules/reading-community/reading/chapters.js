@@ -43,12 +43,15 @@ export async function publishedChapterRows(storyIds, now = new Date(), accountId
       String(revision.storyId) !== String(chapter.storyId)
     )
       continue
-    const locked = earlyAccessActive(chapter, now) && !owned.has(String(chapter._id))
+    const active = earlyAccessActive(chapter, now)
+    const unlocked = active && owned.has(String(chapter._id))
+    const locked = active && !unlocked
     rows.get(String(chapter.storyId))?.push({
       id: String(chapter._id),
       title: revision.content?.title ?? '',
       orderKey: chapter.orderKey,
       locked,
+      unlocked,
       publishedAt: chapter.publishedAt ?? null,
       earlyAccess: locked
         ? {

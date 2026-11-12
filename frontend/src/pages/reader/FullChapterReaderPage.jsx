@@ -14,6 +14,7 @@ import {
   Copy,
   Flag,
   Focus,
+  Headphones,
   Highlighter,
   Info,
   List,
@@ -43,6 +44,7 @@ import { ReaderRange, ReaderSettings } from '../../components/reader/ReaderSetti
 import { ChapterSegment } from '../../components/reader/ChapterSegment'
 import { chapterLabel } from '../../components/reader/chapterLabel'
 import { ChapterInlineText } from '../../components/reader/ChapterInlineText'
+import { ReadListenSwitch } from '../../components/reader/ReadListenSwitch'
 import { useChapterSwipe } from '../../components/reader/useChapterSwipe'
 import {
   DEFAULT_CHAPTER_MODE,
@@ -111,6 +113,9 @@ const freshView = (id, direction = null, jump = 0) => ({
   jump,
 })
 
+const TOOL_CLASS =
+  'grid size-9 shrink-0 place-items-center rounded-full text-xs font-semibold transition-[background-color,color,transform] duration-200 active:scale-[0.96] disabled:pointer-events-none disabled:opacity-40 pointer-coarse:size-11'
+
 function ToolButton({ active, label, children, onClick, disabled, className = '' }) {
   return (
     <button
@@ -120,10 +125,25 @@ function ToolButton({ active, label, children, onClick, disabled, className = ''
       aria-pressed={active === undefined ? undefined : active}
       disabled={disabled}
       onClick={onClick}
-      className={`grid size-9 shrink-0 place-items-center rounded-full text-xs font-semibold transition-[background-color,color,transform] duration-200 active:scale-[0.96] disabled:pointer-events-none disabled:opacity-40 pointer-coarse:size-11 ${active ? 'bg-brand text-on-brand' : 'text-ink/70 hover:bg-ink/6 hover:text-ink'} ${className}`}
+      className={`${TOOL_CLASS} ${active ? 'bg-brand text-on-brand' : 'text-ink/70 hover:bg-ink/6 hover:text-ink'} ${className}`}
     >
       {children}
     </button>
+  )
+}
+
+/* Same chapter in the audio player: a link (navigation), styled like the toolbar buttons. */
+function ListenToolLink({ to, t, className = '' }) {
+  const label = t('reader.listenChapter')
+  return (
+    <Link
+      to={to}
+      title={label}
+      aria-label={label}
+      className={`${TOOL_CLASS} text-ink/70 hover:bg-ink/6 hover:text-ink ${className}`}
+    >
+      <Headphones size={16} aria-hidden="true" />
+    </Link>
   )
 }
 
@@ -147,6 +167,7 @@ function ReaderToolbar({
   openReport,
   commentCount,
   interactive,
+  listenTo,
   t,
 }) {
   const fontIndex = READER_FONT_SIZES.indexOf(settings.fontSize)
@@ -213,6 +234,7 @@ function ReaderToolbar({
           <ToolButton label={t('reader.chapters')} onClick={openChapters}>
             <List size={17} />
           </ToolButton>
+          <ListenToolLink to={listenTo} t={t} />
           <ToolButton
             label={t('reader.commentsCount', { count: commentCount })}
             disabled={!interactive}
@@ -343,6 +365,8 @@ function ReaderToolbar({
             <ToolButton label={t('reader.chapters')} onClick={openChapters}>
               <List size={17} />
             </ToolButton>
+            {/* Phones switch to listening from the "Đọc | Nghe" control in the chapter header. */}
+            <ListenToolLink to={listenTo} t={t} className="max-sm:hidden" />
             <ToolButton
               label={t('reader.commentsCount', { count: commentCount })}
               disabled={!interactive}
@@ -403,7 +427,7 @@ function StoryEndCard({ story, viewer, total, onFollowChange, t }) {
   )
 }
 
-/* A neighbouring chapter in early access: shown as a lock instead of a link into an error. */
+/* The next chapter is in early access and not unlocked by this Reader: open it to unlock. */
 function LockedChapterCard({ link, storyId, t }) {
   return (
     <Card className="mx-4 mt-10 sm:mx-6">
@@ -413,9 +437,14 @@ function LockedChapterCard({ link, storyId, t }) {
         title={t('reader.lockedTitle', { chapter: chapterLabel(t, link) })}
         description={t('reader.lockedDescription')}
         action={
-          <ButtonLink variant="secondary" size="sm" to={ROUTES.story(storyId)}>
-            {t('reader.backToStory')}
-          </ButtonLink>
+          <div className="flex flex-wrap justify-center gap-2">
+            <ButtonLink size="sm" to={ROUTES.read(storyId, link.id)}>
+              {t('reader.openToUnlock')}
+            </ButtonLink>
+            <ButtonLink variant="secondary" size="sm" to={ROUTES.story(storyId)}>
+              {t('reader.backToStory')}
+            </ButtonLink>
+          </div>
         }
         className="py-8"
       />
@@ -423,30 +452,30 @@ function LockedChapterCard({ link, storyId, t }) {
   )
 }
 
+/* A locked neighbour still opens: its page shows the unlock prompt instead of the text. */
 function NeighbourLink({ link, direction, storyId, onNavigate, t }) {
   if (!link) return <span aria-hidden="true" />
   const next = direction === 'next'
-  if (link.locked)
-    return (
-      <p
-        title={t('reader.lockedDescription')}
-        className="flex min-h-[3.125rem] items-center justify-center gap-2 rounded-full border border-dashed border-line px-5 text-sm text-muted"
-      >
-        <LockKeyhole size={15} aria-hidden="true" />
-        {t(next ? 'reader.nextLocked' : 'reader.previousLocked')}
-      </p>
-    )
   return (
     <ButtonLink
-      variant={next ? 'primary' : 'secondary'}
+      variant={next && !link.locked ? 'primary' : 'secondary'}
       size="lg"
       className="min-h-[3.125rem] py-1.5"
       to={ROUTES.read(storyId, link.id)}
-      trailingIcon={next ? ArrowRight : undefined}
+      trailingIcon={next && !link.locked ? ArrowRight : undefined}
       onClick={onNavigate}
     >
       {!next && <ArrowLeft size={16} aria-hidden="true" />}
-      {t(next ? 'reader.next' : 'reader.previous')}
+      {link.locked && <LockKeyhole size={15} aria-hidden="true" />}
+      {t(
+        link.locked
+          ? next
+            ? 'reader.nextLocked'
+            : 'reader.previousLocked'
+          : next
+            ? 'reader.next'
+            : 'reader.previous',
+      )}
     </ButtonLink>
   )
 }
@@ -543,8 +572,8 @@ export function FullChapterReaderPage() {
   const endStory = story && followState ? { ...story, followers: followState.followers } : story
   const chapterKey = `${storyId}-${currentChapter?.id ?? current}`
   const { prev: prevLink, next: nextLink } = neighboursOf(current)
-  const canPrev = Boolean(prevLink && !prevLink.locked)
-  const canNext = Boolean(nextLink && !nextLink.locked)
+  const canPrev = Boolean(prevLink)
+  const canNext = Boolean(nextLink)
 
   const [progress, setProgress] = useState(0)
   const [bookmarks, setBookmarks] = useState(() => readStored(BOOKMARK_KEY, []))
@@ -678,7 +707,7 @@ export function FullChapterReaderPage() {
     setHintSeen(true)
   }, [])
   const goToChapter = link => {
-    if (!link || link.locked || link.id === current) return
+    if (!link || link.id === current) return
     setSelection(null)
     if (mode === 'swipe') dismissHint()
     navigate(ROUTES.read(storyId, link.id))
@@ -895,7 +924,7 @@ export function FullChapterReaderPage() {
         return
       }
       const target = event.key === 'ArrowRight' ? nextLink : prevLink
-      if (!target || target.locked) return
+      if (!target) return
       event.preventDefault()
       setSelection(null)
       if (mode === 'swipe') dismissHint()
@@ -1114,13 +1143,16 @@ export function FullChapterReaderPage() {
         </p>
         <header className="px-4 pb-5 pt-6 sm:px-6 sm:pt-8">
           <div className="mx-auto max-w-[1100px] px-1">
-            <Link
-              to={ROUTES.library}
-              className="inline-flex min-h-9 items-center gap-2 rounded-full text-sm text-ink/70 transition-colors hover:text-brand-strong"
-            >
-              <ArrowLeft size={15} aria-hidden="true" />
-              {t('reader.back')}
-            </Link>
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <Link
+                to={ROUTES.library}
+                className="inline-flex min-h-9 items-center gap-2 rounded-full text-sm text-ink/70 transition-colors hover:text-brand-strong"
+              >
+                <ArrowLeft size={15} aria-hidden="true" />
+                {t('reader.back')}
+              </Link>
+              <ReadListenSwitch storyId={storyId} chapterId={activeChapterId} mode="read" />
+            </div>
             <div
               key={headerId}
               className={headerEnter ? `nh-chapter-enter-${headerEnter}` : undefined}
@@ -1156,6 +1188,7 @@ export function FullChapterReaderPage() {
           openReport={() => currentChapter && setReportTarget(currentChapter.id)}
           commentCount={currentChapter?.commentCount ?? 0}
           interactive={Boolean(currentChapter)}
+          listenTo={ROUTES.listen(storyId, activeChapterId)}
           focus={focus}
           toggleFocus={() => setFocus(value => !value)}
           t={t}

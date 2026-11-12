@@ -443,30 +443,6 @@ function AppRoutes() {
             element={<Navigate to="/reader/settings/privacy" replace />}
           />
           <Route path="/reader/wallet" element={role('reader', <WalletPage />)} />
-          <Route
-            path="/reader/audiobooks"
-            element={role(
-              'reader',
-              <RoleUtilityPage
-                role="reader"
-                eyebrow="Nghe truyện"
-                title="Sách nói của tôi"
-                description="Tiếp tục nghe, quản lý âm thanh đã tải và xem hàng đợi thuyết minh đã lưu."
-              />,
-            )}
-          />
-          <Route
-            path="/reader/messages"
-            element={role(
-              'reader',
-              <RoleUtilityPage
-                role="reader"
-                eyebrow="Cộng đồng"
-                title="Tin nhắn"
-                description="Theo dõi thông báo từ tác giả, câu lạc bộ đọc sách và thảo luận về truyện yêu thích."
-              />,
-            )}
-          />
           <Route path="/reader/settings" element={role('reader', <ReaderProfilePage />)} />
           <Route path="/reader/settings/reading" element={role('reader', <ReaderProfilePage />)} />
           <Route

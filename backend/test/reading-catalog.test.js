@@ -1,7 +1,14 @@
 import request from 'supertest'
 import { describe, expect, it } from 'vitest'
 import { createApp } from '../src/app.js'
-import { Category, Follow, StatisticsEvent, Story } from '../src/models/index.js'
+import {
+  Category,
+  Chapter,
+  Follow,
+  StatisticsEvent,
+  Story,
+  UnlockEntitlement,
+} from '../src/models/index.js'
 import { authenticatedAccount } from './fixtures/accounts.js'
 import { readingClient, origin } from './fixtures/reading.js'
 import { testConfig } from './config.js'
@@ -181,4 +188,45 @@ describe('catalogue discovery', () => {
 it('rejects anonymous access to reader endpoints', async () => {
   for (const url of ['/api/reader/library', '/api/reader/history'])
     expect((await request(app).get(url)).status).toBe(401)
+})
+
+it('shows an unlocked early-access chapter as readable only to the Reader who bought it', async () => {
+  const { author, storyId } = await api.publishStory()
+  const first = await api.publishChapter(author, storyId, 'Một')
+  const second = await api.publishChapter(author, storyId, 'Hai')
+  const endsAt = new Date(Date.now() + 86400000)
+  await Chapter.updateOne(
+    { _id: second },
+    { $set: { earlyAccess: { enabled: true, endsAt, coinPrice: 1000 } } },
+  )
+  const live = await Chapter.findById(second).lean()
+  const buyer = await authenticatedAccount()
+  const other = await authenticatedAccount()
+  await UnlockEntitlement.create({
+    accountId: buyer.account._id,
+    storyId,
+    chapterId: second,
+    publishedRevisionId: live.publishedRevisionId,
+    status: 'active',
+    purchasedAt: new Date(),
+    expiresAt: endsAt,
+    priceCoins: 1000,
+  })
+
+  const listed = async reader =>
+    (await api.get(reader?.cookie, `/api/catalog/stories/${storyId}`)).body.chapters.find(
+      chapter => chapter.id === second,
+    )
+  expect(await listed(buyer)).toMatchObject({ locked: false, unlocked: true })
+  expect(await listed(other)).toMatchObject({ locked: true, earlyAccess: { coinPrice: 1000 } })
+  expect(await listed(null)).toMatchObject({ locked: true })
+
+  const next = async reader =>
+    (await api.get(reader.cookie, `/api/catalog/stories/${storyId}/chapters/${first}`)).body.chapter
+      .next
+  expect(await next(buyer)).toMatchObject({ id: second, locked: false, unlocked: true })
+  expect(await next(other)).toMatchObject({ id: second, locked: true, unlocked: false })
+  const opened = await api.get(buyer.cookie, `/api/catalog/stories/${storyId}/chapters/${second}`)
+  expect(opened.status).toBe(200)
+  expect(opened.body.chapter.prev).toMatchObject({ id: first, locked: false })
 })

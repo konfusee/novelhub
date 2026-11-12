@@ -29,6 +29,7 @@ import { createReaderUnlocksRouter } from './routes/reader-unlocks.routes.js'
 import { createModeratorRouter } from './routes/moderator.routes.js'
 import { createModeratorDashboardRouter } from './routes/moderator-dashboard.routes.js'
 import { createReaderReadingRouter } from './routes/reader-reading.routes.js'
+import { createReaderNarrationRouter } from './routes/reader-narration.routes.js'
 import { createCommunityRouter } from './routes/community.routes.js'
 import { createModeratorReportsRouter } from './routes/moderator-reports.routes.js'
 import { createAuthorEarningsRouter } from './routes/author-earnings.routes.js'
@@ -99,6 +100,7 @@ export function createApp(config) {
   app.use('/api', createModeratorRouter(config))
   app.use('/api', createModeratorDashboardRouter(config))
   app.use('/api', createReaderReadingRouter(config))
+  app.use('/api', createReaderNarrationRouter(config))
   app.use('/api', createCommunityRouter(config))
   app.use('/api', createModeratorReportsRouter(config))
   app.use('/api', createAuthorEarningsRouter(config))
