@@ -3,12 +3,90 @@ import {
   Comment,
   ContentRevision,
   Follow,
+  LedgerEntry,
   Rating,
   StatisticsEvent,
   Story,
+  UnlockEntitlement,
+  UnlockRequest,
+  Wallet,
 } from '../../../models/index.js'
 import { chapterTextProjection } from '../content/rich-chapter-document.js'
-export async function authorDashboard(accountId) {
+const DAY_MS = 86400000
+const vietnameseDay = value =>
+  new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Ho_Chi_Minh' }).format(value)
+const dateWindow = (days, now = new Date()) => {
+  const today = vietnameseDay(now)
+  const end = new Date(`${today}T00:00:00+07:00`)
+  const start = new Date(end.getTime() - (days - 1) * DAY_MS)
+  return {
+    days,
+    today,
+    start,
+    end: new Date(end.getTime() + DAY_MS),
+    startDay: vietnameseDay(start),
+    endDay: vietnameseDay(new Date(end.getTime() - 1)),
+  }
+}
+
+async function revenueForStories(accountId, storyIds, chapterIds, from, to) {
+  if (!storyIds.length || !chapterIds.length) return { total: 0, unlocks: 0, byStory: new Map() }
+  const wallet = await Wallet.findOne({
+    ownerType: 'account',
+    ownerId: accountId,
+    purpose: 'author-earnings',
+  })
+    .select('_id')
+    .lean()
+  if (!wallet) return { total: 0, unlocks: 0, byStory: new Map() }
+  const rows = await LedgerEntry.aggregate([
+    {
+      $match: {
+        walletId: wallet._id,
+        ledgerType: 'allocation-credit',
+        direction: 'credit',
+        sourceType: 'UnlockRequest',
+        occurredAt: { $gte: from, $lt: to },
+      },
+    },
+    {
+      $lookup: {
+        from: UnlockRequest.collection.name,
+        localField: 'sourceId',
+        foreignField: '_id',
+        as: 'request',
+      },
+    },
+    { $unwind: '$request' },
+    { $match: { 'request.chapterId': { $in: chapterIds }, 'request.status': 'committed' } },
+    {
+      $lookup: {
+        from: Chapter.collection.name,
+        localField: 'request.chapterId',
+        foreignField: '_id',
+        as: 'chapter',
+      },
+    },
+    { $unwind: '$chapter' },
+    {
+      $group: {
+        _id: '$chapter.storyId',
+        amount: { $sum: '$amount' },
+        unlocks: { $sum: 1 },
+      },
+    },
+  ])
+  const byStory = new Map(
+    rows.map(row => [String(row._id), { amount: row.amount, unlocks: row.unlocks }]),
+  )
+  return {
+    total: rows.reduce((sum, row) => sum + row.amount, 0),
+    unlocks: rows.reduce((sum, row) => sum + row.unlocks, 0),
+    byStory,
+  }
+}
+
+export async function authorDashboard(accountId, { days = 7 } = {}, now = new Date()) {
   const stories = await Story.find({
     authorAccountId: accountId,
   })
@@ -18,7 +96,18 @@ export async function authorDashboard(accountId) {
     })
     .lean()
   const ids = stories.map(story => story._id)
-  const [chapters, views, ratings, followers, feedback, feedbackTotal] = await Promise.all([
+  const windows = [dateWindow(1, now), dateWindow(7, now), dateWindow(30, now)]
+  const selectedWindow = dateWindow(days, now)
+  const [
+    chapters,
+    views,
+    ratings,
+    followers,
+    feedback,
+    feedbackTotal,
+    selectedViews,
+    selectedUnlocks,
+  ] = await Promise.all([
     Chapter.find({
       storyId: {
         $in: ids,
@@ -99,7 +188,29 @@ export async function authorDashboard(accountId) {
       parentCommentId: null,
       status: 'visible',
     }),
+    StatisticsEvent.aggregate([
+      {
+        $match: {
+          storyId: { $in: ids },
+          eventType: 'view',
+          day: { $gte: selectedWindow.startDay, $lte: selectedWindow.endDay },
+        },
+      },
+      { $group: { _id: '$storyId', count: { $sum: 1 } } },
+    ]),
+    UnlockEntitlement.countDocuments({
+      storyId: { $in: ids },
+      status: { $in: ['active', 'expired', 'revoked'] },
+      purchasedAt: { $gte: selectedWindow.start, $lt: selectedWindow.end },
+    }),
   ])
+  const selectedComments = await Comment.countDocuments({
+    $or: [
+      { targetType: 'story', targetId: { $in: ids } },
+      { targetType: 'chapter', targetId: { $in: chapters.map(chapter => chapter._id) } },
+    ],
+    createdAt: { $gte: selectedWindow.start, $lt: selectedWindow.end },
+  })
   const editable = new Set(
     stories
       .filter(
@@ -148,12 +259,57 @@ export async function authorDashboard(accountId) {
       },
     ]
   })
+  const chapterIds = chapters.map(chapter => chapter._id)
+  const revenueByWindow = await Promise.all(
+    windows.map(window => revenueForStories(accountId, ids, chapterIds, window.start, window.end)),
+  )
+  const selectedRevenue = await revenueForStories(
+    accountId,
+    ids,
+    chapterIds,
+    selectedWindow.start,
+    selectedWindow.end,
+  )
+  const selectedViewByStory = new Map(selectedViews.map(row => [String(row._id), row.count]))
+  const storyRows = stories
+    .map(story => {
+      const revenue = selectedRevenue.byStory.get(String(story._id)) ?? { amount: 0, unlocks: 0 }
+      return {
+        id: String(story._id),
+        title: story.title,
+        earnings: revenue.amount,
+        unlocks: revenue.unlocks,
+        views: selectedViewByStory.get(String(story._id)) ?? 0,
+        rating: ratings.find(item => item._id.equals(story._id))?.average ?? null,
+      }
+    })
+    .sort(
+      (a, b) => b.earnings - a.earnings || b.views - a.views || (b.rating ?? 0) - (a.rating ?? 0),
+    )
+    .map((story, index, list) => ({ ...story, rank: index + 1, rankTotal: list.length }))
   return {
     stats: {
       views: views.reduce((sum, row) => sum + row.count, 0),
       audioPlays: null,
       followers: followers.length,
+      periodViews: selectedViews.reduce((sum, row) => sum + row.count, 0),
+      periodUnlocks: selectedUnlocks,
+      periodComments: selectedComments,
+      periodEarnings: selectedRevenue.total,
     },
+    period: {
+      days: selectedWindow.days,
+      start: selectedWindow.startDay,
+      end: selectedWindow.endDay,
+    },
+    revenue: {
+      selected: selectedRevenue.total,
+      today: revenueByWindow[0].total,
+      week: revenueByWindow[1].total,
+      month: revenueByWindow[2].total,
+      selectedUnlocks: selectedRevenue.unlocks,
+    },
+    storyRankings: storyRows,
     stories: stories.map(story => ({
       id: String(story._id),
       title: story.title,
@@ -161,6 +317,8 @@ export async function authorDashboard(accountId) {
       chapters: chapters.filter(chapter => chapter.storyId.equals(story._id)).length,
       reads: String(views.find(item => item._id.equals(story._id))?.count ?? 0),
       rating: ratings.find(item => item._id.equals(story._id))?.average?.toFixed(1) ?? '—',
+      earnings: storyRows.find(item => item.id === String(story._id))?.earnings ?? 0,
+      periodViews: selectedViewByStory.get(String(story._id)) ?? 0,
     })),
     drafts: validDrafts.slice(0, 2),
     draftCount: validDrafts.length,

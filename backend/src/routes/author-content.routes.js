@@ -73,6 +73,7 @@ const authorCommentQuery = z
   .object({
     page: z.coerce.number().int().min(1).max(100000).default(1),
     storyId: objectId.optional(),
+    chapterId: objectId.optional(),
     targetType: z.enum(['story', 'chapter']).optional(),
     status: authorCommentStatus.optional(),
   })
@@ -130,7 +131,20 @@ export function createAuthorContentRouter(config) {
     requireRole('author'),
     async (req, res, next) => {
       try {
-        res.json(await authorDashboard(req.account._id))
+        const query = parse(
+          z
+            .object({
+              days: z.coerce
+                .number()
+                .pipe(z.union([z.literal(1), z.literal(7), z.literal(30)]))
+                .default(7),
+            })
+            .strict(),
+          req.query,
+        )
+        res
+          .set('Cache-Control', 'private, no-store')
+          .json(await authorDashboard(req.account._id, query))
       } catch (error) {
         next(error)
       }
@@ -158,15 +172,13 @@ export function createAuthorContentRouter(config) {
       try {
         if (!objectId.safeParse(req.params.commentId).success)
           throw new HttpError(400, 'validation_error', 'ID bình luận không hợp lệ.')
-        res
-          .status(201)
-          .json({
-            reply: await replyToAuthorComment(
-              req,
-              req.params.commentId,
-              parse(authorCommentReply, req.body),
-            ),
-          })
+        res.status(201).json({
+          reply: await replyToAuthorComment(
+            req,
+            req.params.commentId,
+            parse(authorCommentReply, req.body),
+          ),
+        })
       } catch (error) {
         next(error)
       }

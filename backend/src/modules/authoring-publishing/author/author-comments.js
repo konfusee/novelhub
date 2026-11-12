@@ -24,11 +24,11 @@ async function ownedTargets(accountId, storyId) {
   return { stories, chapters }
 }
 
-function targetFilter(stories, chapters, targetType) {
+function targetFilter(stories, chapters, targetType, chapterId) {
   const filters = []
-  if (!targetType || targetType === 'story')
+  if (!chapterId && (!targetType || targetType === 'story'))
     filters.push({ targetType: 'story', targetId: { $in: stories.map(story => story._id) } })
-  if (!targetType || targetType === 'chapter')
+  if (chapterId || !targetType || targetType === 'chapter')
     filters.push({ targetType: 'chapter', targetId: { $in: chapters.map(chapter => chapter._id) } })
   return { $or: filters }
 }
@@ -38,15 +38,20 @@ function publicAuthor(author) {
   return author.displayName || 'Độc giả'
 }
 
-export async function authorCommentList(accountId, { page = 1, storyId, targetType, status } = {}) {
+export async function authorCommentList(
+  accountId,
+  { page = 1, storyId, chapterId, targetType, status } = {},
+) {
   const { stories: allStories, chapters: allChapters } = await ownedTargets(accountId)
   const stories = storyId
     ? allStories.filter(story => String(story._id) === String(storyId))
     : allStories
-  const chapters = storyId
-    ? allChapters.filter(chapter => stories.some(story => story._id.equals(chapter.storyId)))
-    : allChapters
-  const base = targetFilter(stories, chapters, targetType)
+  const chapters = allChapters.filter(
+    chapter =>
+      (!storyId || stories.some(story => story._id.equals(chapter.storyId))) &&
+      (!chapterId || String(chapter._id) === String(chapterId)),
+  )
+  const base = targetFilter(stories, chapters, targetType, chapterId)
   if (status && statuses.has(status)) base.status = status
   base.parentCommentId = null
   const [total, roots] = await Promise.all([
@@ -105,6 +110,11 @@ export async function authorCommentList(accountId, { page = 1, storyId, targetTy
       replies: repliesByParent.get(String(root._id)) ?? [],
     })),
     stories: allStories.map(story => ({ id: String(story._id), title: story.title })),
+    chapters: allChapters.map(chapter => ({
+      id: String(chapter._id),
+      storyId: String(chapter.storyId),
+      title: chapter.title,
+    })),
     total,
     page,
     pageCount: Math.max(1, Math.ceil(total / PAGE_SIZE)),

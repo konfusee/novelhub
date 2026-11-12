@@ -3,6 +3,7 @@ import {
   AlertTriangle,
   ArrowRight,
   BookOpen,
+  Coins,
   Edit3,
   Eye,
   Flame,
@@ -14,6 +15,7 @@ import {
   Send,
   Star,
   Target,
+  Trophy,
   UsersRound,
 } from '../../components/icons'
 import { AuthorLayout } from '../../layouts'
@@ -60,6 +62,11 @@ const statMeta = [
     tone: 'brand',
   },
 ]
+const dashboardPeriods = [
+  { value: 1, label: 'Hôm nay' },
+  { value: 7, label: '7 ngày' },
+  { value: 30, label: '30 ngày' },
+]
 const iconTone = {
   brand: 'bg-brand/12 text-brand-strong',
   orange: 'bg-orange/16 text-orange-strong',
@@ -88,7 +95,8 @@ const statusFilter = {
 }
 export function AuthorDashboardPage() {
   const { t, formatNumber } = useLocale()
-  const dashboard = useBackendDocument('/author/dashboard', emptyDashboard)
+  const [period, setPeriod] = useState(7)
+  const dashboard = useBackendDocument(`/author/dashboard?days=${period}`, emptyDashboard)
   const stats = {
     ...dashboard,
     data: [
@@ -115,6 +123,16 @@ export function AuthorDashboardPage() {
   const stories = storiesResource.data
   const shown = stories.filter(story => filter === 'all' || statusFilter[story.status] === filter)
   const drafting = dashboard.data.drafts
+  const periodLabel = dashboardPeriods.find(item => item.value === period)?.label ?? '7 ngày'
+  const revenue = dashboard.data.revenue ?? {
+    selected: 0,
+    today: 0,
+    week: 0,
+    month: 0,
+    selectedUnlocks: 0,
+  }
+  const periodStats = dashboard.data.stats ?? {}
+  const rankings = dashboard.data.storyRankings ?? []
   const sendReply = async event => {
     event.preventDefault()
     const target = feedbackResource.data.find(item => item.id === replyTarget)
@@ -160,6 +178,32 @@ export function AuthorDashboardPage() {
             </ButtonLink>
           </div>
         </header>
+
+        <Card className="mt-5 flex flex-wrap items-center justify-between gap-3 bg-brand-soft">
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-[0.14em] text-brand-strong">
+              Hiệu suất nhanh
+            </p>
+            <p className="mt-1 text-sm text-muted">
+              Thu nhập, lượt đọc và tương tác trong {periodLabel.toLowerCase()}.
+            </p>
+          </div>
+          <label className="flex items-center gap-3 text-sm font-semibold">
+            Kỳ xem
+            <select
+              aria-label="Kỳ xem dashboard"
+              value={period}
+              onChange={event => setPeriod(Number(event.target.value))}
+              className="min-h-10 rounded-full border border-line bg-surface px-4 text-sm"
+            >
+              {dashboardPeriods.map(item => (
+                <option key={item.value} value={item.value}>
+                  {item.label}
+                </option>
+              ))}
+            </select>
+          </label>
+        </Card>
 
         {stats.status === 'loading' ? (
           <section
@@ -222,6 +266,38 @@ export function AuthorDashboardPage() {
                 </Card>
               )
             })}
+          </section>
+        )}
+
+        {stats.status === 'ready' && (
+          <section
+            className="nh-grid-12 nh-cols-2 nh-xl-cols-4 mt-5 grid gap-3 sm:gap-4"
+            aria-label="Chỉ số theo kỳ"
+          >
+            <MetricCard
+              icon={Coins}
+              label={`Thu nhập ${periodLabel.toLowerCase()}`}
+              value={`${formatNumber(revenue.selected)} xu`}
+              tone="orange"
+            />
+            <MetricCard
+              icon={Eye}
+              label={`Lượt đọc ${periodLabel.toLowerCase()}`}
+              value={formatNumber(periodStats.periodViews ?? 0)}
+              tone="brand"
+            />
+            <MetricCard
+              icon={BookOpen}
+              label="Lượt mở khóa"
+              value={formatNumber(periodStats.periodUnlocks ?? revenue.selectedUnlocks ?? 0)}
+              tone="purple"
+            />
+            <MetricCard
+              icon={MessageCircle}
+              label="Bình luận mới"
+              value={formatNumber(periodStats.periodComments ?? 0)}
+              tone="blue"
+            />
           </section>
         )}
 
@@ -295,6 +371,62 @@ export function AuthorDashboardPage() {
 
         <div className="nh-grid-12 mt-8 grid min-w-0 items-start gap-6 nh-layout-xl-8-4">
           <div className="min-w-0 space-y-6">
+            <Card>
+              <div className="flex flex-wrap items-start justify-between gap-3">
+                <div>
+                  <h2 className="text-h3">Thu nhập theo quyển</h2>
+                  <p className="mt-1 text-sm text-muted">
+                    Xếp theo xu ghi nhận trong {periodLabel.toLowerCase()}.
+                  </p>
+                </div>
+                <ButtonLink
+                  to="/author/earnings"
+                  variant="secondary"
+                  size="sm"
+                  trailingIcon={ArrowRight}
+                >
+                  Xem sổ thu nhập
+                </ButtonLink>
+              </div>
+              {rankings.length ? (
+                <div className="mt-4 overflow-x-auto">
+                  <table className="w-full min-w-[560px] text-left text-sm">
+                    <thead className="border-y border-hairline bg-elevated text-muted">
+                      <tr>
+                        <th className="px-3 py-3">Hạng</th>
+                        <th className="px-3 py-3">Tác phẩm</th>
+                        <th className="px-3 py-3 text-right">Thu nhập</th>
+                        <th className="px-3 py-3 text-right">Mở khóa</th>
+                        <th className="px-3 py-3 text-right">Lượt đọc</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-hairline">
+                      {rankings.slice(0, 5).map(item => (
+                        <tr key={item.id}>
+                          <td className="px-3 py-3 font-semibold text-orange-strong">
+                            #{item.rank}
+                          </td>
+                          <td className="max-w-[18rem] truncate px-3 py-3 font-semibold">
+                            {item.title}
+                          </td>
+                          <td className="px-3 py-3 text-right font-semibold tabular-nums">
+                            {formatNumber(item.earnings)} xu
+                          </td>
+                          <td className="px-3 py-3 text-right tabular-nums">
+                            {formatNumber(item.unlocks)}
+                          </td>
+                          <td className="px-3 py-3 text-right tabular-nums">
+                            {formatNumber(item.views)}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              ) : (
+                <p className="mt-5 text-sm text-muted">Chưa có thu nhập theo kỳ này.</p>
+              )}
+            </Card>
             <Card>
               <div className="flex flex-col items-start gap-4">
                 <div>
@@ -462,15 +594,49 @@ export function AuthorDashboardPage() {
 
           <aside className="min-w-0 space-y-6" aria-label="Phản hồi độc giả">
             <Card>
-              <div className="flex items-center justify-between gap-2">
+              <div className="flex items-center gap-3">
+                <span className="grid size-10 place-items-center rounded-2xl bg-orange/16 text-orange-strong">
+                  <Trophy size={18} />
+                </span>
+                <div>
+                  <h2 className="text-h3">Bảng xếp hạng tác phẩm</h2>
+                  <p className="text-xs text-muted">
+                    Theo thu nhập trong {periodLabel.toLowerCase()}
+                  </p>
+                </div>
+              </div>
+              <ol className="mt-4 space-y-3">
+                {rankings.slice(0, 3).map(item => (
+                  <li key={item.id} className="flex items-center gap-3 rounded-2xl bg-elevated p-3">
+                    <strong className="w-6 text-center text-orange-strong">{item.rank}</strong>
+                    <div className="min-w-0 flex-1">
+                      <p className="truncate text-sm font-semibold">{item.title}</p>
+                      <p className="text-xs text-muted">
+                        {formatNumber(item.earnings)} xu · {formatNumber(item.views)} lượt đọc
+                      </p>
+                    </div>
+                  </li>
+                ))}
+              </ol>
+              {!rankings.length && (
+                <p className="mt-4 text-sm text-muted">Chưa có tác phẩm đủ dữ liệu xếp hạng.</p>
+              )}
+            </Card>
+            <Card>
+              <div className="flex flex-wrap items-center justify-between gap-2">
                 <h2 className="text-h3">Phản hồi của độc giả</h2>
-                {feedbackResource.status === 'ready' && (
-                  <Badge tone="rose">
-                    {t('authorData.feedbackCount', {
-                      count: dashboard.data.feedbackTotal,
-                    })}
-                  </Badge>
-                )}
+                <div className="flex items-center gap-2">
+                  {feedbackResource.status === 'ready' && (
+                    <Badge tone="rose">
+                      {t('authorData.feedbackCount', {
+                        count: dashboard.data.feedbackTotal,
+                      })}
+                    </Badge>
+                  )}
+                  <ButtonLink to="/author/comments" variant="ghost" size="sm">
+                    Xem tất cả
+                  </ButtonLink>
+                </div>
               </div>
               {feedbackResource.status === 'loading' ? (
                 <ul aria-busy="true" aria-label="Đang tải phản hồi" className="mt-4 space-y-3">
@@ -635,6 +801,21 @@ function DraftCard({ story, chapter, written, primary = false }) {
           <Edit3 size={14} aria-hidden="true" />
           {primary ? 'Viết tiếp' : 'Mở bản nháp'}
         </ButtonLink>
+      </div>
+    </Card>
+  )
+}
+function MetricCard({ icon: Icon, label, value, tone = 'brand' }) {
+  return (
+    <Card className="flex items-center gap-3 p-4">
+      <span
+        className={`grid size-10 shrink-0 place-items-center rounded-2xl ${iconTone[tone] ?? iconTone.brand}`}
+      >
+        <Icon size={18} />
+      </span>
+      <div className="min-w-0">
+        <p className="truncate text-xs text-muted">{label}</p>
+        <p className="mt-1 text-xl font-bold tabular-nums">{value}</p>
       </div>
     </Card>
   )

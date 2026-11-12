@@ -2206,7 +2206,9 @@
     "deleteHint": "Bình luận sẽ được xóa mềm và không còn hiển thị với độc giả.",
     "confirmDelete": "Xác nhận xóa",
     "cancel": "Hủy",
-    "saveError": "Chưa lưu được thay đổi. Hãy thử lại."
+    "saveError": "Chưa lưu được thay đổi. Hãy thử lại.",
+    "sidebarTitle": "Phạm vi bình luận",
+    "sidebarHint": "Chọn truyện hoặc chương để xem và phản hồi đúng luồng bình luận."
   },
   "earningsData": {
     "description": "Theo dõi xu doanh thu được phân bổ theo kỳ và số dư ví tác giả. Các số liệu chưa có báo cáo được hiển thị riêng.",
