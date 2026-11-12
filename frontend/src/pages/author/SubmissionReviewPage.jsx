@@ -31,7 +31,7 @@ export function SubmissionReviewPage() {
   const status = params.get('status') || ''
   const targetType = params.get('targetType') || ''
   const feed = useBackendDocument(
-    `/author/submissions?page=${page}${storyId ? `&storyId=${encodeURIComponent(storyId)}` : ''}${status ? `&status=${encodeURIComponent(status)}` : ''}${targetType ? `&targetType=${targetType}` : ''}`,
+    `/author/submissions?page=${page}${storyId ? `&storyId=${encodeURIComponent(storyId)}` : ''}${chapterId ? `&chapterId=${encodeURIComponent(chapterId)}` : ''}${status ? `&status=${encodeURIComponent(status)}` : ''}${targetType ? `&targetType=${targetType}` : ''}`,
     emptyFeed,
   )
   const choose = (story, chapter = '') => {
@@ -47,6 +47,7 @@ export function SubmissionReviewPage() {
     setPage(1)
     setParams({
       ...(storyId ? { storyId } : {}),
+      ...(chapterId ? { chapterId } : {}),
       ...(status || next ? { status: next } : {}),
       ...(targetType ? { targetType } : {}),
     })
@@ -96,6 +97,7 @@ export function SubmissionReviewPage() {
               setPage(1)
               setParams({
                 ...(storyId ? { storyId } : {}),
+                ...(chapterId ? { chapterId } : {}),
                 ...(status ? { status } : {}),
                 ...(event.target.value ? { targetType: event.target.value } : {}),
               })
@@ -276,15 +278,18 @@ function SubmissionPackage({ storyId, chapterId, onSubmitted }) {
     (!licenceRequired || Boolean(shownNote.trim())) &&
     !sent
   const chapterMedia = Boolean(chapterId && data.target?.formatVersion === 'blocks-v3')
+  const richEditor = Boolean(
+    chapterId && ['blocks-v2', 'blocks-v3'].includes(data.target?.formatVersion),
+  )
   const back = chapterId
-    ? `/author/stories/${storyId}/chapters/${chapterId}/edit`
+    ? `/author/stories/${storyId}/chapters/${chapterId}/edit${richEditor ? '?mode=rich' : ''}`
     : `/author/stories/${storyId}`
   const fixes = {
     editable: { to: `/author/stories/${storyId}?tab=reviews`, label: 'status' },
     content: { to: chapterId ? back : `/author/stories/${storyId}?tab=details`, label: 'content' },
     categories: { to: `/author/stories/${storyId}?tab=details`, label: 'categories' },
     media: {
-      to: chapterMedia ? back : `/author/stories/${storyId}?tab=details`,
+      to: chapterMedia ? back : `/author/stories/${storyId}?tab=media`,
       label: chapterMedia ? 'chapterMedia' : 'media',
     },
     parent: { to: `/author/submissions?storyId=${encodeURIComponent(storyId)}`, label: 'parent' },
@@ -601,7 +606,7 @@ function SubmissionEntry({ item }) {
       if (!revision?.id || !revision.storyId) throw new Error(t('submissionData.reviseError'))
       navigate(
         revision.chapterId
-          ? `/author/stories/${revision.storyId}/chapters/${revision.chapterId}/edit`
+          ? `/author/stories/${revision.storyId}/chapters/${revision.chapterId}/edit${revision.formatVersion === 'blocks-v1' ? '' : '?mode=rich'}`
           : `/author/stories/${revision.storyId}`,
       )
     } catch (failure) {

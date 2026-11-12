@@ -45,8 +45,8 @@ const storyContent = z
 const markup = /<\/?[a-z][^>]*>|```|\*\*|__|!\[[^\]]*\]\(|^\s{0,3}(?:#{1,6}\s|>\s)/imu
 
 export function canReviseUnpublished(submission, target, revision, story) {
+  if (!submission?.chapterId || !target || !revision || !story) return false
   return Boolean(
-    submission.chapterId &&
     submission.status === 'approved' &&
     !story.authoringFrozen &&
     ['published', 'unpublished'].includes(story.publicationStatus) &&
@@ -61,8 +61,8 @@ export function canReviseUnpublished(submission, target, revision, story) {
 }
 
 export function canReviseApprovedUnreleased(submission, target, revision, story) {
+  if (!submission?.chapterId || !target || !revision || !story) return false
   return Boolean(
-    submission.chapterId &&
     submission.status === 'approved' &&
     !story.authoringFrozen &&
     story.publicationStatus !== 'archived' &&
@@ -502,10 +502,14 @@ export async function submitContent(account, input, config) {
     return { id: String(submissionId), status: 'validated', replayed: false }
   })
 }
-export async function submissionList(account, { page = 1, storyId, targetType, status } = {}) {
+export async function submissionList(
+  account,
+  { page = 1, storyId, chapterId, targetType, status } = {},
+) {
   const filter = {
     authorAccountId: account._id,
     ...(storyId ? { storyId } : {}),
+    ...(chapterId ? { chapterId } : {}),
     ...(targetType === 'story' ? { chapterId: null } : {}),
     ...(targetType === 'chapter' ? { chapterId: { $ne: null } } : {}),
     ...(status ? { status } : {}),
@@ -525,56 +529,66 @@ export async function submissionList(account, { page = 1, storyId, targetType, s
       .select('title authoringFrozen publicationStatus draftRevisionId currentRevisionId')
       .lean(),
   ])
-  const revisions = await ContentRevision.find({
-    _id: { $in: items.map(item => item.revisionId) },
-    authorAccountId: account._id,
-  })
-    .select('content.title revisionNumber status immutableAt')
-    .lean()
-  const chapters = await Chapter.find({
-    _id: { $in: items.map(item => item.chapterId).filter(Boolean) },
-    storyId: { $in: stories.map(story => story._id) },
-  })
-    .select('status publishedRevisionId draftRevisionId currentRevisionId storyId')
-    .lean()
+  const revisionIds = items.map(item => item.revisionId).filter(Boolean)
+  const chapterIds = items.map(item => item.chapterId).filter(Boolean)
+  const submissionIds = items.map(item => item._id).filter(Boolean)
+  const batchIds = items.map(item => item.currentEvidenceBatchId).filter(Boolean)
+  const [revisions, chapters, history, batches] = await Promise.all([
+    revisionIds.length
+      ? ContentRevision.find({ _id: { $in: revisionIds }, authorAccountId: account._id })
+          .select('content.title revisionNumber status immutableAt')
+          .lean()
+      : [],
+    chapterIds.length
+      ? Chapter.find({
+          _id: { $in: chapterIds },
+          storyId: { $in: stories.map(story => story._id) },
+        })
+          .select('status publishedRevisionId draftRevisionId currentRevisionId storyId')
+          .lean()
+      : [],
+    submissionIds.length
+      ? ModerationHistory.find({ submissionId: { $in: submissionIds } })
+          .sort({ occurredAt: -1, _id: -1 })
+          .select('submissionId action outcome feedback occurredAt')
+          .lean()
+      : [],
+    batchIds.length
+      ? EvidenceBatch.find({ _id: { $in: batchIds } })
+          .select('status failedStage')
+          .lean()
+      : [],
+  ])
+  const byId = (rows, id) =>
+    rows.find(row => row?._id && id && String(row._id) === String(id))
   const targetOf = item =>
     item.chapterId
-      ? chapters.find(chapter => chapter._id.equals(item.chapterId))
-      : stories.find(story => story._id.equals(item.storyId))
-  const currents = await ContentRevision.find({
-    _id: {
-      $in: items
-        .map(targetOf)
-        .filter(Boolean)
-        .map(target => target.draftRevisionId ?? target.currentRevisionId)
-        .filter(Boolean),
-    },
-    authorAccountId: account._id,
-  })
-    .select('parentRevisionId status immutableAt')
-    .lean()
-  const history = await ModerationHistory.find({
-    submissionId: { $in: items.map(item => item._id) },
-  })
-    .sort({ occurredAt: -1, _id: -1 })
-    .select('submissionId action outcome feedback occurredAt')
-    .lean()
-  const batches = await EvidenceBatch.find({
-    _id: { $in: items.map(item => item.currentEvidenceBatchId).filter(Boolean) },
-  })
-    .select('status failedStage')
-    .lean()
+      ? byId(chapters, item.chapterId)
+      : byId(stories, item.storyId)
+  const currentIds = items
+    .map(targetOf)
+    .filter(Boolean)
+    .map(target => target.draftRevisionId ?? target.currentRevisionId)
+    .filter(Boolean)
+  const currents = currentIds.length
+    ? await ContentRevision.find({
+        _id: { $in: currentIds },
+        authorAccountId: account._id,
+      })
+        .select('parentRevisionId status immutableAt')
+        .lean()
+    : []
   return {
     page,
     total,
     pageCount: Math.max(1, Math.ceil(total / 10)),
     stories: stories.map(story => ({ id: String(story._id), title: story.title })),
     items: items.map(item => {
-      const revision = revisions.find(revision => revision._id.equals(item.revisionId))
-      const batch = batches.find(batch => batch._id.equals(item.currentEvidenceBatchId))
+      const revision = byId(revisions, item.revisionId)
+      const batch = byId(batches, item.currentEvidenceBatchId)
       const target = targetOf(item)
       const current = target
-        ? currents.find(row => row._id.equals(target.draftRevisionId ?? target.currentRevisionId))
+        ? byId(currents, target.draftRevisionId ?? target.currentRevisionId)
         : undefined
       return {
         id: String(item._id),
@@ -588,26 +602,26 @@ export async function submissionList(account, { page = 1, storyId, targetType, s
             item,
             target,
             current,
-            stories.find(story => story._id.equals(item.storyId)) ?? {},
+            byId(stories, item.storyId) ?? {},
           ) ||
           canReviseUnpublished(
             item,
-            chapters.find(chapter => chapter._id.equals(item.chapterId)),
+            byId(chapters, item.chapterId),
             revision,
-            stories.find(story => story._id.equals(item.storyId)) ?? {},
+            byId(stories, item.storyId) ?? {},
           ) ||
           canReviseApprovedUnreleased(
             item,
             target,
             current,
-            stories.find(story => story._id.equals(item.storyId)) ?? {},
+            byId(stories, item.storyId) ?? {},
           ),
         version: item.version,
         submittedAt: item.submittedAt,
         decisionSummary: item.decisionSummary ?? '',
         processing: batch ? { status: batch.status, failedStage: batch.failedStage ?? null } : null,
         history: history
-          .filter(row => row.submissionId.equals(item._id))
+          .filter(row => row.submissionId && String(row.submissionId) === String(item._id))
           .map(row => ({
             id: String(row._id),
             action: row.action,

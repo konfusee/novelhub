@@ -18,6 +18,7 @@ const listQuery = z
   .object({
     page: z.coerce.number().int().min(1).max(100000).default(1),
     storyId: id.optional(),
+    chapterId: id.optional(),
     targetType: z.enum(['story', 'chapter']).optional(),
     status: z
       .enum([
