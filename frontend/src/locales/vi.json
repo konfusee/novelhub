@@ -3327,7 +3327,15 @@
     "resolved-no-credit": "Đã kết thúc đối soát, không cộng xu",
     "doNotRepay": "Không chuyển lại tiền cho đơn này. Kiểm tra lịch sử ví hoặc liên hệ hỗ trợ nếu cần.",
     "exportPage": "Xuất trang này",
-    "settled": "Đã xác nhận thanh toán"
+    "settled": "Đã xác nhận thanh toán",
+    "confirmationHint": "Xu sẽ được cộng vào ví sau khi hệ thống xác nhận thanh toán.",
+    "checkResult": "Kết quả kiểm tra",
+    "checkError": "Chưa kiểm tra được thanh toán",
+    "checkPayment": "Kiểm tra thanh toán",
+    "checkingPayment": "Đang kiểm tra…",
+    "paymentConfirmed": "Đơn đã được xác nhận thanh toán.",
+    "paymentExpired": "Đơn đã hết hạn thanh toán.",
+    "paymentNotReceived": "Chưa ghi nhận thanh toán cho đơn này. Nếu đã chuyển khoản, bạn có thể kiểm tra lại sau ít phút."
   },
   "platformFinance": {
     "title": "Báo cáo tài chính và mở khóa",
