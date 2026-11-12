@@ -6,11 +6,18 @@ import { HttpError } from '../middleware/errors.js'
 import { ownerWrite } from '../modules/reading-community/reading/owner-write.js'
 
 const id = z.string().regex(/^[a-f\d]{24}$/i)
+const preferenceFields = ['spacing', 'canvas', 'speed', 'skip', 'autoplay']
 const profileInput = z
   .object({
-    displayName: z.string().trim().min(1).max(80),
+    displayName: z.string().trim().min(2).max(80),
     bio: z.string().trim().max(1000),
     fontSize: z.enum(['small', 'medium', 'large', 'x-large']),
+    fontSizePx: z.number().int().min(14).max(24).optional(),
+    spacing: z.literal([1.4, 1.8, 2.2]).optional(),
+    canvas: z.enum(['parchment', 'cream', 'navy']).optional(),
+    speed: z.literal([0.8, 1, 1.25, 1.5]).optional(),
+    skip: z.literal([10, 15, 30]).optional(),
+    autoplay: z.boolean().optional(),
   })
   .strict()
 const validate = (schema, value) => {
@@ -22,6 +29,8 @@ const profile = account => ({
   displayName: account.displayName,
   bio: account.profile?.bio ?? '',
   fontSize: account.preferences?.fontSize ?? 'medium',
+  fontSizePx: account.preferences?.fontSizePx,
+  ...Object.fromEntries(preferenceFields.map(field => [field, account.preferences?.[field]])),
 })
 function notificationView(item) {
   const text = (value, max = 4000) => (typeof value === 'string' ? value.slice(0, max) : '')
@@ -136,6 +145,10 @@ export function createReaderDataRouter(config) {
         account.displayName = input.displayName
         account.set('profile.bio', input.bio)
         account.set('preferences.fontSize', input.fontSize)
+        account.set('preferences.fontSizePx', input.fontSizePx)
+        for (const field of preferenceFields) {
+          if (input[field] !== undefined) account.set(`preferences.${field}`, input[field])
+        }
         await account.save({ session })
         return account
       })

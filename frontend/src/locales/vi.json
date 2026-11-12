@@ -1579,6 +1579,7 @@
       "pause": "Tạm dừng bản mẫu"
     },
     "preferencesSavedNotice": "Đã lưu tùy chọn của bạn.",
+    "profileSaveFailed": "Không thể lưu hồ sơ. Vui lòng thử lại.",
     "profileSavedNotice": "Đã lưu hồ sơ của bạn.",
     "preferencesDiscarded": "Đã hủy các thay đổi tùy chọn chưa lưu.",
     "profileDiscarded": "Đã hủy các thay đổi hồ sơ chưa lưu.",

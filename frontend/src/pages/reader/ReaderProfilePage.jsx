@@ -4,19 +4,16 @@ import { useLocation, useNavigate } from 'react-router'
 import {
   AlertTriangle,
   BookOpen,
-  Camera,
   Check,
   Eye,
   Headphones,
   Palette,
   Pause,
   Play,
-  Plus,
   RefreshCw,
   Save,
   ShieldCheck,
   UserRound,
-  X,
 } from '../../components/icons'
 import { AdminLayout, AuthorLayout, ModeratorLayout, ReaderLayout } from '../../layouts'
 import {
@@ -36,7 +33,7 @@ import { ReaderRange } from '../../components/reader/ReaderSettings'
 import { useTheme } from '../../context/ThemeContext'
 import { useAuth } from '../../context/AuthContext'
 import { useLocale } from '../../context/LocaleContext'
-import { useMockResource } from '../../context/MockDataContext'
+import { apiRequest } from '../../api/client'
 
 const workspaceLayouts = {
   reader: ReaderLayout,
@@ -44,9 +41,7 @@ const workspaceLayouts = {
   moderator: ModeratorLayout,
   admin: AdminLayout,
 }
-const DEFAULT_BIO = 'Yêu thích truyện kỳ ảo phát triển chậm và trinh thám chữa lành.'
-const DEFAULT_GENRES = ['Kỳ ảo', 'Lãng mạn', 'Bí ẩn']
-const SUGGESTED_GENRE = 'Khoa học viễn tưởng'
+const FONT_SIZES = { small: 14, medium: 18, large: 21, 'x-large': 24 }
 const FONT_RANGE = { min: 14, max: 24 }
 /* Reading-canvas swatches are a deliberate canvas preview (AGENTS §7), not product chrome. */
 const canvases = {
@@ -54,47 +49,42 @@ const canvases = {
   cream: { labelKey: 'settings.reading.cream', background: '#fffdf9', ink: '#172033' },
   navy: { labelKey: 'settings.reading.navy', background: '#081321', ink: '#f4f1ea' },
 }
-const handleFor = name =>
-  `@${(name || 'novelhub_reader').toLowerCase().replace(/[^a-z0-9]+/g, '_')}`
-
-const PREFERENCES_KEY = 'novelhub.user.preferences'
-const defaultPreferences = user => ({
-  name: user?.name || 'Độc giả NovelHub',
-  handle: handleFor(user?.name),
-  bio: DEFAULT_BIO,
-  genres: DEFAULT_GENRES,
-  fontSize: 18,
-  spacing: 1.8,
-  canvas: 'parchment',
-  speed: 1,
-  skip: 15,
-  autoplay: true,
+const profileValues = profile => ({
+  name: profile.displayName,
+  bio: profile.bio,
+  fontSize: profile.fontSizePx ?? FONT_SIZES[profile.fontSize],
+  spacing: profile.spacing ?? 1.8,
+  canvas: profile.canvas ?? 'parchment',
+  speed: profile.speed ?? 1,
+  skip: profile.skip ?? 15,
+  autoplay: profile.autoplay ?? true,
 })
-/* Preferences saved by this page; null when nothing was saved yet (resource 'empty'). */
-const readSavedPreferences = () => {
-  try {
-    const value = JSON.parse(localStorage.getItem(PREFERENCES_KEY))
-    return value && typeof value === 'object' ? value : null
-  } catch {
-    return null
-  }
-}
-const isMissing = value => !value
 
 export function ReaderProfilePage({ workspace = 'reader', embedded = false }) {
   const Layout = embedded ? Fragment : workspaceLayouts[workspace] || ReaderLayout
   const location = useLocation()
   const navigate = useNavigate()
   const { currentUser } = useAuth()
+  const accountId = currentUser?.id
   const { t } = useLocale()
-  const [savedPreferences] = useState(readSavedPreferences)
-  const {
-    status,
-    data: stored,
-    retry,
-  } = useMockResource('user:preferences', savedPreferences, {
-    isEmpty: isMissing,
-  })
+  const [attempt, setAttempt] = useState(0)
+  const [resource, setResource] = useState({ status: 'loading' })
+  useEffect(() => {
+    const controller = new AbortController()
+    apiRequest('/reader/profile', { signal: controller.signal })
+      .then(({ profile }) => {
+        if (!controller.signal.aborted) setResource({ status: 'ready', profile, accountId })
+      })
+      .catch(() => {
+        if (!controller.signal.aborted) setResource({ status: 'error', accountId })
+      })
+    return () => controller.abort()
+  }, [attempt, accountId])
+  const status = resource.accountId === accountId ? resource.status : 'loading'
+  const retry = () => {
+    setResource({ status: 'loading' })
+    setAttempt(value => value + 1)
+  }
   const settingsRoot = workspace === 'admin' ? '/admin/preferences' : `/${workspace}/settings`
   const isSettings = location.pathname.startsWith(settingsRoot)
   const sectionFromPath = location.pathname.split('/').at(-1)
@@ -123,8 +113,7 @@ export function ReaderProfilePage({ workspace = 'reader', embedded = false }) {
         {!embedded && (
           <header className="max-w-3xl">
             <p className="text-[11px] font-semibold uppercase tracking-[.16em] text-brand-strong">
-              {t(isSettings ? 'settings.sharedPreferences' : 'settings.publicIdentity')} ·{' '}
-              {t('settings.userId', { id: 'NV-88291' })}
+              {t(isSettings ? 'settings.sharedPreferences' : 'settings.publicIdentity')}
             </p>
             <h1 className="mt-2 text-h2 sm:text-h1">
               {t(isSettings ? 'settings.title' : 'settings.userProfile')}
@@ -170,7 +159,8 @@ export function ReaderProfilePage({ workspace = 'reader', embedded = false }) {
           </Card>
         ) : (
           <PreferencesForm
-            initial={{ ...defaultPreferences(currentUser), ...(status === 'ready' ? stored : {}) }}
+            key={accountId}
+            initial={profileValues(resource.profile)}
             isSettings={isSettings}
             section={section}
           />
@@ -261,7 +251,6 @@ function PreferencesForm({ initial, isSettings, section }) {
   const ids = useId()
   const [baseline, setBaseline] = useState(initial)
   const [name, setName] = useState(initial.name)
-  const [handle, setHandle] = useState(initial.handle)
   const [bio, setBio] = useState(initial.bio)
   const [fontSize, setFontSize] = useState(initial.fontSize)
   const [spacing, setSpacing] = useState(initial.spacing)
@@ -270,7 +259,6 @@ function PreferencesForm({ initial, isSettings, section }) {
   const [skip, setSkip] = useState(initial.skip)
   const [autoplay, setAutoplay] = useState(initial.autoplay)
   const [saved, setSaved] = useState(true)
-  const [genres, setGenres] = useState(initial.genres)
   const [audioPlaying, setAudioPlaying] = useState(false)
   const [notice, setNotice] = useState('')
   const changed = () => setSaved(false)
@@ -278,12 +266,15 @@ function PreferencesForm({ initial, isSettings, section }) {
     setFontSize(Math.min(FONT_RANGE.max, Math.max(FONT_RANGE.min, value)))
     changed()
   }
-  const save = () => {
+  const [saving, setSaving] = useState(false)
+  const [saveError, setSaveError] = useState(false)
+  const save = async () => {
+    setSaving(true)
+    setSaveError(false)
+    setNotice('')
     const values = {
       name,
-      handle,
       bio,
-      genres,
       fontSize,
       spacing,
       canvas,
@@ -291,16 +282,45 @@ function PreferencesForm({ initial, isSettings, section }) {
       skip,
       autoplay,
     }
-    localStorage.setItem(PREFERENCES_KEY, JSON.stringify(values))
+    const [fontKey] = Object.entries(FONT_SIZES).reduce((closest, option) =>
+      Math.abs(option[1] - fontSize) < Math.abs(closest[1] - fontSize) ? option : closest,
+    )
+    try {
+      const { profile } = await apiRequest('/reader/profile', {
+        method: 'PUT',
+        body: {
+          displayName: name.trim(),
+          bio,
+          fontSize: fontKey,
+          fontSizePx: fontSize,
+          spacing,
+          canvas,
+          speed,
+          skip,
+          autoplay,
+        },
+      })
+      Object.assign(values, {
+        name: profile.displayName,
+        bio: profile.bio,
+        fontSize: profile.fontSizePx ?? FONT_SIZES[profile.fontSize],
+      })
+      setName(values.name)
+      setBio(values.bio)
+      setFontSize(values.fontSize)
+    } catch {
+      setSaveError(true)
+      return
+    } finally {
+      setSaving(false)
+    }
     setBaseline(values)
     setSaved(true)
     setNotice(t(isSettings ? 'settings.preferencesSavedNotice' : 'settings.profileSavedNotice'))
   }
   const discard = () => {
     setName(baseline.name)
-    setHandle(baseline.handle)
     setBio(baseline.bio)
-    setGenres(baseline.genres)
     setFontSize(baseline.fontSize)
     setSpacing(baseline.spacing)
     setCanvas(baseline.canvas in canvases ? baseline.canvas : 'parchment')
@@ -315,6 +335,7 @@ function PreferencesForm({ initial, isSettings, section }) {
     <>
       <div className="nh-grid-12 mt-6 grid items-start gap-6 nh-layout-xl-8-4">
         <div className="min-w-0 space-y-5">
+          {saveError && <p role="alert">{t('settings.profileSaveFailed')}</p>}
           {notice && (
             <p
               role="status"
@@ -331,48 +352,18 @@ function PreferencesForm({ initial, isSettings, section }) {
                 title="Thông tin hồ sơ"
                 note="Hiển thị công khai với cộng đồng độc giả"
               />
-              <div className="mt-6 flex items-center gap-4">
-                <div className="relative shrink-0">
-                  <Avatar name={name || 'Người dùng NovelHub'} className="size-20 text-2xl" />
-                  <button
-                    type="button"
-                    onClick={() => setNotice('Đã mở trình chọn ảnh đại diện ở chế độ mẫu.')}
-                    aria-label="Đổi ảnh đại diện"
-                    className="absolute -bottom-1 -right-1 grid size-10 place-items-center rounded-full bg-brand text-on-brand ring-4 ring-surface transition-transform active:scale-[0.96]"
-                  >
-                    <Camera size={15} />
-                  </button>
-                </div>
-                <div>
-                  <Button
-                    onClick={() => setNotice('Đã mở trình chọn ảnh đại diện ở chế độ mẫu.')}
-                    variant="secondary"
-                    size="sm"
-                  >
-                    Tải ảnh mới
-                  </Button>
-                  <p className="mt-2 text-caption text-muted">JPG hoặc PNG, tối thiểu 400×400px.</p>
-                </div>
-              </div>
-              <div className="nh-grid-12 mt-6 grid gap-4 nh-sm-cols-2">
+              <Avatar name={name} className="mt-6 size-20 text-2xl" />
+              <div className="mt-6">
                 <Field label="Tên hiển thị" htmlFor={`${ids}-name`}>
                   <Input
                     id={`${ids}-name`}
                     autoComplete="nickname"
                     value={name}
+                    minLength={2}
+                    maxLength={80}
+                    disabled={saving}
                     onChange={e => {
                       setName(e.target.value)
-                      changed()
-                    }}
-                  />
-                </Field>
-                <Field label="Tên định danh" htmlFor={`${ids}-handle`}>
-                  <Input
-                    id={`${ids}-handle`}
-                    autoComplete="username"
-                    value={handle}
-                    onChange={e => {
-                      setHandle(e.target.value)
                       changed()
                     }}
                   />
@@ -386,7 +377,8 @@ function PreferencesForm({ initial, isSettings, section }) {
                     setBio(e.target.value)
                     changed()
                   }}
-                  maxLength={160}
+                  maxLength={1000}
+                  disabled={saving}
                   aria-describedby={`${ids}-bio-count`}
                   className="min-h-24 w-full rounded-3xl border border-line bg-surface px-4 py-3 text-base text-ink outline-none transition-colors focus:border-brand sm:text-sm"
                 />
@@ -394,49 +386,9 @@ function PreferencesForm({ initial, isSettings, section }) {
                   id={`${ids}-bio-count`}
                   className="mt-1 block text-right text-caption tabular-nums text-muted"
                 >
-                  {bio.length} / 160
+                  {bio.length} / 1000
                 </span>
               </Field>
-              <div className="mt-4">
-                <p id={`${ids}-genres`} className="text-sm font-semibold">
-                  Thể loại yêu thích
-                </p>
-                <ul aria-labelledby={`${ids}-genres`} className="mt-2 flex flex-wrap gap-2">
-                  {genres.map(item => (
-                    <li key={item}>
-                      <button
-                        type="button"
-                        aria-label={`Bỏ thể loại ${item}`}
-                        className="inline-flex min-h-9 items-center rounded-full transition-transform active:scale-[0.96]"
-                        onClick={() => {
-                          setGenres(current => current.filter(genre => genre !== item))
-                          changed()
-                        }}
-                      >
-                        <Badge tone="green" className="gap-1">
-                          {item}
-                          <X size={12} aria-hidden="true" />
-                        </Badge>
-                      </button>
-                    </li>
-                  ))}
-                  {!genres.includes(SUGGESTED_GENRE) && (
-                    <li>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setGenres(current => [...current, SUGGESTED_GENRE])
-                          changed()
-                        }}
-                        className="inline-flex min-h-9 items-center gap-1 rounded-full border border-dashed border-line px-3 text-xs font-semibold text-ink/80 transition-colors hover:border-brand hover:text-brand-strong"
-                      >
-                        <Plus size={12} aria-hidden="true" />
-                        Thêm thể loại
-                      </button>
-                    </li>
-                  )}
-                </ul>
-              </div>
             </Card>
           )}
           {section === 'reading' && (
@@ -729,10 +681,14 @@ function PreferencesForm({ initial, isSettings, section }) {
               {t(isSettings ? 'settings.preferencesUnsaved' : 'settings.profileUnsaved')}
             </p>
             <div className="flex gap-2 sm:ml-auto">
-              <Button variant="secondary" onClick={discard}>
+              <Button variant="secondary" disabled={saving} onClick={discard}>
                 {t('common.discard')}
               </Button>
-              <Button className="flex-1 sm:flex-none" onClick={save}>
+              <Button
+                className="flex-1 sm:flex-none"
+                disabled={saving || name.trim().length < 2}
+                onClick={save}
+              >
                 <Save size={15} aria-hidden="true" />
                 {t('common.saveChanges')}
               </Button>

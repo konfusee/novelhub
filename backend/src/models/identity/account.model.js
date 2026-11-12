@@ -51,6 +51,12 @@ const accountSchema = new Schema(
     },
     preferences: {
       fontSize: { type: String, enum: ['small', 'medium', 'large', 'x-large'], default: 'medium' },
+      fontSizePx: { type: Number, min: 14, max: 24 },
+      spacing: Number,
+      canvas: String,
+      speed: Number,
+      skip: Number,
+      autoplay: Boolean,
       darkMode: { type: Boolean, default: false },
     },
     // Absent for Google-only accounts.
