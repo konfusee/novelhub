@@ -45,6 +45,7 @@ import {
   Input,
   Skeleton,
   Modal,
+  Select,
   Tabs,
 } from '../../components/ui'
 import { Pagination } from '../../components/ui/Pagination'
@@ -686,15 +687,27 @@ const emptyStoryAnalytics = {
   comments: {},
 }
 
+const analyticsPeriods = [
+  { value: '7', labelKey: 'periodWeek', days: 7, groupBy: 'day' },
+  { value: '30', labelKey: 'periodMonth', days: 30, groupBy: 'day' },
+  { value: '90', labelKey: 'periodQuarter', days: 90, groupBy: 'week' },
+  { value: '180', labelKey: 'periodHalfYear', days: 180, groupBy: 'week' },
+  { value: '365', labelKey: 'periodYear', days: 365, groupBy: 'month' },
+]
+
 function StorySubmissionHistory({ storyId }) {
   const { t, formatDate } = useLocale()
-  const feed = useBackendDocument(`/author/submissions?storyId=${encodeURIComponent(storyId)}`, {
-    items: [],
-    stories: [],
-    page: 1,
-    pageCount: 1,
-    total: 0,
-  })
+  const [page, setPage] = useState(1)
+  const feed = useBackendDocument(
+    `/author/submissions?page=${page}&storyId=${encodeURIComponent(storyId)}`,
+    {
+      items: [],
+      stories: [],
+      page: 1,
+      pageCount: 1,
+      total: 0,
+    },
+  )
   const knownStatuses = [
     'validated',
     'pending-review',
@@ -704,6 +717,17 @@ function StorySubmissionHistory({ storyId }) {
     'rejected',
     'cancelled',
   ]
+  const statusTones = {
+    validated: 'blue',
+    'pending-review': 'orange',
+    'decision-pending': 'orange',
+    approved: 'green',
+    superseded: 'neutral',
+    rejected: 'red',
+    cancelled: 'neutral',
+  }
+  const historyActions = ['submitted', 'decided', 'publication.superseded']
+  const historyOutcomes = ['validated', 'approved', 'rejected', 'superseded', 'cancelled']
   return (
     <Card className="mt-5">
       <div className="flex flex-wrap items-start justify-between gap-3">
@@ -711,6 +735,11 @@ function StorySubmissionHistory({ storyId }) {
           <p className="text-xs text-muted">{t('submissionData.studio')}</p>
           <h2 className="mt-1 text-h3">{t('submissionData.storyHistoryTitle')}</h2>
           <p className="mt-1 text-sm text-muted">{t('submissionData.storyHistoryHint')}</p>
+          {feed.status === 'ready' && (
+            <p className="mt-2 text-xs font-semibold text-brand-strong">
+              {t('submissionData.submissionCount', { count: feed.data.total })}
+            </p>
+          )}
         </div>
         <ButtonLink
           to={`/author/submissions?storyId=${encodeURIComponent(storyId)}`}
@@ -746,11 +775,20 @@ function StorySubmissionHistory({ storyId }) {
             <article key={item.id} className="rounded-2xl border border-hairline p-4">
               <div className="flex flex-wrap items-center justify-between gap-2">
                 <h3 className="text-sm font-semibold">{item.title || item.id}</h3>
-                <Badge>
-                  {knownStatuses.includes(item.status)
-                    ? t(`submissionData.status.${item.status}`)
-                    : item.status}
-                </Badge>
+                <div className="flex flex-wrap justify-end gap-2">
+                  <Badge tone={item.chapterId ? 'purple' : 'brand'}>
+                    {t(
+                      item.chapterId
+                        ? 'submissionData.chapterSubmission'
+                        : 'submissionData.storySubmission',
+                    )}
+                  </Badge>
+                  <Badge tone={statusTones[item.status] ?? 'neutral'}>
+                    {knownStatuses.includes(item.status)
+                      ? t(`submissionData.status.${item.status}`)
+                      : item.status}
+                  </Badge>
+                </div>
               </div>
               <p className="mt-2 text-xs text-muted">
                 {item.submittedAt ? formatDate(item.submittedAt) : '—'} ·{' '}
@@ -763,8 +801,14 @@ function StorySubmissionHistory({ storyId }) {
                 <ul className="mt-3 space-y-2">
                   {item.history.map(row => (
                     <li key={row.id} className="rounded-xl bg-elevated p-3 text-xs">
-                      {row.action} · {row.outcome} ·{' '}
-                      {row.occurredAt ? formatDate(row.occurredAt) : '—'}
+                      {historyActions.includes(row.action)
+                        ? t(`submissionData.historyActions.${row.action}`)
+                        : row.action}{' '}
+                      ·{' '}
+                      {historyOutcomes.includes(row.outcome)
+                        ? t(`submissionData.historyOutcomes.${row.outcome}`)
+                        : row.outcome}{' '}
+                      · {row.occurredAt ? formatDate(row.occurredAt) : '—'}
                       {row.feedback && (
                         <p className="mt-2 whitespace-pre-wrap text-sm">{row.feedback}</p>
                       )}
@@ -789,9 +833,42 @@ function StorySubmissionHistory({ storyId }) {
                     {t('submissionData.openDraft')}
                   </ButtonLink>
                 )}
+                {!item.chapterId && (item.canRevise ?? item.status === 'rejected') && (
+                  <ButtonLink
+                    size="sm"
+                    variant="secondary"
+                    to={`/author/stories/${storyId}?tab=details`}
+                  >
+                    {t('submissionData.reviseFromHistory')}
+                  </ButtonLink>
+                )}
               </div>
             </article>
           ))}
+          <div className="flex flex-wrap items-center justify-between gap-3 border-t border-hairline pt-4">
+            <Button
+              variant="secondary"
+              size="sm"
+              disabled={page <= 1}
+              onClick={() => setPage(value => value - 1)}
+            >
+              {t('submissionData.previous')}
+            </Button>
+            <span className="text-sm tabular-nums">
+              {t('submissionData.pageOf', {
+                page: feed.data.page,
+                pageCount: feed.data.pageCount,
+              })}
+            </span>
+            <Button
+              variant="secondary"
+              size="sm"
+              disabled={page >= feed.data.pageCount}
+              onClick={() => setPage(value => value + 1)}
+            >
+              {t('submissionData.next')}
+            </Button>
+          </div>
         </div>
       )}
     </Card>
@@ -800,8 +877,10 @@ function StorySubmissionHistory({ storyId }) {
 
 function StoryAnalyticsSummary({ storyId }) {
   const { t } = useLocale()
+  const [period, setPeriod] = useState('30')
+  const selectedPeriod = analyticsPeriods.find(item => item.value === period) ?? analyticsPeriods[1]
   const analytics = useBackendDocument(
-    `/author/analytics?days=30&groupBy=day&storyId=${encodeURIComponent(storyId)}`,
+    `/author/analytics?days=${selectedPeriod.days}&groupBy=${selectedPeriod.groupBy}&storyId=${encodeURIComponent(storyId)}`,
     emptyStoryAnalytics,
   )
   const data = analytics.data
@@ -818,11 +897,32 @@ function StoryAnalyticsSummary({ storyId }) {
       <Card>
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div>
-            <p className="text-xs text-muted">{t('analyticsData.range')}</p>
+            <div className="flex flex-wrap items-center gap-3">
+              <p className="text-xs text-muted">{t('analyticsData.range')}</p>
+              <label className="sr-only" htmlFor="story-analytics-period">
+                {t('analyticsData.periodLabel')}
+              </label>
+              <Select
+                id="story-analytics-period"
+                value={period}
+                onChange={event => setPeriod(event.target.value)}
+                className="h-9 min-w-28"
+              >
+                {analyticsPeriods.map(item => (
+                  <option key={item.value} value={item.value}>
+                    {t(`analyticsData.${item.labelKey}`)}
+                  </option>
+                ))}
+              </Select>
+            </div>
             <h2 id="story-analytics-heading" className="mt-1 text-h3">
               {t('analyticsData.storySummaryTitle')}
             </h2>
-            <p className="mt-1 text-sm text-muted">{t('analyticsData.storySummaryHint')}</p>
+            <p className="mt-1 text-sm text-muted">
+              {t('analyticsData.storySummaryHint', {
+                period: t(`analyticsData.${selectedPeriod.labelKey}`),
+              })}
+            </p>
           </div>
           <ButtonLink to={ROUTES.authorAnalytics(storyId)} variant="secondary" size="sm">
             {t('analyticsData.openFullAnalytics')}
@@ -875,12 +975,29 @@ function StoryAnalyticsSummary({ storyId }) {
                     return (
                       <span
                         key={`${data.labels?.[index] ?? index}`}
-                        title={`${data.labels?.[index] ?? ''}: ${value}`}
+                        title={`${data.labels?.[index] ?? ''}: ${value} ${t('analyticsData.readCountUnit')}`}
                         className="min-w-0 flex-1 rounded-t bg-brand/75"
                         style={{ height: `${(value / peak) * 100}%` }}
                       />
                     )
                   })}
+                </div>
+                <div className="mt-3 flex items-center justify-between gap-3 text-xs font-semibold text-muted">
+                  <span>{t('analyticsData.date')}</span>
+                  <span>{t('analyticsData.views')}</span>
+                </div>
+                <div className="mt-1 max-h-40 overflow-y-auto rounded-xl border border-hairline bg-elevated">
+                  {data.daily.map((value, index) => (
+                    <div
+                      key={`row-${data.labels?.[index] ?? index}`}
+                      className="flex items-center justify-between gap-3 border-b border-hairline px-3 py-2 text-xs last:border-b-0"
+                    >
+                      <span className="text-muted">{data.labels?.[index] ?? '—'}</span>
+                      <strong className="tabular-nums text-ink">
+                        {value.toLocaleString('vi-VN')} {t('analyticsData.readCountUnit')}
+                      </strong>
+                    </div>
+                  ))}
                 </div>
                 <p className="mt-2 text-xs text-muted">{t('analyticsData.dailyHint')}</p>
               </div>

@@ -42,9 +42,11 @@ const emptyAnalytics = {
   comments: {},
 }
 const rangeLabels = {
-  'Last 7 Days': '7 ngày gần nhất',
-  'Last 30 Days': '30 ngày gần nhất',
-  'Last 90 Days': '90 ngày gần nhất',
+  'Last 7 Days': '1 tuần',
+  'Last 30 Days': '1 tháng',
+  'Last 90 Days': '3 tháng',
+  'Last 180 Days': '6 tháng',
+  'Last 365 Days': '1 năm',
 }
 const formatPercent = value => `${String(value).replace('.', ',')}%`
 /* Index of the daily bar under the pointer, clamped to the plot. */
@@ -93,6 +95,8 @@ export function AuthorAnalyticsPage() {
     'Last 7 Days': 7,
     'Last 30 Days': 30,
     'Last 90 Days': 90,
+    'Last 180 Days': 180,
+    'Last 365 Days': 365,
   }[range]
   const analytics = useBackendDocument(
     `/author/analytics?days=${days}&groupBy=${groupBy}${fromDate ? `&from=${fromDate}` : ''}${toDate ? `&to=${toDate}` : ''}${story ? `&storyId=${encodeURIComponent(story)}` : ''}${chapter ? `&chapterId=${encodeURIComponent(chapter)}` : ''}`,
@@ -499,6 +503,20 @@ export function AuthorAnalyticsPage() {
                               .map(label => (
                                 <span key={label}>{label}</span>
                               ))}
+                          </div>
+                          <div className="mt-4 max-h-48 overflow-y-auto rounded-xl border border-hairline bg-elevated">
+                            {labels.map((label, index) => (
+                              <div
+                                key={`daily-row-${label}`}
+                                className="flex items-center justify-between gap-3 border-b border-hairline px-3 py-2 text-xs last:border-b-0"
+                              >
+                                <span className="text-muted">{label}</span>
+                                <strong className="tabular-nums text-ink">
+                                  {daily[index]?.toLocaleString('vi-VN') ?? 0}{' '}
+                                  {t('analyticsData.readCountUnit')}
+                                </strong>
+                              </div>
+                            ))}
                           </div>
                           <div className="mt-6 flex items-start gap-3 border-t border-hairline pt-4">
                             <span className="grid size-9 shrink-0 place-items-center rounded-xl bg-brand/12 text-brand-strong">
