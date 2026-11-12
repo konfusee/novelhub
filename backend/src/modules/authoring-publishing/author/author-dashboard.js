@@ -41,7 +41,7 @@ const viewsForWindow = (storyIds, startDay, endDay) =>
   ])
 
 async function revenueForStories(accountId, storyIds, chapterIds, from, to) {
-  if (!storyIds.length || !chapterIds.length) return { total: 0, unlocks: 0, byStory: new Map() }
+  if (!storyIds.length) return { total: 0, unlocks: 0, byStory: new Map() }
   const wallet = await Wallet.findOne({
     ownerType: 'account',
     ownerId: accountId,
@@ -61,19 +61,19 @@ async function revenueForStories(accountId, storyIds, chapterIds, from, to) {
       },
     },
     {
-      $lookup: {
-        from: UnlockRequest.collection.name,
-        localField: 'sourceId',
-        foreignField: '_id',
-        as: 'request',
-      },
-    },
-    { $unwind: '$request' },
-    { $match: { 'request.chapterId': { $in: chapterIds }, 'request.status': 'committed' } },
-    {
       $facet: {
         total: [{ $group: { _id: null, amount: { $sum: '$amount' }, unlocks: { $sum: 1 } } }],
         byStory: [
+          {
+            $lookup: {
+              from: UnlockRequest.collection.name,
+              localField: 'sourceId',
+              foreignField: '_id',
+              as: 'request',
+            },
+          },
+          { $unwind: '$request' },
+          { $match: { 'request.chapterId': { $in: chapterIds } } },
           {
             $lookup: {
               from: Chapter.collection.name,
