@@ -10,6 +10,7 @@ import {
   Moon,
   Sun,
 } from '../../components/icons'
+import { CommentThread } from '../../components/community/CommentThread'
 import { useBackendDocument } from '../../api/useBackendResource'
 import { useStoryDetail } from '../../components/public/catalog'
 import { ChapterInlineText } from '../../components/reader/ChapterInlineText'
@@ -139,7 +140,7 @@ export function GuestReaderPreviewPage() {
       ? chapter.error.code
       : null
   const neighbourHref = neighbour =>
-    !isAuthenticated && listed[0]?.id !== neighbour.id
+    !isAuthenticated && listed.find(item => item.orderKey === 1)?.id !== neighbour.id
       ? { to: ROUTES.login, state: { from: ROUTES.read(storyId, neighbour.id) } }
       : {
           to: isAuthenticated
@@ -299,6 +300,10 @@ export function GuestReaderPreviewPage() {
                 />
               </div>
             )}
+            {/* Public chapter comments, read-only here; posting asks Guests to sign in. */}
+            <section className="mt-12 border-t border-hairline pt-8">
+              <CommentThread targetType="chapter" targetId={chapterId} />
+            </section>
           </article>
         )}
       </main>

@@ -7,7 +7,7 @@ import {
   clearHistory,
   deleteHistoryEntry,
   readingHistory,
-  resumeFor,
+  resumePoints,
   saveProgress,
 } from '../modules/reading-community/reading/progress.js'
 
@@ -64,11 +64,7 @@ export function createReaderReadingRouter(config) {
   })
   router.get('/reader/progress/:storyId', async (req, res, next) => {
     try {
-      const [resume, listen] = await Promise.all([
-        resumeFor(req.account, req.params.storyId, 'text'),
-        resumeFor(req.account, req.params.storyId, 'audio'),
-      ])
-      res.json({ resume, listen })
+      res.json(await resumePoints(req.account, req.params.storyId))
     } catch (error) {
       next(error)
     }

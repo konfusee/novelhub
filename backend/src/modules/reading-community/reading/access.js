@@ -1,7 +1,7 @@
 import { Chapter, UnlockEntitlement } from '../../../models/index.js'
 import { readCookie, resolveSession } from '../../../auth/session.js'
 import { HttpError } from '../../../middleware/errors.js'
-import { queryPublishedStories } from '../catalog/catalog-query.js'
+import { publishedStorySummary, queryPublishedStories } from '../catalog/catalog-query.js'
 
 // Only the published revision is authoritative on public surfaces. Story.title may
 // already contain an author's next draft and must not be used as a fallback.
@@ -9,9 +9,12 @@ export async function publishedCards(options) {
   return (await queryPublishedStories(options)).items
 }
 
-/** Public card of a published story whose Author is still visible, or null. */
+/**
+ * Published story whose Author is still visible (`id`, `title`, `description`, `author`,
+ * `authorId`), or null. Access checks use this light lookup, not the catalogue metrics.
+ */
 export async function publishedStory(storyId) {
-  return (await publishedCards({ ids: [storyId] }))[0] ?? null
+  return publishedStorySummary(storyId)
 }
 
 /** Session account for routes that also serve Guests; null when signed out. */
@@ -42,28 +45,37 @@ export async function publishedChapter(storyId, chapterId) {
 }
 
 /**
- * Text access: Guests read only chapter 1 once it is free; every other chapter
- * needs a login, and early access needs an active entitlement for the chapter.
+ * Text access rule for a published chapter: Guests read only chapter 1 once it is free;
+ * every other chapter needs a login, and early access needs an active entitlement for the
+ * chapter (`owned`). Returns the HttpError to throw, or null when the chapter is readable.
  */
-export async function readableChapter({ storyId, chapterId, account }) {
-  const { story, chapter } = await publishedChapter(storyId, chapterId)
-  if (chapter.orderKey !== 1 && !account)
-    throw new HttpError(401, 'authentication_required', 'Đăng nhập để đọc các chương tiếp theo.')
+export function chapterDenial(chapter, { signedIn, owned }, now = new Date()) {
+  if (chapter.orderKey !== 1 && !signedIn)
+    return new HttpError(401, 'authentication_required', 'Đăng nhập để đọc các chương tiếp theo.')
   if (chapter.earlyAccess?.enabled) {
     if (!chapter.earlyAccess.endsAt)
-      throw new HttpError(403, 'chapter_locked', 'Chương chưa mở để đọc.')
-    if (earlyAccessActive(chapter)) {
-      const entitlement =
-        account &&
-        (await UnlockEntitlement.exists({
-          accountId: account._id,
-          chapterId: chapter._id,
-          status: 'active',
-          expiresAt: { $gt: new Date() },
-        }))
-      if (!entitlement)
-        throw new HttpError(403, 'chapter_locked', 'Chương đang trong thời gian đọc sớm.')
-    }
+      return new HttpError(403, 'chapter_locked', 'Chương chưa mở để đọc.')
+    if (earlyAccessActive(chapter, now) && !owned)
+      return new HttpError(403, 'chapter_locked', 'Chương đang trong thời gian đọc sớm.')
   }
+  return null
+}
+
+/** Published chapter the account may read (see `chapterDenial`), or the matching error. */
+export async function readableChapter({ storyId, chapterId, account }) {
+  const { story, chapter } = await publishedChapter(storyId, chapterId)
+  const owned =
+    Boolean(account) &&
+    earlyAccessActive(chapter) &&
+    Boolean(
+      await UnlockEntitlement.exists({
+        accountId: account._id,
+        chapterId: chapter._id,
+        status: 'active',
+        expiresAt: { $gt: new Date() },
+      }),
+    )
+  const denial = chapterDenial(chapter, { signedIn: Boolean(account), owned })
+  if (denial) throw denial
   return { story, chapter }
 }

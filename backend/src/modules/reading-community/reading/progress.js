@@ -1,52 +1,86 @@
 import mongoose from 'mongoose'
-import { Chapter, ContentRevision, ReadingProgress } from '../../../models/index.js'
+import {
+  Chapter,
+  ContentRevision,
+  ReadingProgress,
+  UnlockEntitlement,
+} from '../../../models/index.js'
 import { HttpError } from '../../../middleware/errors.js'
-import { publishedCards, readableChapter } from './access.js'
+import { publishedStorySummaries, visibleStoryIds } from '../catalog/catalog-query.js'
+import { chapterDenial, earlyAccessActive, readableChapter } from './access.js'
 import { ownerWrite } from './owner-write.js'
 
 export const HISTORY_PAGE_SIZE = 20
 /** Text progress stores a scroll fraction; audio progress stores playback seconds. */
 export const PROGRESS_MODES = ['text', 'audio']
 const sameId = (left, right) => Boolean(left && right && String(left) === String(right))
+const unique = values => [...new Set(values.map(String))]
 
-/** Current state of a saved chapter for this reader: live title, revision and readability. */
-async function chapterState(account, progress) {
-  let chapter
-  let available = true
-  try {
-    ;({ chapter } = await readableChapter({
-      storyId: progress.storyId,
-      chapterId: progress.chapterId,
-      account,
-    }))
-  } catch (error) {
-    if (!(error instanceof HttpError)) throw error
-    available = false
-    chapter = await Chapter.findById(progress.chapterId)
-      .select('orderKey title publishedRevisionId')
-      .lean()
-  }
-  const revision =
-    chapter?.publishedRevisionId &&
-    (await ContentRevision.findOne({
-      _id: chapter.publishedRevisionId,
-      chapterId: progress.chapterId,
-      contentType: 'chapter',
-      status: { $in: ['approved', 'immutable'] },
+/**
+ * Current state of saved chapters for this reader (live title, revision and readability),
+ * resolved with one query per collection for the whole batch. Readability follows the
+ * same rule as `readableChapter`.
+ */
+async function chapterStates(account, rows) {
+  if (!rows.length) return []
+  const now = new Date()
+  const chapterIds = unique(rows.map(row => row.chapterId))
+  const [visible, chapters, entitlements] = await Promise.all([
+    visibleStoryIds(unique(rows.map(row => row.storyId))),
+    Chapter.find({ _id: { $in: chapterIds } })
+      .select('storyId status orderKey title publishedRevisionId earlyAccess')
+      .lean(),
+    UnlockEntitlement.find({
+      accountId: account._id,
+      chapterId: { $in: chapterIds },
+      status: 'active',
+      expiresAt: { $gt: now },
     })
-      .select('content.title')
-      .lean())
-  return {
-    available,
-    orderKey: chapter?.orderKey ?? null,
-    title: revision?.content?.title ?? chapter?.title ?? '',
-    // A newer published revision restarts the same chapter from the beginning.
-    contentUpdated: Boolean(
-      chapter?.publishedRevisionId &&
-      progress.revisionId &&
-      !sameId(chapter.publishedRevisionId, progress.revisionId),
-    ),
-  }
+      .select('chapterId')
+      .lean(),
+  ])
+  const revisions = await ContentRevision.find({
+    _id: { $in: chapters.map(chapter => chapter.publishedRevisionId).filter(Boolean) },
+    contentType: 'chapter',
+    status: { $in: ['approved', 'immutable'] },
+  })
+    .select('chapterId content.title')
+    .lean()
+  const byChapter = new Map(chapters.map(chapter => [String(chapter._id), chapter]))
+  const titles = new Map(
+    revisions.map(revision => [`${revision._id}:${revision.chapterId}`, revision.content?.title]),
+  )
+  const owned = new Set(entitlements.map(item => String(item.chapterId)))
+  return rows.map(row => {
+    const chapter = byChapter.get(String(row.chapterId))
+    const published = Boolean(
+      chapter?.status === 'published' &&
+      chapter.publishedRevisionId &&
+      sameId(chapter.storyId, row.storyId) &&
+      visible.has(String(row.storyId)),
+    )
+    const available =
+      published &&
+      !chapterDenial(
+        chapter,
+        {
+          signedIn: true,
+          owned: earlyAccessActive(chapter, now) && owned.has(String(chapter._id)),
+        },
+        now,
+      )
+    return {
+      available,
+      orderKey: chapter?.orderKey ?? null,
+      title: titles.get(`${chapter?.publishedRevisionId}:${row.chapterId}`) ?? chapter?.title ?? '',
+      // A newer published revision restarts the same chapter from the beginning.
+      contentUpdated: Boolean(
+        chapter?.publishedRevisionId &&
+        row.revisionId &&
+        !sameId(chapter.publishedRevisionId, row.revisionId),
+      ),
+    }
+  })
 }
 
 function positionView(progress, contentUpdated) {
@@ -57,30 +91,37 @@ function positionView(progress, contentUpdated) {
   return { mode: progress.mode, position, duration, fraction }
 }
 
-/** Resume point for one saved progress row. */
-export async function resumeView(account, progress) {
-  const state = await chapterState(account, progress)
-  return {
-    chapterId: String(progress.chapterId),
-    orderKey: state.orderKey,
-    title: state.title,
-    ...positionView(progress, state.contentUpdated),
-    contentUpdated: state.contentUpdated,
-    available: state.available,
-    lastReadAt: progress.lastReadAt ?? null,
-  }
+/** Resume points for saved progress rows (`null` rows stay `null`), in one batch. */
+export async function resumeViews(account, rows) {
+  const present = rows.filter(Boolean)
+  const states = await chapterStates(account, present)
+  const byRow = new Map(present.map((row, index) => [row, states[index]]))
+  return rows.map(progress => {
+    if (!progress) return null
+    const state = byRow.get(progress)
+    return {
+      chapterId: String(progress.chapterId),
+      orderKey: state.orderKey,
+      title: state.title,
+      ...positionView(progress, state.contentUpdated),
+      contentUpdated: state.contentUpdated,
+      available: state.available,
+      lastReadAt: progress.lastReadAt ?? null,
+    }
+  })
 }
 
-/** Most recently read (text) or listened (audio) chapter of a story, or null. */
-export async function resumeFor(account, storyId, mode = 'text') {
-  const progress = await ReadingProgress.findOne({
-    accountId: account._id,
-    storyId,
-    mode,
-  })
-    .sort({ lastReadAt: -1, _id: -1 })
-    .lean()
-  return progress ? resumeView(account, progress) : null
+/** Latest saved reading (`resume`) and listening (`listen`) points of a story. */
+export async function resumePoints(account, storyId) {
+  const latest = mode =>
+    ReadingProgress.findOne({ accountId: account._id, storyId, mode })
+      .sort({ lastReadAt: -1, _id: -1 })
+      .lean()
+  const [resume, listen] = await resumeViews(
+    account,
+    await Promise.all([latest('text'), latest('audio')]),
+  )
+  return { resume, listen }
 }
 
 export async function saveProgress(
@@ -127,16 +168,13 @@ export async function readingHistory(account, page) {
     accountId: account._id,
     mode: { $in: PROGRESS_MODES },
   })
-  const cards = storyIds.length
-    ? await publishedCards({ ids: storyIds.map(String), pageSize: storyIds.length })
-    : []
-  const stories = new Map(cards.map(card => [card.id, card]))
+  const visible = await visibleStoryIds(storyIds.map(String))
   const [result] = await ReadingProgress.aggregate([
     {
       $match: {
         accountId: account._id,
         mode: { $in: PROGRESS_MODES },
-        storyId: { $in: [...stories.keys()].map(id => new mongoose.Types.ObjectId(id)) },
+        storyId: { $in: [...visible].map(id => new mongoose.Types.ObjectId(id)) },
       },
     },
     { $sort: { lastReadAt: -1, _id: -1 } },
@@ -150,26 +188,27 @@ export async function readingHistory(account, page) {
       },
     },
   ])
-  const items = await Promise.all(
-    result.rows.map(async row => {
-      const story = stories.get(String(row.storyId))
-      const state = await chapterState(account, row)
-      return {
-        id: story.id,
-        story: { id: story.id, title: story.title, author: story.author },
-        chapter: {
-          id: String(row.chapterId),
-          orderKey: state.orderKey,
-          title: state.title,
-          available: state.available,
-        },
-        ...positionView(row, state.contentUpdated),
-        completed: Boolean(row.completedAt),
-        contentUpdated: state.contentUpdated,
-        lastReadAt: row.lastReadAt ?? null,
-      }
-    }),
-  )
+  const [stories, states] = await Promise.all([
+    publishedStorySummaries(result.rows.map(row => String(row.storyId))),
+    chapterStates(account, result.rows),
+  ])
+  const items = result.rows
+    .map((row, index) => ({ row, state: states[index], story: stories.get(String(row.storyId)) }))
+    .filter(({ story }) => story)
+    .map(({ row, state, story }) => ({
+      id: story.id,
+      story: { id: story.id, title: story.title, author: story.author },
+      chapter: {
+        id: String(row.chapterId),
+        orderKey: state.orderKey,
+        title: state.title,
+        available: state.available,
+      },
+      ...positionView(row, state.contentUpdated),
+      completed: Boolean(row.completedAt),
+      contentUpdated: state.contentUpdated,
+      lastReadAt: row.lastReadAt ?? null,
+    }))
   return { items, total: result.total[0]?.count ?? 0, page, pageSize: HISTORY_PAGE_SIZE }
 }
 

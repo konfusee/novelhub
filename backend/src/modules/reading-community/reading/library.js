@@ -1,7 +1,7 @@
 import { Follow, ReadingProgress } from '../../../models/index.js'
 import { publishedCards } from './access.js'
 import { publishedChapterRows } from './chapters.js'
-import { PROGRESS_MODES, resumeView } from './progress.js'
+import { PROGRESS_MODES, resumeViews } from './progress.js'
 
 export const LIBRARY_PAGE_SIZE = 20
 export const LIBRARY_TABS = ['all', 'reading', 'following', 'completed']
@@ -82,14 +82,17 @@ export async function readerLibrary(account, { tab, page }) {
         (right.lastActivityAt?.getTime() ?? 0) - (left.lastActivityAt?.getTime() ?? 0) ||
         right.story.id.localeCompare(left.story.id),
     )
-  const items = await Promise.all(
-    selected
-      .slice((page - 1) * LIBRARY_PAGE_SIZE, page * LIBRARY_PAGE_SIZE)
-      .map(async ({ latestProgress, latestListen, reading: _reading, ...entry }) => ({
-        ...entry,
-        resume: latestProgress ? await resumeView(account, latestProgress) : null,
-        listenResume: latestListen ? await resumeView(account, latestListen) : null,
-      })),
+  const pageEntries = selected.slice((page - 1) * LIBRARY_PAGE_SIZE, page * LIBRARY_PAGE_SIZE)
+  const resumes = await resumeViews(
+    account,
+    pageEntries.flatMap(entry => [entry.latestProgress, entry.latestListen]),
+  )
+  const items = pageEntries.map(
+    ({ latestProgress: _text, latestListen: _audio, reading: _reading, ...entry }, index) => ({
+      ...entry,
+      resume: resumes[2 * index],
+      listenResume: resumes[2 * index + 1],
+    }),
   )
   return { items, total: selected.length, page, pageSize: LIBRARY_PAGE_SIZE, counts }
 }

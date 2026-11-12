@@ -1,4 +1,4 @@
-import { mkdtemp, readFile, rm } from 'node:fs/promises'
+import { access, mkdtemp, readFile, rm } from 'node:fs/promises'
 import os from 'node:os'
 import path from 'node:path'
 import request from 'supertest'
@@ -34,10 +34,12 @@ const provider = {
     return queue.length > 1 ? queue.shift() : (queue[0] ?? { state: 'processing' })
   },
   async download(audioUrl) {
-    return Buffer.from(`mp3:${audioUrl}`)
+    return [Buffer.from('mp3:'), Buffer.from(audioUrl)]
   },
 }
-const base = { cookieName: 'novelhub_session', corsOrigin: origin }
+// Cost guards are off unless a test turns them on.
+const tts = { ...testConfig().tts, requestCooldownSeconds: 0, dailyCharacterLimit: 0 }
+const base = { cookieName: 'novelhub_session', corsOrigin: origin, tts }
 let root, app, api
 beforeAll(async () => {
   root = await mkdtemp(path.join(os.tmpdir(), 'novelhub-narration-test-'))
@@ -126,6 +128,16 @@ it('generates narration on first play, caches it per revision and serves it with
     'Mở đầu\nCâu một.\nCâu hai.',
     'Mở đầu\nBản sửa.',
   ])
+  // Once the new revision's audio is stored, the superseded file is deleted.
+  provider.script.set('job-2', [{ state: 'completed', audioUrl: 'https://cdn/2.mp3' }])
+  expect((await status(reader, storyId, chapterId)).body.narration.status).toBe('available')
+  await expect(access(path.join(root, asset.audioReference))).rejects.toMatchObject({
+    code: 'ENOENT',
+  })
+  expect(await NarrationAsset.findById(asset._id).lean()).toMatchObject({
+    status: 'failed',
+    failureCode: 'superseded',
+  })
 })
 
 it('checks text access before generating or serving audio', async () => {
@@ -173,7 +185,7 @@ it('records failures with a retry and reports an unconfigured provider', async (
   // The provider callback only triggers a poll with our own credentials.
   const callback = await request(app)
     .post('/api/tts/vbee/callback')
-    .send({ request_id: 'job-2', status: 'SUCCESS', audio_link: 'https://evil/x.mp3' })
+    .send({ requestId: 'job-2', status: 'SUCCESS', audioLink: 'https://evil/x.mp3' })
   expect(callback.status).toBe(204)
   const asset = await NarrationAsset.findOne({ chapterId }).select('+audioReference').lean()
   expect(asset).toMatchObject({ status: 'available', attempts: 2 })
@@ -197,6 +209,97 @@ it('records failures with a retry and reports an unconfigured provider', async (
   const disabled = readingClient(createApp(testConfig({ ...base, ttsProvider: null })))
   const unavailable = await disabled.write(reader.cookie, url(storyId, chapterId), {})
   expect(unavailable.status).toBe(503)
+})
+
+it('caps provider attempts and refuses to resubmit permanent failures', async () => {
+  const { author, storyId } = await api.publishStory()
+  const chapterId = await api.publishChapter(author, storyId, 'Một')
+  const reader = await authenticatedAccount()
+  for (const attempt of [1, 2, 3]) {
+    await play(reader, storyId, chapterId)
+    provider.script.set(`job-${attempt}`, [{ state: 'failed', code: 'provider_failed' }])
+    await status(reader, storyId, chapterId)
+  }
+  const exhausted = (await status(reader, storyId, chapterId)).body.narration
+  expect(exhausted.failure).toMatchObject({ code: 'provider_failed', retryable: false })
+  expect(exhausted.failure.message).toContain('3 lần')
+  expect((await play(reader, storyId, chapterId)).body.narration.status).toBe('failed')
+  expect(provider.submits).toHaveLength(3)
+
+  // A failure the provider marks permanent is never submitted again.
+  const other = await api.publishChapter(author, storyId, 'Hai')
+  await play(reader, storyId, other)
+  await NarrationAsset.updateOne(
+    { chapterId: other },
+    { $set: { status: 'failed', failureCode: 'provider_rejected', retryable: false } },
+  )
+  expect((await play(reader, storyId, other)).body.narration.failure.retryable).toBe(false)
+  expect(provider.submits).toHaveLength(4)
+})
+
+it('limits new provider jobs per account and per day', async () => {
+  const { author, storyId } = await api.publishStory()
+  const first = await api.publishChapter(author, storyId, 'Một', ['Một câu ngắn.'])
+  const second = await api.publishChapter(author, storyId, 'Hai', ['Một câu ngắn khác.'])
+  const reader = await authenticatedAccount()
+  const cooled = readingClient(
+    createApp(
+      testConfig({
+        ...base,
+        mediaStorageDir: root,
+        ttsProvider: provider,
+        tts: { ...tts, requestCooldownSeconds: 60 },
+      }),
+    ),
+  )
+  expect((await cooled.write(reader.cookie, url(storyId, first), {})).status).toBe(202)
+  const throttled = await cooled.write(reader.cookie, url(storyId, second), {})
+  expect(throttled.status).toBe(429)
+  expect(throttled.body.error.code).toBe('narration_cooldown')
+  // Playing a job that already exists is not a new job.
+  expect((await cooled.write(reader.cookie, url(storyId, first), {})).status).toBe(202)
+  // Another account is not affected by this reader's cooldown.
+  const other = await authenticatedAccount()
+  expect((await cooled.write(other.cookie, url(storyId, second), {})).status).toBe(202)
+  expect(provider.submits).toHaveLength(2)
+
+  const third = await api.publishChapter(author, storyId, 'Ba', ['Câu thứ ba.'])
+  const budgeted = readingClient(
+    createApp(
+      testConfig({
+        ...base,
+        mediaStorageDir: root,
+        ttsProvider: provider,
+        tts: { ...tts, dailyCharacterLimit: provider.submits[0].text.length + 5 },
+      }),
+    ),
+  )
+  const overBudget = await budgeted.write(reader.cookie, url(storyId, third), {})
+  expect(overBudget.status).toBe(429)
+  expect(overBudget.body.error.code).toBe('tts_daily_limit')
+  expect(provider.submits).toHaveLength(2)
+})
+
+it('turns a narration whose file disappeared into a retryable failure', async () => {
+  const { author, storyId } = await api.publishStory()
+  const chapterId = await api.publishChapter(author, storyId, 'Một')
+  const reader = await authenticatedAccount()
+  await play(reader, storyId, chapterId)
+  provider.script.set('job-1', [{ state: 'completed', audioUrl: 'https://cdn/1.mp3' }])
+  expect((await status(reader, storyId, chapterId)).body.narration.status).toBe('available')
+  const asset = await NarrationAsset.findOne({ chapterId }).select('+audioReference').lean()
+  await rm(path.join(root, asset.audioReference))
+
+  const audio = await request(app)
+    .get(`${url(storyId, chapterId)}/audio`)
+    .set('Cookie', reader.cookie)
+  expect(audio.status).toBe(404)
+  expect((await status(reader, storyId, chapterId)).body.narration.failure).toMatchObject({
+    code: 'audio_missing',
+    retryable: true,
+  })
+  expect((await play(reader, storyId, chapterId)).body.narration.status).toBe('processing')
+  expect(provider.submits).toHaveLength(2)
 })
 
 it('keeps listening progress separate from reading progress', async () => {
@@ -262,6 +365,7 @@ it('talks to Vbee with App-Id and bearer token and maps request states', async (
   ]
   const fetchImpl = async (target, init) => {
     calls.push({ target, init })
+    if (target === 'https://a/b.mp3') return new Response('mp3-bytes')
     const reply = replies.shift()
     return { ok: reply.ok, status: reply.status, json: async () => reply.json }
   }
@@ -290,6 +394,9 @@ it('talks to Vbee with App-Id and bearer token and maps request states', async (
   expect(await vbee.poll('r1')).toEqual({ state: 'processing' })
   expect(calls[1].target).toBe('https://api.vbee.vn/v1/tts/requests/r1')
   expect(await vbee.poll('r1')).toEqual({ state: 'completed', audioUrl: 'https://a/b.mp3' })
+  const chunks = []
+  for await (const chunk of await vbee.download('https://a/b.mp3')) chunks.push(chunk)
+  expect(Buffer.concat(chunks).toString()).toBe('mp3-bytes')
   await expect(vbee.poll('r1')).rejects.toMatchObject({
     code: 'provider_unauthorized',
     retryable: true,
