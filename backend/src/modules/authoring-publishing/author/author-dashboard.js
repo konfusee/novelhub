@@ -41,8 +41,7 @@ const viewsForWindow = (storyIds, startDay, endDay) =>
   ])
 
 async function revenueForStories(accountId, storyIds, chapterIds, from, to) {
-  if (!storyIds.length || !chapterIds.length)
-    return { total: 0, unlocks: 0, byStory: new Map() }
+  if (!storyIds.length || !chapterIds.length) return { total: 0, unlocks: 0, byStory: new Map() }
   const wallet = await Wallet.findOne({
     ownerType: 'account',
     ownerId: accountId,
