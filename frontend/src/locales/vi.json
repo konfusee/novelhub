@@ -2667,7 +2667,8 @@
     "reload": "Tải lại trạng thái",
     "archiveSaved": "Đã lưu trữ chương nháp.",
     "restoreSaved": "Đã khôi phục chương nháp.",
-    "view": "Xem nội dung"
+    "view": "Xem nội dung",
+    "viewPublished": "Xem bản công khai"
   },
   "documentImport": {
     "title": "Nhập bản thảo từ tài liệu",

@@ -144,6 +144,14 @@ export async function authorStoryWorkspace(account, storyId) {
       title: revision?.content.title ?? chapter.title,
       number: chapter.orderKey,
       status: chapter.status,
+      // Immutable published revisions are read-only; authors edit a new revision.
+      canEdit: Boolean(
+        !story.authoringFrozen &&
+          !['submitted', 'under-review', 'archived'].includes(story.publicationStatus) &&
+          ['draft', 'published'].includes(chapter.status) &&
+          revision?.status === 'editable' &&
+          !revision?.immutableAt,
+      ),
       canRelease: Boolean(
         !story.authoringFrozen &&
         story.publicationStatus === 'published' &&

@@ -733,6 +733,17 @@ function ChapterRow({ chapter, storyId, onLifecycle, onRelease, onSchedule, onEa
           ? '—'
           : t('managerData.coinPrice', { count: access.coinPrice })
   const draft = chapter.status === 'Draft'
+  const canEdit = chapter.canEdit ?? draft
+  const previewPath = `/author/stories/${storyId}/chapters/${chapter.id}/preview`
+  const editPath = `/author/stories/${storyId}/chapters/${chapter.id}/edit`
+  const chapterEditorPath = canEdit ? editPath : previewPath
+  const chapterEditorLabel = canEdit
+    ? draft
+      ? 'Viết tiếp'
+      : 'Chỉnh sửa'
+    : chapter.status === 'Published'
+      ? t('chapterLifecycle.viewPublished')
+      : t('chapterLifecycle.view')
   return (
     <tr className="transition-colors duration-200 hover:bg-elevated/60">
       <td className="px-4 py-4 sm:min-w-[11.5rem] sm:px-5">
@@ -787,8 +798,8 @@ function ChapterRow({ chapter, storyId, onLifecycle, onRelease, onSchedule, onEa
               {
                 show: true,
                 content: (
-                  <ButtonLink to={`/author/stories/${storyId}/chapters/${chapter.id}/edit`} variant={draft ? 'primary' : 'secondary'} size="sm" onClick={() => setMenuOpen(false)}>
-                    {chapter.status === 'Archived' ? t('chapterLifecycle.view') : draft ? 'Viết tiếp' : chapter.status === 'Scheduled' ? t('chapterLifecycle.view') : 'Chỉnh sửa'}
+                  <ButtonLink to={chapterEditorPath} variant={canEdit && draft ? 'primary' : 'secondary'} size="sm" onClick={() => setMenuOpen(false)}>
+                    {chapterEditorLabel}
                   </ButtonLink>
                 ),
               },
@@ -798,7 +809,7 @@ function ChapterRow({ chapter, storyId, onLifecycle, onRelease, onSchedule, onEa
               { show: chapter.canDelete, content: <Button variant="danger" size="sm" onClick={() => { setMenuOpen(false); onLifecycle('delete') }}>{t('chapterLifecycle.delete')}</Button> },
               { show: chapter.canUnpublish, content: <Button variant="danger" size="sm" onClick={() => { setMenuOpen(false); onLifecycle('unpublish') }}>{t('chapterLifecycle.unpublish')}</Button> },
               { show: Boolean(chapter.reviseSource), content: <Button size="sm" onClick={() => { setMenuOpen(false); onLifecycle('reviseUnpublished') }}>{t('chapterLifecycle.reviseUnpublished')}</Button> },
-              { show: true, content: <ButtonLink to={`/author/stories/${storyId}/chapters/${chapter.id}/preview`} variant="secondary" size="sm" onClick={() => setMenuOpen(false)}>{t('authorDraftActions.preview')}</ButtonLink> },
+              { show: true, content: <ButtonLink to={previewPath} variant="secondary" size="sm" onClick={() => setMenuOpen(false)}>{t('authorDraftActions.preview')}</ButtonLink> },
               { show: true, content: <ButtonLink to={ROUTES.authorAnalytics(storyId, chapter.id)} variant="secondary" size="sm" onClick={() => setMenuOpen(false)} aria-label={`Xem phân tích chương ${chapter.number}: ${chapter.title}`}><BarChart3 size={15} aria-hidden="true" /> Phân tích</ButtonLink> },
             ]}
           />
