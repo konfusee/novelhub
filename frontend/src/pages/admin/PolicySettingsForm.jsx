@@ -12,6 +12,11 @@ const fields = [
   'withdrawalThresholdCoins',
   'authorSharePercent',
 ]
+const minimumValue = field =>
+  field.startsWith('duration') ||
+  ['priceMinCoins', 'orderExpiryHours', 'claimExpiryHours'].includes(field)
+    ? 1
+    : 0
 const initialValue = (policy, field) =>
   String(
     policy?.[field] ??
@@ -54,7 +59,7 @@ export function PolicySettingsForm({ policy, onSaved, onBusy }) {
       field =>
         /^\d+$/.test(values[field]) &&
         Number.isSafeInteger(numbers[field]) &&
-        numbers[field] >= (field.startsWith('duration') ? 1 : 0),
+        numbers[field] >= minimumValue(field),
     ) &&
     numbers.authorSharePercent <= 100 &&
     numbers.priceMinCoins <= numbers.priceMaxCoins &&
@@ -124,7 +129,7 @@ export function PolicySettingsForm({ policy, onSaved, onBusy }) {
             <Input
               id={`${id}-${field}`}
               type="number"
-              min={field.startsWith('duration') ? 1 : 0}
+              min={minimumValue(field)}
               max={field === 'authorSharePercent' ? 100 : Number.MAX_SAFE_INTEGER}
               step="1"
               required
@@ -141,6 +146,7 @@ export function PolicySettingsForm({ policy, onSaved, onBusy }) {
         ))}
       </fieldset>
 
+      <p className="mt-2 text-caption text-muted">{t('policy.minimumLimits')}</p>
       <p className="mt-2 text-caption text-muted">{t('policy.expiryScope')}</p>
       <fieldset disabled={busy || failed} className="mt-5">
         <label className="flex items-start gap-3 text-sm font-semibold">

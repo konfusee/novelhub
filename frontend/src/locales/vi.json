@@ -2492,6 +2492,7 @@
     "forbidden": "Bạn không có quyền thực hiện thao tác này."
   },
   "policy": {
+    "minimumLimits": "Giá tối thiểu và thời hạn hết hạn đơn nạp hoặc lượt nhận xử lý phải từ 1 trở lên.",
     "title": "Chính sách đọc sớm đang có hiệu lực",
     "description": "Giới hạn được tải từ MongoDB, dùng khi tác giả cấu hình đọc sớm cho chương.",
     "reload": "Tải lại chính sách",
@@ -2510,7 +2511,7 @@
     "activationHint": "Mặc định phiên bản mới có hiệu lực ngay. Bạn có thể hẹn ngày hiệu lực khi đã có chính sách hiện hành. Cấu hình chương và lịch sử tài chính đã lưu được giữ nguyên.",
     "initialTerms": "Thiết lập giá, thời hạn, ngưỡng chi trả và tỷ lệ mặc định. Tỷ lệ riêng của tác giả được ưu tiên.",
     "reason": "Lý do thay đổi (bắt buộc)",
-    "invalid": "Cần số nguyên hợp lệ, tối thiểu không lớn hơn tối đa; thời hạn ít nhất 1 ngày, tỷ lệ từ 0 đến 100, ngưỡng rút và thời hạn đơn/nhận xử lý không âm; lịch hiệu lực phải ở tương lai.",
+    "invalid": "Cần số nguyên hợp lệ, tối thiểu không lớn hơn tối đa; thời hạn ít nhất 1 ngày, tỷ lệ từ 0 đến 100, ngưỡng rút không âm, giá tối thiểu và thời hạn đơn/nhận xử lý từ 1 trở lên; lịch hiệu lực phải ở tương lai.",
     "activate": "Lưu và kích hoạt chính sách",
     "saving": "Đang lưu chính sách…",
     "saved": "Đã kích hoạt chính sách mới. Các giá trị hiển thị được tải lại từ máy chủ.",

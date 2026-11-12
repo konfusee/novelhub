@@ -373,6 +373,10 @@ export async function activatePolicy(admin, input) {
       const inherited = previous
         ? Object.fromEntries(inheritedFields.map(field => [field, previous[field]]))
         : {}
+      for (const field of ['orderExpiryHours', 'claimExpiryHours']) {
+        if ((input[field] ?? inherited[field] ?? 24) < 1)
+          throw new HttpError(400, 'validation_error', 'Thời hạn phải từ 1 giờ trở lên.')
+      }
       const [policy] = await PolicyVersion.create(
         [
           {

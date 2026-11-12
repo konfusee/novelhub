@@ -219,12 +219,12 @@ export function createAdminAuthorRouter(config) {
         const integer = z.number().int().min(0).max(Number.MAX_SAFE_INTEGER)
         const parsed = z
           .object({
-            priceMinCoins: integer,
+            priceMinCoins: integer.min(1),
             priceMaxCoins: integer,
             durationMinDays: integer.min(1),
             durationMaxDays: integer.min(1),
-            orderExpiryHours: integer.optional(),
-            claimExpiryHours: integer.optional(),
+            orderExpiryHours: integer.min(1).optional(),
+            claimExpiryHours: integer.min(1).optional(),
             withdrawalThresholdCoins: integer.optional(),
             authorSharePercent: integer.max(100).optional(),
             effectiveAt: z
