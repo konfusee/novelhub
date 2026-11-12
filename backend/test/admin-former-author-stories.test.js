@@ -99,7 +99,7 @@ const input = (story, action = 'correct') => ({
     ? { title: 'Tên quản trị sửa', description: 'Mô tả sửa.', categoryId: story.categoryId }
     : {}),
 })
-it('corrects and republishes metadata by explicit Admin exception without rewriting rights or old revisions', async () => {
+it('corrects metadata and keeps visibility without rewriting rights or old revisions', async () => {
   const f = await fixture()
   expect((await f.revoke()).status).toBe(200)
   const original = await ContentRevision.find({ storyId: f.id }).lean(),
@@ -125,6 +125,9 @@ it('corrects and republishes metadata by explicit Admin exception without rewrit
   expect((await write(f.admin.cookie, f.path, input(state, 'unpublish'))).status).toBe(200)
   expect((await request(app).get(`/api/catalog/stories/${f.id}`)).status).toBe(404)
   state = await baseline(f)
+  expect((await write(f.admin.cookie, f.path, input(state))).status).toBe(200)
+  expect((await request(app).get(`/api/catalog/stories/${f.id}`)).status).toBe(404)
+  state = await baseline(f)
   expect((await write(f.admin.cookie, f.path, input(state, 'republish'))).status).toBe(200)
   expect((await request(app).get(`/api/catalog/stories/${f.id}`)).status).toBe(200)
   expect(
@@ -137,7 +140,7 @@ it('corrects and republishes metadata by explicit Admin exception without rewrit
       targetId: f.id,
       action: { $regex: '^former-author.story.' },
     }),
-  ).toBe(3)
+  ).toBe(4)
 })
 it('preserves original provenance across repeated corrections and rejects a tampered correction', async () => {
   const f = await fixture()
