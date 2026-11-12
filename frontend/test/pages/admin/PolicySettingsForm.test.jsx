@@ -84,7 +84,7 @@ it('initializes with explicit bounds, null tokens and disclosed default terms', 
   expect(screen.getByLabelText('Thời hạn đơn nạp (giờ)').value).toBe('24')
   expect(screen.getByLabelText('Thời hạn nhận xử lý (giờ)').value).toBe('24')
   for (const [label, value] of [
-    ['Giá tối thiểu (xu)', '0'],
+    ['Giá tối thiểu (xu)', '1'],
     ['Giá tối đa (xu)', '900'],
     ['Thời hạn tối thiểu (ngày)', '2'],
     ['Thời hạn tối đa (ngày)', '8'],
@@ -96,7 +96,7 @@ it('initializes with explicit bounds, null tokens and disclosed default terms', 
   expect(mocks.apiRequest.mock.calls[0][1].body).toMatchObject({
     expectedPolicyId: null,
     expectedPolicyVersion: null,
-    priceMinCoins: 0,
+    priceMinCoins: 1,
   })
 })
 it('rejects inverted bounds and fractional durations before any write', () => {
@@ -186,24 +186,24 @@ it('saves expiry-only changes without replacing unrelated policy terms', async (
     version: 0,
   })
   const callbacks = view()
-  fill('Thời hạn đơn nạp (giờ)', '0')
+  fill('Thời hạn đơn nạp (giờ)', '1')
   fill('Thời hạn nhận xử lý (giờ)', '36')
   fill('Lý do thay đổi (bắt buộc)', 'Cập nhật thời hạn')
   fireEvent.click(button())
   await waitFor(() => expect(callbacks.onSaved).toHaveBeenCalledOnce())
   expect(mocks.apiRequest.mock.calls[0][1].body).toMatchObject({
-    orderExpiryHours: 0,
+    orderExpiryHours: 1,
     claimExpiryHours: 36,
     priceMinCoins: 200,
     expectedPolicyId: policy.id,
     expectedPolicyVersion: policy.version,
   })
 })
-it('blocks missing, fractional, negative and unsafe expiry values before sending', () => {
+it('blocks missing, fractional, zero, negative and unsafe expiry values before sending', () => {
   view()
   fill('Lý do thay đổi (bắt buộc)', 'Kiểm tra thời hạn')
   for (const label of ['Thời hạn đơn nạp (giờ)', 'Thời hạn nhận xử lý (giờ)']) {
-    for (const value of ['', '-1', '1.5', String(Number.MAX_SAFE_INTEGER + 1)]) {
+    for (const value of ['', '-1', '0', '1.5', String(Number.MAX_SAFE_INTEGER + 1)]) {
       fill(label, value)
       expect(button().disabled).toBe(true)
     }

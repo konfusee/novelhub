@@ -1,4 +1,3 @@
-import { ROUTES } from '../../app/routes'
 import { useRef, useState } from 'react'
 import {
   AlertTriangle,
@@ -22,7 +21,6 @@ import {
   Avatar,
   Badge,
   Button,
-  ButtonLink,
   Card,
   EmptyState,
   IconButton,
@@ -416,27 +414,26 @@ function UserInspector({ user, titleRef, onClose, onChanged }) {
             <X size={16} />
           </IconButton>
         </div>
-        {user.roles.includes('author') && (
-          <ButtonLink to={ROUTES.adminUser(user.id)} variant="secondary" size="sm" className="mt-4">
-            {t('agreement.title')}
-          </ButtonLink>
-        )}
         <div className="mt-5 grid gap-2 sm:grid-cols-2">
           {detail.status === 'ready' &&
             ['active', 'suspended', 'pending-verification'].includes(
               detail.data.account.status,
             ) && (
               <>
-                {detail.data.account.status !== 'pending-verification' && (
+                {(detail.data.account.status === 'suspended' ||
+                  (detail.data.account.status === 'active' &&
+                    !user.roles.some(role => role === 'moderator' || role === 'admin'))) && (
                   <Button variant="secondary" size="sm" onClick={() => setStatusDialog('status')}>
                     {t(
                       `authorAccountStatus.${detail.data.account.status === 'active' ? 'suspend' : 'restore'}`,
                     )}
                   </Button>
                 )}
-                <Button variant="danger" size="sm" onClick={() => setStatusDialog('close')}>
-                  {t('authorAccountStatus.close')}
-                </Button>
+                {!user.roles.some(role => role === 'moderator' || role === 'admin') && (
+                  <Button variant="danger" size="sm" onClick={() => setStatusDialog('close')}>
+                    {t('authorAccountStatus.close')}
+                  </Button>
+                )}
               </>
             )}
         </div>

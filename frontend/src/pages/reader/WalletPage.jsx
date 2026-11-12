@@ -12,6 +12,7 @@ import {
 import { ReaderLayout } from '../../layouts'
 import { useBackendResource } from '../../api/useBackendResource'
 import { apiRequest } from '../../api/client'
+import { notifyWalletBalanceChanged } from '../../api/walletEvents'
 
 const transactionLabels = {
   'topup-credit': 'Nạp xu',
@@ -236,6 +237,7 @@ export function WalletPage() {
 
       if (result.order.status === 'paid') {
         wallet.retry()
+        notifyWalletBalanceChanged()
         setNotice('Đơn đã được xác nhận thanh toán.')
       }
     } catch (error) {
@@ -342,11 +344,7 @@ export function WalletPage() {
               </Card>
             )}
 
-            <Reveal
-              as="section"
-              id="coin-packages"
-              className="scroll-mt-24"
-            >
+            <Reveal as="section" id="coin-packages" className="scroll-mt-24">
               <h2 className="text-h3">Các gói nạp xu</h2>
               {orderError && (
                 <p role="alert" className="mt-3 text-sm text-red-600">

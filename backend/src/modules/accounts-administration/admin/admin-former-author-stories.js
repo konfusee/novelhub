@@ -238,7 +238,8 @@ export async function changeFormerStory(admin, id, input) {
       story.categoryId = input.categoryId
       story.set(storyTagFields(content.tags))
     }
-    story.publicationStatus = input.action === 'unpublish' ? 'unpublished' : 'published'
+    if (input.action === 'unpublish') story.publicationStatus = 'unpublished'
+    if (input.action === 'republish') story.publicationStatus = 'published'
     story.publicationTransition = {
       actorAccountId: admin._id,
       occurredAt: now,

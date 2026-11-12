@@ -110,6 +110,7 @@ function AppSidebar({ workspace, collapsed, mobile = false, onCollapse, onNaviga
   const { t } = useLocale()
   const { pathname } = useLocation()
   const tooltipId = useId()
+  const navigationRef = useRef(null)
   const [tooltip, setTooltip] = useState(null)
   useEffect(() => {
     if (!collapsed || !tooltip) return
@@ -133,6 +134,11 @@ function AppSidebar({ workspace, collapsed, mobile = false, onCollapse, onNaviga
       exact ? pathname === path : path === '/' ? pathname === '/' : pathname.startsWith(path),
     )
     .sort((a, b) => b[1].length - a[1].length)[0]?.[1]
+  useEffect(() => {
+    const navigation = navigationRef.current
+    if (navigation?.clientHeight)
+      navigation.querySelector('[aria-current="page"]')?.scrollIntoView({ block: 'nearest' })
+  }, [activePath, collapsed])
   return (
     <div className="flex h-full flex-col bg-surface p-3">
       <div className={`mb-4 flex h-12 items-center ${collapsed ? 'justify-center' : 'gap-2 px-2'}`}>
@@ -152,6 +158,7 @@ function AppSidebar({ workspace, collapsed, mobile = false, onCollapse, onNaviga
       </div>
       <WorkspaceSwitcher currentRole={workspace} compact={collapsed} />
       <div
+        ref={navigationRef}
         data-sidebar-navigation
         className="-mx-1 min-h-0 flex-1 space-y-5 overflow-y-auto overflow-x-hidden px-1 pb-4"
       >

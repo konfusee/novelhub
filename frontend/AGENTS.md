@@ -425,6 +425,14 @@ Affected: App.jsx, JoinPage, AuthorApplyPage, SiteFooter, ui/index.jsx, ReaderSe
 
 Status: Accepted through the user's explicit requests.
 
+### 2026-11-11 — Workspace header navigation and live balances
+
+Context: The user requested role-specific header navigation, the current reader's actual coin balance, and an author balance shortcut that selects Revenue without a top-up plus sign.
+
+Decision: Keep the shared AppShell and header geometry. Define header links and wallet destinations in workspace navigation metadata. Reader uses the reader wallet balance; Author uses earnings balance and the canonical earnings route. Notifications retain the active workspace. Refresh balances after wallet mutations, route changes and returning to the window, with periodic refresh while visible. Never display a hard-coded balance or retain another account's balance. Scroll the selected sidebar entry into view.
+
+Status: Accepted through the user's explicit header and balance request.
+
 ## 25. Deprecated Patterns
 
 - **DOM-wide translation via `MutationObserver` — DEPRECATED.** Use keyed dictionaries through `useLocale()`.

@@ -244,11 +244,6 @@ const AuthorApplyPage = lazy(() =>
     default: m.AuthorApplyPage,
   })),
 )
-const AuthorAgreementPage = lazy(() =>
-  import('./pages/admin/AuthorAgreementPage').then(m => ({
-    default: m.AuthorAgreementPage,
-  })),
-)
 const ForbiddenPage = lazy(() =>
   import('./pages/system/SystemPages').then(m => ({
     default: m.ForbiddenPage,
@@ -393,6 +388,34 @@ function AppRoutes() {
           <Route path="/reader/history" element={role('reader', <ReadingHistoryPage />)} />
           <Route path="/reader/notifications" element={role('reader', <NotificationsPage />)} />
           <Route
+            path="/author/notifications"
+            element={role(
+              'author',
+              <AuthorLayout>
+                <NotificationsPage embedded workspace="author" />
+              </AuthorLayout>,
+              true,
+            )}
+          />
+          <Route
+            path="/moderator/notifications"
+            element={role(
+              'moderator',
+              <ModeratorLayout>
+                <NotificationsPage embedded workspace="moderator" />
+              </ModeratorLayout>,
+            )}
+          />
+          <Route
+            path="/admin/notifications"
+            element={role(
+              'admin',
+              <AdminLayout>
+                <NotificationsPage embedded workspace="admin" />
+              </AdminLayout>,
+            )}
+          />
+          <Route
             path="/reader/profile"
             element={role('reader', <ProfileAccountPage workspace="reader" />)}
           />
@@ -516,7 +539,10 @@ function AppRoutes() {
             path="/author/profile"
             element={role('author', <ProfileAccountPage workspace="author" />, true)}
           />
-          <Route path="/author/wallet" element={role('author', <AuthorEarningsPage />, true)} />
+          <Route
+            path="/author/wallet"
+            element={role('author', <Navigate to={ROUTES.authorEarnings} replace />, true)}
+          />
           <Route
             path="/author/settings"
             element={role('author', <ReaderProfilePage workspace="author" />, true)}
@@ -638,7 +664,6 @@ function AppRoutes() {
           />
           <Route path="/admin" element={role('admin', <AdminDashboardPage />)} />
           <Route path="/admin/users" element={role('admin', <UsersManagementPage />)} />
-          <Route path="/admin/users/:userId" element={role('admin', <AuthorAgreementPage />)} />
           <Route path="/admin/roles" element={role('admin', <RolesPermissionsPage />)} />
           <Route
             path="/admin/categories"
@@ -661,53 +686,14 @@ function AppRoutes() {
             path="/admin/account"
             element={role('admin', <Navigate to="/admin/profile?tab=account" replace />)}
           />
-          <Route
-            path="/admin/support"
-            element={role(
-              'admin',
-              <RoleUtilityPage
-                role="admin"
-                eyebrow="Trợ giúp NovelHub"
-                title="Trợ giúp và hỗ trợ"
-                description="Tìm hướng dẫn quản trị, tài liệu vận hành và kênh hỗ trợ."
-              />,
-            )}
-          />
           <Route path="/admin/content" element={role('admin', <FormerAuthorStoriesPage />)} />
-          <Route
-            path="/admin/services"
-            element={role(
-              'admin',
-              <RoleUtilityPage
-                role="admin"
-                eyebrow="Hạ tầng"
-                title="Dịch vụ và hạ tầng"
-                description="Giám sát dịch vụ ngoài, lưu trữ, tìm kiếm, xử lý âm thanh và năng lực vận hành."
-              />,
-            )}
-          />
           <Route path="/admin/audit-logs" element={role('admin', <AuditEventsPage />)} />
-          <Route
-            path="/admin/moderation"
-            element={role(
-              'admin',
-              <RoleUtilityPage
-                role="admin"
-                eyebrow="Quản trị"
-                title="Giám sát kiểm duyệt"
-                description="Theo dõi thực thi chính sách, tình trạng hàng đợi, chuyển cấp, khiếu nại và hiệu suất kiểm duyệt."
-              />,
-            )}
-          />
 
           <Route
             path="/admin/author-statistics"
             element={role('admin', <AuthorStatisticsPage />)}
           />
-          <Route
-            path="/admin/payouts"
-            element={role('admin', <MonthlyPayoutsPage />)}
-          />
+          <Route path="/admin/payouts" element={role('admin', <MonthlyPayoutsPage />)} />
 
           <Route path="/403" element={<ForbiddenPage />} />
 

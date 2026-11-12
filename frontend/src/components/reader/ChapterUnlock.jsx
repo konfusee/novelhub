@@ -2,6 +2,7 @@ import { useRef, useState } from 'react'
 import { useLocation } from 'react-router'
 import { Button, ButtonLink } from '../ui'
 import { apiRequest } from '../../api/client'
+import { notifyWalletBalanceChanged } from '../../api/walletEvents'
 import { useBackendDocument } from '../../api/useBackendResource'
 import { ROUTES } from '../../app/routes'
 import { useLocale } from '../../context/LocaleContext'
@@ -42,6 +43,7 @@ export function ChapterUnlock({ storyId, chapterId, onUnlocked }) {
         throw new Error('Unexpected unlock response')
       }
 
+      notifyWalletBalanceChanged()
       onUnlocked()
     } catch (error) {
       setPurchaseError(t('unlock.purchaseError'))

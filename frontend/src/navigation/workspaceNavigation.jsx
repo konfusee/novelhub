@@ -3,7 +3,6 @@ import {
   Bell,
   BookHeart,
   BookOpen,
-  Boxes,
   CircleDollarSign,
   CirclePlus,
   ClipboardCheck,
@@ -26,7 +25,6 @@ import {
   Search,
   Send,
   ShieldAlert,
-  ShieldCheck,
   SlidersHorizontal,
   UserCog,
   UserRoundCheck,
@@ -99,7 +97,7 @@ export const workspaceNavigation = {
       items: [
         ['navigation.submissions', '/author/submissions', Send],
         ['navigation.analytics', '/author/analytics', BarChart3],
-        ['navigation.revenue', '/author/earnings', CircleDollarSign],
+        ['navigation.revenue', ROUTES.authorEarnings, CircleDollarSign],
       ],
     },
   ],
@@ -142,11 +140,54 @@ export const workspaceNavigation = {
       labelKey: 'navigation.platform',
       items: [
         ['navigation.platformSettings', '/admin/settings', SlidersHorizontal],
-        ['navigation.services', '/admin/services', Boxes],
         ['navigation.auditLogs', '/admin/audit-logs', History],
-        ['navigation.moderation', '/admin/moderation', ShieldCheck],
         ['navigation.transactions', '/admin/transactions', WalletCards],
       ],
     },
   ],
+}
+
+// Header destinations belong to the active workspace; Reader capabilities remain
+// available through the explicit workspace switcher.
+export const workspaceHeaderNavigation = {
+  reader: [
+    ['navigation.discover', '/?workspace=reader', ['/', '/discover']],
+    ['navigation.categories', '/categories?workspace=reader', ['/categories', '/browse']],
+    ['navigation.rankings', '/rankings?workspace=reader', ['/rankings']],
+    ['navigation.explore', '/search?workspace=reader', ['/search', '/reader/explore'], true],
+    ['navigation.library', ROUTES.library, [ROUTES.library, '/library']],
+  ],
+  author: [
+    ['navigation.dashboard', '/author', ['/author'], false, true],
+    ['navigation.storyManager', '/author/stories', ['/author/stories']],
+    ['navigation.drafts', '/author/drafts', ['/author/drafts']],
+    ['navigation.submissions', '/author/submissions', ['/author/submissions']],
+  ],
+  moderator: [
+    ['navigation.dashboard', '/moderator', ['/moderator'], false, true],
+    ['navigation.pendingReviews', ROUTES.moderatorSubmissions, [ROUTES.moderatorSubmissions]],
+    ['navigation.reports', '/moderator/reports', ['/moderator/reports']],
+    ['navigation.decisions', ROUTES.moderatorDecisions, [ROUTES.moderatorDecisions]],
+  ],
+  admin: [
+    ['navigation.dashboard', '/admin', ['/admin'], false, true],
+    ['navigation.users', '/admin/users', ['/admin/users']],
+    ['navigation.roles', '/admin/roles', ['/admin/roles']],
+    ['navigation.platformSettings', '/admin/settings', ['/admin/settings'], true],
+  ],
+}
+
+export const workspaceWallets = {
+  reader: {
+    path: ROUTES.wallet,
+    apiPath: '/reader/wallet',
+    labelKey: 'navigation.wallet',
+    topUp: true,
+  },
+  author: {
+    path: ROUTES.authorEarnings,
+    apiPath: '/author/earnings',
+    labelKey: 'navigation.revenue',
+    topUp: false,
+  },
 }

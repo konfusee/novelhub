@@ -56,12 +56,17 @@ it('initializes explicit expiry settings and preserves existing order/claim dead
     await TopUpOrder.findById(order.id).lean(),
     await PublicationSubmission.findById(claim.id).lean(),
   ])
-  const result = await post(admin, { ...input, orderExpiryHours: 0, claimExpiryHours: 6 })
+  for (const field of ['priceMinCoins', 'orderExpiryHours', 'claimExpiryHours']) {
+    const invalid = await post(admin, { ...input, [field]: 0 })
+    expect(invalid.status).toBe(400)
+    expect(invalid.body.error.code).toBe('validation_error')
+  }
+  const result = await post(admin, { ...input, orderExpiryHours: 1, claimExpiryHours: 6 })
   expect(result.status).toBe(201)
   const read = await request(app).get('/api/admin/policy').set('Cookie', admin.cookie)
-  expect(read.body.policy).toMatchObject({ orderExpiryHours: 0, claimExpiryHours: 6 })
+  expect(read.body.policy).toMatchObject({ orderExpiryHours: 1, claimExpiryHours: 6 })
   expect((await adminPolicyHistory({ page: 1, pageSize: 5 })).items[0]).toMatchObject({
-    orderExpiryHours: 0,
+    orderExpiryHours: 1,
     claimExpiryHours: 6,
   })
   expect(

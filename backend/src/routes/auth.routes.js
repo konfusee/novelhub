@@ -283,7 +283,7 @@ export function createAuthRouter(config) {
     }
   })
 
-  router.post('/auth/resend-verification', async (req, res, next) => {
+  router.post('/auth/resend-verification', recoveryRateLimit, async (req, res, next) => {
     try {
       const parsed = emailSchema.safeParse(req.body)
       if (!parsed.success)
@@ -584,7 +584,9 @@ export function createAuthRouter(config) {
           // A deleted account must not leave its Google identity permanently unusable.
           await ExternalIdentity.deleteOne({ _id: linked._id }, { session })
         }
-        let target = await Account.findOne({ normalizedEmail: identity.email }).session(session)
+        let target = await Account.findOne({ normalizedEmail: identity.email })
+          .select('+password')
+          .session(session)
         if (target && !['active', 'pending-verification'].includes(target.status)) {
           throw new HttpError(403, 'account_unavailable', 'This NovelHub account is unavailable')
         }
@@ -601,6 +603,9 @@ export function createAuthRouter(config) {
             { session },
           )
         } else if (target.status === 'pending-verification') {
+          target.password = undefined
+          target.twoFactorEnabled = false
+          target.credentialVersion++
           target.status = 'active'
           target.emailVerifiedAt = new Date()
           await target.save({ session })
@@ -672,13 +677,22 @@ export function createAuthRouter(config) {
         '+password',
       )
       const valid =
-        account?.status === 'active' &&
-        account.emailVerifiedAt &&
-        account.password?.hash &&
+        account?.password?.hash &&
         (await verifyPassword(parsed.data.password, account.password.hash))
       if (!valid) {
-        return next(new HttpError(401, 'invalid_credentials', 'Email or password is invalid'))
+        return next(new HttpError(401, 'invalid_credentials', 'Email hoặc mật khẩu không đúng.'))
       }
+      if (
+        account.status === 'pending-verification' ||
+        (account.status === 'active' && !account.emailVerifiedAt)
+      )
+        throw new HttpError(
+          403,
+          'email_not_verified',
+          'Vui lòng xác minh email trước khi đăng nhập.',
+        )
+      if (account.status !== 'active')
+        throw new HttpError(403, 'account_unavailable', 'Tài khoản hiện không thể đăng nhập.')
       if (account.twoFactorEnabled) {
         return res.json({
           requiresTwoFactor: true,

@@ -55,6 +55,8 @@ export function JoinPage({ initialMode }) {
   const mode = initialMode || queryMode || 'register'
   const isLogin = mode === 'login'
   const [accountType, setAccountType] = useState('reader')
+  const [verificationEmail, setVerificationEmail] = useState('')
+  const [resendingVerification, setResendingVerification] = useState(false)
   const [rememberMe, setRememberMe] = useState(false)
   const [loginChallenge, setLoginChallenge] = useState(
     () => new URLSearchParams(location.search).get('googleChallenge') || '',
@@ -249,15 +251,38 @@ export function JoinPage({ initialMode }) {
         setBusy(false)
       }
     } catch (reason) {
-      setError(
-        reason.code === 'invalid_otp'
-          ? t('security.invalidOtp')
-          : reason.code === 'invalid_captcha'
-            ? t('auth.captchaInvalid')
-            : reason.message,
-      )
+      const messageKey = {
+        invalid_otp: 'security.invalidOtp',
+        invalid_captcha: 'auth.captchaInvalid',
+        invalid_credentials: 'auth.invalidCredentials',
+        email_in_use: 'auth.emailInUse',
+        password_mismatch: 'auth.passwordsDiffer',
+        validation_error: 'auth.invalidDetails',
+        too_many_attempts: 'auth.tooManyAttempts',
+        email_not_verified: 'auth.emailNotVerified',
+        account_unavailable: 'auth.accountUnavailable',
+      }[reason.code]
+      setError(t(messageKey ?? 'auth.requestFailed'))
+      setVerificationEmail(reason.code === 'email_not_verified' ? form.email.trim() : '')
       if (!isLogin) reloadCaptcha()
       setBusy(false)
+    }
+  }
+
+  const resendVerification = async () => {
+    setResendingVerification(true)
+    try {
+      await apiRequest('/auth/resend-verification', {
+        method: 'POST',
+        body: { email: verificationEmail },
+      })
+      setNotice(t('auth.verificationResent'))
+      setError('')
+      setVerificationEmail('')
+    } catch {
+      setError(t('auth.resendVerificationFailed'))
+    } finally {
+      setResendingVerification(false)
     }
   }
 
@@ -662,6 +687,16 @@ export function JoinPage({ initialMode }) {
                         <AlertTriangle size={17} className="mt-0.5 shrink-0" />
                         {error}
                       </p>
+                    )}
+                    {isLogin && verificationEmail === form.email.trim() && verificationEmail && (
+                      <Button
+                        type="button"
+                        variant="secondary"
+                        onClick={resendVerification}
+                        disabled={resendingVerification}
+                      >
+                        {t('auth.resendVerification')}
+                      </Button>
                     )}
                     {(notice || registrationNotice) && (
                       <p

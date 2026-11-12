@@ -56,8 +56,22 @@ describe('community comments', () => {
     expect(thread.replies).toHaveLength(1)
     expect(thread.replies[0]).toMatchObject({ body: 'Đồng ý', mine: true, parentId: rootId })
 
+    const profile = {
+      displayName: 'Tên mới',
+      bio: 'Thích đọc truyện',
+      fontSize: 'medium',
+      fontSizePx: 17,
+    }
+    const saved = await request(app)
+      .put('/api/reader/profile')
+      .set('Origin', origin)
+      .set('Cookie', alice.cookie)
+      .send(profile)
+    expect(saved.status).toBe(200)
+    expect((await api.get(alice.cookie, '/api/reader/profile')).body.profile).toEqual(profile)
     const guest = await request(app).get(url)
     expect(guest.body.items[1].replies[0].mine).toBe(false)
+    expect(guest.body.items[1].author.displayName).toBe(profile.displayName)
 
     await Account.updateOne(
       { _id: alice.account._id },

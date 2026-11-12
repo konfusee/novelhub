@@ -91,7 +91,7 @@ export function RolesPermissionsPage() {
                     disabled={
                       accounts.status !== 'ready' ||
                       account.status !== 'active' ||
-                      account.roles.includes('author')
+                      account.roles.some(role => role === 'author' || role === 'admin')
                     }
                     onClick={() => setSelected(account)}
                   >
@@ -139,7 +139,7 @@ export function RolesPermissionsPage() {
 }
 function StaffRoleDialog({ account, onClose, onSaved }) {
   const { t } = useLocale()
-  const [role, setRole] = useState(account.roles[0] ?? 'reader')
+  const [role, setRole] = useState(account.roles.includes('moderator') ? 'moderator' : 'reader')
   const [reason, setReason] = useState('')
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
@@ -178,7 +178,7 @@ function StaffRoleDialog({ account, onClose, onSaved }) {
           disabled={busy}
           className="mt-2"
         >
-          {['reader', 'moderator', 'admin'].map(value => (
+          {['reader', 'moderator'].map(value => (
             <option key={value} value={value}>
               {t(`adminAccounts.roles.${value}`)}
             </option>

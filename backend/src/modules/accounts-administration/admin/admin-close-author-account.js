@@ -38,6 +38,14 @@ export async function closeAuthorAccount(admin, accountId, input) {
       .session(session)
     if (!target) throw new HttpError(404, 'not_found', 'Không tìm thấy tài khoản.')
     if (
+      await RoleAssignment.exists({
+        accountId,
+        role: { $in: ['moderator', 'admin'] },
+        status: 'active',
+      }).session(session)
+    )
+      throw new HttpError(409, 'protected_account', 'Không thể thao tác với tài khoản nhân sự.')
+    if (
       target.version !== input.expectedVersion ||
       !['active', 'suspended', 'pending-verification'].includes(target.status)
     )
