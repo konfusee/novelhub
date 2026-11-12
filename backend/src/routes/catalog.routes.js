@@ -123,8 +123,10 @@ export function createCatalogRouter(config) {
     try {
       const story = (await publishedCards({ ids: [req.params.storyId] }))[0]
       if (!story) throw new HttpError(404, 'not_found', 'Không tìm thấy truyện đã xuất bản.')
+      res.set('Cache-Control', 'private, no-store').vary('Cookie')
+      const account = await optionalAccount(req, config)
       const [chapters, ratings, author, works, latestComment, viewer] = await Promise.all([
-        publishedChapterRows([story.id]),
+        publishedChapterRows([story.id], new Date(), account?._id),
         Rating.aggregate([
           {
             $match: { storyId: new mongoose.Types.ObjectId(req.params.storyId), status: 'active' },
@@ -140,7 +142,7 @@ export function createCatalogRouter(config) {
           .select('body authorAccountId')
           .populate('authorAccountId', 'displayName status')
           .lean(),
-        optionalAccount(req, config).then(account => storyViewer(account, story.id)),
+        storyViewer(account, story.id),
       ])
       const ratingCount = ratings.reduce((count, item) => count + item.count, 0)
       const ratingTotal = ratings.reduce((sum, item) => sum + item._id * item.count, 0)
@@ -208,7 +210,7 @@ export function createCatalogRouter(config) {
         throw new HttpError(404, 'not_found', 'Chương chưa sẵn sàng.')
       }
       const [neighbours, commentCount] = await Promise.all([
-        publishedChapterRows([chapter.storyId]),
+        publishedChapterRows([chapter.storyId], new Date(), account?._id),
         Comment.countDocuments({ targetType: 'chapter', targetId: chapter._id, status: 'visible' }),
       ])
       const rows = neighbours.get(String(chapter.storyId))

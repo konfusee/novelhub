@@ -79,7 +79,6 @@ export async function prepareAccountDeletion({ account, actorAccountId, session,
 /** On the first day, evaluate deletions before this month's Vietnam cutoff exactly once. */
 export async function evaluateDeletedAccountPayouts(now = new Date()) {
   const local = new Date(+now + 7 * 3600_000)
-  if (local.getUTCDate() !== 1) return
   const periodId = local.toISOString().slice(0, 7)
   const cutoff = new Date(Date.UTC(local.getUTCFullYear(), local.getUTCMonth(), 1) - 7 * 3600_000)
   const accounts = await Account.find({

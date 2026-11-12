@@ -1,3 +1,4 @@
+import { payoutCutoff } from './payout-period.js'
 import {
   AuditEvent,
   LedgerEntry,
@@ -9,7 +10,7 @@ import { HttpError } from '../../../middleware/errors.js'
 import { evaluatePayoutEligibility } from './payout-eligibility.js'
 
 export async function createMonthlyPayoutRecords(
-  { account, wallet, periodId, policy, actorAccountId },
+  { account, wallet, periodId, policy, actorAccountId, eligibleBalanceCoins },
   session,
   now = new Date(),
 ) {
@@ -40,6 +41,7 @@ export async function createMonthlyPayoutRecords(
     account,
     wallet,
     policy,
+    eligibleBalanceCoins,
   })
 
   if (eligibility.state !== 'eligible') {
@@ -55,7 +57,7 @@ export async function createMonthlyPayoutRecords(
         earningsWalletId: wallet._id,
         origin: 'system-monthly',
         periodId,
-        cutoffAt: now,
+        cutoffAt: payoutCutoff(periodId),
         evaluatedAt: now,
         evaluatedBalanceCoins: amountCoins,
         thresholdCoins,
@@ -81,7 +83,7 @@ export async function createMonthlyPayoutRecords(
       ownerId: account._id,
       purpose: 'author-earnings',
       unit: 'coin',
-      availableBalance: amountCoins,
+      availableBalance: wallet.availableBalance,
       balanceVersion: wallet.balanceVersion,
     },
     {
@@ -135,7 +137,7 @@ export async function createMonthlyPayoutRecords(
   await AuditEvent.create(
     [
       {
-        actorType: 'account',
+        actorType: actorAccountId ? 'account' : 'system',
         actorId: actorAccountId,
         action: 'monthly-payout.created',
         targetType: 'WithdrawalRequest',

@@ -3,6 +3,7 @@ import { expect, it } from 'vitest'
 import { createApp } from '../src/app.js'
 import {
   AuditEvent,
+  BankTransaction,
   LedgerEntry,
   PolicyVersion,
   TopUpOrder,
@@ -63,6 +64,36 @@ function createOrder(reader, packageId) {
     .set('Origin', origin)
     .send({ packageId: String(packageId) })
 }
+
+it('restores QR for its owner, then hides it and warns against repayment when a receipt needs review', async () => {
+  const { reader, pack } = await prepareCase()
+  const created = await createOrder(reader, pack._id)
+  const order = created.body.order
+  const path = '/api/reader/top-up-orders/' + order.id
+  const reopened = await request(app).get(path).set('Cookie', reader.cookie)
+  expect(reopened.body.order.payment.content).toBe(order.paymentCode)
+  await BankTransaction.create({
+    sePayTransactionId: 'wrong-amount',
+    amountVnd: 40000,
+    matchedOrderId: order.id,
+    matchStatus: 'amount-mismatch',
+    receivedAt: new Date(),
+    apiKeyAuthenticated: true,
+  })
+  const attention = await request(app).get(path).set('Cookie', reader.cookie)
+  expect(attention.body.order.reviewState).toBe('pending-review')
+  expect(attention.body.order.receivedAmountVnd).toBe(40000)
+  expect(attention.body.order.payment).toBeUndefined()
+  const reused = await createOrder(reader, pack._id)
+  expect(reused.body.order.payment).toBeUndefined()
+  const list = await request(app).get('/api/reader/top-up-orders').set('Cookie', reader.cookie)
+  expect(list.body.items[0].reviewState).toBe('pending-review')
+  const other = await authenticatedAccount()
+  expect((await request(app).get(path).set('Cookie', other.cookie)).status).toBe(404)
+  expect(
+    (await request(app).get('/api/reader/top-up-orders').set('Cookie', other.cookie)).body.items,
+  ).toEqual([])
+})
 
 it('tạo đơn pending đúng thông tin và chưa cộng xu', async () => {
   const { reader, pack, wallet } = await prepareCase()

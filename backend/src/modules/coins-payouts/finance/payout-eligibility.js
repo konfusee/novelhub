@@ -1,7 +1,7 @@
 import { HttpError } from '../../../middleware/errors.js'
 
 // Chỉ xét điều kiện, không ghi database.
-export function evaluatePayoutEligibility({ account, wallet, policy }) {
+export function evaluatePayoutEligibility({ account, wallet, policy, eligibleBalanceCoins }) {
   if (account.status !== 'active') {
     return { state: 'skipped', reason: 'account-inactive' }
   }
@@ -19,7 +19,7 @@ export function evaluatePayoutEligibility({ account, wallet, policy }) {
     throw new HttpError(409, 'invalid_earnings_wallet', 'Ví thu nhập không hợp lệ.')
   }
 
-  const amountCoins = wallet.availableBalance
+  const amountCoins = eligibleBalanceCoins ?? wallet.availableBalance
   const thresholdCoins = policy?.withdrawalThresholdCoins
 
   if (

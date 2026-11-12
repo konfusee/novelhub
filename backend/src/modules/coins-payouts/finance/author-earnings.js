@@ -1,30 +1,4 @@
-import { Wallet, LedgerEntry } from '../../../models/index.js'
+import { getWalletHistory } from './wallet-history.js'
 
-export async function getAuthorEarnings(accountId) {
-  const wallet = await Wallet.findOne({
-    ownerType: 'account',
-    ownerId: accountId,
-    purpose: 'author-earnings',
-  })
-    .select('availableBalance')
-    .lean()
-
-  const entries = wallet
-    ? await LedgerEntry.find({ walletId: wallet._id })
-        .select('ledgerType direction amount occurredAt')
-        .sort({ occurredAt: -1, _id: -1 })
-        .limit(51)
-        .lean()
-    : []
-
-  return {
-    balance: wallet?.availableBalance ?? 0,
-    entries: entries.slice(0, 50).map(entry => ({
-      id: String(entry._id),
-      type: entry.ledgerType,
-      amount: entry.direction === 'credit' ? entry.amount : -entry.amount,
-      occurredAt: entry.occurredAt,
-    })),
-    hasMore: entries.length > 50,
-  }
-}
+export const getAuthorEarnings = (accountId, options) =>
+  getWalletHistory(accountId, options, 'author-earnings')

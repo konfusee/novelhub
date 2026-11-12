@@ -21,7 +21,11 @@ export async function readerLibrary(account, { tab, page }) {
   ])
   const ids = [...new Set([...follows, ...progress].map(row => String(row.storyId)))]
   const cards = ids.length ? await publishedCards({ ids, pageSize: ids.length }) : []
-  const chapters = await publishedChapterRows(cards.map(card => card.id))
+  const chapters = await publishedChapterRows(
+    cards.map(card => card.id),
+    new Date(),
+    account._id,
+  )
   const followedAt = new Map(
     follows.map(row => [String(row.storyId), row.updatedAt ?? row.createdAt ?? null]),
   )

@@ -222,8 +222,8 @@ it('API tạo khoản chi bắt buộc có previewHash hợp lệ', async () => 
       .set('Origin', 'http://localhost:5173')
       .send(body)
 
-    expect(response.status).toBe(400)
-    expect(response.body.error.code).toBe('validation_error')
+    expect(response.status).toBe(405)
+    expect(response.body.error.code).toBe('payouts_read_only')
   }
 
   expect(await WithdrawalRequest.countDocuments()).toBe(0)

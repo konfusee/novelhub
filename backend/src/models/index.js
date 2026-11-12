@@ -46,3 +46,5 @@ export * from './review/moderation-history.model.js'
 export * from './review/processing-attempt.model.js'
 export * from './review/publication-submission.model.js'
 export * from './review/similarity-finding.model.js'
+
+export * from './finance/monthly-payout-run.model.js'

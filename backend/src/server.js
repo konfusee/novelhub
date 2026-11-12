@@ -1,3 +1,4 @@
+import { startMonthlyPayoutWorker } from './modules/coins-payouts/finance/monthly-payout-worker.js'
 import { startNotificationWorker } from './modules/accounts-administration/email-worker.js'
 import { createApp } from './app.js'
 import { loadEnv, toAppConfig } from './config/env.js'
@@ -36,6 +37,7 @@ const config = {
   emailDelivery,
   ...toAppConfig(env),
 }
+const stopMonthlyPayouts = startMonthlyPayoutWorker(logger)
 const stopNotifications = startNotificationWorker(config)
 const stopScheduler = startChapterScheduler(config, logger)
 let stopEvidenceWorker = async () => {}
@@ -47,6 +49,7 @@ const server = createApp(config).listen(env.PORT, () => {
 async function shutdown(signal) {
   logger.info(`${signal} received, shutting down`)
   server.close()
+  await stopMonthlyPayouts()
   await stopNotifications()
   await stopScheduler()
   await stopEvidenceWorker()

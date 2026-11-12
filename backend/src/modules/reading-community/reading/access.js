@@ -43,7 +43,7 @@ export async function publishedChapter(storyId, chapterId) {
 
 /**
  * Text access: Guests read only chapter 1 once it is free; every other chapter
- * needs a login, and early access needs an active entitlement for the live revision.
+ * needs a login, and early access needs an active entitlement for the chapter.
  */
 export async function readableChapter({ storyId, chapterId, account }) {
   const { story, chapter } = await publishedChapter(storyId, chapterId)
@@ -58,7 +58,6 @@ export async function readableChapter({ storyId, chapterId, account }) {
         (await UnlockEntitlement.exists({
           accountId: account._id,
           chapterId: chapter._id,
-          publishedRevisionId: chapter.publishedRevisionId,
           status: 'active',
           expiresAt: { $gt: new Date() },
         }))

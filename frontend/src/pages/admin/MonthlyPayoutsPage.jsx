@@ -1,19 +1,20 @@
+import { PayoutDetailsDialog } from '../../components/shared/PayoutDetailsDialog'
 import { useState } from 'react'
 import { useBackendResource } from '../../api/useBackendResource'
-import { PayoutActionDialog } from '../../components/admin/PayoutActionDialog'
 import { Button, Card, Input, Select } from '../../components/ui'
 import { useLocale } from '../../context/LocaleContext'
 import { AdminLayout } from '../../layouts'
 import { AuthorRevenuePanel } from '../../components/admin/AuthorRevenuePanel'
 import { PayoutSummary } from '../../components/admin/PayoutSummary'
 import { FinanceExportButton } from '../../components/admin/FinanceExportButton'
+import { PlatformFinanceReport } from '../../components/admin/PlatformFinanceReport'
 
 const empty = {
   items: [],
   hasMore: false,
 }
 
-const columns = ['author', 'coins', 'money', 'bank', 'status', 'latest', 'actions']
+const columns = ['author', 'coins', 'money', 'bank', 'status', 'latest']
 
 function selectResponse(response) {
   if (!Array.isArray(response?.items) || typeof response.hasMore !== 'boolean') {
@@ -36,10 +37,103 @@ function currentPeriod() {
   return `${year}-${month}`
 }
 
+function PayoutRuns({ onSelect }) {
+  const { t, formatNumber } = useLocale()
+  const m = key => t(`adminPayouts.${key}`)
+  const [page, setPage] = useState(1)
+  const feed = useBackendResource(`/admin/monthly-payouts/runs?page=${page}`, empty, selectResponse)
+  return (
+    <Card className="mt-6 min-w-0">
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <h2 className="text-h2">{m('runsTitle')}</h2>
+        <Button variant="secondary" onClick={feed.retry} disabled={feed.status === 'loading'}>
+          {m('reload')}
+        </Button>
+      </div>
+      {feed.status === 'loading' ? (
+        <p role="status" className="mt-4">
+          {m('loading')}
+        </p>
+      ) : feed.status === 'error' ? (
+        <p role="alert" className="mt-4">
+          {m('error')}
+        </p>
+      ) : (
+        <>
+          {!feed.data.items.length ? (
+            <p className="mt-4 text-muted">{m('runEmpty')}</p>
+          ) : (
+            <div className="mt-4 overflow-x-auto">
+              <table className="w-full min-w-[640px] text-left text-sm">
+                <thead>
+                  <tr className="border-b border-line">
+                    {['period', 'status', 'runCount', 'runPaid', 'runPendingCount', 'runTotal'].map(
+                      key => (
+                        <th scope="col" key={key} className="px-3 py-3">
+                          {m(key)}
+                        </th>
+                      ),
+                    )}
+                  </tr>
+                </thead>
+                <tbody>
+                  {feed.data.items.map(run => (
+                    <tr key={run.id} className="border-b border-line">
+                      <td className="px-3 py-3">
+                        <Button variant="ghost" onClick={() => onSelect(run.periodId)}>
+                          {run.periodId}
+                        </Button>
+                      </td>
+                      <td className="px-3 py-3">
+                        {m(
+                          run.status === 'pending'
+                            ? 'runPending'
+                            : run.status === 'failed'
+                              ? 'runFailed'
+                              : run.status,
+                        )}
+                      </td>
+                      {[run.totalCount, run.paidCount, run.pendingCount, run.totalCoins].map(
+                        (value, index) => (
+                          <td key={index} className="px-3 py-3 tabular-nums">
+                            {formatNumber(value)}
+                          </td>
+                        ),
+                      )}
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+          <div className="mt-4 flex justify-end gap-3">
+            <Button
+              variant="secondary"
+              disabled={page === 1}
+              onClick={() => setPage(previous => previous - 1)}
+            >
+              {m('previous')}
+            </Button>
+            <span className="self-center">{page}</span>
+            <Button
+              variant="secondary"
+              disabled={!feed.data.hasMore}
+              onClick={() => setPage(previous => previous + 1)}
+            >
+              {m('next')}
+            </Button>
+          </div>
+        </>
+      )}
+    </Card>
+  )
+}
+
 export function MonthlyPayoutsPage() {
   const { t, formatNumber } = useLocale()
   const m = key => t(`adminPayouts.${key}`)
 
+  const [selectedPayout, setSelectedPayout] = useState(null)
   const [filters, setFilters] = useState(() => ({
     periodId: currentPeriod(),
     status: '',
@@ -47,10 +141,6 @@ export function MonthlyPayoutsPage() {
     latestResult: '',
     page: 1,
   }))
-
-  const [action, setAction] = useState(null)
-  const [notice, setNotice] = useState('')
-  const [reportVersion, setReportVersion] = useState(0)
 
   const query = new URLSearchParams({
     periodId: filters.periodId,
@@ -73,7 +163,6 @@ export function MonthlyPayoutsPage() {
 
     const form = new FormData(event.currentTarget)
 
-    setNotice('')
     setFilters({
       periodId: String(form.get('periodId')),
       status: String(form.get('status') ?? ''),
@@ -81,30 +170,6 @@ export function MonthlyPayoutsPage() {
       latestResult: String(form.get('latestResult') ?? ''),
       page: 1,
     })
-  }
-
-  function openGenerate() {
-    setNotice('')
-    setAction({
-      type: 'generate',
-      periodId: filters.periodId,
-    })
-  }
-
-  function openResult(row, result) {
-    setNotice('')
-    setAction({
-      type: 'result',
-      row,
-      result,
-    })
-  }
-
-  function handleActionSaved() {
-    setAction(null)
-    setNotice(m('success'))
-    setReportVersion(previous => previous + 1)
-    feed.retry()
   }
 
   function changePage(offset) {
@@ -122,18 +187,11 @@ export function MonthlyPayoutsPage() {
             <h1 className="text-h2 sm:text-h1">{m('title')}</h1>
             <p className="mt-2 max-w-3xl text-sm text-muted">{m('hint')}</p>
           </div>
-
-          <Button type="button" onClick={openGenerate}>
-            {m('generate')} — {filters.periodId}
-          </Button>
         </div>
 
-        {notice && (
-          <p role="status" className="mt-4 text-sm">
-            {notice}
-          </p>
-        )}
-
+        <PayoutRuns
+          onSelect={periodId => setFilters(previous => ({ ...previous, periodId, page: 1 }))}
+        />
         <Card className="mt-6">
           <form className="flex flex-wrap items-end gap-3" onSubmit={applyFilters}>
             <label className="w-full min-w-0 text-sm font-medium sm:min-w-48 sm:flex-1">
@@ -151,6 +209,7 @@ export function MonthlyPayoutsPage() {
               {m('period')}
               <Input
                 className="mt-1"
+                key={filters.periodId}
                 name="periodId"
                 type="month"
                 required
@@ -258,6 +317,14 @@ export function MonthlyPayoutsPage() {
                       <tr key={row.withdrawalId} className="border-b border-line align-top">
                         <td className="min-w-[10rem] px-3 py-4">
                           {row.displayName || row.accountId || '—'}
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="mt-2"
+                            onClick={() => setSelectedPayout(row.withdrawalId)}
+                          >
+                            {t('payoutDetails.open')}
+                          </Button>
                         </td>
 
                         <td className="whitespace-nowrap px-3 py-4 tabular-nums">
@@ -286,37 +353,20 @@ export function MonthlyPayoutsPage() {
                           {row.latestResult ? (
                             <>
                               <p>{m(row.latestResult.result === 'Paid' ? 'paid' : 'failed')}</p>
+                              {row.latestResult.executionMode === 'simulation' && (
+                                <p className="mt-1 text-muted">{m('simulatedResult')}</p>
+                              )}
+                              {row.latestResult.transferReference && (
+                                <p className="mt-1 break-all text-muted">
+                                  {m('transferReference')}: {row.latestResult.transferReference}
+                                </p>
+                              )}
                               {row.latestResult.note && (
                                 <p className="mt-1 text-muted">{row.latestResult.note}</p>
                               )}
                             </>
                           ) : (
                             m('notAttempted')
-                          )}
-                        </td>
-
-                        <td className="sticky right-0 z-10 min-w-[12rem] border-l border-line bg-surface px-4 py-4 shadow-[-6px_0_12px_-10px_var(--text-primary)]">
-                          {row.status === 'pending' ? (
-                            <div className="flex flex-col items-stretch gap-2">
-                              <Button
-                                type="button"
-                                size="sm"
-                                onClick={() => openResult(row, 'Paid')}
-                              >
-                                {m('simulatePaid')}
-                              </Button>
-
-                              <Button
-                                type="button"
-                                size="sm"
-                                variant="secondary"
-                                onClick={() => openResult(row, 'Failed')}
-                              >
-                                {m('simulateFailed')}
-                              </Button>
-                            </div>
-                          ) : (
-                            m('paid')
                           )}
                         </td>
                       </tr>
@@ -352,17 +402,14 @@ export function MonthlyPayoutsPage() {
           </Card>
         )}
 
-        <AuthorRevenuePanel
-          key={`${filters.periodId}:${reportVersion}`}
-          periodId={filters.periodId}
-        />
+        <AuthorRevenuePanel key={filters.periodId} periodId={filters.periodId} />
+        <PlatformFinanceReport />
       </div>
-
-      {action && (
-        <PayoutActionDialog
-          action={action}
-          onClose={() => setAction(null)}
-          onSaved={handleActionSaved}
+      {selectedPayout && (
+        <PayoutDetailsDialog
+          withdrawalId={selectedPayout}
+          role="admin"
+          onClose={() => setSelectedPayout(null)}
         />
       )}
     </AdminLayout>

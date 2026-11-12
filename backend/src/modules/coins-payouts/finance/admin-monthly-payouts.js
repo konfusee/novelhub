@@ -1,9 +1,10 @@
+import { requireCurrentAdmin } from './admin-guard.js'
+import { currentPayoutPeriod, availableAtCutoff, payoutCutoff } from './payout-period.js'
 import {
   Account,
   Notification,
   NotificationOutbox,
   PolicyVersion,
-  RoleAssignment,
   Wallet,
 } from '../../../models/index.js'
 import { withTransaction } from '../../../db/connection.js'
@@ -12,26 +13,11 @@ import { createMonthlyPayoutRecords } from './monthly-payout-records.js'
 import { buildMonthlyPayoutPreview } from './admin-payout-preview.js'
 
 function validatePayoutPeriod(periodId, now) {
-  const parts = new Intl.DateTimeFormat('en-CA', {
-    timeZone: 'Asia/Ho_Chi_Minh',
-    year: 'numeric',
-    month: '2-digit',
-    day: '2-digit',
-  }).formatToParts(now)
-
-  const date = Object.fromEntries(
-    parts.filter(part => part.type !== 'literal').map(part => [part.type, part.value]),
-  )
-
-  const currentPeriod = `${date.year}-${date.month}`
-
-  const lastDay = new Date(Date.UTC(Number(date.year), Number(date.month), 0)).getUTCDate()
-
-  if (periodId !== currentPeriod || Number(date.day) !== lastDay) {
+  if (periodId !== currentPayoutPeriod(now)) {
     throw new HttpError(
       409,
       'payout_period_not_due',
-      'Chỉ được lập chi trả cho tháng hiện tại vào ngày cuối tháng.',
+      'Chỉ được lập chi trả cho kỳ hiện tại, từ ngày 1 theo giờ Việt Nam.',
     )
   }
 }
@@ -87,26 +73,7 @@ export async function generateMonthlyPayouts(
   validatePayoutPeriod(periodId, now)
 
   return withTransaction(async session => {
-    const actor = await Account.findOneAndUpdate(
-      {
-        _id: admin._id,
-        status: 'active',
-        credentialVersion: admin.credentialVersion,
-        authorizationEpoch: admin.authorizationEpoch,
-      },
-      { $inc: { version: 1 } },
-      { session },
-    )
-
-    const adminRole = await RoleAssignment.exists({
-      accountId: admin._id,
-      role: 'admin',
-      status: 'active',
-    }).session(session)
-
-    if (!actor || !adminRole) {
-      throw new HttpError(403, 'forbidden', 'Quyền quản trị không còn hiệu lực.')
-    }
+    if (admin) await requireCurrentAdmin(admin, session)
 
     // API sẽ luôn truyền expectedPreviewHash.
     // Các test nghiệp vụ gọi trực tiếp hàm cũ vẫn có thể không truyền.
@@ -131,8 +98,8 @@ export async function generateMonthlyPayouts(
     }
 
     const policy = await PolicyVersion.findOne({
-      status: 'effective',
-      effectiveAt: { $lte: now },
+      status: { $in: ['effective', 'superseded'] },
+      effectiveAt: { $lte: payoutCutoff(periodId) },
     })
       .sort({ effectiveAt: -1, _id: -1 })
       .session(session)
@@ -142,21 +109,23 @@ export async function generateMonthlyPayouts(
       throw new HttpError(409, 'policy_required', 'Chưa có chính sách chi trả có hiệu lực.')
     }
 
-    const authorRoles = await RoleAssignment.find({
-      role: 'author',
-      status: 'active',
+    // Earnings remain payable after the author role is revoked.
+    const authorWallets = await Wallet.find({
+      ownerType: 'account',
+      purpose: 'author-earnings',
+      unit: 'coin',
     })
-      .select('accountId')
-      .sort({ accountId: 1 })
+      .select('ownerId')
+      .sort({ ownerId: 1 })
       .session(session)
       .lean()
 
     const results = []
 
-    for (const role of authorRoles) {
+    for (const role of authorWallets) {
       const account = await Account.findOneAndUpdate(
         {
-          _id: role.accountId,
+          _id: role.ownerId,
           status: 'active',
         },
         { $inc: { version: 1 } },
@@ -165,7 +134,7 @@ export async function generateMonthlyPayouts(
 
       if (!account) {
         results.push({
-          accountId: String(role.accountId),
+          accountId: String(role.ownerId),
           state: 'skipped',
           reason: 'account-inactive',
         })
@@ -184,7 +153,8 @@ export async function generateMonthlyPayouts(
           wallet,
           periodId,
           policy,
-          actorAccountId: admin._id,
+          actorAccountId: admin?._id,
+          eligibleBalanceCoins: await availableAtCutoff(wallet, periodId, session),
         },
         session,
         now,
@@ -203,7 +173,7 @@ export async function generateMonthlyPayouts(
 
     return {
       periodId,
-      totalAuthors: authorRoles.length,
+      totalAuthors: authorWallets.length,
       results,
     }
   })

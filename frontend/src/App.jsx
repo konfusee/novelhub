@@ -269,6 +269,11 @@ const ProfileAccountPage = lazy(() =>
     default: m.ProfileAccountPage,
   })),
 )
+const FinancialTransactionsPage = lazy(() =>
+  import('./pages/admin/FinancialTransactionsPage').then(module => ({
+    default: module.FinancialTransactionsPage,
+  })),
+)
 const MonthlyPayoutsPage = lazy(() =>
   import('./pages/admin/MonthlyPayoutsPage').then(module => ({
     default: module.MonthlyPayoutsPage,
@@ -345,15 +350,7 @@ function AppRoutes() {
         <Routes>
           <Route
             path="/admin/transactions"
-            element={role(
-              'admin',
-              <RoleUtilityPage
-                role="admin"
-                eyebrow="Tài chính nền tảng"
-                title="Giao dịch ví"
-                description="Xem nạp xu, mua chương, hoàn tiền, điều chỉnh và giao dịch bất thường trên toàn nền tảng."
-              />,
-            )}
+            element={role('admin', <FinancialTransactionsPage />)}
           />
           <Route path="/" element={<AdaptivePublicPage page="home" />} />
           <Route path="/discover" element={<AdaptivePublicPage page="home" />} />
