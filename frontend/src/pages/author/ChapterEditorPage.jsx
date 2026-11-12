@@ -10,6 +10,7 @@ import {
   ChevronDown,
   ChevronRight,
   Eye,
+  FileText,
   Heading2,
   Heading3,
   Image,
@@ -27,13 +28,14 @@ import {
   Send,
   Trash2,
   Underline,
+  Upload,
   X,
 } from '../../components/icons'
 import { AuthorLayout } from '../../layouts'
 import { useBackendDocument } from '../../api/useBackendResource'
 import { apiRequest } from '../../api/client'
 import { useLocale } from '../../context/LocaleContext'
-import { ChapterTextError } from './chapterParagraphs'
+import { chapterParagraphs, ChapterTextError } from './chapterParagraphs'
 import { ChapterConflictDialog } from './ChapterConflictDialog'
 import { ChapterLifecycleDialog } from './ChapterLifecycleDialog'
 import { DraftReadingCanvas } from './DraftReadingCanvas'
@@ -293,6 +295,7 @@ function ChapterEditor({ chapter }) {
   const [leftPanelVisible, setLeftPanelVisible] = useState(true)
   const [rightPanelVisible, setRightPanelVisible] = useState(true)
   const [previewOpen, setPreviewOpen] = useState(false)
+  const [quickImportOpen, setQuickImportOpen] = useState(false)
   const [imagePicker, setImagePicker] = useState(false)
   const [submit, setSubmit] = useState('idle')
   const words = useMemo(() => countWords(body), [body])
@@ -409,6 +412,46 @@ function ChapterEditor({ chapter }) {
       setSaveBusy(false)
     }
   }
+  const appendImportedText = text => {
+    let paragraphs
+    try {
+      paragraphs = chapterParagraphs(text)
+    } catch (error) {
+      setSaveError(
+        error instanceof ChapterTextError
+          ? t(`chapterText.${error.code}`)
+          : t('editorData.saveError'),
+      )
+      return false
+    }
+    if (!paragraphs.length) return false
+    const sourceBlocks = [...(richDocument.blocks ?? [])]
+    const hasContent = sourceBlocks.some(
+      block => block.type !== 'paragraph' || block.inlines?.some(inline => inline.text?.trim()),
+    )
+    const blocks = sourceBlocks.filter(
+      (block, index) =>
+        !(
+          index === sourceBlocks.length - 1 &&
+          block.type === 'paragraph' &&
+          !block.inlines?.some(inline => inline.text?.trim())
+        ),
+    )
+    const last = blocks.at(-1)
+    if (hasContent && last?.type !== 'scene-break') blocks.push({ type: 'scene-break' })
+    blocks.push(
+      ...paragraphs.map(value => ({
+        type: 'paragraph',
+        inlines: [{ text: value, marks: [] }],
+      })),
+    )
+    const next = { ...richDocument, title, blocks }
+    setRichDocument(next)
+    setBody(richChapterBody(next))
+    setSaved(false)
+    bodyRef.current?.replace(next)
+    return true
+  }
   const leave = event => {
     if (!saved && !window.confirm(t('editorData.discard'))) event.preventDefault()
   }
@@ -463,7 +506,7 @@ function ChapterEditor({ chapter }) {
   }
 
   return (
-    <div className="flex min-h-[calc(100dvh-var(--app-header-h))] flex-col bg-reader">
+    <div className="flex h-[calc(100dvh-var(--app-header-h))] min-h-0 flex-col overflow-hidden bg-reader">
       <EditorHeader
         story={
           <Link to={STORY_ROUTE} onClick={leave} className="hover:text-brand-strong">
@@ -488,26 +531,25 @@ function ChapterEditor({ chapter }) {
         onOpenRight={toggleRightPanel}
         onPreview={() => setPreviewOpen(true)}
         onDelete={chapter.canDelete ? requestDelete : null}
-        importTo={chapter.canEdit ? `/author/import?storyId=${chapter.storyId}` : null}
-        onLeave={leave}
+        onImport={chapter.canEdit ? () => setQuickImportOpen(true) : null}
         onSubmit={() => setSubmit('confirm')}
         submitDisabled={saveBusy || conflict || !chapter.canEdit}
       />
 
       <div
-        className={`nh-grid-12 nh-fade-enter grid min-h-0 flex-1 nh-layout-xl-3-6-3 ${leftPanelVisible ? '' : 'nh-editor-left-hidden'} ${rightPanelVisible ? '' : 'nh-editor-right-hidden'}`}
+        className={`nh-grid-12 nh-fade-enter grid min-h-0 flex-1 overflow-hidden nh-layout-xl-3-6-3 ${leftPanelVisible ? '' : 'nh-editor-left-hidden'} ${rightPanelVisible ? '' : 'nh-editor-right-hidden'}`}
       >
         <aside
           aria-label="Dàn ý truyện"
-          className={`${leftPanelVisible ? '' : 'xl:hidden'} hidden overflow-y-auto border-r border-hairline bg-surface p-5 xl:block`}
+          className={`${leftPanelVisible ? '' : 'xl:hidden'} hidden min-h-0 overscroll-contain overflow-y-auto border-r border-hairline bg-surface p-5 xl:block`}
         >
           {tree}
         </aside>
-        <div className="min-w-0">
+        <div className="flex min-h-0 min-w-0 flex-col overflow-hidden">
           <div
             role="toolbar"
             aria-label="Định dạng văn bản"
-            className="sticky top-[var(--app-header-h)] z-20 flex items-center gap-2 border-b border-hairline bg-surface/90 px-3 py-2 backdrop-blur"
+            className="z-20 flex shrink-0 items-center gap-2 border-b border-hairline bg-surface/90 px-3 py-2 backdrop-blur"
           >
             <div className="nh-tab-rail flex min-w-0 flex-1 gap-0.5 overflow-x-auto pr-6 [mask-image:linear-gradient(to_right,black_calc(100%-2rem),transparent)] lg:pr-0 lg:[mask-image:none]">
               {tools.map(([Icon, key, edit]) => (
@@ -541,101 +583,103 @@ function ChapterEditor({ chapter }) {
               Lưu
             </Button>
           </div>
-          <p
-            id="editor-format-support"
-            className="border-b border-hairline px-5 py-3 text-xs leading-5 text-muted"
-          >
-            {t('richEditor.hint')}
-            <span className="ml-1 text-ink/70">· {t('editorTools.sceneBreakHint')}</span>
-            <span className="ml-1 text-ink/70">
-              ·{' '}
-              {autosave.enabled
-                ? `Tự động lưu mỗi ${autosave.minutes} phút`
-                : 'Chưa bật tự động lưu'}
-            </span>
-          </p>
-          {saveError && (
-            <p role="alert" className="px-5 pt-4 text-sm text-rose-strong">
-              {saveError}
-            </p>
-          )}
-          {conflict && (
-            <div className="px-5 pt-3">
-              <p className="text-sm leading-6 text-muted">{t('chapterConflict.notice')}</p>
-              <Button
-                variant="secondary"
-                size="sm"
-                className="mt-2"
-                onClick={() => setCompareOpen(true)}
-              >
-                {t('chapterConflict.open')}
-              </Button>
-            </div>
-          )}
-          <article className="mx-auto max-w-[760px] px-5 py-10 sm:px-10 lg:py-14">
-            <label htmlFor="chapter-title" className="sr-only">
-              Tiêu đề chương
-            </label>
-            <textarea
-              id="chapter-title"
-              rows={1}
-              value={title}
-              disabled={saveBusy || !chapter.canEdit}
-              maxLength={200}
-              onChange={event => {
-                setTitle(event.target.value.replace(/\n/g, ' '))
-                setSaved(false)
-              }}
-              placeholder="Tiêu đề chương"
-              className="w-full resize-none border-b border-transparent bg-transparent pb-3 text-[1.75rem] font-bold leading-tight tracking-[-0.02em] text-ink outline-none transition-colors [field-sizing:content] placeholder:text-muted hover:border-line focus:border-brand sm:text-4xl"
-            />
-            <label htmlFor="chapter-body" className="sr-only">
-              Nội dung chương
-            </label>
-            <RichChapterInput
-              ref={bodyRef}
-              initialDocument={chapter.document}
-              disabled={saveBusy || !chapter.canEdit}
-              label={t('richEditor.body')}
-              onChange={document => {
-                setRichDocument(document)
-                updateBody(richChapterBody(document))
-              }}
-              onSave={saveChapter}
-              onError={() => setSaveError(t('richEditor.pasteHint'))}
-            />
-            <ChapterImageControls
-              document={richDocument}
-              disabled={saveBusy || !chapter.canEdit}
-              onChange={(index, changes) => bodyRef.current?.changeImage(index, changes)}
-            />
-            <div className="mt-6 flex flex-wrap items-center justify-between gap-3 border-t border-hairline pt-5 text-sm text-muted">
-              <span role="status" className="flex items-center gap-2">
-                <Save size={14} aria-hidden="true" />
-                {saveBusy
-                  ? t('editorData.saving')
-                  : saved
-                    ? t(chapter.canEdit ? 'editorData.saved' : 'editorData.readOnly')
-                    : t('editorData.unsaved')}
+          <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain">
+            <p
+              id="editor-format-support"
+              className="border-b border-hairline px-5 py-3 text-xs leading-5 text-muted"
+            >
+              {t('richEditor.hint')}
+              <span className="ml-1 text-ink/70">· {t('editorTools.sceneBreakHint')}</span>
+              <span className="ml-1 text-ink/70">
+                ·{' '}
+                {autosave.enabled
+                  ? `Tự động lưu mỗi ${autosave.minutes} phút`
+                  : 'Chưa bật tự động lưu'}
               </span>
-              <ButtonLink
-                to={chapter.nextChapter ? chapterRoute(chapter.nextChapter.id) : STORY_ROUTE}
-                onClick={leave}
-                variant="ghost"
-                size="sm"
-                trailingIcon={ChevronRight}
-                className="text-brand-strong"
-              >
-                {chapter.nextChapter
-                  ? t('editorData.next', { count: chapter.nextChapter.number })
-                  : t('editorData.back')}
-              </ButtonLink>
-            </div>
-          </article>
+            </p>
+            {saveError && (
+              <p role="alert" className="px-5 pt-4 text-sm text-rose-strong">
+                {saveError}
+              </p>
+            )}
+            {conflict && (
+              <div className="px-5 pt-3">
+                <p className="text-sm leading-6 text-muted">{t('chapterConflict.notice')}</p>
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  className="mt-2"
+                  onClick={() => setCompareOpen(true)}
+                >
+                  {t('chapterConflict.open')}
+                </Button>
+              </div>
+            )}
+            <article className="mx-auto max-w-[760px] px-5 py-10 sm:px-10 lg:py-14">
+              <label htmlFor="chapter-title" className="sr-only">
+                Tiêu đề chương
+              </label>
+              <textarea
+                id="chapter-title"
+                rows={1}
+                value={title}
+                disabled={saveBusy || !chapter.canEdit}
+                maxLength={200}
+                onChange={event => {
+                  setTitle(event.target.value.replace(/\n/g, ' '))
+                  setSaved(false)
+                }}
+                placeholder="Tiêu đề chương"
+                className="w-full resize-none border-b border-transparent bg-transparent pb-3 text-[1.75rem] font-bold leading-tight tracking-[-0.02em] text-ink outline-none transition-colors [field-sizing:content] placeholder:text-muted hover:border-line focus:border-brand sm:text-4xl"
+              />
+              <label htmlFor="chapter-body" className="sr-only">
+                Nội dung chương
+              </label>
+              <RichChapterInput
+                ref={bodyRef}
+                initialDocument={chapter.document}
+                disabled={saveBusy || !chapter.canEdit}
+                label={t('richEditor.body')}
+                onChange={document => {
+                  setRichDocument(document)
+                  updateBody(richChapterBody(document))
+                }}
+                onSave={saveChapter}
+                onError={() => setSaveError(t('richEditor.pasteHint'))}
+              />
+              <ChapterImageControls
+                document={richDocument}
+                disabled={saveBusy || !chapter.canEdit}
+                onChange={(index, changes) => bodyRef.current?.changeImage(index, changes)}
+              />
+              <div className="mt-6 flex flex-wrap items-center justify-between gap-3 border-t border-hairline pt-5 text-sm text-muted">
+                <span role="status" className="flex items-center gap-2">
+                  <Save size={14} aria-hidden="true" />
+                  {saveBusy
+                    ? t('editorData.saving')
+                    : saved
+                      ? t(chapter.canEdit ? 'editorData.saved' : 'editorData.readOnly')
+                      : t('editorData.unsaved')}
+                </span>
+                <ButtonLink
+                  to={chapter.nextChapter ? chapterRoute(chapter.nextChapter.id) : STORY_ROUTE}
+                  onClick={leave}
+                  variant="ghost"
+                  size="sm"
+                  trailingIcon={ChevronRight}
+                  className="text-brand-strong"
+                >
+                  {chapter.nextChapter
+                    ? t('editorData.next', { count: chapter.nextChapter.number })
+                    : t('editorData.back')}
+                </ButtonLink>
+              </div>
+            </article>
+          </div>
         </div>
         <aside
           aria-label="Trợ lý sáng tác"
-          className={`${rightPanelVisible ? '' : 'xl:hidden'} hidden overflow-y-auto border-l border-hairline bg-surface xl:block`}
+          className={`${rightPanelVisible ? '' : 'xl:hidden'} hidden min-h-0 overscroll-contain overflow-y-auto border-l border-hairline bg-surface xl:block`}
         >
           {utilityPanel}
         </aside>
@@ -702,6 +746,11 @@ function ChapterEditor({ chapter }) {
           }}
         />
       )}
+      <QuickChapterImportModal
+        open={quickImportOpen}
+        onClose={() => setQuickImportOpen(false)}
+        onInsert={appendImportedText}
+      />
       <Modal
         open={previewOpen}
         title="Xem trước cho độc giả"
@@ -757,8 +806,7 @@ function EditorHeader({
   onDelete,
   onSubmit,
   submitDisabled = !onSubmit,
-  importTo,
-  onLeave,
+  onImport,
 }) {
   const { t } = useLocale()
   return (
@@ -798,10 +846,11 @@ function EditorHeader({
       <div className="flex w-full flex-wrap items-center gap-2 xl:w-auto">
         {badges}
         <div className="ml-auto flex flex-wrap items-center justify-end gap-2">
-          {importTo && (
-            <ButtonLink to={importTo} variant="secondary" size="sm" onClick={onLeave}>
-              {t('authorDraftActions.import')}
-            </ButtonLink>
+          {onImport && (
+            <Button variant="secondary" size="sm" onClick={onImport}>
+              <Upload size={14} aria-hidden="true" />
+              {t('authorDraftActions.quickImport')}
+            </Button>
           )}
           {onDelete && (
             <Button variant="danger" size="sm" onClick={onDelete}>
@@ -819,6 +868,153 @@ function EditorHeader({
         </div>
       </div>
     </div>
+  )
+}
+
+function QuickChapterImportModal({ open, onClose, onInsert }) {
+  const { t } = useLocale()
+  const picker = useRef(null)
+  const pending = useRef(null)
+  const [busy, setBusy] = useState(false)
+  const [error, setError] = useState('')
+  const [fileName, setFileName] = useState('')
+  const [text, setText] = useState('')
+
+  useEffect(() => {
+    if (!open) return undefined
+    return () => pending.current?.abort()
+  }, [open])
+
+  const reset = () => {
+    pending.current?.abort()
+    setBusy(false)
+    setError('')
+    setFileName('')
+    setText('')
+    if (picker.current) picker.current.value = ''
+  }
+  const close = () => {
+    if (busy) return
+    reset()
+    onClose()
+  }
+  const choose = async file => {
+    if (!file || busy) return
+    const format = file.name.split('.').pop()?.toLowerCase()
+    if (
+      !['pdf', 'doc', 'docx', 'txt', 'md'].includes(format) ||
+      !file.size ||
+      file.size > 10 * 1024 * 1024
+    ) {
+      setError(t('documentImport.invalidFile'))
+      return
+    }
+    const controller = new AbortController()
+    pending.current = controller
+    setBusy(true)
+    setError('')
+    setFileName(file.name)
+    try {
+      const response = await apiRequest(`/author/imports/preview?format=${format}`, {
+        method: 'POST',
+        body: file,
+        binary: true,
+        signal: controller.signal,
+      })
+      if (!controller.signal.aborted) setText(response.text || '')
+    } catch (failure) {
+      if (!controller.signal.aborted) {
+        setText('')
+        setError(failure.message || t('documentImport.invalidFile'))
+      }
+    } finally {
+      if (pending.current === controller) {
+        pending.current = null
+        setBusy(false)
+      }
+    }
+  }
+  const insert = () => {
+    if (!text.trim() || busy) return
+    if (onInsert(text)) {
+      reset()
+      onClose()
+    }
+  }
+
+  return (
+    <Modal
+      open={open}
+      title={t('authorDraftActions.quickImport')}
+      onClose={close}
+      className="max-w-2xl"
+    >
+      <p className="text-sm leading-6 text-muted">{t('authorDraftActions.quickImportHint')}</p>
+      <input
+        ref={picker}
+        type="file"
+        className="sr-only"
+        accept=".pdf,.doc,.docx,.txt,.md"
+        onChange={event => {
+          void choose(event.target.files?.[0])
+          event.target.value = ''
+        }}
+      />
+      <div
+        className="mt-5 rounded-2xl border border-dashed border-line bg-surface p-5 text-center"
+        onDragOver={event => event.preventDefault()}
+        onDrop={event => {
+          event.preventDefault()
+          void choose(event.dataTransfer.files?.[0])
+        }}
+      >
+        <FileText size={24} className="mx-auto text-brand" aria-hidden="true" />
+        <p className="mt-2 text-sm font-semibold">
+          {fileName || t('authorDraftActions.quickImportEmpty')}
+        </p>
+        <p className="mt-1 text-xs text-muted">{t('authorDraftActions.quickImportLimit')}</p>
+        <Button
+          type="button"
+          variant="secondary"
+          size="sm"
+          className="mt-4"
+          disabled={busy}
+          onClick={() => picker.current?.click()}
+        >
+          <Upload size={14} aria-hidden="true" />
+          {busy
+            ? t('authorDraftActions.quickImportExtracting')
+            : t('authorDraftActions.quickImportChoose')}
+        </Button>
+      </div>
+      {error && (
+        <p role="alert" className="mt-4 rounded-xl bg-rose/10 p-3 text-sm text-rose-strong">
+          {error}
+        </p>
+      )}
+      {text && (
+        <>
+          <label htmlFor="quick-import-text" className="mt-5 block text-sm font-semibold">
+            {t('authorDraftActions.quickImportContent')}
+          </label>
+          <textarea
+            id="quick-import-text"
+            value={text}
+            onChange={event => setText(event.target.value)}
+            className="mt-2 min-h-56 w-full resize-y rounded-2xl border border-line bg-surface p-4 text-sm leading-7 text-ink focus:border-brand focus:outline-none"
+          />
+          <div className="mt-5 flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
+            <Button type="button" variant="secondary" onClick={close} disabled={busy}>
+              {t('authorDraftActions.quickImportCancel')}
+            </Button>
+            <Button type="button" onClick={insert} disabled={busy || !text.trim()}>
+              <Check size={16} aria-hidden="true" />
+              {t('authorDraftActions.quickImportInsert')}
+            </Button>
+          </div>
+        </>
+      )}
+    </Modal>
   )
 }
 

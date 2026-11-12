@@ -812,6 +812,15 @@
   "authorDraftActions": {
     "unavailable": "Không tìm thấy nội dung để xem trước hoặc bạn không có quyền truy cập.",
     "import": "Nhập PDF / Word / TXT / MD",
+    "quickImport": "Nhập nhanh vào chương",
+    "quickImportHint": "Chọn PDF, Word, TXT hoặc Markdown. Nội dung sẽ được chèn vào cuối chương đang mở; bạn vẫn có thể sửa trước khi lưu.",
+    "quickImportEmpty": "Chưa chọn tài liệu",
+    "quickImportLimit": "Tối đa 10 MB · PDF tối đa 100 trang",
+    "quickImportExtracting": "Đang trích xuất…",
+    "quickImportChoose": "Chọn tài liệu",
+    "quickImportContent": "Nội dung sẽ chèn",
+    "quickImportCancel": "Hủy",
+    "quickImportInsert": "Chèn vào chương",
     "preview": "Xem trước",
     "manuscript": "Nội dung chương xem trước",
     "privatePreview": "Xem trước riêng tư · Không xuất bản và không ghi lượt đọc",
@@ -2208,7 +2217,14 @@
     "cancel": "Hủy",
     "saveError": "Chưa lưu được thay đổi. Hãy thử lại.",
     "sidebarTitle": "Phạm vi bình luận",
-    "sidebarHint": "Chọn truyện hoặc chương để xem và phản hồi đúng luồng bình luận."
+    "sidebarHint": "Chọn truyện hoặc chương để xem và phản hồi đúng luồng bình luận.",
+    "search": "Tìm bình luận",
+    "searchPlaceholder": "Tìm theo nội dung, độc giả hoặc tên truyện...",
+    "sort": "Sắp xếp",
+    "newest": "Mới nhất",
+    "oldest": "Cũ nhất",
+    "az": "A–Z theo nội dung",
+    "filterHint": "Bộ lọc được áp dụng ở máy chủ trước khi phân trang để tổng số và kết quả luôn chính xác."
   },
   "earningsData": {
     "description": "Theo dõi xu doanh thu được phân bổ theo kỳ và số dư ví tác giả. Các số liệu chưa có báo cáo được hiển thị riêng.",
