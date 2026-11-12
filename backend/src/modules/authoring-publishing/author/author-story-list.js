@@ -69,6 +69,16 @@ export async function authorStoryList(accountId) {
           ? { id: String(category._id), name: category.name, status: category.status }
           : null,
         tags: tagsByRevision.get(String(story.draftRevisionId ?? story.currentRevisionId)) ?? [],
+        coverMediaId: story.coverMediaId ? String(story.coverMediaId) : null,
+        coverUrl: story.coverMediaId
+          ? `/author/media/${story.coverMediaId}/content`
+          : null,
+        coverBannerMediaId: story.theme?.coverBannerMediaId
+          ? String(story.theme.coverBannerMediaId)
+          : null,
+        bannerUrl: story.theme?.coverBannerMediaId
+          ? `/author/media/${story.theme.coverBannerMediaId}/content`
+          : null,
         status: story.publicationStatus,
         reviewStatus: latestReview?.status ?? null,
         chapterCount: chapterCounts.get(String(story._id)) ?? 0,

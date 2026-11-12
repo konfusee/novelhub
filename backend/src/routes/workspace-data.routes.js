@@ -8,7 +8,6 @@ import {
   Category,
   ContentImport,
   Follow,
-  MediaAsset,
   Notification,
   PolicyVersion,
   PublicationSubmission,
@@ -59,30 +58,6 @@ export function createWorkspaceDataRouter(config) {
       },
     )
   }
-  get('/workspace/author/media', 'author', async (req, options) => {
-    const items = await MediaAsset.find({
-      ownerAccountId: req.account._id,
-      status: {
-        $ne: 'deleted',
-      },
-    })
-      .sort({
-        createdAt: -1,
-      })
-      .skip(options.skip)
-      .limit(options.limit)
-      .select('kind contentType sizeBytes status createdAt')
-      .lean()
-    return items.map(item =>
-      entry(
-        item._id,
-        item.kind,
-        `${item.contentType ?? ''} · ${item.sizeBytes ?? 0} bytes`,
-        item.status,
-        item.createdAt,
-      ),
-    )
-  })
   get('/workspace/author/imports', 'author', async (req, options) => {
     const items = await ContentImport.find({
       accountId: req.account._id,

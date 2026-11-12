@@ -2,7 +2,6 @@ import { policy as policies } from '../../accounts-administration/service.js'
 import {
   Chapter,
   ContentRevision,
-  PolicyVersion,
   Story,
   AuditEvent,
 } from '../../../models/index.js'
@@ -29,9 +28,10 @@ function unreleasedOwnedRevision(chapter, revision, story) {
 export function canConfigureEarlyAccess(chapter, revision, story) {
   return Boolean(
     unreleasedOwnedRevision(chapter, revision, story) &&
-    chapter.status === 'draft' &&
-    revision.status === 'editable' &&
-    !revision.immutableAt,
+    ((chapter.status === 'draft' && revision.status === 'editable' && !revision.immutableAt) ||
+      (['approved', 'scheduled', 'due'].includes(chapter.status) &&
+        ['approved', 'immutable'].includes(revision.status) &&
+        revision.immutableAt)),
   )
 }
 export function canDisableEarlyAccess(chapter, revision, story) {
@@ -108,7 +108,7 @@ export async function changeEarlyAccess(account, storyId, chapterId, input) {
       throw new HttpError(
         409,
         'early_access_locked',
-        'Chỉ thiết lập đọc sớm cho chương nháp chưa từng phát hành.',
+        'Chỉ thiết lập đọc sớm cho chương chưa từng phát hành và chưa bị khóa.',
       )
     const before = settings(chapter)
     if (input.enabled) {
@@ -130,12 +130,6 @@ export async function changeEarlyAccess(account, storyId, chapterId, input) {
           'invalid_early_access',
           'Giá hoặc thời hạn ngoài giới hạn policy hiện hành.',
         )
-      const pinned = await PolicyVersion.findOneAndUpdate(
-        { _id: policy._id, version: policy.version, status: 'effective' },
-        { $inc: { version: 1 } },
-        { session },
-      )
-      if (!pinned) throw new HttpError(409, 'policy_changed', 'Policy đã thay đổi. Hãy tải lại.')
       chapter.earlyAccess = {
         enabled: true,
         coinPrice: input.coinPrice,

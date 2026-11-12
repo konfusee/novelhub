@@ -194,14 +194,14 @@ function SubmissionPackage({ storyId, chapterId, onSubmitted }) {
   const shownBasis = data.frozenRights?.basis ?? basis
   const shownNote = data.frozenRights?.sourceLicenceNote ?? note
   const imageRights = data.imageRights
-  const licenceRequired = Boolean(imageRights && shownBasis === 'licensed')
+  const licenceRequired = Boolean(data.requiresRights && shownBasis === 'licensed')
   const passed = data.checks.filter(check => check.ok).length
   const percent = data.checks.length ? Math.round((passed / data.checks.length) * 100) : 0
   const ready =
     resource.status === 'ready' &&
     data.ready &&
     (!data.requiresRights || asserted) &&
-    (!licenceRequired || Boolean(note.trim())) &&
+    (!licenceRequired || Boolean(shownNote.trim())) &&
     !sent
   const richTarget = ['blocks-v2', 'blocks-v3'].includes(data.target?.formatVersion)
   const chapterMedia = Boolean(chapterId && data.target?.formatVersion === 'blocks-v3')
@@ -213,7 +213,7 @@ function SubmissionPackage({ storyId, chapterId, onSubmitted }) {
     content: { to: chapterId ? back : `/author/stories/${storyId}?tab=details`, label: 'content' },
     categories: { to: `/author/stories/${storyId}?tab=details`, label: 'categories' },
     media: {
-      to: chapterMedia ? back : `/author/stories/${storyId}?tab=media`,
+      to: chapterMedia ? back : `/author/stories/${storyId}?tab=details`,
       label: chapterMedia ? 'chapterMedia' : 'media',
     },
     parent: { to: `/author/submissions?storyId=${encodeURIComponent(storyId)}`, label: 'parent' },
@@ -231,7 +231,9 @@ function SubmissionPackage({ storyId, chapterId, onSubmitted }) {
           ...(chapterId ? { chapterId } : {}),
           revisionId: data.target.revisionId,
           expectedVersion: data.target.version,
-          ...(data.requiresRights ? { rights: { basis, asserted, sourceLicenceNote: note } } : {}),
+                  ...(data.requiresRights
+                    ? { rights: { basis: shownBasis, asserted, sourceLicenceNote: shownNote } }
+                    : {}),
           ...(imageRights ? { imageManifestDigest: imageRights.mediaDigest } : {}),
         },
       })
@@ -544,6 +546,7 @@ function SubmissionEntry({ item, choose }) {
     'pending-review',
     'decision-pending',
     'approved',
+    'superseded',
     'rejected',
     'cancelled',
   ]

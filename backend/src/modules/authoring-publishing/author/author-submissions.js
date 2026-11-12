@@ -32,6 +32,8 @@ const storyContent = z
     description: z.string().trim().min(1).max(10000),
     categoryId: oid,
     tags: storedTags.optional(),
+    coverMediaId: oid.nullable().optional(),
+    coverBannerMediaId: oid.nullable().optional(),
   })
   .strict()
 const markup = /<\/?[a-z][^>]*>|```|\*\*|__|!\[[^\]]*\]\(|^\s{0,3}(?:#{1,6}\s|>\s)/imu
@@ -49,6 +51,23 @@ export function canReviseUnpublished(submission, target, revision, story) {
     ['approved', 'immutable'].includes(revision.status) &&
     String(target.publishedRevisionId) === String(submission.revisionId) &&
     String(target.draftRevisionId ?? target.currentRevisionId) === String(submission.revisionId),
+  )
+}
+
+export function canReviseApprovedUnreleased(submission, target, revision, story) {
+  return Boolean(
+    submission.chapterId &&
+      submission.status === 'approved' &&
+      !story.authoringFrozen &&
+      story.publicationStatus !== 'archived' &&
+      ['approved', 'scheduled', 'due'].includes(target?.status) &&
+      !target.firstReleasedAt &&
+      !target.publishedRevisionId &&
+      String(target.storyId) === String(submission.storyId) &&
+      String(target.draftRevisionId ?? target.currentRevisionId) === String(submission.revisionId) &&
+      String(revision?._id) === String(submission.revisionId) &&
+      revision?.immutableAt &&
+      ['approved', 'immutable'].includes(revision.status),
   )
 }
 
@@ -267,12 +286,6 @@ export async function submitContent(account, input, config) {
           'image_rights_required',
           'Hãy khai báo quyền cho đúng danh sách ảnh của bản nháp.',
         )
-      if (input.rights.basis === 'licensed' && !input.rights.sourceLicenceNote?.trim())
-        throw new HttpError(
-          400,
-          'licence_note_required',
-          'Hãy ghi nguồn và phạm vi được cấp phép cho nội dung và ảnh.',
-        )
       // Pin the verified assets in the same transaction as the immutable package.
       const pinned = await pinChapterImages(
         config,
@@ -286,6 +299,16 @@ export async function submitContent(account, input, config) {
     } else if (input.imageManifestDigest || (input.chapterId && input.rights)) {
       throw new HttpError(400, 'validation_error', 'Khai báo ảnh không phù hợp với phiên bản này.')
     }
+    if (
+      (!input.chapterId || state.illustrated) &&
+      input.rights?.basis === 'licensed' &&
+      !input.rights.sourceLicenceNote?.trim()
+    )
+      throw new HttpError(
+        400,
+        'licence_note_required',
+        'Hãy ghi nguồn và phạm vi được cấp phép cho nội dung và ảnh.',
+      )
     const now = new Date()
     const submissionId = new mongoose.Types.ObjectId()
     let rights = state.rights
@@ -420,7 +443,10 @@ export async function submissionList(account, { page = 1 } = {}) {
       .skip((page - 1) * 10)
       .limit(10)
       .lean(),
-    Story.find({ authorAccountId: account._id })
+    Story.find({
+      authorAccountId: account._id,
+      'publicationTransition.result': { $ne: 'author-draft-deleted' },
+    })
       .sort({ updatedAt: -1 })
       .select('title authoringFrozen publicationStatus draftRevisionId currentRevisionId')
       .lean(),
@@ -494,6 +520,12 @@ export async function submissionList(account, { page = 1 } = {}) {
             item,
             chapters.find(chapter => chapter._id.equals(item.chapterId)),
             revision,
+            stories.find(story => story._id.equals(item.storyId)) ?? {},
+          ) ||
+          canReviseApprovedUnreleased(
+            item,
+            target,
+            current,
             stories.find(story => story._id.equals(item.storyId)) ?? {},
           ),
         version: item.version,
@@ -578,7 +610,7 @@ export async function reviseSubmission(account, submissionId, expectedVersion) {
     if (!target) throw new HttpError(404, 'not_found', 'Không tìm thấy nội dung.')
     if (submission.chapterId && story.authoringFrozen)
       throw new HttpError(409, 'content_frozen', 'Truyện đang có gói thông tin chờ xử lý.')
-    if (['archived', 'cancelled', 'scheduled', 'due'].includes(target.status))
+    if (['archived', 'cancelled'].includes(target.status))
       throw new HttpError(409, 'content_frozen', 'Nội dung không còn ở vòng chỉnh sửa này.')
     const currentId = target.draftRevisionId ?? target.currentRevisionId
     const current = await ContentRevision.findOne({
@@ -590,6 +622,9 @@ export async function reviseSubmission(account, submissionId, expectedVersion) {
     }).session(session)
     if (!current) throw new HttpError(409, 'missing_revision', 'Không tìm thấy phiên bản hiện tại.')
     const unpublished = canReviseUnpublished(submission, target, current, story)
+    const approvedUnreleased = canReviseApprovedUnreleased(submission, target, current, story)
+    const rejected = submission.status === 'rejected'
+    const rejectedAllowed = rejected && canReviseRejected(submission, target, current, story)
     const unpublishedReplay =
       submission.chapterId &&
       submission.status === 'approved' &&
@@ -598,7 +633,9 @@ export async function reviseSubmission(account, submissionId, expectedVersion) {
       current.parentRevisionId?.equals(submission.revisionId) &&
       current.status === 'editable' &&
       !current.immutableAt
-    if (submission.status !== 'rejected' && !unpublished && !unpublishedReplay)
+    if (rejected && !rejectedAllowed)
+      throw new HttpError(409, 'revision_not_allowed', 'Gói chưa đủ điều kiện tạo bản sửa.')
+    if (!rejected && !unpublished && !approvedUnreleased && !unpublishedReplay)
       throw new HttpError(409, 'revision_not_allowed', 'Gói chưa đủ điều kiện tạo bản sửa.')
     if (
       current.parentRevisionId?.equals(submission.revisionId) &&
@@ -614,7 +651,8 @@ export async function reviseSubmission(account, submissionId, expectedVersion) {
       }
     if (!current._id.equals(submission.revisionId) || !current.immutableAt)
       throw new HttpError(409, 'stale_content', 'Nội dung đã chuyển sang phiên bản khác.')
-    if (unpublished) await loadSubmittedPackage(account, submission._id, session)
+    if (unpublished || approvedUnreleased)
+      await loadSubmittedPackage(account, submission._id, session)
     const revision = await createEditableRevision({
       current,
       storyId: story._id,
@@ -626,15 +664,20 @@ export async function reviseSubmission(account, submissionId, expectedVersion) {
     target.currentRevisionId = revision._id
     if (submission.chapterId) {
       if (target.status !== 'published') target.status = 'draft'
+      if (approvedUnreleased) target.requestedReleaseAt = undefined
     } else {
       story.authoringFrozen = false
       if (!['published', 'unpublished'].includes(story.publicationStatus))
         story.publicationStatus = story.publishedRevisionId ? 'unpublished' : 'draft'
     }
     await target.save({ session })
-    if (unpublished) {
+    if (unpublished || approvedUnreleased) {
       story.increment()
       await story.save({ session })
+    }
+    if (approvedUnreleased) {
+      submission.status = 'superseded'
+      await submission.save({ session })
     }
     const now = new Date()
     await AuditEvent.create(
@@ -669,6 +712,24 @@ export async function reviseSubmission(account, submissionId, expectedVersion) {
       ],
       { session },
     )
+    if (approvedUnreleased)
+      await ModerationHistory.create(
+        [
+          {
+            aggregateType: 'chapter',
+            aggregateId: target._id,
+            action: 'publication.superseded',
+            outcome: 'superseded',
+            submissionId: submission._id,
+            revisionId: current._id,
+            actorAccountId: account._id,
+            actorAuthorizationEpoch: account.authorizationEpoch,
+            reason: 'Bản duyệt đã được thay thế bằng bản sửa mới.',
+            occurredAt: now,
+          },
+        ],
+        { session },
+      )
     return {
       id: String(revision._id),
       storyId: String(story._id),

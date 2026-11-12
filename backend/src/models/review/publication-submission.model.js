@@ -4,6 +4,7 @@ export const SUBMISSION_STATUSES = [
   'pending-review',
   'decision-pending',
   'approved',
+  'superseded',
   'rejected',
   'cancelled',
 ]

@@ -343,8 +343,31 @@
     "emptyDescription": "Choose another category or explore new stories.",
     "popularityValue": "{{count}} views/30 days",
     "ratingValue": "{{count}} ratings",
+    "topFive": "Top 5 highlights",
+    "remaining": "More ranked stories",
     "viewStory": "View {{title}}",
     "view": "View"
+  },
+  "analyticsData": {
+    "sectionsLabel": "Analytics sections",
+    "sections": {
+      "overview": "Overview",
+      "retention": "Retention",
+      "audience": "Audience"
+    }
+  },
+  "editorData": {
+    "status": {
+      "draft": "Draft",
+      "submitted": "Submitted",
+      "approved": "Approved",
+      "scheduled": "Scheduled",
+      "due": "Ready to publish",
+      "published": "Published",
+      "unpublished": "Unpublished",
+      "archived": "Archived",
+      "cancelled": "Cancelled"
+    }
   },
   "home": {
     "viewRankings": "View rankings",

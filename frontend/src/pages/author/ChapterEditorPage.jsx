@@ -57,7 +57,6 @@ const SCENE_BREAK = '*     *     *'
 const emptyChapter = { chapter: null }
 const utilityTabs = [
   { value: 'outline', label: 'Dàn ý' },
-  { value: 'notes', label: 'Ghi chú' },
   { value: 'checklist', label: 'Danh sách kiểm tra' },
 ]
 
@@ -111,6 +110,7 @@ export function ChapterEditorPage() {
                 item.number,
                 `Chương ${item.number}: ${item.title}`,
                 item.id,
+                item.status,
               ]),
             },
           ],
@@ -231,10 +231,11 @@ function ChapterEditor({ chapter }) {
   const [saved, setSaved] = useState(true)
   const [caret, setCaret] = useState(0)
   const [utility, setUtility] = useState('outline')
-  const [notes, setNotes] = useState('')
   const groups = chapter.groups
   const [leftOpen, setLeftOpen] = useState(false)
   const [rightOpen, setRightOpen] = useState(false)
+  const [leftPanelVisible, setLeftPanelVisible] = useState(true)
+  const [rightPanelVisible, setRightPanelVisible] = useState(true)
   const [previewOpen, setPreviewOpen] = useState(false)
   const [imagePicker, setImagePicker] = useState(false)
   const [submit, setSubmit] = useState('idle')
@@ -363,10 +364,16 @@ function ChapterEditor({ chapter }) {
       title={title}
       words={words}
       saved={saved}
-      notes={notes}
-      setNotes={setNotes}
     />
   )
+  const toggleLeftPanel = () => {
+    if (window.matchMedia('(min-width: 1280px)').matches) setLeftPanelVisible(value => !value)
+    else setLeftOpen(true)
+  }
+  const toggleRightPanel = () => {
+    if (window.matchMedia('(min-width: 1280px)').matches) setRightPanelVisible(value => !value)
+    else setRightOpen(true)
+  }
 
   return (
     <div className="flex min-h-[calc(100dvh-var(--app-header-h))] flex-col bg-reader">
@@ -390,8 +397,8 @@ function ChapterEditor({ chapter }) {
             <Badge className="hidden md:inline-flex">Đọc trong {minutes} phút</Badge>
           </>
         }
-        onOpenLeft={() => setLeftOpen(true)}
-        onOpenRight={() => setRightOpen(true)}
+        onOpenLeft={toggleLeftPanel}
+        onOpenRight={toggleRightPanel}
         onPreview={() => setPreviewOpen(true)}
         importTo={chapter.canEdit ? `/author/import?storyId=${chapter.storyId}` : null}
         onLeave={leave}
@@ -400,10 +407,10 @@ function ChapterEditor({ chapter }) {
         submitDisabled={saveBusy || conflict || !chapter.canEdit}
       />
 
-      <div className="nh-grid-12 nh-fade-enter grid min-h-0 flex-1 nh-layout-xl-3-6-3">
+      <div className={`nh-grid-12 nh-fade-enter grid min-h-0 flex-1 nh-layout-xl-3-6-3 ${leftPanelVisible ? '' : 'nh-editor-left-hidden'} ${rightPanelVisible ? '' : 'nh-editor-right-hidden'}`}>
         <aside
           aria-label="Dàn ý truyện"
-          className="hidden overflow-y-auto border-r border-hairline bg-surface p-5 xl:block"
+          className={`${leftPanelVisible ? '' : 'xl:hidden'} hidden overflow-y-auto border-r border-hairline bg-surface p-5 xl:block`}
         >
           {tree}
         </aside>
@@ -561,7 +568,7 @@ function ChapterEditor({ chapter }) {
         </div>
         <aside
           aria-label="Trợ lý sáng tác"
-          className="hidden overflow-y-auto border-l border-hairline bg-surface xl:block"
+          className={`${rightPanelVisible ? '' : 'xl:hidden'} hidden overflow-y-auto border-l border-hairline bg-surface xl:block`}
         >
           {utilityPanel}
         </aside>
@@ -690,12 +697,11 @@ function EditorHeader({
   return (
     <div className="flex flex-wrap items-center gap-x-3 gap-y-2 border-b border-hairline bg-surface px-4 py-3">
       <IconButton
-        label="Mở dàn ý chương"
+        label="Ẩn hoặc hiện danh sách chương"
         shape="circle"
         size="sm"
         onClick={onOpenLeft}
         disabled={!onOpenLeft}
-        className="xl:hidden"
       >
         <PanelLeft size={18} />
       </IconButton>
@@ -714,12 +720,11 @@ function EditorHeader({
         <h1 className="line-clamp-2 text-sm font-semibold text-brand-strong">{title}</h1>
       </div>
       <IconButton
-        label="Mở bảng trợ lý sáng tác"
+        label="Ẩn hoặc hiện bảng trợ lý sáng tác"
         shape="circle"
         size="sm"
         onClick={onOpenRight}
         disabled={!onOpenRight}
-        className="xl:hidden"
       >
         <PanelRight size={18} />
       </IconButton>
@@ -956,6 +961,18 @@ function ChapterTree({
   onLeave,
   rich,
 }) {
+  const { t } = useLocale()
+  const statusLabels = {
+    draft: t('editorData.status.draft'),
+    submitted: t('editorData.status.submitted'),
+    approved: t('editorData.status.approved'),
+    scheduled: t('editorData.status.scheduled'),
+    due: t('editorData.status.due'),
+    published: t('editorData.status.published'),
+    unpublished: t('editorData.status.unpublished'),
+    archived: t('editorData.status.archived'),
+    cancelled: t('editorData.status.cancelled'),
+  }
   return (
     <>
       <div className="border-b border-hairline pb-4">
@@ -973,7 +990,7 @@ function ChapterTree({
               <span className="shrink-0 text-xs text-muted">{group.count} chương</span>
             </div>
             <ul className="mt-2 space-y-1 border-l border-hairline pl-3">
-              {group.chapters.map(([number, label, id]) => {
+              {group.chapters.map(([number, label, id, status]) => {
                 const active = number === activeChapter
                 return (
                   <li key={number}>
@@ -983,9 +1000,12 @@ function ChapterTree({
                       aria-current={active ? 'page' : undefined}
                       className={`flex w-full items-center gap-2 rounded-full px-3 py-2 text-sm transition-colors duration-200 pointer-coarse:min-h-11 ${active ? 'bg-brand/12 font-semibold text-brand-strong' : 'text-ink/70 hover:bg-elevated hover:text-ink'}`}
                     >
-                      <span className="truncate" title={label}>
-                        {label}
-                      </span>
+                      <span className="min-w-0 flex-1 truncate" title={label}>{label}</span>
+                      {status && (
+                        <span className="shrink-0 rounded-full bg-elevated px-2 py-0.5 text-[10px] font-medium text-muted">
+                          {statusLabels[status] ?? status}
+                        </span>
+                      )}
                       {active && (
                         <PenLine size={14} aria-hidden="true" className="ml-auto shrink-0" />
                       )}
@@ -1005,28 +1025,11 @@ function ChapterTree({
   )
 }
 
-function WriterUtility({ tab, setTab, body, title, words, saved, notes, setNotes }) {
-  const { t } = useLocale()
+function WriterUtility({ tab, setTab, body, title, words, saved }) {
   return (
     <div className="space-y-5 p-5">
       <Tabs label="Tiện ích sáng tác" value={tab} onChange={setTab} items={utilityTabs} />
       {tab === 'outline' && <Outline body={body} />}
-      {tab === 'notes' && (
-        <div>
-          <label htmlFor="chapter-notes" className="text-sm font-semibold">
-            Ghi chú cho chương này
-          </label>
-          <textarea
-            id="chapter-notes"
-            value={notes}
-            disabled
-            onChange={event => setNotes(event.target.value)}
-            placeholder="Ý tưởng, chi tiết cần nhớ, câu thoại muốn giữ lại..."
-            className="mt-2 min-h-48 w-full resize-y rounded-3xl border border-line bg-surface p-4 text-base leading-6 text-ink outline-none transition-colors placeholder:text-muted focus:border-brand sm:text-sm"
-          />
-          <p className="mt-2 text-xs text-muted">{t('editorData.noNotes')}</p>
-        </div>
-      )}
       {tab === 'checklist' && <Checklist title={title} body={body} words={words} saved={saved} />}
     </div>
   )

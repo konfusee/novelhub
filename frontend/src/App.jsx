@@ -149,11 +149,6 @@ const ImportPdfPage = lazy(() =>
     default: m.ImportPdfPage,
   })),
 )
-const MediaLibraryPage = lazy(() =>
-  import('./pages/author/MediaLibraryPage').then(m => ({
-    default: m.MediaLibraryPage,
-  })),
-)
 const SubmissionReviewPage = lazy(() =>
   import('./pages/author/SubmissionReviewPage').then(m => ({
     default: m.SubmissionReviewPage,
@@ -312,7 +307,6 @@ const pages = [
   ChapterEditorPage,
   DraftsPage,
   ImportPdfPage,
-  MediaLibraryPage,
   SubmissionReviewPage,
   AuthorAnalyticsPage,
   ModeratorOverviewPage,
@@ -503,7 +497,6 @@ function AppRoutes() {
             element={role('author', <AuthorPreviewPage />, true)}
           />
           <Route path="/author/import" element={role('author', <ImportPdfPage />, true)} />
-          <Route path="/author/media" element={role('author', <MediaLibraryPage />, true)} />
           <Route
             path="/author/ai"
             element={role('author', <Navigate to="/author" replace />, true)}

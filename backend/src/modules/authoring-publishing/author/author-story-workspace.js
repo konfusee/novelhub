@@ -11,15 +11,23 @@ import {
 import { HttpError } from '../../../middleware/errors.js'
 import { draftLifecycle } from './author-story-lifecycle.js'
 import { canReorderDraftChapters } from './author-chapter-order.js'
-import { chapterCanUnpublish, chapterDraftLifecycle } from './author-chapter-lifecycle.js'
+import {
+  chapterCanDelete,
+  chapterCanUnpublish,
+  chapterDraftLifecycle,
+} from './author-chapter-lifecycle.js'
 import { chapterTextProjection } from '../content/rich-chapter-document.js'
-import { canReviseUnpublished } from './author-submissions.js'
+import { canReviseApprovedUnreleased, canReviseUnpublished } from './author-submissions.js'
 import { storyCanUnpublish } from './author-story-unpublish.js'
 import { canReleaseStoryVersion } from './author-story-release.js'
 import { metadataTags } from '../content/story-tags.js'
 
 export async function authorStoryWorkspace(account, storyId) {
-  const story = await Story.findOne({ _id: storyId, authorAccountId: account._id }).lean()
+  const story = await Story.findOne({
+    _id: storyId,
+    authorAccountId: account._id,
+    'publicationTransition.result': { $ne: 'author-draft-deleted' },
+  }).lean()
   if (!story) throw new HttpError(404, 'not_found', 'Không tìm thấy truyện.')
   const lifecycle = await draftLifecycle(story)
   const metadataRevisionId = story.draftRevisionId ?? story.currentRevisionId
@@ -29,7 +37,7 @@ export async function authorStoryWorkspace(account, storyId) {
       storyId: story._id,
       'publicationTransition.result': { $ne: 'author-draft-deleted' },
     })
-      .sort({ orderKey: -1, _id: -1 })
+      .sort({ orderKey: 1, _id: 1 })
       .lean(),
     StatisticsEvent.aggregate([
       { $match: { storyId: story._id, eventType: 'view' } },
@@ -75,6 +83,18 @@ export async function authorStoryWorkspace(account, storyId) {
   })
     .select('chapterId revisionId storyId status version')
     .lean()
+  const openChapterIds = new Set(
+    (
+      await PublicationSubmission.find({
+        storyId: story._id,
+        chapterId: { $ne: null },
+        authorAccountId: account._id,
+        status: { $in: ['validated', 'pending-review', 'decision-pending'] },
+      })
+        .select('chapterId')
+        .lean()
+    ).map(item => String(item.chapterId)),
+  )
   const rows = chapters.map(chapter => {
     const revisionId =
       chapter.draftRevisionId ?? chapter.currentRevisionId ?? chapter.publishedRevisionId
@@ -91,7 +111,19 @@ export async function authorStoryWorkspace(account, storyId) {
       item => item.chapterId.equals(chapter._id) && item.revisionId.equals(revisionId),
     )
     return {
-      ...chapterDraftLifecycle(chapter, revision, story, lifecycle),
+      ...chapterDraftLifecycle(
+        chapter,
+        revision,
+        story,
+        lifecycle,
+        openChapterIds.has(String(chapter._id)),
+      ),
+      canDelete: chapterCanDelete(
+        chapter,
+        revision,
+        story,
+        openChapterIds.has(String(chapter._id)),
+      ),
       canConfigureEarlyAccess:
         canConfigureEarlyAccess(chapter, revision, story) ||
         canDisableEarlyAccess(chapter, revision, story),
@@ -102,7 +134,9 @@ export async function authorStoryWorkspace(account, storyId) {
         ['approved', 'scheduled', 'due'].includes(chapter.status) &&
         !chapter.publishedRevisionId,
       reviseSource:
-        source && canReviseUnpublished(source, chapter, revision, story)
+        source &&
+        (canReviseUnpublished(source, chapter, revision, story) ||
+          canReviseApprovedUnreleased(source, chapter, revision, story))
           ? { id: String(source._id), version: source.version }
           : null,
       id: String(chapter._id),
@@ -152,6 +186,14 @@ export async function authorStoryWorkspace(account, storyId) {
         : null,
       categoryId: String(story.categoryId),
       tags,
+      coverMediaId: story.coverMediaId ? String(story.coverMediaId) : null,
+      coverUrl: story.coverMediaId ? `/author/media/${story.coverMediaId}/content` : null,
+      coverBannerMediaId: story.theme?.coverBannerMediaId
+        ? String(story.theme.coverBannerMediaId)
+        : null,
+      bannerUrl: story.theme?.coverBannerMediaId
+        ? `/author/media/${story.theme.coverBannerMediaId}/content`
+        : null,
       author: account.displayName,
       status: story.publicationStatus,
       version: story.version,

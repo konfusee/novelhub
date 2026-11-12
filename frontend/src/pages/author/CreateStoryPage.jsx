@@ -30,7 +30,6 @@ import {
   Input,
   Modal,
   SectionHeader,
-  Select,
   Skeleton,
 } from '../../components/ui'
 
@@ -42,16 +41,7 @@ const steps = [
   ['create-genre', 'Phân loại'],
   ['create-rights', 'Xuất bản và bản quyền'],
 ]
-const ratings = [
-  [
-    'PG-13',
-    'Độc giả phổ thông (PG-13)',
-    'Phù hợp với thanh thiếu niên và độc giả truyện phổ thông.',
-  ],
-  ['18+', 'Trưởng thành (18+)', 'Có miêu tả tình cảm trực diện hoặc chủ đề u tối.'],
-]
-const MAX_COVER_BYTES = 5 * 1024 * 1024
-const MIN_SYNOPSIS = 100
+const MAX_COVER_BYTES = 10 * 1024 * 1024
 
 export function CreateStoryPage() {
   const { t } = useLocale()
@@ -62,17 +52,17 @@ export function CreateStoryPage() {
   const [requestError, setRequestError] = useState('')
   const sectionRefs = useRef([])
   const fileRef = useRef(null)
+  const bannerFileRef = useRef(null)
   const [step, setStep] = useState(1)
   const [title, setTitle] = useState('')
   const [tagline, setTagline] = useState('')
   const [synopsis, setSynopsis] = useState('')
   const [genre, setGenre] = useState('')
   const [tags, setTags] = useState([])
-  const [rating, setRating] = useState('')
-  const [language, setLanguage] = useState('vi')
   const [cover, setCover] = useState(null)
   const [coverError, setCoverError] = useState('')
-  const [agreed, setAgreed] = useState(false)
+  const [banner, setBanner] = useState(null)
+  const [bannerError, setBannerError] = useState('')
   const [showErrors, setShowErrors] = useState(false)
   const [draftState, setDraftState] = useState('idle')
   const [submitState, setSubmitState] = useState('idle')
@@ -80,11 +70,7 @@ export function CreateStoryPage() {
 
   const errors = {
     title: title.trim() ? '' : 'Hãy nhập tên truyện.',
-    synopsis:
-      synopsis.trim().length >= MIN_SYNOPSIS
-        ? ''
-        : `Tóm tắt cần ít nhất ${MIN_SYNOPSIS} ký tự (hiện có ${synopsis.trim().length}).`,
-    agreed: agreed ? '' : 'Bạn cần xác nhận quyền tác giả trước khi tạo truyện.',
+    synopsis: '',
   }
   const genreLabel =
     genreOptions.data.find(item => item.id === genre)?.name ?? t('createData.chooseGenre')
@@ -92,6 +78,7 @@ export function CreateStoryPage() {
     title: title.trim() || 'Truyện chưa đặt tên',
     author: currentUser.name,
     cover: cover?.url,
+    bannerUrl: banner?.url,
   }
 
   useEffect(() => {
@@ -110,6 +97,7 @@ export function CreateStoryPage() {
     return () => observer.disconnect()
   }, [])
   useEffect(() => () => cover && URL.revokeObjectURL(cover.url), [cover])
+  useEffect(() => () => banner && URL.revokeObjectURL(banner.url), [banner])
 
   const goTo = number => {
     setStep(number)
@@ -123,11 +111,22 @@ export function CreateStoryPage() {
     const file = event.target.files?.[0]
     event.target.value = ''
     if (!file) return
-    if (!file.type.startsWith('image/'))
-      return setCoverError('Ảnh bìa phải là tệp hình ảnh (JPG, PNG hoặc WebP).')
-    if (file.size > MAX_COVER_BYTES) return setCoverError('Ảnh bìa tối đa 5 MB.')
+    if (!['image/jpeg', 'image/png', 'image/webp'].includes(file.type))
+      return setCoverError(t('createData.coverInvalid'))
+    if (file.size > MAX_COVER_BYTES) return setCoverError(t('createData.coverTooLarge'))
     setCoverError('')
     setCover({ name: file.name, url: URL.createObjectURL(file), file })
+    touch()
+  }
+  const chooseBanner = event => {
+    const file = event.target.files?.[0]
+    event.target.value = ''
+    if (!file) return
+    if (!['image/jpeg', 'image/png', 'image/webp'].includes(file.type))
+      return setBannerError(t('createData.bannerInvalid'))
+    if (file.size > MAX_COVER_BYTES) return setBannerError(t('createData.bannerTooLarge'))
+    setBannerError('')
+    setBanner({ name: file.name, url: URL.createObjectURL(file), file })
     touch()
   }
   const persist = async asDraft => {
@@ -136,7 +135,7 @@ export function CreateStoryPage() {
     const invalid =
       !title.trim() ||
       !genreOptions.data.some(item => item.id === genre) ||
-      (!asDraft && (errors.synopsis || errors.agreed))
+      (!asDraft && errors.synopsis)
     if (invalid) {
       setRequestError(t('createData.required'))
       return
@@ -151,18 +150,25 @@ export function CreateStoryPage() {
         body: { title: title.trim(), description: synopsis.trim(), categoryId: genre, tags },
       })
       if (!result.story?.id) throw new Error(t('createData.saveError'))
-      if (cover?.file) {
-        const query = new URLSearchParams({
-          name: cover.name,
-          kind: 'cover',
-          storyId: result.story.id,
-        })
+      setCreatedId(result.story.id)
+      let coverMediaId = null
+      let coverBannerMediaId = null
+      for (const [asset, kind, key] of [
+        [cover, 'cover', 'coverMediaId'],
+        [banner, 'banner', 'coverBannerMediaId'],
+      ]) {
+        if (!asset?.file) continue
+        const query = new URLSearchParams({ name: asset.name, kind, storyId: result.story.id })
         const uploaded = await apiRequest(`/author/media?${query.toString()}`, {
           method: 'POST',
-          body: cover.file,
+          body: asset.file,
           binary: true,
         })
         if (!uploaded.asset?.id) throw new Error(t('createData.coverUploadError'))
+        if (key === 'coverMediaId') coverMediaId = uploaded.asset.id
+        else coverBannerMediaId = uploaded.asset.id
+      }
+      if (coverMediaId || coverBannerMediaId) {
         const updated = await apiRequest(`/author/stories/${result.story.id}`, {
           method: 'PUT',
           body: {
@@ -170,13 +176,13 @@ export function CreateStoryPage() {
             description: synopsis.trim(),
             categoryId: genre,
             tags,
-            coverMediaId: uploaded.asset.id,
+            ...(coverMediaId ? { coverMediaId } : {}),
+            ...(coverBannerMediaId ? { coverBannerMediaId } : {}),
             expectedVersion: result.story.version,
           },
         })
         if (!updated.story?.id) throw new Error(t('createData.coverUploadError'))
       }
-      setCreatedId(result.story.id)
       setDraftState('saved')
       setSubmitState('done')
     } catch (error) {
@@ -247,13 +253,13 @@ export function CreateStoryPage() {
                   <Field
                     id="story-title"
                     label="Tên truyện *"
-                    count={`${title.length}/100`}
+                    count={`${title.length}/200`}
                     error={showErrors && errors.title}
                   >
                     <Input
                       id="story-title"
                       value={title}
-                      maxLength={100}
+                      maxLength={200}
                       required
                       aria-invalid={Boolean(showErrors && errors.title)}
                       aria-describedby={
@@ -285,14 +291,14 @@ export function CreateStoryPage() {
                   <Field
                     id="story-synopsis"
                     label="Tóm tắt truyện *"
-                    count={`${synopsis.length}/2000`}
+                    count={`${synopsis.length}/10000`}
                     error={showErrors && errors.synopsis}
                   >
                     <div className="overflow-hidden rounded-3xl border border-line bg-surface transition-colors focus-within:border-brand">
                       <textarea
                         id="story-synopsis"
                         value={synopsis}
-                        maxLength={2000}
+                        maxLength={10000}
                         required
                         aria-invalid={Boolean(showErrors && errors.synopsis)}
                         aria-describedby={
@@ -305,7 +311,7 @@ export function CreateStoryPage() {
                         className="block min-h-40 w-full resize-y bg-transparent p-4 text-base leading-6 text-ink outline-none sm:text-sm"
                       />
                       <div className="flex flex-wrap items-center gap-2 border-t border-hairline px-3 py-2">
-                        <span className="text-xs text-muted">Tối thiểu {MIN_SYNOPSIS} ký tự</span>
+                        <span className="text-xs text-muted">Có thể để trống khi lưu bản nháp</span>
                       </div>
                     </div>
                   </Field>
@@ -342,7 +348,7 @@ export function CreateStoryPage() {
                         onClick={() => fileRef.current?.click()}
                       >
                         <ImagePlus size={16} aria-hidden="true" />
-                        {cover ? 'Đổi ảnh bìa' : 'Tải ảnh bìa lên'}
+                        {t(cover ? 'createData.replaceCover' : 'createData.uploadCover')}
                       </Button>
                       {cover && (
                         <Button
@@ -355,7 +361,7 @@ export function CreateStoryPage() {
                           }}
                         >
                           <Trash2 size={14} aria-hidden="true" />
-                          Gỡ ảnh
+                          {t('createData.removeCover')}
                         </Button>
                       )}
                     </div>
@@ -369,6 +375,59 @@ export function CreateStoryPage() {
                         {coverError}
                       </p>
                     )}
+                    <div className="mt-5 border-t border-hairline pt-5">
+                      <p className="text-sm font-semibold">{t('createData.bannerTitle')}</p>
+                      <div className="mt-3 aspect-[3/1] max-w-sm overflow-hidden rounded-xl border border-line bg-elevated">
+                        {banner ? (
+                          <img
+                            src={banner.url}
+                            alt={t('createData.bannerPreview')}
+                            className="h-full w-full object-cover"
+                          />
+                        ) : (
+                          <div className="flex h-full items-center justify-center text-muted">
+                            {t('createData.noBanner')}
+                          </div>
+                        )}
+                      </div>
+                      <input
+                        ref={bannerFileRef}
+                        type="file"
+                        accept="image/jpeg,image/png,image/webp"
+                        onChange={chooseBanner}
+                        className="sr-only"
+                        aria-describedby={bannerError ? 'story-banner-error' : undefined}
+                      />
+                      <div className="mt-3 flex flex-wrap gap-2">
+                        <Button
+                          type="button"
+                          variant="secondary"
+                          onClick={() => bannerFileRef.current?.click()}
+                        >
+                          <ImagePlus size={16} aria-hidden="true" />
+                          {t(banner ? 'createData.changeBanner' : 'createData.uploadBanner')}
+                        </Button>
+                        {banner && (
+                          <Button
+                            type="button"
+                            variant="danger"
+                            size="sm"
+                            onClick={() => {
+                              setBanner(null)
+                              touch()
+                            }}
+                          >
+                            <Trash2 size={14} aria-hidden="true" />
+                            {t('createData.removeBanner')}
+                          </Button>
+                        )}
+                      </div>
+                      {bannerError && (
+                        <p id="story-banner-error" role="alert" className="mt-2 text-xs text-rose-strong">
+                          {bannerError}
+                        </p>
+                      )}
+                    </div>
                   </div>
                 </div>
               </Card>
@@ -455,56 +514,6 @@ export function CreateStoryPage() {
                   />
                 </div>
 
-                <div className="nh-grid-12 mt-6 grid gap-5 nh-sm-cols-2">
-                  <fieldset>
-                    <legend className="text-sm font-semibold">Phân loại nội dung hướng đến</legend>
-                    <div className="mt-2 space-y-2">
-                      {ratings.map(([value, label, note]) => (
-                        <label
-                          key={value}
-                          className={`flex cursor-pointer items-start gap-3 rounded-3xl border p-4 transition-[background-color,border-color] duration-200 ${rating === value ? 'border-brand bg-brand/8' : 'border-line hover:border-brand/60'}`}
-                        >
-                          <input
-                            type="radio"
-                            disabled
-                            name="story-rating"
-                            value={value}
-                            checked={rating === value}
-                            onChange={() => {
-                              setRating(value)
-                              touch()
-                            }}
-                            className="mt-0.5 size-4 shrink-0 accent-[var(--primary)]"
-                          />
-                          <span>
-                            <strong className="block text-sm">{label}</strong>
-                            <span className="mt-1 block text-xs leading-5 text-muted">{note}</span>
-                          </span>
-                        </label>
-                      ))}
-                    </div>
-                  </fieldset>
-                  <p className="text-xs text-muted">{t('createData.noAgeRating')}</p>
-                  <Field id="story-language" label="Ngôn ngữ bản thảo gốc">
-                    <Select
-                      id="story-language"
-                      disabled
-                      value={language}
-                      onChange={event => {
-                        setLanguage(event.target.value)
-                        touch()
-                      }}
-                      className="w-full"
-                    >
-                      <option value="en-US">Tiếng Anh (Mỹ)</option>
-                      <option value="vi">Tiếng Việt</option>
-                      <option value="ja">Tiếng Nhật</option>
-                    </Select>
-                    <p className="mt-3 rounded-2xl bg-purple/10 p-3 text-xs leading-5 text-purple-strong">
-                      {t('createData.language')}
-                    </p>
-                  </Field>
-                </div>
               </Card>
 
               <Card
@@ -513,36 +522,9 @@ export function CreateStoryPage() {
                 className="scroll-mt-[calc(var(--app-header-h)+1rem)]"
               >
                 <CardHeading icon={Copyright} title="Xuất bản và bản quyền" />
-                <label
-                  htmlFor="story-agreed"
-                  className={`mt-5 flex cursor-pointer items-start gap-3 rounded-3xl border p-4 ${showErrors && errors.agreed ? 'border-rose' : 'border-line'}`}
-                >
-                  <input
-                    id="story-agreed"
-                    type="checkbox"
-                    checked={agreed}
-                    onChange={event => {
-                      setAgreed(event.target.checked)
-                      touch()
-                    }}
-                    aria-invalid={Boolean(showErrors && errors.agreed)}
-                    aria-describedby={
-                      showErrors && errors.agreed ? 'story-agreed-error' : undefined
-                    }
-                    className="mt-0.5 size-4 shrink-0 accent-[var(--primary)]"
-                  />
-                  <span className="text-sm leading-6">
-                    <strong>Tuyên bố tác phẩm gốc và bản quyền:</strong> Tôi xác nhận “
-                    {title.trim() || 'Truyện chưa đặt tên'}” là bản thảo gốc do tôi sáng tác và tuân
-                    thủ Chính sách quyền tác giả của NovelHub.
-                  </span>
-                </label>
-                <p className="mt-3 text-xs text-muted">{t('createData.rightsHint')}</p>
-                {showErrors && errors.agreed && (
-                  <p id="story-agreed-error" className="mt-2 text-xs text-rose-strong">
-                    {errors.agreed}
-                  </p>
-                )}
+                <p className="mt-5 rounded-2xl bg-elevated p-4 text-sm leading-6 text-muted">
+                  {t('createData.rightsHint')}
+                </p>
               </Card>
             </fieldset>
             {requestError && (
@@ -658,9 +640,8 @@ export function CreateStoryPage() {
               <ul className="mt-4 space-y-4">
                 {[
                   ['Có tên truyện', Boolean(title.trim()), 1],
-                  ['Tóm tắt đủ chiều sâu', synopsis.trim().length >= MIN_SYNOPSIS, 1],
+                  ['Đã kiểm tra tóm tắt', true, 1],
                   [t('createData.coverOptional'), true, 2],
-                  ['Xác nhận quyền tác giả', agreed, 4],
                 ].map(([label, done, target]) => (
                   <li key={label} className="flex gap-3">
                     <span

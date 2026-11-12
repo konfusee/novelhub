@@ -316,6 +316,11 @@ retry after disposal requires Author re-upload
 (`FR-AUTHOR-09`–`FR-AUTHOR-11`, `UC-AUT-05`).
 
 Actual story assets and narration retain the VPSTTT Object Storage boundary.
+For the local demo, the media module uses a configured local adapter behind
+the same ownership, checksum, audit and serving contract because VPSTTT
+credentials and endpoint details are not available. A production deployment
+must replace that adapter before claiming VPSTTT-backed storage; this does not
+change the route or revision contract.
 Users may delete accounts even with financial history. Public profile/comment
 surfaces are anonymized and comments display “Deleted user.” Finance/audit
 records remain; finance/payout bank snapshots and legal/account-holder names

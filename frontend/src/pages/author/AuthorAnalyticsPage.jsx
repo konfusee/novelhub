@@ -7,9 +7,11 @@ import {
   BookOpen,
   Check,
   Download,
+  FileText,
   Plus,
   RefreshCw,
   Sparkles,
+  Star,
   UsersRound,
 } from '../../components/icons'
 import { AuthorLayout } from '../../layouts'
@@ -24,6 +26,7 @@ import {
   ProgressBar,
   Select,
   Skeleton,
+  Tabs,
 } from '../../components/ui'
 const emptyAnalytics = {
   daily: [],
@@ -32,6 +35,11 @@ const emptyAnalytics = {
   chapters: [],
   reads: 0,
   readers: 0,
+  followers: 0,
+  rating: { average: null, count: 0 },
+  paidUnlocks: 0,
+  earnings: 0,
+  comments: {},
 }
 const rangeLabels = {
   'Last 7 Days': '7 ngày gần nhất',
@@ -74,7 +82,11 @@ export function AuthorAnalyticsPage() {
     setDay(null)
   }
   const [range, setRange] = useState('Last 30 Days')
+  const [groupBy, setGroupBy] = useState('day')
+  const [fromDate, setFromDate] = useState('')
+  const [toDate, setToDate] = useState('')
   const [exported, setExported] = useState(false)
+  const [section, setSection] = useState('overview')
   // Per-day readout for touch: the bars are too thin to target, so the plot maps the pointer x to a day.
   const [day, setDay] = useState(null)
   const days = {
@@ -83,7 +95,7 @@ export function AuthorAnalyticsPage() {
     'Last 90 Days': 90,
   }[range]
   const analytics = useBackendDocument(
-    `/author/analytics?days=${days}${story ? `&storyId=${encodeURIComponent(story)}` : ''}${chapter ? `&chapterId=${encodeURIComponent(chapter)}` : ''}`,
+    `/author/analytics?days=${days}&groupBy=${groupBy}${fromDate ? `&from=${fromDate}` : ''}${toDate ? `&to=${toDate}` : ''}${story ? `&storyId=${encodeURIComponent(story)}` : ''}${chapter ? `&chapterId=${encodeURIComponent(chapter)}` : ''}`,
     emptyAnalytics,
   )
   const loading = analytics.status === 'loading'
@@ -163,6 +175,11 @@ export function AuthorAnalyticsPage() {
         title: selectedChapter.title,
       })
     : t('analyticsData.allChapters')
+  const comments = analytics.data.comments ?? {}
+  const commentTotal = Object.values(comments).reduce(
+    (total, count) => total + (Number.isSafeInteger(count) ? count : 0),
+    0,
+  )
   const kpis = [
     {
       icon: BookOpen,
@@ -189,6 +206,41 @@ export function AuthorAnalyticsPage() {
         : t('analyticsData.noProgress'),
       tone: 'purple',
     },
+    {
+      icon: UsersRound,
+      label: t('analyticsData.followers'),
+      value: analytics.data.followers?.toLocaleString('vi-VN') ?? '—',
+      delta: t('analyticsData.recorded'),
+      tone: 'orange',
+    },
+    {
+      icon: Sparkles,
+      label: t('analyticsData.paidUnlocks'),
+      value: analytics.data.paidUnlocks?.toLocaleString('vi-VN') ?? '—',
+      delta: `${analytics.data.earnings?.toLocaleString('vi-VN') ?? 0} ${t('analyticsData.coinUnit')}`,
+      tone: 'purple',
+    },
+    {
+      icon: Star,
+      label: t('analyticsData.averageRating'),
+      value:
+        analytics.data.rating?.average == null
+          ? '—'
+          : analytics.data.rating.average.toLocaleString('vi-VN'),
+      delta: t('analyticsData.ratingCount', { count: analytics.data.rating?.count ?? 0 }),
+      tone: 'orange',
+    },
+    {
+      icon: FileText,
+      label: t('analyticsData.comments'),
+      value: commentTotal.toLocaleString('vi-VN'),
+      delta: t('analyticsData.commentBreakdown', {
+        visible: comments.visible ?? 0,
+        hidden: comments.hidden ?? 0,
+        deleted: comments['soft-deleted'] ?? 0,
+      }),
+      tone: 'brand',
+    },
   ]
   const dailyPeak = Math.max(0, ...daily)
   const resetRange = () => {
@@ -203,6 +255,17 @@ export function AuthorAnalyticsPage() {
       [t('analyticsData.range'), rangeLabels[range]],
       [t('analyticsData.views'), reads],
       [t('analyticsData.readers'), readers],
+      [t('analyticsData.followers'), analytics.data.followers ?? 0],
+      [t('analyticsData.averageRating'), analytics.data.rating?.average ?? t('analyticsData.unknown')],
+      [t('analyticsData.ratingCount', { count: analytics.data.rating?.count ?? 0 })],
+      [t('analyticsData.paidUnlocks'), analytics.data.paidUnlocks ?? 0],
+      [t('analyticsData.earnings'), analytics.data.earnings ?? 0],
+      [t('analyticsData.comments'), commentTotal],
+      [t('analyticsData.commentBreakdown', {
+        visible: comments.visible ?? 0,
+        hidden: comments.hidden ?? 0,
+        deleted: comments['soft-deleted'] ?? 0,
+      })],
       [
         t('analyticsData.returningReaders'),
         Number.isSafeInteger(returning) ? returning : t('analyticsData.unknown'),
@@ -298,6 +361,26 @@ export function AuthorAnalyticsPage() {
                 </option>
               ))}
             </Select>
+            <Select
+              aria-label={t('analyticsData.groupBy')}
+              value={groupBy}
+              onChange={event => {
+                setGroupBy(event.target.value)
+                setExported(false)
+              }}
+            >
+              <option value="day">{t('analyticsData.groupDay')}</option>
+              <option value="week">{t('analyticsData.groupWeek')}</option>
+              <option value="month">{t('analyticsData.groupMonth')}</option>
+            </Select>
+            <label className="text-xs text-muted">
+              {t('analyticsData.fromDate')}
+              <input type="date" value={fromDate} onChange={event => setFromDate(event.target.value)} className="mt-1 block rounded-full border border-line bg-surface px-3 py-2 text-sm text-ink" />
+            </label>
+            <label className="text-xs text-muted">
+              {t('analyticsData.toDate')}
+              <input type="date" value={toDate} onChange={event => setToDate(event.target.value)} className="mt-1 block rounded-full border border-line bg-surface px-3 py-2 text-sm text-ink" />
+            </label>
             <Select
               aria-label={t('analyticsData.chooseChapter')}
               value={chapter}
@@ -398,7 +481,20 @@ export function AuthorAnalyticsPage() {
                 {t('analyticsData.completionScope')}
               </p>
             )}
-            <div className="nh-grid-12 mt-6 grid items-start gap-5 nh-layout-xl-8-4">
+            <div className="mt-6 overflow-x-auto">
+              <Tabs
+                label={t('analyticsData.sectionsLabel')}
+                singleRow
+                value={section}
+                onChange={setSection}
+                items={[
+                  { value: 'overview', label: t('analyticsData.sections.overview') },
+                  { value: 'retention', label: t('analyticsData.sections.retention') },
+                  { value: 'audience', label: t('analyticsData.sections.audience') },
+                ]}
+              />
+            </div>
+            {section === 'overview' && <div className="nh-grid-12 mt-6 grid items-start gap-5 nh-layout-xl-8-4">
               <Card className="min-w-0">
                 <div className="flex flex-wrap items-start justify-between gap-3">
                   <div className="min-w-0 max-w-[60ch]">
@@ -484,9 +580,9 @@ export function AuthorAnalyticsPage() {
                   </div>
                 )}
               </Card>
-            </div>
+            </div>}
 
-            <Card className="mt-6">
+            {section === 'retention' && <Card className="mt-6">
               <h2 className="text-h3 md:text-h2">{t('analyticsData.returningReaders')}</h2>
               <p className="mt-2 text-sm text-muted">{t('analyticsData.returningHint')}</p>
               {loading ? (
@@ -537,9 +633,9 @@ export function AuthorAnalyticsPage() {
                   </dl>
                 </section>
               )}
-            </Card>
+            </Card>}
 
-            <div className="nh-grid-12 mt-6 grid items-start gap-5 nh-layout-xl-7-5">
+            {section === 'audience' && <div className="nh-grid-12 mt-6 grid items-start gap-5 nh-layout-xl-7-5">
               <Card className="min-w-0 overflow-hidden p-0">
                 <div className="p-6 pb-4">
                   <h2 className="text-h3">Đặc điểm độc giả và kênh khám phá</h2>
@@ -675,7 +771,7 @@ export function AuthorAnalyticsPage() {
                   </figcaption>
                 </figure>
               </Card>
-            </div>
+            </div>}
           </>
         )}
       </div>

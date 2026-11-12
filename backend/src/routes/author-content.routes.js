@@ -28,6 +28,10 @@ import {
   chapterDocumentFormat,
 } from '../modules/authoring-publishing/content/rich-chapter-document.js'
 import { pinChapterImages } from '../modules/authoring-publishing/author/author-chapter-media.js'
+import {
+  cleanupUnusedStoryMedia,
+  removeMediaFiles,
+} from '../modules/authoring-publishing/author/author-media.js'
 import { changeDraftLifecycle } from '../modules/authoring-publishing/author/author-story-lifecycle.js'
 import {
   prepareStoryRelease,
@@ -82,8 +86,12 @@ function view(story, tags) {
     categoryId: String(story.categoryId),
     tags,
     coverMediaId: story.coverMediaId ? String(story.coverMediaId) : null,
+    coverUrl: story.coverMediaId ? `/author/media/${story.coverMediaId}/content` : null,
     coverBannerMediaId: story.theme?.coverBannerMediaId
       ? String(story.theme.coverBannerMediaId)
+      : null,
+    bannerUrl: story.theme?.coverBannerMediaId
+      ? `/author/media/${story.theme.coverBannerMediaId}/content`
       : null,
     status: story.publicationStatus,
     version: story.version,
@@ -221,14 +229,18 @@ export function createAuthorContentRouter(config) {
           .strict(),
         req.body,
       )
-      res.json(
-        await changeChapterDraftLifecycle(
-          req.account,
-          parse(objectId, req.params.storyId),
-          parse(objectId, req.params.chapterId),
-          input,
-        ),
+      const storyId = parse(objectId, req.params.storyId)
+      const result = await changeChapterDraftLifecycle(
+        req.account,
+        storyId,
+        parse(objectId, req.params.chapterId),
+        input,
       )
+      if (input.action === 'delete') {
+        const cleanupKeys = await cleanupUnusedStoryMedia(config, req.account, storyId)
+        await removeMediaFiles(config, cleanupKeys)
+      }
+      res.json(result)
     } catch (error) {
       next(error)
     }
@@ -276,11 +288,15 @@ export function createAuthorContentRouter(config) {
                 .number()
                 .pipe(z.union([z.literal(7), z.literal(30), z.literal(90)]))
                 .default(30),
+              from: z.iso.date().optional(),
+              to: z.iso.date().optional(),
+              groupBy: z.enum(['day', 'week', 'month']).default('day'),
               storyId: objectId.optional(),
               chapterId: objectId.optional(),
             })
             .strict()
-            .refine(value => !value.chapterId || Boolean(value.storyId)),
+            .refine(value => !value.chapterId || Boolean(value.storyId))
+            .refine(value => !value.from || !value.to || value.from <= value.to),
           req.query,
         )
         res
@@ -352,7 +368,11 @@ export function createAuthorContentRouter(config) {
               authorAccountId: req.account._id,
               revisionNumber: 1,
               formatVersion: 'story-v1',
-              content: metadata,
+              content: {
+                ...metadata,
+                coverMediaId: null,
+                coverBannerMediaId: null,
+              },
             },
           ],
           {
@@ -474,12 +494,15 @@ export function createAuthorContentRouter(config) {
         ]),
         req.body,
       )
-      res.set('Cache-Control', 'private, no-store').json({
-        story:
-          input.action === 'unpublish'
-            ? await unpublishStory(req.account, id, input)
-            : await changeDraftLifecycle(req.account, id, input),
-      })
+      const story =
+        input.action === 'unpublish'
+          ? await unpublishStory(req.account, id, input)
+          : await changeDraftLifecycle(req.account, id, input)
+      if (input.action === 'delete') {
+        const cleanupKeys = await cleanupUnusedStoryMedia(config, req.account, id)
+        await removeMediaFiles(config, cleanupKeys)
+      }
+      res.set('Cache-Control', 'private, no-store').json({ story })
     } catch (error) {
       next(error)
     }
@@ -496,7 +519,7 @@ export function createAuthorContentRouter(config) {
         req.body,
       )
       const requestedTags = input.tags === undefined ? undefined : parseStoryTags(input.tags)
-      const { story, tags } = await withTransaction(async session => {
+      const { story, tags, cleanupKeys } = await withTransaction(async session => {
         await lockAuthor(req.account, session)
         const current = await ownStory(req.account, req.params.storyId, session)
         editable(current)
@@ -543,6 +566,18 @@ export function createAuthorContentRouter(config) {
             revisionNumber: -1,
           })
           .session(session)
+        const coverMediaId =
+          input.coverMediaId !== undefined
+            ? input.coverMediaId
+            : current.coverMediaId
+              ? String(current.coverMediaId)
+              : null
+        const coverBannerMediaId =
+          input.coverBannerMediaId !== undefined
+            ? input.coverBannerMediaId
+            : current.theme?.coverBannerMediaId
+              ? String(current.theme.coverBannerMediaId)
+              : null
         const [revision] = await ContentRevision.create(
           [
             {
@@ -557,6 +592,8 @@ export function createAuthorContentRouter(config) {
                 description: input.description,
                 categoryId,
                 tags,
+                coverMediaId,
+                coverBannerMediaId,
               },
             },
           ],
@@ -581,8 +618,13 @@ export function createAuthorContentRouter(config) {
         await current.save({
           session,
         })
-        return { story: current, tags }
+        return {
+          story: current,
+          tags,
+          cleanupKeys: await cleanupUnusedStoryMedia(config, req.account, current._id, session),
+        }
       })
+      await removeMediaFiles(config, cleanupKeys)
       res.json({
         story: view(story, tags),
       })
@@ -642,7 +684,7 @@ export function createAuthorContentRouter(config) {
         req.body,
       )
       const title = input.document?.title ?? input.title
-      const chapter = await withTransaction(async session => {
+      const { chapter, cleanupKeys } = await withTransaction(async session => {
         await lockAuthor(req.account, session)
         const story = await ownStory(req.account, req.params.storyId, session)
         editable(story)
@@ -693,8 +735,12 @@ export function createAuthorContentRouter(config) {
         await created.save({
           session,
         })
-        return created
+        return {
+          chapter: created,
+          cleanupKeys: await cleanupUnusedStoryMedia(config, req.account, story._id, session),
+        }
       })
+      await removeMediaFiles(config, cleanupKeys)
       res.status(201).json({
         chapter: {
           id: String(chapter._id),
@@ -744,7 +790,7 @@ export function createAuthorContentRouter(config) {
         .sort({
           orderKey: 1,
         })
-        .select('title orderKey')
+        .select('title orderKey status')
         .lean()
       const canCreate =
         !story.authoringFrozen &&
@@ -765,6 +811,7 @@ export function createAuthorContentRouter(config) {
             id: String(item._id),
             number: item.orderKey,
             title: item.title,
+            status: item.status,
           })),
           title: revision.content.title,
           version: chapter.version,
@@ -868,10 +915,13 @@ export function createAuthorContentRouter(config) {
         return {
           id: String(chapter._id),
           version: chapter.version,
+          cleanupKeys: await cleanupUnusedStoryMedia(config, req.account, story._id, session),
         }
       })
+      const { cleanupKeys, ...chapterResult } = result
+      await removeMediaFiles(config, cleanupKeys)
       res.json({
-        chapter: result,
+        chapter: chapterResult,
       })
     } catch (error) {
       next(error)

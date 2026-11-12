@@ -3,7 +3,7 @@ import { mkdir, readFile, writeFile, unlink, stat } from 'node:fs/promises'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 import sharp from 'sharp'
-import { AuditEvent, MediaAsset, ContentRevision, Story } from '../../../models/index.js'
+import { AuditEvent, ContentRevision, MediaAsset, Story } from '../../../models/index.js'
 import { withTransaction } from '../../../db/connection.js'
 import { lockAuthor, ownStory, editable } from './author-ownership.js'
 import { HttpError } from '../../../middleware/errors.js'
@@ -37,34 +37,6 @@ function view(asset) {
     storyId: asset.storyId ? String(asset.storyId) : null,
     url: asset.storageProvider === 'local' && parsed ? `/author/media/${asset._id}/content` : null,
     status: asset.status,
-  }
-}
-
-export async function authorMedia(accountId, cursor) {
-  const filter = { ownerAccountId: accountId, status: 'available' }
-  const items = await MediaAsset.find({ ...filter, ...(cursor ? { _id: { $lt: cursor } } : {}) })
-    .select('+objectKey')
-    .sort({ _id: -1 })
-    .limit(51)
-    .lean()
-  const [stats] = await MediaAsset.aggregate([
-    { $match: filter },
-    { $group: { _id: null, bytes: { $sum: '$sizeBytes' }, count: { $sum: 1 } } },
-  ])
-  const stories = await Story.find({
-    authorAccountId: accountId,
-    authoringFrozen: false,
-    publicationStatus: { $nin: ['archived', 'submitted', 'under-review'] },
-  })
-    .select('title')
-    .sort({ title: 1 })
-    .lean()
-  return {
-    items: items.slice(0, 50).map(view),
-    nextCursor: items.length > 50 ? String(items[49]._id) : null,
-    stats: { bytes: stats?.bytes ?? 0, count: stats?.count ?? 0 },
-    stories: stories.map(story => ({ id: String(story._id), title: story.title })),
-    maxUploadBytes: MEDIA_UPLOAD_BYTES,
   }
 }
 
@@ -183,102 +155,78 @@ export async function readAuthorMedia(config, accountId, id) {
   }
 }
 
-export async function deleteAuthorMedia(account, id, expectedVersion) {
-  return withTransaction(async session => {
-    await lockAuthor(account, session)
-    const asset = await MediaAsset.findOne({
-      _id: id,
-      ownerAccountId: account._id,
-      status: 'available',
-    }).session(session)
-    if (!asset) throw new HttpError(404, 'not_found', 'Không tìm thấy ảnh.')
-    if (asset.version !== expectedVersion)
-      throw new HttpError(409, 'stale_content', 'Ảnh đã thay đổi. Hãy tải lại thư viện.')
-    await assertUnused(asset, session)
-    asset.status = 'deleted'
-    asset.deletedAt = new Date()
-    await asset.save({ session })
-    await AuditEvent.create(
-      [
-        {
-          actorType: 'account',
-          actorId: account._id,
-          action: 'media.deleted',
-          targetType: 'MediaAsset',
-          targetId: asset._id,
-          targetVersion: asset.version,
-          result: 'accepted',
-          occurredAt: new Date(),
-        },
-      ],
-      { session },
-    )
-    return { id: String(asset._id) }
+/**
+ * Marks story-scoped uploads that are no longer referenced by any revision or
+ * the live story as deleted. Historical revisions remain authoritative, so a
+ * replacement cover or an old chapter illustration is retained when it is
+ * still part of an immutable package.
+ */
+export async function cleanupUnusedStoryMedia(config, account, storyId, session) {
+  const assets = await MediaAsset.find({
+    ownerAccountId: account._id,
+    storyId,
+    status: 'available',
   })
+    .select('+objectKey revisionId chapterId rightsDeclarationId')
+    .session(session ?? null)
+    .lean()
+  if (!assets.length) return []
+
+  const revisions = await ContentRevision.find({ storyId })
+    .select('mediaIds content.coverMediaId content.coverBannerMediaId')
+    .session(session ?? null)
+    .lean()
+  const story = await Story.findById(storyId)
+    .select('coverMediaId theme.coverBannerMediaId')
+    .session(session ?? null)
+    .lean()
+  const referenced = new Set()
+  for (const revision of revisions) {
+    for (const id of revision.mediaIds ?? []) referenced.add(String(id))
+    if (revision.content?.coverMediaId) referenced.add(String(revision.content.coverMediaId))
+    if (revision.content?.coverBannerMediaId)
+      referenced.add(String(revision.content.coverBannerMediaId))
+  }
+  if (story?.coverMediaId) referenced.add(String(story.coverMediaId))
+  if (story?.theme?.coverBannerMediaId) referenced.add(String(story.theme.coverBannerMediaId))
+
+  const candidates = assets.filter(
+    asset =>
+      !asset.revisionId &&
+      !asset.chapterId &&
+      !asset.rightsDeclarationId &&
+      !referenced.has(String(asset._id)),
+  )
+  if (!candidates.length) return []
+  const now = new Date()
+  await MediaAsset.bulkWrite(
+    candidates.map(asset => ({
+      updateOne: {
+        filter: { _id: asset._id, status: 'available', version: asset.version },
+        update: { $set: { status: 'deleted', deletedAt: now }, $inc: { version: 1 } },
+      },
+    })),
+    { session, ordered: true },
+  )
+  await AuditEvent.insertMany(
+    candidates.map(asset => ({
+      actorType: 'account',
+      actorId: account._id,
+      action: 'media.deleted',
+      targetType: 'MediaAsset',
+      targetId: asset._id,
+      targetVersion: asset.version + 1,
+      result: 'accepted',
+      occurredAt: now,
+      reason: 'Ảnh không còn được tham chiếu bởi nội dung của truyện.',
+    })),
+    { session, ordered: true },
+  )
+  return candidates.map(asset => asset.objectKey).filter(Boolean)
 }
 
-async function assertUnused(asset, session) {
-  const revision = await ContentRevision.exists({ mediaIds: asset._id }).session(session)
-  const story = await Story.exists({
-    $or: [{ coverMediaId: asset._id }, { 'theme.coverBannerMediaId': asset._id }],
-  }).session(session)
-  if (revision || story || asset.revisionId || asset.chapterId || asset.rightsDeclarationId)
-    throw new HttpError(
-      409,
-      'media_in_use',
-      'Ảnh đang được sử dụng hoặc đã gắn quyền nội dung, không thể thay đổi.',
-    )
-}
-
-export async function organizeAuthorMedia(account, input) {
-  return withTransaction(async session => {
-    await lockAuthor(account, session)
-    if (input.storyId) editable(await ownStory(account, input.storyId, session))
-    const assets = await MediaAsset.find({
-      _id: { $in: input.items.map(item => item.id) },
-      ownerAccountId: account._id,
-      status: 'available',
-    }).session(session)
-    if (assets.length !== input.items.length)
-      throw new HttpError(404, 'not_found', 'Một ảnh không còn trong thư viện của bạn.')
-    const expected = new Map(input.items.map(item => [item.id.toLowerCase(), item.expectedVersion]))
-    const checkedStories = new Set()
-    let changed = 0
-    for (const asset of assets) {
-      if (asset.version !== expected.get(String(asset._id)))
-        throw new HttpError(
-          409,
-          'stale_content',
-          'Ảnh đã thay đổi. Hãy tải lại thư viện trước khi sắp xếp.',
-        )
-      await assertUnused(asset, session)
-      if (asset.storyId && !checkedStories.has(String(asset.storyId))) {
-        editable(await ownStory(account, asset.storyId, session))
-        checkedStories.add(String(asset.storyId))
-      }
-      if ((asset.storyId ? String(asset.storyId) : null) === input.storyId) continue
-      asset.storyId = input.storyId ?? undefined
-      await asset.save({ session })
-      await AuditEvent.create(
-        [
-          {
-            actorType: 'account',
-            actorId: account._id,
-            action: 'media.organized',
-            targetType: 'MediaAsset',
-            targetId: asset._id,
-            targetVersion: asset.version,
-            result: 'accepted',
-            occurredAt: new Date(),
-          },
-        ],
-        { session },
-      )
-      changed += 1
-    }
-    return {
-      changed,
-      items: assets.map(asset => ({ id: String(asset._id), version: asset.version })),
-    }
-  })
+export async function removeMediaFiles(config, keys) {
+  await Promise.all(
+    [...new Set(keys ?? [])].map(key => unlink(filePath(config, key)).catch(() => {})),
+  )
 }

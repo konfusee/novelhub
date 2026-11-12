@@ -9,6 +9,7 @@ import {
   Rating,
   StatisticsEvent,
   Story,
+  MediaAsset,
 } from '../models/index.js'
 import mongoose from 'mongoose'
 import { HttpError } from '../middleware/errors.js'
@@ -32,6 +33,7 @@ import {
 import { resumeFor } from '../modules/reading-community/reading/progress.js'
 import { recordChapterView } from '../modules/reading-community/reading/views.js'
 import { searchTagKey } from '../modules/authoring-publishing/content/story-tags.js'
+import { readAuthorMedia } from '../modules/authoring-publishing/author/author-media.js'
 
 const filters = z
   .object({
@@ -185,6 +187,51 @@ export function createCatalogRouter(config) {
         chapters: chapters.map(chapterListItem),
         viewer,
       })
+    } catch (error) {
+      next(error)
+    }
+  })
+  router.get('/catalog/stories/:storyId/media/:mediaId', async (req, res, next) => {
+    try {
+      const story = await Story.findOne({
+        _id: req.params.storyId,
+        publicationStatus: 'published',
+        publishedRevisionId: { $ne: null },
+      })
+        .select('authorAccountId publishedRevisionId')
+        .lean()
+      if (!story) throw new HttpError(404, 'not_found', 'Không tìm thấy ảnh công khai.')
+      const revision = await ContentRevision.findOne({
+        _id: story.publishedRevisionId,
+        storyId: story._id,
+        contentType: 'story',
+        status: { $in: ['approved', 'immutable'] },
+      })
+        .select('content.coverMediaId content.coverBannerMediaId')
+        .lean()
+      const mediaId = req.params.mediaId
+      const selected = [revision?.content?.coverMediaId, revision?.content?.coverBannerMediaId]
+        .filter(Boolean)
+        .some(value => String(value) === mediaId)
+      if (!selected)
+        throw new HttpError(404, 'not_found', 'Ảnh không thuộc phiên bản công khai hiện tại.')
+      const asset = await MediaAsset.findOne({
+        _id: mediaId,
+        ownerAccountId: story.authorAccountId,
+        storyId: story._id,
+        kind: { $in: ['cover', 'banner'] },
+        status: 'available',
+      }).lean()
+      if (!asset) throw new HttpError(404, 'not_found', 'Ảnh chưa sẵn sàng.')
+      const bytes = await readAuthorMedia(config, story.authorAccountId, mediaId)
+      res
+        .set({
+          'Content-Type': 'image/webp',
+          'Content-Disposition': 'inline; filename="story-cover.webp"',
+          'Cache-Control': 'public, max-age=300',
+          'X-Content-Type-Options': 'nosniff',
+        })
+        .send(bytes)
     } catch (error) {
       next(error)
     }
