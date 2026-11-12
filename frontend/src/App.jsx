@@ -455,18 +455,6 @@ function AppRoutes() {
           />
 
           <Route
-            path="/reader/support"
-            element={role(
-              'reader',
-              <RoleUtilityPage
-                role="reader"
-                eyebrow="Trợ giúp NovelHub"
-                title="Trợ giúp và hỗ trợ"
-                description="Tìm hướng dẫn sản phẩm, hỗ trợ tiếp cận, câu hỏi thường gặp và kênh hỗ trợ."
-              />,
-            )}
-          />
-          <Route
             path="/read/:storyId/:chapterId"
             element={role('reader', <FullChapterReaderPage />)}
           />
@@ -618,14 +606,16 @@ function AppRoutes() {
 
           <Route path="/403" element={<ForbiddenPage />} />
 
-          <Route path="/ui-preview" element={<UIPreviewPage />} />
-          {pages.map((Page, index) => (
-            <Route
-              key={index}
-              path={`/ui-preview/p${String(index + 1).padStart(2, '0')}`}
-              element={<Page />}
-            />
-          ))}
+          {/* Design previews render every page without role guards: development builds only. */}
+          {import.meta.env.DEV && <Route path="/ui-preview" element={<UIPreviewPage />} />}
+          {import.meta.env.DEV &&
+            pages.map((Page, index) => (
+              <Route
+                key={index}
+                path={`/ui-preview/p${String(index + 1).padStart(2, '0')}`}
+                element={<Page />}
+              />
+            ))}
           <Route path="*" element={<NotFoundPage />} />
         </Routes>
       </Suspense>

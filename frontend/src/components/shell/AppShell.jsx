@@ -1,7 +1,7 @@
 import { useEffect, useId, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { Link, useLocation } from 'react-router'
-import { NovelHubMark, Menu, Settings, HelpCircle, UserRound, X } from '../icons'
+import { NovelHubMark, Menu, Settings, UserRound, X } from '../icons'
 import { IconButton } from '../ui'
 import { SharedWorkspaceHeader, WorkspaceSwitcher } from '../shared/RoleNavigation'
 import { workspaceMeta, workspaceNavigation } from '../../navigation/workspaceNavigation'
@@ -101,8 +101,6 @@ function commonNavigation(workspace) {
     items: [
       ['account.combinedTitle', `${base}/profile`, UserRound],
       ['navigation.settings', settingsPath, Settings],
-      // The moderator workspace has no help page (no mock RoleUtilityPage for moderators).
-      ...(workspace === 'moderator' ? [] : [['common.helpSupport', `${base}/support`, HelpCircle]]),
     ],
   }
 }

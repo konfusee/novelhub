@@ -117,3 +117,10 @@ it('shows the unlock-needed notice for a locked early-access chapter', async () 
   )
   expect(progressCalls()).toHaveLength(0)
 })
+
+it('links the locked next chapter so it opens on its unlock prompt', async () => {
+  view(CH1)
+  await screen.findByText('Sương sớm phủ kín khu rừng im lặng.')
+  const link = await screen.findByRole('link', { name: 'Mở chương để mở khóa' })
+  expect(link.getAttribute('href')).toBe(`/read/${STORY}/${CH2}`)
+})

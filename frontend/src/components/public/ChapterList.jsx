@@ -15,7 +15,7 @@ export function ChapterList({ chapters, storyId }) {
   return (
     <ol className="space-y-3">
       {chapters.map(chapter => {
-        const guestPreview = !isAuthenticated && chapter.number === 1
+        const guestPreview = !isAuthenticated && chapter.orderKey === 1
         const readable = (isAuthenticated || guestPreview) && !chapter.locked
         const readHref = ROUTES.read(storyId, chapter.id)
         return (

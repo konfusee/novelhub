@@ -15,7 +15,7 @@ export function catalogStoriesPath({ q, sort, category, tag, status, page, pageS
 
 const emptyPage = Object.freeze({ items: [], total: 0, page: 1, pageSize: CATALOG_PAGE_SIZE })
 const pageFrom = response => {
-  if (!Array.isArray(response?.items)) throw new Error('Invalid catalogue response')
+  if (!Array.isArray(response?.items)) throw new Error('Dữ liệu danh sách truyện không hợp lệ.')
   return response
 }
 
