@@ -58,12 +58,20 @@ export async function authorStoryWorkspace(account, storyId) {
       : Promise.resolve(null),
     metadataTags(story),
   ])
-  const revisionIds = chapters
-    .map(
-      chapter =>
-        chapter.draftRevisionId ?? chapter.currentRevisionId ?? chapter.publishedRevisionId,
-    )
-    .filter(Boolean)
+  // Keep every pointer because a published chapter can have an editable draft
+  // revision alongside its immutable public revision.
+  const revisionIds = [
+    ...new Set(
+      chapters
+        .flatMap(chapter => [
+          chapter.draftRevisionId,
+          chapter.currentRevisionId,
+          chapter.publishedRevisionId,
+        ])
+        .filter(Boolean)
+        .map(String),
+    ),
+  ]
   const revisions = await ContentRevision.find({
     _id: { $in: revisionIds },
     storyId: story._id,
@@ -110,6 +118,27 @@ export async function authorStoryWorkspace(account, storyId) {
     const source = approvedChapters.find(
       item => item.chapterId.equals(chapter._id) && item.revisionId.equals(revisionId),
     )
+    const publishedRevision = chapter.publishedRevisionId
+      ? revisions.find(item => item._id.equals(chapter.publishedRevisionId))
+      : null
+    const publishedSource = chapter.publishedRevisionId
+      ? approvedChapters.find(
+          item =>
+            item.chapterId.equals(chapter._id) &&
+            item.revisionId.equals(chapter.publishedRevisionId),
+        )
+      : null
+    const publishedCanRevise = Boolean(
+      publishedSource &&
+        publishedRevision &&
+        canReviseUnpublished(publishedSource, chapter, publishedRevision, story),
+    )
+    const currentCanRevise = Boolean(
+      source &&
+        (canReviseUnpublished(source, chapter, revision, story) ||
+          canReviseApprovedUnreleased(source, chapter, revision, story)),
+    )
+    const revisionSource = publishedCanRevise ? publishedSource : currentCanRevise ? source : null
     return {
       ...chapterDraftLifecycle(
         chapter,
@@ -133,12 +162,9 @@ export async function authorStoryWorkspace(account, storyId) {
         story.publicationStatus !== 'archived' &&
         ['approved', 'scheduled', 'due'].includes(chapter.status) &&
         !chapter.publishedRevisionId,
-      reviseSource:
-        source &&
-        (canReviseUnpublished(source, chapter, revision, story) ||
-          canReviseApprovedUnreleased(source, chapter, revision, story))
-          ? { id: String(source._id), version: source.version }
-          : null,
+      reviseSource: revisionSource
+        ? { id: String(revisionSource._id), version: revisionSource.version }
+        : null,
       id: String(chapter._id),
       version: chapter.version,
       title: revision?.content.title ?? chapter.title,
