@@ -271,6 +271,41 @@ it('binds image rights to the exact manifest and requires a licence note before 
     ),
   )
 })
+it('binds a story declaration to its submitted cover and banner', async () => {
+  const digest = 'b'.repeat(64)
+  mocks.apiRequest.mockImplementation(async (path, options) => {
+    if (options?.method === 'POST') return { submission: { id: 'story-submission' } }
+    if (path.includes('/prepare?'))
+      return { ...prepared, imageRights: { count: 2, mediaDigest: digest } }
+    if (path.includes('/workspace')) return { chapters: [] }
+    return {
+      stories: [{ id: 'owned', title: 'Truyện' }],
+      items: [],
+      page: 1,
+      pageCount: 1,
+      total: 0,
+    }
+  })
+  view()
+  await screen.findByText(/thông tin truyện và 2 ảnh \(ảnh bìa, banner\)/)
+  expect(screen.queryByText(/nội dung chương/)).toBeNull()
+  fireEvent.click(screen.getByRole('checkbox', { name: /cùng ảnh bìa và banner/ }))
+  fireEvent.click(screen.getByRole('button', { name: 'Gửi xét duyệt', exact: true }))
+  const sends = screen.getAllByRole('button', { name: 'Gửi xét duyệt', exact: true })
+  fireEvent.click(sends[sends.length - 1])
+  await waitFor(() =>
+    expect(mocks.apiRequest).toHaveBeenCalledWith('/author/submissions', {
+      method: 'POST',
+      body: {
+        storyId: 'owned',
+        revisionId: 'revision7',
+        expectedVersion: 7,
+        rights: { basis: 'original', asserted: true, sourceLicenceNote: '' },
+        imageManifestDigest: digest,
+      },
+    }),
+  )
+})
 it('requires a fresh rights confirmation when rechecking finds a different revision', async () => {
   let revisionId = 'revision7'
   mocks.apiRequest.mockImplementation(async path => {

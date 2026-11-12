@@ -231,9 +231,9 @@ function SubmissionPackage({ storyId, chapterId, onSubmitted }) {
           ...(chapterId ? { chapterId } : {}),
           revisionId: data.target.revisionId,
           expectedVersion: data.target.version,
-                  ...(data.requiresRights
-                    ? { rights: { basis: shownBasis, asserted, sourceLicenceNote: shownNote } }
-                    : {}),
+          ...(data.requiresRights
+            ? { rights: { basis: shownBasis, asserted, sourceLicenceNote: shownNote } }
+            : {}),
           ...(imageRights ? { imageManifestDigest: imageRights.mediaDigest } : {}),
         },
       })
@@ -376,7 +376,12 @@ function SubmissionPackage({ storyId, chapterId, onSubmitted }) {
               >
                 {imageRights && (
                   <p className="text-sm leading-6 text-muted">
-                    {t('submissionData.imageRightsHint', { count: imageRights.count })}
+                    {t(
+                      chapterId
+                        ? 'submissionData.imageRightsHint'
+                        : 'submissionData.storyImageRightsHint',
+                      { count: imageRights.count },
+                    )}
                   </p>
                 )}
                 <label className="block text-sm font-semibold" htmlFor="rights-basis">
@@ -399,7 +404,13 @@ function SubmissionPackage({ storyId, chapterId, onSubmitted }) {
                     }
                     className="mt-1 size-4 shrink-0 accent-brand"
                   />
-                  {t(imageRights ? 'submissionData.imageAssertion' : 'submissionData.assertion')}
+                  {t(
+                    !imageRights
+                      ? 'submissionData.assertion'
+                      : chapterId
+                        ? 'submissionData.imageAssertion'
+                        : 'submissionData.storyImageAssertion',
+                  )}
                 </label>
                 <label htmlFor="rights-note" className="block text-sm font-semibold">
                   {t(

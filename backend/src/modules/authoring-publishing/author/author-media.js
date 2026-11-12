@@ -159,7 +159,8 @@ export async function readAuthorMedia(config, accountId, id) {
  * Marks story-scoped uploads that are no longer referenced by any revision or
  * the live story as deleted. Historical revisions remain authoritative, so a
  * replacement cover or an old chapter illustration is retained when it is
- * still part of an immutable package.
+ * still part of an immutable package or its frozen image manifest. Returns the
+ * object keys of the rows actually deleted, so callers unlink only those files.
  */
 export async function cleanupUnusedStoryMedia(config, account, storyId, session) {
   const assets = await MediaAsset.find({
@@ -167,28 +168,33 @@ export async function cleanupUnusedStoryMedia(config, account, storyId, session)
     storyId,
     status: 'available',
   })
-    .select('+objectKey revisionId chapterId rightsDeclarationId')
+    .select('+objectKey version revisionId chapterId rightsDeclarationId')
     .session(session ?? null)
     .lean()
   if (!assets.length) return []
 
   const revisions = await ContentRevision.find({ storyId })
-    .select('mediaIds content.coverMediaId content.coverBannerMediaId')
+    .select(
+      'mediaIds content.coverMediaId content.coverBannerMediaId validation.mediaManifest.mediaId',
+    )
     .session(session ?? null)
     .lean()
   const story = await Story.findById(storyId)
     .select('coverMediaId theme.coverBannerMediaId')
     .session(session ?? null)
     .lean()
+  // Content ids are stored as sent and may be upper-case hex; asset ids stringify lower-case.
   const referenced = new Set()
+  const keep = id => id && referenced.add(String(id).toLowerCase())
   for (const revision of revisions) {
-    for (const id of revision.mediaIds ?? []) referenced.add(String(id))
-    if (revision.content?.coverMediaId) referenced.add(String(revision.content.coverMediaId))
-    if (revision.content?.coverBannerMediaId)
-      referenced.add(String(revision.content.coverBannerMediaId))
+    for (const id of revision.mediaIds ?? []) keep(id)
+    keep(revision.content?.coverMediaId)
+    keep(revision.content?.coverBannerMediaId)
+    const manifest = revision.validation?.mediaManifest
+    for (const entry of Array.isArray(manifest) ? manifest : []) keep(entry?.mediaId)
   }
-  if (story?.coverMediaId) referenced.add(String(story.coverMediaId))
-  if (story?.theme?.coverBannerMediaId) referenced.add(String(story.theme.coverBannerMediaId))
+  keep(story?.coverMediaId)
+  keep(story?.theme?.coverBannerMediaId)
 
   const candidates = assets.filter(
     asset =>
@@ -199,17 +205,18 @@ export async function cleanupUnusedStoryMedia(config, account, storyId, session)
   )
   if (!candidates.length) return []
   const now = new Date()
-  await MediaAsset.bulkWrite(
-    candidates.map(asset => ({
-      updateOne: {
-        filter: { _id: asset._id, status: 'available', version: asset.version },
-        update: { $set: { status: 'deleted', deletedAt: now }, $inc: { version: 1 } },
-      },
-    })),
-    { session, ordered: true },
-  )
+  const deleted = []
+  for (const asset of candidates) {
+    const result = await MediaAsset.updateOne(
+      { _id: asset._id, status: 'available', version: asset.version },
+      { $set: { status: 'deleted', deletedAt: now }, $inc: { version: 1 } },
+      { session },
+    )
+    if (result.modifiedCount === 1) deleted.push(asset)
+  }
+  if (!deleted.length) return []
   await AuditEvent.insertMany(
-    candidates.map(asset => ({
+    deleted.map(asset => ({
       actorType: 'account',
       actorId: account._id,
       action: 'media.deleted',
@@ -222,7 +229,7 @@ export async function cleanupUnusedStoryMedia(config, account, storyId, session)
     })),
     { session, ordered: true },
   )
-  return candidates.map(asset => asset.objectKey).filter(Boolean)
+  return deleted.map(asset => asset.objectKey).filter(Boolean)
 }
 
 export async function removeMediaFiles(config, keys) {

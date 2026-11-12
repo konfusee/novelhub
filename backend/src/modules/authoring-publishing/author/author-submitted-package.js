@@ -4,29 +4,35 @@ import { ContentRevision, PublicationSubmission, RightsDeclaration } from '../..
 import { HttpError } from '../../../middleware/errors.js'
 import { ownStory } from './author-ownership.js'
 import { readAuthorMedia } from './author-media.js'
+import {
+  STORY_MEDIA_MANIFEST,
+  STORY_MEDIA_VALIDATOR,
+  storyImageRefs,
+} from './author-story-media.js'
 import { chapterMediaIds, readRichChapter } from '../content/rich-chapter-document.js'
 import { digest, rightsFacts } from '../submissions/submission-digests.js'
 import { storedTags } from '../content/story-tags.js'
 
 const oid = z.string().regex(/^[a-f\d]{24}$/)
+const imageFacts = {
+  checksum: z.string().regex(/^[a-f\d]{64}$/),
+  sizeBytes: z
+    .number()
+    .int()
+    .positive()
+    .max(10 * 1024 * 1024),
+  contentType: z.literal('image/webp'),
+  storageProvider: z.literal('local'),
+}
 const manifestSchema = z
-  .array(
-    z
-      .object({
-        mediaId: oid,
-        checksum: z.string().regex(/^[a-f\d]{64}$/),
-        sizeBytes: z
-          .number()
-          .int()
-          .positive()
-          .max(10 * 1024 * 1024),
-        contentType: z.literal('image/webp'),
-        storageProvider: z.literal('local'),
-      })
-      .strict(),
-  )
+  .array(z.object({ mediaId: oid, ...imageFacts }).strict())
   .min(1)
   .max(20)
+// Story cover and banner, in that order (story-media-v1).
+const storyManifestSchema = z
+  .array(z.object({ mediaId: oid, role: z.enum(['cover', 'banner']), ...imageFacts }).strict())
+  .min(1)
+  .max(2)
 const unavailable = () =>
   new HttpError(
     409,
@@ -90,6 +96,9 @@ export async function loadSubmittedPackage(account, submissionId, session) {
       .safeParse(revision.content).success
   )
     throw unavailable()
+  // Legacy story packages frozen before story-media-v1 keep no manifest and their original digests.
+  const storyImaged =
+    !submission.chapterId && revision.validation?.mediaManifestVersion === STORY_MEDIA_MANIFEST
   if (illustrated) {
     const result = manifestSchema.safeParse(revision.validation?.mediaManifest)
     if (
@@ -107,9 +116,20 @@ export async function loadSubmittedPackage(account, submissionId, session) {
     )
       throw unavailable()
   } else if (revision.mediaIds?.length) throw unavailable()
+  else if (storyImaged) {
+    const result = storyManifestSchema.safeParse(revision.validation.mediaManifest)
+    if (!result.success || revision.validation.validator !== STORY_MEDIA_VALIDATOR)
+      throw unavailable()
+    manifest = result.data
+    if (
+      JSON.stringify(storyImageRefs(revision.content)) !==
+      JSON.stringify(manifest.map(({ mediaId, role }) => ({ mediaId, role })))
+    )
+      throw unavailable()
+  }
   const mediaDigest = illustrated
     ? createHash('sha256').update(JSON.stringify(manifest)).digest('hex')
-    : digest([])
+    : digest(manifest)
   const parentRightsId = illustrated
     ? revision.validation.parentRightsDeclarationId
     : String(rights._id)
@@ -144,7 +164,9 @@ export async function loadSubmittedPackage(account, submissionId, session) {
         parentRightsDeclarationId: parentRightsId,
         mediaDigest,
       })
-    : digest(rightsFacts(rights))
+    : storyImaged
+      ? digest({ declaration: rightsFacts(rights), mediaDigest })
+      : digest(rightsFacts(rights))
   if (
     mediaDigest !== revision.mediaDigest ||
     rightsDigest !== revision.rightsDigest ||

@@ -360,3 +360,73 @@ it('flags partial AI coverage and truncated findings', async () => {
   expect(screen.getByText('Đang hiển thị 50 / 75 đoạn tương đồng')).toBeTruthy()
   expect(screen.queryByText('Mức rủi ro: Trung bình')).toBeNull()
 })
+
+// A story package: metadata carries the submitted cover and banner (T32, UC-MOD-02).
+const storyHeld = images => {
+  const base = held()
+  delete base.chapter
+  return {
+    ...base,
+    submission: { ...base.submission, type: 'story' },
+    title: 'Truyện kiểm duyệt',
+    revision: { ...base.revision, formatVersion: 'story-v1' },
+    media: [],
+    metadata: {
+      title: 'Truyện kiểm duyệt',
+      description: 'Tóm tắt của gói truyện.',
+      categoryId: 'category-1',
+      tags: [],
+      category: { id: 'category-1', name: 'Kỳ ảo', status: 'active' },
+      cover: null,
+      banner: null,
+      ...images,
+    },
+  }
+}
+
+it('renders the exact submitted cover and banner in the story card', async () => {
+  serve(
+    storyHeld({
+      cover: { mediaId: 'cover-a', url: '/moderator/submissions/sub-1/images/cover-a' },
+      banner: { mediaId: 'banner-a', url: '/moderator/submissions/sub-1/images/banner-a' },
+    }),
+  )
+  view()
+  const cover = await screen.findByRole('img', {
+    name: 'Ảnh bìa đã gửi của truyện Truyện kiểm duyệt',
+  })
+  expect(cover.getAttribute('src')).toBe('/api/moderator/submissions/sub-1/images/cover-a')
+  expect(cover.getAttribute('crossorigin')).toBe('use-credentials')
+  expect(
+    screen
+      .getByRole('img', { name: 'Banner đã gửi của truyện Truyện kiểm duyệt' })
+      .getAttribute('src'),
+  ).toBe('/api/moderator/submissions/sub-1/images/banner-a')
+  expect(screen.getByText('Ảnh bìa đã gửi')).toBeTruthy()
+  expect(screen.getByText('Banner đã gửi')).toBeTruthy()
+  fireEvent.error(cover)
+  expect(
+    screen.getByText(
+      'Không tải được ảnh đã gửi. Ảnh có thể không còn khớp gói hoặc claim đã hết hạn; hãy tải lại hồ sơ.',
+    ),
+  ).toBeTruthy()
+})
+
+it('states when the story package has no cover or banner, or only an undigested legacy one', async () => {
+  serve(storyHeld())
+  view()
+  expect(await screen.findByText('Gói gửi không có ảnh bìa.')).toBeTruthy()
+  expect(screen.getByText('Gói gửi không có banner.')).toBeTruthy()
+  expect(screen.queryByRole('img')).toBeNull()
+  cleanup()
+
+  serve(storyHeld({ cover: { mediaId: 'legacy-cover', url: null } }))
+  view()
+  expect(
+    await screen.findByText(
+      'Gói này được gửi trước khi ảnh được lưu kèm dấu kiểm tra, nên không thể hiển thị đúng ảnh đã gửi.',
+    ),
+  ).toBeTruthy()
+  expect(screen.getByText('Gói gửi không có banner.')).toBeTruthy()
+  expect(screen.queryByRole('img')).toBeNull()
+})

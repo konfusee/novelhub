@@ -17,6 +17,12 @@ import { lockAuthor, ownStory } from './author-ownership.js'
 import { textChapterDocument } from '../content/chapter-document.js'
 import { digest, rightsFacts } from '../submissions/submission-digests.js'
 import { inspectChapterImages, pinChapterImages } from './author-chapter-media.js'
+import {
+  STORY_MEDIA_MANIFEST,
+  STORY_MEDIA_VALIDATOR,
+  inspectStoryImages,
+  pinStoryImages,
+} from './author-story-media.js'
 import { loadSubmittedPackage } from './author-submitted-package.js'
 import {
   richChapterDocument,
@@ -57,17 +63,17 @@ export function canReviseUnpublished(submission, target, revision, story) {
 export function canReviseApprovedUnreleased(submission, target, revision, story) {
   return Boolean(
     submission.chapterId &&
-      submission.status === 'approved' &&
-      !story.authoringFrozen &&
-      story.publicationStatus !== 'archived' &&
-      ['approved', 'scheduled', 'due'].includes(target?.status) &&
-      !target.firstReleasedAt &&
-      !target.publishedRevisionId &&
-      String(target.storyId) === String(submission.storyId) &&
-      String(target.draftRevisionId ?? target.currentRevisionId) === String(submission.revisionId) &&
-      String(revision?._id) === String(submission.revisionId) &&
-      revision?.immutableAt &&
-      ['approved', 'immutable'].includes(revision.status),
+    submission.status === 'approved' &&
+    !story.authoringFrozen &&
+    story.publicationStatus !== 'archived' &&
+    ['approved', 'scheduled', 'due'].includes(target?.status) &&
+    !target.firstReleasedAt &&
+    !target.publishedRevisionId &&
+    String(target.storyId) === String(submission.storyId) &&
+    String(target.draftRevisionId ?? target.currentRevisionId) === String(submission.revisionId) &&
+    String(revision?._id) === String(submission.revisionId) &&
+    revision?.immutableAt &&
+    ['approved', 'immutable'].includes(revision.status),
   )
 }
 
@@ -143,9 +149,23 @@ async function packageState(account, input, session, config) {
       if (!(error instanceof HttpError) || ![404, 409].includes(error.status)) throw error
     }
   }
+  // A story package includes its cover and banner: owned, scoped to the story, of the right kind,
+  // available and matching their stored bytes (UC-AUT-09 steps 2-3).
+  let storyImages = null
+  let storyImagesValid = true
+  if (!input.chapterId && storyContent.safeParse(content).success) {
+    try {
+      storyImages = await inspectStoryImages(config, account, story._id, content, session)
+    } catch (error) {
+      if (!(error instanceof HttpError) || ![404, 409].includes(error.status)) throw error
+      storyImagesValid = false
+    }
+  }
   const mediaSupported = illustrated
     ? Boolean(images)
-    : !revision.mediaIds?.length && !blocks.some(block => block?.type === 'image')
+    : !revision.mediaIds?.length &&
+      !blocks.some(block => block?.type === 'image') &&
+      storyImagesValid
   const rights = input.chapterId
     ? await RightsDeclaration.findOne({
         storyId: story._id,
@@ -188,6 +208,7 @@ async function packageState(account, input, session, config) {
     revision,
     rights,
     images,
+    storyImages,
     illustrated,
     checks: [
       { code: 'editable', ok: editable },
@@ -197,6 +218,20 @@ async function packageState(account, input, session, config) {
       { code: 'parent', ok: parentReady },
     ],
   }
+}
+// The story images a declaration covers: the frozen manifest of a submitted revision, otherwise
+// the cover and banner validated now. Plain chapters and stories without images have none.
+function storyImageRights({ revision, storyImages }) {
+  const imageRights = revision.immutableAt
+    ? revision.validation?.mediaManifestVersion === STORY_MEDIA_MANIFEST && {
+        mediaDigest: revision.mediaDigest,
+        count: revision.validation.mediaManifest.length,
+      }
+    : storyImages && {
+        mediaDigest: storyImages.mediaDigest,
+        count: storyImages.validation.mediaManifest.length,
+      }
+  return imageRights ? { imageRights } : {}
 }
 export async function prepareSubmission(account, input, config) {
   const state = await packageState(account, input, undefined, config)
@@ -234,7 +269,7 @@ export async function prepareSubmission(account, input, config) {
             count: state.revision.mediaIds.length,
           },
         }
-      : {}),
+      : storyImageRights(state)),
   }
 }
 export async function submitContent(account, input, config) {
@@ -251,6 +286,8 @@ export async function submitContent(account, input, config) {
       const frozen = await ContentRevision.findById(existing.revisionId).session(session)
       const illustrated = frozen?.formatVersion === 'blocks-v3'
       if (!input.chapterId || illustrated) {
+        const imaged =
+          illustrated || frozen?.validation?.mediaManifestVersion === STORY_MEDIA_MANIFEST
         const rights = await RightsDeclaration.findOne({ submissionId: existing._id }).session(
           session,
         )
@@ -258,7 +295,9 @@ export async function submitContent(account, input, config) {
           !rights ||
           !input.rights ||
           digest(rightsFacts(rights)) !== digest(rightsFacts(input.rights)) ||
-          (illustrated && input.imageManifestDigest !== frozen.mediaDigest)
+          (imaged
+            ? input.imageManifestDigest !== frozen.mediaDigest
+            : Boolean(input.imageManifestDigest))
         )
           throw new HttpError(409, 'package_changed', 'Nội dung quyền khác với gói đã gửi.')
       } else if (input.rights || input.imageManifestDigest)
@@ -296,6 +335,29 @@ export async function submitContent(account, input, config) {
       )
       if (pinned.mediaDigest !== state.images.mediaDigest)
         throw new HttpError(409, 'media_changed', 'Ảnh đã thay đổi. Hãy kiểm tra lại bản nháp.')
+    } else if (state.storyImages) {
+      // The declaration covers the cover and banner the author validated (UC-AUT-09 EX3, EX4).
+      if (!input.imageManifestDigest)
+        throw new HttpError(
+          409,
+          'image_rights_required',
+          'Hãy khai báo quyền cho cả ảnh bìa và banner của bản nháp.',
+        )
+      const changed = () =>
+        new HttpError(
+          409,
+          'media_changed',
+          'Ảnh bìa hoặc banner đã thay đổi. Hãy kiểm tra lại bản nháp.',
+        )
+      if (input.imageManifestDigest !== state.storyImages.mediaDigest) throw changed()
+      const pinned = await pinStoryImages(
+        config,
+        account,
+        state.story._id,
+        state.revision.content,
+        session,
+      )
+      if (pinned?.mediaDigest !== state.storyImages.mediaDigest) throw changed()
     } else if (input.imageManifestDigest || (input.chapterId && input.rights)) {
       throw new HttpError(400, 'validation_error', 'Khai báo ảnh không phù hợp với phiên bản này.')
     }
@@ -329,14 +391,16 @@ export async function submitContent(account, input, config) {
         { session },
       )
     }
+    const mediaDigest = state.images?.mediaDigest ?? state.storyImages?.mediaDigest ?? digest([])
     const rightsDigest = state.illustrated
       ? digest({
           declaration: rightsFacts(rights),
           parentRightsDeclarationId: String(state.rights._id),
-          mediaDigest: state.images.mediaDigest,
+          mediaDigest,
         })
-      : digest(rightsFacts(rights))
-    const mediaDigest = state.images?.mediaDigest ?? digest([])
+      : state.storyImages
+        ? digest({ declaration: rightsFacts(rights), mediaDigest })
+        : digest(rightsFacts(rights))
     const packageDigest = digest({
       formatVersion: state.revision.formatVersion,
       content: state.revision.content,
@@ -349,10 +413,14 @@ export async function submitContent(account, input, config) {
       mediaDigest,
       packageDigest,
       validation: {
-        ...(state.images?.validation ?? {}),
+        ...(state.images?.validation ?? state.storyImages?.validation ?? {}),
         ...(state.illustrated ? { parentRightsDeclarationId: String(state.rights._id) } : {}),
         valid: true,
-        validator: state.illustrated ? 'publishing-images-v1' : 'publishing-text-v2',
+        validator: state.illustrated
+          ? 'publishing-images-v1'
+          : state.storyImages
+            ? STORY_MEDIA_VALIDATOR
+            : 'publishing-text-v2',
         validatedAt: now,
       },
       status: 'submitted',

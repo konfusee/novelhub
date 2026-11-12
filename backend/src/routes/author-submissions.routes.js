@@ -34,10 +34,12 @@ const input = z
       .optional(),
   })
   .strict()
+  // A story always carries a declaration; its image digest is required when it has a cover or
+  // banner, which only the server can tell.
   .refine(value =>
     value.chapterId
       ? Boolean(value.rights) === Boolean(value.imageManifestDigest)
-      : Boolean(value.rights) && !value.imageManifestDigest,
+      : Boolean(value.rights),
   )
 function parse(schema, value) {
   const result = schema.safeParse(value)
