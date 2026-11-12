@@ -2,12 +2,16 @@ import { Router } from 'express'
 import { z } from 'zod'
 import { requireAuth, requireRole } from '../middleware/auth.js'
 import { HttpError } from '../middleware/errors.js'
-import { getAuthorBankDetails, updateAuthorBankDetails } from '../modules/coins-payouts/finance/author-bank-details.js'
+import {
+  BANK_ACCOUNT_NUMBER_PATTERN,
+  getAuthorBankDetails,
+  updateAuthorBankDetails,
+} from '../modules/coins-payouts/finance/author-bank-details.js'
 
 const bankDetailsSchema = z
   .object({
     bankName: z.string().trim().min(1).max(120),
-    accountNumber: z.string().trim().min(1).max(64),
+    accountNumber: z.string().trim().regex(BANK_ACCOUNT_NUMBER_PATTERN),
     accountHolder: z.string().trim().min(1).max(120),
   })
   .strict()

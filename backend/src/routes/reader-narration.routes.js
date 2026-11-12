@@ -11,7 +11,13 @@ import {
 import { createTtsProvider } from '../modules/reading-community/narration/tts-provider.js'
 
 const id = z.string().regex(/^[a-f\d]{24}$/i)
-const callbackBody = z.object({ request_id: z.string().trim().min(1).max(200) }).passthrough()
+const callbackBody = z
+  .object({
+    request_id: z.string().trim().min(1).max(200).optional(),
+    requestId: z.string().trim().min(1).max(200).optional(),
+  })
+  .passthrough()
+  .refine(body => body.request_id || body.requestId)
 
 export function createReaderNarrationRouter(config) {
   const router = Router()
@@ -68,7 +74,11 @@ export function createReaderNarrationRouter(config) {
     try {
       const parsed = callbackBody.safeParse(req.body)
       if (parsed.success)
-        await narrationCallback({ config, provider, requestId: parsed.data.request_id })
+        await narrationCallback({
+          config,
+          provider,
+          requestId: parsed.data.request_id ?? parsed.data.requestId,
+        })
       res.status(204).end()
     } catch (error) {
       next(error)

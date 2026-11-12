@@ -10,7 +10,11 @@ import { notify } from '../../accounts-administration/service.js'
 // This provider is deliberately simulated: no bank request is made. The receipt
 // and result explicitly identify simulation instead of claiming a real transfer.
 export async function simulatePendingPayouts(now = new Date()) {
-  const pending = await WithdrawalRequest.find({ status: 'pending', evaluatedAt: { $lte: now } })
+  const pending = await WithdrawalRequest.find({
+    status: 'pending',
+    executionMode: 'simulation',
+    evaluatedAt: { $lte: now },
+  })
     .select('_id')
     .sort({ _id: 1 })
     .lean()

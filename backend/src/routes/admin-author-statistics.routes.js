@@ -29,6 +29,9 @@ export function createAdminAuthorStatisticsRouter(config) {
             period: z
               .union([z.literal('all'), z.string().regex(/^(?:19|20|21)\d{2}-(?:0[1-9]|1[0-2])$/)])
               .default('all'),
+            accountStatus: z
+              .enum(['all', 'active', 'suspended', 'pending-verification', 'anonymized'])
+              .default('all'),
           })
           .strict()
           .safeParse(req.query)
@@ -36,7 +39,7 @@ export function createAdminAuthorStatisticsRouter(config) {
           throw new HttpError(400, 'validation_error', 'Kỳ thống kê không hợp lệ.')
         res
           .set('Cache-Control', 'private, no-store')
-          .json(await adminAuthorStatistics(parsed.data.period))
+          .json(await adminAuthorStatistics(parsed.data.period, parsed.data))
       } catch (error) {
         next(error)
       }

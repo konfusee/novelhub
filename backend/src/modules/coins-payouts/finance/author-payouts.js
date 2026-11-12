@@ -8,7 +8,7 @@ export async function getAuthorPayouts(accountId, page = 1) {
     const withdrawals = await WithdrawalRequest.find({
       accountId,
     })
-      .select('periodId amountCoins payoutSlipAmountVnd status createdAt')
+      .select('periodId amountCoins payoutSlipAmountVnd status createdAt +bankDetailsSnapshot')
       .sort({ periodId: -1, _id: -1 })
       .skip((page - 1) * pageSize)
       .limit(pageSize + 1)
@@ -65,6 +65,15 @@ export async function getAuthorPayouts(accountId, page = 1) {
                 executionMode: latest.executionMode ?? 'legacy',
                 result: latest.result,
                 occurredAt: latest.occurredAt,
+              }
+            : null,
+          bank: row.bankDetailsSnapshot
+            ? {
+                bankName: row.bankDetailsSnapshot.bankName ?? '',
+                accountNumber:
+                  String(row.bankDetailsSnapshot.accountNumber ?? '').length > 4
+                    ? `••••${String(row.bankDetailsSnapshot.accountNumber).slice(-4)}`
+                    : String(row.bankDetailsSnapshot.accountNumber ?? ''),
               }
             : null,
         }

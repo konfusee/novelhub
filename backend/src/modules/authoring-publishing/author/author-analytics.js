@@ -8,7 +8,6 @@ import {
   StatisticsEvent,
   ReadingProgress,
   UnlockEntitlement,
-  UnlockRequest,
   Wallet,
 } from '../../../models/index.js'
 import { HttpError } from '../../../middleware/errors.js'
@@ -51,11 +50,17 @@ export async function authorAnalytics(
   // Calendar days in Vietnam. UTC arithmetic runs on the shifted calendar, avoiding host timezone differences.
   const today = new Date(now.getTime() + 7 * 60 * 60 * 1000).toISOString().slice(0, 10)
   const endDay = to && to < today ? to : today
-  const startDay = from ?? new Date(Date.parse(`${endDay}T00:00:00Z`) - (days - 1) * 86400000)
-    .toISOString()
-    .slice(0, 10)
+  const startDay =
+    from ??
+    new Date(Date.parse(`${endDay}T00:00:00Z`) - (days - 1) * 86400000).toISOString().slice(0, 10)
   if (startDay > endDay)
     throw new HttpError(400, 'validation_error', 'Khoảng thời gian thống kê không hợp lệ.')
+  const spanDays =
+    Math.floor(
+      (Date.parse(`${endDay}T00:00:00Z`) - Date.parse(`${startDay}T00:00:00Z`)) / 86400000,
+    ) + 1
+  if (spanDays > 366)
+    throw new HttpError(400, 'validation_error', 'Khoảng thời gian thống kê tối đa 366 ngày.')
   const dayLabels = []
   for (
     let cursor = Date.parse(`${startDay}T00:00:00Z`), end = Date.parse(`${endDay}T00:00:00Z`);
@@ -96,7 +101,17 @@ export async function authorAnalytics(
   const progressStart = new Date(`${startDay}T00:00:00+07:00`)
   const rangeEnd = new Date(`${endDay}T23:59:59.999+07:00`)
   const range = { $gte: progressStart, $lte: rangeEnd < now ? rangeEnd : now }
-  const [daily, readers, cohortRetention, progress, followers, ratings, unlocks, earnings, comments] = await Promise.all([
+  const [
+    daily,
+    readers,
+    cohortRetention,
+    progress,
+    followers,
+    ratings,
+    unlocks,
+    earnings,
+    comments,
+  ] = await Promise.all([
     StatisticsEvent.aggregate([
       {
         $match: match,
@@ -284,12 +299,6 @@ export async function authorAnalytics(
         .select('_id')
         .lean()
       if (!wallet) return 0
-      const unlockRequests = await UnlockRequest.find({
-        chapterId: { $in: selectedChapters },
-      })
-        .select('_id')
-        .lean()
-      if (!unlockRequests.length) return 0
       const [row] = await LedgerEntry.aggregate([
         {
           $match: {
@@ -297,10 +306,19 @@ export async function authorAnalytics(
             ledgerType: 'allocation-credit',
             direction: 'credit',
             sourceType: 'UnlockRequest',
-            sourceId: { $in: unlockRequests.map(item => item._id) },
             occurredAt: range,
           },
         },
+        {
+          $lookup: {
+            from: 'unlockRequests',
+            localField: 'sourceId',
+            foreignField: '_id',
+            as: 'unlockRequest',
+          },
+        },
+        { $unwind: '$unlockRequest' },
+        { $match: { 'unlockRequest.chapterId': { $in: selectedChapters } } },
         { $group: { _id: null, amount: { $sum: '$amount' } } },
       ])
       return row?.amount ?? 0

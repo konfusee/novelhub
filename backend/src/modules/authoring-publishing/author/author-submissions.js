@@ -502,8 +502,12 @@ export async function submitContent(account, input, config) {
     return { id: String(submissionId), status: 'validated', replayed: false }
   })
 }
-export async function submissionList(account, { page = 1 } = {}) {
-  const filter = { authorAccountId: account._id }
+export async function submissionList(account, { page = 1, storyId, status } = {}) {
+  const filter = {
+    authorAccountId: account._id,
+    ...(storyId ? { storyId } : {}),
+    ...(status ? { status } : {}),
+  }
   const [total, items, stories] = await Promise.all([
     PublicationSubmission.countDocuments(filter),
     PublicationSubmission.find(filter)

@@ -42,14 +42,11 @@ const WORDS_PER_MINUTE = 250
 const filterLabels = [
   ['All Drafts', 'Tất cả bản nháp'],
   ['Story Chapters', 'Chương truyện'],
-  ['Standalone Concepts', 'Ý tưởng độc lập'],
-  ['Ready for Review', 'Sẵn sàng xét duyệt'],
 ]
 const matchesFilter = (draft, filter) =>
   filter === 'All Drafts' ||
   (filter === 'Story Chapters' && draft.type.includes('Chapter')) ||
-  (filter === 'Standalone Concepts' && draft.type === 'Standalone Concept') ||
-  (filter === 'Ready for Review' && draft.meta === 'Ready for Review')
+  false
 const draftTypeLabels = {
   'Story Chapter': 'Chương truyện',
   'Chapter Draft': 'Bản nháp chương',
@@ -290,9 +287,6 @@ export function DraftsPage() {
           </div>
         </Card>
 
-        {['Standalone Concepts', 'Ready for Review'].includes(filter) && (
-          <p className="mt-4 text-sm text-muted">{t('draftsData.unsupportedFilters')}</p>
-        )}
         {draftsResource.status === 'loading' ? (
           <section
             aria-busy="true"

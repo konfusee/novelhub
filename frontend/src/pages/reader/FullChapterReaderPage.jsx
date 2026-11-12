@@ -60,6 +60,7 @@ import { FollowButton } from '../../components/community/FollowButton'
 import { ReportDialog } from '../../components/community/ReportDialog'
 import { apiRequest } from '../../api/client'
 import { useBackendDocument } from '../../api/useBackendResource'
+import { apiGet } from '../../api/client'
 import { ROUTES } from '../../app/routes'
 import { useLocale } from '../../context/LocaleContext'
 
@@ -511,6 +512,21 @@ export function FullChapterReaderPage() {
         : DEFAULT_CHAPTER_MODE,
     }
   })
+  useEffect(() => {
+    let active = true
+    apiGet('/reader/profile').then(result => {
+      if (!active || !result.ok || !result.data?.profile) return
+      const profile = result.data.profile
+      setSettings(current => ({
+        ...current,
+        ...(Number.isFinite(profile.fontSizePx) ? { fontSize: profile.fontSizePx } : {}),
+        ...(profile.spacing ? { lineHeight: profile.spacing } : {}),
+      }))
+    })
+    return () => {
+      active = false
+    }
+  }, [])
   const mode = settings.chapterMode
   const continuous = mode === 'continuous'
   /* Story context: title, Author, chapter list (with lock state) and the viewer's follow. */

@@ -11,11 +11,18 @@ const columns =
 export function RankingRow({ rank, story, metric, featured = false }) {
   const { t } = useLocale()
   return (
-    <div className={`${featured ? 'flex h-full flex-col gap-3 rounded-3xl border border-orange/30 bg-surface p-4 shadow-soft' : columns} transition-colors duration-200 hover:bg-elevated/60`}>
-      <strong className={`${featured ? 'text-2xl' : 'text-base'} font-bold tabular-nums text-orange-strong`}>
+    <div
+      className={`${featured ? 'flex h-full flex-col gap-3 rounded-3xl border border-orange/30 bg-surface p-4 shadow-soft' : columns} transition-colors duration-200 hover:bg-elevated/60`}
+    >
+      <strong
+        className={`${featured ? 'text-2xl' : 'text-base'} font-bold tabular-nums text-orange-strong`}
+      >
         {String(rank).padStart(2, '0')}
       </strong>
-      <StoryCover story={story} className={`${featured ? 'w-full' : 'w-full'} aspect-[2/3] rounded-xl border border-hairline`} />
+      <StoryCover
+        story={story}
+        className={`${featured ? 'w-full' : 'w-full'} aspect-[2/3] rounded-xl border border-hairline`}
+      />
       <div className="min-w-0">
         <h3 className="line-clamp-2 text-sm font-semibold" title={story.title}>
           {story.title}
@@ -25,7 +32,9 @@ export function RankingRow({ rank, story, metric, featured = false }) {
           {story.genre ? ` · ${story.genre}` : ''}
         </p>
       </div>
-      <div className={`${featured ? 'mt-auto' : 'hidden text-right sm:block'} text-xs tabular-nums`}>
+      <div
+        className={`${featured ? 'mt-auto' : 'hidden text-right sm:block'} text-xs tabular-nums`}
+      >
         <strong className="block font-semibold">{metric}</strong>
         <span className="flex items-center justify-end gap-1 text-muted">
           <Star size={11} className="fill-orange text-orange" aria-hidden="true" />

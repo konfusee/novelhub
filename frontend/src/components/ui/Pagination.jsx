@@ -1,9 +1,10 @@
 import { Button } from './index'
 import { ChevronLeft, ChevronRight } from '../icons'
 import { useLocale } from '../../context/LocaleContext'
-export function Pagination({ page, pageCount, onChange }) {
+export function Pagination({ page, pageCount, onChange, className = '' }) {
   const { t } = useLocale()
   if (pageCount <= 1) return null
+  const marginClass = /(^|\s)mt-/.test(className) ? '' : 'mt-5'
   const pages = [
     ...new Set([
       1,
@@ -14,7 +15,7 @@ export function Pagination({ page, pageCount, onChange }) {
   return (
     <nav
       aria-label={t('pagination.label')}
-      className="mt-5 flex flex-wrap items-center justify-center gap-2"
+      className={`${marginClass} flex flex-wrap items-center justify-center gap-2 ${className}`}
     >
       <Button
         variant="secondary"

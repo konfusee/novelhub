@@ -35,3 +35,9 @@ export function editable(story) {
   )
     throw new HttpError(409, 'content_frozen', 'Truyện đang bị khóa chỉnh sửa.')
 }
+
+export function metadataEditable(story) {
+  editable(story)
+  if (story.publishedRevisionId)
+    throw new HttpError(409, 'content_frozen', 'Truyện đã xuất bản, không thể sửa thông tin chung.')
+}

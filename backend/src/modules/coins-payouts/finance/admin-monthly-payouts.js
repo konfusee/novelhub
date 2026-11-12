@@ -123,14 +123,12 @@ export async function generateMonthlyPayouts(
     const results = []
 
     for (const role of authorWallets) {
-      const account = await Account.findOneAndUpdate(
-        {
-          _id: role.ownerId,
-          status: 'active',
-        },
-        { $inc: { version: 1 } },
-        { session, returnDocument: 'after' },
-      ).select('+bankDetails')
+      const account = await Account.findOne({
+        _id: role.ownerId,
+        status: 'active',
+      })
+        .select('+bankDetails')
+        .session(session)
 
       if (!account) {
         results.push({
@@ -155,6 +153,7 @@ export async function generateMonthlyPayouts(
           policy,
           actorAccountId: admin?._id,
           eligibleBalanceCoins: await availableAtCutoff(wallet, periodId, session),
+          executionMode: admin ? 'external' : 'simulation',
         },
         session,
         now,
@@ -162,6 +161,19 @@ export async function generateMonthlyPayouts(
 
       if (result.state === 'created' || result.state === 'missing-bank-details') {
         await queuePayoutNotice(account._id, periodId, result, session, now)
+      }
+      if (result.state === 'created') {
+        const bumped = await Account.updateOne(
+          { _id: account._id, version: account.version },
+          { $inc: { version: 1 } },
+          { session },
+        )
+        if (bumped.modifiedCount !== 1)
+          throw new HttpError(
+            409,
+            'account_changed',
+            'Tài khoản đã thay đổi. Hãy tải lại và thử lại.',
+          )
       }
 
       results.push({

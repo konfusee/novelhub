@@ -66,9 +66,10 @@ function vbeeProvider({ appId, token, apiUrl, timeoutMs }, voiceCode, fetchImpl)
           webhookUrl: callbackUrl,
         }),
       })
-      if (typeof body?.requestId !== 'string' || !body.requestId)
+      const requestId = body?.request_id ?? body?.requestId
+      if (typeof requestId !== 'string' || !requestId)
         throw new TtsProviderError('provider_invalid_response', true)
-      return { jobId: body.requestId }
+      return { jobId: requestId }
     },
     async poll(jobId) {
       const body = await call(`${base}/tts/requests/${encodeURIComponent(jobId)}`, {
@@ -76,9 +77,10 @@ function vbeeProvider({ appId, token, apiUrl, timeoutMs }, voiceCode, fetchImpl)
       })
       const status = String(body?.status ?? '').toUpperCase()
       if (status === 'COMPLETED' || status === 'SUCCESS') {
-        if (typeof body.audioLink !== 'string' || !/^https?:\/\//.test(body.audioLink))
+        const audioUrl = body.audio_link ?? body.audioLink
+        if (typeof audioUrl !== 'string' || !/^https?:\/\//.test(audioUrl))
           throw new TtsProviderError('provider_invalid_response', true)
-        return { state: 'completed', audioUrl: body.audioLink }
+        return { state: 'completed', audioUrl }
       }
       if (FAILED.has(status)) return { state: 'failed', code: 'provider_failed' }
       if (PROCESSING.has(status)) return { state: 'processing' }
@@ -94,10 +96,31 @@ function vbeeProvider({ appId, token, apiUrl, timeoutMs }, voiceCode, fetchImpl)
       if (!response.ok) throw new TtsProviderError('audio_download_failed', true)
       const declared = Number(response.headers.get('content-length') ?? 0)
       if (declared > MAX_AUDIO_BYTES) throw new TtsProviderError('audio_too_large', false)
-      const bytes = Buffer.from(await response.arrayBuffer())
-      if (!bytes.length) throw new TtsProviderError('audio_download_failed', true)
-      if (bytes.length > MAX_AUDIO_BYTES) throw new TtsProviderError('audio_too_large', false)
-      return bytes
+      if (!response.body?.getReader) {
+        const bytes = Buffer.from(await response.arrayBuffer())
+        if (!bytes.length) throw new TtsProviderError('audio_download_failed', true)
+        if (bytes.length > MAX_AUDIO_BYTES) throw new TtsProviderError('audio_too_large', false)
+        return bytes
+      }
+      const reader = response.body.getReader()
+      const chunks = []
+      let total = 0
+      try {
+        while (true) {
+          const { done, value } = await reader.read()
+          if (done) break
+          total += value.byteLength
+          if (total > MAX_AUDIO_BYTES) {
+            await reader.cancel()
+            throw new TtsProviderError('audio_too_large', false)
+          }
+          chunks.push(Buffer.from(value))
+        }
+      } finally {
+        reader.releaseLock?.()
+      }
+      if (!total) throw new TtsProviderError('audio_download_failed', true)
+      return Buffer.concat(chunks, total)
     },
   }
 }

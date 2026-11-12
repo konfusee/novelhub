@@ -16,6 +16,14 @@ const fields = [
   { key: 'accountHolder', maxLength: 120 },
 ]
 
+const editableDetails = details => ({
+  ...emptyDetails,
+  ...details,
+  accountNumber: String(details?.accountNumber ?? '').startsWith('••••')
+    ? ''
+    : (details?.accountNumber ?? ''),
+})
+
 export function AuthorBankDetailsForm() {
   const { t } = useLocale()
   const resource = useBackendDocument('/author/bank-details', null)
@@ -51,14 +59,10 @@ function BankDetailsFields({ initialDetails }) {
   const formId = useId()
   const copy = key => t(`authorFinance.bank.${key}`)
 
-  const [saved, setSaved] = useState(() => ({
-    ...emptyDetails,
-    ...initialDetails,
-  }))
+  const [saved, setSaved] = useState(() => editableDetails(initialDetails))
 
   const [draft, setDraft] = useState(() => ({
-    ...emptyDetails,
-    ...initialDetails,
+    ...editableDetails(initialDetails),
   }))
 
   const [saving, setSaving] = useState(false)
@@ -100,8 +104,9 @@ function BankDetailsFields({ initialDetails }) {
         throw new Error('Invalid bank details response')
       }
 
-      setSaved({ ...result.bankDetails })
-      setDraft({ ...result.bankDetails })
+      const savedDetails = { ...result.bankDetails, accountNumber: draft.accountNumber.trim() }
+      setSaved(savedDetails)
+      setDraft(savedDetails)
       setFeedback('saved')
     } catch {
       setFeedback('error')
@@ -119,10 +124,7 @@ function BankDetailsFields({ initialDetails }) {
 
           return (
             <div key={key}>
-              <label
-                htmlFor={inputId}
-                className="mb-2 block text-sm font-semibold"
-              >
+              <label htmlFor={inputId} className="mb-2 block text-sm font-semibold">
                 {copy(key)}
               </label>
               <Input
@@ -140,26 +142,17 @@ function BankDetailsFields({ initialDetails }) {
 
         {changed && (
           <div className="flex flex-wrap justify-end gap-3 pt-2">
-            <Button
-              type="button"
-              variant="secondary"
-              onClick={handleDiscard}
-            >
+            <Button type="button" variant="secondary" onClick={handleDiscard}>
               {copy('discard')}
             </Button>
 
-            <Button type="submit">
-              {saving ? copy('saving') : copy('save')}
-            </Button>
+            <Button type="submit">{saving ? copy('saving') : copy('save')}</Button>
           </div>
         )}
       </fieldset>
 
       {feedback && (
-        <p
-          role={feedback === 'error' ? 'alert' : 'status'}
-          className="mt-4 text-sm"
-        >
+        <p role={feedback === 'error' ? 'alert' : 'status'} className="mt-4 text-sm">
           {copy(feedback === 'saved' ? 'saved' : 'saveError')}
         </p>
       )}

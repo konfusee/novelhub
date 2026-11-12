@@ -102,7 +102,11 @@ export function createAuthRouter(config) {
     current.count += 1
     if (current.count > MAX_ATTEMPTS) {
       return next(
-        new HttpError(429, 'too_many_attempts', 'Too many login attempts. Try again later.'),
+        new HttpError(
+          429,
+          'too_many_attempts',
+          'Bạn đã thử quá nhiều lần đăng nhập. Hãy thử lại sau.',
+        ),
       )
     }
     next()
@@ -125,7 +129,11 @@ export function createAuthRouter(config) {
     recoveryIps.set(req.ip, current)
     if (current.count > config.securityConfig.recoveryMaxAttempts)
       return next(
-        new HttpError(429, 'too_many_attempts', 'Too many recovery attempts. Try again later.'),
+        new HttpError(
+          429,
+          'too_many_attempts',
+          'Bạn đã thử khôi phục quá nhiều lần. Hãy thử lại sau.',
+        ),
       )
     next()
   }
@@ -179,7 +187,7 @@ export function createAuthRouter(config) {
         new HttpError(
           429,
           'captcha_rate_limit',
-          'Too many verification requests. Try again in a minute.',
+          'Bạn đã yêu cầu xác minh quá nhiều lần. Hãy thử lại sau một phút.',
         ),
       )
     res.set('Cache-Control', 'no-store').json(challenge)
@@ -265,14 +273,22 @@ export function createAuthRouter(config) {
           { returnDocument: 'after', session },
         )
         if (!emailToken)
-          throw new HttpError(400, 'invalid_token', 'Verification link is invalid or expired')
+          throw new HttpError(
+            400,
+            'invalid_token',
+            'Liên kết xác minh không hợp lệ hoặc đã hết hạn.',
+          )
         const updated = await Account.findOneAndUpdate(
           { _id: emailToken.accountId, status: 'pending-verification', emailVerifiedAt: null },
           { $set: { status: 'active', emailVerifiedAt: usedAt } },
           { returnDocument: 'after', session },
         )
         if (!updated)
-          throw new HttpError(400, 'invalid_token', 'Verification link is invalid or expired')
+          throw new HttpError(
+            400,
+            'invalid_token',
+            'Liên kết xác minh không hợp lệ hoặc đã hết hạn.',
+          )
         return updated
       })
       res.json({
@@ -287,9 +303,18 @@ export function createAuthRouter(config) {
     try {
       const parsed = emailSchema.safeParse(req.body)
       if (!parsed.success)
-        return next(new HttpError(400, 'validation_error', 'Valid email is required'))
+        return next(new HttpError(400, 'validation_error', 'Email không hợp lệ.'))
+      const email = parsed.data.email
+      const now = Date.now()
+      for (const [key, until] of recoveryRequests) {
+        if (until <= now) recoveryRequests.delete(key)
+      }
+      if (recoveryRequests.has(email)) {
+        return res.json({ message: 'Nếu tài khoản đang chờ xác minh, email mới sẽ được gửi.' })
+      }
+      recoveryRequests.set(email, now + config.securityConfig.resendSeconds * 1000)
       const account = await Account.findOne({
-        normalizedEmail: parsed.data.email,
+        normalizedEmail: email,
         status: 'pending-verification',
       })
       if (account) {
@@ -301,9 +326,13 @@ export function createAuthRouter(config) {
             session,
           }),
         )
-        await deliverToken({ email: account.email, token, purpose: 'email-verification' })
+        try {
+          await deliverToken({ email: account.email, token, purpose: 'email-verification' })
+        } catch (error) {
+          config.logger?.warn?.({ err: error }, 'verification email delivery failed')
+        }
       }
-      res.json({ message: 'If the account is awaiting verification, a new email has been sent.' })
+      res.json({ message: 'Nếu tài khoản đang chờ xác minh, email mới sẽ được gửi.' })
     } catch (error) {
       next(error)
     }
@@ -313,7 +342,7 @@ export function createAuthRouter(config) {
     try {
       const parsed = emailSchema.safeParse(req.body)
       if (!parsed.success)
-        return next(new HttpError(400, 'validation_error', 'Valid email is required'))
+        return next(new HttpError(400, 'validation_error', 'Email không hợp lệ.'))
       const now = Date.now()
       for (const [key, until] of recoveryRequests) {
         if (until <= now) recoveryRequests.delete(key)
@@ -532,7 +561,7 @@ export function createAuthRouter(config) {
 
   router.get('/auth/google/start', (req, res, next) => {
     if (!googleProvider)
-      return next(new HttpError(503, 'google_unavailable', 'Google sign-in is not configured'))
+      return next(new HttpError(503, 'google_unavailable', 'Đăng nhập Google chưa được cấu hình.'))
     const state = randomBytes(24).toString('base64url')
     const verifier = randomBytes(32).toString('base64url')
     const challenge = createHash('sha256').update(verifier).digest('base64url')
@@ -550,12 +579,12 @@ export function createAuthRouter(config) {
   router.get('/auth/google/callback', async (req, res) => {
     try {
       if (!googleProvider)
-        throw new HttpError(503, 'google_unavailable', 'Google sign-in is not configured')
+        throw new HttpError(503, 'google_unavailable', 'Đăng nhập Google chưa được cấu hình.')
       const expectedState = readCookie(req.headers.cookie, 'novelhub_oauth_state')
       const verifier = readCookie(req.headers.cookie, 'novelhub_oauth_verifier')
       const registering = readCookie(req.headers.cookie, 'novelhub_oauth_mode') === 'register'
       if (!req.query.state || req.query.state !== expectedState || !verifier) {
-        throw new HttpError(400, 'invalid_oauth_state', 'Google sign-in state is invalid')
+        throw new HttpError(400, 'invalid_oauth_state', 'Phiên đăng nhập Google không hợp lệ.')
       }
       const clear = { ...oauthCookieOptions }
       delete clear.maxAge
@@ -671,7 +700,7 @@ export function createAuthRouter(config) {
     try {
       const parsed = credentialsSchema.safeParse(req.body)
       if (!parsed.success) {
-        return next(new HttpError(400, 'validation_error', 'Valid email and password are required'))
+        return next(new HttpError(400, 'validation_error', 'Email và mật khẩu không hợp lệ.'))
       }
       const account = await Account.findOne({ normalizedEmail: parsed.data.email }).select(
         '+password',

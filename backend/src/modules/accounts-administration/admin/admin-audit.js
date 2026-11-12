@@ -1,5 +1,5 @@
 import { z } from 'zod'
-import { AuditEvent } from '../../../models/index.js'
+import { Account, AuditEvent } from '../../../models/index.js'
 
 const id = z.string().regex(/^[a-f\d]{24}$/i)
 export const auditQuery = z
@@ -42,11 +42,17 @@ export async function adminAudit(query) {
       .lean(),
     AuditEvent.countDocuments(match).maxTimeMS(5000),
   ])
+  const actorIds = items.map(item => item.actorId).filter(Boolean)
+  const actors = await Account.find({ _id: { $in: actorIds } })
+    .select('displayName')
+    .lean()
+  const actorNames = new Map(actors.map(actor => [String(actor._id), actor.displayName]))
   return {
     items: items.map(({ _id, ...event }) => ({
       ...event,
       id: String(_id),
       actorId: event.actorId ? String(event.actorId) : null,
+      actorName: event.actorId ? (actorNames.get(String(event.actorId)) ?? null) : null,
       targetId: String(event.targetId),
     })),
     total,

@@ -146,16 +146,15 @@ export function AuthorWorksPage({ editor = false }) {
                   className="flex flex-wrap items-center justify-between gap-4 py-5"
                 >
                   <div className="flex min-w-0 flex-1 items-start gap-4">
-                    <StoryCover
-                      story={story}
-                      className="aspect-[2/3] w-16 shrink-0 rounded-xl"
-                    />
+                    <StoryCover story={story} className="aspect-[2/3] w-16 shrink-0 rounded-xl" />
                     <div className="min-w-0 flex-1">
                       <h2 className="break-words text-h3">{story.title}</h2>
                       <Badge className="mt-2">{t(`worksData.status.${story.status}`)}</Badge>
                       <p className="mt-2 line-clamp-2 text-sm text-muted">{story.description}</p>
                       <div className="mt-3 flex flex-wrap gap-2 text-xs text-muted">
-                        <span>{t('worksData.chapterCount', { count: story.chapterCount ?? 0 })}</span>
+                        <span>
+                          {t('worksData.chapterCount', { count: story.chapterCount ?? 0 })}
+                        </span>
                         {story.reviewStatus && (
                           <Badge tone={story.reviewStatus === 'approved' ? 'green' : 'purple'}>
                             {t('worksData.reviewLabel')}:{' '}

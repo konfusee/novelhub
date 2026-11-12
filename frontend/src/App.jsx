@@ -264,11 +264,6 @@ const LegalPage = lazy(() =>
     default: m.LegalPage,
   })),
 )
-const RoleUtilityPage = lazy(() =>
-  import('./pages/system/RoleUtilityPage').then(m => ({
-    default: m.RoleUtilityPage,
-  })),
-)
 const ProfileAccountPage = lazy(() =>
   import('./pages/system/ProfileAccountPage').then(m => ({
     default: m.ProfileAccountPage,
@@ -455,18 +450,6 @@ function AppRoutes() {
           />
 
           <Route
-            path="/reader/support"
-            element={role(
-              'reader',
-              <RoleUtilityPage
-                role="reader"
-                eyebrow="Trợ giúp NovelHub"
-                title="Trợ giúp và hỗ trợ"
-                description="Tìm hướng dẫn sản phẩm, hỗ trợ tiếp cận, câu hỏi thường gặp và kênh hỗ trợ."
-              />,
-            )}
-          />
-          <Route
             path="/read/:storyId/:chapterId"
             element={role('reader', <FullChapterReaderPage />)}
           />
@@ -530,19 +513,6 @@ function AppRoutes() {
           <Route
             path="/author/account"
             element={role('author', <Navigate to="/author/profile?tab=account" replace />, true)}
-          />
-          <Route
-            path="/author/support"
-            element={role(
-              'author',
-              <RoleUtilityPage
-                role="author"
-                eyebrow="Trợ giúp NovelHub"
-                title="Trợ giúp và hỗ trợ"
-                description="Tìm hướng dẫn sáng tác, hỗ trợ xuất bản, câu hỏi thường gặp và kênh hỗ trợ."
-              />,
-              true,
-            )}
           />
           <Route path="/moderator" element={role('moderator', <ModeratorOverviewPage />)} />
           <Route
@@ -618,14 +588,15 @@ function AppRoutes() {
 
           <Route path="/403" element={<ForbiddenPage />} />
 
-          <Route path="/ui-preview" element={<UIPreviewPage />} />
-          {pages.map((Page, index) => (
-            <Route
-              key={index}
-              path={`/ui-preview/p${String(index + 1).padStart(2, '0')}`}
-              element={<Page />}
-            />
-          ))}
+          {import.meta.env.DEV && <Route path="/ui-preview" element={<UIPreviewPage />} />}
+          {import.meta.env.DEV &&
+            pages.map((Page, index) => (
+              <Route
+                key={index}
+                path={`/ui-preview/p${String(index + 1).padStart(2, '0')}`}
+                element={<Page />}
+              />
+            ))}
           <Route path="*" element={<NotFoundPage />} />
         </Routes>
       </Suspense>

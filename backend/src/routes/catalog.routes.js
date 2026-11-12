@@ -109,7 +109,8 @@ export function createCatalogRouter(config) {
   router.get('/catalog/stories', async (req, res, next) => {
     try {
       const parsed = filters.safeParse(req.query)
-      if (!parsed.success) throw new HttpError(400, 'validation_error', 'Invalid catalogue filters')
+      if (!parsed.success)
+        throw new HttpError(400, 'validation_error', 'Bộ lọc danh mục không hợp lệ.')
       res.json(await queryPublishedStories(parsed.data))
     } catch (error) {
       next(error)

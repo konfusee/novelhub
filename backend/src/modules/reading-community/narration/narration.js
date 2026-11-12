@@ -1,4 +1,4 @@
-import { mkdir, rename, writeFile } from 'node:fs/promises'
+import { mkdir, rename, stat, writeFile } from 'node:fs/promises'
 import path from 'node:path'
 import { Chapter, ContentRevision, NarrationAsset } from '../../../models/index.js'
 import { HttpError } from '../../../middleware/errors.js'
@@ -13,6 +13,9 @@ import { TtsProviderError } from './tts-provider.js'
 const LEASE_MS = 60_000
 const POLL_INTERVAL_MS = 2_000
 const MAX_PROCESSING_MS = 15 * 60_000
+const MAX_ATTEMPTS = 3
+const REQUEST_COOLDOWN_MS = 15_000
+const requestCooldowns = new Map()
 const TRANSIENT = new Set([
   'provider_unreachable',
   'provider_busy',
@@ -208,6 +211,17 @@ export async function narrationStatus({ config, provider, account, storyId, chap
 export async function requestNarration({ config, provider, account, storyId, chapterId }) {
   const { chapter } = await readableChapter({ storyId, chapterId, account })
   requireProvider(provider)
+  const cooldownKey = `${account._id}:${storyId}:${chapterId}`
+  const lastRequestedAt = requestCooldowns.get(cooldownKey) ?? 0
+  if (Date.now() - lastRequestedAt < REQUEST_COOLDOWN_MS) {
+    const existing = await current(chapter, provider)
+    if (existing) return narrationView(existing, { storyId, chapterId })
+  }
+  requestCooldowns.set(cooldownKey, Date.now())
+  if (requestCooldowns.size > 10_000) {
+    const cutoff = Date.now() - REQUEST_COOLDOWN_MS
+    for (const [key, value] of requestCooldowns) if (value < cutoff) requestCooldowns.delete(key)
+  }
   const key = { revisionId: chapter.publishedRevisionId, voiceId: provider.voiceId }
   let asset = await current(chapter, provider)
   if (!asset) {
@@ -225,6 +239,8 @@ export async function requestNarration({ config, provider, account, storyId, cha
     }
     asset = await current(chapter, provider)
   } else if (asset.status === 'failed') {
+    if (asset.retryable === false || (asset.attempts ?? 0) >= MAX_ATTEMPTS)
+      throw new HttpError(409, 'narration_retry_exhausted', 'Không thể thử tạo lại âm thanh này.')
     asset =
       (await NarrationAsset.findOneAndUpdate(
         { _id: asset._id, status: 'failed' },
@@ -259,7 +275,21 @@ export async function narrationFile({ config, provider, account, storyId, chapte
     .select('+audioReference')
     .lean()
   if (!asset) throw new HttpError(404, 'narration_unavailable', 'Âm thanh chưa sẵn sàng.')
-  return narrationAudioPath(config, asset.audioReference)
+  const file = narrationAudioPath(config, asset.audioReference)
+  try {
+    const info = await stat(file)
+    if (!info.isFile() || info.size <= 0) throw new Error('invalid audio file')
+  } catch {
+    await NarrationAsset.updateOne(
+      { _id: asset._id, status: 'available' },
+      {
+        $set: { status: 'failed', failureCode: 'audio_missing', retryable: true },
+        $inc: { version: 1 },
+      },
+    )
+    throw new HttpError(404, 'narration_unavailable', 'Âm thanh chưa sẵn sàng.')
+  }
+  return file
 }
 
 /**

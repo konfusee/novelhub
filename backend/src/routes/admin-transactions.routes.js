@@ -26,7 +26,11 @@ const list = z
   .strict()
   .refine(value => !value.from || !value.to || new Date(value.from) < new Date(value.to))
 const resolution = z
-  .object({ walletId: id.optional(), reason: z.string().trim().min(1).max(500) })
+  .object({
+    walletId: id.optional(),
+    reason: z.string().trim().min(1).max(1000),
+    expectedVersion: z.number().int().min(0),
+  })
   .strict()
 
 export function createAdminTransactionsRouter(config) {

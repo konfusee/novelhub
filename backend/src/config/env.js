@@ -97,6 +97,10 @@ const envSchema = z.object({
     .enum(['true', 'false'])
     .default('false')
     .transform(value => value === 'true'),
+  PAYOUT_WORKER_ENABLED: z
+    .enum(['true', 'false'])
+    .default('false')
+    .transform(value => value === 'true'),
   VBEE_APP_ID: z.string().trim().min(1).max(200).optional(),
   VBEE_TOKEN: z.string().trim().min(1).max(5000).optional(),
   VBEE_VOICE_CODE: z
@@ -151,6 +155,7 @@ export function loadEnv(source = process.env) {
     'SIMILARITY_TOP_K',
     'VECTOR_SEARCH_INDEX',
     'AI_EVIDENCE_WORKER_ENABLED',
+    'PAYOUT_WORKER_ENABLED',
     'AI_BUDGET_USD',
     'AI_BUDGET_WINDOW_START',
     'VBEE_APP_ID',
@@ -214,6 +219,7 @@ export function toAppConfig(env) {
       budgetUsd: env.AI_BUDGET_USD,
       budgetWindowStart: env.AI_BUDGET_WINDOW_START ?? null,
     },
+    payoutWorkerEnabled: env.PAYOUT_WORKER_ENABLED,
     securityConfig: {
       emailSendAttempts: env.EMAIL_SEND_ATTEMPTS,
       windowMs: env.AUTH_RATE_LIMIT_WINDOW_MINUTES * 60000,

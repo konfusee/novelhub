@@ -22,14 +22,12 @@ export function createAuthorPayoutsRouter(config) {
         const input = querySchema.safeParse(req.query)
         if (!input.success || !/^[a-fA-F0-9]{24}$/.test(req.params.withdrawalId))
           throw new HttpError(400, 'validation_error', 'Trang kết quả không hợp lệ.')
-        res
-          .set('Cache-Control', 'private, no-store')
-          .json(
-            await getPayoutDetails(req.params.withdrawalId, {
-              ...input.data,
-              accountId: req.account._id,
-            }),
-          )
+        res.set('Cache-Control', 'private, no-store').json(
+          await getPayoutDetails(req.params.withdrawalId, {
+            ...input.data,
+            accountId: req.account._id,
+          }),
+        )
       } catch (error) {
         next(error)
       }

@@ -9,6 +9,7 @@ import {
 import { withTransaction } from '../../../db/connection.js'
 import { HttpError } from '../../../middleware/errors.js'
 import { requireCurrentAdmin } from './admin-guard.js'
+import { notify } from '../../accounts-administration/notifications.js'
 
 const PAGE_SIZE = 20
 const unresolved = ['unmatched', 'amount-mismatch', 'expired', 'already-paid']
@@ -80,6 +81,7 @@ export async function listFinancialTransactions({ source, status, search, from, 
       bank
         ? {
             id: String(row._id),
+            version: row.version,
             reference: row.sePayTransactionId,
             amount: row.amountVnd,
             content: row.content,
@@ -140,15 +142,22 @@ export async function findReaderWallets(search) {
 export async function resolveBankTransaction(admin, bankId, input, now = new Date()) {
   return withTransaction(async session => {
     await requireCurrentAdmin(admin, session)
+    const reason = input.reason?.trim()
+    if (!reason || reason.length > 1000)
+      throw new HttpError(400, 'validation_error', 'Cần nhập lý do đối soát.')
     const bank = await BankTransaction.findOneAndUpdate(
-      { _id: bankId },
+      { _id: bankId, version: input.expectedVersion },
       { $inc: { version: 1 } },
       { session, returnDocument: 'after' },
     )
-    if (!bank) throw new HttpError(404, 'transaction_not_found', 'Không tìm thấy giao dịch.')
-    const reason = input.reason?.trim()
-    if (!reason || reason.length > 500)
-      throw new HttpError(400, 'validation_error', 'Cần nhập lý do đối soát.')
+    if (!bank) {
+      const exists = await BankTransaction.exists({ _id: bankId }).session(session)
+      throw new HttpError(
+        exists ? 409 : 404,
+        exists ? 'transaction_version_conflict' : 'transaction_not_found',
+        exists ? 'Giao dịch đã thay đổi. Hãy tải lại.' : 'Không tìm thấy giao dịch.',
+      )
+    }
     if (bank.matchStatus === 'resolved') {
       const entry = bank.adjustmentId
         ? await LedgerEntry.findById(bank.adjustmentId).session(session).lean()
@@ -171,6 +180,7 @@ export async function resolveBankTransaction(admin, bankId, input, now = new Dat
         'Giao dịch không thể đối soát thủ công.',
       )
     let adjustmentId
+    let recipientAccountId = null
     if (input.walletId) {
       if (!Number.isSafeInteger(bank.amountVnd) || bank.amountVnd <= 0)
         throw new HttpError(409, 'invalid_amount', 'Số tiền nhận không hợp lệ.')
@@ -189,6 +199,7 @@ export async function resolveBankTransaction(admin, bankId, input, now = new Dat
         ))
       if (!wallet || !owner)
         throw new HttpError(409, 'invalid_reader_wallet', 'Ví nhận xu không còn hợp lệ.')
+      recipientAccountId = wallet.ownerId
       const updated = await Wallet.updateOne(
         {
           _id: wallet._id,
@@ -245,6 +256,21 @@ export async function resolveBankTransaction(admin, bankId, input, now = new Dat
       ],
       { session },
     )
+    if (adjustmentId && recipientAccountId) {
+      await notify(
+        {
+          recipientAccountId,
+          eventType: 'topup.adjustment-created',
+          sourceEventKey: `bank-resolution:${bank._id}`,
+          payload: {
+            bankTransactionId: String(bank._id),
+            adjustmentId: String(adjustmentId),
+            amount: bank.amountVnd,
+          },
+        },
+        { session },
+      )
+    }
     return { reused: false, adjustmentId: adjustmentId ?? null }
   })
 }

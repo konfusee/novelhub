@@ -2,10 +2,13 @@ import { useSearchParams } from 'react-router'
 import { useBackendResource } from '../../api/useBackendResource'
 import { useLocale } from '../../context/LocaleContext'
 import { AdminLayout } from '../../layouts'
-import { Button, Card, Input } from '../../components/ui'
+import { Button, Card, Input, Select } from '../../components/ui'
 const metrics = [
   'registrations',
   'unlocks',
+  'requestedUnlocks',
+  'rejectedUnlocks',
+  'committedUnlocks',
   'applications',
   'approvedApplications',
   'rejectedApplications',
@@ -29,9 +32,11 @@ export function AuthorStatisticsPage() {
     m = key => t(`adminAuthorStats.${key}`)
   const [params, setParams] = useSearchParams()
   const period = params.get('period') || 'all'
+  const accountStatus = params.get('accountStatus') || 'all'
   const feed = useBackendResource(
     `/admin/author-statistics?${new URLSearchParams({
       period,
+      accountStatus,
     })}`,
     empty,
     validate,
@@ -47,17 +52,15 @@ export function AuthorStatisticsPage() {
         </div>
         <Card className="mt-6">
           <form
-            key={period}
+            key={`${period}:${accountStatus}`}
             className="flex flex-wrap items-end gap-3"
             onSubmit={event => {
               event.preventDefault()
-              const value = String(new FormData(event.currentTarget).get('period') ?? '')
+              const form = new FormData(event.currentTarget)
+              const value = String(form.get('period') ?? '')
+              const status = String(form.get('accountStatus') ?? 'all')
               setParams(
-                value
-                  ? {
-                      period: value,
-                    }
-                  : {},
+                value || status !== 'all' ? { period: value || 'all', accountStatus: status } : {},
               )
             }}
           >
@@ -69,6 +72,16 @@ export function AuthorStatisticsPage() {
                 name="period"
                 defaultValue={period === 'all' ? '' : period}
               />
+            </label>
+            <label className="text-sm font-medium">
+              {m('accountStatus')}
+              <Select className="mt-1" name="accountStatus" defaultValue={accountStatus}>
+                {['all', 'active', 'suspended', 'pending-verification', 'anonymized'].map(value => (
+                  <option key={value} value={value}>
+                    {m(`statuses.${value}`)}
+                  </option>
+                ))}
+              </Select>
             </label>
             <Button type="submit">{m('apply')}</Button>
             <Button type="button" variant="secondary" onClick={() => setParams({})}>

@@ -8,8 +8,6 @@ import {
   Eye,
   Headphones,
   Palette,
-  Pause,
-  Play,
   RefreshCw,
   Save,
   ShieldCheck,
@@ -23,7 +21,6 @@ import {
   Card,
   EmptyState,
   Input,
-  ProgressBar,
   SectionHeader,
   Skeleton,
   SkeletonText,
@@ -259,7 +256,6 @@ function PreferencesForm({ initial, isSettings, section }) {
   const [skip, setSkip] = useState(initial.skip)
   const [autoplay, setAutoplay] = useState(initial.autoplay)
   const [saved, setSaved] = useState(true)
-  const [audioPlaying, setAudioPlaying] = useState(false)
   const [notice, setNotice] = useState('')
   const changed = () => setSaved(false)
   const changeFontSize = value => {
@@ -592,12 +588,11 @@ function PreferencesForm({ initial, isSettings, section }) {
                 </div>
                 <div className="mt-5 border-y border-current/12 py-5">
                   <p className="text-[11px] font-semibold uppercase tracking-[.16em] opacity-70">
-                    Chương 14 · The Silver Compass
+                    Xem trước cỡ chữ
                   </p>
-                  <h2 className="mt-2 text-lg font-semibold">The Whisper in the Pines</h2>
+                  <h2 className="mt-2 text-lg font-semibold">Một chương truyện NovelHub</h2>
                   <p className="mt-4" style={{ fontSize, lineHeight: spacing }}>
-                    The ancient trail curved gently beneath the canopy of silver pines, where
-                    twilight pooled in deep amethyst shadows. The story had not ended at the lake.
+                    Đây là đoạn văn mẫu để bạn xem trước cỡ chữ và khoảng cách dòng đang chọn.
                   </p>
                 </div>
                 <div className="mt-4 flex items-center gap-2 text-xs">
@@ -619,14 +614,6 @@ function PreferencesForm({ initial, isSettings, section }) {
                   >
                     A+
                   </button>
-                  <ProgressBar
-                    value={62}
-                    tone="orange"
-                    size="sm"
-                    label="Tiến độ đọc mẫu"
-                    className="ml-auto max-w-24"
-                  />
-                  <span className="ml-2 tabular-nums">62%</span>
                 </div>
               </Card>
             )}
@@ -643,19 +630,11 @@ function PreferencesForm({ initial, isSettings, section }) {
                     <Headphones aria-hidden="true" />
                   </span>
                   <div className="min-w-0 flex-1">
-                    <strong className="block text-sm">The Silver Compass (Audio)</strong>
-                    <ProgressBar value={42} size="sm" label="Tiến độ nghe mẫu" className="mt-2" />
+                    <strong className="block text-sm">Xem trước chế độ nghe</strong>
+                    <p className="mt-2 text-sm text-muted">
+                      Tốc độ {speed}× sẽ áp dụng khi bạn nghe chương.
+                    </p>
                   </div>
-                  <button
-                    type="button"
-                    onClick={() => setAudioPlaying(value => !value)}
-                    className="grid size-11 shrink-0 place-items-center rounded-full bg-brand text-on-brand shadow-[0_10px_24px_-14px_var(--primary)] transition-transform active:scale-[0.96]"
-                    aria-label={t(
-                      audioPlaying ? 'settings.preview.pause' : 'settings.preview.play',
-                    )}
-                  >
-                    {audioPlaying ? <Pause size={16} /> : <Play size={16} />}
-                  </button>
                 </div>
               </Card>
             )}

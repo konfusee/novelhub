@@ -41,6 +41,7 @@ function notificationView(item) {
     'monthly-payout.bank-details-missing': 'Cần bổ sung thông tin ngân hàng',
     'monthly-payout.Paid': 'Khoản chi trả đã thanh toán',
     'monthly-payout.Failed': 'Chi trả chưa thành công',
+    'topup.adjustment-created': 'Đã điều chỉnh giao dịch nạp xu',
   }
   const decided = item.eventType === 'author-application.decided'
   const publication = item.eventType === 'publication.decided'
@@ -65,36 +66,42 @@ function notificationView(item) {
     ['author.content-warning', 'author.content-unpublished'].includes(item.eventType) &&
     /^[a-f\d]{24}$/i.test(item.payload?.storyId ?? '')
   const reportResolved = item.eventType === 'report.resolved'
-  const href = chapterReleased
-    ? `/read/${item.payload.storyId}/${item.payload.chapterId}`
-    : authorContent
-      ? `/author/stories/${item.payload.storyId}`
-      : reportResolved
-        ? '/reader/notifications'
-        : item.eventType === 'publication.decided'
-          ? '/author/submissions'
-          : decided
-            ? '/author/apply'
-            : /^[a-f\d]{24}$/i.test(item.payload?.storyId ?? '')
-              ? `/stories/${item.payload.storyId}`
-              : type === 'system'
-                ? '/reader/wallet'
-                : '/reader/library'
-  const title = publication
-    ? `${item.payload?.outcome === 'approved' ? 'Đã duyệt' : 'Cần chỉnh sửa'}: ${text(item.payload?.title, 200) || 'Gói gửi duyệt'}`
-    : decided
-      ? item.payload?.status === 'approved'
-        ? 'Đơn đăng ký tác giả đã được duyệt'
-        : 'Đã có kết quả xét duyệt đăng ký tác giả'
-      : authorContent || reportResolved
-        ? `${
-            reportResolved
-              ? 'Báo cáo đã được xử lý'
-              : item.eventType === 'author.content-warning'
-                ? 'Cảnh báo nội dung'
-                : 'Nội dung bị ngừng phát hành'
-          }: ${text(item.payload?.title, 200) || 'Nội dung'}`
-        : text(item.payload?.title, 300) || 'Thông báo mới'
+  const roleChanged = item.eventType === 'system.role-changed'
+  const href = roleChanged
+    ? item.payload?.href || '/reader/profile?tab=account'
+    : chapterReleased
+      ? `/read/${item.payload.storyId}/${item.payload.chapterId}`
+      : authorContent
+        ? `/author/stories/${item.payload.storyId}`
+        : reportResolved
+          ? '/reader/notifications'
+          : item.eventType === 'publication.decided'
+            ? '/author/submissions'
+            : decided
+              ? '/author/apply'
+              : /^[a-f\d]{24}$/i.test(item.payload?.storyId ?? '')
+                ? `/stories/${item.payload.storyId}`
+                : type === 'system'
+                  ? '/reader/wallet'
+                  : '/reader/library'
+  const title =
+    item.eventType === 'topup.adjustment-created'
+      ? 'Giao dịch nạp xu đã được điều chỉnh'
+      : publication
+        ? `${item.payload?.outcome === 'approved' ? 'Đã duyệt' : 'Cần chỉnh sửa'}: ${text(item.payload?.title, 200) || 'Gói gửi duyệt'}`
+        : decided
+          ? item.payload?.status === 'approved'
+            ? 'Đơn đăng ký tác giả đã được duyệt'
+            : 'Đã có kết quả xét duyệt đăng ký tác giả'
+          : authorContent || reportResolved
+            ? `${
+                reportResolved
+                  ? 'Báo cáo đã được xử lý'
+                  : item.eventType === 'author.content-warning'
+                    ? 'Cảnh báo nội dung'
+                    : 'Nội dung bị ngừng phát hành'
+              }: ${text(item.payload?.title, 200) || 'Nội dung'}`
+            : text(item.payload?.title, 300) || 'Thông báo mới'
   const description =
     text(item.payload?.body) || text(item.payload?.reason) || text(item.payload?.feedback)
   return {
@@ -113,8 +120,9 @@ function notificationView(item) {
       : item.eventType === 'google.linked'
         ? '/reader/account'
         : href,
-    action:
-      decided || publication
+    action: roleChanged
+      ? 'Xem tài khoản'
+      : decided || publication
         ? 'Xem kết quả'
         : chapterReleased
           ? 'Đọc chương'
@@ -124,9 +132,11 @@ function notificationView(item) {
               ? 'Xem thông báo'
               : href.startsWith('/stories/')
                 ? 'Xem truyện'
-                : type === 'system'
+                : item.eventType === 'topup.adjustment-created'
                   ? 'Xem ví'
-                  : 'Xem thư viện',
+                  : type === 'system'
+                    ? 'Xem ví'
+                    : 'Xem thư viện',
   }
 }
 export function createReaderDataRouter(config) {

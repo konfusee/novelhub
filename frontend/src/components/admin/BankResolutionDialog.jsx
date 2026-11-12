@@ -41,7 +41,11 @@ export function BankResolutionDialog({ row, onClose, onSaved }) {
     try {
       await apiRequest(`/admin/transactions/${row.id}/resolve`, {
         method: 'POST',
-        body: { reason, ...(mode === 'credit' ? { walletId } : {}) },
+        body: {
+          expectedVersion: row.version,
+          reason,
+          ...(mode === 'credit' ? { walletId } : {}),
+        },
       })
       onSaved()
     } catch (caught) {
@@ -112,7 +116,7 @@ export function BankResolutionDialog({ row, onClose, onSaved }) {
           {m('reason')}
           <Input
             required
-            maxLength={500}
+            maxLength={1000}
             disabled={busy}
             value={reason}
             onChange={event => setReason(event.target.value)}

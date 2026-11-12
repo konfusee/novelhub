@@ -14,13 +14,14 @@ import {
   UserRound,
 } from '../icons'
 import { Link, useLocation, useNavigate } from 'react-router'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { ROLE_HOME, useAuth } from '../../context/AuthContext'
 import { useTheme } from '../../context/ThemeContext'
 import { Avatar, IconButton, Input } from '../ui'
 import { useLocale } from '../../context/LocaleContext'
 import { workspaceHeaderNavigation, workspaceWallets } from '../../navigation/workspaceNavigation'
 import { useWorkspaceBalance } from '../../api/useWorkspaceBalance'
+import { apiGet } from '../../api/client'
 import { ROUTES } from '../../app/routes'
 
 const roleMeta = {
@@ -160,6 +161,16 @@ export function SharedWorkspaceHeader({
   const navigate = useNavigate()
   const wallet = workspaceWallets[currentRole]
   const balance = useWorkspaceBalance(currentRole)
+  const [unreadCount, setUnreadCount] = useState(0)
+  useEffect(() => {
+    let active = true
+    apiGet('/reader/notifications/unread-count').then(result => {
+      if (active && result.ok) setUnreadCount(Number(result.data?.count) || 0)
+    })
+    return () => {
+      active = false
+    }
+  }, [])
   const walletActive =
     wallet &&
     (pathname === wallet.path || (currentRole === 'author' && pathname === '/author/wallet'))
@@ -243,7 +254,9 @@ export function SharedWorkspaceHeader({
           onClick={() => navigate(ROUTES.workspaceNotifications(currentRole))}
         >
           <Bell size={18} />
-          <span className="absolute right-2.5 top-2.5 size-2 rounded-full bg-rose ring-2 ring-surface" />
+          {unreadCount > 0 && (
+            <span className="absolute right-2.5 top-2.5 size-2 rounded-full bg-rose ring-2 ring-surface" />
+          )}
         </IconButton>
         <WorkspaceHeaderAccount currentRole={currentRole} />
       </div>

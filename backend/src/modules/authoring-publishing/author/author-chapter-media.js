@@ -50,7 +50,7 @@ export async function imageManifest(config, account, storyId, items, session, pi
     throw new HttpError(
       409,
       'media_unavailable',
-      'Một ảnh không còn sẵn sàng trong thư viện của bạn.',
+      'Một ảnh không còn sẵn sàng trong kho ảnh riêng của bạn.',
     )
   const manifest = []
   for (const { mediaId, role } of items) {
@@ -71,7 +71,11 @@ export async function imageManifest(config, account, storyId, items, session, pi
       bytes.length !== asset.sizeBytes ||
       asset.contentType !== 'image/webp'
     )
-      throw new HttpError(409, 'media_changed', 'Tệp ảnh đã thay đổi. Hãy tải lại thư viện.')
+      throw new HttpError(
+        409,
+        'media_changed',
+        'Tệp ảnh đã thay đổi. Hãy tải lại ảnh trong bản nháp.',
+      )
     manifest.push({
       mediaId,
       ...(role ? { role } : {}),
@@ -87,7 +91,7 @@ export async function imageManifest(config, account, storyId, items, session, pi
       { session },
     )
     if (result.modifiedCount !== 1)
-      throw new HttpError(409, 'stale_content', 'Ảnh đã thay đổi. Hãy tải lại thư viện.')
+      throw new HttpError(409, 'stale_content', 'Ảnh đã thay đổi. Hãy tải lại ảnh trong bản nháp.')
     await AuditEvent.create(
       [
         {

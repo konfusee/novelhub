@@ -1,6 +1,13 @@
 import { policy as policies } from '../../accounts-administration/service.js'
 import { randomInt } from 'node:crypto'
-import { Account, AuditEvent, TopUpOrder, TopUpPackage, Wallet } from '../../../models/index.js'
+import {
+  Account,
+  AuditEvent,
+  BankTransaction,
+  TopUpOrder,
+  TopUpPackage,
+  Wallet,
+} from '../../../models/index.js'
 import { withTransaction } from '../../../db/connection.js'
 import { HttpError } from '../../../middleware/errors.js'
 import { topUpReviewStates } from './top-up-status.js'
@@ -184,7 +191,15 @@ export async function getReaderTopUpOrder(accountId, orderId) {
 }
 
 export async function listReaderTopUpOrders(accountId, page = 1) {
-  const orders = await TopUpOrder.find({ accountId, status: { $in: ['pending', 'expired'] } })
+  const reviewedOrderIds = await BankTransaction.distinct('matchedOrderId', {
+    apiKeyAuthenticated: true,
+    matchedOrderId: { $ne: null },
+  })
+  const orders = await TopUpOrder.find({
+    accountId,
+    status: 'pending',
+    $or: [{ expiresAt: { $gt: new Date() } }, { _id: { $in: reviewedOrderIds } }],
+  })
     .sort({ createdAt: -1, _id: -1 })
     .skip((page - 1) * 10)
     .limit(11)

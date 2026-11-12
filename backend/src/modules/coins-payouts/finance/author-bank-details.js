@@ -2,12 +2,17 @@ import { Account, AuditEvent } from '../../../models/index.js'
 import { HttpError } from '../../../middleware/errors.js'
 import { ownerWrite } from '../../reading-community/reading/owner-write.js'
 
+export const BANK_ACCOUNT_NUMBER_PATTERN = /^\d{6,34}$/
+
 function bankDetailsView(details) {
   if (!details) return null
 
   return {
     bankName: details.bankName,
-    accountNumber: details.accountNumber,
+    accountNumber:
+      details.accountNumber && details.accountNumber.length > 4
+        ? `••••${details.accountNumber.slice(-4)}`
+        : details.accountNumber,
     accountHolder: details.accountHolder,
   }
 }

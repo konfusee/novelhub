@@ -191,6 +191,9 @@ export async function authorStoryWorkspace(account, storyId) {
       reads: views.find(item => item._id?.equals(chapter._id))?.count ?? 0,
       updatedAt: chapter.updatedAt,
       publishedAt: chapter.publishedAt ?? null,
+      publishedRevisionId: chapter.publishedRevisionId
+        ? String(chapter.publishedRevisionId)
+        : null,
       requestedReleaseAt: chapter.requestedReleaseAt ?? null,
       earlyAccess: chapter.earlyAccess
         ? {
@@ -234,6 +237,11 @@ export async function authorStoryWorkspace(account, storyId) {
       canEdit:
         !story.authoringFrozen &&
         !['submitted', 'under-review', 'archived'].includes(story.publicationStatus),
+      canEditMetadata: Boolean(
+        !story.publishedRevisionId &&
+          !story.authoringFrozen &&
+          !['submitted', 'under-review', 'archived'].includes(story.publicationStatus),
+      ),
     },
     chapters: rows,
     stats: {

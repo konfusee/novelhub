@@ -31,22 +31,18 @@ export async function getPayoutDetails(withdrawalId, { accountId, page = 1 } = {
       evaluatedAt: withdrawal.evaluatedAt,
       page,
       hasMore: entries.length > 20,
-      items: entries
-        .slice(0, 20)
-        .map(row => ({
-          id: String(row._id),
-          result: row.result,
-          mode: row.executionMode ?? 'legacy',
-          actorName: accountId ? null : (row.actorAccountId?.displayName ?? null),
-          actorType: row.executionMode === 'simulation' ? 'system' : 'account',
-          note: !accountId || row.executionMode === 'simulation' ? (row.note ?? '') : '',
-          occurredAt: row.occurredAt,
-          transferOccurredAt: row.transferOccurredAt ?? null,
-          transferReference:
-            !accountId || row.executionMode === 'simulation'
-              ? (row.transferReference ?? null)
-              : null,
-        })),
+      items: entries.slice(0, 20).map(row => ({
+        id: String(row._id),
+        result: row.result,
+        mode: row.executionMode ?? 'legacy',
+        actorName: accountId ? null : (row.actorAccountId?.displayName ?? null),
+        actorType: row.executionMode === 'simulation' ? 'system' : 'account',
+        note: !accountId || row.executionMode === 'simulation' ? (row.note ?? '') : '',
+        occurredAt: row.occurredAt,
+        transferOccurredAt: row.transferOccurredAt ?? null,
+        transferReference:
+          !accountId || row.executionMode === 'simulation' ? (row.transferReference ?? null) : null,
+      })),
     }
   })
 }

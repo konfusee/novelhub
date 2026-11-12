@@ -37,13 +37,21 @@ export async function recordPayoutResult(admin, withdrawalId, input, now = new D
     // Ghi vào khoản chi để các thao tác đồng thời không xử lý
     // độc lập trên cùng một trạng thái cũ.
     const withdrawal = await WithdrawalRequest.findOneAndUpdate(
-      { _id: withdrawalId },
+      {
+        _id: withdrawalId,
+        ...(input.expectedVersion === undefined ? {} : { version: input.expectedVersion }),
+      },
       { $inc: { version: 1 } },
       { session, returnDocument: 'after' },
     )
 
     if (!withdrawal) {
-      throw new HttpError(404, 'payout_not_found', 'Không tìm thấy khoản chi.')
+      const exists = await WithdrawalRequest.exists({ _id: withdrawalId }).session(session)
+      throw new HttpError(
+        exists ? 409 : 404,
+        exists ? 'payout_version_conflict' : 'payout_not_found',
+        exists ? 'Khoản chi đã thay đổi. Hãy tải lại.' : 'Không tìm thấy khoản chi.',
+      )
     }
 
     const requestDigest = createHash('sha256')

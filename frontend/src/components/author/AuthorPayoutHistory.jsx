@@ -9,7 +9,7 @@ const empty = {
   hasMore: false,
 }
 
-const columns = ['period', 'coins', 'money', 'status', 'latestResult', 'processedAt']
+const columns = ['period', 'coins', 'money', 'bank', 'status', 'latestResult', 'processedAt']
 
 function selectResponse(response) {
   if (!Array.isArray(response?.items) || typeof response.hasMore !== 'boolean') {
@@ -92,6 +92,19 @@ export function AuthorPayoutHistory() {
 
                       <td className="px-3 py-4 tabular-nums">
                         {formatNumber(row.payoutSlipAmountVnd)}
+                      </td>
+
+                      <td className="px-3 py-4">
+                        {row.bank ? (
+                          <>
+                            <span>{row.bank.bankName}</span>
+                            <span className="mt-1 block text-xs text-muted">
+                              {row.bank.accountNumber}
+                            </span>
+                          </>
+                        ) : (
+                          '—'
+                        )}
                       </td>
 
                       <td className="px-3 py-4">{m(row.status)}</td>

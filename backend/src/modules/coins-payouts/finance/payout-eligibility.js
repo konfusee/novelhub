@@ -1,4 +1,5 @@
 import { HttpError } from '../../../middleware/errors.js'
+import { BANK_ACCOUNT_NUMBER_PATTERN } from './author-bank-details.js'
 
 // Chỉ xét điều kiện, không ghi database.
 export function evaluatePayoutEligibility({ account, wallet, policy, eligibleBalanceCoins }) {
@@ -43,7 +44,7 @@ export function evaluatePayoutEligibility({ account, wallet, policy, eligibleBal
 
   if (
     !bankDetailsSnapshot.bankName ||
-    !bankDetailsSnapshot.accountNumber ||
+    !BANK_ACCOUNT_NUMBER_PATTERN.test(bankDetailsSnapshot.accountNumber) ||
     !bankDetailsSnapshot.accountHolder
   ) {
     return { state: 'missing-bank-details' }

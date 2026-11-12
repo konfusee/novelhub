@@ -33,6 +33,9 @@ export function createAuthorMediaRouter(config) {
               kind: z.enum(['image', 'cover', 'banner']).default('image'),
               storyId: oid.optional(),
             })
+            .refine(value => value.kind === 'image' || Boolean(value.storyId), {
+              message: 'Ảnh bìa hoặc banner phải gắn với một truyện.',
+            })
             .strict(),
           req.query,
         )

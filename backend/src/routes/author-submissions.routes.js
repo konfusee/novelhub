@@ -14,6 +14,23 @@ import {
 } from '../modules/authoring-publishing/author/author-submissions.js'
 const id = z.string().regex(/^[a-f\d]{24}$/i)
 const target = z.object({ storyId: id, chapterId: id.optional() }).strict()
+const listQuery = z
+  .object({
+    page: z.coerce.number().int().min(1).max(100000).default(1),
+    storyId: id.optional(),
+    status: z
+      .enum([
+        'validated',
+        'pending-review',
+        'decision-pending',
+        'approved',
+        'superseded',
+        'rejected',
+        'cancelled',
+      ])
+      .optional(),
+  })
+  .strict()
 const input = z
   .object({
     storyId: id,
@@ -82,15 +99,7 @@ export function createAuthorSubmissionsRouter(config) {
   })
   router.get('/author/submissions', async (req, res, next) => {
     try {
-      res.json(
-        await submissionList(
-          req.account,
-          parse(
-            z.object({ page: z.coerce.number().int().min(1).max(100000).default(1) }).strict(),
-            req.query,
-          ),
-        ),
-      )
+      res.json(await submissionList(req.account, parse(listQuery, req.query)))
     } catch (error) {
       next(error)
     }
