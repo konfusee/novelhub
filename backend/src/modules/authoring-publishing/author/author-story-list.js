@@ -70,9 +70,7 @@ export async function authorStoryList(accountId) {
           : null,
         tags: tagsByRevision.get(String(story.draftRevisionId ?? story.currentRevisionId)) ?? [],
         coverMediaId: story.coverMediaId ? String(story.coverMediaId) : null,
-        coverUrl: story.coverMediaId
-          ? `/author/media/${story.coverMediaId}/content`
-          : null,
+        coverUrl: story.coverMediaId ? `/author/media/${story.coverMediaId}/content` : null,
         coverBannerMediaId: story.theme?.coverBannerMediaId
           ? String(story.theme.coverBannerMediaId)
           : null,

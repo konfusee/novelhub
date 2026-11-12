@@ -5,13 +5,14 @@ import { fileURLToPath } from 'node:url'
 import sharp from 'sharp'
 import { AuditEvent, ContentRevision, MediaAsset, Story } from '../../../models/index.js'
 import { withTransaction } from '../../../db/connection.js'
-import { lockAuthor, ownStory, editable } from './author-ownership.js'
+import { lockAuthor, ownStory, editable, metadataEditable } from './author-ownership.js'
 import { HttpError } from '../../../middleware/errors.js'
 
 export const MEDIA_UPLOAD_BYTES = 10 * 1024 * 1024
 const localRoot = fileURLToPath(new URL('../../../../uploads/media', import.meta.url))
 const hash = bytes => createHash('sha256').update(bytes).digest('hex')
 const keyPattern = /^[a-f\d-]{36}~(\d{1,5})x(\d{1,5})~([^/\\\p{Cc}]+\.webp)$/u
+export const MEDIA_CLEANUP_GRACE_MS = 24 * 60 * 60 * 1000
 const busy = new Set()
 export const mediaRoot = config => path.resolve(config.mediaStorageDir ?? localRoot)
 function filePath(config, key) {
@@ -87,7 +88,11 @@ export async function uploadAuthorMedia(config, account, input, bytes) {
     stored = file
     const asset = await withTransaction(async session => {
       await lockAuthor(account, session)
-      if (input.storyId) editable(await ownStory(account, input.storyId, session))
+      if (input.storyId) {
+        const story = await ownStory(account, input.storyId, session)
+        if (['cover', 'banner'].includes(input.kind)) metadataEditable(story)
+        else editable(story)
+      }
       const [created] = await MediaAsset.create(
         [
           {
@@ -160,7 +165,7 @@ export async function readAuthorMedia(config, accountId, id) {
  * the live story as deleted. Historical revisions remain authoritative, so a
  * replacement cover or an old chapter illustration is retained when it is
  * still part of an immutable package or its frozen image manifest. Returns the
- * object keys of the rows actually deleted, so callers unlink only those files.
+ * file records of the rows actually deleted, so callers unlink only those files.
  */
 export async function cleanupUnusedStoryMedia(config, account, storyId, session) {
   const assets = await MediaAsset.find({
@@ -198,6 +203,7 @@ export async function cleanupUnusedStoryMedia(config, account, storyId, session)
 
   const candidates = assets.filter(
     asset =>
+      (!asset.createdAt || asset.createdAt.getTime() <= Date.now() - MEDIA_CLEANUP_GRACE_MS) &&
       !asset.revisionId &&
       !asset.chapterId &&
       !asset.rightsDeclarationId &&
@@ -229,11 +235,40 @@ export async function cleanupUnusedStoryMedia(config, account, storyId, session)
     })),
     { session, ordered: true },
   )
-  return deleted.map(asset => asset.objectKey).filter(Boolean)
+  return deleted
+    .filter(asset => asset.objectKey)
+    .map(asset => ({ key: asset.objectKey, targetId: asset._id }))
 }
 
-export async function removeMediaFiles(config, keys) {
+export async function removeMediaFiles(config, keys, { accountId } = {}) {
+  const uniqueKeys = [
+    ...new Map(
+      (keys ?? []).map(item => {
+        const record = typeof item === 'string' ? { key: item } : item
+        return [record.key, record]
+      }),
+    ).values(),
+  ]
   await Promise.all(
-    [...new Set(keys ?? [])].map(key => unlink(filePath(config, key)).catch(() => {})),
+    uniqueKeys.map(async record => {
+      try {
+        await unlink(filePath(config, record.key))
+      } catch (error) {
+        // The database row is already marked deleted. Keep a durable audit trail for an
+        // operator to repair when the filesystem is unavailable.
+        if (accountId && record.targetId) {
+          await AuditEvent.create({
+            actorType: 'account',
+            actorId: accountId,
+            action: 'media.unlink-failed',
+            targetType: 'MediaAsset',
+            targetId: record.targetId,
+            result: 'failed',
+            reason: error?.message || 'Không thể xóa tệp ảnh khỏi bộ nhớ.',
+            occurredAt: new Date(),
+          }).catch(() => {})
+        }
+      }
+    }),
   )
 }

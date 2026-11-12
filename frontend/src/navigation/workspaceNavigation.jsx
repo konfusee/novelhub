@@ -19,6 +19,7 @@ import {
   PenLine,
   Search,
   Send,
+  MessageCircle,
   SlidersHorizontal,
   UserCog,
   UsersRound,
@@ -86,6 +87,7 @@ export const workspaceNavigation = {
       labelKey: 'navigation.publish',
       items: [
         ['navigation.submissions', '/author/submissions', Send],
+        ['navigation.comments', '/author/comments', MessageCircle],
         ['navigation.analytics', '/author/analytics', BarChart3],
         ['navigation.revenue', ROUTES.authorEarnings, CircleDollarSign],
       ],

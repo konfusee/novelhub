@@ -81,6 +81,15 @@ export async function getAuthorPayouts(accountId, page = 1, { status, year } = {
                 occurredAt: latest.occurredAt,
               }
             : null,
+          bank: row.bankDetailsSnapshot
+            ? {
+                bankName: row.bankDetailsSnapshot.bankName ?? '',
+                accountNumber:
+                  String(row.bankDetailsSnapshot.accountNumber ?? '').length > 4
+                    ? `••••${String(row.bankDetailsSnapshot.accountNumber).slice(-4)}`
+                    : String(row.bankDetailsSnapshot.accountNumber ?? ''),
+              }
+            : null,
         }
       }),
     }

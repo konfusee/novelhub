@@ -51,6 +51,7 @@ const view = () =>
             path="/author/stories/:storyId/chapters/:chapterId/edit"
             element={<EditDestination />}
           />
+          <Route path="/author/stories" element={<EditDestination />} />
         </Routes>
       </LocaleProvider>
     </MemoryRouter>,
@@ -179,6 +180,30 @@ it('confirms archive and restore using persisted versions without deleting the w
   expect(mocks.apiRequest).toHaveBeenCalledWith('/author/stories/owned/lifecycle', {
     method: 'POST',
     body: { action: 'restore', expectedVersion: 8 },
+  })
+})
+it('shows delete for an eligible draft and deletes it only after confirmation', async () => {
+  mocks.apiRequest.mockImplementation(async (_path, options) => {
+    if (options?.method === 'POST') return { story: { id: 'owned', status: 'archived' } }
+    return {
+      ...workspace,
+      story: {
+        ...workspace.story,
+        status: 'draft',
+        canEdit: true,
+        canDelete: true,
+        canArchive: true,
+      },
+    }
+  })
+  view()
+  fireEvent.click(await screen.findByRole('button', { name: 'Xóa truyện', exact: true }))
+  expect(mocks.apiRequest.mock.calls.some(([, options]) => options?.method === 'POST')).toBe(false)
+  fireEvent.click(screen.getByRole('button', { name: 'Xác nhận xóa', exact: true }))
+  await screen.findByText('/author/stories')
+  expect(mocks.apiRequest).toHaveBeenCalledWith('/author/stories/owned/lifecycle', {
+    method: 'POST',
+    body: { action: 'delete', expectedVersion: 7 },
   })
 })
 it('prevents archiving unsaved edits and retains the form when archive conflicts', async () => {

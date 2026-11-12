@@ -153,6 +153,19 @@ export async function generateMonthlyPayouts(admin, periodId, now = new Date()) 
       if (result.state === 'created' || result.state === 'missing-bank-details') {
         await queuePayoutNotice(account._id, periodId, result, session, now)
       }
+      if (result.state === 'created') {
+        const bumped = await Account.updateOne(
+          { _id: account._id, version: account.version },
+          { $inc: { version: 1 } },
+          { session },
+        )
+        if (bumped.modifiedCount !== 1)
+          throw new HttpError(
+            409,
+            'account_changed',
+            'Tài khoản đã thay đổi. Hãy tải lại và thử lại.',
+          )
+      }
 
       results.push({
         accountId: String(account._id),

@@ -68,9 +68,10 @@ function vbeeProvider({ appId, token, apiUrl, timeoutMs }, voiceCode, fetchImpl)
           webhookUrl: callbackUrl,
         }),
       })
-      if (typeof body?.requestId !== 'string' || !body.requestId)
+      const requestId = body?.request_id ?? body?.requestId
+      if (typeof requestId !== 'string' || !requestId)
         throw new TtsProviderError('provider_invalid_response', true)
-      return { jobId: body.requestId }
+      return { jobId: requestId }
     },
     async poll(jobId) {
       const body = await call(`${base}/tts/requests/${encodeURIComponent(jobId)}`, {
@@ -78,9 +79,10 @@ function vbeeProvider({ appId, token, apiUrl, timeoutMs }, voiceCode, fetchImpl)
       })
       const status = String(body?.status ?? '').toUpperCase()
       if (status === 'COMPLETED' || status === 'SUCCESS') {
-        if (typeof body.audioLink !== 'string' || !/^https?:\/\//.test(body.audioLink))
+        const audioUrl = body.audio_link ?? body.audioLink
+        if (typeof audioUrl !== 'string' || !/^https?:\/\//.test(audioUrl))
           throw new TtsProviderError('provider_invalid_response', true)
-        return { state: 'completed', audioUrl: body.audioLink }
+        return { state: 'completed', audioUrl }
       }
       if (FAILED.has(status)) return { state: 'failed', code: 'provider_failed' }
       if (PROCESSING.has(status)) return { state: 'processing' }

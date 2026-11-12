@@ -3,6 +3,7 @@ import { createContext, useContext, useEffect, useState } from 'react'
 import { API_BASE, ApiError, apiRequest } from '../api/client'
 
 const AuthContext = createContext(null)
+const loadCurrentUser = signal => apiRequest('/auth/me', { signal })
 export const ROLE_HOME = {
   guest: '/',
   reader: '/reader',
@@ -32,9 +33,14 @@ export const canAccessPath = (user, path = '/') => {
 export function AuthProvider({ children }) {
   const [currentUser, setCurrentUser] = useState(null)
   const [authLoading, setAuthLoading] = useState(true)
+  const refreshUser = async signal => {
+    const result = await loadCurrentUser(signal)
+    setCurrentUser(result.user)
+    return result.user
+  }
   useEffect(() => {
     const controller = new AbortController()
-    apiRequest('/auth/me', { signal: controller.signal })
+    loadCurrentUser(controller.signal)
       .then(({ user }) => {
         if (!controller.signal.aborted) setCurrentUser(user)
       })
@@ -129,6 +135,7 @@ export function AuthProvider({ children }) {
     },
     register,
     applyForAuthor,
+    refreshUser: () => refreshUser(),
   }
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>
 }

@@ -20,6 +20,7 @@ const schema = new Schema(
     bankDetailsSnapshot: { type: Schema.Types.Mixed, select: false },
     status: { type: String, enum: WITHDRAWAL_STATUSES, default: 'pending', required: true },
     forcedByDeletion: { type: Boolean, required: true },
+    executionMode: { type: String, enum: ['external', 'simulation'], default: 'external' },
   },
   mutableOptions,
 )
@@ -45,6 +46,7 @@ lockFields(
     'payoutSlipAmountVnd',
     'bankDetailsSnapshot',
     'forcedByDeletion',
+    'executionMode',
   ],
   { mode: 'insert-only' },
 )

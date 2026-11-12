@@ -12,7 +12,7 @@ export function csrfProtection({ corsOrigin, cookieName }) {
     if (!hasSessionCookie) return next()
     const origin = req.get('origin')
     if (!origin || !allowedOrigins.has(origin)) {
-      return next(new HttpError(403, 'csrf_rejected', 'Request origin is not allowed'))
+      return next(new HttpError(403, 'csrf_rejected', 'Nguồn yêu cầu không được phép.'))
     }
     next()
   }

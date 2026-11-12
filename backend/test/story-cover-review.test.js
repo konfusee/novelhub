@@ -196,6 +196,10 @@ it('serves the live claimant exactly the submitted cover and banner, never a lat
   )
   const coverB = await upload(author, storyId, 'cover', '#f08030')
   const abandoned = await upload(author, storyId, 'cover', '#101010')
+  await MediaAsset.updateOne(
+    { _id: abandoned },
+    { $set: { createdAt: new Date(Date.now() - 25 * 60 * 60 * 1000) } },
+  )
   const abandonedPath = await objectPath(abandoned)
   await saveImages(author, storyId, { coverMediaId: coverB })
   expect(String((await Story.findById(storyId)).coverMediaId)).toBe(coverB)

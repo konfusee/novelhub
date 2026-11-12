@@ -3,8 +3,8 @@
 Part 4 of NovelHub: public discovery, chapter reading with saved progress,
 follows, ratings, comments, content reports and the Moderator report queue.
 Business rules come from `docs/decision-log.md` (decisions 8, 14, 16, 17, 20,
-21, 26, 31). TTS is not implemented yet: its provider is still undecided
-(decision 29).
+21, 26, 31). Narration uses one configured Vbee voice for signed-in readers. The provider is
+optional; text reading remains available when Vbee is not configured.
 
 ## Access rules
 
@@ -36,6 +36,13 @@ saves and chapter comments all go through them.
 | `GET /api/reader/progress/:storyId`                 | Resume target. After a chapter edit it returns `position: 0` and `contentUpdated: true`, so the Reader starts the same chapter again from the top. |
 | `GET /api/reader/library?tab=all\|reading\|following\|completed` | Followed or started stories, with progress, new-chapter counts and per-tab counts                                                       |
 | `GET /api/reader/history`, `DELETE /api/reader/history[/:id]` | Reading history; remove one entry or all                                                                                                 |
+| `GET /api/reader/narration/:storyId/:chapterId` / `POST` | Read or request cached Vbee narration for a readable chapter. Requests are capped at three attempts and non-retryable failures stay failed. |
+| `GET /api/reader/narration/:storyId/:chapterId/audio` | Stream the locally cached MP3 after access and file checks. |
+
+Vbee calls back to `POST /api/tts/vbee/callback` with `request_id`. The backend polls Vbee with
+its own credentials and accepts the provider's `request_id`/`requestId` and `audio_link`/`audioLink`
+spellings. Audio progress is saved through `PUT /api/reader/progress` with `mode: "audio"` and
+`listenResume` is returned separately from text reading progress.
 
 When a chapter is released for the first time, every active follower except
 the Author gets one in-app notification (`story.chapter-released`). These

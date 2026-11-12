@@ -31,18 +31,22 @@ async function lockAccount(account, session) {
     { $inc: { version: 1 } },
     { session, returnDocument: 'after' },
   )
-  if (!locked) throw new HttpError(409, 'account_changed', 'Account permissions have changed')
+  if (!locked) throw new HttpError(409, 'account_changed', 'Quyền tài khoản đã thay đổi.')
   return locked
 }
 
 async function assertApplicant(account, session) {
   if (!account.emailVerifiedAt || !account.email) {
-    throw new HttpError(409, 'applicant_ineligible', 'A verified active account is required')
+    throw new HttpError(
+      409,
+      'applicant_ineligible',
+      'Tài khoản đang hoạt động và đã xác minh email mới được đăng ký.',
+    )
   }
   const staff = await RoleAssignment.exists({ accountId: account._id, status: 'active' }).session(
     session,
   )
-  if (staff) throw new HttpError(409, 'staff_role_conflict', 'Account already has a staff role')
+  if (staff) throw new HttpError(409, 'staff_role_conflict', 'Tài khoản đã có vai trò nhân sự.')
 }
 
 export async function submitApplication(account) {
@@ -95,7 +99,7 @@ export async function getApplication(id) {
   const application = await AuthorApplication.findById(id)
     .populate('applicantAccountId', 'displayName email status')
     .lean()
-  if (!application) throw new HttpError(404, 'application_not_found', 'Application not found')
+  if (!application) throw new HttpError(404, 'application_not_found', 'Không tìm thấy đơn đăng ký.')
   return adminView(application)
 }
 
@@ -109,7 +113,8 @@ export async function decideApplication(admin, id, { decision, reason, expectedV
     }).session(session)
     if (!allowed) throw new HttpError(403, 'forbidden', 'Admin permission required')
     const application = await AuthorApplication.findById(id).session(session)
-    if (!application) throw new HttpError(404, 'application_not_found', 'Application not found')
+    if (!application)
+      throw new HttpError(404, 'application_not_found', 'Không tìm thấy đơn đăng ký.')
     if (application.status !== 'submitted' || application.version !== expectedVersion) {
       throw new HttpError(409, 'application_changed', 'Application has already changed; reload it')
     }

@@ -2,7 +2,7 @@ import { useSearchParams } from 'react-router'
 import { useBackendResource } from '../../api/useBackendResource'
 import { useLocale } from '../../context/LocaleContext'
 import { AdminLayout } from '../../layouts'
-import { Button, Card, Input } from '../../components/ui'
+import { Button, Card, Input, Select } from '../../components/ui'
 const metrics = [
   'registrations',
   'unlocks',

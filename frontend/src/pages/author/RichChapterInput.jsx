@@ -221,6 +221,13 @@ export function RichChapterInput({
         if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 's') {
           event.preventDefault()
           onSave()
+          return
+        }
+        if ((event.ctrlKey || event.metaKey) && ['b', 'i', 'u'].includes(event.key.toLowerCase())) {
+          event.preventDefault()
+          const command = { b: 'bold', i: 'italic', u: 'underline' }[event.key.toLowerCase()]
+          document.execCommand(command)
+          emit()
         }
       }}
       className="mt-6 min-h-[60dvh] w-full whitespace-pre-wrap break-words rounded-2xl bg-transparent text-base leading-8 text-ink outline-none sm:text-lg sm:leading-9 [&_p]:mb-5 [&_h2]:mb-5 [&_h2]:text-h2 [&_h3]:mb-5 [&_h3]:text-h3 [&_blockquote]:mb-5 [&_blockquote]:border-l-2 [&_blockquote]:border-brand [&_blockquote]:pl-4 [&_blockquote]:italic [&_hr]:my-6 [&_hr]:border-line"

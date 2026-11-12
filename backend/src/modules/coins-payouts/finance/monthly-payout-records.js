@@ -10,7 +10,15 @@ import { HttpError } from '../../../middleware/errors.js'
 import { evaluatePayoutEligibility } from './payout-eligibility.js'
 
 export async function createMonthlyPayoutRecords(
-  { account, wallet, periodId, policy, actorAccountId, eligibleBalanceCoins },
+  {
+    account,
+    wallet,
+    periodId,
+    policy,
+    actorAccountId,
+    eligibleBalanceCoins,
+    executionMode = 'external',
+  },
   session,
   now = new Date(),
 ) {
@@ -67,6 +75,7 @@ export async function createMonthlyPayoutRecords(
         bankDetailsSnapshot,
         status: 'pending',
         forcedByDeletion: false,
+        executionMode,
         policySnapshot: {
           id: String(policy._id),
           version: policy.version,

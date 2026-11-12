@@ -11,6 +11,7 @@ import { notify } from '../../accounts-administration/service.js'
 import { withTransaction } from '../../../db/connection.js'
 import { HttpError } from '../../../middleware/errors.js'
 import { requireCurrentAdmin } from './admin-guard.js'
+import { notify } from '../../accounts-administration/notifications.js'
 
 const PAGE_SIZE = 20
 const unresolved = ['unmatched', 'amount-mismatch', 'expired', 'already-paid']
@@ -234,6 +235,7 @@ export async function resolveBankTransaction(admin, bankId, input, now = new Dat
       throw new HttpError(409, 'transaction_changed', 'Giao dịch đã thay đổi. Vui lòng tải lại.')
     bank.version = input.expectedVersion + 1
     let adjustmentId
+    let recipientAccountId = null
     if (input.walletId) {
       if (!Number.isSafeInteger(bank.amountVnd) || bank.amountVnd <= 0)
         throw new HttpError(409, 'invalid_amount', 'Số tiền nhận không hợp lệ.')
@@ -252,6 +254,7 @@ export async function resolveBankTransaction(admin, bankId, input, now = new Dat
         ))
       if (!wallet || !owner)
         throw new HttpError(409, 'invalid_reader_wallet', 'Ví nhận xu không còn hợp lệ.')
+      recipientAccountId = wallet.ownerId
       const updated = await Wallet.updateOne(
         {
           _id: wallet._id,
@@ -321,6 +324,21 @@ export async function resolveBankTransaction(admin, bankId, input, now = new Dat
       ],
       { session },
     )
+    if (adjustmentId && recipientAccountId) {
+      await notify(
+        {
+          recipientAccountId,
+          eventType: 'topup.adjustment-created',
+          sourceEventKey: `bank-resolution:${bank._id}`,
+          payload: {
+            bankTransactionId: String(bank._id),
+            adjustmentId: String(adjustmentId),
+            amount: bank.amountVnd,
+          },
+        },
+        { session },
+      )
+    }
     return { reused: false, adjustmentId: adjustmentId ?? null }
   })
 }

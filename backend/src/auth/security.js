@@ -140,7 +140,7 @@ export function installSecurityRoutes(
         account.password?.hash &&
         !(await verifyPassword(currentPassword || '', account.password.hash))
       )
-        throw new HttpError(400, 'invalid_current_password', 'Current password is incorrect')
+        throw new HttpError(400, 'invalid_current_password', 'Mật khẩu hiện tại không đúng.')
       if (
         (action === 'enable' && account.twoFactorEnabled) ||
         (action === 'disable' && !account.twoFactorEnabled)

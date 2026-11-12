@@ -19,7 +19,10 @@ export function ChapterImagePicker({ storyId, onClose, onAdd }) {
     const file = event.target.files?.[0]
     event.target.value = ''
     if (!file) return
-    if (!['image/jpeg', 'image/png', 'image/webp'].includes(file.type) || file.size > MAX_UPLOAD_BYTES) {
+    if (
+      !['image/jpeg', 'image/png', 'image/webp'].includes(file.type) ||
+      file.size > MAX_UPLOAD_BYTES
+    ) {
       setError(t('chapterImages.invalidFile'))
       return
     }

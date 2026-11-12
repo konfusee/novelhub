@@ -28,9 +28,29 @@ export function SubmissionReviewPage() {
   const [page, setPage] = useState(1)
   const storyId = params.get('storyId') || ''
   const chapterId = params.get('chapterId') || ''
-  const feed = useBackendDocument(`/author/submissions?page=${page}`, emptyFeed)
+  const status = params.get('status') || ''
+  const targetType = params.get('targetType') || ''
+  const feed = useBackendDocument(
+    `/author/submissions?page=${page}${storyId ? `&storyId=${encodeURIComponent(storyId)}` : ''}${chapterId ? `&chapterId=${encodeURIComponent(chapterId)}` : ''}${status ? `&status=${encodeURIComponent(status)}` : ''}${targetType ? `&targetType=${targetType}` : ''}`,
+    emptyFeed,
+  )
   const choose = (story, chapter = '') => {
-    setParams(story ? { storyId: story, ...(chapter ? { chapterId: chapter } : {}) } : {})
+    setPage(1)
+    setParams({
+      ...(story ? { storyId: story } : {}),
+      ...(chapter ? { chapterId: chapter } : {}),
+      ...(status ? { status } : {}),
+      ...(targetType ? { targetType } : {}),
+    })
+  }
+  const updateStatus = next => {
+    setPage(1)
+    setParams({
+      ...(storyId ? { storyId } : {}),
+      ...(chapterId ? { chapterId } : {}),
+      ...(status || next ? { status: next } : {}),
+      ...(targetType ? { targetType } : {}),
+    })
   }
   return (
     <AuthorLayout>
@@ -66,6 +86,53 @@ export function SubmissionReviewPage() {
               </option>
             ))}
           </Select>
+          <label className="mt-4 block text-sm font-semibold" htmlFor="submission-target">
+            {t('submissionData.targetFilter')}
+          </label>
+          <Select
+            id="submission-target"
+            className="mt-3 w-full"
+            value={targetType}
+            onChange={event => {
+              setPage(1)
+              setParams({
+                ...(storyId ? { storyId } : {}),
+                ...(chapterId ? { chapterId } : {}),
+                ...(status ? { status } : {}),
+                ...(event.target.value ? { targetType: event.target.value } : {}),
+              })
+            }}
+            disabled={feed.status !== 'ready'}
+          >
+            <option value="">{t('submissionData.allTargets')}</option>
+            <option value="story">{t('submissionData.storySubmission')}</option>
+            <option value="chapter">{t('submissionData.chapterSubmission')}</option>
+          </Select>
+          <label className="mt-4 block text-sm font-semibold" htmlFor="submission-status">
+            {t('submissionData.statusFilter')}
+          </label>
+          <Select
+            id="submission-status"
+            className="mt-3 w-full"
+            value={status}
+            onChange={event => updateStatus(event.target.value)}
+            disabled={feed.status !== 'ready'}
+          >
+            <option value="">{t('submissionData.allStatuses')}</option>
+            {[
+              'validated',
+              'pending-review',
+              'decision-pending',
+              'approved',
+              'superseded',
+              'rejected',
+              'cancelled',
+            ].map(value => (
+              <option key={value} value={value}>
+                {t(`submissionData.status.${value}`)}
+              </option>
+            ))}
+          </Select>
           {feed.status === 'error' && (
             <p role="alert" className="mt-3 text-sm text-rose-strong">
               {t('submissionData.loadError')}
@@ -93,7 +160,14 @@ export function SubmissionReviewPage() {
           </Card>
         )}
         <Card className="mt-5">
-          <h2 className="text-h3">{t('submissionData.history')}</h2>
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <h2 className="text-h3">{t('submissionData.history')}</h2>
+            {feed.status === 'ready' && (
+              <span className="text-sm text-muted">
+                {t('submissionData.totalCount', { count: feed.data.total })}
+              </span>
+            )}
+          </div>
           {feed.status === 'loading' ? (
             <StatusSkeleton />
           ) : feed.status === 'error' ? (
@@ -110,7 +184,7 @@ export function SubmissionReviewPage() {
           ) : (
             <div className="mt-4 space-y-3">
               {feed.data.items.map(item => (
-                <SubmissionEntry key={item.id} item={item} choose={choose} />
+                <SubmissionEntry key={item.id} item={item} />
               ))}
               <div className="flex flex-wrap items-center justify-between gap-3 pt-3">
                 <Button variant="secondary" disabled={page <= 1} onClick={() => setPage(page - 1)}>
@@ -203,17 +277,19 @@ function SubmissionPackage({ storyId, chapterId, onSubmitted }) {
     (!data.requiresRights || asserted) &&
     (!licenceRequired || Boolean(shownNote.trim())) &&
     !sent
-  const richTarget = ['blocks-v2', 'blocks-v3'].includes(data.target?.formatVersion)
   const chapterMedia = Boolean(chapterId && data.target?.formatVersion === 'blocks-v3')
+  const richEditor = Boolean(
+    chapterId && ['blocks-v2', 'blocks-v3'].includes(data.target?.formatVersion),
+  )
   const back = chapterId
-    ? `/author/stories/${storyId}/chapters/${chapterId}/edit${richTarget ? '?mode=rich' : ''}`
+    ? `/author/stories/${storyId}/chapters/${chapterId}/edit${richEditor ? '?mode=rich' : ''}`
     : `/author/stories/${storyId}`
   const fixes = {
     editable: { to: `/author/stories/${storyId}?tab=reviews`, label: 'status' },
     content: { to: chapterId ? back : `/author/stories/${storyId}?tab=details`, label: 'content' },
     categories: { to: `/author/stories/${storyId}?tab=details`, label: 'categories' },
     media: {
-      to: chapterMedia ? back : `/author/stories/${storyId}?tab=details`,
+      to: chapterMedia ? back : `/author/stories/${storyId}?tab=media`,
       label: chapterMedia ? 'chapterMedia' : 'media',
     },
     parent: { to: `/author/submissions?storyId=${encodeURIComponent(storyId)}`, label: 'parent' },
@@ -434,17 +510,6 @@ function SubmissionPackage({ storyId, chapterId, onSubmitted }) {
             )}
           </Card>
           <Card>
-            <h2 className="text-h3">{t('submissionData.notes')}</h2>
-            <textarea
-              disabled
-              value=""
-              readOnly
-              aria-label={t('submissionData.notes')}
-              className="mt-4 min-h-28 w-full rounded-2xl border border-line bg-elevated p-4 opacity-60"
-            />
-            <p className="mt-2 text-xs text-muted">{t('submissionData.notesUnavailable')}</p>
-          </Card>
-          <Card>
             {error && (
               <p role="alert" className="mb-4 text-sm text-rose-strong">
                 {error}
@@ -518,7 +583,7 @@ function SubmissionPackage({ storyId, chapterId, onSubmitted }) {
   )
 }
 
-function SubmissionEntry({ item, choose }) {
+function SubmissionEntry({ item }) {
   const { t, formatDate } = useLocale()
   const reviseLabel = t(
     item.status === 'approved' ? 'submissionData.reviseUnpublished' : 'submissionData.revise',
@@ -541,7 +606,7 @@ function SubmissionEntry({ item, choose }) {
       if (!revision?.id || !revision.storyId) throw new Error(t('submissionData.reviseError'))
       navigate(
         revision.chapterId
-          ? `/author/stories/${revision.storyId}/chapters/${revision.chapterId}/edit${['blocks-v2', 'blocks-v3'].includes(revision.formatVersion) ? '?mode=rich' : ''}`
+          ? `/author/stories/${revision.storyId}/chapters/${revision.chapterId}/edit${revision.formatVersion === 'blocks-v1' ? '' : '?mode=rich'}`
           : `/author/stories/${revision.storyId}`,
       )
     } catch (failure) {
@@ -569,11 +634,33 @@ function SubmissionEntry({ item, choose }) {
     'available-for-human-review',
     'failed',
   ]
+  const historyActions = ['submitted', 'decided', 'publication.superseded']
+  const historyOutcomes = ['validated', 'approved', 'rejected', 'superseded', 'cancelled']
+  const statusTones = {
+    validated: 'blue',
+    'pending-review': 'orange',
+    'decision-pending': 'orange',
+    approved: 'green',
+    superseded: 'neutral',
+    rejected: 'red',
+    cancelled: 'neutral',
+  }
   return (
     <article className="rounded-2xl border border-hairline p-4">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <h3 className="text-sm font-semibold">{item.title || item.id}</h3>
-        <Badge>{known.includes(item.status) ? t(statusKey) : item.status}</Badge>
+        <div className="flex flex-wrap justify-end gap-2">
+          <Badge tone={item.chapterId ? 'purple' : 'brand'}>
+            {t(
+              item.chapterId
+                ? 'submissionData.chapterSubmission'
+                : 'submissionData.storySubmission',
+            )}
+          </Badge>
+          <Badge tone={statusTones[item.status] ?? 'neutral'}>
+            {known.includes(item.status) ? t(statusKey) : item.status}
+          </Badge>
+        </div>
       </div>
       <p className="mt-2 text-xs text-muted">
         {item.submittedAt ? formatDate(item.submittedAt) : '—'} · {t('submissionData.revision')}{' '}
@@ -595,7 +682,14 @@ function SubmissionEntry({ item, choose }) {
         {item.history.map(row => (
           <li key={row.id} className="rounded-xl bg-elevated p-3 text-xs">
             <p>
-              {row.action} · {row.outcome} · {row.occurredAt ? formatDate(row.occurredAt) : '—'}
+              {historyActions.includes(row.action)
+                ? t(`submissionData.historyActions.${row.action}`)
+                : row.action}{' '}
+              ·{' '}
+              {historyOutcomes.includes(row.outcome)
+                ? t(`submissionData.historyOutcomes.${row.outcome}`)
+                : row.outcome}{' '}
+              · {row.occurredAt ? formatDate(row.occurredAt) : '—'}
             </p>
             {row.feedback && <p className="mt-2 whitespace-pre-wrap text-sm">{row.feedback}</p>}
           </li>
@@ -605,7 +699,13 @@ function SubmissionEntry({ item, choose }) {
         size="sm"
         variant="secondary"
         className="mt-3"
-        onClick={() => choose(item.storyId, item.chapterId || '')}
+        onClick={() =>
+          navigate(
+            `/author/stories/${item.storyId}?tab=reviews${
+              item.chapterId ? `&chapterId=${encodeURIComponent(item.chapterId)}` : ''
+            }`,
+          )
+        }
       >
         {t('submissionData.open')}
       </Button>

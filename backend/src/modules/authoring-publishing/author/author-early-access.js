@@ -1,10 +1,5 @@
 import { policy as policies } from '../../accounts-administration/service.js'
-import {
-  Chapter,
-  ContentRevision,
-  Story,
-  AuditEvent,
-} from '../../../models/index.js'
+import { Chapter, ContentRevision, Story, AuditEvent } from '../../../models/index.js'
 import { withTransaction } from '../../../db/connection.js'
 import { HttpError } from '../../../middleware/errors.js'
 import { lockAuthor, ownStory, editable } from './author-ownership.js'

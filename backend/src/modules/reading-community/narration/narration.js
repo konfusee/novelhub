@@ -357,6 +357,17 @@ async function guardNewJob(config, account, chapter) {
 export async function requestNarration({ config, provider, account, storyId, chapterId }) {
   const { chapter } = await readableChapter({ storyId, chapterId, account })
   requireProvider(provider)
+  const cooldownKey = `${account._id}:${storyId}:${chapterId}`
+  const lastRequestedAt = requestCooldowns.get(cooldownKey) ?? 0
+  if (Date.now() - lastRequestedAt < REQUEST_COOLDOWN_MS) {
+    const existing = await current(chapter, provider)
+    if (existing) return narrationView(existing, { storyId, chapterId })
+  }
+  requestCooldowns.set(cooldownKey, Date.now())
+  if (requestCooldowns.size > 10_000) {
+    const cutoff = Date.now() - REQUEST_COOLDOWN_MS
+    for (const [key, value] of requestCooldowns) if (value < cutoff) requestCooldowns.delete(key)
+  }
   const key = { revisionId: chapter.publishedRevisionId, voiceId: provider.voiceId }
   let asset = await current(chapter, provider)
   if (!asset) {

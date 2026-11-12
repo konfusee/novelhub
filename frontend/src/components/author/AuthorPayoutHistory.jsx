@@ -125,6 +125,19 @@ export function AuthorPayoutHistory() {
                         {formatNumber(row.payoutSlipAmountVnd)}
                       </td>
 
+                      <td className="px-3 py-4">
+                        {row.bank ? (
+                          <>
+                            <span>{row.bank.bankName}</span>
+                            <span className="mt-1 block text-xs text-muted">
+                              {row.bank.accountNumber}
+                            </span>
+                          </>
+                        ) : (
+                          '—'
+                        )}
+                      </td>
+
                       <td className="px-3 py-4">{m(row.status)}</td>
 
                       <td className="px-3 py-4">

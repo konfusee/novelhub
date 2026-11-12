@@ -109,6 +109,11 @@ const AuthorDashboardPage = lazy(() =>
     default: m.AuthorDashboardPage,
   })),
 )
+const AuthorCommentsPage = lazy(() =>
+  import('./pages/author/AuthorCommentsPage').then(m => ({
+    default: m.AuthorCommentsPage,
+  })),
+)
 const CreateStoryPage = lazy(() =>
   import('./pages/author/CreateStoryPage').then(m => ({
     default: m.CreateStoryPage,
@@ -264,11 +269,6 @@ const LegalPage = lazy(() =>
     default: m.LegalPage,
   })),
 )
-const RoleUtilityPage = lazy(() =>
-  import('./pages/system/RoleUtilityPage').then(m => ({
-    default: m.RoleUtilityPage,
-  })),
-)
 const ProfileAccountPage = lazy(() =>
   import('./pages/system/ProfileAccountPage').then(m => ({
     default: m.ProfileAccountPage,
@@ -302,6 +302,7 @@ const pages = [
   ReaderProfilePage,
   WalletPage,
   AuthorDashboardPage,
+  AuthorCommentsPage,
   CreateStoryPage,
   StoryManagerPage,
   ChapterEditorPage,
@@ -493,6 +494,7 @@ function AppRoutes() {
             path="/author/submissions"
             element={role('author', <SubmissionReviewPage />, true)}
           />
+          <Route path="/author/comments" element={role('author', <AuthorCommentsPage />, true)} />
           <Route path="/author/analytics" element={role('author', <AuthorAnalyticsPage />, true)} />
           <Route
             path="/author/submissions/:submissionId/preview"
@@ -518,19 +520,6 @@ function AppRoutes() {
           <Route
             path="/author/account"
             element={role('author', <Navigate to="/author/profile?tab=account" replace />, true)}
-          />
-          <Route
-            path="/author/support"
-            element={role(
-              'author',
-              <RoleUtilityPage
-                role="author"
-                eyebrow="Trợ giúp NovelHub"
-                title="Trợ giúp và hỗ trợ"
-                description="Tìm hướng dẫn sáng tác, hỗ trợ xuất bản, câu hỏi thường gặp và kênh hỗ trợ."
-              />,
-              true,
-            )}
           />
           <Route path="/moderator" element={role('moderator', <ModeratorOverviewPage />)} />
           <Route

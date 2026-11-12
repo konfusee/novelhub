@@ -25,6 +25,18 @@ const timestamp = new Intl.DateTimeFormat('vi-VN', {
   timeStyle: 'medium',
   timeZone: 'Asia/Ho_Chi_Minh',
 })
+const actionLabels = {
+  'account.role-changed': 'Thay đổi vai trò tài khoản',
+  'account.author-role-revoked': 'Thu hồi vai trò Author',
+  'account.suspended': 'Tạm khóa tài khoản',
+  'account.restored': 'Mở lại tài khoản',
+  'account.anonymized': 'Ẩn danh tài khoản',
+  'author.bank-details.updated': 'Cập nhật thông tin ngân hàng',
+  'bank-transaction.resolved': 'Đối soát giao dịch ngân hàng',
+  'former-author.story.correct': 'Sửa truyện của cựu Author',
+  'former-author.story.unpublish': 'Gỡ xuất bản truyện',
+  'former-author.story.republish': 'Xuất bản lại truyện',
+}
 export function AuditEventsPage() {
   const { t, formatNumber } = useLocale()
   const m = key => t(`adminAudit.${key}`)

@@ -140,8 +140,9 @@ function notificationView(item) {
       : item.eventType === 'google.linked'
         ? '/reader/account'
         : href,
-    action:
-      decided || publication
+    action: roleChanged
+      ? 'Xem tài khoản'
+      : decided || publication
         ? 'Xem kết quả'
         : chapterReleased
           ? 'Đọc chương'
@@ -151,7 +152,7 @@ function notificationView(item) {
               ? 'Xem thông báo'
               : href.startsWith('/stories/')
                 ? 'Xem truyện'
-                : type === 'system'
+                : item.eventType === 'topup.adjustment-created'
                   ? 'Xem ví'
                   : 'Xem thư viện',
     ...(submissionReady && {

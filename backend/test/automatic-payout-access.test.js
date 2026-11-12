@@ -10,13 +10,9 @@ useTestDatabase()
 const origin = 'http://localhost:5173'
 const app = createApp(testConfig({ corsOrigin: origin }))
 
-it('payout execution endpoints cannot be invoked manually by an admin', async () => {
+it('scheduled payout generation and simulation endpoints cannot be invoked manually by an admin', async () => {
   const admin = await authenticatedAccount('admin')
-  for (const suffix of [
-    'generate',
-    '123456789012345678901234/result',
-    '123456789012345678901234/simulate-result',
-  ]) {
+  for (const suffix of ['generate', '123456789012345678901234/simulate-result']) {
     const response = await request(app)
       .post(`/api/admin/monthly-payouts/${suffix}`)
       .set('Origin', origin)
@@ -25,6 +21,18 @@ it('payout execution endpoints cannot be invoked manually by an admin', async ()
     expect(response.status).toBe(405)
     expect(response.body.error.code).toBe('payouts_read_only')
   }
+  const result = await request(app)
+    .post('/api/admin/monthly-payouts/123456789012345678901234/result')
+    .set('Origin', origin)
+    .set('Cookie', admin.cookie)
+    .send({
+      result: 'Failed',
+      resultEntryKey: 'test',
+      expectedVersion: 0,
+      note: 'Không thể chuyển khoản.',
+    })
+  expect(result.status).toBe(404)
+  expect(result.body.error.code).toBe('payout_not_found')
   expect(await WithdrawalRequest.countDocuments()).toBe(0)
 })
 

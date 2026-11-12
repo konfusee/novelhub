@@ -8,7 +8,7 @@ export class HttpError extends Error {
 }
 
 export function notFound(req, _res, next) {
-  next(new HttpError(404, 'not_found', `Route ${req.method} ${req.originalUrl} not found`))
+  next(new HttpError(404, 'not_found', 'Không tìm thấy đường dẫn yêu cầu.'))
 }
 
 // Express recognises error handlers by their four-argument signature.
@@ -19,7 +19,7 @@ export function errorHandler(err, req, res, _next) {
   res.status(status).json({
     error: {
       code: exposed ? err.code : status === 400 ? 'bad_request' : 'internal_error',
-      message: status >= 500 ? 'Internal server error' : err.message,
+      message: status >= 500 ? 'Đã xảy ra lỗi máy chủ. Vui lòng thử lại.' : err.message,
       ...(exposed && err.details ? { details: err.details } : {}),
     },
   })

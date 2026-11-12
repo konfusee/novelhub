@@ -55,7 +55,6 @@ export function CreateStoryPage() {
   const bannerFileRef = useRef(null)
   const [step, setStep] = useState(1)
   const [title, setTitle] = useState('')
-  const [tagline, setTagline] = useState('')
   const [synopsis, setSynopsis] = useState('')
   const [genre, setGenre] = useState('')
   const [tags, setTags] = useState([])
@@ -272,23 +271,6 @@ export function CreateStoryPage() {
                     />
                   </Field>
                   <Field
-                    id="story-tagline"
-                    label="Tiêu đề phụ hoặc câu giới thiệu"
-                    count={`${tagline.length}/140`}
-                  >
-                    <Input
-                      id="story-tagline"
-                      disabled
-                      value={tagline}
-                      maxLength={140}
-                      onChange={event => {
-                        setTagline(event.target.value)
-                        touch()
-                      }}
-                    />
-                  </Field>
-                  <p className="text-xs text-muted">{t('createData.noTagline')}</p>
-                  <Field
                     id="story-synopsis"
                     label="Tóm tắt truyện *"
                     count={`${synopsis.length}/10000`}
@@ -423,7 +405,11 @@ export function CreateStoryPage() {
                         )}
                       </div>
                       {bannerError && (
-                        <p id="story-banner-error" role="alert" className="mt-2 text-xs text-rose-strong">
+                        <p
+                          id="story-banner-error"
+                          role="alert"
+                          className="mt-2 text-xs text-rose-strong"
+                        >
                           {bannerError}
                         </p>
                       )}
@@ -513,7 +499,6 @@ export function CreateStoryPage() {
                     }}
                   />
                 </div>
-
               </Card>
 
               <Card
@@ -615,9 +600,6 @@ export function CreateStoryPage() {
                   <p className="text-xs font-semibold">
                     {currentUser.name} · {t('createData.previewDraft')}
                   </p>
-                  {tagline.trim() && (
-                    <p className="mt-1 text-sm font-medium text-orange-strong">{tagline}</p>
-                  )}
                   <p className="mt-2 line-clamp-3 text-sm leading-6 text-muted">{synopsis}</p>
                   <div className="mt-3 flex flex-wrap gap-1.5">
                     {tags.slice(0, 3).map(tag => (
@@ -691,7 +673,6 @@ export function CreateStoryPage() {
               <Badge tone="green">{genreLabel}</Badge>
               <h3 className="mt-2 text-h2">{previewStory.title}</h3>
               <p className="text-sm text-muted">{currentUser.name}</p>
-              {tagline.trim() && <p className="mt-3 font-medium">{tagline}</p>}
               <p className="mt-3 text-sm leading-6 text-muted">{synopsis}</p>
               <div className="mt-4 flex flex-wrap gap-1.5">
                 {tags.map(tag => (

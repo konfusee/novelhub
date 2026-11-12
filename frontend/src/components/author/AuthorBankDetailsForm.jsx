@@ -16,6 +16,14 @@ const fields = [
   { key: 'accountHolder', maxLength: 120 },
 ]
 
+const editableDetails = details => ({
+  ...emptyDetails,
+  ...details,
+  accountNumber: String(details?.accountNumber ?? '').startsWith('••••')
+    ? ''
+    : (details?.accountNumber ?? ''),
+})
+
 export function AuthorBankDetailsForm() {
   const { t } = useLocale()
   const resource = useBackendDocument('/author/bank-details', null)
@@ -51,10 +59,7 @@ function BankDetailsFields({ initialDetails }) {
   const formId = useId()
   const copy = key => t(`authorFinance.bank.${key}`)
 
-  const [saved, setSaved] = useState(() => ({
-    ...emptyDetails,
-    ...initialDetails,
-  }))
+  const [saved, setSaved] = useState(() => editableDetails(initialDetails))
 
   const [draft, setDraft] = useState(() => ({
     ...emptyDetails,
