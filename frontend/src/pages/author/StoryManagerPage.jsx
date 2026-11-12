@@ -1,19 +1,18 @@
-import { useMemo, useRef, useState } from 'react'
+import { useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router'
+import { createPortal } from 'react-dom'
 import {
   AlertTriangle,
   Archive,
   BarChart3,
   BookOpen,
   CheckCircle2,
-  ChevronLeft,
   ChevronRight,
   Coins,
   Edit3,
   Ellipsis,
   Eye,
   FileText,
-  Headphones,
   ImagePlus,
   Plus,
   RefreshCw,
@@ -49,8 +48,9 @@ import {
   Modal,
   Tabs,
 } from '../../components/ui'
+import { Pagination } from '../../components/ui/Pagination'
 
-const PAGE_SIZE = 5
+const PAGE_SIZE = 10
 const MAX_MEDIA_BYTES = 10 * 1024 * 1024
 const emptyWorkspace = {
   story: { id: null, title: '—', description: '', genre: '', canEdit: false, version: 0 },
@@ -109,7 +109,16 @@ const statusLabels = {
   Archived: 'Đã lưu trữ',
   Cancelled: 'Đã hủy',
 }
-const statusTones = { Published: 'green', Scheduled: 'orange', 'In Review': 'purple' }
+const statusTones = {
+  Published: 'green',
+  Draft: 'blue',
+  Scheduled: 'orange',
+  'In Review': 'purple',
+  Approved: 'purple',
+  Unpublished: 'orange',
+  Archived: 'neutral',
+  Cancelled: 'red',
+}
 export function StoryManagerPage() {
   const navigate = useNavigate()
   const { storyId } = useParams()
@@ -160,6 +169,27 @@ export function StoryManagerPage() {
   const [releaseChapter, setReleaseChapter] = useState(null)
   const [scheduleChapter, setScheduleChapter] = useState(null)
   const [accessChapter, setAccessChapter] = useState(null)
+  const [deleteOpen, setDeleteOpen] = useState(false)
+  const [deleteBusy, setDeleteBusy] = useState(false)
+  const [deleteError, setDeleteError] = useState('')
+  const deleteDraft = async () => {
+    if (deleteBusy || !story.canDelete) return
+    setDeleteBusy(true)
+    setDeleteError('')
+    try {
+      const response = await apiRequest(`/author/stories/${storyId}/lifecycle`, {
+        method: 'POST',
+        body: { action: 'delete', expectedVersion: story.version },
+      })
+      if (response?.story?.status !== 'archived') throw new Error(t('worksData.deleteError'))
+      setDeleteOpen(false)
+      navigate('/author/stories')
+    } catch (error) {
+      setDeleteError(error.message || t('worksData.deleteError'))
+    } finally {
+      setDeleteBusy(false)
+    }
+  }
   const createChapter = async event => {
     event.preventDefault()
     if (newBusy || !newTitle.trim()) return
@@ -286,7 +316,11 @@ export function StoryManagerPage() {
                 <Plus size={16} aria-hidden="true" />
                 Thêm chương mới
               </Button>
-              <Button variant="secondary" onClick={() => setTab('details')}>
+              <Button
+                variant="secondary"
+                disabled={!story.canEditMetadata}
+                onClick={() => setTab('details')}
+              >
                 <Edit3 size={16} aria-hidden="true" />
                 Sửa thông tin
               </Button>
@@ -299,9 +333,43 @@ export function StoryManagerPage() {
                 <Eye size={16} aria-hidden="true" />
                 Xem trước như độc giả
               </ButtonLink>
+              {story.canDelete && (
+                <Button
+                  variant="danger"
+                  onClick={() => {
+                    setDeleteError('')
+                    setDeleteOpen(true)
+                  }}
+                >
+                  <Trash2 size={16} aria-hidden="true" />
+                  {t('worksData.delete')}
+                </Button>
+              )}
             </div>
           </div>
         </Card>
+
+        <Modal
+          open={deleteOpen}
+          title={t('worksData.deleteTitle')}
+          onClose={() => !deleteBusy && setDeleteOpen(false)}
+        >
+          <p className="font-semibold">{story.title}</p>
+          <p className="mt-3 text-sm leading-6 text-muted">{t('worksData.deleteHint')}</p>
+          {deleteError && (
+            <p className="mt-3 text-sm text-rose-strong" role="alert">
+              {deleteError}
+            </p>
+          )}
+          <div className="mt-6 flex justify-end gap-2">
+            <Button variant="secondary" disabled={deleteBusy} onClick={() => setDeleteOpen(false)}>
+              {t('worksData.cancel')}
+            </Button>
+            <Button variant="danger" disabled={deleteBusy} onClick={deleteDraft}>
+              {deleteBusy ? t('worksData.deleting') : t('worksData.confirmDelete')}
+            </Button>
+          </div>
+        </Modal>
 
         {releaseOpen && (
           <StoryReleaseDialog
@@ -403,36 +471,38 @@ export function StoryManagerPage() {
             />
           </Card>
         ) : (
-          <div className="nh-grid-12 mt-5 grid items-start gap-6 nh-layout-xl-8-4">
+          <div className="nh-grid-12 mt-5 grid items-start gap-6 nh-layout-xl-9-3">
             <Card
               as="section"
               aria-label="Danh sách chương"
               className="min-w-0 overflow-hidden p-0"
             >
-              <div className="flex flex-col gap-3 border-b border-hairline p-4 2xl:flex-row 2xl:items-center">
-                <Button
-                  variant="secondary"
-                  disabled={workspace.status !== 'ready' || !story.canReorder}
-                  onClick={() => setOrderOpen(true)}
-                >
-                  {t('chapterOrder.title')}
-                </Button>
-                <Input
-                  icon={Search}
-                  type="search"
-                  enterKeyHint="search"
-                  aria-label="Tìm tiêu đề chương"
-                  value={query}
-                  onChange={event => {
-                    setQuery(event.target.value)
-                    setPage(1)
-                  }}
-                  placeholder="Tìm tiêu đề chương..."
-                  className="2xl:w-64 2xl:shrink-0"
-                />
-                <div className="min-w-0 max-w-full">
+              <div className="flex flex-col gap-3 border-b border-hairline p-4">
+                <div className="flex flex-wrap items-center gap-3">
+                  <Button
+                    variant="secondary"
+                    disabled={workspace.status !== 'ready' || !story.canReorder}
+                    onClick={() => setOrderOpen(true)}
+                  >
+                    {t('chapterOrder.title')}
+                  </Button>
+                  <Input
+                    icon={Search}
+                    type="search"
+                    enterKeyHint="search"
+                    aria-label="Tìm tiêu đề chương"
+                    value={query}
+                    onChange={event => {
+                      setQuery(event.target.value)
+                      setPage(1)
+                    }}
+                    placeholder="Tìm tiêu đề chương..."
+                    className="min-w-0 flex-1 2xl:w-64 2xl:flex-none"
+                  />
+                </div>
+                <div className="min-w-0 w-full max-w-full">
                   <Tabs
-                    singleRow
+                    className="w-full"
                     label="Lọc trạng thái chương"
                     value={filter}
                     onChange={value => {
@@ -445,6 +515,22 @@ export function StoryManagerPage() {
                       { value: 'Unpublished', label: t('chapterLifecycle.unpublishedFilter') },
                     ]}
                   />
+                  <div
+                    className="mt-3 flex flex-wrap items-center gap-2 text-xs text-muted"
+                    aria-label="Chú giải trạng thái chương"
+                  >
+                    <span className="font-semibold text-ink/80">Màu trạng thái:</span>
+                    {[
+                      ['green', 'Đã xuất bản'],
+                      ['blue', 'Bản nháp'],
+                      ['purple', 'Đang duyệt/đã duyệt'],
+                      ['orange', 'Đã lên lịch/gỡ xuất bản'],
+                    ].map(([tone, label]) => (
+                      <Badge key={tone} tone={tone} className="px-2 py-0.5 text-[10px]">
+                        {label}
+                      </Badge>
+                    ))}
+                  </div>
                 </div>
               </div>
               {workspace.status === 'ready' && !story.canReorder && (
@@ -536,30 +622,13 @@ export function StoryManagerPage() {
                     Đang hiển thị {pageRows.length} / {chapters.length} chương
                   </span>
                 )}
-                {chaptersResource.status === 'ready' && pageCount > 1 && (
-                  <div className="flex items-center gap-2">
-                    <Button
-                      variant="secondary"
-                      size="sm"
-                      disabled={currentPage === 1}
-                      onClick={() => setPage(currentPage - 1)}
-                    >
-                      <ChevronLeft size={14} aria-hidden="true" />
-                      Trước
-                    </Button>
-                    <span className="tabular-nums" aria-live="polite">
-                      Trang {currentPage} / {pageCount}
-                    </span>
-                    <Button
-                      variant="secondary"
-                      size="sm"
-                      disabled={currentPage === pageCount}
-                      onClick={() => setPage(currentPage + 1)}
-                    >
-                      Sau
-                      <ChevronRight size={14} aria-hidden="true" />
-                    </Button>
-                  </div>
+                {chaptersResource.status === 'ready' && (
+                  <Pagination
+                    page={currentPage}
+                    pageCount={pageCount}
+                    onChange={setPage}
+                    className="mt-0 justify-end"
+                  />
                 )}
               </div>
             </Card>
@@ -582,9 +651,7 @@ export function StoryManagerPage() {
             onSaved={result => {
               if (chapterAction.action === 'reviseUnpublished') {
                 const revision = result.revision
-                navigate(
-                  `/author/stories/${revision.storyId}/chapters/${revision.chapterId}/edit${['blocks-v2', 'blocks-v3'].includes(revision.formatVersion) ? '?mode=rich' : ''}`,
-                )
+                navigate(`/author/stories/${revision.storyId}/chapters/${revision.chapterId}/edit`)
                 return
               }
               setChapterAction(null)
@@ -734,7 +801,7 @@ function ChapterRow({ chapter, storyId, onLifecycle, onRelease, onSchedule, onEa
           : t('managerData.coinPrice', { count: access.coinPrice })
   const draft = chapter.status === 'Draft'
   const canEdit = chapter.canEdit ?? draft
-  const previewPath = `/author/stories/${storyId}/chapters/${chapter.id}/preview`
+  const previewPath = `/author/stories/${storyId}/chapters/${chapter.id}/preview${chapter.status === 'Published' ? '?source=published' : ''}`
   const editPath = `/author/stories/${storyId}/chapters/${chapter.id}/edit`
   const chapterEditorPath = canEdit ? editPath : previewPath
   const chapterEditorLabel = canEdit
@@ -790,6 +857,24 @@ function ChapterRow({ chapter, storyId, onLifecycle, onRelease, onSchedule, onEa
               {t('chapterRelease.title')}
             </Button>
           )}
+          <ButtonLink
+            to={chapterEditorPath}
+            variant={canEdit && draft ? 'primary' : 'secondary'}
+            size="sm"
+          >
+            {chapterEditorLabel}
+          </ButtonLink>
+          {chapter.canDelete && (
+            <Button
+              variant="danger"
+              size="sm"
+              onClick={() => onLifecycle('delete')}
+              aria-label={`Xóa bản nháp Chương ${chapter.number}: ${chapter.title}`}
+            >
+              <Trash2 size={14} aria-hidden="true" />
+              Xóa
+            </Button>
+          )}
           <ChapterActionsMenu
             open={menuOpen}
             onToggle={() => setMenuOpen(value => !value)}
@@ -798,19 +883,138 @@ function ChapterRow({ chapter, storyId, onLifecycle, onRelease, onSchedule, onEa
               {
                 show: true,
                 content: (
-                  <ButtonLink to={chapterEditorPath} variant={canEdit && draft ? 'primary' : 'secondary'} size="sm" onClick={() => setMenuOpen(false)}>
+                  <ButtonLink
+                    to={chapterEditorPath}
+                    variant={canEdit && draft ? 'primary' : 'secondary'}
+                    size="sm"
+                    onClick={() => setMenuOpen(false)}
+                  >
                     {chapterEditorLabel}
                   </ButtonLink>
                 ),
               },
-              { show: chapter.canConfigureEarlyAccess, content: <Button variant="secondary" size="sm" onClick={() => { setMenuOpen(false); onEarlyAccess() }}>{t('earlyAccess.title')}</Button> },
-              { show: chapter.canManageSchedule, content: <Button variant="secondary" size="sm" onClick={() => { setMenuOpen(false); onSchedule() }}>{t(chapter.status === 'Scheduled' ? 'chapterSchedule.manage' : 'chapterSchedule.title')}</Button> },
-              { show: chapter.canArchive || chapter.canRestore, content: <Button variant="secondary" size="sm" onClick={() => { setMenuOpen(false); onLifecycle(chapter.canRestore ? 'restore' : 'archive') }}>{t(chapter.canRestore ? 'chapterLifecycle.restore' : 'chapterLifecycle.archive')}</Button> },
-              { show: chapter.canDelete, content: <Button variant="danger" size="sm" onClick={() => { setMenuOpen(false); onLifecycle('delete') }}>{t('chapterLifecycle.delete')}</Button> },
-              { show: chapter.canUnpublish, content: <Button variant="danger" size="sm" onClick={() => { setMenuOpen(false); onLifecycle('unpublish') }}>{t('chapterLifecycle.unpublish')}</Button> },
-              { show: Boolean(chapter.reviseSource), content: <Button size="sm" onClick={() => { setMenuOpen(false); onLifecycle('reviseUnpublished') }}>{t('chapterLifecycle.reviseUnpublished')}</Button> },
-              { show: true, content: <ButtonLink to={previewPath} variant="secondary" size="sm" onClick={() => setMenuOpen(false)}>{t('authorDraftActions.preview')}</ButtonLink> },
-              { show: true, content: <ButtonLink to={ROUTES.authorAnalytics(storyId, chapter.id)} variant="secondary" size="sm" onClick={() => setMenuOpen(false)} aria-label={`Xem phân tích chương ${chapter.number}: ${chapter.title}`}><BarChart3 size={15} aria-hidden="true" /> Phân tích</ButtonLink> },
+              {
+                show: chapter.canConfigureEarlyAccess,
+                content: (
+                  <Button
+                    variant="secondary"
+                    size="sm"
+                    onClick={() => {
+                      setMenuOpen(false)
+                      onEarlyAccess()
+                    }}
+                  >
+                    {t('earlyAccess.title')}
+                  </Button>
+                ),
+              },
+              {
+                show: chapter.canManageSchedule,
+                content: (
+                  <Button
+                    variant="secondary"
+                    size="sm"
+                    onClick={() => {
+                      setMenuOpen(false)
+                      onSchedule()
+                    }}
+                  >
+                    {t(
+                      chapter.status === 'Scheduled'
+                        ? 'chapterSchedule.manage'
+                        : 'chapterSchedule.title',
+                    )}
+                  </Button>
+                ),
+              },
+              {
+                show: chapter.canArchive || chapter.canRestore,
+                content: (
+                  <Button
+                    variant="secondary"
+                    size="sm"
+                    onClick={() => {
+                      setMenuOpen(false)
+                      onLifecycle(chapter.canRestore ? 'restore' : 'archive')
+                    }}
+                  >
+                    {t(
+                      chapter.canRestore ? 'chapterLifecycle.restore' : 'chapterLifecycle.archive',
+                    )}
+                  </Button>
+                ),
+              },
+              {
+                show: chapter.canDelete,
+                content: (
+                  <Button
+                    variant="danger"
+                    size="sm"
+                    onClick={() => {
+                      setMenuOpen(false)
+                      onLifecycle('delete')
+                    }}
+                  >
+                    {t('chapterLifecycle.delete')}
+                  </Button>
+                ),
+              },
+              {
+                show: chapter.canUnpublish,
+                content: (
+                  <Button
+                    variant="danger"
+                    size="sm"
+                    onClick={() => {
+                      setMenuOpen(false)
+                      onLifecycle('unpublish')
+                    }}
+                  >
+                    {t('chapterLifecycle.unpublish')}
+                  </Button>
+                ),
+              },
+              {
+                show: Boolean(chapter.reviseSource),
+                content: (
+                  <Button
+                    size="sm"
+                    onClick={() => {
+                      setMenuOpen(false)
+                      onLifecycle('reviseUnpublished')
+                    }}
+                  >
+                    {t('chapterLifecycle.reviseUnpublished')}
+                  </Button>
+                ),
+              },
+              {
+                show: true,
+                content: (
+                  <ButtonLink
+                    to={previewPath}
+                    variant="secondary"
+                    size="sm"
+                    onClick={() => setMenuOpen(false)}
+                  >
+                    {t('authorDraftActions.preview')}
+                  </ButtonLink>
+                ),
+              },
+              {
+                show: true,
+                content: (
+                  <ButtonLink
+                    to={ROUTES.authorAnalytics(storyId, chapter.id)}
+                    variant="secondary"
+                    size="sm"
+                    onClick={() => setMenuOpen(false)}
+                    aria-label={`Xem phân tích chương ${chapter.number}: ${chapter.title}`}
+                  >
+                    <BarChart3 size={15} aria-hidden="true" /> Phân tích
+                  </ButtonLink>
+                ),
+              },
             ]}
           />
         </div>
@@ -821,8 +1025,36 @@ function ChapterRow({ chapter, storyId, onLifecycle, onRelease, onSchedule, onEa
 
 function ChapterActionsMenu({ open, onToggle, onClose, items }) {
   const visible = items.filter(item => item.show)
+  const buttonRef = useRef(null)
+  const menuRef = useRef(null)
+  const [position, setPosition] = useState(null)
+  useLayoutEffect(() => {
+    if (!open) return undefined
+    const updatePosition = () => {
+      const button = buttonRef.current
+      if (!button) return
+      const rect = button.getBoundingClientRect()
+      const menuHeight = Math.min(menuRef.current?.scrollHeight ?? 360, window.innerHeight - 24)
+      const width = 224
+      const top = Math.max(12, rect.top - menuHeight - 8)
+      const left = Math.min(
+        Math.max(12, rect.right - width),
+        Math.max(12, window.innerWidth - width - 12),
+      )
+      setPosition({ top, left, width })
+    }
+    updatePosition()
+    const frame = window.requestAnimationFrame(updatePosition)
+    window.addEventListener('resize', updatePosition)
+    window.addEventListener('scroll', updatePosition, true)
+    return () => {
+      window.cancelAnimationFrame(frame)
+      window.removeEventListener('resize', updatePosition)
+      window.removeEventListener('scroll', updatePosition, true)
+    }
+  }, [open, visible.length])
   return (
-    <div className="relative">
+    <div ref={buttonRef}>
       <Button
         type="button"
         variant="secondary"
@@ -835,24 +1067,46 @@ function ChapterActionsMenu({ open, onToggle, onClose, items }) {
       >
         <Ellipsis size={17} aria-hidden="true" />
       </Button>
-      {open && (
-        <>
-          <button type="button" aria-label="Đóng menu thao tác" className="fixed inset-0 z-20 cursor-default" onClick={onClose} />
-          <div role="menu" className="absolute right-0 top-full z-30 mt-2 grid min-w-44 gap-1 rounded-2xl border border-line bg-surface p-2 shadow-float">
-            {visible.map((item, index) => (
-              <div key={index} role="none" className="[&>a]:w-full [&>a]:justify-start [&>button]:w-full [&>button]:justify-start">
-                {item.content}
-              </div>
-            ))}
-          </div>
-        </>
-      )}
+      {open &&
+        createPortal(
+          <>
+            <button
+              type="button"
+              aria-label="Đóng menu thao tác"
+              className="fixed inset-0 z-[90] cursor-default"
+              onClick={onClose}
+            />
+            <div
+              ref={menuRef}
+              role="menu"
+              style={
+                position
+                  ? { top: position.top, left: position.left, width: position.width }
+                  : { visibility: 'hidden' }
+              }
+              className="fixed z-[100] grid max-h-[min(24rem,calc(100vh-1.5rem))] min-w-56 gap-1 overflow-y-auto rounded-2xl border border-line bg-surface p-2.5 shadow-float"
+            >
+              {visible.map((item, index) => (
+                <div
+                  key={index}
+                  role="menuitem"
+                  tabIndex={-1}
+                  className="[&>a]:w-full [&>a]:justify-start [&>button]:w-full [&>button]:justify-start"
+                >
+                  {item.content}
+                </div>
+              ))}
+            </div>
+          </>,
+          document.body,
+        )}
     </div>
   )
 }
 
 function StoryDetails({ story, onSaved, onLifecycle }) {
   const { t } = useLocale()
+  const canEditMetadata = story.canEditMetadata ?? !story.publishedRevisionId
   const categories = useBackendResource('/catalog/categories')
   const [categoryId, setCategoryId] = useState(story.categoryId ?? '')
   const categoryChanged = categoryId !== (story.categoryId ?? '')
@@ -875,7 +1129,11 @@ function StoryDetails({ story, onSaved, onLifecycle }) {
   const [coverMediaId, setCoverMediaId] = useState(story.coverMediaId ?? null)
   const [coverUrl, setCoverUrl] = useState(story.coverUrl ?? null)
   const [coverBannerMediaId, setCoverBannerMediaId] = useState(story.coverBannerMediaId ?? null)
-  const [bannerUrl, setBannerUrl] = useState(story.bannerUrl ?? null)
+  const [bannerUrl, setBannerUrl] = useState(
+    story.coverBannerMediaId
+      ? privateMediaUrl(story.coverBannerMediaId)
+      : (story.bannerUrl ?? null),
+  )
   const [coverBusy, setCoverBusy] = useState(false)
   const [bannerBusy, setBannerBusy] = useState(false)
   const coverInputRef = useRef(null)
@@ -892,7 +1150,7 @@ function StoryDetails({ story, onSaved, onLifecycle }) {
   const synopsisError = false
   const submit = async event => {
     event.preventDefault()
-    if (!story.canEdit || status === 'saving' || lifecycleBusy || coverBusy || bannerBusy) return
+    if (!canEditMetadata || status === 'saving' || lifecycleBusy || coverBusy || bannerBusy) return
     if (titleError || synopsisError || (categoryChanged && !categoryId)) {
       setStatus('invalid')
       return
@@ -999,13 +1257,18 @@ function StoryDetails({ story, onSaved, onLifecycle }) {
     <Card as="form" noValidate onSubmit={submit} className="mt-5 max-w-3xl">
       <h2 className="text-h3">Thông tin và tóm tắt truyện</h2>
       <p className="mt-1 text-sm text-muted">{t('managerData.draftInfo')}</p>
+      {!canEditMetadata && (
+        <p className="mt-3 rounded-2xl border border-orange/30 bg-orange/10 p-3 text-sm leading-6 text-orange-strong">
+          {t('managerData.metadataLocked')}
+        </p>
+      )}
       <label htmlFor="story-title" className="mt-6 block text-sm font-semibold">
         Tên truyện
       </label>
       <Input
         id="story-title"
         value={title}
-        disabled={!story.canEdit || status === 'saving' || lifecycleBusy}
+        disabled={!canEditMetadata || status === 'saving' || lifecycleBusy}
         maxLength={200}
         onChange={event => {
           setTitle(event.target.value)
@@ -1027,7 +1290,7 @@ function StoryDetails({ story, onSaved, onLifecycle }) {
       <textarea
         id="story-synopsis"
         value={synopsis}
-        disabled={!story.canEdit || status === 'saving' || lifecycleBusy}
+        disabled={!canEditMetadata || status === 'saving' || lifecycleBusy}
         maxLength={10000}
         onChange={event => {
           setSynopsis(event.target.value)
@@ -1043,7 +1306,12 @@ function StoryDetails({ story, onSaved, onLifecycle }) {
       >
         Tóm tắt là tùy chọn khi lưu bản nháp và tối đa 10.000 ký tự.
       </p>
-      <fieldset disabled={!story.canEdit || status === 'saving' || lifecycleBusy || coverBusy || bannerBusy} className="mt-5">
+      <fieldset
+        disabled={
+          !canEditMetadata || status === 'saving' || lifecycleBusy || coverBusy || bannerBusy
+        }
+        className="mt-5"
+      >
         <legend className="text-sm font-semibold">{t('managerData.categories')}</legend>
         <p className="mt-2 text-xs text-muted">{t('managerData.categoriesHint')}</p>
         {categories.status === 'loading' ? (
@@ -1115,7 +1383,9 @@ function StoryDetails({ story, onSaved, onLifecycle }) {
               type="button"
               variant="secondary"
               size="sm"
-              disabled={!story.canEdit || coverBusy || bannerBusy || status === 'saving' || lifecycleBusy}
+              disabled={
+                !canEditMetadata || coverBusy || bannerBusy || status === 'saving' || lifecycleBusy
+              }
               onClick={() => coverInputRef.current?.click()}
             >
               {coverBusy
@@ -1169,7 +1439,9 @@ function StoryDetails({ story, onSaved, onLifecycle }) {
               type="button"
               variant="secondary"
               size="sm"
-              disabled={!story.canEdit || coverBusy || bannerBusy || status === 'saving' || lifecycleBusy}
+              disabled={
+                !canEditMetadata || coverBusy || bannerBusy || status === 'saving' || lifecycleBusy
+              }
               onClick={() => bannerInputRef.current?.click()}
             >
               {bannerBusy
@@ -1199,7 +1471,7 @@ function StoryDetails({ story, onSaved, onLifecycle }) {
         <StoryTagEditor
           id="story-manager-tag"
           tags={tags}
-          disabled={!story.canEdit || status === 'saving' || lifecycleBusy}
+          disabled={!canEditMetadata || status === 'saving' || lifecycleBusy}
           onChange={next => {
             setTags(next)
             setStatus('idle')
@@ -1217,7 +1489,9 @@ function StoryDetails({ story, onSaved, onLifecycle }) {
         </p>
         <Button
           type="submit"
-          disabled={status === 'saving' || !story.canEdit || lifecycleBusy || coverBusy || bannerBusy}
+          disabled={
+            status === 'saving' || !canEditMetadata || lifecycleBusy || coverBusy || bannerBusy
+          }
         >
           <Save size={16} aria-hidden="true" />
           {status === 'saving' ? t('managerData.saving') : t('managerData.save')}
@@ -1346,17 +1620,6 @@ function StoryHealth({ storyId, stats }) {
         </h2>
         <Metric label="Mức độ cập nhật đều đặn hằng tuần" />
         <Metric label="Tỷ lệ giữ chân độc giả" />
-        <div className="mt-5 rounded-2xl border border-hairline bg-elevated p-4">
-          <div className="flex flex-wrap items-center justify-between gap-2">
-            <span className="flex items-center gap-2 text-sm">
-              <Headphones size={16} aria-hidden="true" className="text-orange-strong" />
-              Thuyết minh âm thanh
-            </span>
-            <Badge tone="orange">—</Badge>
-          </div>
-          <div aria-hidden="true" className="mt-3 h-1.5 rounded-full bg-elevated" />
-          <p className="mt-3 text-xs text-muted">{t('mediaData.audioUnavailable')}</p>
-        </div>
         <h3 className="mt-5 text-sm font-semibold">Cột mốc xuất bản</h3>
         <ul className="mt-3 space-y-3">
           {[
@@ -1365,7 +1628,6 @@ function StoryHealth({ storyId, stats }) {
               stats.publishedChapters > 0,
             ],
             [t('managerData.viewCount', { count: stats.reads }), stats.reads > 0],
-            [t('managerData.audioUnknown'), false],
           ].map(([label, done]) => (
             <li key={label} className="flex items-start gap-2 text-sm">
               <CheckCircle2

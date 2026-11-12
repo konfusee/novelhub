@@ -28,9 +28,25 @@ export function SubmissionReviewPage() {
   const [page, setPage] = useState(1)
   const storyId = params.get('storyId') || ''
   const chapterId = params.get('chapterId') || ''
-  const feed = useBackendDocument(`/author/submissions?page=${page}`, emptyFeed)
+  const status = params.get('status') || ''
+  const feed = useBackendDocument(
+    `/author/submissions?page=${page}${storyId ? `&storyId=${encodeURIComponent(storyId)}` : ''}${status ? `&status=${encodeURIComponent(status)}` : ''}`,
+    emptyFeed,
+  )
   const choose = (story, chapter = '') => {
-    setParams(story ? { storyId: story, ...(chapter ? { chapterId: chapter } : {}) } : {})
+    setPage(1)
+    setParams({
+      ...(story ? { storyId: story } : {}),
+      ...(chapter ? { chapterId: chapter } : {}),
+      ...(status ? { status } : {}),
+    })
+  }
+  const updateStatus = next => {
+    setPage(1)
+    setParams({
+      ...(storyId ? { storyId } : {}),
+      ...(status || next ? { status: next } : {}),
+    })
   }
   return (
     <AuthorLayout>
@@ -63,6 +79,31 @@ export function SubmissionReviewPage() {
             {feed.data.stories.map(story => (
               <option key={story.id} value={story.id}>
                 {story.title}
+              </option>
+            ))}
+          </Select>
+          <label className="mt-4 block text-sm font-semibold" htmlFor="submission-status">
+            {t('submissionData.statusFilter')}
+          </label>
+          <Select
+            id="submission-status"
+            className="mt-3 w-full"
+            value={status}
+            onChange={event => updateStatus(event.target.value)}
+            disabled={feed.status !== 'ready'}
+          >
+            <option value="">{t('submissionData.allStatuses')}</option>
+            {[
+              'validated',
+              'pending-review',
+              'decision-pending',
+              'approved',
+              'superseded',
+              'rejected',
+              'cancelled',
+            ].map(value => (
+              <option key={value} value={value}>
+                {t(`submissionData.status.${value}`)}
               </option>
             ))}
           </Select>
@@ -203,10 +244,9 @@ function SubmissionPackage({ storyId, chapterId, onSubmitted }) {
     (!data.requiresRights || asserted) &&
     (!licenceRequired || Boolean(shownNote.trim())) &&
     !sent
-  const richTarget = ['blocks-v2', 'blocks-v3'].includes(data.target?.formatVersion)
   const chapterMedia = Boolean(chapterId && data.target?.formatVersion === 'blocks-v3')
   const back = chapterId
-    ? `/author/stories/${storyId}/chapters/${chapterId}/edit${richTarget ? '?mode=rich' : ''}`
+    ? `/author/stories/${storyId}/chapters/${chapterId}/edit`
     : `/author/stories/${storyId}`
   const fixes = {
     editable: { to: `/author/stories/${storyId}?tab=reviews`, label: 'status' },
@@ -434,17 +474,6 @@ function SubmissionPackage({ storyId, chapterId, onSubmitted }) {
             )}
           </Card>
           <Card>
-            <h2 className="text-h3">{t('submissionData.notes')}</h2>
-            <textarea
-              disabled
-              value=""
-              readOnly
-              aria-label={t('submissionData.notes')}
-              className="mt-4 min-h-28 w-full rounded-2xl border border-line bg-elevated p-4 opacity-60"
-            />
-            <p className="mt-2 text-xs text-muted">{t('submissionData.notesUnavailable')}</p>
-          </Card>
-          <Card>
             {error && (
               <p role="alert" className="mb-4 text-sm text-rose-strong">
                 {error}
@@ -541,7 +570,7 @@ function SubmissionEntry({ item, choose }) {
       if (!revision?.id || !revision.storyId) throw new Error(t('submissionData.reviseError'))
       navigate(
         revision.chapterId
-          ? `/author/stories/${revision.storyId}/chapters/${revision.chapterId}/edit${['blocks-v2', 'blocks-v3'].includes(revision.formatVersion) ? '?mode=rich' : ''}`
+          ? `/author/stories/${revision.storyId}/chapters/${revision.chapterId}/edit`
           : `/author/stories/${revision.storyId}`,
       )
     } catch (failure) {
@@ -569,6 +598,8 @@ function SubmissionEntry({ item, choose }) {
     'available-for-human-review',
     'failed',
   ]
+  const historyActions = ['submitted', 'decided', 'publication.superseded']
+  const historyOutcomes = ['validated', 'approved', 'rejected', 'superseded', 'cancelled']
   return (
     <article className="rounded-2xl border border-hairline p-4">
       <div className="flex flex-wrap items-center justify-between gap-3">
@@ -595,7 +626,14 @@ function SubmissionEntry({ item, choose }) {
         {item.history.map(row => (
           <li key={row.id} className="rounded-xl bg-elevated p-3 text-xs">
             <p>
-              {row.action} · {row.outcome} · {row.occurredAt ? formatDate(row.occurredAt) : '—'}
+              {historyActions.includes(row.action)
+                ? t(`submissionData.historyActions.${row.action}`)
+                : row.action}{' '}
+              ·{' '}
+              {historyOutcomes.includes(row.outcome)
+                ? t(`submissionData.historyOutcomes.${row.outcome}`)
+                : row.outcome}{' '}
+              · {row.occurredAt ? formatDate(row.occurredAt) : '—'}
             </p>
             {row.feedback && <p className="mt-2 whitespace-pre-wrap text-sm">{row.feedback}</p>}
           </li>

@@ -1,4 +1,10 @@
-import { AuditEvent, Chapter, ContentRevision, PublicationSubmission } from '../../../models/index.js'
+import {
+  AuditEvent,
+  Chapter,
+  ContentRevision,
+  PublicationSubmission,
+  Story,
+} from '../../../models/index.js'
 import { withTransaction } from '../../../db/connection.js'
 import { HttpError } from '../../../middleware/errors.js'
 import { lockAuthor, ownStory } from './author-ownership.js'
@@ -17,30 +23,29 @@ export function chapterCanUnpublish(chapter, story) {
 }
 
 /**
- * A chapter that has never been released can be removed even when its parent
- * story is already public. Archive/restore uses the stricter private-draft
- * lifecycle; deletion only needs an editable, owned chapter with no open
- * review package.
+ * Only an editable chapter in draft status can be removed. A draft chapter may
+ * belong to an already published story, but approved, scheduled, due,
+ * published, archived and submitted chapters stay in the working history.
  */
 export function chapterCanDelete(chapter, revision, story, hasOpenSubmission = false) {
   return Boolean(
     !hasOpenSubmission &&
-      !story.authoringFrozen &&
-      story.publicationStatus !== 'archived' &&
-      !chapter.firstReleasedAt &&
-      !chapter.publishedAt &&
-      !chapter.publishedRevisionId &&
-      !chapter.cancelledAt &&
-      chapter.status !== 'archived' &&
-      ['draft', 'approved', 'scheduled', 'due'].includes(chapter.status) &&
-      revision &&
-      String(revision._id) === String(chapter.draftRevisionId ?? chapter.currentRevisionId) &&
-      String(revision.chapterId) === String(chapter._id) &&
-      String(revision.storyId) === String(story._id) &&
-      String(revision.authorAccountId) === String(story.authorAccountId) &&
-      revision.contentType === 'chapter' &&
-      ((revision.status === 'editable' && !revision.immutableAt) ||
-        (['approved', 'immutable'].includes(revision.status) && revision.immutableAt)),
+    !story.authoringFrozen &&
+    story.publicationStatus !== 'archived' &&
+    !chapter.firstReleasedAt &&
+    !chapter.publishedAt &&
+    !chapter.publishedRevisionId &&
+    !chapter.cancelledAt &&
+    chapter.status !== 'archived' &&
+    chapter.status === 'draft' &&
+    revision &&
+    String(revision._id) === String(chapter.draftRevisionId ?? chapter.currentRevisionId) &&
+    String(revision.chapterId) === String(chapter._id) &&
+    String(revision.storyId) === String(story._id) &&
+    String(revision.authorAccountId) === String(story.authorAccountId) &&
+    revision.contentType === 'chapter' &&
+    revision.status === 'editable' &&
+    !revision.immutableAt,
   )
 }
 
@@ -65,12 +70,14 @@ export function chapterDraftLifecycle(
     !revision.immutableAt
   return {
     canArchive: Boolean(contentSafe && lifecycle.canArchive && chapter.status === 'draft'),
-    canRestore: Boolean(contentSafe && lifecycle.canRestore && chapter.status === 'archived'),
+    // A chapter archived by the author can be restored while its parent story is still a
+    // private draft. The story-level lifecycle flag only covers restoring an archived story.
+    canRestore: Boolean(contentSafe && lifecycle.canArchive && chapter.status === 'archived'),
     canDelete: Boolean(
       contentSafe &&
-        story.publicationStatus !== 'archived' &&
-        chapter.status === 'draft' &&
-        !hasOpenSubmission,
+      story.publicationStatus !== 'archived' &&
+      chapter.status === 'draft' &&
+      !hasOpenSubmission,
     ),
   }
 }
@@ -125,9 +132,9 @@ export async function changeChapterDraftLifecycle(account, storyId, chapterId, i
     const deletedOrderKey = input.action === 'delete' ? chapter.orderKey : null
     if (input.action === 'delete') {
       const occupiedOrderKeys = new Set(
-        (
-          await Chapter.find({ storyId: story._id }).select('orderKey').session(session).lean()
-        ).map(item => item.orderKey),
+        (await Chapter.find({ storyId: story._id }).select('orderKey').session(session).lean()).map(
+          item => item.orderKey,
+        ),
       )
       let deletedKey = -1
       while (occupiedOrderKeys.has(deletedKey)) deletedKey -= 1
@@ -155,7 +162,8 @@ export async function changeChapterDraftLifecycle(account, storyId, chapterId, i
     if (input.action === 'delete') {
       const following = await Chapter.find({
         storyId: story._id,
-        status: { $in: ['draft', 'approved', 'scheduled', 'due'] },
+        // Any unreleased chapter occupies an order slot, including submitted and archived
+        // chapters. Exclude only rows deliberately removed by this lifecycle operation.
         orderKey: { $gt: deletedOrderKey },
         firstReleasedAt: null,
         publishedAt: null,
@@ -171,7 +179,8 @@ export async function changeChapterDraftLifecycle(account, storyId, chapterId, i
           .select('orderKey')
           .session(session)
           .lean()
-        const temporary = Math.max(highest?.orderKey ?? 0, ...following.map(item => item.orderKey)) + 1
+        const temporary =
+          Math.max(highest?.orderKey ?? 0, ...following.map(item => item.orderKey)) + 1
         const staged = await Chapter.bulkWrite(
           following.map((item, index) => ({
             updateOne: {
@@ -196,8 +205,20 @@ export async function changeChapterDraftLifecycle(account, storyId, chapterId, i
           throw new HttpError(409, 'stale_chapters', 'Danh sách chương đã thay đổi. Hãy tải lại.')
       }
     }
-    story.increment()
-    await story.save({ session })
+    // Only bump the optimistic-concurrency counter. Legacy stories may be
+    // missing newer required metadata (such as categoryId); saving the whole
+    // document would validate that unrelated field and turn deletion into 500.
+    const storyUpdate = await Story.updateOne(
+      { _id: story._id, version: story.version },
+      { $inc: { version: 1 } },
+      { session },
+    )
+    if (storyUpdate.matchedCount !== 1)
+      throw new HttpError(
+        409,
+        'stale_content',
+        'Truyện đã thay đổi. Hãy tải lại trước khi tiếp tục.',
+      )
     await AuditEvent.create(
       [
         {
@@ -229,7 +250,7 @@ export async function changeChapterDraftLifecycle(account, storyId, chapterId, i
     )
     return {
       chapter: { id: String(chapter._id), status: chapter.status, version: chapter.version },
-      story: { id: String(story._id), version: story.version },
+      story: { id: String(story._id), version: story.version + 1 },
     }
   })
 }

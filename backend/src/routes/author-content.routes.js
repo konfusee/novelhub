@@ -1,6 +1,13 @@
 import { Router } from 'express'
 import { z } from 'zod'
-import { Category, ContentRevision, MediaAsset, Story, Chapter } from '../models/index.js'
+import {
+  Category,
+  ContentRevision,
+  MediaAsset,
+  Story,
+  Chapter,
+  PublicationSubmission,
+} from '../models/index.js'
 import { requireAuth, requireRole } from '../middleware/auth.js'
 import { HttpError } from '../middleware/errors.js'
 import { withTransaction } from '../db/connection.js'
@@ -17,11 +24,13 @@ import {
   lockAuthor,
   ownStory,
   editable,
+  metadataEditable,
 } from '../modules/authoring-publishing/author/author-ownership.js'
 import {
   assertTextEditorRevision,
   chapterParagraphText,
 } from '../modules/authoring-publishing/content/chapter-document.js'
+import { chapterCanDelete } from '../modules/authoring-publishing/author/author-chapter-lifecycle.js'
 import {
   readRichChapter,
   editableChapterDocument,
@@ -238,7 +247,7 @@ export function createAuthorContentRouter(config) {
       )
       if (input.action === 'delete') {
         const cleanupKeys = await cleanupUnusedStoryMedia(config, req.account, storyId)
-        await removeMediaFiles(config, cleanupKeys)
+        await removeMediaFiles(config, cleanupKeys, { accountId: req.account._id })
       }
       res.json(result)
     } catch (error) {
@@ -500,7 +509,7 @@ export function createAuthorContentRouter(config) {
           : await changeDraftLifecycle(req.account, id, input)
       if (input.action === 'delete') {
         const cleanupKeys = await cleanupUnusedStoryMedia(config, req.account, id)
-        await removeMediaFiles(config, cleanupKeys)
+        await removeMediaFiles(config, cleanupKeys, { accountId: req.account._id })
       }
       res.set('Cache-Control', 'private, no-store').json({ story })
     } catch (error) {
@@ -522,7 +531,7 @@ export function createAuthorContentRouter(config) {
       const { story, tags, cleanupKeys } = await withTransaction(async session => {
         await lockAuthor(req.account, session)
         const current = await ownStory(req.account, req.params.storyId, session)
-        editable(current)
+        metadataEditable(current)
         if (current.version !== input.expectedVersion)
           throw new HttpError(
             409,
@@ -624,7 +633,7 @@ export function createAuthorContentRouter(config) {
           cleanupKeys: await cleanupUnusedStoryMedia(config, req.account, current._id, session),
         }
       })
-      await removeMediaFiles(config, cleanupKeys)
+      await removeMediaFiles(config, cleanupKeys, { accountId: req.account._id })
       res.json({
         story: view(story, tags),
       })
@@ -740,7 +749,7 @@ export function createAuthorContentRouter(config) {
           cleanupKeys: await cleanupUnusedStoryMedia(config, req.account, story._id, session),
         }
       })
-      await removeMediaFiles(config, cleanupKeys)
+      await removeMediaFiles(config, cleanupKeys, { accountId: req.account._id })
       res.status(201).json({
         chapter: {
           id: String(chapter._id),
@@ -753,10 +762,11 @@ export function createAuthorContentRouter(config) {
   })
   router.get('/author/stories/:storyId/chapters/:chapterId', async (req, res, next) => {
     try {
-      const { format } = parse(
+      const { format, source } = parse(
         z
           .object({
             format: z.enum(['plain', 'rich']).default('plain'),
+            source: z.enum(['current', 'published']).default('current'),
           })
           .strict(),
         req.query,
@@ -770,8 +780,14 @@ export function createAuthorContentRouter(config) {
         },
       }).lean()
       if (!chapter) throw new HttpError(404, 'not_found', 'Không tìm thấy chương.')
+      if (source === 'published' && !chapter.publishedRevisionId)
+        throw new HttpError(404, 'not_found', 'Chương này chưa được xuất bản.')
+      const revisionId =
+        source === 'published' && chapter.publishedRevisionId
+          ? chapter.publishedRevisionId
+          : (chapter.draftRevisionId ?? chapter.currentRevisionId ?? chapter.publishedRevisionId)
       const revision = await ContentRevision.findOne({
-        _id: chapter.draftRevisionId ?? chapter.currentRevisionId ?? chapter.publishedRevisionId,
+        _id: revisionId,
         chapterId: chapter._id,
         storyId: story._id,
         contentType: 'chapter',
@@ -779,6 +795,11 @@ export function createAuthorContentRouter(config) {
       }).lean()
       if (!revision)
         throw new HttpError(409, 'missing_revision', 'Không tải được bản nội dung của chương.')
+      const openSubmission = await PublicationSubmission.exists({
+        storyId: story._id,
+        chapterId: chapter._id,
+        status: { $in: ['validated', 'pending-review', 'decision-pending'] },
+      })
       const document = format === 'rich' ? readRichChapter(revision) : null
       if (!document) assertTextEditorRevision(revision)
       const outline = await Chapter.find({
@@ -800,13 +821,21 @@ export function createAuthorContentRouter(config) {
           id: String(chapter._id),
           storyId: String(story._id),
           storyTitle: story.title,
+          storyVersion: story.version,
           number: chapter.orderKey,
           canCreate,
+          revisionSource:
+            String(revision._id) === String(chapter.publishedRevisionId) ? 'published' : 'current',
+          publishedRevisionId: chapter.publishedRevisionId
+            ? String(chapter.publishedRevisionId)
+            : null,
           canEdit:
+            String(revision._id) !== String(chapter.publishedRevisionId) &&
             canCreate &&
             ['draft', 'published'].includes(chapter.status) &&
             revision.status === 'editable' &&
             !revision.immutableAt,
+          canDelete: chapterCanDelete(chapter, revision, story, Boolean(openSubmission)),
           outline: outline.map(item => ({
             id: String(item._id),
             number: item.orderKey,
@@ -919,7 +948,7 @@ export function createAuthorContentRouter(config) {
         }
       })
       const { cleanupKeys, ...chapterResult } = result
-      await removeMediaFiles(config, cleanupKeys)
+      await removeMediaFiles(config, cleanupKeys, { accountId: req.account._id })
       res.json({
         chapter: chapterResult,
       })
