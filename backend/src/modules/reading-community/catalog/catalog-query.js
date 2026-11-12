@@ -9,13 +9,15 @@ import {
   StatisticsEvent,
   Story,
 } from '../../../models/index.js'
+import { searchTagKey } from '../../authoring-publishing/content/story-tags.js'
 
-const snapshotStages = ids => [
+const snapshotStages = (ids, match = {}) => [
   {
     $match: {
       publicationStatus: 'published',
       publishedRevisionId: { $ne: null },
       ...(ids ? { _id: { $in: ids.map(id => new mongoose.Types.ObjectId(id)) } } : {}),
+      ...match,
     },
   },
   {
@@ -69,12 +71,13 @@ const SORTS = {
 /**
  * Published, visible story cards. `reads` counts every unique daily chapter view ever
  * recorded; `popularity` counts unique (day, viewer) pairs across the story's chapters
- * over the rolling last 30 days.
+ * over the rolling last 30 days. `tag` is a tag key; `q` also matches a story tag.
  */
 export async function queryPublishedStories({
   ids,
   q = '',
   category,
+  tag,
   status,
   page = 1,
   pageSize = 24,
@@ -83,18 +86,8 @@ export async function queryPublishedStories({
 } = {}) {
   if (!SORTS[sort]) throw new Error(`Unsupported catalogue sort: ${sort}`)
   const stages = [
-    ...snapshotStages(ids),
-    {
-      $set: {
-        categoryKeys: {
-          $map: {
-            input: { $ifNull: ['$revision.content.categoryIds', []] },
-            as: 'category',
-            in: { $toString: '$$category' },
-          },
-        },
-      },
-    },
+    ...snapshotStages(ids, tag ? { tagKeys: tag } : {}),
+    { $set: { categoryKey: { $toString: '$revision.content.categoryId' } } },
     {
       $lookup: {
         from: Account.collection.name,
@@ -107,14 +100,16 @@ export async function queryPublishedStories({
     { $set: { author: { $first: '$author' } } },
   ]
   if (status) stages.push({ $match: { completionStatus: status } })
-  if (category) stages.push({ $match: { categoryKeys: category } })
+  if (category) stages.push({ $match: { categoryKey: category } })
   if (q) {
     const literal = { $regex: q.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), $options: 'i' }
+    const qTag = searchTagKey(q)
     stages.push({
       $match: {
         $or: [
           { 'revision.content.title': literal },
           { 'author.status': 'active', 'author.displayName': literal },
+          ...(qTag ? [{ tagKeys: qTag }] : []),
         ],
       },
     })
@@ -123,14 +118,15 @@ export async function queryPublishedStories({
     {
       $lookup: {
         from: Category.collection.name,
-        let: { keys: '$categoryKeys' },
+        let: { key: '$categoryKey' },
         pipeline: [
-          { $match: { $expr: { $in: [{ $toString: '$_id' }, '$$keys'] } } },
+          { $match: { $expr: { $eq: [{ $toString: '$_id' }, '$$key'] } } },
           { $project: { name: 1 } },
         ],
-        as: 'categories',
+        as: 'category',
       },
     },
+    { $set: { category: { $first: '$category' } } },
     storyLookup(Chapter, { status: 'published' }, [{ $count: 'value' }], 'chapters'),
     storyLookup(
       Rating,
@@ -174,9 +170,10 @@ export async function queryPublishedStories({
             $project: {
               'revision.content.title': 1,
               'revision.content.description': 1,
+              'revision.content.tags': 1,
               author: 1,
-              categoryKeys: 1,
-              categories: 1,
+              categoryKey: 1,
+              category: 1,
               average: 1,
               ratingCount: 1,
               viewCount: 1,
@@ -198,9 +195,9 @@ export async function queryPublishedStories({
       description: story.revision.content.description ?? '',
       author: story.author?.status === 'active' ? story.author.displayName : 'Tác giả',
       authorId: story.author ? String(story.author._id) : null,
-      categoryIds: story.categoryKeys,
-      genres: story.categories.map(item => item.name),
-      genre: story.categories.map(item => item.name).join(', '),
+      categoryId: story.categoryKey,
+      genre: story.category?.name ?? '',
+      tags: story.revision.content.tags ?? [],
       format: 'Story',
       status: story.completionStatus === 'completed' ? 'Completed' : 'Ongoing',
       rating: story.average == null ? '—' : story.average.toFixed(1),
@@ -223,8 +220,7 @@ export async function categoryStoryCounts() {
     Category.find({ status: 'active' }).sort({ sortKey: 1, name: 1 }).select('name').lean(),
     Story.aggregate([
       ...snapshotStages(),
-      { $unwind: '$revision.content.categoryIds' },
-      { $group: { _id: { $toString: '$revision.content.categoryIds' }, value: { $sum: 1 } } },
+      { $group: { _id: { $toString: '$revision.content.categoryId' }, value: { $sum: 1 } } },
     ]),
   ])
   const byCategory = new Map(counts.map(row => [row._id, row.value]))

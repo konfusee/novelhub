@@ -228,7 +228,7 @@ async function submitStory(step, cookie, categoryId, { title, description }) {
     await request(cookie, 'POST', '/author/stories', {
       title,
       description,
-      categoryIds: [categoryId],
+      categoryId,
     }),
     201,
     'create story',

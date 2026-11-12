@@ -18,7 +18,7 @@ const story = {
   authorId: 'former-author',
   version: 8,
   publishedRevisionId: 'source-revision',
-  categoryIds: ['category-id'],
+  categoryId: 'category-id',
 }
 function setup({ saveError = false, blocked = false } = {}) {
   api.mockImplementation(async (path, options) => {
@@ -48,7 +48,9 @@ it('loads the frozen story and saves an explicit versioned correction with a rea
   await screen.findByLabelText('Tên truyện')
   fireEvent.change(screen.getByLabelText('Tên truyện'), { target: { value: 'Tên đã sửa' } })
   fireEvent.change(screen.getByLabelText('Lý do quản trị'), { target: { value: 'Sửa metadata' } })
-  await screen.findByLabelText('Kỳ ảo')
+  expect((await screen.findByRole('combobox', { name: /Thể loại chính/ })).textContent).toContain(
+    'Kỳ ảo',
+  )
   fireEvent.click(screen.getByRole('button', { name: 'Lưu sửa và công khai' }))
   await waitFor(() =>
     expect(
@@ -59,7 +61,7 @@ it('loads the frozen story and saves an explicit versioned correction with a rea
           options.body.expectedPublishedRevisionId === 'source-revision' &&
           options.body.title === 'Tên đã sửa' &&
           options.body.reason === 'Sửa metadata' &&
-          options.body.categoryIds[0] === 'category-id',
+          options.body.categoryId === 'category-id',
       ),
     ).toBe(true),
   )
@@ -72,7 +74,7 @@ it('preserves the entered correction when the server refuses a stale write', asy
   await screen.findByLabelText('Tên truyện')
   fireEvent.change(screen.getByLabelText('Tên truyện'), { target: { value: 'Bản đang sửa' } })
   fireEvent.change(screen.getByLabelText('Lý do quản trị'), { target: { value: 'Lý do' } })
-  await screen.findByLabelText('Kỳ ảo')
+  await screen.findByRole('combobox', { name: /Thể loại chính/ })
   fireEvent.click(screen.getByRole('button', { name: 'Lưu sửa và công khai' }))
   expect((await screen.findByRole('alert')).textContent).toBe('Truyện đã thay đổi')
   expect(screen.getByLabelText('Tên truyện').value).toBe('Bản đang sửa')

@@ -10,11 +10,11 @@ This document records the implementation boundary for Field 2 and maps the lates
 | UC-AUT-08 | `ChapterEarlyAccessDialog` | `author-early-access.js` and policy lookup |
 | UC-AUT-09–11 | `SubmissionReviewPage`, `SubmittedPackagePage`, `AuthorPreviewPage` | `author-submissions.routes.js`, moderation submission contract |
 | UC-AUT-12 | `AuthorAnalyticsPage` | `/author/analytics`, `author-analytics.js` |
-| UC-AUT-13, UC-AUT-14, UC-AUT-17, UC-AUT-18 | `AuthorEarningsPage` | `/author/earnings`, `controllers/author/finance.controller.js`, `services/author/finance.service.js` |
+| UC-AUT-13, UC-AUT-14, UC-AUT-17, UC-AUT-18 | `AuthorEarningsPage` | `/author/earnings`, `modules/coins-payouts/finance/author-earnings.js`, `modules/coins-payouts/finance/author-payouts.js` |
 
 Submitted revisions are frozen. A rejected revision is revised into a new editable draft, while a published revision remains live until an approved replacement is released. Rights declarations and media digests are checked when a package is submitted and retained with the submitted package.
 
-The owned story list now returns category labels, chapter counts, latest review status,
+The owned story list now returns each story's main category, chapter counts, latest review status,
 updated time and the safe-delete flag. Delete is an append-only lifecycle transition:
 only a never-published draft with no open submission can be marked as deleted, so the
 audit trail remains available while the story disappears from the Author workspace.

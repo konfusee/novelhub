@@ -6,6 +6,7 @@ import { ownStory } from './author-ownership.js'
 import { readAuthorMedia } from './author-media.js'
 import { chapterMediaIds, readRichChapter } from '../content/rich-chapter-document.js'
 import { digest, rightsFacts } from '../submissions/submission-digests.js'
+import { storedTags } from '../content/story-tags.js'
 
 const oid = z.string().regex(/^[a-f\d]{24}$/)
 const manifestSchema = z
@@ -80,7 +81,8 @@ export async function loadSubmittedPackage(account, submissionId, session) {
       .object({
         title: z.string().min(1).max(200),
         description: z.string().min(1).max(10000),
-        categoryIds: z.array(oid).min(1).max(10),
+        categoryId: oid,
+        tags: storedTags.optional(),
       })
       .strict()
       .safeParse(revision.content).success
@@ -180,7 +182,7 @@ export async function submittedPackage(account, submissionId) {
     media: manifest,
     ...(submission.chapterId
       ? { chapter: { id: String(submission.chapterId), document } }
-      : { metadata: revision.content }),
+      : { metadata: { ...revision.content, tags: revision.content.tags ?? [] } }),
   }
 }
 

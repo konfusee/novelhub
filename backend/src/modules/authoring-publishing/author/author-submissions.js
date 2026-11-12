@@ -23,13 +23,15 @@ import {
   editableChapterDocument,
   chapterTextProjection,
 } from '../content/rich-chapter-document.js'
+import { storedTags } from '../content/story-tags.js'
 
 const oid = z.string().regex(/^[a-f\d]{24}$/i)
 const storyContent = z
   .object({
     title: z.string().trim().min(1).max(200),
     description: z.string().trim().min(1).max(10000),
-    categoryIds: z.array(oid).min(1).max(10),
+    categoryId: oid,
+    tags: storedTags.optional(),
   })
   .strict()
 const markup = /<\/?[a-z][^>]*>|```|\*\*|__|!\[[^\]]*\]\(|^\s{0,3}(?:#{1,6}\s|>\s)/imu
@@ -100,20 +102,10 @@ async function packageState(account, input, session, config) {
     (['blocks-v2', 'blocks-v3'].includes(revision.formatVersion) || !markup.test(text)) &&
     !markup.test(content.title ?? ''),
   )
-  const rawCategoryIds = input.chapterId ? story.categoryIds.map(String) : content.categoryIds
-  const categoryIds = Array.isArray(rawCategoryIds)
-    ? rawCategoryIds.filter(value => oid.safeParse(value).success)
-    : []
-  const active = await Category.countDocuments({
-    _id: { $in: categoryIds },
-    status: 'active',
-  }).session(session ?? null)
-  const categoriesValid =
-    Array.isArray(rawCategoryIds) &&
-    categoryIds.length === rawCategoryIds.length &&
-    categoryIds.length > 0 &&
-    new Set(categoryIds.map(String)).size === categoryIds.length &&
-    active === categoryIds.length
+  const categoryId = input.chapterId ? String(story.categoryId) : content.categoryId
+  const categoryValid =
+    oid.safeParse(categoryId).success &&
+    Boolean(await Category.exists({ _id: categoryId, status: 'active' }).session(session ?? null))
   const illustrated = Boolean(input.chapterId && revision.formatVersion === 'blocks-v3')
   let images = null
   if (illustrated && valid) {
@@ -181,7 +173,7 @@ async function packageState(account, input, session, config) {
     checks: [
       { code: 'editable', ok: editable },
       { code: 'content', ok: valid },
-      { code: 'categories', ok: categoriesValid },
+      { code: 'categories', ok: categoryValid },
       { code: 'media', ok: mediaSupported },
       { code: 'parent', ok: parentReady },
     ],

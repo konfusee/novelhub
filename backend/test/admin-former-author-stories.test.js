@@ -32,7 +32,7 @@ async function fixture() {
   const created = await write(author.cookie, '/api/author/stories', {
     title: 'Tên gốc',
     description: 'Mô tả gốc.',
-    categoryIds: [String(category._id)],
+    categoryId: String(category._id),
   })
   const id = created.body.story.id
   const prep = (
@@ -96,7 +96,7 @@ const input = (story, action = 'correct') => ({
   expectedPublishedRevisionId: story.publishedRevisionId,
   reason: 'Quản trị sửa thông tin',
   ...(action === 'correct'
-    ? { title: 'Tên quản trị sửa', description: 'Mô tả sửa.', categoryIds: story.categoryIds }
+    ? { title: 'Tên quản trị sửa', description: 'Mô tả sửa.', categoryId: story.categoryId }
     : {}),
 })
 it('corrects and republishes metadata by explicit Admin exception without rewriting rights or old revisions', async () => {
@@ -105,10 +105,22 @@ it('corrects and republishes metadata by explicit Admin exception without rewrit
   const original = await ContentRevision.find({ storyId: f.id }).lean(),
     rights = await RightsDeclaration.find({ storyId: f.id }).lean()
   let state = await baseline(f)
-  expect((await write(f.admin.cookie, f.path, input(state))).status).toBe(200)
-  expect((await request(app).get(`/api/catalog/stories/${f.id}`)).body.story.title).toBe(
-    'Tên quản trị sửa',
-  )
+  const other = await Category.create({
+    name: 'Trinh thám',
+    normalizedName: 'trinh thám',
+    createdBy: f.admin.account._id,
+  })
+  expect(
+    (await write(f.admin.cookie, f.path, { ...input(state), categoryId: String(other._id) }))
+      .status,
+  ).toBe(200)
+  expect((await request(app).get(`/api/catalog/stories/${f.id}`)).body.story).toMatchObject({
+    title: 'Tên quản trị sửa',
+    categoryId: String(other._id),
+    genre: 'Trinh thám',
+  })
+  expect(String((await Story.findById(f.id)).categoryId)).toBe(String(other._id))
+  expect((await baseline(f)).categoryId).toBe(String(other._id))
   state = await baseline(f)
   expect((await write(f.admin.cookie, f.path, input(state, 'unpublish'))).status).toBe(200)
   expect((await request(app).get(`/api/catalog/stories/${f.id}`)).status).toBe(404)
@@ -162,8 +174,20 @@ it('blocks routine Author content, stale writes, invalid categories, non-Admin a
   expect(
     (await write(f.admin.cookie, f.path, { ...input(story), expectedVersion: 0 })).status,
   ).toBe(409)
+  const unknown = await write(f.admin.cookie, f.path, {
+    ...input(story),
+    categoryId: '000000000000000000000000',
+  })
+  expect(unknown.status).toBe(400)
+  expect(unknown.body.error.code).toBe('invalid_category')
   await Category.updateOne({ _id: f.category._id }, { $set: { status: 'retired' } })
-  expect((await write(f.admin.cookie, f.path, input(story))).status).toBe(409)
+  const retired = await write(f.admin.cookie, f.path, input(story))
+  expect(retired.status).toBe(400)
+  expect(retired.body.error).toMatchObject({
+    code: 'invalid_category',
+    message: 'Hãy chọn một thể loại đang hoạt động.',
+  })
+  expect((await baseline(f)).version).toBe(story.version)
   await Account.updateOne({ _id: f.author.account._id }, { $set: { status: 'suspended' } })
   expect((await write(f.admin.cookie, f.path, input(story, 'unpublish'))).status).toBe(409)
 })

@@ -1,6 +1,7 @@
 import { HttpError } from '../../../middleware/errors.js'
 import {
   Account,
+  Category,
   Chapter,
   EvidenceBatch,
   LlmReview,
@@ -120,13 +121,15 @@ async function storedEvidence(batch) {
 export async function moderatorSubmissionDetail(account, submissionId, now = new Date()) {
   const { submission, revision, rights, parent, manifest, document } =
     await loadModeratorPackage(submissionId)
-  const [author, batch, history] = await Promise.all([
+  const categoryId = submission.chapterId ? null : revision.content.categoryId
+  const [author, batch, history, category] = await Promise.all([
     Account.findById(submission.authorAccountId).select('displayName status').lean(),
     EvidenceBatch.findById(submission.currentEvidenceBatchId).lean(),
     ModerationHistory.find({ submissionId: submission._id })
       .sort({ occurredAt: 1, _id: 1 })
       .select('action outcome feedback occurredAt')
       .lean(),
+    categoryId ? Category.findById(categoryId).select('name status').lean() : null,
   ])
   const authorActive = author?.status === 'active'
   const terminal = terminalEvidenceReady(batch)
@@ -158,7 +161,15 @@ export async function moderatorSubmissionDetail(account, submissionId, now = new
     media: manifest,
     ...(submission.chapterId
       ? { chapter: { id: String(submission.chapterId), document } }
-      : { metadata: revision.content }),
+      : {
+          metadata: {
+            ...revision.content,
+            tags: revision.content.tags ?? [],
+            category: category
+              ? { id: String(category._id), name: category.name, status: category.status }
+              : null,
+          },
+        }),
     evidence: batch ? await storedEvidence(batch) : null,
     history: history.map(row => ({
       id: String(row._id),

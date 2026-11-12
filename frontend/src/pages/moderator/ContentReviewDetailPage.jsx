@@ -236,6 +236,24 @@ function ReviewContent({ data, claimBusy, claimError, onClaim, onDecide }) {
               <p className="mt-4 whitespace-pre-wrap break-words leading-7">
                 {data.metadata.description}
               </p>
+              <dl className="mt-4 grid gap-2 text-sm">
+                <div className="flex flex-wrap gap-1.5">
+                  <dt className="text-muted">{t('manualReview.storyCategory')}</dt>
+                  <dd className="font-medium">{data.metadata.category?.name ?? '—'}</dd>
+                </div>
+                <div className="flex flex-wrap items-center gap-1.5">
+                  <dt className="text-muted">{t('manualReview.storyTags')}</dt>
+                  {data.metadata.tags?.length ? (
+                    data.metadata.tags.map(tag => (
+                      <dd key={tag}>
+                        <Badge tone="blue">#{tag}</Badge>
+                      </dd>
+                    ))
+                  ) : (
+                    <dd className="font-medium">{t('manualReview.storyNoTags')}</dd>
+                  )}
+                </div>
+              </dl>
             </Card>
           )}
           <HistoryCard history={data.history} />

@@ -76,7 +76,7 @@ describe('author application decisions', () => {
     const oldStory = await Story.create({
       authorAccountId: account._id,
       title: 'Truyện cũ',
-      categoryIds: [category._id],
+      categoryId: category._id,
     })
     const accessBefore = await request(app)
       .get('/api/auth/author-application')

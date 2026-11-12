@@ -85,7 +85,7 @@ export function readingClient(app) {
     const created = await write(author.cookie, '/api/author/stories', {
       title,
       description: 'Mô tả truyện thật.',
-      categoryIds: [String(category._id)],
+      categoryId: String(category._id),
     })
     expect(created.status).toBe(201)
     const storyId = created.body.story.id

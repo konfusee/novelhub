@@ -42,7 +42,6 @@ const tabs = [
   ['synopsis', 'storyDetail.synopsis'],
   ['reviews', 'storyDetail.reviews'],
 ]
-const genreTones = ['green', 'orange', 'purple']
 const CHAPTER_PAGE_SIZE = 10
 const initials = name =>
   (name || '?')
@@ -316,13 +315,25 @@ function StoryDetailView({ data, storyId }) {
               </dd>
             </div>
           </dl>
-          <div className="mt-5 flex flex-wrap gap-2">
-            {(story.genres ?? []).map((genre, index) => (
-              <Badge tone={genreTones[index] ?? 'green'} key={genre}>
-                {genre}
-              </Badge>
-            ))}
-          </div>
+          {(story.genre || story.tags?.length > 0) && (
+            <ul className="mt-5 flex flex-wrap gap-2" aria-label={t('storyDetail.tags')}>
+              {story.genre && (
+                <li>
+                  <Badge tone="orange">{story.genre}</Badge>
+                </li>
+              )}
+              {(story.tags ?? []).map(tag => (
+                <li key={tag}>
+                  <Link
+                    to={`${ROUTES.search}?tag=${encodeURIComponent(tag)}`}
+                    className="inline-flex min-h-8 items-center rounded-full transition-colors hover:text-brand-strong"
+                  >
+                    <Badge tone="green">#{tag}</Badge>
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          )}
           <p
             id="story-synopsis"
             className={`mt-5 max-w-[68ch] whitespace-pre-line text-base leading-7 text-muted lg:line-clamp-none ${synopsisOpen ? '' : 'line-clamp-4'}`}
@@ -575,11 +586,11 @@ export function StoryDetailPage({ embedded = false }) {
           >
             {t('navigation.home')}
           </Link>
-          {ready && detail.data.story.categoryIds?.[0] && detail.data.story.genre && (
+          {ready && detail.data.story.categoryId && detail.data.story.genre && (
             <>
               <span aria-hidden="true"> / </span>
               <Link
-                to={`${ROUTES.categories}?category=${encodeURIComponent(detail.data.story.categoryIds[0])}`}
+                to={`${ROUTES.categories}?category=${encodeURIComponent(detail.data.story.categoryId)}`}
                 className="inline-flex min-h-8 items-center hover:text-brand-strong"
               >
                 {detail.data.story.genre}

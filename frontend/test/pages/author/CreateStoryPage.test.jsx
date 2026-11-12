@@ -34,14 +34,31 @@ it('creates a real private draft with the chosen category ID and links the confi
   fireEvent.change(screen.getByRole('textbox', { name: /Tên truyện/ }), {
     target: { value: 'Truyện mới của tôi' },
   })
-  fireEvent.click(await screen.findByRole('button', { name: 'Kỳ ảo trong DB', exact: true }))
+  fireEvent.click(await screen.findByRole('radio', { name: 'Kỳ ảo trong DB', exact: true }))
+  const tagInput = screen.getByRole('textbox', { name: 'Thẻ khám phá' })
+  fireEvent.change(tagInput, { target: { value: ' #Bí Ẩn Cổ Đại ' } })
+  fireEvent.keyDown(tagInput, { key: 'Enter' })
+  fireEvent.change(tagInput, { target: { value: 'bíẩncổđại' } })
+  fireEvent.click(screen.getByRole('button', { name: 'Thêm thẻ', exact: true }))
+  expect(screen.getByRole('alert').textContent).toBe('Thẻ này đã có trong danh sách.')
+  fireEvent.change(tagInput, { target: { value: 'x' } })
+  fireEvent.click(screen.getByRole('button', { name: 'Thêm thẻ', exact: true }))
+  expect(screen.getByRole('alert').textContent).toContain('2–30 ký tự')
+  fireEvent.change(tagInput, { target: { value: 'slow-burn' } })
+  fireEvent.click(screen.getByRole('button', { name: 'Thêm thẻ', exact: true }))
+  expect(screen.getByRole('list', { name: 'Thẻ đã thêm' }).textContent).toContain('#slow-burn')
   fireEvent.click(screen.getByRole('button', { name: 'Lưu làm bản nháp', exact: true }))
   expect(
     (await screen.findByRole('link', { name: 'Quản lý truyện', exact: true })).getAttribute('href'),
   ).toBe('/author/stories/created-real')
   expect(mocks.apiRequest).toHaveBeenCalledWith('/author/stories', {
     method: 'POST',
-    body: { title: 'Truyện mới của tôi', description: '', categoryIds: ['real-category'] },
+    body: {
+      title: 'Truyện mới của tôi',
+      description: '',
+      categoryId: 'real-category',
+      tags: ['BíẨnCổĐại', 'slow-burn'],
+    },
   })
   expect(screen.queryByText('The Whisper of Sunken Stars')).toBeNull()
   expect(screen.queryByText('Mira Lane')).toBeNull()
@@ -55,7 +72,7 @@ it('does not claim success when persistence fails and retains the entered fields
   fireEvent.change(screen.getByRole('textbox', { name: /Tên truyện/ }), {
     target: { value: 'Bản còn đang viết' },
   })
-  fireEvent.click(await screen.findByRole('button', { name: 'Kỳ ảo trong DB', exact: true }))
+  fireEvent.click(await screen.findByRole('radio', { name: 'Kỳ ảo trong DB', exact: true }))
   fireEvent.click(screen.getByRole('button', { name: 'Lưu làm bản nháp', exact: true }))
   expect(await screen.findByRole('alert')).toHaveProperty(
     'textContent',
@@ -72,7 +89,7 @@ it('does not claim success when persistence fails and retains the entered fields
 it('requires an active category before writing and allows selecting a cover for the new draft', async () => {
   mocks.apiRequest.mockResolvedValue(categories)
   view()
-  await screen.findByRole('button', { name: 'Kỳ ảo trong DB', exact: true })
+  await screen.findByRole('radio', { name: 'Kỳ ảo trong DB', exact: true })
   fireEvent.click(screen.getByRole('button', { name: 'Lưu làm bản nháp', exact: true }))
   expect(mocks.apiRequest.mock.calls.every(([, options]) => options?.method !== 'POST')).toBe(true)
   expect(screen.getByRole('button', { name: 'Tải ảnh bìa lên', exact: true }).disabled).toBe(false)

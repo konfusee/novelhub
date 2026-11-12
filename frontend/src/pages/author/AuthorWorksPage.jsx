@@ -156,11 +156,7 @@ export function AuthorWorksPage({ editor = false }) {
                           {t(`worksData.review.${story.reviewStatus}`)}
                         </Badge>
                       )}
-                      {story.categories?.slice(0, 3).map(category => (
-                        <Badge key={category.id} tone="blue">
-                          {category.name}
-                        </Badge>
-                      ))}
+                      {story.category && <Badge tone="blue">{story.category.name}</Badge>}
                     </div>
                   </div>
                   <div className="flex flex-wrap items-center gap-2">

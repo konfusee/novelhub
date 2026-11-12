@@ -62,9 +62,9 @@ This section follows the latest SRS Author diagram and specifications. The earli
 
 | ID | Use case | Goal and successful outcome | SRS reference |
 |---|---|---|---|
-| UC-AUT-02 | View owned story list | Open, search, filter and sort the Author’s stories and inspect status, categories, chapters and review state. | SRS 2.3.1 |
-| UC-AUT-02.1 | Create story | Create a draft story with title, description, one to ten active categories and optional cover/banner. | SRS 2.3.2 |
-| UC-AUT-02.2 | Update story | Update editable story metadata and cover/banner media. | SRS 2.3.3 |
+| UC-AUT-02 | View owned story list | Open, search, filter and sort the Author’s stories and inspect status, main category, chapters and review state. | SRS 2.3.1 |
+| UC-AUT-02.1 | Create story | Create a draft story with title, description, exactly one active main category, 0–10 optional tags and optional cover/banner. | SRS 2.3.2 |
+| UC-AUT-02.2 | Update story | Update editable story metadata, including tags, and cover/banner media. | SRS 2.3.3 |
 | UC-AUT-02.3 | Delete story | Delete a never-published story with no open submission. | SRS 2.3.4 |
 | UC-AUT-12 | View story statistics | View reading, reader, completion, follower, rating, unlock, earnings and comment metrics. | SRS 2.3.5 |
 | UC-AUT-03 | View chapter list | Filter chapters by lifecycle state and inspect release state. | SRS 2.3.6 |
@@ -74,7 +74,7 @@ This section follows the latest SRS Author diagram and specifications. The earli
 | UC-AUT-03.4 | Reorder chapters | Save a new order while all chapters remain drafts and unchanged. | SRS 2.3.10 |
 | UC-AUT-08 | Configure early access | Set price and duration for an unreleased chapter within Admin policy limits. | SRS 2.3.11 |
 | UC-AUT-05 | Import chapters from PDF | Extract a text-layer PDF, split or merge chapters and save editable drafts. | SRS 2.3.12 |
-| UC-AUT-09 | Submit content for review | Validate content, categories, media and rights, then freeze and submit the package. | SRS 2.3.13 |
+| UC-AUT-09 | Submit content for review | Validate content, the main category, media and rights, then freeze and submit the package. | SRS 2.3.13 |
 | UC-AUT-10 | Track review and publication | Follow submission status, publication state and Moderator feedback. | SRS 2.3.14 |
 | UC-AUT-10.1 | Release approved content | Publish an approved story/chapter now or schedule a chapter release. | SRS 2.3.15 |
 | UC-AUT-11 | Revise and resubmit content | Create a new editable revision for rejected or approved-but-unreleased content and submit it again. | SRS 2.3.16 |

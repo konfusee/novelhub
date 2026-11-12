@@ -25,14 +25,13 @@ const schema = new Schema(
     description: { type: String, trim: true },
     coverMediaId: { type: ObjectId, ref: 'MediaAsset' },
     language: { type: String, enum: ['vi'], default: 'vi', required: true },
-    categoryIds: {
-      type: [{ type: ObjectId, ref: 'Category' }],
-      required: true,
-      validate: {
-        validator: values => values.length >= 1,
-        message: 'a story must have at least one category',
-      },
+    categoryId: { type: ObjectId, ref: 'Category', required: true },
+    tags: {
+      type: [String],
+      default: [],
+      validate: { validator: values => values.length <= 10, message: 'at most 10 tags' },
     },
+    tagKeys: { type: [String], default: [] },
     publicationStatus: {
       type: String,
       enum: PUBLICATION_STATUSES,
@@ -57,5 +56,6 @@ const schema = new Schema(
 )
 schema.index({ publicationStatus: 1, completionStatus: 1, publishedAt: -1 })
 schema.index({ authorAccountId: 1, publicationStatus: 1 })
-schema.index({ categoryIds: 1, publicationStatus: 1 })
+schema.index({ categoryId: 1, publicationStatus: 1 })
+schema.index({ tagKeys: 1, publicationStatus: 1 })
 export const Story = defineModel('Story', schema, 'stories')

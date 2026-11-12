@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { Link, useSearchParams } from 'react-router'
-import { Filter, Search } from '../../components/icons'
+import { Filter, Search, X } from '../../components/icons'
 import { PublicHeader } from '../../components/public/PublicHeader'
 import { CatalogResults } from '../../components/public/CatalogResults'
 import { SearchFilters } from '../../components/public/SearchFilters'
@@ -12,7 +12,7 @@ import {
   useCatalogCategories,
   useCatalogStories,
 } from '../../components/public/catalog'
-import { Button, Card, Drawer, Input } from '../../components/ui'
+import { Badge, Button, Card, Drawer, Input } from '../../components/ui'
 import { useLocale } from '../../context/LocaleContext'
 
 export function SearchResultsPage({ embedded = false }) {
@@ -21,6 +21,7 @@ export function SearchResultsPage({ embedded = false }) {
   const [filtersOpen, setFiltersOpen] = useState(false)
   const q = (params.get('q') ?? '').trim()
   const category = params.get('category') ?? ''
+  const tag = (params.get('tag') ?? '').trim().replace(/^#/, '').replace(/\s+/g, '')
   const status = pick(params.get('status'), CATALOG_STATUSES)
   const sort = pick(params.get('sort'), CATALOG_SORTS, 'popular')
   const page = Math.max(1, Number(params.get('page')) || 1)
@@ -28,23 +29,25 @@ export function SearchResultsPage({ embedded = false }) {
   const stories = useCatalogStories({
     q,
     category,
+    tag,
     status,
     sort,
     page,
     pageSize: CATALOG_PAGE_SIZE,
   })
   const update = next => {
-    const merged = { q, category, status, sort, page: 1, ...next }
+    const merged = { q, category, tag, status, sort, page: 1, ...next }
     const search = new URLSearchParams()
     if (merged.q) search.set('q', merged.q)
     if (merged.category) search.set('category', merged.category)
+    if (merged.tag) search.set('tag', merged.tag)
     if (merged.status) search.set('status', merged.status)
     if (merged.sort !== 'popular') search.set('sort', merged.sort)
     if (merged.page > 1) search.set('page', String(merged.page))
     setParams(search)
   }
-  const reset = () => update({ category: '', status: '', sort: 'popular' })
-  const appliedCount = (category ? 1 : 0) + (status ? 1 : 0)
+  const reset = () => update({ category: '', tag: '', status: '', sort: 'popular' })
+  const appliedCount = (category ? 1 : 0) + (tag ? 1 : 0) + (status ? 1 : 0)
   const filterProps = {
     categories: categories.data,
     categoriesStatus: categories.status,
@@ -74,11 +77,26 @@ export function SearchResultsPage({ embedded = false }) {
                 <span className="text-sm text-muted" aria-live="polite">
                   {t('search.showingFor', {
                     count: stories.data.total,
-                    query: q || t('search.allStories'),
+                    query: q || (tag ? `#${tag}` : t('search.allStories')),
                   })}
                 </span>
               )}
             </div>
+            {tag && (
+              <div className="mt-3 flex flex-wrap items-center gap-2">
+                <Badge tone="green" className="pr-1.5">
+                  {t('search.tagFilter', { tag })}
+                  <button
+                    type="button"
+                    aria-label={t('search.clearTag', { tag })}
+                    onClick={() => update({ tag: '' })}
+                    className="-my-1.5 -mr-1 grid size-8 place-items-center rounded-full transition-colors hover:bg-brand/20 pointer-coarse:-my-2.5 pointer-coarse:-mr-2 pointer-coarse:size-11"
+                  >
+                    <X size={12} aria-hidden="true" />
+                  </button>
+                </Badge>
+              </div>
+            )}
           </div>
           <form
             key={q}

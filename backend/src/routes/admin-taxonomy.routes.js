@@ -4,6 +4,14 @@ import { Account, AuditEvent, Category, RoleAssignment, Story } from '../models/
 import { requireAuth, requireRole } from '../middleware/auth.js'
 import { HttpError } from '../middleware/errors.js'
 import { withTransaction } from '../db/connection.js'
+import { tagKey, tagSpelling } from '../modules/authoring-publishing/content/story-tags.js'
+
+const escapeRegex = value => value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+const pageQuery = {
+  page: z.coerce.number().int().min(1).max(100000).default(1),
+  pageSize: z.coerce.number().int().min(1).max(50).default(20),
+  q: z.string().trim().max(100).default(''),
+}
 
 const values = {
   name: z.string().trim().min(1).max(100),
@@ -23,7 +31,11 @@ const view = category => ({
 })
 export function createAdminTaxonomyRouter(config) {
   const router = Router()
-  router.use('/admin/taxonomy/categories', requireAuth(config), requireRole('admin'))
+  router.use(
+    ['/admin/taxonomy/categories', '/admin/taxonomy/tags'],
+    requireAuth(config),
+    requireRole('admin'),
+  )
   router.get('/admin/taxonomy/categories', async (req, res, next) => {
     try {
       const parsed = z
@@ -51,9 +63,8 @@ export function createAdminTaxonomyRouter(config) {
         Category.countDocuments(match),
       ])
       const counts = await Story.aggregate([
-        { $match: { categoryIds: { $in: items.map(item => item._id) } } },
-        { $unwind: '$categoryIds' },
-        { $group: { _id: '$categoryIds', count: { $sum: 1 } } },
+        { $match: { categoryId: { $in: items.map(item => item._id) } } },
+        { $group: { _id: '$categoryId', count: { $sum: 1 } } },
       ])
       const byId = new Map(counts.map(item => [String(item._id), item.count]))
       res.set('Cache-Control', 'private, no-store').json({
@@ -62,6 +73,65 @@ export function createAdminTaxonomyRouter(config) {
           storyCount: byId.get(String(item._id)) ?? 0,
         })),
         total,
+        page,
+        pageSize,
+      })
+    } catch (error) {
+      next(error)
+    }
+  })
+  // Read-only: tags are free-form Author metadata, so Admin only sees how they are used.
+  router.get('/admin/taxonomy/tags', async (req, res, next) => {
+    try {
+      const parsed = z.object(pageQuery).strict().safeParse(req.query)
+      if (!parsed.success) throw new HttpError(400, 'validation_error', 'Bộ lọc thẻ không hợp lệ.')
+      const { page, pageSize, q } = parsed.data
+      const key = q ? tagKey(tagSpelling(q)) : ''
+      const [result] = await Story.aggregate([
+        { $match: { 'tagKeys.0': { $exists: true } } },
+        { $project: { publicationStatus: 1, pair: { $zip: { inputs: ['$tagKeys', '$tags'] } } } },
+        { $unwind: '$pair' },
+        {
+          $project: {
+            published: { $cond: [{ $eq: ['$publicationStatus', 'published'] }, 1, 0] },
+            key: { $arrayElemAt: ['$pair', 0] },
+            label: { $arrayElemAt: ['$pair', 1] },
+          },
+        },
+        ...(key ? [{ $match: { key: { $regex: escapeRegex(key) } } }] : []),
+        {
+          $group: {
+            _id: { key: '$key', label: '$label' },
+            stories: { $sum: 1 },
+            published: { $sum: '$published' },
+          },
+        },
+        // The most frequent spelling becomes the label; a tie goes to the lowest code point.
+        { $sort: { stories: -1, '_id.label': 1 } },
+        {
+          $group: {
+            _id: '$_id.key',
+            label: { $first: '$_id.label' },
+            totalStories: { $sum: '$stories' },
+            publishedStories: { $sum: '$published' },
+          },
+        },
+        { $sort: { publishedStories: -1, _id: 1 } },
+        {
+          $facet: {
+            total: [{ $count: 'value' }],
+            items: [{ $skip: (page - 1) * pageSize }, { $limit: pageSize }],
+          },
+        },
+      ])
+      res.set('Cache-Control', 'private, no-store').json({
+        items: result.items.map(item => ({
+          key: item._id,
+          label: item.label,
+          publishedStories: item.publishedStories,
+          totalStories: item.totalStories,
+        })),
+        total: result.total[0]?.value ?? 0,
         page,
         pageSize,
       })

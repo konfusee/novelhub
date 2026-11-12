@@ -28,7 +28,7 @@ async function fixture({ approved = true, evidence = 'available-for-human-review
   const created = await write(author.cookie, '/api/author/stories', {
     title: 'Thông tin đã duyệt',
     description: 'Mô tả của gói gửi được duyệt.',
-    categoryIds: [String(category._id)],
+    categoryId: String(category._id),
   })
   const storyId = created.body.story.id
   const prepared = (
@@ -137,7 +137,7 @@ it('preserves a newer private draft and prevents restoration of its older approv
           expectedVersion: f.story.version,
           title: 'Private draft',
           description: 'Private changes awaiting review',
-          categoryIds: [String(f.category._id)],
+          categoryId: String(f.category._id),
         },
         'put',
       )

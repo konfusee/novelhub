@@ -11,6 +11,7 @@ import { HttpError } from '../../../middleware/errors.js'
 import { lockAuthor, ownStory } from './author-ownership.js'
 import { loadSubmittedPackage } from './author-submitted-package.js'
 import { digest } from '../submissions/submission-digests.js'
+import { storyTagFields } from '../content/story-tags.js'
 import { terminalEvidenceReady } from '../../moderation-ai/review-evidence.js'
 
 export function canReleaseStoryVersion(story, revisionId) {
@@ -62,12 +63,10 @@ async function releaseState(account, storyId, session) {
         .lean()
     : null
   const evidenceReady = terminalEvidenceReady(batch)
-  const ids = snapshot?.revision.content.categoryIds ?? []
-  const active = ids.length
-    ? await Category.countDocuments({ _id: { $in: ids }, status: 'active' }).session(
-        session ?? null,
-      )
-    : 0
+  const categoryId = snapshot?.revision.content.categoryId
+  const categoryActive = categoryId
+    ? Boolean(await Category.exists({ _id: categoryId, status: 'active' }).session(session ?? null))
+    : false
   const storyMediaIds = [story.coverMediaId, story.theme?.coverBannerMediaId].filter(Boolean)
   const storyMedia = storyMediaIds.length
     ? await MediaAsset.find({
@@ -92,10 +91,7 @@ async function releaseState(account, storyId, session) {
     { code: 'integrity', ok: Boolean(snapshot) },
     { code: 'evidence', ok: Boolean(evidenceReady) },
     { code: 'rights', ok: snapshot?.rights.status === 'asserted' },
-    {
-      code: 'categories',
-      ok: ids.length > 0 && new Set(ids).size === ids.length && active === ids.length,
-    },
+    { code: 'categories', ok: categoryActive },
     {
       code: 'media',
       ok:
@@ -190,7 +186,8 @@ export async function publishStory(account, storyId, input) {
       : null
     story.title = snapshot.revision.content.title
     story.description = snapshot.revision.content.description
-    story.categoryIds = snapshot.revision.content.categoryIds
+    story.categoryId = snapshot.revision.content.categoryId
+    story.set(storyTagFields(snapshot.revision.content.tags ?? []))
     story.publicationStatus = 'published'
     story.publishedRevisionId = snapshot.revision._id
     story.currentRevisionId = snapshot.revision._id
