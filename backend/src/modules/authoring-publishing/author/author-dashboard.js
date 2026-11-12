@@ -117,19 +117,6 @@ export async function authorDashboard(accountId, { days = 1 } = {}, now = new Da
   const ids = stories.map(story => story._id)
   const windows = [dateWindow(1, now), dateWindow(7, now), dateWindow(30, now)]
   const selectedWindow = dateWindow(days, now)
-  const sinceStart = stories.reduce(
-    (earliest, story) =>
-      story.publishedAt && (!earliest || new Date(story.publishedAt) < earliest)
-        ? new Date(story.publishedAt)
-        : earliest,
-    null,
-  )
-  const sinceWindow = {
-    start: sinceStart ?? new Date(0),
-    startDay: vietnameseDay(sinceStart ?? new Date(0)),
-    end: windows[0].end,
-    endDay: windows[0].endDay,
-  }
   const publishedStories = stories.filter(story => story.publicationStatus === 'published')
   const publishedStoryIds = publishedStories.map(story => story._id)
   const [chapters, views, ratings, followers, feedback, feedbackTotal, selectedViews] =
@@ -317,27 +304,13 @@ export async function authorDashboard(accountId, { days = 1 } = {}, now = new Da
     selectedWindow.end,
   )
   const selectedViewByStory = new Map(selectedViews.map(row => [String(row._id), row.count]))
-  const [todayViews, weekViews, monthViews, sinceViews] = await Promise.all(
-    windows
-      .map(window => viewsForWindow(ids, window.startDay, window.endDay))
-      .concat([viewsForWindow(ids, sinceWindow.startDay, sinceWindow.endDay)]),
+  const [todayViews, weekViews, monthViews] = await Promise.all(
+    windows.map(window => viewsForWindow(ids, window.startDay, window.endDay)),
   )
-  const viewMaps = [todayViews, weekViews, monthViews, sinceViews].map(
+  const viewMaps = [todayViews, weekViews, monthViews].map(
     rows => new Map(rows.map(row => [String(row._id), row.count])),
   )
-  const sinceRevenue = await revenueForStories(
-    accountId,
-    ids,
-    chapterIds,
-    sinceWindow.start,
-    sinceWindow.end,
-  )
-  const revenueMaps = [
-    revenueByWindow[0].byStory,
-    revenueByWindow[1].byStory,
-    revenueByWindow[2].byStory,
-    sinceRevenue.byStory,
-  ]
+  const revenueMaps = revenueByWindow.map(window => window.byStory)
   const metricFor = (index, storyId) => {
     const revenue = revenueMaps[index].get(String(storyId)) ?? { amount: 0, unlocks: 0 }
     return {
@@ -346,6 +319,36 @@ export async function authorDashboard(accountId, { days = 1 } = {}, now = new Da
       unlocks: revenue.unlocks,
     }
   }
+  const sincePublicationMetrics = new Map(
+    await Promise.all(
+      publishedStories.map(async story => {
+        const start = story.publishedAt ? new Date(story.publishedAt) : new Date(0)
+        const storyChapters = chapters.filter(chapter => chapter.storyId.equals(story._id))
+        const [storyViews, storyRevenue] = await Promise.all([
+          viewsForWindow([story._id], vietnameseDay(start), windows[0].endDay),
+          revenueForStories(
+            accountId,
+            [story._id],
+            storyChapters.map(chapter => chapter._id),
+            start,
+            windows[0].end,
+          ),
+        ])
+        const revenue = storyRevenue.byStory.get(String(story._id)) ?? {
+          amount: 0,
+          unlocks: 0,
+        }
+        return [
+          String(story._id),
+          {
+            views: storyViews[0]?.count ?? 0,
+            earnings: revenue.amount,
+            unlocks: revenue.unlocks,
+          },
+        ]
+      }),
+    ),
+  )
   const storyRows = stories
     .filter(story => story.publicationStatus === 'published')
     .map(story => {
@@ -361,7 +364,9 @@ export async function authorDashboard(accountId, { days = 1 } = {}, now = new Da
           today: metricFor(0, story._id),
           week: metricFor(1, story._id),
           month: metricFor(2, story._id),
-          sincePublication: story.publishedAt ? metricFor(3, story._id) : null,
+          sincePublication: story.publishedAt
+            ? sincePublicationMetrics.get(String(story._id))
+            : null,
           selected: {
             views: selectedViewByStory.get(String(story._id)) ?? 0,
             earnings: revenue.amount,

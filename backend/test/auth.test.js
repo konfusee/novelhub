@@ -196,6 +196,30 @@ describe('password security', () => {
 })
 
 describe('session authentication API', () => {
+  it.each(['reader', 'author', 'moderator', 'admin'])(
+    'allows the %s role to log in; guest remains unauthenticated',
+    async role => {
+      const roleAccount = await createAccount({
+        displayName: `Test ${role}`,
+        email: `${role}-${crypto.randomUUID()}@example.test`,
+        everAuthor: role === 'author',
+      })
+      if (role !== 'reader')
+        await RoleAssignment.create({
+          accountId: roleAccount._id,
+          role,
+          grantedBy: roleAccount._id,
+        })
+      expect((await request(app).get('/api/auth/me')).status).toBe(401)
+      const response = await request(app)
+        .post('/api/auth/login')
+        .send({ email: roleAccount.email, password })
+      expect(response.status).toBe(200)
+      expect(response.body.user.roles).toContain('reader')
+      if (role !== 'reader') expect(response.body.user.roles).toContain(role)
+    },
+  )
+
   it('uses a browser-session cookie by default and a persistent cookie when remembered', async () => {
     const session = await request(app)
       .post('/api/auth/login')
