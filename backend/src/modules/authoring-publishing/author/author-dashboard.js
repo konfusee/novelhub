@@ -211,6 +211,25 @@ export async function authorDashboard(accountId, { days = 7 } = {}, now = new Da
     ],
     createdAt: { $gte: selectedWindow.start, $lt: selectedWindow.end },
   })
+  const [chapterFeedback, chapterFeedbackTotal] = await Promise.all([
+    Comment.find({
+      targetType: 'chapter',
+      targetId: { $in: chapters.map(chapter => chapter._id) },
+      parentCommentId: null,
+      status: 'visible',
+    })
+      .sort({ createdAt: -1, _id: -1 })
+      .limit(2)
+      .populate('authorAccountId', 'displayName status')
+      .select('body targetId authorAccountId createdAt')
+      .lean(),
+    Comment.countDocuments({
+      targetType: 'chapter',
+      targetId: { $in: chapters.map(chapter => chapter._id) },
+      parentCommentId: null,
+      status: 'visible',
+    }),
+  ])
   const editable = new Set(
     stories
       .filter(
@@ -323,23 +342,35 @@ export async function authorDashboard(accountId, { days = 7 } = {}, now = new Da
     drafts: validDrafts.slice(0, 2),
     draftCount: validDrafts.length,
     draftWords: validDrafts.reduce((sum, item) => sum + item.written, 0),
-    feedback: feedback.map(comment => ({
-      id: String(comment._id),
-      storyId: String(comment.targetId),
-      author:
-        comment.authorAccountId?.status === 'active'
-          ? comment.authorAccountId.displayName
-          : 'Tài khoản đã ngừng hoạt động',
-      canReply: stories.some(
-        story =>
-          story._id.equals(comment.targetId) &&
-          story.publicationStatus === 'published' &&
-          story.publishedRevisionId,
-      ),
-      body: comment.body,
-      createdAt: comment.createdAt,
-    })),
-    feedbackTotal,
+    feedback: [...feedback, ...chapterFeedback]
+      .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
+      .slice(0, 2)
+      .map(comment => {
+        const chapter =
+          comment.targetType === 'chapter'
+            ? chapters.find(item => item._id.equals(comment.targetId))
+            : null
+        const story = stories.find(item =>
+          comment.targetType === 'story'
+            ? item._id.equals(comment.targetId)
+            : chapter?.storyId.equals(item._id),
+        )
+        return {
+          id: String(comment._id),
+          targetType: comment.targetType,
+          targetId: String(comment.targetId),
+          storyId: story ? String(story._id) : null,
+          chapterId: chapter ? String(chapter._id) : null,
+          author:
+            comment.authorAccountId?.status === 'active'
+              ? comment.authorAccountId.displayName
+              : 'Tài khoản đã ngừng hoạt động',
+          canReply: Boolean(story?.publicationStatus === 'published' && story.publishedRevisionId),
+          body: comment.body,
+          createdAt: comment.createdAt,
+        }
+      }),
+    feedbackTotal: feedbackTotal + chapterFeedbackTotal,
     writingGoal: null,
     writingStreak: null,
     ai: null,

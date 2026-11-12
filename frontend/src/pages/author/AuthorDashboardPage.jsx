@@ -141,7 +141,11 @@ export function AuthorDashboardPage() {
     setReplyError(false)
     setReplySent(false)
     try {
-      await apiRequest(`/community/stories/${target.storyId}/comments`, {
+      const commentPath =
+        target.targetType === 'chapter' && target.chapterId
+          ? `/community/chapters/${target.chapterId}/comments`
+          : `/community/stories/${target.storyId}/comments`
+      await apiRequest(commentPath, {
         method: 'POST',
         body: {
           body: reply.trim(),
