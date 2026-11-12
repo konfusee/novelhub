@@ -109,6 +109,11 @@ const AuthorDashboardPage = lazy(() =>
     default: m.AuthorDashboardPage,
   })),
 )
+const AuthorCommentsPage = lazy(() =>
+  import('./pages/author/AuthorCommentsPage').then(m => ({
+    default: m.AuthorCommentsPage,
+  })),
+)
 const CreateStoryPage = lazy(() =>
   import('./pages/author/CreateStoryPage').then(m => ({
     default: m.CreateStoryPage,
@@ -297,6 +302,7 @@ const pages = [
   ReaderProfilePage,
   WalletPage,
   AuthorDashboardPage,
+  AuthorCommentsPage,
   CreateStoryPage,
   StoryManagerPage,
   ChapterEditorPage,
@@ -488,6 +494,7 @@ function AppRoutes() {
             path="/author/submissions"
             element={role('author', <SubmissionReviewPage />, true)}
           />
+          <Route path="/author/comments" element={role('author', <AuthorCommentsPage />, true)} />
           <Route path="/author/analytics" element={role('author', <AuthorAnalyticsPage />, true)} />
           <Route
             path="/author/submissions/:submissionId/preview"

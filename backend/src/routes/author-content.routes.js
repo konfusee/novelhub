@@ -17,6 +17,11 @@ import { authorStoryWorkspace } from '../modules/authoring-publishing/author/aut
 import { authorDrafts } from '../modules/authoring-publishing/author/author-drafts.js'
 import { authorAnalytics } from '../modules/authoring-publishing/author/author-analytics.js'
 import {
+  authorCommentList,
+  changeAuthorCommentStatus,
+  replyToAuthorComment,
+} from '../modules/authoring-publishing/author/author-comments.js'
+import {
   prepareEarlyAccess,
   changeEarlyAccess,
 } from '../modules/authoring-publishing/author/author-early-access.js'
@@ -63,6 +68,16 @@ import {
   storyTagFields,
 } from '../modules/authoring-publishing/content/story-tags.js'
 const objectId = z.string().regex(/^[a-f\d]{24}$/i)
+const authorCommentStatus = z.enum(['visible', 'hidden', 'soft-deleted'])
+const authorCommentQuery = z
+  .object({
+    page: z.coerce.number().int().min(1).max(100000).default(1),
+    storyId: objectId.optional(),
+    targetType: z.enum(['story', 'chapter']).optional(),
+    status: authorCommentStatus.optional(),
+  })
+  .strict()
+const authorCommentReply = z.object({ body: z.string().trim().min(1).max(2000) }).strict()
 const storyInput = z
   .object({
     title: z.string().trim().min(1).max(200),
@@ -116,6 +131,57 @@ export function createAuthorContentRouter(config) {
     async (req, res, next) => {
       try {
         res.json(await authorDashboard(req.account._id))
+      } catch (error) {
+        next(error)
+      }
+    },
+  )
+  router.get(
+    '/author/comments',
+    requireAuth(config),
+    requireRole('author'),
+    async (req, res, next) => {
+      try {
+        res
+          .set('Cache-Control', 'private, no-store')
+          .json(await authorCommentList(req.account._id, parse(authorCommentQuery, req.query)))
+      } catch (error) {
+        next(error)
+      }
+    },
+  )
+  router.post(
+    '/author/comments/:commentId/reply',
+    requireAuth(config),
+    requireRole('author'),
+    async (req, res, next) => {
+      try {
+        if (!objectId.safeParse(req.params.commentId).success)
+          throw new HttpError(400, 'validation_error', 'ID bình luận không hợp lệ.')
+        res
+          .status(201)
+          .json({
+            reply: await replyToAuthorComment(
+              req,
+              req.params.commentId,
+              parse(authorCommentReply, req.body),
+            ),
+          })
+      } catch (error) {
+        next(error)
+      }
+    },
+  )
+  router.patch(
+    '/author/comments/:commentId/status',
+    requireAuth(config),
+    requireRole('author'),
+    async (req, res, next) => {
+      try {
+        if (!objectId.safeParse(req.params.commentId).success)
+          throw new HttpError(400, 'validation_error', 'ID bình luận không hợp lệ.')
+        const { status } = parse(z.object({ status: authorCommentStatus }).strict(), req.body)
+        res.json({ comment: await changeAuthorCommentStatus(req, req.params.commentId, status) })
       } catch (error) {
         next(error)
       }
@@ -295,7 +361,15 @@ export function createAuthorContentRouter(config) {
             .object({
               days: z.coerce
                 .number()
-                .pipe(z.union([z.literal(7), z.literal(30), z.literal(90)]))
+                .pipe(
+                  z.union([
+                    z.literal(7),
+                    z.literal(30),
+                    z.literal(90),
+                    z.literal(180),
+                    z.literal(365),
+                  ]),
+                )
                 .default(30),
               from: z.iso.date().optional(),
               to: z.iso.date().optional(),
