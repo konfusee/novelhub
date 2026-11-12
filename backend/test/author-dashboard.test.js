@@ -56,6 +56,8 @@ describe('author dashboard', () => {
       title: 'Truyện của tôi',
       authorAccountId: author.account._id,
       categoryId: category._id,
+      publicationStatus: 'published',
+      publishedRevisionId: new mongoose.Types.ObjectId(),
     })
     const second = await Story.create({
       title: 'Truyện thứ hai',
@@ -134,7 +136,7 @@ describe('author dashboard', () => {
     expect(result.draftWords).toBe(3)
     expect(result.feedback[0]).toMatchObject({
       body: 'Nhận xét của độc giả',
-      canReply: false,
+      canReply: true,
     })
     expect(JSON.stringify(result)).not.toContain('OTHER')
     expect(JSON.stringify(result)).not.toContain('999999')
@@ -164,6 +166,7 @@ describe('author dashboard', () => {
       authorAccountId: author.account._id,
       categoryId: category._id,
       publicationStatus: 'published',
+      publishedRevisionId: new mongoose.Types.ObjectId(),
       publishedAt: new Date('2026-11-13T01:00:00Z'),
     })
     const chapter = await Chapter.create({
@@ -171,6 +174,7 @@ describe('author dashboard', () => {
       title: 'Chương có doanh thu',
       orderKey: 1,
       status: 'published',
+      publishedRevisionId: new mongoose.Types.ObjectId(),
       publishedAt: new Date('2026-11-13T01:00:00Z'),
     })
     const wallet = await Wallet.create({

@@ -117,7 +117,9 @@ export async function authorDashboard(accountId, { days = 1 } = {}, now = new Da
   const ids = stories.map(story => story._id)
   const windows = [dateWindow(1, now), dateWindow(7, now), dateWindow(30, now)]
   const selectedWindow = dateWindow(days, now)
-  const publishedStories = stories.filter(story => story.publicationStatus === 'published')
+  const publishedStories = stories.filter(
+    story => story.publicationStatus === 'published' && story.publishedRevisionId,
+  )
   const publishedStoryIds = publishedStories.map(story => story._id)
   const [chapters, views, ratings, followers, feedback, feedbackTotal, selectedViews] =
     await Promise.all([
@@ -138,9 +140,7 @@ export async function authorDashboard(accountId, { days = 1 } = {}, now = new Da
       StatisticsEvent.aggregate([
         {
           $match: {
-            storyId: {
-              $in: ids,
-            },
+            storyId: { $in: publishedStoryIds },
             eventType: 'view',
           },
         },
@@ -156,9 +156,7 @@ export async function authorDashboard(accountId, { days = 1 } = {}, now = new Da
       Rating.aggregate([
         {
           $match: {
-            storyId: {
-              $in: ids,
-            },
+            storyId: { $in: publishedStoryIds },
             status: 'active',
           },
         },
@@ -172,9 +170,7 @@ export async function authorDashboard(accountId, { days = 1 } = {}, now = new Da
         },
       ]),
       Follow.distinct('accountId', {
-        storyId: {
-          $in: ids,
-        },
+        storyId: { $in: publishedStoryIds },
         status: 'active',
       }),
       Comment.find({
@@ -204,7 +200,7 @@ export async function authorDashboard(accountId, { days = 1 } = {}, now = new Da
       StatisticsEvent.aggregate([
         {
           $match: {
-            storyId: { $in: ids },
+            storyId: { $in: publishedStoryIds },
             eventType: 'view',
             day: { $gte: selectedWindow.startDay, $lte: selectedWindow.endDay },
           },
@@ -212,7 +208,9 @@ export async function authorDashboard(accountId, { days = 1 } = {}, now = new Da
         { $group: { _id: '$storyId', count: { $sum: 1 } } },
       ]),
     ])
-  const publishedChapters = chapters.filter(chapter => chapter.status === 'published')
+  const publishedChapters = chapters.filter(
+    chapter => chapter.status === 'published' && chapter.publishedRevisionId,
+  )
   const publishedChapterIds = publishedChapters.map(chapter => chapter._id)
   const selectedComments = await Comment.countDocuments({
     $or: [
@@ -293,19 +291,19 @@ export async function authorDashboard(accountId, { days = 1 } = {}, now = new Da
   const revenueChapterIds = publishedChapterIds
   const revenueByWindow = await Promise.all(
     windows.map(window =>
-      revenueForStories(accountId, ids, revenueChapterIds, window.start, window.end),
+      revenueForStories(accountId, publishedStoryIds, revenueChapterIds, window.start, window.end),
     ),
   )
   const selectedRevenue = await revenueForStories(
     accountId,
-    ids,
+    publishedStoryIds,
     revenueChapterIds,
     selectedWindow.start,
     selectedWindow.end,
   )
   const selectedViewByStory = new Map(selectedViews.map(row => [String(row._id), row.count]))
   const [todayViews, weekViews, monthViews] = await Promise.all(
-    windows.map(window => viewsForWindow(ids, window.startDay, window.endDay)),
+    windows.map(window => viewsForWindow(publishedStoryIds, window.startDay, window.endDay)),
   )
   const viewMaps = [todayViews, weekViews, monthViews].map(
     rows => new Map(rows.map(row => [String(row._id), row.count])),
@@ -350,7 +348,7 @@ export async function authorDashboard(accountId, { days = 1 } = {}, now = new Da
     ),
   )
   const storyRows = stories
-    .filter(story => story.publicationStatus === 'published')
+    .filter(story => publishedStoryIds.some(id => id.equals(story._id)))
     .map(story => {
       const revenue = selectedRevenue.byStory.get(String(story._id)) ?? { amount: 0, unlocks: 0 }
       return {
