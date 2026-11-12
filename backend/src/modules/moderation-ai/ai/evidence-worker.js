@@ -33,6 +33,7 @@ import {
 } from './review-criteria.js'
 import { RUNNER_ID } from './runner-id.js'
 import { StageError } from './stage-error.js'
+import { notifyModeratorsSubmissionReady } from '../moderation/submission-ready-notice.js'
 
 const MAX_STAGE_ATTEMPTS = 3
 const PERSIST_ERROR_ATTEMPTS = 2
@@ -68,12 +69,15 @@ class LeaseExpiring extends Error {}
 const clamp01 = score => Math.min(1, Math.max(0, score))
 
 // Terminal evidence hands the submission to moderators; a closed submission does not match.
-function promoteSubmission(batch, session) {
-  return PublicationSubmission.updateOne(
+async function promoteSubmission(batch, session) {
+  const promoted = await PublicationSubmission.updateOne(
     { _id: batch.submissionId, status: 'validated', currentEvidenceBatchId: batch._id },
     { $set: { status: 'pending-review' }, $inc: { version: 1 } },
     { session },
   )
+  if (promoted.modifiedCount === 1)
+    await notifyModeratorsSubmissionReady(batch.submissionId, session)
+  return promoted
 }
 
 // Keeps provider spend in the ledger when the attempt's transition was rolled back.

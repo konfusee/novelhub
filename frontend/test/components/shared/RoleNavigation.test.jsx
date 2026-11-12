@@ -4,6 +4,7 @@ import { MemoryRouter, useLocation } from 'react-router'
 import { AppShell } from '../../../src/components/shell/AppShell'
 import { LocaleProvider } from '../../../src/context/LocaleContext'
 import { notifyWalletBalanceChanged } from '../../../src/api/walletEvents'
+import { notifyNotificationsChanged } from '../../../src/api/useUnreadNotifications'
 
 const mocks = vi.hoisted(() => ({ apiRequest: vi.fn(), user: null }))
 vi.mock('../../../src/api/client', () => ({ apiRequest: mocks.apiRequest }))
@@ -114,7 +115,7 @@ it('clears the previous account balance immediately and ignores its late respons
       }),
   )
   const page = view('/reader')
-  await waitFor(() => expect(mocks.apiRequest).toHaveBeenCalledOnce())
+  await waitFor(() => expect(resolveOld).toBeTypeOf('function'))
   mocks.user = { id: 'account-b', name: 'Account B', roles: ['reader'] }
   mocks.apiRequest.mockResolvedValue({ balance: 55 })
   page.rerender(
@@ -149,7 +150,9 @@ it.each(['moderator', 'admin'])(
     for (const link of within(nav).getAllByRole('link'))
       expect(link.getAttribute('href').startsWith(`/${role}`)).toBe(true)
     expect(header().queryByRole('link', { name: 'Ví' })).toBeNull()
-    expect(mocks.apiRequest).not.toHaveBeenCalled()
+    expect(mocks.apiRequest.mock.calls.map(([path]) => path)).toEqual([
+      '/reader/notifications/unread-count',
+    ])
   },
 )
 
@@ -159,4 +162,18 @@ it('opens notifications in the active workspace', () => {
   fireEvent.click(header().getByRole('button', { name: 'Thông báo' }))
   expect(screen.getByTestId('location').textContent).toBe('/admin/notifications')
   expect(screen.getByText('Workspace admin')).toBeTruthy()
+})
+
+it('shows the unread count on the bell and clears it after notifications change', async () => {
+  mocks.user = { id: 'moderator', name: 'Moderator', roles: ['reader', 'moderator'] }
+  mocks.apiRequest.mockResolvedValue({ count: 3 })
+  view('/moderator')
+  const bell = await header().findByRole('button', { name: 'Thông báo, 3 chưa đọc' })
+  expect(bell.querySelector('[data-unread-count]').textContent).toBe('3')
+  mocks.apiRequest.mockResolvedValue({ count: 0 })
+  notifyNotificationsChanged()
+  await header().findByRole('button', { name: 'Thông báo' })
+  expect(
+    header().getByRole('button', { name: 'Thông báo' }).querySelector('[data-unread-count]'),
+  ).toBeNull()
 })

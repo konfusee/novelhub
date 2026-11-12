@@ -2,6 +2,7 @@ import { withTransaction } from '../../../db/connection.js'
 import { EvidenceBatch, ProcessingAttempt, PublicationSubmission } from '../../../models/index.js'
 import { STAGE_BY_STATUS } from './evidence-worker.js'
 import { RUNNER_ID } from './runner-id.js'
+import { notifyModeratorsSubmissionReady } from '../moderation/submission-ready-notice.js'
 
 const NON_TERMINAL_STATUSES = [
   'pending',
@@ -93,6 +94,8 @@ export async function failPendingEvidence({
           { $set: { status: 'pending-review' }, $inc: { version: 1 } },
           { session },
         )
+        if (promoted.modifiedCount === 1)
+          await notifyModeratorsSubmissionReady(batch.submissionId, session)
         return promoted.modifiedCount
       })
       failed += 1

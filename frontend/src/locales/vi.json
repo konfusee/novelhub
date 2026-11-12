@@ -875,6 +875,7 @@
     "search": "Tìm kiếm",
     "mainNavigation": "Điều hướng chính",
     "notifications": "Thông báo",
+    "notificationsUnread": "Thông báo, {{count}} chưa đọc",
     "openMenu": "Mở menu",
     "openProfile": "Mở hồ sơ",
     "save": "Lưu",
@@ -2133,7 +2134,8 @@
         "story": "Cập nhật truyện",
         "author": "Tác giả",
         "comment": "Bình luận & phản hồi",
-        "system": "Hệ thống"
+        "system": "Hệ thống",
+        "moderation": "Kiểm duyệt"
       }
     }
   },

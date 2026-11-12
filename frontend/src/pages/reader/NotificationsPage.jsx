@@ -6,6 +6,7 @@ import {
   CheckCheck,
   MessageCircle,
   RefreshCw,
+  ShieldCheck,
   Trash2,
   UserRound,
   WalletCards,
@@ -22,6 +23,7 @@ import {
   Tabs,
 } from '../../components/ui'
 import { apiRequest } from '../../api/client'
+import { notifyNotificationsChanged } from '../../api/useUnreadNotifications'
 import { formatWhen } from '../../components/reader/readerLinks'
 import { useLocale } from '../../context/LocaleContext'
 
@@ -33,11 +35,14 @@ const FILTERS = [
   ['comment', MessageCircle],
   ['system', WalletCards],
 ]
+// Moderators also receive queue notices; other workspaces never do.
+const WORKSPACE_FILTERS = { moderator: [['moderation', ShieldCheck]] }
 const typeStyles = {
   story: { tone: 'green', tile: 'bg-brand/12 text-brand-strong', icon: BookOpen },
   author: { tone: 'purple', tile: 'bg-purple/12 text-purple-strong', icon: UserRound },
   comment: { tone: 'green', tile: 'bg-brand/12 text-brand-strong', icon: MessageCircle },
   system: { tone: 'orange', tile: 'bg-orange/16 text-orange-strong', icon: WalletCards },
+  moderation: { tone: 'purple', tile: 'bg-purple/12 text-purple-strong', icon: ShieldCheck },
 }
 
 function NotificationSkeleton() {
@@ -101,6 +106,7 @@ export function NotificationsPage({ embedded = false, workspace = 'reader' }) {
     try {
       await request()
       apply()
+      notifyNotificationsChanged()
     } catch (failure) {
       setError(failure.message)
     }
@@ -209,7 +215,7 @@ export function NotificationsPage({ embedded = false, workspace = 'reader' }) {
             label={t('readerData.notifications.filterLabel')}
             value={filter}
             onChange={setFilter}
-            items={FILTERS.map(([value, Icon]) => {
+            items={[...FILTERS, ...(WORKSPACE_FILTERS[workspace] ?? [])].map(([value, Icon]) => {
               const label = t(`readerData.notifications.filter.${value}`)
               const count =
                 value === 'all' ? items.length : items.filter(item => item.type === value).length

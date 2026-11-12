@@ -21,6 +21,7 @@ import { Avatar, IconButton, Input } from '../ui'
 import { useLocale } from '../../context/LocaleContext'
 import { workspaceHeaderNavigation, workspaceWallets } from '../../navigation/workspaceNavigation'
 import { useWorkspaceBalance } from '../../api/useWorkspaceBalance'
+import { useUnreadNotifications } from '../../api/useUnreadNotifications'
 import { ROUTES } from '../../app/routes'
 
 const roleMeta = {
@@ -160,6 +161,7 @@ export function SharedWorkspaceHeader({
   const navigate = useNavigate()
   const wallet = workspaceWallets[currentRole]
   const balance = useWorkspaceBalance(currentRole)
+  const unread = useUnreadNotifications()
   const walletActive =
     wallet &&
     (pathname === wallet.path || (currentRole === 'author' && pathname === '/author/wallet'))
@@ -237,13 +239,23 @@ export function SharedWorkspaceHeader({
         </IconButton>
         {children}
         <IconButton
-          label={t('common.notifications')}
+          label={
+            unread ? t('common.notificationsUnread', { count: unread }) : t('common.notifications')
+          }
           shape="circle"
           className="relative"
           onClick={() => navigate(ROUTES.workspaceNotifications(currentRole))}
         >
           <Bell size={18} />
-          <span className="absolute right-2.5 top-2.5 size-2 rounded-full bg-rose ring-2 ring-surface" />
+          {unread > 0 && (
+            <span
+              data-unread-count
+              aria-hidden="true"
+              className="absolute right-1 top-1 grid h-4 min-w-4 place-items-center rounded-full bg-rose px-1 text-[10px] font-semibold leading-none text-white ring-2 ring-surface"
+            >
+              {unread > 99 ? '99+' : unread}
+            </span>
+          )}
         </IconButton>
         <WorkspaceHeaderAccount currentRole={currentRole} />
       </div>

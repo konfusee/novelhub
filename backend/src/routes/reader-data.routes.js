@@ -66,6 +66,9 @@ function notificationView(item) {
     ['author.content-warning', 'author.content-unpublished'].includes(item.eventType) &&
     /^[a-f\d]{24}$/i.test(item.payload?.storyId ?? '')
   const reportResolved = item.eventType === 'report.resolved'
+  const submissionReady =
+    item.eventType === 'moderation.submission-ready' &&
+    /^[a-f\d]{24}$/i.test(item.payload?.submissionId ?? '')
   const href = chapterReleased
     ? `/read/${item.payload.storyId}/${item.payload.chapterId}`
     : authorContent
@@ -128,6 +131,13 @@ function notificationView(item) {
                 : type === 'system'
                   ? 'Xem ví'
                   : 'Xem thư viện',
+    ...(submissionReady && {
+      title: `Hồ sơ mới chờ kiểm duyệt: ${text(item.payload?.title, 200) || 'Gói gửi duyệt'}`,
+      label: 'Kiểm duyệt',
+      type: 'moderation',
+      href: `/moderator/submissions/${item.payload.submissionId}`,
+      action: 'Mở hồ sơ',
+    }),
   }
 }
 export function createReaderDataRouter(config) {
