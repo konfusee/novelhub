@@ -11,8 +11,9 @@
 // submission and evidence batches. The migration recomputes it with the same digest function,
 // updates those copies and re-links every Admin former-Author correction of that package,
 // including corrections already stored with one category, so every package integrity check
-// still passes. A digest that did not verify before the migration is reported and left as it
-// was. Audit, moderation-history and AI-attempt records keep the digests they were written
+// still passes. A revision whose digest did not verify before the migration keeps that stored
+// digest (its content is still converted to one category) and is listed in `unverifiedDigests`.
+// Audit, moderation-history and AI-attempt records keep the digests they were written
 // with: they are append-only history and are never re-verified.
 // Frozen revisions are rewritten through the driver on purpose, because the Mongoose field
 // locks forbid it. Each story migrates in its own transaction; re-running changes nothing.

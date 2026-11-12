@@ -184,7 +184,7 @@ export function createCatalogRouter(config) {
                 ? latestComment.authorAccountId.displayName
                 : '',
         },
-        chapters: chapters.map(chapterListItem),
+        chapters: (chapters.get(story.id) ?? []).map(chapterListItem),
         viewer,
       })
     } catch (error) {
@@ -261,7 +261,7 @@ export function createCatalogRouter(config) {
         publishedChapterRows([chapter.storyId], new Date(), account?._id),
         Comment.countDocuments({ targetType: 'chapter', targetId: chapter._id, status: 'visible' }),
       ])
-      const rows = neighbours
+      const rows = neighbours.get(String(chapter.storyId)) ?? []
       const link = row =>
         row
           ? {
