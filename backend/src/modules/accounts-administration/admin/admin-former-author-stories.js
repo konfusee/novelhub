@@ -42,6 +42,8 @@ const metadata = z
     description: z.string().max(10000).optional(),
     categoryId: oid,
     tags: storedTags.optional(),
+    coverMediaId: oid.nullable().optional(),
+    coverBannerMediaId: oid.nullable().optional(),
   })
   .strict()
 const unavailable = () =>
@@ -204,6 +206,12 @@ export async function changeFormerStory(admin, id, input) {
         description: input.description,
         categoryId: input.categoryId,
         tags: source.content.tags ?? [],
+        ...(Object.hasOwn(source.content, 'coverMediaId') && {
+          coverMediaId: source.content.coverMediaId,
+        }),
+        ...(Object.hasOwn(source.content, 'coverBannerMediaId') && {
+          coverBannerMediaId: source.content.coverBannerMediaId,
+        }),
       }
       const correction = {
         rootRevisionId: String(root.revision._id),
