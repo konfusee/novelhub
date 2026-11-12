@@ -133,7 +133,7 @@ describe('email registration and verification', () => {
           .post('/api/auth/login')
           .send({ email: registration.email, password: registration.password })
       ).status,
-    ).toBe(401)
+    ).toBe(403)
   })
 
   it('verifies once, activates the account, and permits login', async () => {
@@ -254,7 +254,7 @@ describe('session authentication API', () => {
     expect(response.status).toBe(401)
     expect(response.body.error).toMatchObject({
       code: 'invalid_credentials',
-      message: 'Email or password is invalid',
+      message: 'Email hoặc mật khẩu không đúng.',
     })
   })
 
@@ -268,20 +268,21 @@ describe('session authentication API', () => {
     expect(response.body.error.code).toBe('validation_error')
   })
 
-  it.each(['pending-verification', 'suspended', 'anonymized'])(
-    'rejects an account with status %s',
-    async status => {
-      await Account.updateOne(
-        { _id: account._id },
-        { $set: { status }, ...(status === 'anonymized' ? { $unset: { email: 1 } } : {}) },
-      )
-      const response = await request(app)
-        .post('/api/auth/login')
-        .send({ email: 'reader@example.test', password })
-      expect(response.status).toBe(401)
-      expect(response.body.error.code).toBe('invalid_credentials')
-    },
-  )
+  it.each([
+    ['pending-verification', 403, 'email_not_verified'],
+    ['suspended', 403, 'account_unavailable'],
+    ['anonymized', 401, 'invalid_credentials'],
+  ])('rejects an account with status %s', async (status, httpStatus, code) => {
+    await Account.updateOne(
+      { _id: account._id },
+      { $set: { status }, ...(status === 'anonymized' ? { $unset: { email: 1 } } : {}) },
+    )
+    const response = await request(app)
+      .post('/api/auth/login')
+      .send({ email: 'reader@example.test', password })
+    expect(response.status).toBe(httpStatus)
+    expect(response.body.error.code).toBe(code)
+  })
 
   it('rejects missing, expired, and invalid sessions', async () => {
     expect((await request(app).get('/api/auth/me')).status).toBe(401)
@@ -662,6 +663,24 @@ describe('Google OAuth account registration and linking', () => {
     const link = await ExternalIdentity.findOne({ providerSubject: 'orphan-subject' })
     expect(link.accountId.equals(replacement._id)).toBe(true)
     expect(await ExternalIdentity.countDocuments({ providerSubject: 'orphan-subject' })).toBe(1)
+  })
+
+  it('clears pending credentials when Google verifies the account', async () => {
+    account.status = 'pending-verification'
+    account.twoFactorEnabled = true
+    await account.save()
+    const agent = request.agent(
+      googleApp({ sub: 'verified-pending', email: account.email, name: 'Reader' }),
+    )
+    await completeGoogle(agent)
+    const updated = await Account.findById(account._id).select('+password')
+    expect(updated.status).toBe('active')
+    expect(updated.password).toBeUndefined()
+    expect(updated.twoFactorEnabled).toBe(false)
+    expect(updated.credentialVersion).toBe(account.credentialVersion + 1)
+    expect(
+      (await request(app).post('/api/auth/login').send({ email: account.email, password })).status,
+    ).toBe(401)
   })
 
   it('keeps suspended Google accounts blocked', async () => {

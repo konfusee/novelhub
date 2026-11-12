@@ -1,3 +1,5 @@
+import vi from '../locales/vi.json'
+
 export const API_BASE = import.meta.env.VITE_API_BASE_URL ?? '/api'
 
 /**
@@ -43,10 +45,9 @@ export async function apiRequest(path, { method = 'GET', body, signal, binary = 
   }
   const data = response.status === 204 ? null : await response.json().catch(() => null)
   if (!response.ok) {
-    throw new ApiError(data?.error?.message || 'Yêu cầu không thành công.', {
-      status: response.status,
-      code: data?.error?.code,
-    })
+    const code = data?.error?.code
+    const message = Object.hasOwn(vi.apiErrors, code) ? vi.apiErrors[code] : data?.error?.message
+    throw new ApiError(message || vi.auth.requestFailed, { status: response.status, code })
   }
   return data
 }

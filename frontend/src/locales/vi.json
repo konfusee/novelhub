@@ -799,6 +799,17 @@
     "storyProgress": "Đã đi qua {{percent}}% truyện"
   },
   "auth": {
+    "emailNotVerified": "Vui lòng xác minh email trước khi đăng nhập.",
+    "accountUnavailable": "Tài khoản hiện không thể đăng nhập.",
+    "emailInUse": "Email này đã được đăng ký.",
+    "passwordsDiffer": "Mật khẩu xác nhận không khớp.",
+    "invalidDetails": "Thông tin đã nhập chưa hợp lệ.",
+    "tooManyAttempts": "Bạn đã thử quá nhiều lần. Vui lòng thử lại sau.",
+    "invalidCredentials": "Email hoặc mật khẩu không đúng.",
+    "resendVerification": "Gửi lại email xác minh",
+    "verificationResent": "Nếu tài khoản đang chờ xác minh, email mới đã được gửi.",
+    "resendVerificationFailed": "Chưa thể gửi lại email. Vui lòng thử lại sau.",
+    "requestFailed": "Không thể xử lý yêu cầu. Vui lòng thử lại.",
     "accountType": "Loại tài khoản",
     "alreadyAccount": "Bạn đã có tài khoản?",
     "author": "Tác giả",
@@ -2472,6 +2483,10 @@
     "failed": "Không xác nhận được thiết lập đọc sớm.",
     "disableOnly": "Chương đã duyệt chỉ có thể tắt đọc sớm trước lần phát hành đầu. Không thay đổi giá, thời hạn, nội dung duyệt hoặc lịch phát hành.",
     "enabledState": "Áp dụng đọc sớm"
+  },
+  "apiErrors": {
+    "unauthorized": "Vui lòng đăng nhập để tiếp tục.",
+    "forbidden": "Bạn không có quyền thực hiện thao tác này."
   },
   "policy": {
     "title": "Chính sách đọc sớm đang có hiệu lực",
