@@ -243,7 +243,6 @@ function ReaderToolbar({
           <ListenToolLink to={listenTo} t={t} />
           <ToolButton
             label={t('reader.commentsCount', { count: commentCount })}
-            disabled={!interactive}
             onClick={openComments}
           >
             <MessageSquareText size={16} />
@@ -375,7 +374,6 @@ function ReaderToolbar({
             <ListenToolLink to={listenTo} t={t} className="max-sm:hidden" />
             <ToolButton
               label={t('reader.commentsCount', { count: commentCount })}
-              disabled={!interactive}
               onClick={openComments}
             >
               <MessageSquareText size={16} />
@@ -1617,11 +1615,12 @@ export function FullChapterReaderPage() {
           title={t('reader.comments')}
           onClose={() => setCommentsOpen(false)}
         >
-          {currentChapter && (
+          {/* Public comments stay readable on a locked chapter; posting needs access. */}
+          {activeChapterId && (
             <CommentThread
               targetType="chapter"
-              targetId={currentChapter.id}
-              canComment
+              targetId={activeChapterId}
+              canComment={Boolean(currentChapter)}
               disabledReason={t('reader.commentLocked')}
             />
           )}

@@ -23,7 +23,7 @@ export function SearchResultsPage({ embedded = false }) {
   const category = params.get('category') ?? ''
   const tag = (params.get('tag') ?? '').trim().replace(/^#/, '').replace(/\s+/g, '')
   const status = pick(params.get('status'), CATALOG_STATUSES)
-  const sort = pick(params.get('sort'), CATALOG_SORTS, 'popular')
+  const sort = pick(params.get('sort'), CATALOG_SORTS, 'newest')
   const page = Math.max(1, Number(params.get('page')) || 1)
   const categories = useCatalogCategories()
   const stories = useCatalogStories({
@@ -42,11 +42,11 @@ export function SearchResultsPage({ embedded = false }) {
     if (merged.category) search.set('category', merged.category)
     if (merged.tag) search.set('tag', merged.tag)
     if (merged.status) search.set('status', merged.status)
-    if (merged.sort !== 'popular') search.set('sort', merged.sort)
+    if (merged.sort !== 'newest') search.set('sort', merged.sort)
     if (merged.page > 1) search.set('page', String(merged.page))
     setParams(search)
   }
-  const reset = () => update({ category: '', tag: '', status: '', sort: 'popular' })
+  const reset = () => update({ category: '', tag: '', status: '', sort: 'newest' })
   const appliedCount = (category ? 1 : 0) + (tag ? 1 : 0) + (status ? 1 : 0)
   const filterProps = {
     categories: categories.data,

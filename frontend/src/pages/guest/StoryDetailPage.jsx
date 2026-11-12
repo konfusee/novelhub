@@ -177,9 +177,18 @@ function StoryAsideSkeleton() {
 /** Reading CTA: resume for signed-in readers, chapter 1 (preview route for Guests). */
 function ReadAction({ storyId, chapters, viewer, isAuthenticated }) {
   const { t } = useLocale()
-  const first = chapters[0]
-  const resume = viewer?.resume?.available ? viewer.resume : null
-  if (!first && !resume) return null
+  const first = chapters.find(chapter => chapter.orderKey === 1) ?? chapters[0]
+  const saved = viewer?.resume
+  const resume = saved?.available ? saved : null
+  if (!first && !saved) return null
+  /* The saved chapter is locked now: the reader shows its inline unlock prompt. */
+  if (saved && !resume)
+    return (
+      <ButtonLink to={ROUTES.read(storyId, saved.chapterId)} size="lg" trailingIcon={ArrowRight}>
+        <BookOpen size={18} aria-hidden="true" />
+        {t('storyDetail.unlockToContinue', { title: saved.title })}
+      </ButtonLink>
+    )
   if (resume)
     return (
       <div className="flex flex-col items-start gap-2">
@@ -217,7 +226,7 @@ function ListenAction({ storyId, chapters, viewer, isAuthenticated }) {
   if (!isAuthenticated) return null
   const listen = viewer?.listenResume?.available ? viewer.listenResume : null
   const target = listen?.chapterId ?? (viewer?.resume?.available && viewer.resume.chapterId)
-  const chapterId = target || chapters[0]?.id
+  const chapterId = target || (chapters.find(chapter => chapter.orderKey === 1) ?? chapters[0])?.id
   if (!chapterId) return null
   return (
     <ButtonLink variant="secondary" size="lg" to={ROUTES.listen(storyId, chapterId)}>

@@ -103,14 +103,19 @@ describe('catalogue discovery', () => {
       view(old.storyId, oldChapter, 'b', longAgo),
       view(old.storyId, oldChapter, 'c', longAgo),
       view(hot.storyId, hotChapter, 'a', new Date()),
+      // The same reader on another day is still one distinct reader for popularity.
+      { ...view(hot.storyId, hotChapter, 'a-again', new Date()), viewerKey: 'a', day: longAgo },
     ])
     const list = query => api.get(null, `/api/catalog/stories?${query}`)
 
     const popular = (await list('sort=popular')).body.items
     expect(popular.map(item => item.id)).toEqual([hot.storyId, old.storyId])
-    expect(popular[0]).toMatchObject({ popularity: 1, reads: '1', followers: 0, ratingCount: 0 })
+    expect(popular[0]).toMatchObject({ popularity: 1, reads: '2', followers: 0, ratingCount: 0 })
     expect(popular[1]).toMatchObject({ popularity: 0, reads: '3', status: 'Completed' })
     expect((await list('sort=reads')).status).toBe(400)
+    const unknownCategory = await list('category=0123456789abcdef01234567')
+    expect(unknownCategory.status).toBe(400)
+    expect(unknownCategory.body.error.message).toBe('Thể loại không tồn tại hoặc đã ngừng sử dụng.')
 
     const completed = await list('status=completed')
     expect(completed.body.items.map(item => item.id)).toEqual([old.storyId])
@@ -135,7 +140,7 @@ describe('catalogue discovery', () => {
       sortKey: 1,
       createdBy: author.account._id,
     })
-    await Category.create({
+    const retired = await Category.create({
       name: 'Đã bỏ',
       normalizedName: 'da bo',
       status: 'retired',
@@ -148,6 +153,8 @@ describe('catalogue discovery', () => {
       { id: String(empty._id), name: 'Áo choàng', storyCount: 0 },
       { id: String(used._id), name: 'Bí ẩn', storyCount: 1 },
     ])
+    const filtered = await api.get(null, `/api/catalog/stories?category=${retired._id}`)
+    expect(filtered.status).toBe(400)
   })
 
   it('adds viewer follow, rating and resume state to story detail', async () => {

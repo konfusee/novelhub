@@ -111,6 +111,8 @@ const envSchema = z.object({
   VBEE_API_URL: z.string().url().default('https://api.vbee.vn/v1'),
   VBEE_TIMEOUT_MS: z.coerce.number().int().min(1000).max(120000).default(20000),
   TTS_CALLBACK_URL: z.string().url().optional(),
+  TTS_REQUEST_COOLDOWN_SECONDS: z.coerce.number().int().min(0).max(3600).default(30),
+  TTS_DAILY_CHARACTER_LIMIT: z.coerce.number().int().min(0).default(0),
   AI_BUDGET_USD: z.coerce.number().min(0).max(1000).default(3),
   AI_BUDGET_WINDOW_START: z
     .string()
@@ -164,6 +166,8 @@ export function loadEnv(source = process.env) {
     'VBEE_API_URL',
     'VBEE_TIMEOUT_MS',
     'TTS_CALLBACK_URL',
+    'TTS_REQUEST_COOLDOWN_SECONDS',
+    'TTS_DAILY_CHARACTER_LIMIT',
   ]) {
     if (normalized[key] === '') delete normalized[key]
   }
@@ -260,6 +264,8 @@ export function toAppConfig(env) {
           : undefined,
       voiceCode: env.VBEE_VOICE_CODE,
       callbackUrl: env.TTS_CALLBACK_URL ?? new URL('/api/tts/vbee/callback', env.FRONTEND_URL).href,
+      requestCooldownSeconds: env.TTS_REQUEST_COOLDOWN_SECONDS,
+      dailyCharacterLimit: env.TTS_DAILY_CHARACTER_LIMIT,
     },
   }
 }

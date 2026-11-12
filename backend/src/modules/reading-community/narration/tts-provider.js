@@ -1,10 +1,12 @@
+import { Readable } from 'node:stream'
+
 /**
  * Provider-neutral TTS adapter (decision-log #29). Narration code only sees:
  *   provider.name, provider.voiceId, provider.maxCharacters, provider.pollIntervalMs (optional)
  *   provider.submit({ text, callbackUrl }) -> { jobId }
  *   provider.poll(jobId) -> { state: 'processing' } | { state: 'completed', audioUrl }
  *                          | { state: 'failed', code }
- *   provider.download(audioUrl) -> Buffer (mp3)
+ *   provider.download(audioUrl) -> AsyncIterable<Uint8Array> (mp3 bytes, streamed)
  * Every failure is thrown as TtsProviderError so callers can record code + retryability.
  */
 export class TtsProviderError extends Error {
@@ -94,10 +96,9 @@ function vbeeProvider({ appId, token, apiUrl, timeoutMs }, voiceCode, fetchImpl)
       if (!response.ok) throw new TtsProviderError('audio_download_failed', true)
       const declared = Number(response.headers.get('content-length') ?? 0)
       if (declared > MAX_AUDIO_BYTES) throw new TtsProviderError('audio_too_large', false)
-      const bytes = Buffer.from(await response.arrayBuffer())
-      if (!bytes.length) throw new TtsProviderError('audio_download_failed', true)
-      if (bytes.length > MAX_AUDIO_BYTES) throw new TtsProviderError('audio_too_large', false)
-      return bytes
+      if (!response.body) throw new TtsProviderError('audio_download_failed', true)
+      // The caller streams this to disk and enforces MAX_AUDIO_BYTES on the actual bytes.
+      return Readable.fromWeb(response.body)
     },
   }
 }

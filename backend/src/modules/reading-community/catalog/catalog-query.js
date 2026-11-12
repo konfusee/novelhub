@@ -53,6 +53,59 @@ const snapshotStages = (ids, match = {}) => [
     },
   },
 ]
+/** Ids (strings) of the given stories that are published and visible, without metrics. */
+export async function visibleStoryIds(ids) {
+  if (!ids.length) return new Set()
+  const rows = await Story.aggregate([...snapshotStages(ids.map(String)), { $project: { _id: 1 } }])
+  return new Set(rows.map(row => String(row._id)))
+}
+
+/**
+ * Light summaries (`id`, `title`, `description`, `author`, `authorId`) of the published,
+ * visible stories among `ids`, keyed by id. No catalogue metrics are computed.
+ */
+export async function publishedStorySummaries(ids) {
+  const valid = ids.map(String).filter(id => mongoose.isValidObjectId(id))
+  if (!valid.length) return new Map()
+  const stories = await Story.aggregate([
+    ...snapshotStages(valid),
+    {
+      $lookup: {
+        from: Account.collection.name,
+        localField: 'authorAccountId',
+        foreignField: '_id',
+        pipeline: [{ $project: { displayName: 1, status: 1 } }],
+        as: 'author',
+      },
+    },
+    { $set: { author: { $first: '$author' } } },
+    {
+      $project: {
+        'revision.content.title': 1,
+        'revision.content.description': 1,
+        author: 1,
+      },
+    },
+  ])
+  return new Map(
+    stories.map(story => [
+      String(story._id),
+      {
+        id: String(story._id),
+        title: story.revision.content.title,
+        description: story.revision.content.description ?? '',
+        author: story.author?.status === 'active' ? story.author.displayName : 'Tác giả',
+        authorId: story.author ? String(story.author._id) : null,
+      },
+    ]),
+  )
+}
+
+/** Light summary of one published, visible story for access checks; null otherwise. */
+export async function publishedStorySummary(storyId) {
+  return (await publishedStorySummaries([storyId])).get(String(storyId)) ?? null
+}
+
 const storyLookup = (model, match, pipeline, as) => ({
   $lookup: {
     from: model.collection.name,
@@ -65,13 +118,14 @@ const POPULARITY_WINDOW_MS = 30 * 86400000
 const SORTS = {
   newest: { publishedAt: -1, _id: -1 },
   popular: { popularity: -1, _id: -1 },
-  rating: { average: -1, _id: -1 },
+  rating: { average: -1, ratingCount: -1, _id: -1 },
 }
 
 /**
  * Published, visible story cards. `reads` counts every unique daily chapter view ever
- * recorded; `popularity` counts unique (day, viewer) pairs across the story's chapters
- * over the rolling last 30 days. `tag` is a tag key; `q` also matches a story tag.
+ * recorded; `popularity` counts distinct readers (accounts or guest devices) of the
+ * story's chapters over the rolling last 30 days (BR-NEW-R11). Rating ties are broken by
+ * the number of ratings. `tag` is a tag key; `q` also matches a story tag.
  */
 export async function queryPublishedStories({
   ids,
@@ -138,10 +192,7 @@ export async function queryPublishedStories({
     storyLookup(
       StatisticsEvent,
       { eventType: 'view', occurredAt: { $gte: new Date(now.getTime() - POPULARITY_WINDOW_MS) } },
-      [
-        { $group: { _id: { day: '$day', type: '$viewerType', key: '$viewerKey' } } },
-        { $count: 'value' },
-      ],
+      [{ $group: { _id: { type: '$viewerType', key: '$viewerKey' } } }, { $count: 'value' }],
       'recentViews',
     ),
     storyLookup(Follow, { status: 'active' }, [{ $count: 'value' }], 'follows'),

@@ -366,7 +366,7 @@
     "balance": "Số dư khả dụng",
     "price": "Giá mở khóa",
     "unavailable": "Chưa có giá hoặc thời hạn mở khóa hợp lệ.",
-    "note": "Xác nhận sẽ trừ xu để đọc sớm đúng phiên bản chương đang công khai. Giao dịch đã hoàn tất không hoàn xu.",
+    "note": "Xác nhận sẽ trừ xu để đọc sớm chương này. Giao dịch đã hoàn tất không hoàn xu.",
     "unlock": "Mở khóa bằng xu",
     "wallet": "Đến ví xu",
     "insufficient": "Số dư chưa đủ. Nạp xu hoặc chờ chương được mở miễn phí.",
@@ -1221,7 +1221,7 @@
     "following": "Đang theo dõi",
     "freePreview": "Đọc thử miễn phí",
     "guestMode": "Chế độ đọc khách:",
-    "guestModeDescription": "Tạo tài khoản miễn phí để mở khóa toàn bộ chương, đồng bộ dấu trang và tham gia thảo luận với tác giả.",
+    "guestModeDescription": "Tạo tài khoản miễn phí để đọc mọi chương đã mở, lưu tiến độ đọc, nghe chương và tham gia thảo luận với tác giả.",
     "listenPreview": "Nghe thử",
     "newestFirst": "Mới nhất trước",
     "oldestFirst": "Cũ nhất trước",
@@ -1236,13 +1236,14 @@
     "synopsisMore": "Xem thêm",
     "status": "Trạng thái:",
     "synopsis": "Tóm tắt & chi tiết",
-    "unlockFree": "Mở khóa miễn phí",
+    "unlockFree": "Đăng ký miễn phí",
     "verifiedAuthor": "Tác giả đã xác minh",
     "viewAll": "Xem tất cả {{count}}",
     "works": "Tác phẩm",
     "continueReading": "Đọc tiếp: {{title}}",
     "contentUpdated": "Chương này đã được cập nhật nội dung; bạn sẽ đọc lại từ đầu chương.",
     "startReading": "Bắt đầu đọc",
+    "unlockToContinue": "Mở khóa để đọc tiếp: {{title}}",
     "shareCopied": "Đã sao chép liên kết truyện để chia sẻ.",
     "shareFailed": "Không thể sao chép liên kết. Hãy sao chép địa chỉ trang trong trình duyệt.",
     "bannerAlt": "Banner của {{title}}",
@@ -2155,8 +2156,10 @@
         "story": "Cập nhật truyện",
         "author": "Tác giả",
         "comment": "Bình luận & phản hồi",
-        "system": "Hệ thống"
-      }
+        "system": "Hệ thống",
+        "moderation": "Kiểm duyệt"
+      },
+      "countUnavailable": "Chưa tải được số thông báo chưa đọc"
     }
   },
   "authorData": {
@@ -3354,7 +3357,15 @@
     "resolved-no-credit": "Đã kết thúc đối soát, không cộng xu",
     "doNotRepay": "Không chuyển lại tiền cho đơn này. Kiểm tra lịch sử ví hoặc liên hệ hỗ trợ nếu cần.",
     "exportPage": "Xuất trang này",
-    "settled": "Đã xác nhận thanh toán"
+    "settled": "Đã xác nhận thanh toán",
+    "confirmationHint": "Xu sẽ được cộng vào ví sau khi hệ thống xác nhận thanh toán.",
+    "checkResult": "Kết quả kiểm tra",
+    "checkError": "Chưa kiểm tra được thanh toán",
+    "checkPayment": "Kiểm tra thanh toán",
+    "checkingPayment": "Đang kiểm tra…",
+    "paymentConfirmed": "Đơn đã được xác nhận thanh toán.",
+    "paymentExpired": "Đơn đã hết hạn thanh toán.",
+    "paymentNotReceived": "Chưa ghi nhận thanh toán cho đơn này. Nếu đã chuyển khoản, bạn có thể kiểm tra lại sau ít phút."
   },
   "platformFinance": {
     "title": "Báo cáo tài chính và mở khóa",

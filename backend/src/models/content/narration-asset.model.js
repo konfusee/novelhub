@@ -14,6 +14,16 @@ const schema = new Schema(
     failureCode: String,
     retryable: Boolean,
     attempts: { type: Number, min: 0, default: 0 },
+    // Every provider submit (billed characters); feeds the daily character budget.
+    submissions: [
+      {
+        _id: false,
+        at: { type: Date, required: true },
+        characters: { type: Number, min: 0, required: true },
+      },
+    ],
+    // Reader whose play started the current provider job (per-account cooldown).
+    requestedBy: { type: ObjectId, ref: 'Account' },
     leaseExpiresAt: Date,
     checkedAt: Date,
     requestedAt: Date,
@@ -24,4 +34,6 @@ const schema = new Schema(
 schema.index({ revisionId: 1, voiceId: 1 }, { unique: true })
 schema.index({ chapterId: 1, status: 1 })
 schema.index({ providerRequestId: 1 }, { sparse: true })
+schema.index({ requestedBy: 1, requestedAt: -1 }, { sparse: true })
+schema.index({ 'submissions.at': 1 })
 export const NarrationAsset = defineModel('NarrationAsset', schema, 'narrationAssets')

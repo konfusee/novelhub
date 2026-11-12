@@ -1,11 +1,11 @@
-import { mkdir, rename, writeFile } from 'node:fs/promises'
+import { mkdir, open, rename, rm, stat } from 'node:fs/promises'
 import path from 'node:path'
 import { Chapter, ContentRevision, NarrationAsset } from '../../../models/index.js'
 import { HttpError } from '../../../middleware/errors.js'
 import { mediaRoot } from '../../authoring-publishing/author/author-media.js'
 import { chapterTextProjection } from '../../authoring-publishing/content/rich-chapter-document.js'
 import { readableChapter } from '../reading/access.js'
-import { TtsProviderError } from './tts-provider.js'
+import { MAX_AUDIO_BYTES, TtsProviderError } from './tts-provider.js'
 
 // A worker owns a job for at most LEASE_MS; provider polls are spaced by the provider's
 // pollIntervalMs (default POLL_INTERVAL_MS) and a job still not done after MAX_PROCESSING_MS
@@ -13,6 +13,11 @@ import { TtsProviderError } from './tts-provider.js'
 const LEASE_MS = 60_000
 const POLL_INTERVAL_MS = 2_000
 const MAX_PROCESSING_MS = 15 * 60_000
+// Cost limits: provider submits per (revision, voice) before a retry is refused, and the
+// day boundary (Vietnam time) of the optional platform-wide daily character budget.
+export const MAX_ATTEMPTS = 3
+const VN_OFFSET_MS = 7 * 3_600_000
+const DAY_MS = 86_400_000
 const TRANSIENT = new Set([
   'provider_unreachable',
   'provider_busy',
@@ -24,7 +29,9 @@ const FAILURE_MESSAGES = {
   empty_text: 'Chương không có nội dung để đọc.',
   provider_rejected: 'Dịch vụ giọng nói từ chối nội dung chương này.',
   audio_too_large: 'Tệp âm thanh tạo ra quá lớn.',
+  audio_missing: 'Tệp âm thanh đã bị mất. Vui lòng tạo lại.',
 }
+const EXHAUSTED_MESSAGE = `Đã thử tạo âm thanh ${MAX_ATTEMPTS} lần không thành công. Vui lòng báo quản trị viên.`
 const DEFAULT_FAILURE = 'Tạo âm thanh thất bại. Vui lòng thử lại.'
 const ID_KEY = /^narration[/\\][a-f\d]{24}\.mp3$/
 
@@ -39,9 +46,14 @@ function requireProvider(provider) {
   return provider
 }
 
+const exhausted = asset => (asset.attempts ?? 0) >= MAX_ATTEMPTS
+/** A failed narration may be submitted again: not a permanent failure, attempts left. */
+const canRetry = asset => asset.retryable !== false && !exhausted(asset)
+
 /** Reader-facing state; 'requested' and 'processing' are both "being generated". */
 export function narrationView(asset, { storyId, chapterId }) {
   const status = !asset ? 'none' : asset.status === 'requested' ? 'processing' : asset.status
+  const retryable = status === 'failed' && canRetry(asset)
   return {
     status,
     audioUrl: status === 'available' ? `/reader/narration/${storyId}/${chapterId}/audio` : null,
@@ -49,8 +61,11 @@ export function narrationView(asset, { storyId, chapterId }) {
       status === 'failed'
         ? {
             code: asset.failureCode ?? 'tts_failed',
-            message: FAILURE_MESSAGES[asset.failureCode] ?? DEFAULT_FAILURE,
-            retryable: asset.retryable !== false,
+            message:
+              asset.retryable !== false && !retryable
+                ? EXHAUSTED_MESSAGE
+                : (FAILURE_MESSAGES[asset.failureCode] ?? DEFAULT_FAILURE),
+            retryable,
           }
         : null,
     updatedAt: asset?.updatedAt ?? null,
@@ -102,31 +117,110 @@ async function submit(config, provider, chapter, asset) {
   const text = await chapterText(chapter)
   if (!text) return fail(claimed, 'empty_text', false)
   if (text.length > provider.maxCharacters) return fail(claimed, 'text_too_long', false)
+  // Every submit is billed, so it counts as an attempt and toward the daily budget even
+  // when the provider then fails.
+  const submitted = await NarrationAsset.findOneAndUpdate(
+    { _id: claimed._id, status: 'processing' },
+    {
+      $push: { submissions: { at: new Date(), characters: text.length } },
+      $inc: { attempts: 1, version: 1 },
+    },
+    { returnDocument: 'after' },
+  )
+  if (!submitted) return NarrationAsset.findById(claimed._id)
   try {
     const { jobId } = await provider.submit({ text, callbackUrl: config.tts?.callbackUrl })
     return NarrationAsset.findOneAndUpdate(
       { _id: claimed._id, status: 'processing' },
       {
         $set: { providerRequestId: jobId, checkedAt: new Date(), leaseExpiresAt: null },
-        $inc: { attempts: 1, version: 1 },
+        $inc: { version: 1 },
       },
       { returnDocument: 'after' },
     )
   } catch (error) {
     if (!(error instanceof TtsProviderError)) throw error
-    return fail(claimed, error.code, error.retryable)
+    return fail(submitted, error.code, error.retryable)
   }
 }
 
-async function store(config, asset, bytes) {
+/** Streams the provider audio to local storage, refusing more than MAX_AUDIO_BYTES. */
+async function store(config, asset, chunks) {
   const key = `narration/${asset._id}.mp3`
   const target = narrationAudioPath(config, key)
   await mkdir(path.dirname(target), { recursive: true })
   const temp = `${target}.${process.pid}.${Date.now()}.tmp`
-  await writeFile(temp, bytes)
-  await rename(temp, target)
-  return key
+  const file = await open(temp, 'w')
+  let size = 0
+  try {
+    try {
+      for await (const chunk of chunks) {
+        size += chunk.length
+        if (size > MAX_AUDIO_BYTES) throw new TtsProviderError('audio_too_large', false)
+        await file.write(chunk)
+      }
+    } catch (error) {
+      if (error instanceof TtsProviderError) throw error
+      throw new TtsProviderError('audio_download_failed', true)
+    }
+    if (!size) throw new TtsProviderError('audio_download_failed', true)
+    await file.close()
+    await rename(temp, target)
+  } catch (error) {
+    await file.close().catch(() => {})
+    await rm(temp, { force: true })
+    throw error
+  }
+  return { key, size }
 }
+
+/**
+ * Deletes the stored audio of the chapter's other narrations (older revisions or another
+ * voice): they can no longer be served, since playback always uses the live revision.
+ */
+async function pruneSuperseded(config, asset) {
+  const stale = await NarrationAsset.find({
+    chapterId: asset.chapterId,
+    _id: { $ne: asset._id },
+    status: 'available',
+  })
+    .select('+audioReference')
+    .lean()
+  for (const old of stale) {
+    const updated = await NarrationAsset.findOneAndUpdate(
+      { _id: old._id, status: 'available' },
+      {
+        $set: { status: 'failed', failureCode: 'superseded', retryable: false },
+        $unset: { audioReference: 1 },
+        $inc: { version: 1 },
+      },
+    )
+    if (updated && old.audioReference)
+      await rm(narrationAudioPath(config, old.audioReference), { force: true }).catch(() => {})
+  }
+}
+
+/** An 'available' narration whose file is gone becomes a retryable failure (fresh attempts). */
+async function markMissing(asset) {
+  return NarrationAsset.findOneAndUpdate(
+    { _id: asset._id, status: 'available' },
+    {
+      $set: { status: 'failed', failureCode: 'audio_missing', retryable: true, attempts: 0 },
+      $unset: { audioReference: 1 },
+      $inc: { version: 1 },
+    },
+    { returnDocument: 'after' },
+  ).then(updated => updated ?? NarrationAsset.findById(asset._id))
+}
+
+const fileMissing = (config, reference) =>
+  stat(narrationAudioPath(config, reference)).then(
+    () => false,
+    error => {
+      if (error?.code === 'ENOENT' || error instanceof HttpError) return true
+      throw error
+    },
+  )
 
 /**
  * Moves a pending job forward: submits a 'requested' job, or polls a 'processing' job and
@@ -166,15 +260,14 @@ async function advance(config, provider, chapter, asset, { force = false } = {})
     const result = await provider.poll(claimed.providerRequestId)
     if (result.state === 'processing') return release()
     if (result.state === 'failed') return fail(claimed, result.code ?? 'provider_failed', true)
-    const bytes = await provider.download(result.audioUrl)
-    const key = await store(config, claimed, bytes)
-    return NarrationAsset.findOneAndUpdate(
+    const { key, size } = await store(config, claimed, await provider.download(result.audioUrl))
+    const stored = await NarrationAsset.findOneAndUpdate(
       { _id: claimed._id, status: 'processing' },
       {
         $set: {
           status: 'available',
           audioReference: key,
-          sizeBytes: bytes.length,
+          sizeBytes: size,
           completedAt: new Date(),
           leaseExpiresAt: null,
           failureCode: null,
@@ -184,6 +277,8 @@ async function advance(config, provider, chapter, asset, { force = false } = {})
       },
       { returnDocument: 'after' },
     )
+    if (stored) await pruneSuperseded(config, stored)
+    return stored
   } catch (error) {
     if (!(error instanceof TtsProviderError)) {
       await release()
@@ -193,17 +288,71 @@ async function advance(config, provider, chapter, asset, { force = false } = {})
   }
 }
 
-/** Narration state of the chapter's live revision; also advances a pending job. */
+/**
+ * Narration state of the chapter's live revision; also advances a pending job and turns an
+ * available narration whose file disappeared into a retryable failure.
+ */
 export async function narrationStatus({ config, provider, account, storyId, chapterId }) {
   const { chapter } = await readableChapter({ storyId, chapterId, account })
   requireProvider(provider)
-  const asset = await advance(config, provider, chapter, await current(chapter, provider))
+  let asset = await advance(config, provider, chapter, await current(chapter, provider))
+  if (asset?.status === 'available') {
+    const stored = await NarrationAsset.findById(asset._id).select('+audioReference').lean()
+    if (stored && (await fileMissing(config, stored.audioReference)))
+      asset = await markMissing(asset)
+  }
   return narrationView(asset, { storyId, chapterId })
+}
+
+const vietnamDayStart = now =>
+  new Date(Math.floor((now.getTime() + VN_OFFSET_MS) / DAY_MS) * DAY_MS - VN_OFFSET_MS)
+
+/**
+ * Cost guards before a new provider job is started for this account: a per-account
+ * cooldown between job starts, and the optional platform-wide daily character budget.
+ */
+async function guardNewJob(config, account, chapter) {
+  const now = new Date()
+  const cooldownMs = (config.tts?.requestCooldownSeconds ?? 0) * 1000
+  if (cooldownMs) {
+    const last = await NarrationAsset.findOne({
+      requestedBy: account._id,
+      requestedAt: { $gt: new Date(now.getTime() - cooldownMs) },
+    })
+      .sort({ requestedAt: -1 })
+      .select('requestedAt')
+      .lean()
+    if (last) {
+      const seconds = Math.ceil((last.requestedAt.getTime() + cooldownMs - now.getTime()) / 1000)
+      throw new HttpError(
+        429,
+        'narration_cooldown',
+        `Bạn vừa yêu cầu tạo âm thanh. Vui lòng thử lại sau ${seconds} giây.`,
+      )
+    }
+  }
+  const limit = config.tts?.dailyCharacterLimit ?? 0
+  if (limit) {
+    const since = vietnamDayStart(now)
+    const [usage] = await NarrationAsset.aggregate([
+      { $match: { 'submissions.at': { $gte: since } } },
+      { $unwind: '$submissions' },
+      { $match: { 'submissions.at': { $gte: since } } },
+      { $group: { _id: null, characters: { $sum: '$submissions.characters' } } },
+    ])
+    if ((usage?.characters ?? 0) + (await chapterText(chapter)).length > limit)
+      throw new HttpError(
+        429,
+        'tts_daily_limit',
+        'Hệ thống đã dùng hết hạn mức tạo âm thanh hôm nay. Vui lòng thử lại vào ngày mai.',
+      )
+  }
 }
 
 /**
  * First play creates the narration for (published revision, voice); a failed one is
- * retried. Concurrent first plays share one asset through the unique index.
+ * retried while it is retryable and has attempts left. Concurrent first plays share one
+ * asset through the unique index. Starting a provider job passes `guardNewJob` first.
  */
 export async function requestNarration({ config, provider, account, storyId, chapterId }) {
   const { chapter } = await readableChapter({ storyId, chapterId, account })
@@ -211,6 +360,7 @@ export async function requestNarration({ config, provider, account, storyId, cha
   const key = { revisionId: chapter.publishedRevisionId, voiceId: provider.voiceId }
   let asset = await current(chapter, provider)
   if (!asset) {
+    await guardNewJob(config, account, chapter)
     try {
       await NarrationAsset.create({
         ...key,
@@ -218,13 +368,15 @@ export async function requestNarration({ config, provider, account, storyId, cha
         language: 'vi',
         provider: provider.name,
         status: 'requested',
+        requestedBy: account._id,
         requestedAt: new Date(),
       })
     } catch (error) {
       if (error?.code !== 11000) throw error
     }
     asset = await current(chapter, provider)
-  } else if (asset.status === 'failed') {
+  } else if (asset.status === 'failed' && canRetry(asset)) {
+    await guardNewJob(config, account, chapter)
     asset =
       (await NarrationAsset.findOneAndUpdate(
         { _id: asset._id, status: 'failed' },
@@ -232,6 +384,7 @@ export async function requestNarration({ config, provider, account, storyId, cha
           $set: {
             status: 'requested',
             provider: provider.name,
+            requestedBy: account._id,
             requestedAt: new Date(),
             failureCode: null,
             retryable: null,
@@ -259,6 +412,10 @@ export async function narrationFile({ config, provider, account, storyId, chapte
     .select('+audioReference')
     .lean()
   if (!asset) throw new HttpError(404, 'narration_unavailable', 'Âm thanh chưa sẵn sàng.')
+  if (await fileMissing(config, asset.audioReference)) {
+    await markMissing(asset)
+    throw new HttpError(404, 'narration_unavailable', 'Âm thanh chưa sẵn sàng.')
+  }
   return narrationAudioPath(config, asset.audioReference)
 }
 

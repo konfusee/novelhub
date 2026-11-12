@@ -38,6 +38,7 @@ async function queuePayoutNotice(accountId, periodId, result, session, now) {
         eventType,
         deliveryState: 'available',
         payload: {
+          executionMode: 'simulation',
           periodId,
           withdrawalId: result.withdrawalId ?? null,
           amountCoins: result.amountCoins ?? null,

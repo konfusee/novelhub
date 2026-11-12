@@ -11,7 +11,13 @@ import {
 import { createTtsProvider } from '../modules/reading-community/narration/tts-provider.js'
 
 const id = z.string().regex(/^[a-f\d]{24}$/i)
-const callbackBody = z.object({ request_id: z.string().trim().min(1).max(200) }).passthrough()
+// Verified live (2026-11): Vbee posts `{ requestId, status: 'SUCCESS', audioLink }`.
+// `request_id` (the older documented name) is still accepted.
+const requestId = z.string().trim().min(1).max(200)
+const callbackBody = z
+  .object({ requestId: requestId.optional(), request_id: requestId.optional() })
+  .passthrough()
+  .refine(body => body.requestId || body.request_id)
 
 export function createReaderNarrationRouter(config) {
   const router = Router()
@@ -68,7 +74,11 @@ export function createReaderNarrationRouter(config) {
     try {
       const parsed = callbackBody.safeParse(req.body)
       if (parsed.success)
-        await narrationCallback({ config, provider, requestId: parsed.data.request_id })
+        await narrationCallback({
+          config,
+          provider,
+          requestId: parsed.data.requestId ?? parsed.data.request_id,
+        })
       res.status(204).end()
     } catch (error) {
       next(error)

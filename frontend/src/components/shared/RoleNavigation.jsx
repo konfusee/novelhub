@@ -14,14 +14,14 @@ import {
   UserRound,
 } from '../icons'
 import { Link, useLocation, useNavigate } from 'react-router'
-import { useEffect, useState } from 'react'
-import { apiGet } from '../../api/client'
+import { useId, useState } from 'react'
 import { ROLE_HOME, useAuth } from '../../context/AuthContext'
 import { useTheme } from '../../context/ThemeContext'
 import { Avatar, IconButton, Input } from '../ui'
 import { useLocale } from '../../context/LocaleContext'
 import { workspaceHeaderNavigation, workspaceWallets } from '../../navigation/workspaceNavigation'
 import { useWorkspaceBalance } from '../../api/useWorkspaceBalance'
+import { useUnreadNotifications } from '../../api/useUnreadNotifications'
 import { ROUTES } from '../../app/routes'
 
 const roleMeta = {
@@ -161,28 +161,8 @@ export function SharedWorkspaceHeader({
   const navigate = useNavigate()
   const wallet = workspaceWallets[currentRole]
   const balance = useWorkspaceBalance(currentRole)
-  const { currentUser } = useAuth()
-  const accountId = currentUser?.id
-  const [unread, setUnread] = useState(null)
-  useEffect(() => {
-    if (!accountId) return
-    const controller = new AbortController()
-    const refresh = () => {
-      apiGet('/reader/notifications/unread-count', { signal: controller.signal })
-        .then(({ ok, data }) => {
-          if (!controller.signal.aborted) setUnread({ accountId, count: ok ? data?.count : 0 })
-        })
-        .catch(() => {})
-    }
-    refresh()
-    window.addEventListener('focus', refresh)
-    const timer = window.setInterval(refresh, 30_000)
-    return () => {
-      controller.abort()
-      window.removeEventListener('focus', refresh)
-      window.clearInterval(timer)
-    }
-  }, [accountId, pathname])
+  const unreadCount = useUnreadNotifications()
+  const unreadDescriptionId = useId()
   const walletActive =
     wallet &&
     (pathname === wallet.path || (currentRole === 'author' && pathname === '/author/wallet'))
@@ -263,15 +243,27 @@ export function SharedWorkspaceHeader({
           label={t('common.notifications')}
           shape="circle"
           className="relative"
+          aria-describedby={unreadDescriptionId}
           onClick={() => navigate(ROUTES.workspaceNotifications(currentRole))}
         >
           <Bell size={18} />
-          {unread?.accountId === accountId && unread?.count > 0 && (
-            <span className="absolute right-1 top-1 rounded-full bg-rose px-1 text-[10px] leading-4 text-ink">
-              {unread.count > 99 ? '99+' : formatNumber(unread.count)}
+          {unreadCount > 0 && (
+            <span
+              aria-hidden="true"
+              data-notification-count
+              className="absolute -right-1 -top-1 flex h-5 min-w-5 items-center justify-center rounded-full bg-rose px-1 text-[10px] font-bold leading-none text-on-rose ring-2 ring-surface"
+            >
+              {unreadCount > 99 ? '99+' : unreadCount}
             </span>
           )}
         </IconButton>
+        <span id={unreadDescriptionId} className="sr-only">
+          {unreadCount === null
+            ? t('readerData.notifications.countUnavailable')
+            : unreadCount
+              ? t('readerData.notifications.unreadCount', { count: unreadCount })
+              : t('readerData.notifications.allRead')}
+        </span>
         <WorkspaceHeaderAccount currentRole={currentRole} />
       </div>
       <div className="h-14 px-4 sm:hidden">
