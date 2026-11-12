@@ -1,5 +1,22 @@
 # NovelHub decision log
 
+## Finance amendment — confirmed 2026-11-11
+
+The Coins & Payouts owner explicitly confirmed automatic simulated settlement.
+This amendment supersedes older requirements for Admin approval, external-result
+recording and Admin payout bank correction for the current demonstration scope.
+At 00:00 on the 1st in Asia/Ho_Chi_Minh the system generates the monthly sheet,
+reserves eligible accumulated earnings (default threshold 100,000 coins), and
+automatically records simulated Paid/Failed outcomes. Admin has read-only payout
+access: runs, statistics, history, filters and CSV export. No bank transfer occurs.
+Every automatic outcome identifies simulation, a system actor and a deterministic
+receipt key. Retries never debit or settle twice. Invalid destination information
+leaves the obligation pending; the system never invents beneficiary details.
+Historical records remain unchanged and unclassified records are labelled legacy.
+See [current implementation and use cases](coins-payouts-completion.md) and
+[updated diagrams](diagrams/payouts-automatic-current.drawio).
+
+
 **Status: DRAFT FOR REVIEW.** This log is the decision surface for the
 requirements-to-database work. “Confirmed” is the current accepted contract;
 “Proposed technical design” is advice for domain/schema review, not product

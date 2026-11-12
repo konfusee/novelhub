@@ -8,7 +8,7 @@ import {
   WithdrawalRequest,
 } from '../src/models/index.js'
 import { generateMonthlyPayouts } from '../src/modules/coins-payouts/finance/admin-monthly-payouts.js'
-import { recordSimulatedPayoutResult } from '../src/modules/coins-payouts/finance/admin-payout-results.js'
+import { recordPayoutResult } from '../src/modules/coins-payouts/finance/admin-payout-results.js'
 import { authenticatedAccount } from './fixtures/accounts.js'
 import { useTestDatabase } from './db.js'
 
@@ -42,7 +42,7 @@ async function prepare() {
   const generated = await generateMonthlyPayouts(
     admin,
     '2026-11',
-    new Date('2026-11-30T10:00:00+07:00'),
+    new Date('2026-11-01T00:00:00+07:00'),
   )
 
   const withdrawalId = generated.results.find(
@@ -64,11 +64,17 @@ async function prepare() {
   return { admin, withdrawalId, walletId: wallet._id }
 }
 
-function input(result, note = '') {
+function input(result, note = 'Kết quả kiểm tra chuyển khoản') {
   return {
     resultEntryKey: crypto.randomUUID(),
     result,
     note,
+    ...(result === 'Paid'
+      ? {
+          transferReference: `BANK-${crypto.randomUUID()}`,
+          transferOccurredAt: new Date().toISOString(),
+        }
+      : {}),
   }
 }
 
@@ -87,7 +93,7 @@ async function expectWalletUnchanged(walletId) {
 it('Paid đổi khoản chi sang paid nhưng không trừ xu lần nữa', async () => {
   const { admin, withdrawalId, walletId } = await prepare()
 
-  const result = await recordSimulatedPayoutResult(admin, withdrawalId, input('Paid'))
+  const result = await recordPayoutResult(admin, withdrawalId, input('Paid'))
 
   expect(result).toMatchObject({
     withdrawalId,
@@ -100,7 +106,7 @@ it('Paid đổi khoản chi sang paid nhưng không trừ xu lần nữa', async
 
   const entry = await PayoutResultEntry.findById(result.resultEntryId).select('+transferReference')
 
-  expect(entry.transferReference).toMatch(/^SIM-/)
+  expect(entry.transferReference).toMatch(/^BANK-/)
   expect(await PayoutResultEntry.countDocuments()).toBe(1)
 
   await expectWalletUnchanged(walletId)
@@ -109,7 +115,7 @@ it('Paid đổi khoản chi sang paid nhưng không trừ xu lần nữa', async
 it('Failed giữ pending; lần thử mới có thể chuyển thành Paid', async () => {
   const { admin, withdrawalId, walletId } = await prepare()
 
-  const failed = await recordSimulatedPayoutResult(
+  const failed = await recordPayoutResult(
     admin,
     withdrawalId,
     input('Failed', 'Giả lập lỗi chuyển khoản'),
@@ -117,7 +123,7 @@ it('Failed giữ pending; lần thử mới có thể chuyển thành Paid', asy
 
   expect(failed.status).toBe('pending')
 
-  const paid = await recordSimulatedPayoutResult(admin, withdrawalId, input('Paid'))
+  const paid = await recordPayoutResult(admin, withdrawalId, input('Paid'))
 
   expect(paid.status).toBe('paid')
 
@@ -132,14 +138,14 @@ it('gửi lại cùng mã trả kết quả cũ; không cho trả thành công l
   const { admin, withdrawalId, walletId } = await prepare()
   const body = input('Paid')
 
-  const first = await recordSimulatedPayoutResult(admin, withdrawalId, body)
+  const first = await recordPayoutResult(admin, withdrawalId, body)
 
-  const replay = await recordSimulatedPayoutResult(admin, withdrawalId, body)
+  const replay = await recordPayoutResult(admin, withdrawalId, body)
 
   expect(replay.reused).toBe(true)
   expect(replay.resultEntryId).toBe(first.resultEntryId)
 
-  await expect(recordSimulatedPayoutResult(admin, withdrawalId, input('Paid'))).rejects.toThrow(
+  await expect(recordPayoutResult(admin, withdrawalId, input('Paid'))).rejects.toThrow(
     'Khoản chi đã được thanh toán.',
   )
 
@@ -158,12 +164,13 @@ it('không được dùng lại mã thao tác với kết quả khác', async ()
   const { admin, withdrawalId } = await prepare()
   const body = input('Failed')
 
-  await recordSimulatedPayoutResult(admin, withdrawalId, body)
+  await recordPayoutResult(admin, withdrawalId, body)
 
   await expect(
-    recordSimulatedPayoutResult(admin, withdrawalId, {
+    recordPayoutResult(admin, withdrawalId, {
       ...body,
-      result: 'Paid',
+      ...input('Paid'),
+      resultEntryKey: body.resultEntryKey,
     }),
   ).rejects.toThrow('Mã thao tác đã được dùng cho kết quả khác.')
 
@@ -180,7 +187,7 @@ it('lỗi ghi audit thì rollback trạng thái và bản ghi kết quả', asyn
     .mockRejectedValueOnce(new Error('Giả lập lỗi audit'))
 
   try {
-    await expect(recordSimulatedPayoutResult(admin, withdrawalId, input('Paid'))).rejects.toThrow(
+    await expect(recordPayoutResult(admin, withdrawalId, input('Paid'))).rejects.toThrow(
       'Giả lập lỗi audit',
     )
   } finally {
@@ -198,7 +205,7 @@ it('tài khoản không có quyền admin không được ghi kết quả', asyn
   const { withdrawalId } = await prepare()
   const { account: reader } = await authenticatedAccount()
 
-  await expect(recordSimulatedPayoutResult(reader, withdrawalId, input('Paid'))).rejects.toThrow(
+  await expect(recordPayoutResult(reader, withdrawalId, input('Paid'))).rejects.toThrow(
     'Quyền quản trị không còn hiệu lực.',
   )
 

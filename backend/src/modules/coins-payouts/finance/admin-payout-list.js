@@ -1,4 +1,4 @@
-import { PayoutResultEntry, WithdrawalRequest } from '../../../models/index.js'
+import { PayoutResultEntry, PayoutSheetRow, WithdrawalRequest } from '../../../models/index.js'
 import { withTransaction } from '../../../db/connection.js'
 import { assertReportAmounts, matchesAuthorName, paginateReport } from './finance-reporting.js'
 
@@ -23,6 +23,15 @@ export async function listMonthlyPayouts({
       .session(session)
       .lean()
 
+    const sheets = await PayoutSheetRow.find({
+      withdrawalRequestId: { $in: rows.map(row => row._id) },
+    })
+      .select('withdrawalRequestId +correctedBankDetailsSnapshot')
+      .session(session)
+      .lean()
+    const correctedBanks = new Map(
+      sheets.map(row => [String(row.withdrawalRequestId), row.correctedBankDetailsSnapshot]),
+    )
     const latestResults = rows.length
       ? await PayoutResultEntry.aggregate([
           {
@@ -41,9 +50,12 @@ export async function listMonthlyPayouts({
           {
             $group: {
               _id: '$withdrawalRequestId',
+              executionMode: { $first: '$executionMode' },
               result: { $first: '$result' },
               note: { $first: '$note' },
               occurredAt: { $first: '$occurredAt' },
+              transferReference: { $first: '$transferReference' },
+              transferOccurredAt: { $first: '$transferOccurredAt' },
             },
           },
         ]).session(session)
@@ -53,7 +65,7 @@ export async function listMonthlyPayouts({
 
     const items = rows.map(row => {
       const latest = resultByWithdrawal.get(String(row._id))
-      const bank = row.bankDetailsSnapshot
+      const bank = correctedBanks.get(String(row._id)) ?? row.bankDetailsSnapshot
 
       return {
         withdrawalId: String(row._id),
@@ -73,9 +85,16 @@ export async function listMonthlyPayouts({
           : null,
         latestResult: latest
           ? {
+              executionMode: latest.executionMode ?? 'legacy',
               result: latest.result,
               note: latest.note ?? '',
               occurredAt: latest.occurredAt,
+              ...(latest.result === 'Paid'
+                ? {
+                    transferReference: latest.transferReference ?? null,
+                    transferOccurredAt: latest.transferOccurredAt ?? null,
+                  }
+                : {}),
             }
           : null,
       }

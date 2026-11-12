@@ -1,3 +1,4 @@
+import { PayoutDetailsDialog } from '../shared/PayoutDetailsDialog'
 import { useState } from 'react'
 import { useBackendResource } from '../../api/useBackendResource'
 import { useLocale } from '../../context/LocaleContext'
@@ -8,20 +9,10 @@ const empty = {
   hasMore: false,
 }
 
-const columns = [
-  'period',
-  'coins',
-  'money',
-  'status',
-  'latestResult',
-  'processedAt',
-]
+const columns = ['period', 'coins', 'money', 'status', 'latestResult', 'processedAt']
 
 function selectResponse(response) {
-  if (
-    !Array.isArray(response?.items) ||
-    typeof response.hasMore !== 'boolean'
-  ) {
+  if (!Array.isArray(response?.items) || typeof response.hasMore !== 'boolean') {
     throw new Error('Invalid author payout history response')
   }
 
@@ -32,13 +23,10 @@ export function AuthorPayoutHistory() {
   const { t, formatNumber, formatDate } = useLocale()
   const m = key => t(`authorPayouts.${key}`)
 
+  const [selectedPayout, setSelectedPayout] = useState(null)
   const [page, setPage] = useState(1)
 
-  const feed = useBackendResource(
-    `/author/payouts?page=${page}`,
-    empty,
-    selectResponse,
-  )
+  const feed = useBackendResource(`/author/payouts?page=${page}`, empty, selectResponse)
 
   const loading = feed.status === 'loading'
   const ready = feed.status === 'ready'
@@ -48,17 +36,10 @@ export function AuthorPayoutHistory() {
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
           <h2 className="text-h3">{m('title')}</h2>
-          <p className="mt-2 max-w-3xl text-sm text-muted">
-            {m('hint')}
-          </p>
+          <p className="mt-2 max-w-3xl text-sm text-muted">{m('hint')}</p>
         </div>
 
-        <Button
-          type="button"
-          variant="secondary"
-          disabled={loading}
-          onClick={feed.retry}
-        >
+        <Button type="button" variant="secondary" disabled={loading} onClick={feed.retry}>
           {m('reload')}
         </Button>
       </div>
@@ -78,20 +59,14 @@ export function AuthorPayoutHistory() {
       {ready && (
         <>
           {feed.data.items.length === 0 ? (
-            <p className="mt-5 text-sm text-muted">
-              {m('empty')}
-            </p>
+            <p className="mt-5 text-sm text-muted">{m('empty')}</p>
           ) : (
             <div className="mt-5 overflow-x-auto">
               <table className="w-full min-w-[780px] text-left text-sm">
                 <thead>
                   <tr className="border-b border-line">
                     {columns.map(key => (
-                      <th
-                        key={key}
-                        scope="col"
-                        className="px-3 py-3"
-                      >
+                      <th key={key} scope="col" className="px-3 py-3">
                         {m(key)}
                       </th>
                     ))}
@@ -100,34 +75,34 @@ export function AuthorPayoutHistory() {
 
                 <tbody>
                   {feed.data.items.map(row => (
-                    <tr
-                      key={row.withdrawalId}
-                      className="border-b border-line align-top"
-                    >
+                    <tr key={row.withdrawalId} className="border-b border-line align-top">
                       <td className="px-3 py-4">
                         {row.periodId}
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="mt-2"
+                          onClick={() => setSelectedPayout(row.withdrawalId)}
+                        >
+                          {t('payoutDetails.open')}
+                        </Button>
                       </td>
 
-                      <td className="px-3 py-4 tabular-nums">
-                        {formatNumber(row.amountCoins)}
-                      </td>
+                      <td className="px-3 py-4 tabular-nums">{formatNumber(row.amountCoins)}</td>
 
                       <td className="px-3 py-4 tabular-nums">
                         {formatNumber(row.payoutSlipAmountVnd)}
                       </td>
 
-                      <td className="px-3 py-4">
-                        {m(row.status)}
-                      </td>
+                      <td className="px-3 py-4">{m(row.status)}</td>
 
                       <td className="px-3 py-4">
                         {row.latestResult
-                          ? m(
-                              row.latestResult.result === 'Paid'
-                                ? 'success'
-                                : 'failed',
-                            )
+                          ? m(row.latestResult.result === 'Paid' ? 'success' : 'failed')
                           : m('notAttempted')}
+                        {row.latestResult?.executionMode === 'simulation' && (
+                          <p className="mt-1 text-xs text-muted">{m('simulatedResult')}</p>
+                        )}
                       </td>
 
                       <td className="px-3 py-4">
@@ -156,9 +131,7 @@ export function AuthorPayoutHistory() {
               {m('previous')}
             </Button>
 
-            <span className="text-sm text-muted">
-              {t('authorPayouts.page', { page })}
-            </span>
+            <span className="text-sm text-muted">{t('authorPayouts.page', { page })}</span>
 
             <Button
               type="button"
@@ -170,6 +143,13 @@ export function AuthorPayoutHistory() {
             </Button>
           </div>
         </>
+      )}
+      {selectedPayout && (
+        <PayoutDetailsDialog
+          withdrawalId={selectedPayout}
+          role="author"
+          onClose={() => setSelectedPayout(null)}
+        />
       )}
     </Card>
   )

@@ -1,3 +1,4 @@
+import { createAdminTransactionsRouter } from './routes/admin-transactions.routes.js'
 import cors from 'cors'
 import express from 'express'
 import helmet from 'helmet'
@@ -103,6 +104,7 @@ export function createApp(config) {
   app.use('/api', createAuthorEarningsRouter(config))
   app.use('/api', createAuthorBankDetailsRouter(config))
   app.use('/api', createAdminMonthlyPayoutsRouter(config))
+  app.use('/api', createAdminTransactionsRouter(config))
   app.use('/api', createAdminPayoutPreviewRouter(config))
   app.use('/api', createAdminAuthorRevenueRouter(config))
   app.use('/api', createAuthorPayoutsRouter(config))

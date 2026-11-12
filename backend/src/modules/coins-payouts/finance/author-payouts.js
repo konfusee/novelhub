@@ -36,6 +36,7 @@ export async function getAuthorPayouts(accountId, page = 1) {
           {
             $group: {
               _id: '$withdrawalRequestId',
+              executionMode: { $first: '$executionMode' },
               result: { $first: '$result' },
               occurredAt: { $first: '$occurredAt' },
             },
@@ -61,6 +62,7 @@ export async function getAuthorPayouts(accountId, page = 1) {
           createdAt: row.createdAt,
           latestResult: latest
             ? {
+                executionMode: latest.executionMode ?? 'legacy',
                 result: latest.result,
                 occurredAt: latest.occurredAt,
               }

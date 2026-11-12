@@ -143,6 +143,7 @@ it('lấy kết quả mới nhất và không trả mã chuyển khoản riêng 
 
   expect(response.status).toBe(200)
   expect(response.body.items[0].latestResult).toEqual({
+    executionMode: 'legacy',
     result: 'Failed',
     note: 'Lần thử mới nhất',
     occurredAt: '2026-12-01T02:00:00.000Z',

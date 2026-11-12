@@ -1,36 +1,37 @@
+import { createHash } from 'node:crypto'
+import { requireCurrentAdmin } from './admin-guard.js'
 import {
-  Account,
   AuditEvent,
   PayoutResultEntry,
-  RoleAssignment,
+  PayoutSheetRow,
   WithdrawalRequest,
 } from '../../../models/index.js'
 import { withTransaction } from '../../../db/connection.js'
 import { HttpError } from '../../../middleware/errors.js'
 import { notify } from '../../accounts-administration/service.js'
 
-export async function recordSimulatedPayoutResult(admin, withdrawalId, input, now = new Date()) {
+export async function recordPayoutResult(admin, withdrawalId, input, now = new Date()) {
   return withTransaction(async session => {
-    // Kiểm tra lại quyền admin tại thời điểm ghi dữ liệu.
-    const actor = await Account.findOneAndUpdate(
-      {
-        _id: admin._id,
-        status: 'active',
-        credentialVersion: admin.credentialVersion,
-        authorizationEpoch: admin.authorizationEpoch,
-      },
-      { $inc: { version: 1 } },
-      { session },
-    )
-
-    const adminRole = await RoleAssignment.exists({
-      accountId: admin._id,
-      role: 'admin',
-      status: 'active',
-    }).session(session)
-
-    if (!actor || !adminRole) {
-      throw new HttpError(403, 'forbidden', 'Quyền quản trị không còn hiệu lực.')
+    await requireCurrentAdmin(admin, session)
+    const note = input.note?.trim() ?? ''
+    const transferReference = input.transferReference?.trim() ?? ''
+    const transferOccurredAt = input.transferOccurredAt ? new Date(input.transferOccurredAt) : null
+    if (
+      !['Paid', 'Failed'].includes(input.result) ||
+      (input.result === 'Failed' &&
+        (!note || transferReference || transferOccurredAt || input.bankDetailsCorrection)) ||
+      (input.result === 'Paid' &&
+        (!transferReference ||
+          transferReference.length > 200 ||
+          !transferOccurredAt ||
+          !Number.isFinite(+transferOccurredAt) ||
+          transferOccurredAt > now))
+    ) {
+      throw new HttpError(
+        400,
+        'validation_error',
+        'Nhập mã giao dịch và thời gian chuyển khoản, hoặc lý do thất bại.',
+      )
     }
 
     // Ghi vào khoản chi để các thao tác đồng thời không xử lý
@@ -45,17 +46,35 @@ export async function recordSimulatedPayoutResult(admin, withdrawalId, input, no
       throw new HttpError(404, 'payout_not_found', 'Không tìm thấy khoản chi.')
     }
 
-    const note = input.note ?? ''
+    const requestDigest = createHash('sha256')
+      .update(
+        JSON.stringify({
+          result: input.result,
+          note,
+          transferReference,
+          transferOccurredAt,
+          bank: input.bankDetailsCorrection ?? null,
+          correctionReason: input.correctionReason ?? null,
+        }),
+      )
+      .digest('hex')
 
     const previous = await PayoutResultEntry.findOne({
       withdrawalRequestId: withdrawal._id,
       resultEntryKey: input.resultEntryKey,
     })
+      .select('+transferReference')
       .session(session)
       .lean()
 
     if (previous) {
-      if (previous.result !== input.result || (previous.note ?? '') !== note) {
+      if (
+        (previous.requestDigest && previous.requestDigest !== requestDigest) ||
+        previous.result !== input.result ||
+        (previous.note ?? '') !== note ||
+        (previous.transferReference ?? '') !== transferReference ||
+        +(previous.transferOccurredAt ?? 0) !== +(transferOccurredAt ?? 0)
+      ) {
         throw new HttpError(
           409,
           'payout_result_conflict',
@@ -76,18 +95,85 @@ export async function recordSimulatedPayoutResult(admin, withdrawalId, input, no
       throw new HttpError(409, 'payout_already_paid', 'Khoản chi đã được thanh toán.')
     }
 
+    if (input.result === 'Paid' && transferOccurredAt < withdrawal.evaluatedAt) {
+      throw new HttpError(
+        400,
+        'validation_error',
+        'Thời gian chuyển khoản phải sau khi lập khoản chi.',
+      )
+    }
+
+    const sheet = await PayoutSheetRow.findOne({ withdrawalRequestId: withdrawal._id })
+      .select('+bankDetailsSnapshot +correctedBankDetailsSnapshot')
+      .session(session)
+    let correctedBankDetailsSnapshot
+    if (input.result === 'Paid') {
+      if (!sheet) throw new HttpError(409, 'payout_bank_required', 'Chưa có bảng chi trả hợp lệ.')
+      const correction = input.bankDetailsCorrection
+      if (correction) {
+        if (
+          !input.correctionReason?.trim() ||
+          !['bankName', 'accountNumber', 'accountHolder'].every(
+            key => typeof correction[key] === 'string' && correction[key].trim(),
+          )
+        )
+          throw new HttpError(
+            400,
+            'validation_error',
+            'Cần thông tin ngân hàng và lý do hiệu chỉnh.',
+          )
+        correctedBankDetailsSnapshot = correction
+        sheet.correctedBankDetailsSnapshot = correction
+        sheet.correctedBy = admin._id
+        sheet.correctedAt = now
+        sheet.correctionReason = input.correctionReason.trim()
+        await sheet.save({ session })
+        await AuditEvent.create(
+          [
+            {
+              actorType: 'account',
+              actorId: admin._id,
+              action: 'monthly-payout.bank-details-corrected',
+              targetType: 'PayoutSheetRow',
+              targetId: sheet._id,
+              reason: sheet.correctionReason,
+              result: 'committed',
+              occurredAt: now,
+            },
+          ],
+          { session },
+        )
+      }
+      const bank = sheet.correctedBankDetailsSnapshot ?? sheet.bankDetailsSnapshot
+      if (!bank?.bankName || !bank.accountNumber || !bank.accountHolder)
+        throw new HttpError(
+          409,
+          'payout_bank_required',
+          'Cần bổ sung ngân hàng nhận có căn cứ trước khi ghi nhận đã trả.',
+        )
+      if (await PayoutResultEntry.exists({ result: 'Paid', transferReference }).session(session))
+        throw new HttpError(
+          409,
+          'transfer_reference_used',
+          'Mã giao dịch đã được dùng cho khoản chi khác.',
+        )
+    }
+
     const [entry] = await PayoutResultEntry.create(
       [
         {
           withdrawalRequestId: withdrawal._id,
           resultEntryKey: input.resultEntryKey,
+          requestDigest,
           actorAccountId: admin._id,
           occurredAt: now,
           result: input.result,
           note,
           ...(input.result === 'Paid'
             ? {
-                transferReference: `SIM-${withdrawal._id}-${input.resultEntryKey}`,
+                transferReference,
+                transferOccurredAt,
+                correctedBankDetailsSnapshot,
               }
             : {}),
         },

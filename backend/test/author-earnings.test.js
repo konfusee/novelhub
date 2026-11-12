@@ -51,6 +51,8 @@ it('tác giả chưa có ví nhận kết quả rỗng, không phát sinh dữ l
 
   expect(response.status).toBe(200)
   expect(response.body).toEqual({
+    page: 1,
+    pageSize: 50,
     balance: 0,
     entries: [],
     hasMore: false,

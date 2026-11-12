@@ -1,11 +1,11 @@
-import { Chapter, ContentRevision } from '../../../models/index.js'
+import { Chapter, ContentRevision, UnlockEntitlement } from '../../../models/index.js'
 import { earlyAccessActive } from './access.js'
 
 /**
  * Published chapters (title from the live published revision only) grouped by story,
  * ordered by `orderKey`. Chapters whose published revision is missing are omitted.
  */
-export async function publishedChapterRows(storyIds, now = new Date()) {
+export async function publishedChapterRows(storyIds, now = new Date(), accountId = null) {
   const chapters = await Chapter.find({
     storyId: { $in: storyIds },
     status: 'published',
@@ -21,6 +21,18 @@ export async function publishedChapterRows(storyIds, now = new Date()) {
   })
     .select('chapterId storyId content.title')
     .lean()
+  // Ownership is tied to the chapter; the purchased revision stays in the receipt.
+  const entitlements = accountId
+    ? await UnlockEntitlement.find({
+        accountId,
+        chapterId: { $in: chapters.map(chapter => chapter._id) },
+        status: 'active',
+        expiresAt: { $gt: now },
+      })
+        .select('chapterId')
+        .lean()
+    : []
+  const owned = new Set(entitlements.map(item => String(item.chapterId)))
   const byId = new Map(revisions.map(revision => [String(revision._id), revision]))
   const rows = new Map(storyIds.map(id => [String(id), []]))
   for (const chapter of chapters) {
@@ -31,7 +43,7 @@ export async function publishedChapterRows(storyIds, now = new Date()) {
       String(revision.storyId) !== String(chapter.storyId)
     )
       continue
-    const locked = earlyAccessActive(chapter, now)
+    const locked = earlyAccessActive(chapter, now) && !owned.has(String(chapter._id))
     rows.get(String(chapter.storyId))?.push({
       id: String(chapter._id),
       title: revision.content?.title ?? '',

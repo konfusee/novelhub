@@ -78,6 +78,14 @@ it('chỉ trả 50 giao dịch gần nhất và báo còn dữ liệu', async ()
   expect(response.status).toBe(200)
   expect(response.body.entries).toHaveLength(50)
   expect(response.body.hasMore).toBe(true)
+  const next = await request(app)
+    .get('/api/reader/wallet?page=2&type=other')
+    .set('Cookie', reader.cookie)
+  expect(next.status).toBe(200)
+  expect(next.body.entries).toHaveLength(1)
+  expect(next.body.entries[0].balanceAfter).toBe(1)
+  expect(next.body.hasMore).toBe(false)
+  expect(response.body.entries.some(entry => entry.id === next.body.entries[0].id)).toBe(false)
 })
 
 it('không cho khách xem ví', async () => {
@@ -93,6 +101,8 @@ it('chưa có ví thì trả 0 và không tự tạo ví', async () => {
 
   expect(response.status).toBe(200)
   expect(response.body).toEqual({
+    page: 1,
+    pageSize: 50,
     balance: 0,
     entries: [],
     hasMore: false,

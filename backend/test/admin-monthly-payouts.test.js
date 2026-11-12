@@ -135,13 +135,13 @@ it('gọi lại cùng kỳ không tạo thêm khoản chi hoặc thông báo', a
   expect(await NotificationOutbox.countDocuments()).toBe(2)
 })
 
-it('chưa tới cuối tháng thì không lập khoản chi', async () => {
+it('không lập khoản chi trước mốc bắt đầu kỳ theo giờ Việt Nam', async () => {
   const admin = await prepareAdmin()
   const author = await prepareAuthor(150000)
 
   await expect(
-    generateMonthlyPayouts(admin, periodId, new Date('2026-11-15T10:00:00+07:00')),
-  ).rejects.toThrow('Chỉ được lập chi trả cho tháng hiện tại vào ngày cuối tháng.')
+    generateMonthlyPayouts(admin, periodId, new Date('2026-10-31T23:59:59+07:00')),
+  ).rejects.toThrow('Chỉ được lập chi trả cho kỳ hiện tại, từ ngày 1 theo giờ Việt Nam.')
 
   expect(await WithdrawalRequest.countDocuments()).toBe(0)
 
@@ -192,8 +192,8 @@ it('API từ chối kỳ sai định dạng và trường ngoài schema', async 
   for (const body of invalidBodies) {
     const response = await generateRequest(admin.cookie, body)
 
-    expect(response.status).toBe(400)
-    expect(response.body.error.code).toBe('validation_error')
+    expect(response.status).toBe(405)
+    expect(response.body.error.code).toBe('payouts_read_only')
   }
 
   expect(await WithdrawalRequest.countDocuments()).toBe(0)

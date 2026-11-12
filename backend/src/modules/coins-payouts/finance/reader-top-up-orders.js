@@ -3,6 +3,7 @@ import { randomInt } from 'node:crypto'
 import { Account, AuditEvent, TopUpOrder, TopUpPackage, Wallet } from '../../../models/index.js'
 import { withTransaction } from '../../../db/connection.js'
 import { HttpError } from '../../../middleware/errors.js'
+import { topUpReviewStates } from './top-up-status.js'
 
 export async function prepareTopUpOrder(packageId, session, now = new Date()) {
   const pack = await TopUpPackage.findOne({
@@ -73,7 +74,10 @@ export async function createTopUpOrder(account, packageId) {
 
         if (existing) {
           return {
-            order: topUpOrderView(existing, now),
+            order: {
+              ...topUpOrderView(existing, now),
+              ...(await topUpReviewStates([existing._id])).get(String(existing._id)),
+            },
             reused: true,
           }
         }
@@ -156,6 +160,8 @@ export function topUpOrderView(order, now = new Date()) {
     status: order.status === 'pending' && order.expiresAt <= now ? 'expired' : order.status,
     expiresAt: order.expiresAt,
     createdAt: order.createdAt,
+    reviewState: 'no-payment',
+    receivedAmountVnd: 0,
   }
 }
 
@@ -169,5 +175,25 @@ export async function getReaderTopUpOrder(accountId, orderId) {
     throw new HttpError(404, 'topup_order_not_found', 'Không tìm thấy đơn nạp xu.')
   }
 
-  return { order: topUpOrderView(order) }
+  return {
+    order: {
+      ...topUpOrderView(order),
+      ...(await topUpReviewStates([order._id])).get(String(order._id)),
+    },
+  }
+}
+
+export async function listReaderTopUpOrders(accountId, page = 1) {
+  const orders = await TopUpOrder.find({ accountId, status: { $in: ['pending', 'expired'] } })
+    .sort({ createdAt: -1, _id: -1 })
+    .skip((page - 1) * 10)
+    .limit(11)
+    .lean()
+  const rows = orders.slice(0, 10)
+  const reviews = await topUpReviewStates(rows.map(row => row._id))
+  return {
+    page,
+    hasMore: orders.length > 10,
+    items: rows.map(row => ({ ...topUpOrderView(row), ...reviews.get(String(row._id)) })),
+  }
 }

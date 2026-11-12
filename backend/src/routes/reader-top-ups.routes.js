@@ -6,10 +6,27 @@ import { HttpError } from '../middleware/errors.js'
 import {
   createTopUpOrder,
   getReaderTopUpOrder,
+  listReaderTopUpOrders,
 } from '../modules/coins-payouts/finance/reader-top-up-orders.js'
+import { orderPayment } from '../modules/coins-payouts/finance/top-up-status.js'
 
 export function createReaderTopUpsRouter(config) {
   const router = Router()
+  router.get('/reader/top-up-orders', requireAuth(config), async (req, res, next) => {
+    try {
+      const input = z
+        .object({ page: z.coerce.number().int().min(1).max(10000).default(1) })
+        .strict()
+        .safeParse(req.query)
+      if (!input.success)
+        throw new HttpError(400, 'validation_error', 'Trang đơn nạp không hợp lệ.')
+      res
+        .set('Cache-Control', 'private, no-store')
+        .json(await listReaderTopUpOrders(req.account._id, input.data.page))
+    } catch (error) {
+      next(error)
+    }
+  })
 
   router.get('/reader/top-up-packages', requireAuth(config), async (req, res, next) => {
     try {
@@ -53,14 +70,7 @@ export function createReaderTopUpsRouter(config) {
           ...result,
           order: {
             ...result.order,
-            payment: {
-              bankBin: bank.bin,
-              bankName: bank.name,
-              accountNumber: bank.accountNumber,
-              accountName: bank.accountName,
-              amount: result.order.priceVnd,
-              content: result.order.paymentCode,
-            },
+            payment: orderPayment(result.order, bank),
           },
         })
     } catch (error) {
@@ -78,7 +88,9 @@ export function createReaderTopUpsRouter(config) {
 
       const result = await getReaderTopUpOrder(req.account._id, orderId)
 
-      res.set('Cache-Control', 'private, no-store').json(result)
+      res
+        .set('Cache-Control', 'private, no-store')
+        .json({ order: { ...result.order, payment: orderPayment(result.order, config.topUpBank) } })
     } catch (error) {
       next(error)
     }

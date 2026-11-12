@@ -337,7 +337,7 @@ it('stops serving images after the associated rights declaration is superseded',
     ).status,
   ).toBe(200)
 })
-it.each(['expired', 'revoked', 'wrong-revision'])(
+it.each(['expired', 'revoked', 'wrong-chapter'])(
   'refuses an image when a reader entitlement is %s',
   async condition => {
     const f = await fixture()
@@ -350,8 +350,8 @@ it.each(['expired', 'revoked', 'wrong-revision'])(
     await UnlockEntitlement.create({
       accountId: reader.account._id,
       storyId: f.storyId,
-      chapterId: f.chapterId,
-      publishedRevisionId: condition === 'wrong-revision' ? f.storyId : f.target.revisionId,
+      chapterId: condition === 'wrong-chapter' ? f.storyId : f.chapterId,
+      publishedRevisionId: f.target.revisionId,
       status: condition === 'revoked' ? 'revoked' : 'active',
       purchasedAt: new Date(Date.now() - 86400000),
       expiresAt: condition === 'expired' ? new Date(Date.now() - 1000) : future,

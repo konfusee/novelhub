@@ -30,7 +30,7 @@ export function updateAuthorPaymentDetailsController() {
           'validation_error',
           'Thông tin tài khoản nhận thanh toán không hợp lệ.',
         )
-      res.json(await updateAuthorPaymentDetails(req.account._id, parsed.data))
+      res.json(await updateAuthorPaymentDetails(req, parsed.data))
     } catch (error) {
       next(error)
     }

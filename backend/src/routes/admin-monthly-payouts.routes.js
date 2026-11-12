@@ -1,31 +1,10 @@
+import { MonthlyPayoutRun } from '../models/index.js'
 import { Router } from 'express'
 import { z } from 'zod'
 import { requireAuth, requireRole } from '../middleware/auth.js'
 import { HttpError } from '../middleware/errors.js'
-import { generateMonthlyPayouts } from '../modules/coins-payouts/finance/admin-monthly-payouts.js'
-import { recordSimulatedPayoutResult } from '../modules/coins-payouts/finance/admin-payout-results.js'
 import { listMonthlyPayouts } from '../modules/coins-payouts/finance/admin-payout-list.js'
-
-const generateSchema = z
-  .object({
-    periodId: z.string().regex(/^\d{4}-(0[1-9]|1[0-2])$/),
-    previewHash: z.string().regex(/^[a-f0-9]{64}$/),
-  })
-  .strict()
-
-const payoutParamsSchema = z
-  .object({
-    withdrawalId: z.string().regex(/^[a-fA-F0-9]{24}$/),
-  })
-  .strict()
-
-const payoutResultSchema = z
-  .object({
-    resultEntryKey: z.string().uuid(),
-    result: z.enum(['Paid', 'Failed']),
-    note: z.string().trim().max(500).optional(),
-  })
-  .strict()
+import { getPayoutDetails } from '../modules/coins-payouts/finance/payout-details.js'
 
 const listSchema = z
   .object({
@@ -40,53 +19,92 @@ const listSchema = z
 
 export function createAdminMonthlyPayoutsRouter(config) {
   const router = Router()
-
-  router.post(
-    '/admin/monthly-payouts/generate',
+  router.get(
+    '/admin/monthly-payouts/:withdrawalId/history',
     requireAuth(config),
     requireRole('admin'),
     async (req, res, next) => {
       try {
-        const parsed = generateSchema.safeParse(req.body)
-
-        if (!parsed.success) {
-          throw new HttpError(400, 'validation_error', 'Kỳ chi trả không hợp lệ.')
-        }
-
-        const result = await generateMonthlyPayouts(
-          req.account,
-          parsed.data.periodId,
-          new Date(),
-          parsed.data.previewHash,
-        )
-
-        res.set('Cache-Control', 'private, no-store').json(result)
+        const input = z
+          .object({ page: z.coerce.number().int().min(1).max(10000).default(1) })
+          .strict()
+          .safeParse(req.query)
+        if (!input.success || !/^[a-fA-F0-9]{24}$/.test(req.params.withdrawalId))
+          throw new HttpError(400, 'validation_error', 'Trang kết quả không hợp lệ.')
+        res
+          .set('Cache-Control', 'private, no-store')
+          .json(await getPayoutDetails(req.params.withdrawalId, input.data))
       } catch (error) {
         next(error)
       }
     },
   )
 
+  // Payout execution belongs exclusively to the system worker.
   router.post(
-    '/admin/monthly-payouts/:withdrawalId/simulate-result',
+    [
+      '/admin/monthly-payouts/generate',
+      '/admin/monthly-payouts/:withdrawalId/result',
+      '/admin/monthly-payouts/:withdrawalId/simulate-result',
+    ],
+    requireAuth(config),
+    requireRole('admin'),
+    (_req, _res, next) =>
+      next(
+        new HttpError(
+          405,
+          'payouts_read_only',
+          'Chi trả do hệ thống tự động xử lý. Admin chỉ có quyền xem.',
+        ),
+      ),
+  )
+  router.get(
+    '/admin/monthly-payouts/runs',
     requireAuth(config),
     requireRole('admin'),
     async (req, res, next) => {
       try {
-        const params = payoutParamsSchema.safeParse(req.params)
-        const body = payoutResultSchema.safeParse(req.body)
-
-        if (!params.success || !body.success) {
-          throw new HttpError(400, 'validation_error', 'Dữ liệu kết quả chi trả không hợp lệ.')
-        }
-
-        const result = await recordSimulatedPayoutResult(
-          req.account,
-          params.data.withdrawalId,
-          body.data,
-        )
-
-        res.set('Cache-Control', 'private, no-store').json(result)
+        const query = z
+          .object({ page: z.coerce.number().int().min(1).max(10000).default(1) })
+          .strict()
+          .safeParse(req.query)
+        if (!query.success)
+          throw new HttpError(400, 'validation_error', 'Trang kỳ chi trả không hợp lệ.')
+        const rows = await MonthlyPayoutRun.find()
+          .sort({ periodId: -1 })
+          .skip((query.data.page - 1) * 12)
+          .limit(13)
+          .lean()
+        res.set('Cache-Control', 'private, no-store').json({
+          items: rows
+            .slice(0, 12)
+            .map(
+              ({
+                _id,
+                periodId,
+                cutoffAt,
+                status,
+                executionMode,
+                totalCount,
+                paidCount,
+                pendingCount,
+                totalCoins,
+                lastEvaluatedAt,
+              }) => ({
+                id: String(_id),
+                periodId,
+                cutoffAt,
+                status,
+                executionMode,
+                totalCount,
+                paidCount,
+                pendingCount,
+                totalCoins,
+                lastEvaluatedAt,
+              }),
+            ),
+          hasMore: rows.length > 12,
+        })
       } catch (error) {
         next(error)
       }

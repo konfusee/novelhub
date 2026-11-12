@@ -1,4 +1,4 @@
-import { withTransaction } from '../../db/connection.js'
+import { updateAuthorBankDetails } from '../../modules/coins-payouts/finance/author-bank-details.js'
 import {
   Account,
   LedgerEntry,
@@ -106,19 +106,8 @@ export async function authorFinance(accountId) {
   }
 }
 
-export async function updateAuthorPaymentDetails(accountId, input) {
-  return withTransaction(async session => {
-    const account = await Account.findById(accountId).select('+bankDetails').session(session)
-    if (!account) throw new HttpError(404, 'not_found', 'Không tìm thấy tài khoản tác giả.')
-    account.bankDetails = input
-    account.increment()
-    await account.save({ session })
-    return {
-      paymentDetails: {
-        bankName: account.bankDetails.bankName,
-        accountNumber: account.bankDetails.accountNumber,
-        accountHolder: account.bankDetails.accountHolder,
-      },
-    }
-  })
+// Both API contracts share the same authorization fence and audit trail.
+export async function updateAuthorPaymentDetails(req, input) {
+  const { bankDetails } = await updateAuthorBankDetails(req, input)
+  return { paymentDetails: bankDetails }
 }

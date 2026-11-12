@@ -12,6 +12,9 @@ import {
 import { ReaderLayout } from '../../layouts'
 import { useBackendResource } from '../../api/useBackendResource'
 import { apiRequest } from '../../api/client'
+import { PendingTopUps } from '../../components/reader/PendingTopUps'
+import { useLocale } from '../../context/LocaleContext'
+import { downloadReportCsv } from '../../utils/reportCsv'
 
 const transactionLabels = {
   'topup-credit': 'Nạp xu',
@@ -119,11 +122,18 @@ function buildTopUpQrUrl(payment) {
 }
 
 export function WalletPage() {
-  const wallet = useBackendResource('/reader/wallet', emptyWallet, selectWallet)
+  const { t } = useLocale()
+  const [page, setPage] = useState(1)
+  const [filter, setFilter] = useState('all')
+  const [orderRevision, setOrderRevision] = useState(0)
+  const wallet = useBackendResource(
+    `/reader/wallet?page=${page}&type=${filter}`,
+    emptyWallet,
+    selectWallet,
+  )
   const packages = useBackendResource('/reader/top-up-packages', emptyPackages, selectPackages)
   const ledger = wallet
   const balance = wallet.data.balance
-  const [filter, setFilter] = useState('all')
   const [notice, setNotice] = useState('')
 
   const [creatingPackageId, setCreatingPackageId] = useState(null)
@@ -159,34 +169,35 @@ export function WalletPage() {
               ? 'unlock'
               : 'other',
         label: transactionLabels[entry.type],
-        item: entry.id,
+        item: entry.description ?? entry.id,
+        balanceAfter: entry.balanceAfter,
         amount: entry.amount,
       })),
     [wallet.data.entries],
   )
 
-  const shown = useMemo(
-    () => (filter === 'all' ? records : records.filter(item => item.type === filter)),
-    [filter, records],
-  )
+  const shown = records
 
   const exportCsv = () => {
     const rows = [
       ['Ngày & giờ', 'Loại', 'Chi tiết', 'Số xu'],
       ...shown.map(item => [item.date, item.label, item.item, item.amount]),
     ]
-    const csv = rows
-      .map(row => row.map(cell => `"${String(cell).replaceAll('"', '""')}"`).join(','))
-      .join('\n')
-    const link = document.createElement('a')
-    link.href = URL.createObjectURL(new Blob([`\ufeff${csv}`], { type: 'text/csv' }))
-    link.download = 'novelhub-giao-dich.csv'
-    link.click()
-    URL.revokeObjectURL(link.href)
+    downloadReportCsv('novelhub-giao-dich-trang-' + page + '.csv', rows[0], rows.slice(1))
     setNotice('Đã xuất CSV giao dịch.')
   }
 
-  /*Tao hoa don */
+  async function openOrder(orderId) {
+    setQrError(false)
+    setOrderError('')
+    try {
+      const result = await apiRequest(`/reader/top-up-orders/${orderId}`)
+      setTopUpOrder(result.order)
+    } catch (error) {
+      setNotice(error.message)
+    }
+  }
+
   async function handleCreateOrder(pack) {
     if (creatingPackageId) return
 
@@ -201,6 +212,7 @@ export function WalletPage() {
       })
 
       setTopUpOrder(result.order)
+      setOrderRevision(value => value + 1)
     } catch (error) {
       setOrderError(error.message || 'Không tạo được đơn nạp xu.')
     } finally {
@@ -227,15 +239,20 @@ export function WalletPage() {
       setStatusMessage({
         orderId,
         text:
-          result.order.status === 'paid'
-            ? 'Đơn đã được xác nhận thanh toán.'
-            : result.order.status === 'expired'
-              ? 'Đơn đã hết hạn thanh toán.'
-              : 'Chưa ghi nhận thanh toán cho đơn này. Bạn có thể kiểm tra lại sau.',
+          result.order.reviewState &&
+          result.order.reviewState !== 'no-payment' &&
+          result.order.status !== 'paid'
+            ? t('walletFlow.' + result.order.reviewState) + '. ' + t('walletFlow.doNotRepay')
+            : result.order.status === 'paid'
+              ? 'Đơn đã được xác nhận thanh toán.'
+              : result.order.status === 'expired'
+                ? 'Đơn đã hết hạn thanh toán.'
+                : 'Chưa ghi nhận thanh toán cho đơn này. Bạn có thể kiểm tra lại sau.',
       })
 
       if (result.order.status === 'paid') {
         wallet.retry()
+        setOrderRevision(value => value + 1)
         setNotice('Đơn đã được xác nhận thanh toán.')
       }
     } catch (error) {
@@ -342,11 +359,8 @@ export function WalletPage() {
               </Card>
             )}
 
-            <Reveal
-              as="section"
-              id="coin-packages"
-              className="scroll-mt-24"
-            >
+            <PendingTopUps key={orderRevision} revision={orderRevision} onOpen={openOrder} />
+            <Reveal as="section" id="coin-packages" className="scroll-mt-24">
               <h2 className="text-h3">Các gói nạp xu</h2>
               {orderError && (
                 <p role="alert" className="mt-3 text-sm text-red-600">
@@ -387,11 +401,6 @@ export function WalletPage() {
             </Reveal>
 
             <Reveal>
-              {wallet.status === 'ready' && wallet.data.hasMore && (
-                <p className="px-6 py-4 text-caption text-muted">
-                  Đang hiển thị 50 giao dịch gần nhất.
-                </p>
-              )}
               <Card className="p-0">
                 <div className="flex flex-wrap items-start justify-between gap-3 px-6 pt-6">
                   <div>
@@ -408,7 +417,7 @@ export function WalletPage() {
                     disabled={ledger.status !== 'ready' || !shown.length}
                   >
                     <Download size={15} aria-hidden="true" />
-                    Xuất dữ liệu
+                    {t('walletFlow.exportPage')}
                   </Button>
                 </div>
                 <div className="mt-5 px-6">
@@ -416,7 +425,10 @@ export function WalletPage() {
                     singleRow
                     label="Lọc giao dịch"
                     value={filter}
-                    onChange={setFilter}
+                    onChange={value => {
+                      setFilter(value)
+                      setPage(1)
+                    }}
                     items={filters.map(([value, label]) => ({ value, label }))}
                   />
                 </div>
@@ -517,7 +529,11 @@ export function WalletPage() {
                               {item.amount > 0 ? '+' : ''}
                               {formatCoins(item.amount)} xu
                             </td>
-                            <td className="px-3 text-right tabular-nums text-muted">—</td>
+                            <td className="px-3 text-right tabular-nums text-muted">
+                              {Number.isSafeInteger(item.balanceAfter)
+                                ? formatCoins(item.balanceAfter)
+                                : '—'}
+                            </td>
                             <td className="whitespace-nowrap pl-3 pr-6">
                               <Badge tone="green">Hoàn tất</Badge>
                             </td>
@@ -550,6 +566,23 @@ export function WalletPage() {
                     }
                   />
                 )}
+                <div className="flex flex-wrap items-center justify-end gap-3 border-t border-line p-4">
+                  <Button
+                    variant="secondary"
+                    disabled={page === 1 || ledger.status === 'loading'}
+                    onClick={() => setPage(value => value - 1)}
+                  >
+                    {t('walletFlow.previous')}
+                  </Button>
+                  <span>{page}</span>
+                  <Button
+                    variant="secondary"
+                    disabled={!wallet.data.hasMore || ledger.status === 'loading'}
+                    onClick={() => setPage(value => value + 1)}
+                  >
+                    {t('walletFlow.next')}
+                  </Button>
+                </div>
               </Card>
             </Reveal>
           </div>
@@ -586,6 +619,13 @@ export function WalletPage() {
               })}
             </p>
 
+            {topUpOrder.reviewState &&
+              topUpOrder.reviewState !== 'no-payment' &&
+              topUpOrder.status !== 'paid' && (
+                <p role="status" className="rounded-xl border border-line p-3 text-sm">
+                  {t('walletFlow.' + topUpOrder.reviewState)}. {t('walletFlow.doNotRepay')}
+                </p>
+              )}
             {/* QR code for payment */}
             {topUpOrder.payment && (
               <div className="space-y-3 border-t border-border pt-4">
@@ -607,6 +647,7 @@ export function WalletPage() {
                 </p>
 
                 {displayedOrderStatus === 'pending' &&
+                  (!topUpOrder.reviewState || topUpOrder.reviewState === 'no-payment') &&
                   (qrError ? (
                     <p role="alert" className="text-sm text-muted">
                       Không tải được QR. Bạn có thể chuyển khoản theo thông tin trên, giữ đúng số

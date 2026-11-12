@@ -50,6 +50,26 @@ function getHistory(cookie, query = {}) {
   return request(app).get(endpoint).set('Cookie', cookie).query(query)
 }
 
+it('details are owner-scoped and do not reveal legacy internal notes or transfer references', async () => {
+  const own = await prepareAuthor(),
+    other = await prepareAuthor()
+  const withdrawal = await addWithdrawal(own)
+  await PayoutResultEntry.create({
+    withdrawalRequestId: withdrawal._id,
+    resultEntryKey: 'internal-note',
+    occurredAt: new Date(),
+    result: 'Failed',
+    note: 'PRIVATE INTERNAL NOTE',
+    transferReference: 'PRIVATE BANK REF',
+  })
+  const path = endpoint + '/' + withdrawal._id + '/history'
+  expect((await request(app).get(path).set('Cookie', other.cookie)).status).toBe(404)
+  const result = await request(app).get(path).set('Cookie', own.cookie)
+  expect(result.status).toBe(200)
+  expect(result.body.items).toHaveLength(1)
+  expect(JSON.stringify(result.body)).not.toContain('PRIVATE')
+})
+
 it('khách và tài khoản không có quyền author bị từ chối', async () => {
   expect((await request(app).get(endpoint)).status).toBe(401)
 
@@ -108,6 +128,7 @@ it('chỉ trả khoản của mình, lấy kết quả gần nhất và ẩn d�
     status: 'paid',
     createdAt: ownWithdrawal.createdAt.toISOString(),
     latestResult: {
+      executionMode: 'legacy',
       result: 'Paid',
       occurredAt: '2026-12-01T02:00:00.000Z',
     },

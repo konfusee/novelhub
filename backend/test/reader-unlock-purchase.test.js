@@ -3,6 +3,8 @@ import { expect, it } from 'vitest'
 import { createApp } from '../src/app.js'
 import {
   Account,
+  Chapter,
+  ContentRevision,
   LedgerEntry,
   RevenueAllocation,
   UnlockEntitlement,
@@ -102,4 +104,33 @@ it('thiếu xu thì không tạo quyền hoặc ghi nhận lần mua thành côn
       sourceType: 'UnlockRequest',
     }),
   ).toBe(0)
+})
+
+it('tái xuất bản không làm mất quyền, không trừ lại xu và danh sách hiển thị đã mở', async () => {
+  const { story, chapter, cookie, buy } = await preparePurchase()
+  expect((await buy()).status).toBe(201)
+  const original = await ContentRevision.findById(chapter.revisionId).lean()
+  const copy = Object.fromEntries(
+    Object.entries(original).filter(
+      ([key]) => !['_id', 'createdAt', 'updatedAt', 'version'].includes(key),
+    ),
+  )
+  const next = await ContentRevision.create({
+    ...copy,
+    revisionNumber: original.revisionNumber + 1,
+  })
+  await Chapter.updateOne({ _id: chapter.id }, { $set: { publishedRevisionId: next._id } })
+  const path = `/api/catalog/stories/${story.id}/chapters/${chapter.id}`
+  expect((await request(app).get(path).set('Cookie', cookie)).status).toBe(200)
+  const owned = await buy({ expectedRevisionId: String(next._id), requestKey: crypto.randomUUID() })
+  expect(owned.status).toBe(200)
+  expect(owned.body.state).toBe('owned')
+  const list = await request(app).get(`/api/catalog/stories/${story.id}`).set('Cookie', cookie)
+  expect(list.status).toBe(200)
+  expect(list.body.chapters.find(row => row.id === chapter.id).locked).toBe(false)
+  const guest = await request(app).get(`/api/catalog/stories/${story.id}`)
+  expect(guest.body.chapters.find(row => row.id === chapter.id).locked).toBe(true)
+  expect((await Wallet.findById(demoId('wallet:rich'))).availableBalance).toBe(4000)
+  expect(await UnlockEntitlement.countDocuments()).toBe(1)
+  expect(String((await UnlockEntitlement.findOne()).publishedRevisionId)).toBe(chapter.revisionId)
 })

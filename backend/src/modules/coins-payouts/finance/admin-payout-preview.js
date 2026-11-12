@@ -1,11 +1,6 @@
+import { availableAtCutoff, payoutCutoff } from './payout-period.js'
 import { createHash } from 'node:crypto'
-import {
-  Account,
-  PolicyVersion,
-  RoleAssignment,
-  Wallet,
-  WithdrawalRequest,
-} from '../../../models/index.js'
+import { Account, PolicyVersion, Wallet, WithdrawalRequest } from '../../../models/index.js'
 import { withTransaction } from '../../../db/connection.js'
 import { HttpError } from '../../../middleware/errors.js'
 import { evaluatePayoutEligibility } from './payout-eligibility.js'
@@ -13,8 +8,8 @@ import { evaluatePayoutEligibility } from './payout-eligibility.js'
 // Hàm này sẽ được dùng lại khi xác nhận tạo khoản chi.
 export async function buildMonthlyPayoutPreview(periodId, session, now = new Date()) {
   const policy = await PolicyVersion.findOne({
-    status: 'effective',
-    effectiveAt: { $lte: now },
+    status: { $in: ['effective', 'superseded'] },
+    effectiveAt: { $lte: new Date(Math.min(+now, +payoutCutoff(periodId))) },
   })
     .sort({ effectiveAt: -1, _id: -1 })
     .session(session)
@@ -26,18 +21,16 @@ export async function buildMonthlyPayoutPreview(periodId, session, now = new Dat
     throw new HttpError(409, 'policy_required', 'Chưa có chính sách chi trả hợp lệ.')
   }
 
-  const authorRoles = await RoleAssignment.find({
-    role: 'author',
-    status: 'active',
+  const earningsWallets = await Wallet.find({
+    ownerType: 'account',
+    purpose: 'author-earnings',
+    unit: 'coin',
   })
-    .select('accountId')
+    .select('ownerId')
     .session(session)
     .lean()
-
   const accounts = await Account.find({
-    _id: {
-      $in: authorRoles.map(role => role.accountId),
-    },
+    _id: { $in: earningsWallets.map(wallet => wallet.ownerId) },
     status: 'active',
   })
     .select('displayName status version +bankDetails')
@@ -82,6 +75,7 @@ export async function buildMonthlyPayoutPreview(periodId, session, now = new Dat
       account,
       wallet,
       policy,
+      eligibleBalanceCoins: await availableAtCutoff(wallet, periodId, session),
     })
 
     if (eligibility.state !== 'eligible') continue

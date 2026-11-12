@@ -88,10 +88,7 @@ export async function getReaderUnlockQuote(accountId, storyId, chapterId) {
   }).lean()
 
   if (entitlement) {
-    const valid =
-      entitlement.status === 'active' &&
-      entitlement.expiresAt > now &&
-      String(entitlement.publishedRevisionId) === base.revisionId
+    const valid = entitlement.status === 'active' && entitlement.expiresAt > now
 
     if (!valid) {
       throw new HttpError(
@@ -249,10 +246,7 @@ export async function purchaseReaderChapter(req, storyId, chapterId, input) {
           .lean()
 
         if (entitlement) {
-          const valid =
-            entitlement.status === 'active' &&
-            entitlement.expiresAt > now &&
-            String(entitlement.publishedRevisionId) === String(chapter.publishedRevisionId)
+          const valid = entitlement.status === 'active' && entitlement.expiresAt > now
 
           if (!valid) {
             throw new HttpError(

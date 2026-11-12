@@ -9,7 +9,6 @@ import {
 } from '../../models/index.js'
 import { withTransaction } from '../../db/connection.js'
 import { createDevelopmentEmailDelivery, unavailableEmailDelivery } from '../../email/delivery.js'
-import { evaluateDeletedAccountPayouts } from '../coins-payouts/account-lifecycle.js'
 
 const subjects = {
   'google.linked': 'Đã liên kết tài khoản Google',
@@ -195,7 +194,6 @@ export function startNotificationWorker(config) {
   const tick = () => {
     if (stopped || active) return
     active = (async () => {
-      await evaluateDeletedAccountPayouts()
       for (let i = 0; i < 25 && !stopped; i++) if (!(await deliverNextNotification(delivery))) break
       await closeSettledContacts()
     })()
