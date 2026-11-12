@@ -31,12 +31,14 @@ export function AuthorCommentsPage() {
   const [storyId, setStoryId] = useState('')
   const [chapterId, setChapterId] = useState('')
   const [targetType, setTargetType] = useState('')
-  const [status, setStatus] = useState('visible')
+  const [status, setStatus] = useState('')
+  const [search, setSearch] = useState('')
+  const [sort, setSort] = useState('newest')
   const [replyTarget, setReplyTarget] = useState(null)
   const [reply, setReply] = useState('')
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
-  const query = `/author/comments?page=${page}${storyId ? `&storyId=${encodeURIComponent(storyId)}` : ''}${chapterId ? `&chapterId=${encodeURIComponent(chapterId)}` : ''}${targetType ? `&targetType=${targetType}` : ''}${status ? `&status=${status}` : ''}`
+  const query = `/author/comments?page=${page}${storyId ? `&storyId=${encodeURIComponent(storyId)}` : ''}${chapterId ? `&chapterId=${encodeURIComponent(chapterId)}` : ''}${targetType ? `&targetType=${targetType}` : ''}${status ? `&status=${status}` : ''}${search.trim() ? `&search=${encodeURIComponent(search.trim())}` : ''}&sort=${sort}`
   const resource = useBackendDocument(query, emptyComments)
   const changeFilter = setter => event => {
     setter(event.target.value)
@@ -111,50 +113,37 @@ export function AuthorCommentsPage() {
           <div className="min-w-0">
             <Card>
               <div className="grid gap-3 md:grid-cols-3">
-                <label className="text-xs font-semibold text-muted" htmlFor="comments-story">
-                  {t('authorComments.story')}
-                  <Select
-                    id="comments-story"
+                <label
+                  className="text-xs font-semibold text-muted md:col-span-2"
+                  htmlFor="comments-search"
+                >
+                  {t('authorComments.search')}
+                  <Input
+                    id="comments-search"
                     className="mt-1 w-full"
-                    value={storyId}
-                    onChange={event => selectStory(event.target.value)}
-                  >
-                    <option value="">{t('authorComments.allStories')}</option>
-                    {resource.data.stories.map(story => (
-                      <option key={story.id} value={story.id}>
-                        {story.title}
-                      </option>
-                    ))}
-                  </Select>
+                    value={search}
+                    onChange={event => {
+                      setSearch(event.target.value)
+                      setPage(1)
+                    }}
+                    placeholder={t('authorComments.searchPlaceholder')}
+                  />
                 </label>
-                <label className="text-xs font-semibold text-muted" htmlFor="comments-target">
-                  {t('authorComments.target')}
+                <label className="text-xs font-semibold text-muted" htmlFor="comments-sort">
+                  {t('authorComments.sort')}
                   <Select
-                    id="comments-target"
+                    id="comments-sort"
                     className="mt-1 w-full"
-                    value={targetType}
-                    onChange={changeFilter(setTargetType)}
+                    value={sort}
+                    onChange={changeFilter(setSort)}
                   >
-                    <option value="">{t('authorComments.allTargets')}</option>
-                    <option value="story">{t('authorComments.storyComments')}</option>
-                    <option value="chapter">{t('authorComments.chapterComments')}</option>
-                  </Select>
-                </label>
-                <label className="text-xs font-semibold text-muted" htmlFor="comments-status">
-                  {t('authorComments.status')}
-                  <Select
-                    id="comments-status"
-                    className="mt-1 w-full"
-                    value={status}
-                    onChange={changeFilter(setStatus)}
-                  >
-                    <option value="">{t('authorComments.allStatuses')}</option>
-                    <option value="visible">{t('authorComments.visible')}</option>
-                    <option value="hidden">{t('authorComments.hidden')}</option>
-                    <option value="soft-deleted">{t('authorComments.deleted')}</option>
+                    <option value="newest">{t('authorComments.newest')}</option>
+                    <option value="oldest">{t('authorComments.oldest')}</option>
+                    <option value="az">{t('authorComments.az')}</option>
                   </Select>
                 </label>
               </div>
+              <p className="mt-3 text-xs text-muted">{t('authorComments.filterHint')}</p>
             </Card>
 
             {error && (
@@ -265,6 +254,39 @@ export function AuthorCommentsPage() {
             <Card>
               <h2 className="text-sm font-semibold">{t('authorComments.sidebarTitle')}</h2>
               <p className="mt-1 text-xs leading-5 text-muted">{t('authorComments.sidebarHint')}</p>
+              <div className="mt-4 grid gap-3">
+                <label className="text-xs font-semibold text-muted" htmlFor="comments-target">
+                  {t('authorComments.target')}
+                  <Select
+                    id="comments-target"
+                    className="mt-1 w-full"
+                    value={targetType}
+                    onChange={event => {
+                      setTargetType(event.target.value)
+                      setChapterId('')
+                      setPage(1)
+                    }}
+                  >
+                    <option value="">{t('authorComments.allTargets')}</option>
+                    <option value="story">{t('authorComments.storyComments')}</option>
+                    <option value="chapter">{t('authorComments.chapterComments')}</option>
+                  </Select>
+                </label>
+                <label className="text-xs font-semibold text-muted" htmlFor="comments-status">
+                  {t('authorComments.status')}
+                  <Select
+                    id="comments-status"
+                    className="mt-1 w-full"
+                    value={status}
+                    onChange={changeFilter(setStatus)}
+                  >
+                    <option value="">{t('authorComments.allStatuses')}</option>
+                    <option value="visible">{t('authorComments.visible')}</option>
+                    <option value="hidden">{t('authorComments.hidden')}</option>
+                    <option value="soft-deleted">{t('authorComments.deleted')}</option>
+                  </Select>
+                </label>
+              </div>
               <div className="mt-4 space-y-1">
                 <button
                   type="button"
@@ -386,17 +408,40 @@ function CommentCard({ item, t, formatDate, busy, setReplyTarget, onStatus }) {
             <div key={reply.id} className="rounded-xl bg-elevated p-3 text-sm">
               <div className="flex items-center justify-between gap-2">
                 <strong>{reply.author}</strong>
-                {reply.status !== 'soft-deleted' && (
-                  <Button
-                    size="sm"
-                    variant="ghost"
-                    disabled={busy}
-                    onClick={() => onStatus(reply.id, 'soft-deleted')}
-                  >
-                    <Trash2 size={13} aria-hidden="true" />
-                    {t('authorComments.delete')}
-                  </Button>
-                )}
+                <div className="flex flex-wrap gap-1">
+                  {reply.status === 'visible' && (
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      disabled={busy}
+                      onClick={() => onStatus(reply.id, 'hidden')}
+                    >
+                      {t('authorComments.hide')}
+                    </Button>
+                  )}
+                  {reply.status === 'hidden' && (
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      disabled={busy}
+                      onClick={() => onStatus(reply.id, 'visible')}
+                    >
+                      <Check size={13} aria-hidden="true" />
+                      {t('authorComments.restore')}
+                    </Button>
+                  )}
+                  {reply.status !== 'soft-deleted' && (
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      disabled={busy}
+                      onClick={() => onStatus(reply.id, 'soft-deleted')}
+                    >
+                      <Trash2 size={13} aria-hidden="true" />
+                      {t('authorComments.delete')}
+                    </Button>
+                  )}
+                </div>
               </div>
               <p
                 className={`mt-1 whitespace-pre-wrap ${reply.status === 'soft-deleted' ? 'text-muted line-through' : 'text-muted'}`}

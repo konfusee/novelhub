@@ -95,7 +95,7 @@ const statusFilter = {
 }
 export function AuthorDashboardPage() {
   const { t, formatNumber } = useLocale()
-  const [period, setPeriod] = useState(7)
+  const [period, setPeriod] = useState(1)
   const dashboard = useBackendDocument(`/author/dashboard?days=${period}`, emptyDashboard)
   const stats = {
     ...dashboard,
@@ -141,16 +141,9 @@ export function AuthorDashboardPage() {
     setReplyError(false)
     setReplySent(false)
     try {
-      const commentPath =
-        target.targetType === 'chapter' && target.chapterId
-          ? `/community/chapters/${target.chapterId}/comments`
-          : `/community/stories/${target.storyId}/comments`
-      await apiRequest(commentPath, {
+      await apiRequest(`/author/comments/${target.id}/reply`, {
         method: 'POST',
-        body: {
-          body: reply.trim(),
-          parentId: target.id,
-        },
+        body: { body: reply.trim() },
       })
       setReply('')
       setReplySent(true)
@@ -305,73 +298,61 @@ export function AuthorDashboardPage() {
           </section>
         )}
 
-        <section className="mt-8" aria-labelledby="continue-writing">
-          <div className="flex flex-wrap items-center justify-between gap-3">
-            <div className="flex flex-wrap items-center gap-3">
-              <h2 id="continue-writing" className="text-h3 md:text-h2">
-                Tiếp tục sáng tác
-              </h2>
-              {storiesResource.status === 'ready' ? (
-                <Badge>
-                  {t('authorData.draftCount', {
-                    count: dashboard.data.draftCount,
-                  })}
-                </Badge>
-              ) : storiesResource.status === 'loading' ? (
-                <Skeleton className="h-6 w-36" />
-              ) : null}
+        {drafting.length > 0 && (
+          <section className="mt-8" aria-labelledby="continue-writing">
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <div className="flex flex-wrap items-center gap-3">
+                <h2 id="continue-writing" className="text-h3 md:text-h2">
+                  Tiếp tục sáng tác
+                </h2>
+                {storiesResource.status === 'ready' ? (
+                  <Badge>
+                    {t('authorData.draftCount', {
+                      count: dashboard.data.draftCount,
+                    })}
+                  </Badge>
+                ) : storiesResource.status === 'loading' ? (
+                  <Skeleton className="h-6 w-36" />
+                ) : null}
+              </div>
+              <ButtonLink to="/author/drafts" variant="ghost" size="sm" trailingIcon={ArrowRight}>
+                Xem tất cả bản nháp
+              </ButtonLink>
             </div>
-            <ButtonLink to="/author/drafts" variant="ghost" size="sm" trailingIcon={ArrowRight}>
-              Xem tất cả bản nháp
-            </ButtonLink>
-          </div>
-          {storiesResource.status === 'loading' ? (
-            <div
-              aria-busy="true"
-              aria-label="Đang tải bản nháp đang viết"
-              className="nh-grid-12 mt-4 grid gap-4 nh-md-cols-2"
-            >
-              <DraftCardSkeleton />
-              <DraftCardSkeleton />
-            </div>
-          ) : storiesResource.status === 'error' ? (
-            <Card className="mt-4 p-0">
-              <EmptyState
-                tone="rose"
-                icon={AlertTriangle}
-                title="Không tải được bản nháp đang viết"
-                description="Kết nối tới máy chủ bị gián đoạn. Hãy thử tải lại sau ít phút."
-                action={<RetryButton onClick={storiesResource.retry} />}
-              />
-            </Card>
-          ) : drafting.length ? (
-            <div className="nh-grid-12 nh-fade-enter mt-4 grid gap-4 nh-md-cols-2">
-              {drafting.map((story, index) => (
-                <DraftCard
-                  key={story.chapterId}
-                  story={story}
-                  chapter={story.chapter}
-                  written={story.written}
-                  primary={!index}
+            {storiesResource.status === 'loading' ? (
+              <div
+                aria-busy="true"
+                aria-label="Đang tải bản nháp đang viết"
+                className="nh-grid-12 mt-4 grid gap-4 nh-md-cols-2"
+              >
+                <DraftCardSkeleton />
+                <DraftCardSkeleton />
+              </div>
+            ) : storiesResource.status === 'error' ? (
+              <Card className="mt-4 p-0">
+                <EmptyState
+                  tone="rose"
+                  icon={AlertTriangle}
+                  title="Không tải được bản nháp đang viết"
+                  description="Kết nối tới máy chủ bị gián đoạn. Hãy thử tải lại sau ít phút."
+                  action={<RetryButton onClick={storiesResource.retry} />}
                 />
-              ))}
-            </div>
-          ) : (
-            <Card className="mt-4 p-0">
-              <EmptyState
-                icon={Edit3}
-                title="Chưa có bản nháp nào đang viết"
-                description={t('documentImport.dashboardEmpty')}
-                action={
-                  <ButtonLink to="/author/stories/new" size="sm">
-                    <Plus size={14} aria-hidden="true" />
-                    Tạo truyện mới
-                  </ButtonLink>
-                }
-              />
-            </Card>
-          )}
-        </section>
+              </Card>
+            ) : drafting.length ? (
+              <div className="nh-grid-12 nh-fade-enter mt-4 grid gap-4 nh-md-cols-2">
+                {drafting.map((story, index) => (
+                  <DraftCard
+                    key={story.chapterId}
+                    story={story}
+                    chapter={story.chapter}
+                    written={story.written}
+                    primary={!index}
+                  />
+                ))}
+              </div>
+            ) : null}
+          </section>
+        )}
 
         <div className="nh-grid-12 mt-8 grid min-w-0 items-start gap-6 nh-layout-xl-8-4">
           <div className="min-w-0 space-y-6">
@@ -380,7 +361,7 @@ export function AuthorDashboardPage() {
                 <div>
                   <h2 className="text-h3">Thu nhập theo quyển</h2>
                   <p className="mt-1 text-sm text-muted">
-                    Xếp theo xu ghi nhận trong {periodLabel.toLowerCase()}.
+                    Xu ghi nhận và lượt đọc theo từng kỳ. Số liệu được lấy từ sổ doanh thu tác giả.
                   </p>
                 </div>
                 <ButtonLink
@@ -413,15 +394,7 @@ export function AuthorDashboardPage() {
                           <td className="max-w-[18rem] truncate px-3 py-3 font-semibold">
                             {item.title}
                           </td>
-                          <td className="px-3 py-3 text-right font-semibold tabular-nums">
-                            {formatNumber(item.earnings)} xu
-                          </td>
-                          <td className="px-3 py-3 text-right tabular-nums">
-                            {formatNumber(item.unlocks)}
-                          </td>
-                          <td className="px-3 py-3 text-right tabular-nums">
-                            {formatNumber(item.views)}
-                          </td>
+                          <StoryMetricCells item={item} formatNumber={formatNumber} />
                         </tr>
                       ))}
                     </tbody>
@@ -564,36 +537,38 @@ export function AuthorDashboardPage() {
               )}
             </Card>
 
-            <Reveal>
-              <Card className="grid grid-cols-[minmax(0,1fr)] gap-5 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-center">
-                <div className="min-w-0">
-                  <p className="nh-eyebrow">{t('authorData.draftContent')}</p>
-                  <h2 className="mt-3 text-h3">
-                    {t('authorData.words', {
-                      count:
-                        dashboard.status === 'ready'
-                          ? formatNumber(dashboard.data.draftWords)
-                          : '—',
-                    })}
-                  </h2>
-                  <p className="mt-1 text-sm text-muted">{t('authorData.noWeeklyTracking')}</p>
-                  <div aria-hidden="true" className="mt-4 h-1.5 rounded-full bg-elevated" />
-                </div>
-                <div className="flex flex-wrap items-center gap-4 sm:flex-col sm:items-end">
-                  <div className="flex items-center gap-3 rounded-2xl bg-orange/12 px-4 py-3">
-                    <Flame size={22} aria-hidden="true" className="text-orange-strong" />
-                    <div>
-                      <strong className="block text-xl leading-6 text-ink">—</strong>
-                      <span className="text-xs text-ink/70">{t('authorData.noStreak')}</span>
-                    </div>
+            {dashboard.data.draftWords > 0 && (
+              <Reveal>
+                <Card className="grid grid-cols-[minmax(0,1fr)] gap-5 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-center">
+                  <div className="min-w-0">
+                    <p className="nh-eyebrow">{t('authorData.draftContent')}</p>
+                    <h2 className="mt-3 text-h3">
+                      {t('authorData.words', {
+                        count:
+                          dashboard.status === 'ready'
+                            ? formatNumber(dashboard.data.draftWords)
+                            : '—',
+                      })}
+                    </h2>
+                    <p className="mt-1 text-sm text-muted">{t('authorData.noWeeklyTracking')}</p>
+                    <div aria-hidden="true" className="mt-4 h-1.5 rounded-full bg-elevated" />
                   </div>
-                  <Button variant="secondary" size="sm" onClick={() => setGoalOpen(true)}>
-                    <Target size={14} aria-hidden="true" />
-                    Cài đặt mục tiêu
-                  </Button>
-                </div>
-              </Card>
-            </Reveal>
+                  <div className="flex flex-wrap items-center gap-4 sm:flex-col sm:items-end">
+                    <div className="flex items-center gap-3 rounded-2xl bg-orange/12 px-4 py-3">
+                      <Flame size={22} aria-hidden="true" className="text-orange-strong" />
+                      <div>
+                        <strong className="block text-xl leading-6 text-ink">—</strong>
+                        <span className="text-xs text-ink/70">{t('authorData.noStreak')}</span>
+                      </div>
+                    </div>
+                    <Button variant="secondary" size="sm" onClick={() => setGoalOpen(true)}>
+                      <Target size={14} aria-hidden="true" />
+                      Cài đặt mục tiêu
+                    </Button>
+                  </div>
+                </Card>
+              </Reveal>
+            )}
           </div>
 
           <aside className="min-w-0 space-y-6" aria-label="Phản hồi độc giả">
@@ -747,15 +722,17 @@ export function AuthorDashboardPage() {
               </form>
             </Card>
 
-            <Card className="flex items-center gap-4">
-              <span className="grid size-11 shrink-0 place-items-center rounded-2xl bg-orange/16 text-orange-strong">
-                <Flame size={20} />
-              </span>
-              <div className="min-w-0">
-                <strong className="text-sm">{t('authorData.guild')}</strong>
-                <p className="text-caption text-muted">{t('authorData.noGuild')}</p>
-              </div>
-            </Card>
+            {dashboard.data.guild && (
+              <Card className="flex items-center gap-4">
+                <span className="grid size-11 shrink-0 place-items-center rounded-2xl bg-orange/16 text-orange-strong">
+                  <Flame size={20} />
+                </span>
+                <div className="min-w-0">
+                  <strong className="text-sm">{t('authorData.guild')}</strong>
+                  <p className="text-caption text-muted">{t('authorData.noGuild')}</p>
+                </div>
+              </Card>
+            )}
           </aside>
         </div>
 
@@ -809,6 +786,57 @@ function DraftCard({ story, chapter, written, primary = false }) {
     </Card>
   )
 }
+
+function StoryMetricCells({ item, formatNumber }) {
+  const selected = item.metrics?.selected ?? {
+    earnings: item.earnings ?? 0,
+    unlocks: item.unlocks ?? 0,
+    views: item.views ?? 0,
+  }
+  return (
+    <>
+      <td className="px-3 py-3 text-right font-semibold tabular-nums">
+        {formatNumber(selected.earnings)} xu
+        <div className="mt-1 text-[11px] font-normal text-muted">
+          Hôm nay {formatNumber(item.metrics?.today?.earnings ?? 0)} · 7 ngày{' '}
+          {formatNumber(item.metrics?.week?.earnings ?? 0)} · 30 ngày{' '}
+          {formatNumber(item.metrics?.month?.earnings ?? 0)}
+        </div>
+        {item.metrics?.sincePublication && (
+          <div className="text-[11px] font-normal text-muted">
+            Từ khi xuất bản {formatNumber(item.metrics.sincePublication.earnings)}
+          </div>
+        )}
+      </td>
+      <td className="px-3 py-3 text-right tabular-nums">
+        {formatNumber(selected.unlocks)}
+        <div className="mt-1 text-[11px] text-muted">
+          Hôm nay {formatNumber(item.metrics?.today?.unlocks ?? 0)} · 7 ngày{' '}
+          {formatNumber(item.metrics?.week?.unlocks ?? 0)}
+        </div>
+        {item.metrics?.sincePublication && (
+          <div className="text-[11px] text-muted">
+            Từ khi xuất bản {formatNumber(item.metrics.sincePublication.unlocks)}
+          </div>
+        )}
+      </td>
+      <td className="px-3 py-3 text-right tabular-nums">
+        {formatNumber(selected.views)}
+        <div className="mt-1 text-[11px] text-muted">
+          Hôm nay {formatNumber(item.metrics?.today?.views ?? 0)} · 7 ngày{' '}
+          {formatNumber(item.metrics?.week?.views ?? 0)} · 30 ngày{' '}
+          {formatNumber(item.metrics?.month?.views ?? 0)}
+        </div>
+        {item.metrics?.sincePublication && (
+          <div className="text-[11px] text-muted">
+            Từ khi xuất bản {formatNumber(item.metrics.sincePublication.views)}
+          </div>
+        )}
+      </td>
+    </>
+  )
+}
+
 function MetricCard({ icon: Icon, label, value, tone = 'brand' }) {
   return (
     <Card className="flex items-center gap-3 p-4">

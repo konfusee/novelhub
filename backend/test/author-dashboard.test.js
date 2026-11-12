@@ -1,4 +1,5 @@
 import request from 'supertest'
+import mongoose from 'mongoose'
 import { describe, expect, it } from 'vitest'
 import { createApp } from '../src/app.js'
 import {
@@ -7,7 +8,9 @@ import {
   Comment,
   ContentRevision,
   Follow,
+  LedgerEntry,
   Story,
+  UnlockRequest,
   Wallet,
 } from '../src/models/index.js'
 import { authenticatedAccount } from './fixtures/accounts.js'
@@ -147,5 +150,71 @@ describe('author dashboard', () => {
       },
     )
     expect((await get(author.cookie)).body.drafts).toEqual([])
+  })
+
+  it('uses the author earnings ledger for today and selected dashboard revenue', async () => {
+    const author = await authenticatedAccount('author')
+    const category = await Category.create({
+      name: 'Doanh thu',
+      normalizedName: `doanh thu ${crypto.randomUUID()}`,
+      createdBy: author.account._id,
+    })
+    const story = await Story.create({
+      title: 'Truyện có doanh thu',
+      authorAccountId: author.account._id,
+      categoryId: category._id,
+      publicationStatus: 'published',
+      publishedAt: new Date('2026-11-13T01:00:00Z'),
+    })
+    const chapter = await Chapter.create({
+      storyId: story._id,
+      title: 'Chương có doanh thu',
+      orderKey: 1,
+      status: 'published',
+      publishedAt: new Date('2026-11-13T01:00:00Z'),
+    })
+    const wallet = await Wallet.create({
+      ownerType: 'account',
+      ownerId: author.account._id,
+      purpose: 'author-earnings',
+      availableBalance: 280,
+    })
+    const requestId = new mongoose.Types.ObjectId()
+    await UnlockRequest.create({
+      _id: requestId,
+      accountId: new mongoose.Types.ObjectId(),
+      chapterId: chapter._id,
+      requestedPriceCoins: 280,
+      effectivePriceCoins: 280,
+      idempotencyScope: {
+        operation: 'dashboard-test',
+        ownerId: author.account._id,
+        key: String(requestId),
+      },
+      status: 'committed',
+    })
+    await LedgerEntry.create({
+      walletId: wallet._id,
+      ledgerType: 'allocation-credit',
+      direction: 'credit',
+      amount: 280,
+      actorAccountId: author.account._id,
+      sourceType: 'UnlockRequest',
+      sourceId: requestId,
+      idempotencyScope: {
+        operation: 'dashboard-test',
+        ownerId: author.account._id,
+        key: String(requestId),
+      },
+      occurredAt: new Date('2026-11-13T03:00:00Z'),
+    })
+
+    const result = (
+      await request(app).get('/api/author/dashboard?days=1').set('Cookie', author.cookie)
+    ).body
+    expect(result.revenue.today).toBe(280)
+    expect(result.revenue.selected).toBe(280)
+    expect(result.stats.periodEarnings).toBe(280)
+    expect(result.storyRankings[0]).toMatchObject({ earnings: 280, unlocks: 1 })
   })
 })

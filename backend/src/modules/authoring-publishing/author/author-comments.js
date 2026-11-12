@@ -4,10 +4,20 @@ import { ownerWrite } from '../../reading-community/reading/owner-write.js'
 
 const PAGE_SIZE = 20
 const statuses = new Set(['visible', 'hidden', 'soft-deleted'])
+const sorts = new Set(['newest', 'oldest', 'az'])
+
+const normalizeSearch = value =>
+  String(value ?? '')
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLocaleLowerCase('vi-VN')
+    .trim()
 
 async function ownedTargets(accountId, storyId) {
   const stories = await Story.find({
     authorAccountId: accountId,
+    publicationStatus: 'published',
+    publishedRevisionId: { $ne: null },
     ...(storyId ? { _id: storyId } : {}),
     'publicationTransition.result': { $ne: 'author-draft-deleted' },
   })
@@ -16,6 +26,8 @@ async function ownedTargets(accountId, storyId) {
     .lean()
   const chapters = await Chapter.find({
     storyId: { $in: stories.map(story => story._id) },
+    status: 'published',
+    publishedRevisionId: { $ne: null },
     'publicationTransition.result': { $ne: 'author-draft-deleted' },
   })
     .select('_id storyId title orderKey')
@@ -30,7 +42,8 @@ function targetFilter(stories, chapters, targetType, chapterId) {
     filters.push({ targetType: 'story', targetId: { $in: stories.map(story => story._id) } })
   if (chapterId || !targetType || targetType === 'chapter')
     filters.push({ targetType: 'chapter', targetId: { $in: chapters.map(chapter => chapter._id) } })
-  return { $or: filters }
+  // Keep an empty ownership set an explicit no-op query. MongoDB rejects `$or: []`.
+  return { $or: filters.length ? filters : [{ targetId: null }] }
 }
 
 function publicAuthor(author) {
@@ -40,7 +53,7 @@ function publicAuthor(author) {
 
 export async function authorCommentList(
   accountId,
-  { page = 1, storyId, chapterId, targetType, status } = {},
+  { page = 1, storyId, chapterId, targetType, status, search = '', sort = 'newest' } = {},
 ) {
   const { stories: allStories, chapters: allChapters } = await ownedTargets(accountId)
   const stories = storyId
@@ -54,26 +67,71 @@ export async function authorCommentList(
   const base = targetFilter(stories, chapters, targetType, chapterId)
   if (status && statuses.has(status)) base.status = status
   base.parentCommentId = null
-  const [total, roots] = await Promise.all([
-    Comment.countDocuments(base),
-    Comment.find(base)
-      .sort({ createdAt: -1, _id: -1 })
-      .skip((page - 1) * PAGE_SIZE)
-      .limit(PAGE_SIZE)
-      .lean(),
-  ])
-  const replies = await Comment.find({
-    parentCommentId: { $in: roots.map(comment => comment._id) },
+  const roots = await Comment.find(base).sort({ createdAt: -1, _id: -1 }).lean()
+  const authors = await Account.find({
+    _id: { $in: roots.map(comment => comment.authorAccountId) },
   })
-    .sort({ createdAt: 1, _id: 1 })
-    .lean()
-  const all = [...roots, ...replies]
-  const authors = await Account.find({ _id: { $in: all.map(comment => comment.authorAccountId) } })
     .select('displayName status')
     .lean()
   const authorsById = new Map(authors.map(author => [String(author._id), author]))
   const storiesById = new Map(stories.map(story => [String(story._id), story]))
   const chaptersById = new Map(chapters.map(chapter => [String(chapter._id), chapter]))
+  const searchable = comment => {
+    const chapter =
+      comment.targetType === 'chapter' ? chaptersById.get(String(comment.targetId)) : null
+    const story =
+      comment.targetType === 'story'
+        ? storiesById.get(String(comment.targetId))
+        : storiesById.get(String(chapter?.storyId))
+    return normalizeSearch(
+      [
+        comment.body,
+        authorsById.get(String(comment.authorAccountId))?.displayName,
+        story?.title,
+        chapter?.title,
+      ]
+        .filter(Boolean)
+        .join(' '),
+    )
+  }
+  const needle = normalizeSearch(search)
+  const filteredRoots = needle
+    ? roots.filter(comment => searchable(comment).includes(needle))
+    : roots
+  const viewForSort = comment => {
+    const chapter =
+      comment.targetType === 'chapter' ? chaptersById.get(String(comment.targetId)) : null
+    const story =
+      comment.targetType === 'story'
+        ? storiesById.get(String(comment.targetId))
+        : storiesById.get(String(chapter?.storyId))
+    return normalizeSearch([story?.title, chapter?.title, comment.body].filter(Boolean).join(' '))
+  }
+  if (sorts.has(sort) && sort === 'oldest')
+    filteredRoots.sort(
+      (a, b) =>
+        new Date(a.createdAt) - new Date(b.createdAt) || String(a._id).localeCompare(String(b._id)),
+    )
+  if (sorts.has(sort) && sort === 'az')
+    filteredRoots.sort(
+      (a, b) =>
+        viewForSort(a).localeCompare(viewForSort(b), 'vi') ||
+        new Date(b.createdAt) - new Date(a.createdAt),
+    )
+  const total = filteredRoots.length
+  const pagedRoots = filteredRoots.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE)
+  const replies = await Comment.find({
+    parentCommentId: { $in: pagedRoots.map(comment => comment._id) },
+  })
+    .sort({ createdAt: 1, _id: 1 })
+    .lean()
+  const all = [...pagedRoots, ...replies]
+  const allAuthors = await Account.find({
+    _id: { $in: all.map(comment => comment.authorAccountId) },
+  })
+    .select('displayName status')
+    .lean()
+  const allAuthorsById = new Map(allAuthors.map(author => [String(author._id), author]))
   const view = comment => {
     const story =
       comment.targetType === 'story'
@@ -85,7 +143,7 @@ export async function authorCommentList(
       id: String(comment._id),
       body: comment.body,
       status: comment.status,
-      author: publicAuthor(authorsById.get(String(comment.authorAccountId))),
+      author: publicAuthor(allAuthorsById.get(String(comment.authorAccountId))),
       authorId: String(comment.authorAccountId),
       createdAt: comment.createdAt,
       edited: Boolean(comment.editedAt),
@@ -105,7 +163,7 @@ export async function authorCommentList(
     repliesByParent.set(key, [...(repliesByParent.get(key) ?? []), view(reply)])
   }
   return {
-    items: roots.map(root => ({
+    items: pagedRoots.map(root => ({
       ...view(root),
       replies: repliesByParent.get(String(root._id)) ?? [],
     })),
@@ -119,6 +177,8 @@ export async function authorCommentList(
     page,
     pageCount: Math.max(1, Math.ceil(total / PAGE_SIZE)),
     pageSize: PAGE_SIZE,
+    search: String(search ?? ''),
+    sort: sorts.has(sort) ? sort : 'newest',
   }
 }
 

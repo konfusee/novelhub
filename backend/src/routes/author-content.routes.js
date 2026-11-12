@@ -76,6 +76,8 @@ const authorCommentQuery = z
     chapterId: objectId.optional(),
     targetType: z.enum(['story', 'chapter']).optional(),
     status: authorCommentStatus.optional(),
+    search: z.string().trim().max(120).default(''),
+    sort: z.enum(['newest', 'oldest', 'az']).default('newest'),
   })
   .strict()
 const authorCommentReply = z.object({ body: z.string().trim().min(1).max(2000) }).strict()
@@ -137,7 +139,7 @@ export function createAuthorContentRouter(config) {
               days: z.coerce
                 .number()
                 .pipe(z.union([z.literal(1), z.literal(7), z.literal(30)]))
-                .default(7),
+                .default(1),
             })
             .strict(),
           req.query,
