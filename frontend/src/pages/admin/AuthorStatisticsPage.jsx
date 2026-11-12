@@ -4,6 +4,8 @@ import { useLocale } from '../../context/LocaleContext'
 import { AdminLayout } from '../../layouts'
 import { Button, Card, Input } from '../../components/ui'
 const metrics = [
+  'registrations',
+  'unlocks',
   'applications',
   'approvedApplications',
   'rejectedApplications',

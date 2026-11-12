@@ -1,4 +1,9 @@
-import { Account, AuthorApplication, RoleAssignment } from '../../../models/index.js'
+import {
+  Account,
+  AuthorApplication,
+  RoleAssignment,
+  UnlockEntitlement,
+} from '../../../models/index.js'
 import { withTransaction } from '../../../db/connection.js'
 function statisticsPeriod(period) {
   if (period === 'all') return null
@@ -58,7 +63,13 @@ export async function adminAuthorStatistics(period, now = new Date()) {
         $count: 'count',
       },
     ]).session(session)
+    const registrations = await Account.countDocuments({ createdAt: range }).session(session)
+    const unlocks = await UnlockEntitlement.countDocuments({
+      purchasedAt: range,
+    }).session(session)
     const summary = {
+      registrations,
+      unlocks,
       applications,
       approvedApplications,
       rejectedApplications,

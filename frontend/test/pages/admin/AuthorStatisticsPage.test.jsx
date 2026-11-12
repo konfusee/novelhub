@@ -25,6 +25,8 @@ const view = () =>
 it('renders real counts and sends the selected period to the backend', async () => {
   api.mockResolvedValue({
     summary: {
+      registrations: 2,
+      unlocks: 1,
       applications: 2,
       approvedApplications: 1,
       rejectedApplications: 1,

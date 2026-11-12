@@ -357,8 +357,10 @@
     "unavailable": "Chưa có dữ liệu"
   },
   "adminAuthorStats": {
+    "registrations": "Tài khoản đăng ký",
+    "unlocks": "Lượt mở khóa chương thành công",
     "title": "Thống kê tác giả",
-    "hint": "Theo dõi hồ sơ đăng ký và số lượng tác giả đang hoạt động.",
+    "hint": "Theo dõi số tài khoản đăng ký, hồ sơ tác giả và lượt mở khóa chương.",
     "period": "Tháng thống kê",
     "apply": "Áp dụng",
     "all": "Tất cả thời gian",
