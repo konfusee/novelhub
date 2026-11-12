@@ -32,7 +32,6 @@
     "analytics": "Analytics",
     "auditLogs": "Audit Logs",
     "auditTrail": "Audit Trail",
-    "audiobooks": "Audiobooks",
     "categories": "Categories",
     "chapterEditor": "Chapter Editor",
     "content": "Content",
@@ -51,7 +50,6 @@
     "main": "Main",
     "management": "Management",
     "mediaLibrary": "Media Library",
-    "messages": "Messages",
     "moderation": "Moderation",
     "moderator": "Moderator",
     "myList": "My List",
@@ -183,7 +181,8 @@
     "modeSwitch": "Switch between reading and listening",
     "modeRead": "Read",
     "modeListen": "Listen",
-    "listenChapter": "Listen to this chapter"
+    "listenChapter": "Listen to this chapter",
+    "openToUnlock": "Open chapter to unlock"
   },
   "community": {
     "title": "Comments",
@@ -434,7 +433,8 @@
     "earlyAccess": "Early access",
     "coinPrice": "{{count}} coins",
     "earlyAccessEnds": "Free from {{date}}",
-    "unlock": "Unlock"
+    "unlock": "Unlock",
+    "unlockedBadge": "Unlocked"
   },
   "readerHome": {
     "chaptersRead": "{{read}}/{{total}} chapters",
@@ -525,9 +525,9 @@
     "cleared": "Reading history cleared.",
     "completedBadge": "Finished",
     "contentUpdated": "Content updated",
-    "description": "Chapters you read recently, newest first.",
+    "description": "Stories you read or listened to recently, one row per story, newest first.",
     "empty": "No reading history yet",
-    "emptyDescription": "Chapters you read show up here so you can continue any time.",
+    "emptyDescription": "Stories you read or listen to show up here so you can continue any time.",
     "error": "Could not load reading history",
     "lastRead": "Last read {{when}}",
     "listLabel": "Reading history",
@@ -535,7 +535,7 @@
     "openLibrary": "Open library",
     "pageTitle": "Reading history",
     "removeConfirm": "Remove",
-    "removeDescription": "Remove {{chapter}} of {{title}} from your reading history?",
+    "removeDescription": "Remove {{title}} from your reading history? Every saved reading and listening position of this story will be deleted.",
     "removeEntry": "Remove {{title}} from history",
     "removeTitle": "Remove from reading history?",
     "removed": "Removed from reading history.",

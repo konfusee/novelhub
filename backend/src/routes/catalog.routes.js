@@ -28,6 +28,7 @@ import {
 import {
   chapterListItem,
   publishedChapterRows,
+  withViewerUnlocks,
 } from '../modules/reading-community/reading/chapters.js'
 import { resumeFor } from '../modules/reading-community/reading/progress.js'
 import { recordChapterView } from '../modules/reading-community/reading/views.js'
@@ -124,8 +125,11 @@ export function createCatalogRouter(config) {
     try {
       const story = (await publishedCards({ ids: [req.params.storyId] }))[0]
       if (!story) throw new HttpError(404, 'not_found', 'Không tìm thấy truyện đã xuất bản.')
+      const account = await optionalAccount(req, config)
       const [chapters, ratings, author, works, latestComment, viewer] = await Promise.all([
-        publishedChapterRows([story.id]),
+        publishedChapterRows([story.id]).then(rows =>
+          withViewerUnlocks(rows.get(story.id), account),
+        ),
         Rating.aggregate([
           {
             $match: { storyId: new mongoose.Types.ObjectId(req.params.storyId), status: 'active' },
@@ -141,7 +145,7 @@ export function createCatalogRouter(config) {
           .select('body authorAccountId')
           .populate('authorAccountId', 'displayName status')
           .lean(),
-        optionalAccount(req, config).then(account => storyViewer(account, story.id)),
+        storyViewer(account, story.id),
       ])
       const ratingCount = ratings.reduce((count, item) => count + item.count, 0)
       const ratingTotal = ratings.reduce((sum, item) => sum + item._id * item.count, 0)
@@ -180,7 +184,7 @@ export function createCatalogRouter(config) {
                 ? latestComment.authorAccountId.displayName
                 : '',
         },
-        chapters: chapters.get(story.id).map(chapterListItem),
+        chapters: chapters.map(chapterListItem),
         viewer,
       })
     } catch (error) {
@@ -209,12 +213,22 @@ export function createCatalogRouter(config) {
         throw new HttpError(404, 'not_found', 'Chương chưa sẵn sàng.')
       }
       const [neighbours, commentCount] = await Promise.all([
-        publishedChapterRows([chapter.storyId]),
+        publishedChapterRows([chapter.storyId]).then(rows =>
+          withViewerUnlocks(rows.get(String(chapter.storyId)), account),
+        ),
         Comment.countDocuments({ targetType: 'chapter', targetId: chapter._id, status: 'visible' }),
       ])
-      const rows = neighbours.get(String(chapter.storyId))
+      const rows = neighbours
       const link = row =>
-        row ? { id: row.id, orderKey: row.orderKey, title: row.title, locked: row.locked } : null
+        row
+          ? {
+              id: row.id,
+              orderKey: row.orderKey,
+              title: row.title,
+              locked: row.locked,
+              unlocked: Boolean(row.unlocked),
+            }
+          : null
       await recordChapterView({ req, res, config, account, chapter })
       res.json({
         chapter: {

@@ -249,11 +249,7 @@ export function ReadingHistoryPage() {
         <p className="text-sm leading-6 text-muted">
           {confirm === 'all'
             ? t('history.clearDescription')
-            : confirm &&
-              t('history.removeDescription', {
-                title: confirm.story.title,
-                chapter: chapterLabel(t, confirm.chapter),
-              })}
+            : confirm && t('history.removeDescription', { title: confirm.story.title })}
         </p>
         <div className="mt-6 flex justify-end gap-2">
           <Button variant="ghost" disabled={pending} onClick={() => setConfirm(null)}>

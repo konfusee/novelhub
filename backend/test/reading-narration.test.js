@@ -245,7 +245,6 @@ it('keeps listening progress separate from reading progress', async () => {
   const history = (await api.get(reader.cookie, '/api/reader/history')).body.items
   expect(history.map(item => [item.chapter.id, item.mode, item.completed])).toEqual([
     [second, 'audio', true],
-    [first, 'text', false],
   ])
 })
 

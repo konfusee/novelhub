@@ -1,3 +1,4 @@
+import mongoose from 'mongoose'
 import { Chapter, ContentRevision, ReadingProgress } from '../../../models/index.js'
 import { HttpError } from '../../../middleware/errors.js'
 import { publishedCards, readableChapter } from './access.js'
@@ -117,7 +118,10 @@ export async function saveProgress(
   }
 }
 
-/** Reading and listening history of currently visible stories, newest first. */
+/**
+ * Reading and listening history of currently visible stories: one entry per story (its
+ * latest saved chapter, in either mode), newest first. The entry id is the story id.
+ */
 export async function readingHistory(account, page) {
   const storyIds = await ReadingProgress.distinct('storyId', {
     accountId: account._id,
@@ -127,25 +131,31 @@ export async function readingHistory(account, page) {
     ? await publishedCards({ ids: storyIds.map(String), pageSize: storyIds.length })
     : []
   const stories = new Map(cards.map(card => [card.id, card]))
-  const filter = {
-    accountId: account._id,
-    mode: { $in: PROGRESS_MODES },
-    storyId: { $in: [...stories.keys()] },
-  }
-  const [total, rows] = await Promise.all([
-    ReadingProgress.countDocuments(filter),
-    ReadingProgress.find(filter)
-      .sort({ lastReadAt: -1, _id: -1 })
-      .skip((page - 1) * HISTORY_PAGE_SIZE)
-      .limit(HISTORY_PAGE_SIZE)
-      .lean(),
+  const [result] = await ReadingProgress.aggregate([
+    {
+      $match: {
+        accountId: account._id,
+        mode: { $in: PROGRESS_MODES },
+        storyId: { $in: [...stories.keys()].map(id => new mongoose.Types.ObjectId(id)) },
+      },
+    },
+    { $sort: { lastReadAt: -1, _id: -1 } },
+    { $group: { _id: '$storyId', row: { $first: '$$ROOT' } } },
+    { $replaceRoot: { newRoot: '$row' } },
+    { $sort: { lastReadAt: -1, _id: -1 } },
+    {
+      $facet: {
+        total: [{ $count: 'count' }],
+        rows: [{ $skip: (page - 1) * HISTORY_PAGE_SIZE }, { $limit: HISTORY_PAGE_SIZE }],
+      },
+    },
   ])
   const items = await Promise.all(
-    rows.map(async row => {
+    result.rows.map(async row => {
       const story = stories.get(String(row.storyId))
       const state = await chapterState(account, row)
       return {
-        id: String(row._id),
+        id: story.id,
         story: { id: story.id, title: story.title, author: story.author },
         chapter: {
           id: String(row.chapterId),
@@ -160,18 +170,18 @@ export async function readingHistory(account, page) {
       }
     }),
   )
-  return { items, total, page, pageSize: HISTORY_PAGE_SIZE }
+  return { items, total: result.total[0]?.count ?? 0, page, pageSize: HISTORY_PAGE_SIZE }
 }
 
-export async function deleteHistoryEntry(req, id) {
+/** Deletes a story's history entry: every saved reading and listening position of that story. */
+export async function deleteHistoryEntry(req, storyId) {
   const result = await ownerWrite(req, session =>
-    ReadingProgress.deleteOne(
-      { _id: id, accountId: req.account._id, mode: { $in: PROGRESS_MODES } },
+    ReadingProgress.deleteMany(
+      { accountId: req.account._id, storyId, mode: { $in: PROGRESS_MODES } },
       { session },
     ),
   )
-  if (result.deletedCount !== 1)
-    throw new HttpError(404, 'not_found', 'Không tìm thấy mục lịch sử đọc.')
+  if (!result.deletedCount) throw new HttpError(404, 'not_found', 'Không tìm thấy mục lịch sử đọc.')
 }
 
 export async function clearHistory(req) {

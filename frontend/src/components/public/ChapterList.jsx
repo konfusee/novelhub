@@ -6,7 +6,8 @@ import { useLocale } from '../../context/LocaleContext'
 
 /**
  * Published chapters of one story. Each chapter carries its 1-based reading `number`.
- * Guests may preview chapter 1 only; early-access chapters show the coin price and end date.
+ * Guests may preview chapter 1 only; early-access chapters show the coin price and end date,
+ * unless this Reader already unlocked them (`unlocked`).
  */
 export function ChapterList({ chapters, storyId }) {
   const { isAuthenticated } = useAuth()
@@ -38,6 +39,10 @@ export function ChapterList({ chapters, storyId }) {
                         {t('story.coinPrice', { count: chapter.earlyAccess.coinPrice })}
                       </>
                     )}
+                  </Badge>
+                ) : chapter.unlocked ? (
+                  <Badge tone="green" data-testid="chapter-unlocked">
+                    {t('story.unlockedBadge')}
                   </Badge>
                 ) : (
                   guestPreview && <Badge tone="green">{t('story.freePreview')}</Badge>

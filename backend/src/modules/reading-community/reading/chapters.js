@@ -1,4 +1,4 @@
-import { Chapter, ContentRevision } from '../../../models/index.js'
+import { Chapter, ContentRevision, UnlockEntitlement } from '../../../models/index.js'
 import { earlyAccessActive } from './access.js'
 
 /**
@@ -48,6 +48,29 @@ export async function publishedChapterRows(storyIds, now = new Date()) {
     })
   }
   return rows
+}
+
+/**
+ * Viewer-aware lock state: an early-access chapter this account already unlocked for its
+ * live revision is returned as `locked: false, unlocked: true` (same rule as text access).
+ */
+export async function withViewerUnlocks(rows, account, now = new Date()) {
+  const locked = rows.filter(row => row.locked)
+  if (!account || !locked.length) return rows
+  const owned = await UnlockEntitlement.find({
+    accountId: account._id,
+    chapterId: { $in: locked.map(row => row.id) },
+    status: 'active',
+    expiresAt: { $gt: now },
+  })
+    .select('chapterId publishedRevisionId')
+    .lean()
+  const keys = new Set(owned.map(item => `${item.chapterId}:${item.publishedRevisionId}`))
+  return rows.map(row =>
+    row.locked && keys.has(`${row.id}:${row.publishedRevisionId}`)
+      ? { ...row, locked: false, unlocked: true }
+      : row,
+  )
 }
 
 /** Public chapter list entry (without internal revision binding). */

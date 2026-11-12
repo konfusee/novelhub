@@ -427,7 +427,7 @@ function StoryEndCard({ story, viewer, total, onFollowChange, t }) {
   )
 }
 
-/* A neighbouring chapter in early access: shown as a lock instead of a link into an error. */
+/* The next chapter is in early access and not unlocked by this Reader: open it to unlock. */
 function LockedChapterCard({ link, storyId, t }) {
   return (
     <Card className="mx-4 mt-10 sm:mx-6">
@@ -437,9 +437,14 @@ function LockedChapterCard({ link, storyId, t }) {
         title={t('reader.lockedTitle', { chapter: chapterLabel(t, link) })}
         description={t('reader.lockedDescription')}
         action={
-          <ButtonLink variant="secondary" size="sm" to={ROUTES.story(storyId)}>
-            {t('reader.backToStory')}
-          </ButtonLink>
+          <div className="flex flex-wrap justify-center gap-2">
+            <ButtonLink size="sm" to={ROUTES.read(storyId, link.id)}>
+              {t('reader.openToUnlock')}
+            </ButtonLink>
+            <ButtonLink variant="secondary" size="sm" to={ROUTES.story(storyId)}>
+              {t('reader.backToStory')}
+            </ButtonLink>
+          </div>
         }
         className="py-8"
       />
@@ -447,30 +452,30 @@ function LockedChapterCard({ link, storyId, t }) {
   )
 }
 
+/* A locked neighbour still opens: its page shows the unlock prompt instead of the text. */
 function NeighbourLink({ link, direction, storyId, onNavigate, t }) {
   if (!link) return <span aria-hidden="true" />
   const next = direction === 'next'
-  if (link.locked)
-    return (
-      <p
-        title={t('reader.lockedDescription')}
-        className="flex min-h-[3.125rem] items-center justify-center gap-2 rounded-full border border-dashed border-line px-5 text-sm text-muted"
-      >
-        <LockKeyhole size={15} aria-hidden="true" />
-        {t(next ? 'reader.nextLocked' : 'reader.previousLocked')}
-      </p>
-    )
   return (
     <ButtonLink
-      variant={next ? 'primary' : 'secondary'}
+      variant={next && !link.locked ? 'primary' : 'secondary'}
       size="lg"
       className="min-h-[3.125rem] py-1.5"
       to={ROUTES.read(storyId, link.id)}
-      trailingIcon={next ? ArrowRight : undefined}
+      trailingIcon={next && !link.locked ? ArrowRight : undefined}
       onClick={onNavigate}
     >
       {!next && <ArrowLeft size={16} aria-hidden="true" />}
-      {t(next ? 'reader.next' : 'reader.previous')}
+      {link.locked && <LockKeyhole size={15} aria-hidden="true" />}
+      {t(
+        link.locked
+          ? next
+            ? 'reader.nextLocked'
+            : 'reader.previousLocked'
+          : next
+            ? 'reader.next'
+            : 'reader.previous',
+      )}
     </ButtonLink>
   )
 }
@@ -567,8 +572,8 @@ export function FullChapterReaderPage() {
   const endStory = story && followState ? { ...story, followers: followState.followers } : story
   const chapterKey = `${storyId}-${currentChapter?.id ?? current}`
   const { prev: prevLink, next: nextLink } = neighboursOf(current)
-  const canPrev = Boolean(prevLink && !prevLink.locked)
-  const canNext = Boolean(nextLink && !nextLink.locked)
+  const canPrev = Boolean(prevLink)
+  const canNext = Boolean(nextLink)
 
   const [progress, setProgress] = useState(0)
   const [bookmarks, setBookmarks] = useState(() => readStored(BOOKMARK_KEY, []))
@@ -702,7 +707,7 @@ export function FullChapterReaderPage() {
     setHintSeen(true)
   }, [])
   const goToChapter = link => {
-    if (!link || link.locked || link.id === current) return
+    if (!link || link.id === current) return
     setSelection(null)
     if (mode === 'swipe') dismissHint()
     navigate(ROUTES.read(storyId, link.id))
@@ -919,7 +924,7 @@ export function FullChapterReaderPage() {
         return
       }
       const target = event.key === 'ArrowRight' ? nextLink : prevLink
-      if (!target || target.locked) return
+      if (!target) return
       event.preventDefault()
       setSelection(null)
       if (mode === 'swipe') dismissHint()
