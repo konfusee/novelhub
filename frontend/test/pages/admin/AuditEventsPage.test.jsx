@@ -12,7 +12,8 @@ afterEach(() => {
 })
 const event = {
   id: 'audit-1',
-  actorType: 'system',
+  actorType: 'account',
+  actorName: 'Quản trị thử',
   targetType: 'chapter',
   targetId: 'chapter-id',
   action: 'chapter.saved',
@@ -53,7 +54,9 @@ it('restores the visible filters with browser history instead of keeping the lat
 it('renders stored events as escaped text, applies server filters and resets pagination', async () => {
   mocks.apiRequest.mockResolvedValue({ items: [event], total: 21, page: 1, pageSize: 20 })
   const { container } = view()
-  await screen.findByText('chapter.saved')
+  await screen.findByText('Đã lưu chương')
+  expect(screen.getByText(event.actorName)).toBeTruthy()
+  expect(screen.queryByText(event.action)).toBeNull()
   expect(screen.getByText('<script>literal</script>')).toBeTruthy()
   expect(container.querySelector('script')).toBeNull()
   fireEvent.click(screen.getByRole('button', { name: 'Trang sau' }))

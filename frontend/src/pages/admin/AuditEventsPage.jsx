@@ -5,6 +5,20 @@ import { useBackendDocument } from '../../api/useBackendResource'
 import { useLocale } from '../../context/LocaleContext'
 
 const empty = { items: [], total: 0, page: 1, pageSize: 20 }
+const actionLabels = {
+  'chapter.saved': 'chapterSaved',
+  'story.created': 'storyCreated',
+  'account.role-changed': 'roleChanged',
+  'account.suspended': 'accountSuspended',
+  'account.restored': 'accountRestored',
+  'account.anonymized': 'accountAnonymized',
+  'author-role.revoked': 'authorRevoked',
+  'former-author.story.correct': 'storyCorrected',
+  'former-author.story.unpublish': 'storyUnpublished',
+  'former-author.story.republish': 'storyRepublished',
+  'policy.scheduled': 'policyScheduled',
+  'policy.cancelled': 'policyCancelled',
+}
 const fields = ['action', 'targetType', 'targetId', 'actorId', 'result', 'from', 'to']
 const timestamp = new Intl.DateTimeFormat('vi-VN', {
   dateStyle: 'short',
@@ -113,9 +127,13 @@ export function AuditEventsPage() {
                         {timestamp.format(new Date(event.occurredAt))}
                       </td>
                       <td className="px-4 py-4 break-all">
-                        {event.actorType === 'system' ? m('system') : (event.actorId ?? '—')}
+                        {event.actorType === 'system' ? m('system') : (event.actorName ?? '—')}
                       </td>
-                      <td className="px-4 py-4 break-all">{event.action}</td>
+                      <td className="px-4 py-4 break-all">
+                        {actionLabels[event.action]
+                          ? m(actionLabels[event.action])
+                          : m('otherAction')}
+                      </td>
                       <td className="px-4 py-4 break-all">
                         {event.targetType}
                         <br />
