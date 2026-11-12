@@ -2192,6 +2192,9 @@
       "retention": "Giữ chân",
       "audience": "Độc giả"
     },
+    "filtersTitle": "Bộ lọc phân tích",
+    "filtersHint": "Xem toàn bộ truyện hoặc lọc riêng một truyện và chương.",
+    "resetFilters": "Đặt lại",
     "returningReaders": "Định danh độc giả quay lại trong kỳ",
     "returnRate": "Tỷ lệ quay lại trong kỳ",
     "returningHint": "Định danh tài khoản hoặc thiết bị khách có lượt đọc trên ít nhất hai ngày Việt Nam khác nhau trong bộ lọc hiện tại.",
@@ -2254,7 +2257,12 @@
     "cohortCount": "{{returned}} / {{eligible}} định danh đủ ngày quan sát",
     "cohortNotMature": "Chưa đủ ngày quan sát hoặc chưa có định danh mới trong kỳ. Chọn kỳ dài hơn để xem ngày 7.",
     "cohortEligible": "Định danh đủ ngày {{day}}",
-    "cohortReturned": "Định danh quay lại đúng ngày {{day}}"
+    "cohortReturned": "Định danh quay lại đúng ngày {{day}}",
+    "storySummaryTitle": "Tóm tắt phân tích truyện",
+    "storySummaryHint": "Số liệu của riêng truyện này trong 30 ngày gần nhất.",
+    "openFullAnalytics": "Mở phân tích đầy đủ",
+    "noDailyData": "Chưa có lượt đọc theo ngày trong khoảng thời gian này.",
+    "loadError": "Không tải được dữ liệu phân tích"
   },
   "draftsData": {
     "error": "Không lưu được bản nháp. Hãy thử lại.",
@@ -2568,6 +2576,9 @@
     "notFound": "Kiểm tra quyền sở hữu và bản nháp hiện tại, sau đó tải lại.",
     "retry": "Thử lại",
     "history": "Lịch sử gửi duyệt của bạn",
+    "storyHistoryTitle": "Lịch sử gửi duyệt của truyện này",
+    "storyHistoryHint": "Theo dõi các phiên bản, phản hồi và gói nội dung đã gửi của truyện.",
+    "openGlobalHistory": "Mở lịch sử tất cả truyện",
     "historyActions": {
       "submitted": "Đã gửi duyệt",
       "decided": "Đã ra quyết định",
@@ -2616,6 +2627,7 @@
     "pipeline": "Quy trình xuất bản",
     "processing": "Bằng chứng",
     "open": "Mở nội dung",
+    "openDraft": "Mở bản nháp chương",
     "editorContinue": "Lưu và kiểm tra gửi duyệt",
     "editorHint": "Bản nháp cần được lưu trước khi kiểm tra điều kiện gửi duyệt. Bạn sẽ chọn và xác nhận gói gửi ở bước tiếp theo.",
     "checks": {

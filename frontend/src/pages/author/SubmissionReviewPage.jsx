@@ -151,7 +151,7 @@ export function SubmissionReviewPage() {
           ) : (
             <div className="mt-4 space-y-3">
               {feed.data.items.map(item => (
-                <SubmissionEntry key={item.id} item={item} choose={choose} />
+                <SubmissionEntry key={item.id} item={item} />
               ))}
               <div className="flex flex-wrap items-center justify-between gap-3 pt-3">
                 <Button variant="secondary" disabled={page <= 1} onClick={() => setPage(page - 1)}>
@@ -547,7 +547,7 @@ function SubmissionPackage({ storyId, chapterId, onSubmitted }) {
   )
 }
 
-function SubmissionEntry({ item, choose }) {
+function SubmissionEntry({ item }) {
   const { t, formatDate } = useLocale()
   const reviseLabel = t(
     item.status === 'approved' ? 'submissionData.reviseUnpublished' : 'submissionData.revise',
@@ -643,7 +643,13 @@ function SubmissionEntry({ item, choose }) {
         size="sm"
         variant="secondary"
         className="mt-3"
-        onClick={() => choose(item.storyId, item.chapterId || '')}
+        onClick={() =>
+          navigate(
+            `/author/stories/${item.storyId}?tab=reviews${
+              item.chapterId ? `&chapterId=${encodeURIComponent(item.chapterId)}` : ''
+            }`,
+          )
+        }
       >
         {t('submissionData.open')}
       </Button>

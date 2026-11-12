@@ -7,7 +7,6 @@ import {
   BarChart3,
   BookOpen,
   CheckCircle2,
-  ChevronRight,
   Coins,
   Edit3,
   Ellipsis,
@@ -18,10 +17,10 @@ import {
   RefreshCw,
   Save,
   Search,
-  Send,
   Sparkles,
   Star,
   Trash2,
+  UsersRound,
 } from '../../components/icons'
 import { AuthorLayout } from '../../layouts'
 import { useBackendDocument, useBackendResource } from '../../api/useBackendResource'
@@ -75,22 +74,6 @@ const tabItems = [
   { value: 'reviews', label: 'Bản gửi và đánh giá' },
   { value: 'analytics', label: 'Phân tích truyện' },
 ]
-const linkedTabs = {
-  reviews: {
-    icon: Send,
-    title: 'Bản gửi và kết quả xét duyệt',
-    description: 'Theo dõi phản hồi của biên tập viên và lịch sử gửi duyệt cho từng chương.',
-    to: '/author/submissions',
-    action: 'Xem bản gửi duyệt',
-  },
-  analytics: {
-    icon: BarChart3,
-    title: 'Phân tích truyện',
-    description: 'Xem lượt đọc, tỷ lệ giữ chân và doanh thu theo từng chương.',
-    to: '/author/analytics',
-    action: 'Mở phân tích truyện',
-  },
-}
 const filters = [
   { value: 'All', label: 'Tất cả' },
   { value: 'Published', label: 'Đã xuất bản' },
@@ -222,8 +205,6 @@ export function StoryManagerPage() {
   const pageCount = Math.max(1, Math.ceil(chapters.length / PAGE_SIZE))
   const currentPage = Math.min(page, pageCount)
   const pageRows = chapters.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE)
-  const linked = linkedTabs[tab]
-
   if (workspace.status === 'error' || workspace.status === 'empty')
     return (
       <AuthorLayout>
@@ -446,30 +427,10 @@ export function StoryManagerPage() {
               setSavedStory({ source: workspace.data, story: { ...story, ...updated } })
             }
           />
-        ) : linked ? (
-          <Card className="mt-5 p-0">
-            <EmptyState
-              icon={linked.icon}
-              title={linked.titleKey ? t(linked.titleKey) : linked.title}
-              description={linked.descriptionKey ? t(linked.descriptionKey) : linked.description}
-              action={
-                <ButtonLink
-                  to={
-                    tab === 'analytics'
-                      ? ROUTES.authorAnalytics(storyId)
-                      : tab === 'reviews'
-                        ? `${linked.to}?storyId=${storyId}`
-                        : linked.to
-                  }
-                  variant="secondary"
-                  size="sm"
-                  trailingIcon={ChevronRight}
-                >
-                  {linked.action}
-                </ButtonLink>
-              }
-            />
-          </Card>
+        ) : tab === 'reviews' ? (
+          <StorySubmissionHistory storyId={storyId} />
+        ) : tab === 'analytics' ? (
+          <StoryAnalyticsSummary storyId={storyId} />
         ) : (
           <div className="nh-grid-12 mt-5 grid items-start gap-6 nh-layout-xl-9-3">
             <Card
@@ -708,6 +669,226 @@ export function StoryManagerPage() {
         </Modal>
       </div>
     </AuthorLayout>
+  )
+}
+
+const emptyStoryAnalytics = {
+  daily: [],
+  labels: [],
+  stories: [],
+  chapters: [],
+  reads: 0,
+  readers: 0,
+  followers: 0,
+  paidUnlocks: 0,
+  earnings: 0,
+  rating: { average: null, count: 0 },
+  comments: {},
+}
+
+function StorySubmissionHistory({ storyId }) {
+  const { t, formatDate } = useLocale()
+  const feed = useBackendDocument(`/author/submissions?storyId=${encodeURIComponent(storyId)}`, {
+    items: [],
+    stories: [],
+    page: 1,
+    pageCount: 1,
+    total: 0,
+  })
+  const knownStatuses = [
+    'validated',
+    'pending-review',
+    'decision-pending',
+    'approved',
+    'superseded',
+    'rejected',
+    'cancelled',
+  ]
+  return (
+    <Card className="mt-5">
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <p className="text-xs text-muted">{t('submissionData.studio')}</p>
+          <h2 className="mt-1 text-h3">{t('submissionData.storyHistoryTitle')}</h2>
+          <p className="mt-1 text-sm text-muted">{t('submissionData.storyHistoryHint')}</p>
+        </div>
+        <ButtonLink
+          to={`/author/submissions?storyId=${encodeURIComponent(storyId)}`}
+          variant="secondary"
+          size="sm"
+        >
+          {t('submissionData.openGlobalHistory')}
+        </ButtonLink>
+      </div>
+      {feed.status === 'loading' ? (
+        <div aria-busy="true" className="mt-5 space-y-3">
+          {[0, 1, 2].map(item => (
+            <Skeleton key={item} className="h-24 w-full" />
+          ))}
+        </div>
+      ) : feed.status === 'error' ? (
+        <EmptyState
+          tone="rose"
+          icon={AlertTriangle}
+          title={t('submissionData.loadError')}
+          action={<RetryButton onClick={feed.retry} />}
+        />
+      ) : !feed.data.items.length ? (
+        <EmptyState
+          className="mt-5"
+          icon={FileText}
+          title={t('submissionData.noHistory')}
+          description={t('submissionData.noHistoryHint')}
+        />
+      ) : (
+        <div className="mt-5 space-y-3">
+          {feed.data.items.map(item => (
+            <article key={item.id} className="rounded-2xl border border-hairline p-4">
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <h3 className="text-sm font-semibold">{item.title || item.id}</h3>
+                <Badge>
+                  {knownStatuses.includes(item.status)
+                    ? t(`submissionData.status.${item.status}`)
+                    : item.status}
+                </Badge>
+              </div>
+              <p className="mt-2 text-xs text-muted">
+                {item.submittedAt ? formatDate(item.submittedAt) : '—'} ·{' '}
+                {t('submissionData.revision')} {item.revisionNumber ?? '—'}
+              </p>
+              {item.decisionSummary && (
+                <p className="mt-3 whitespace-pre-wrap text-sm">{item.decisionSummary}</p>
+              )}
+              {Array.isArray(item.history) && item.history.length > 0 && (
+                <ul className="mt-3 space-y-2">
+                  {item.history.map(row => (
+                    <li key={row.id} className="rounded-xl bg-elevated p-3 text-xs">
+                      {row.action} · {row.outcome} ·{' '}
+                      {row.occurredAt ? formatDate(row.occurredAt) : '—'}
+                      {row.feedback && (
+                        <p className="mt-2 whitespace-pre-wrap text-sm">{row.feedback}</p>
+                      )}
+                    </li>
+                  ))}
+                </ul>
+              )}
+              <div className="mt-3 flex flex-wrap gap-2">
+                <ButtonLink
+                  size="sm"
+                  variant="secondary"
+                  to={`/author/submissions/${item.id}/preview`}
+                >
+                  {t('submissionPackage.title')}
+                </ButtonLink>
+                {item.chapterId && (
+                  <ButtonLink
+                    size="sm"
+                    variant="secondary"
+                    to={`/author/stories/${storyId}/chapters/${item.chapterId}/edit`}
+                  >
+                    {t('submissionData.openDraft')}
+                  </ButtonLink>
+                )}
+              </div>
+            </article>
+          ))}
+        </div>
+      )}
+    </Card>
+  )
+}
+
+function StoryAnalyticsSummary({ storyId }) {
+  const { t } = useLocale()
+  const analytics = useBackendDocument(
+    `/author/analytics?days=30&groupBy=day&storyId=${encodeURIComponent(storyId)}`,
+    emptyStoryAnalytics,
+  )
+  const data = analytics.data
+  const metrics = [
+    [BookOpen, t('analyticsData.views'), data.reads ?? 0, 'brand'],
+    [UsersRound, t('analyticsData.readers'), data.readers ?? 0, 'orange'],
+    [UsersRound, t('analyticsData.followers'), data.followers ?? 0, 'purple'],
+    [Coins, t('analyticsData.paidUnlocks'), data.paidUnlocks ?? 0, 'orange'],
+    [Coins, t('analyticsData.earnings'), data.earnings ?? 0, 'purple'],
+    [Star, t('analyticsData.averageRating'), data.rating?.average ?? '—', 'orange'],
+  ]
+  return (
+    <section className="mt-5 space-y-5" aria-labelledby="story-analytics-heading">
+      <Card>
+        <div className="flex flex-wrap items-start justify-between gap-3">
+          <div>
+            <p className="text-xs text-muted">{t('analyticsData.range')}</p>
+            <h2 id="story-analytics-heading" className="mt-1 text-h3">
+              {t('analyticsData.storySummaryTitle')}
+            </h2>
+            <p className="mt-1 text-sm text-muted">{t('analyticsData.storySummaryHint')}</p>
+          </div>
+          <ButtonLink to={ROUTES.authorAnalytics(storyId)} variant="secondary" size="sm">
+            {t('analyticsData.openFullAnalytics')}
+          </ButtonLink>
+        </div>
+        {analytics.status === 'error' ? (
+          <EmptyState
+            className="mt-5"
+            tone="rose"
+            icon={AlertTriangle}
+            title={t('analyticsData.loadError')}
+            action={<RetryButton onClick={analytics.retry} />}
+          />
+        ) : analytics.status === 'loading' ? (
+          <div aria-busy="true" className="mt-5 grid grid-cols-2 gap-3 sm:grid-cols-3">
+            {[0, 1, 2, 3, 4, 5].map(item => (
+              <Skeleton key={item} className="h-24 w-full" />
+            ))}
+          </div>
+        ) : (
+          <>
+            <div className="mt-5 grid grid-cols-2 gap-3 sm:grid-cols-3">
+              {metrics.map(([Icon, label, value, tone]) => (
+                <div key={label} className="rounded-2xl bg-elevated p-4">
+                  <Icon
+                    size={16}
+                    aria-hidden="true"
+                    className={
+                      {
+                        brand: 'text-brand-strong',
+                        orange: 'text-orange-strong',
+                        purple: 'text-purple-strong',
+                      }[tone]
+                    }
+                  />
+                  <span className="mt-2 block text-xs text-muted">{label}</span>
+                  <strong className="mt-1 block text-h3 tabular-nums">
+                    {typeof value === 'number' ? value.toLocaleString('vi-VN') : value}
+                  </strong>
+                </div>
+              ))}
+            </div>
+            {!data.daily?.length ? (
+              <p className="mt-5 text-sm text-muted">{t('analyticsData.noDailyData')}</p>
+            ) : (
+              <div className="mt-5">
+                <div className="flex h-28 items-end gap-1 rounded-2xl bg-elevated px-3 py-3">
+                  {data.daily.map((value, index) => {
+                    const peak = Math.max(1, ...data.daily)
+                    return (
+                      <span
+                        key={`${data.labels?.[index] ?? index}`}
+                        title={`${data.labels?.[index] ?? ''}: ${value}`}
+                        className="min-w-0 flex-1 rounded-t bg-brand/75"
+                        style={{ height: `${(value / peak) * 100}%` }}
+                      />
+                    )
+                  })}
+                </div>
+                <p className="mt-2 text-xs text-muted">{t('analyticsData.dailyHint')}</p>
+              </div>
+            )}
+          </>
+        )}
+      </Card>
+    </section>
   )
 }
 
