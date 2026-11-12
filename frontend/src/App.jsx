@@ -4,7 +4,7 @@ import { ThemeProvider } from './context/ThemeContext'
 import { AuthProvider, canAccessPath, getAccountHome, useAuth } from './context/AuthContext'
 import { LocaleProvider } from './context/LocaleContext'
 import { MockDataProvider } from './context/MockDataContext'
-import { authorAgreements } from './data/authorAgreements'
+import { authorAgreements } from './content/authorAgreements'
 import { ROUTES } from './app/routes'
 import { RoleRoute } from './app/RouteGuards'
 import { DevPanel } from './components/dev/DevPanel'
@@ -14,11 +14,6 @@ import { TopProgress } from './components/shared/TopProgress'
 import { AdminLayout, AuthorLayout, ModeratorLayout, ReaderLayout } from './layouts'
 
 // Route pages load on demand; RouteFallback shows a shell skeleton meanwhile.
-const UIPreviewPage = lazy(() =>
-  import('./pages/system/UIPreviewPage').then(m => ({
-    default: m.UIPreviewPage,
-  })),
-)
 const GuestHomePage = lazy(() =>
   import('./pages/guest/GuestHomePage').then(m => ({
     default: m.GuestHomePage,
@@ -596,15 +591,6 @@ function AppRoutes() {
           <Route path="/403" element={<ForbiddenPage />} />
 
           {/* Design previews render every page without role guards: development builds only. */}
-          {import.meta.env.DEV && <Route path="/ui-preview" element={<UIPreviewPage />} />}
-          {import.meta.env.DEV &&
-            pages.map((Page, index) => (
-              <Route
-                key={index}
-                path={`/ui-preview/p${String(index + 1).padStart(2, '0')}`}
-                element={<Page />}
-              />
-            ))}
           <Route path="*" element={<NotFoundPage />} />
         </Routes>
       </Suspense>

@@ -15,7 +15,14 @@ import {
 import { ProgressBar } from '../ui'
 import { StoryCover } from '../story/StoryCover'
 import { useLocale } from '../../context/LocaleContext'
-import { stories } from '../../data/mock/stories'
+const stories = [
+  { id: 'silent-forest', title: 'The Silent Forest', author: 'Mira Lane', color: '#173b3f', icon: '🌲' },
+  { id: 'whispers-of-you', title: 'Whispers of You', author: 'Elena J. Park', color: '#df8b79', icon: '🌅' },
+  { id: 'neon-hearts', title: 'Neon Hearts', author: 'Kaito Min', color: '#34336f', icon: '🌃' },
+  { id: 'dragons-wish', title: "A Dragon's Wish", author: 'Ren Park', color: '#9d744b', icon: '🐉' },
+  { id: 'last-kingdom', title: 'The Last Kingdom', author: 'Aurora White', color: '#668ba3', icon: '🏰' },
+  { id: 'your-story', title: 'Truyện của bạn', author: '', color: '#31584c', icon: '✦' },
+]
 
 const storyById = Object.fromEntries(stories.map(story => [story.id, story]))
 const socialCovers = ['silent-forest', 'whispers-of-you', 'neon-hearts']
