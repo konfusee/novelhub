@@ -293,13 +293,16 @@ export async function authorDashboard(accountId, { days = 1 } = {}, now = new Da
     ]
   })
   const chapterIds = chapters.map(chapter => chapter._id)
+  const revenueChapterIds = publishedChapterIds
   const revenueByWindow = await Promise.all(
-    windows.map(window => revenueForStories(accountId, ids, chapterIds, window.start, window.end)),
+    windows.map(window =>
+      revenueForStories(accountId, ids, revenueChapterIds, window.start, window.end),
+    ),
   )
   const selectedRevenue = await revenueForStories(
     accountId,
     ids,
-    chapterIds,
+    revenueChapterIds,
     selectedWindow.start,
     selectedWindow.end,
   )
@@ -323,7 +326,7 @@ export async function authorDashboard(accountId, { days = 1 } = {}, now = new Da
     await Promise.all(
       publishedStories.map(async story => {
         const start = story.publishedAt ? new Date(story.publishedAt) : new Date(0)
-        const storyChapters = chapters.filter(chapter => chapter.storyId.equals(story._id))
+        const storyChapters = publishedChapters.filter(chapter => chapter.storyId.equals(story._id))
         const [storyViews, storyRevenue] = await Promise.all([
           viewsForWindow([story._id], vietnameseDay(start), windows[0].endDay),
           revenueForStories(
