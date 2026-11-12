@@ -7,6 +7,11 @@ import { getPayoutDetails } from '../modules/coins-payouts/finance/payout-detail
 
 const querySchema = z
   .object({
+    status: z.enum(['pending', 'paid']).optional(),
+    year: z
+      .string()
+      .regex(/^20\d{2}$/)
+      .optional(),
     page: z.coerce.number().int().min(1).max(10000).default(1),
   })
   .strict()
@@ -19,17 +24,15 @@ export function createAuthorPayoutsRouter(config) {
     requireRole('author'),
     async (req, res, next) => {
       try {
-        const input = querySchema.safeParse(req.query)
+        const input = querySchema.pick({ page: true }).safeParse(req.query)
         if (!input.success || !/^[a-fA-F0-9]{24}$/.test(req.params.withdrawalId))
           throw new HttpError(400, 'validation_error', 'Trang kết quả không hợp lệ.')
-        res
-          .set('Cache-Control', 'private, no-store')
-          .json(
-            await getPayoutDetails(req.params.withdrawalId, {
-              ...input.data,
-              accountId: req.account._id,
-            }),
-          )
+        res.set('Cache-Control', 'private, no-store').json(
+          await getPayoutDetails(req.params.withdrawalId, {
+            ...input.data,
+            accountId: req.account._id,
+          }),
+        )
       } catch (error) {
         next(error)
       }
@@ -48,7 +51,7 @@ export function createAuthorPayoutsRouter(config) {
           throw new HttpError(400, 'validation_error', 'Bộ lọc lịch sử chi trả không hợp lệ.')
         }
 
-        const result = await getAuthorPayouts(req.account._id, parsed.data.page)
+        const result = await getAuthorPayouts(req.account._id, parsed.data.page, parsed.data)
 
         res.set('Cache-Control', 'private, no-store').json(result)
       } catch (error) {

@@ -2,14 +2,14 @@ import { PayoutDetailsDialog } from '../shared/PayoutDetailsDialog'
 import { useState } from 'react'
 import { useBackendResource } from '../../api/useBackendResource'
 import { useLocale } from '../../context/LocaleContext'
-import { Button, Card } from '../ui'
+import { Button, Card, Input, Select } from '../ui'
 
 const empty = {
   items: [],
   hasMore: false,
 }
 
-const columns = ['period', 'coins', 'money', 'status', 'latestResult', 'processedAt']
+const columns = ['period', 'coins', 'money', 'status', 'latestResult', 'processedAt', 'bank']
 
 function selectResponse(response) {
   if (!Array.isArray(response?.items) || typeof response.hasMore !== 'boolean') {
@@ -25,8 +25,13 @@ export function AuthorPayoutHistory() {
 
   const [selectedPayout, setSelectedPayout] = useState(null)
   const [page, setPage] = useState(1)
+  const [filters, setFilters] = useState({})
 
-  const feed = useBackendResource(`/author/payouts?page=${page}`, empty, selectResponse)
+  const feed = useBackendResource(
+    `/author/payouts?${new URLSearchParams({ ...filters, page })}`,
+    empty,
+    selectResponse,
+  )
 
   const loading = feed.status === 'loading'
   const ready = feed.status === 'ready'
@@ -44,6 +49,32 @@ export function AuthorPayoutHistory() {
         </Button>
       </div>
 
+      <form
+        className="mt-5 flex flex-wrap items-end gap-3"
+        onSubmit={event => {
+          event.preventDefault()
+          setFilters(
+            Object.fromEntries([...new FormData(event.currentTarget)].filter(([, value]) => value)),
+          )
+          setPage(1)
+        }}
+      >
+        <label className="flex flex-col gap-2 text-sm">
+          {m('status')}
+          <Select name="status" defaultValue="">
+            <option value="">{m('allStates')}</option>
+            <option value="pending">{m('pending')}</option>
+            <option value="paid">{m('paid')}</option>
+          </Select>
+        </label>
+        <label className="flex flex-col gap-2 text-sm">
+          {m('year')}
+          <Input name="year" type="number" min="2000" max="2099" placeholder={m('allYears')} />
+        </label>
+        <Button type="submit" variant="secondary">
+          {t('financialTransactions.apply')}
+        </Button>
+      </form>
       {loading && (
         <p role="status" className="mt-5 text-sm text-muted">
           {m('loading')}
@@ -110,6 +141,16 @@ export function AuthorPayoutHistory() {
                           <time dateTime={row.latestResult.occurredAt}>
                             {formatDate(row.latestResult.occurredAt)}
                           </time>
+                        ) : (
+                          '—'
+                        )}
+                      </td>
+                      <td className="px-3 py-4">
+                        {row.bankDetails ? (
+                          <>
+                            <p>{row.bankDetails.bankName}</p>
+                            <p className="mt-1 text-muted">{row.bankDetails.accountNumber}</p>
+                          </>
                         ) : (
                           '—'
                         )}

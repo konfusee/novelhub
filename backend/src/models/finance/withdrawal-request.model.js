@@ -7,6 +7,8 @@ const schema = new Schema(
     accountId: { type: ObjectId, ref: 'Account', required: true },
     earningsWalletId: { type: ObjectId, ref: 'Wallet', required: true },
     origin: { type: String, enum: ['system-monthly'], required: true },
+    // No default: legacy obligations must never be silently simulated.
+    executionMode: { type: String, enum: ['simulation', 'external'] },
     periodId: { type: String, required: true },
     cutoffAt: { type: Date, required: true },
     evaluatedBalanceCoins: coinAmount,
@@ -32,6 +34,7 @@ lockFields(
     'accountId',
     'earningsWalletId',
     'origin',
+    'executionMode',
     'periodId',
     'cutoffAt',
     'evaluatedBalanceCoins',
@@ -48,4 +51,5 @@ lockFields(
 forwardOnly(schema, 'status', { pending: ['paid'], paid: [] })
 schema.index({ accountId: 1, periodId: 1 }, { unique: true })
 schema.index({ status: 1, periodId: 1 })
+schema.index({ executionMode: 1, status: 1, evaluatedAt: 1 })
 export const WithdrawalRequest = defineModel('WithdrawalRequest', schema, 'withdrawalRequests')

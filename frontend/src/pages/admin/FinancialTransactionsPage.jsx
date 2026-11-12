@@ -1,3 +1,4 @@
+import { BankTransactionDetailsDialog } from '../../components/admin/BankTransactionDetailsDialog'
 import { useState } from 'react'
 import { useBackendResource } from '../../api/useBackendResource'
 import { BankResolutionDialog } from '../../components/admin/BankResolutionDialog'
@@ -43,6 +44,7 @@ export function FinancialTransactionsPage() {
   const [draftSource, setDraftSource] = useState('ledger')
   const [fromDate, setFromDate] = useState('')
   const [toDate, setToDate] = useState('')
+  const [detailId, setDetailId] = useState(null)
   const [action, setAction] = useState(null)
   const [notice, setNotice] = useState('')
   const query = new URLSearchParams(Object.entries(filters).filter(([, value]) => value !== ''))
@@ -245,6 +247,14 @@ export function FinancialTransactionsPage() {
                         </td>
                         {bank && (
                           <td className="sticky right-0 z-10 border-l border-line bg-surface px-3 py-4">
+                            <Button
+                              size="sm"
+                              variant="secondary"
+                              className="mb-2"
+                              onClick={() => setDetailId(row.id)}
+                            >
+                              {m('details')}
+                            </Button>
                             {row.canResolve && (
                               <Button type="button" size="sm" onClick={() => setAction(row)}>
                                 {m('resolve')}
@@ -278,6 +288,16 @@ export function FinancialTransactionsPage() {
             </>
           )}
         </Card>
+        {detailId && (
+          <BankTransactionDetailsDialog
+            id={detailId}
+            onClose={() => setDetailId(null)}
+            onResolve={row => {
+              setDetailId(null)
+              setAction(row)
+            }}
+          />
+        )}
         {action && (
           <BankResolutionDialog
             row={action}

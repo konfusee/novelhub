@@ -56,6 +56,7 @@ export async function createMonthlyPayoutRecords(
         accountId: account._id,
         earningsWalletId: wallet._id,
         origin: 'system-monthly',
+        executionMode: 'simulation',
         periodId,
         cutoffAt: payoutCutoff(periodId),
         evaluatedAt: now,

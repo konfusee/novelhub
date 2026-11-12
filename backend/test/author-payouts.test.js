@@ -125,6 +125,7 @@ it('chỉ trả khoản của mình, lấy kết quả gần nhất và ẩn d�
     periodId: '2026-11',
     amountCoins: 150000,
     payoutSlipAmountVnd: 150000,
+    bankDetails: { bankName: 'TPBank', accountNumber: '••••4321' },
     status: 'paid',
     createdAt: ownWithdrawal.createdAt.toISOString(),
     latestResult: {

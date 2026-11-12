@@ -14,13 +14,15 @@ export async function topUpReviewStates(orderIds) {
       return [
         String(id),
         {
-          reviewState: rows.some(row => row.matchStatus !== 'resolved')
+          reviewState: rows.some(row => !['resolved', 'matched'].includes(row.matchStatus))
             ? 'pending-review'
             : rows.some(row => row.matchStatus === 'resolved' && row.adjustmentId)
               ? 'resolved-credit'
               : rows.some(row => row.matchStatus === 'resolved')
                 ? 'resolved-no-credit'
-                : 'no-payment',
+                : rows.some(row => row.matchStatus === 'matched')
+                  ? 'settled'
+                  : 'no-payment',
           receivedAmountVnd: rows.reduce((total, row) => total + row.amountVnd, 0),
         },
       ]

@@ -28,7 +28,7 @@ const ledgerEntrySchema = new Schema(
     amount: coinAmount,
     unit: { type: String, enum: ['coin'], default: 'coin' },
     // Mandatory for Admin adjustments; enforced below.
-    reason: { type: String, trim: true, maxlength: 500 },
+    reason: { type: String, trim: true, maxlength: 1000 },
     actorAccountId: { type: ObjectId, ref: 'Account' },
     sourceType: { type: String, required: true },
     sourceId: { type: ObjectId, required: true },

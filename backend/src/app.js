@@ -35,7 +35,6 @@ import { createModeratorReportsRouter } from './routes/moderator-reports.routes.
 import { createAuthorEarningsRouter } from './routes/author-earnings.routes.js'
 import { createAuthorBankDetailsRouter } from './routes/author-bank-details.routes.js'
 import { createAdminMonthlyPayoutsRouter } from './routes/admin-monthly-payouts.routes.js'
-import { createAdminPayoutPreviewRouter } from './routes/admin-payout-preview.routes.js'
 import { createAdminAuthorRevenueRouter } from './routes/admin-author-revenue.routes.js'
 import { createAuthorPayoutsRouter } from './routes/author-payouts.routes.js'
 
@@ -107,7 +106,6 @@ export function createApp(config) {
   app.use('/api', createAuthorBankDetailsRouter(config))
   app.use('/api', createAdminMonthlyPayoutsRouter(config))
   app.use('/api', createAdminTransactionsRouter(config))
-  app.use('/api', createAdminPayoutPreviewRouter(config))
   app.use('/api', createAdminAuthorRevenueRouter(config))
   app.use('/api', createAuthorPayoutsRouter(config))
 

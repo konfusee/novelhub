@@ -1,5 +1,4 @@
 import { policy as policies } from '../../accounts-administration/service.js'
-import { AuthorRevenueRate } from '../../../models/index.js'
 import { HttpError } from '../../../middleware/errors.js'
 
 export function calculateUnlockSplit(priceCoins, authorPercent) {
@@ -33,15 +32,7 @@ export async function getUnlockRevenueSplit(authorId, priceCoins, session, now =
     throw new HttpError(409, 'policy_required', 'Chưa có chính sách phân bổ doanh thu có hiệu lực.')
   }
 
-  const negotiatedRate = await AuthorRevenueRate.findOne({
-    authorAccountId: authorId,
-    effectiveAt: { $lte: now },
-  })
-    .sort({ effectiveAt: -1, _id: -1 })
-    .session(session ?? null)
-    .lean()
-
-  const authorPercent = negotiatedRate?.percentage ?? policy.authorSharePercent
+  const authorPercent = policy.authorSharePercent
 
   const split = calculateUnlockSplit(priceCoins, authorPercent)
 
@@ -55,13 +46,5 @@ export async function getUnlockRevenueSplit(authorId, priceCoins, session, now =
       authorSharePercent: policy.authorSharePercent,
       platformSharePercent: policy.platformSharePercent,
     },
-    negotiatedAllocationSnapshot: negotiatedRate
-      ? {
-          id: String(negotiatedRate._id),
-          authorAccountId: String(negotiatedRate.authorAccountId),
-          percentage: negotiatedRate.percentage,
-          effectiveAt: negotiatedRate.effectiveAt,
-        }
-      : undefined,
   }
 }

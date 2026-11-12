@@ -28,7 +28,8 @@ import {
   closeSettledContacts,
 } from '../src/modules/accounts-administration/email-worker.js'
 import { evaluateDeletedAccountPayouts } from '../src/modules/coins-payouts/account-lifecycle.js'
-import { recordPayoutResult } from '../src/modules/coins-payouts/finance/admin-payout-results.js'
+import { correctPayoutBank } from '../src/modules/coins-payouts/finance/payout-bank-correction.js'
+import { simulatePendingPayouts } from '../src/modules/coins-payouts/finance/automatic-payout-results.js'
 import { claimReport } from '../src/modules/moderation-ai/moderation/report-queue.js'
 
 useTestDatabase()
@@ -206,24 +207,25 @@ it('forfeits Reader coins on deletion and pays final Author earnings below thres
   expect(await WithdrawalRequest.countDocuments()).toBe(1)
   expect(await PayoutSheetRow.countDocuments()).toBe(1)
   expect((await Wallet.findById(earnings._id)).availableBalance).toBe(0)
-  await recordPayoutResult(
+  await correctPayoutBank(
     admin.account,
     String(withdrawal._id),
     {
-      result: 'Paid',
-      resultEntryKey: 'final-paid',
-      transferReference: 'BANK-FINAL-PAID',
-      transferOccurredAt: nextMonth.toISOString(),
-      note: '',
-      bankDetailsCorrection: {
+      expectedVersion: withdrawal.version,
+      bankDetails: {
         bankName: 'TPBank',
         accountNumber: '0123456789',
         accountHolder: 'TEST AUTHOR',
       },
-      correctionReason: 'Support verified beneficiary',
+      reason: 'Support verified beneficiary',
     },
     nextMonth,
   )
+  await simulatePendingPayouts(nextMonth)
+  expect((await Wallet.findById(earnings._id)).availableBalance).toBe(0)
+  expect(
+    await LedgerEntry.countDocuments({ sourceId: withdrawal._id, ledgerType: 'withdrawal-debit' }),
+  ).toBe(1)
   await closeSettledContacts()
   expect(
     (await Account.findById(author.account._id).select('+retainedPayoutEmail')).retainedPayoutEmail,

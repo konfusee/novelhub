@@ -204,11 +204,13 @@ async function seed(password) {
             _id: id(`result:${scenario.key}:${index}`),
             withdrawalRequestId: withdrawal._id,
             resultEntryKey: `${namespace}:${scenario.key}:${index}`,
-            actorAccountId: id('account:admin'),
             occurredAt: new Date(now.getTime() - (attempts.length - index) * 1000),
+            executionMode: 'simulation',
             result: outcome,
             note: `[DEMO PAYOUTS] ${outcome === 'Paid' ? 'Giả lập thành công sau lần thử lại' : 'Giả lập chuyển khoản thất bại'}`,
-            ...(outcome === 'Paid' ? { transferReference: `SIM-DEMO-${withdrawal._id}` } : {}),
+            ...(outcome === 'Paid'
+              ? { transferReference: `SIM-DEMO-${withdrawal._id}`, transferOccurredAt: now }
+              : {}),
           },
           session,
         )

@@ -46,10 +46,12 @@ export function PlatformFinanceReport() {
     storyId: '',
     chapterId: '',
   }))
+  const [optionSearch, setOptionSearch] = useState('')
+  const [optionSearchDraft, setOptionSearchDraft] = useState('')
   const [applied, setApplied] = useState(draft)
   const [page, setPage] = useState(1)
   const options = useBackendResource(
-    '/admin/transactions/report-options',
+    `/admin/transactions/report-options?${new URLSearchParams({ search: optionSearch, ...(draft.authorId ? { authorId: draft.authorId } : {}), ...(draft.storyId ? { storyId: draft.storyId } : {}) })}`,
     emptyOptions,
     selectOptions,
   )
@@ -73,6 +75,18 @@ export function PlatformFinanceReport() {
   const ready = feed.status === 'ready'
   const groups = [
     [
+      'ledger',
+      (feed.data.ledger ?? []).map(row => [
+        row.bucket +
+          ' · ' +
+          t('financialTransactions.' + row.purpose) +
+          ' · ' +
+          t('financialTransactions.' + row.type),
+        row.count,
+        row.netCoins,
+      ]),
+    ],
+    [
       'registrations',
       feed.data.registrations.map(row => [row.bucket + ' · ' + m(row.status), row.count, null]),
     ],
@@ -87,23 +101,48 @@ export function PlatformFinanceReport() {
     [
       'bank',
       feed.data.bank.map(row => [
-        t('financialTransactions.' + row.status),
+        [row.bucket, t('financialTransactions.' + row.status)].filter(Boolean).join(' · '),
         row.count,
         row.amountVnd,
       ]),
     ],
     [
       'payouts',
-      feed.data.payouts.map(row => [m(row.result) + ' · ' + m(row.mode), row.count, row.coins]),
+      feed.data.payouts.map(row => [
+        [row.bucket, m(row.result), m(row.mode)].filter(Boolean).join(' · '),
+        row.count,
+        row.coins,
+      ]),
     ],
   ]
   return (
-    <section className="mt-8 space-y-5">
+    <section id="finance-report" className="mt-8 space-y-5">
       <div>
         <h2 className="text-h2">{m('title')}</h2>
         <p className="mt-2 text-sm leading-6 text-muted">{m('hint')}</p>
       </div>
       <Card>
+        <form
+          className="mb-5 flex flex-wrap items-end gap-3"
+          onSubmit={event => {
+            event.preventDefault()
+            setOptionSearch(optionSearchDraft)
+          }}
+        >
+          <label className="flex min-w-0 flex-1 flex-col gap-2 text-sm">
+            {m('optionSearch')}
+            <Input
+              type="search"
+              maxLength={100}
+              value={optionSearchDraft}
+              onChange={event => setOptionSearchDraft(event.target.value)}
+            />
+          </label>
+          <Button type="submit" variant="secondary">
+            {m('searchOptions')}
+          </Button>
+          <p className="w-full text-xs text-muted">{m('optionSearchHint')}</p>
+        </form>
         <form
           className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4"
           onSubmit={event => {
@@ -180,6 +219,39 @@ export function PlatformFinanceReport() {
               </label>
             )
           })}
+          {Object.entries({
+            walletPurpose: ['reader-coins', 'author-earnings', 'system-earnings'],
+            ledgerType: [
+              'topup-credit',
+              'unlock-debit',
+              'allocation-credit',
+              'withdrawal-debit',
+              'adjustment',
+              'reversal',
+              'deletion-forfeiture',
+            ],
+            payoutStatus: ['pending', 'paid'],
+            bankState: [
+              'matched',
+              'unmatched',
+              'amount-mismatch',
+              'expired',
+              'already-paid',
+              'resolved',
+            ],
+          }).map(([key, values]) => (
+            <label key={key} className="flex min-w-0 flex-col gap-2 text-sm font-medium">
+              {m(key)}
+              <Select value={draft[key] ?? ''} onChange={event => update(key, event.target.value)}>
+                <option value="">{m('all')}</option>
+                {values.map(value => (
+                  <option key={value} value={value}>
+                    {t('financialTransactions.' + value)}
+                  </option>
+                ))}
+              </Select>
+            </label>
+          ))}
           <div className="flex flex-wrap items-end gap-3">
             <Button type="submit">{m('apply')}</Button>
             <Button type="button" variant="secondary" onClick={feed.retry}>

@@ -9,6 +9,7 @@ import {
   findReaderWallets,
   resolveBankTransaction,
   financialStatistics,
+  getBankTransactionDetails,
 } from '../modules/coins-payouts/finance/admin-transactions.js'
 
 const id = z.string().regex(/^[a-fA-F0-9]{24}$/)
@@ -26,26 +27,56 @@ const list = z
   .strict()
   .refine(value => !value.from || !value.to || new Date(value.from) < new Date(value.to))
 const resolution = z
-  .object({ walletId: id.optional(), reason: z.string().trim().min(1).max(500) })
+  .object({
+    walletId: id.optional(),
+    expectedVersion: z.number().int().min(0),
+    reason: z.string().trim().min(1).max(1000),
+  })
   .strict()
 
 export function createAdminTransactionsRouter(config) {
   const router = Router()
   router.use('/admin/transactions', requireAuth(config), requireRole('admin'))
-  router.get('/admin/transactions/report-options', async (_req, res, next) => {
+  router.get('/admin/transactions/report-options', async (req, res, next) => {
     try {
-      const authors = await Account.find({ everAuthor: true })
+      const parsed = z
+        .object({
+          search: z.string().trim().max(100).default(''),
+          authorId: id.optional(),
+          storyId: id.optional(),
+        })
+        .strict()
+        .safeParse(req.query)
+      if (!parsed.success)
+        throw new HttpError(400, 'validation_error', 'Tìm kiếm bộ lọc không hợp lệ.')
+      const { search, authorId, storyId } = parsed.data
+      const literal = search.replace(/[.*+?^${}()|[\]\\]/g, character => '\\' + character)
+      const titleSearch = search ? { title: { $regex: literal, $options: 'i' } } : {}
+      const authors = await Account.find({
+        everAuthor: true,
+        ...(search ? { displayName: { $regex: literal, $options: 'i' } } : {}),
+      })
         .select('displayName')
         .sort({ displayName: 1 })
+        .limit(50)
         .lean()
-      const stories = await Story.find().select('title authorAccountId').sort({ title: 1 }).lean()
-      const chapters = await Chapter.find()
+      const stories = await Story.find({
+        ...titleSearch,
+        ...(authorId ? { authorAccountId: authorId } : {}),
+      })
+        .select('title authorAccountId')
+        .sort({ title: 1 })
+        .limit(50)
+        .lean()
+      const chapters = await Chapter.find({ ...titleSearch, ...(storyId ? { storyId } : {}) })
         .select('storyId title orderKey')
         .sort({ storyId: 1, orderKey: 1 })
+        .limit(50)
         .lean()
       const policies = await PolicyVersion.find({ status: { $ne: 'draft' } })
         .select('effectiveAt version')
         .sort({ effectiveAt: -1 })
+        .limit(50)
         .lean()
       res.set('Cache-Control', 'private, no-store').json({ authors, stories, chapters, policies })
     } catch (error) {
@@ -59,6 +90,29 @@ export function createAdminTransactionsRouter(config) {
           from: z.string().datetime({ offset: true }),
           to: z.string().datetime({ offset: true }),
           groupBy: z.enum(['day', 'week', 'month', 'story', 'chapter', 'author']).default('month'),
+          walletPurpose: z.enum(['reader-coins', 'author-earnings', 'system-earnings']).optional(),
+          ledgerType: z
+            .enum([
+              'topup-credit',
+              'unlock-debit',
+              'allocation-credit',
+              'withdrawal-debit',
+              'adjustment',
+              'reversal',
+              'deletion-forfeiture',
+            ])
+            .optional(),
+          payoutStatus: z.enum(['pending', 'paid']).optional(),
+          bankState: z
+            .enum([
+              'matched',
+              'unmatched',
+              'amount-mismatch',
+              'expired',
+              'already-paid',
+              'resolved',
+            ])
+            .optional(),
           policyId: id.optional(),
           authorId: id.optional(),
           storyId: id.optional(),
@@ -113,6 +167,17 @@ export function createAdminTransactionsRouter(config) {
       if (!query.success)
         throw new HttpError(400, 'validation_error', 'Nhập ít nhất hai ký tự tìm tài khoản.')
       res.set('Cache-Control', 'private, no-store').json(await findReaderWallets(query.data.search))
+    } catch (error) {
+      next(error)
+    }
+  })
+  router.get('/admin/transactions/:id/details', async (req, res, next) => {
+    try {
+      if (!id.safeParse(req.params.id).success)
+        throw new HttpError(400, 'validation_error', 'Mã giao dịch không hợp lệ.')
+      res
+        .set('Cache-Control', 'private, no-store')
+        .json(await getBankTransactionDetails(req.params.id))
     } catch (error) {
       next(error)
     }

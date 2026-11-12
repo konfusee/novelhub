@@ -1,3 +1,5 @@
+> Archived finance wording: manual withdrawal/approval/provider settlement in this source is superseded by the owner-confirmed 2026-11-12 finance amendment in [requirements-baseline](../requirements-baseline.md). A-UC-13.1 manual real-transfer result recording is removed from the current project/demo scope. Monthly payouts are automatic simulations; Admin views results and may auditably correct failed destinations.
+
 # NovelHub Use Case List
 
 ## 1. Purpose

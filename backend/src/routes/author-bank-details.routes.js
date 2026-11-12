@@ -1,16 +1,11 @@
 import { Router } from 'express'
-import { z } from 'zod'
+import { bankDetailsSchema } from '../modules/coins-payouts/finance/bank-details.js'
 import { requireAuth, requireRole } from '../middleware/auth.js'
 import { HttpError } from '../middleware/errors.js'
-import { getAuthorBankDetails, updateAuthorBankDetails } from '../modules/coins-payouts/finance/author-bank-details.js'
-
-const bankDetailsSchema = z
-  .object({
-    bankName: z.string().trim().min(1).max(120),
-    accountNumber: z.string().trim().min(1).max(64),
-    accountHolder: z.string().trim().min(1).max(120),
-  })
-  .strict()
+import {
+  getAuthorBankDetails,
+  updateAuthorBankDetails,
+} from '../modules/coins-payouts/finance/author-bank-details.js'
 
 export function createAuthorBankDetailsRouter(config) {
   const router = Router()

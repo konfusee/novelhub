@@ -1,21 +1,28 @@
 # NovelHub decision log
 
-## Finance amendment — confirmed 2026-11-11
+## Finance amendment — confirmed 2026-11-12
 
-The Coins & Payouts owner explicitly confirmed automatic simulated settlement.
-This amendment supersedes older requirements for Admin approval, external-result
-recording and Admin payout bank correction for the current demonstration scope.
-At 00:00 on the 1st in Asia/Ho_Chi_Minh the system generates the monthly sheet,
-reserves eligible accumulated earnings (default threshold 100,000 coins), and
-automatically records simulated Paid/Failed outcomes. Admin has read-only payout
-access: runs, statistics, history, filters and CSV export. No bank transfer occurs.
-Every automatic outcome identifies simulation, a system actor and a deterministic
-receipt key. Retries never debit or settle twice. Invalid destination information
-leaves the obligation pending; the system never invents beneficiary details.
-Historical records remain unchanged and unclassified records are labelled legacy.
-See [current implementation and use cases](coins-payouts-completion.md) and
-[updated diagrams](diagrams/payouts-automatic-current.drawio).
+The Coins & Payouts owner confirmed automatic **simulated** monthly settlement.
+A-UC-13.1 (Admin recording a real transfer result) is **removed from the current
+project/demo scope**, along with manual generation/approval and payment-result UI.
+Admin views runs, statistics, history and CSV; Admin may correct a failed/missing
+simulated payout destination from verified support information, with a mandatory
+reason, version check and audit. This is not permission to execute a transfer.
+An active Author's bank update also repairs their failed/invalid simulated rows.
+The original evaluation snapshot and wallet reservation never change.
 
+Only the designated backend enables `PAYOUT_WORKER_ENABLED=true` (default false).
+At 00:00 on the 1st in Asia/Ho_Chi_Minh it reserves eligible accumulated earnings
+(default 100,000 coins) and automatically simulates Paid/Failed. Startup/daily
+catch-up is idempotent; corrected obligations are retried on the next worker tick.
+Only withdrawals explicitly created with `executionMode=simulation` are selected;
+legacy/external rows are never simulated or migrated automatically. There is no
+real bank transfer. Private stored bank numbers retain leading zeros; API views
+mask them. New unlocks use the **shared effective policy rate only**, with no
+per-Author override. Existing ledger/allocation snapshots remain unchanged.
+
+See [implementation contract](coins-payouts-completion.md),
+[review closure](coins-payouts-review-2026-11-12.md) and [demo runbook](sepay-demo-runbook.md).
 
 **Status: DRAFT FOR REVIEW.** This log is the decision surface for the
 requirements-to-database work. “Confirmed” is the current accepted contract;
@@ -35,10 +42,9 @@ policy; deferred technical selections and team process gates are not approval.
    `moderator-use-cases.csv` supplies detailed Moderator behavior. Legacy
    diagrams and template/draft text are evidence only. Existing numbering
    gaps are preserved and use-case drift is mapped by goal.
-3. **Revenue uses negotiated rates with a configurable default.** Eligible
-   early-unlock revenue uses the Admin-recorded per-Author negotiated rate;
-   otherwise default 70% Author/30% platform applies. Author share rounds down
-   to whole coins; platform receives the remainder. Top-up is not revenue.
+3. **Revenue uses the shared policy rate.** New unlocks use the effective policy
+   (default 70% Author/30% platform). Per-Author rates are out of scope. The
+   Author share rounds down and the platform receives the remainder.
 4. **Monthly payout-sheet withdrawal and earnings finality.** The monthly run is
    the **1st of each month at 00:00 in `Asia/Ho_Chi_Minh`**. It evaluates the
    accumulated available Author earnings balance, including balances carried
@@ -63,17 +69,12 @@ policy; deferred technical selections and team process gates are not approval.
    earnings balance and no pending withdrawal, close and remove the email
    immediately in the deletion transaction. Existing unlocks become inaccessible
    with no refunds.
-   Admin/finance pays outside NovelHub and records each row **Paid** or
-   **Failed**, retaining actor/time and optional transfer reference/note. Failed
-   is a result entry; the withdrawal stays pending until later paid, with no
-   coin return. The Author supplies corrected bank details via support;
-   **Admin always enters them on the pending row**, audited and Admin-only,
-   never overwriting the evaluation snapshot. An Author's profile bank-details
-   update applies only to future monthly evaluations, not an existing row.
-   For a suspended/deleted Author, Admin contacts them off-platform. Missing
-   details on a deleted account follow the same audited correction path.
-   Payout slip equals withdrawn coins (1 coin = 1 VND),
-   with no fee/tax. NovelHub initiates no transfer; SePay is top-up only.
+   The enabled worker automatically simulates explicitly simulated obligations.
+   Failed remains pending; an audited bank correction by the active Author or
+   Admin via support enables a new simulated attempt without another debit.
+   Admin may view results and correct failed destinations but cannot generate
+   sheets or record Paid/Failed. Payout slips identify simulation at 1 coin =
+   1 VND, without fees or tax. No transfer occurs; SePay is top-up only.
    Manual/on-demand withdrawals are out of scope. Unlocks immediately credit
    Author share within the debit/entitlement/allocation transaction; unlocks
    are final with no refunds. Admin corrections are append-only adjustments.
@@ -102,7 +103,7 @@ policy; deferred technical selections and team process gates are not approval.
 9. **Duplicate financial actions are forbidden.** A matched SePay bank
    transaction credits a top-up once per unique transaction ID. A successful
    unlock does not charge twice for the same entitlement. Balance, entitlement,
-   and negotiated
+   and policy-based
    allocation records remain consistent and auditable; corrections are
    adjustments, not silent rewrites.
 10. **External boundaries stay explicit.** Google OAuth, SePay incoming-transfer
@@ -140,8 +141,8 @@ policy; deferred technical selections and team process gates are not approval.
    chapter-scoped and last only through early access; chapters become free
    automatically at the configured end. Authors set price and duration within
    Admin-configured bounds: price is 200–5,000 coins and duration is 1–14
-   days. Revenue uses a per-Author negotiated rate, with a 70% Author/30%
-   platform default when no negotiated rate exists; the Author share rounds
+   days. Revenue uses the shared effective policy rate (default 70% Author/30%
+   platform); no per-Author override applies. The Author share rounds
    down and the platform receives the remainder. The Author chooses requested
    release time at submission or schedules/publishes after approval. An elapsed
    requested time makes publication due immediately on approval, without
@@ -201,10 +202,9 @@ policy; deferred technical selections and team process gates are not approval.
    custom amounts. The withdrawal threshold defaults to 100,000 coins and is
    Admin-configurable. No bank-detail verification is required. When a payout
    row is marked Paid, its slip is shown in earnings history and emailed; a
-   failed transfer remains pending until the Author supplies details via
-   support and Admin records the correction; no self-service row correction.
-   Profile bank changes apply only to future evaluations. V1 Author
-   statistics cover views per story/chapter, followers, average rating,
+   failed simulation remains pending until audited destination correction and
+   automatic retry. Profile updates repair failed/invalid simulated obligations.
+   V1 Author statistics cover views per story/chapter, followers, average rating,
    unlocks and earnings per chapter/month, and comment counts; a view is one
    unique Reader per chapter per day, or one Guest device for chapter one
    after its text is free; a locked preview counts no view.
@@ -236,11 +236,10 @@ policy; deferred technical selections and team process gates are not approval.
    category, tag and status (decision 34 adds tags); sorting covers
    popularity, rating, and newest. Popularity is unique daily views over a
    rolling 30 days.
-22. **Early-access bounds and revenue default.** The default price bounds are
-   200–5,000 coins and duration bounds are 1–14 days, both Admin-configurable
-   afterwards. The default revenue split is 70% Author/30% platform only when
-   no negotiated per-Author rate exists; negotiated rates override it and the
-   Author share rounds down.
+22. **Early-access bounds and shared revenue policy.** Price defaults to
+   200–5,000 coins and duration to 1–14 days, both Admin-configurable.
+   The shared policy rate defaults to 70% Author/30% platform; no per-Author
+   override applies to new unlocks. The Author share rounds down.
 23. **Superseded source wording.** Earlier secure Google-link language that
    forbade email-only linking, open entitlement/reuse wording, automatic
    publication ambiguity, multi-role alternatives, generic similarity/TTS
@@ -451,7 +450,7 @@ rationale, without reopening confirmed business rules.
   immutable purpose, type, and unit. VND receipts/order amounts are external
   payment metadata, not wallets; Reader coins and Author/system earnings are
   distinct coin-purpose wallets. Unlock commits effective price/access
-  and negotiated allocation snapshots under compare-and-set. Reader coins
+  and policy-based allocation snapshots under compare-and-set. Reader coins
   never expire; Admin coin additions/removals are audited append-only
   adjustments with mandatory reasons.
 - **Durable secondary work:** committed business results emit transactional
@@ -481,7 +480,7 @@ rationale, without reopening confirmed business rules.
   already-paid code reuse is a new exception receipt, not a second credit.
   Payout-result keys identify entries, allowing Failed entries then one Paid.
 - **Financial history:** keep append-only transaction/allocation/adjustment
-  records beside derived balances. Store the effective negotiated policy
+  records beside derived balances. Store the effective shared policy
   reference/rate with each allocation, falling back to the confirmed
   configurable 70% Author/30% platform default; round the Author share down.
 - **Atomic decisions and queue claims:** enforce current revision, pending
@@ -563,18 +562,17 @@ decision and uploaded media remains private, audited and checksum-verified.
   differently numbered draft counterparts.
 - Source wording that treats 70/30 as either a universal fixed rate or as stale
   is superseded:
-  the confirmed default is configurable 70% Author/30% platform when no
-  negotiated per-Author rate exists, with the Author share rounded down.
-  Negotiated rates override the default; current records retain the effective
-  negotiated/default policy snapshot rather than assuming a universal rate.
+  new unlocks use the effective shared policy (default 70% Author/30% platform),
+  with Author share rounded down; per-Author overrides are out of scope.
+  Historical snapshots remain immutable.
 - The owner's payout-sheet correction supersedes manual-request
   prerequisites, provider-payout assumptions, and open-frequency/threshold
   wording in `SRS.md`, `SRS-mismatches.md`,
   `novelhub_requirements_spec.md` (`FR-PAYOUT-03`, `FR-PAYOUT-04`, `BR-10`)
   and `use-case-list.md` (`UC-AUT-13`). Existing IDs remain traceability
   anchors, not authority for the superseded wording. The fixed run is the 1st
-  at 00:00 `Asia/Ho_Chi_Minh`; SePay is top-up only, while Admin records
-  external payout-sheet results. Author-access application approval remains a
+  at 00:00 `Asia/Ho_Chi_Minh`; SePay is top-up only. The enabled worker
+  automatically simulates payouts; manual external-result recording is removed. Author-access application approval remains a
   separate Admin governance flow.
 - The mandatory moderation order, exact revision lineage, empty-discovery-to-
   LLM rule, manual fallback, and no-rerun viewing rule override simplified or

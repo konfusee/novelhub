@@ -110,6 +110,7 @@ export async function evaluateDeletedAccountPayouts(now = new Date()) {
               accountId: account._id,
               earningsWalletId: wallet._id,
               origin: 'system-monthly',
+              executionMode: 'simulation',
               periodId,
               cutoffAt: cutoff,
               evaluatedAt: now,

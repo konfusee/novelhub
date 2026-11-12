@@ -10,6 +10,7 @@ useTestDatabase()
 
 const origin = 'http://localhost:5173'
 const endpoint = '/api/author/bank-details'
+const mask = bank => ({ ...bank, accountNumber: '••••' + bank.accountNumber.slice(-4) })
 const action = 'author.bank-details.updated'
 
 const app = createApp(testConfig({ corsOrigin: origin }))
@@ -21,17 +22,11 @@ const bank = {
 }
 
 function saveBank(cookie, body) {
-  return request(app)
-    .put(endpoint)
-    .set('Cookie', cookie)
-    .set('Origin', origin)
-    .send(body)
+  return request(app).put(endpoint).set('Cookie', cookie).set('Origin', origin).send(body)
 }
 
 async function storedBank(accountId) {
-  const account = await Account.findById(accountId)
-    .select('+bankDetails')
-    .lean()
+  const account = await Account.findById(accountId).select('+bankDetails').lean()
 
   return account.bankDetails
 }
@@ -42,9 +37,7 @@ it('khách và reader không được xem hoặc sửa ngân hàng tác giả', 
 
   const reader = await authenticatedAccount()
 
-  expect(
-    (await request(app).get(endpoint).set('Cookie', reader.cookie)).status,
-  ).toBe(403)
+  expect((await request(app).get(endpoint).set('Cookie', reader.cookie)).status).toBe(403)
 
   expect((await saveBank(reader.cookie, bank)).status).toBe(403)
   expect(await AuditEvent.countDocuments({ action })).toBe(0)
@@ -53,9 +46,7 @@ it('khách và reader không được xem hoặc sửa ngân hàng tác giả', 
 it('chưa có ngân hàng thì trả null, không tự lưu dữ liệu', async () => {
   const author = await authenticatedAccount('author')
 
-  const response = await request(app)
-    .get(endpoint)
-    .set('Cookie', author.cookie)
+  const response = await request(app).get(endpoint).set('Cookie', author.cookie)
 
   expect(response.status).toBe(200)
   expect(response.body).toEqual({ bankDetails: null })
@@ -83,22 +74,18 @@ it('lưu đúng tài khoản, bỏ khoảng trắng và không sửa ngân hàng
   })
 
   expect(response.status).toBe(200)
-  expect(response.body).toEqual({ bankDetails: bank })
+  expect(response.body).toEqual({ bankDetails: mask(bank) })
   expect(response.headers['cache-control']).toBe('private, no-store')
 
   expect(await storedBank(author.account._id)).toEqual(bank)
   expect(await storedBank(other.account._id)).toEqual(otherBank)
 
-  const ownResponse = await request(app)
-    .get(endpoint)
-    .set('Cookie', author.cookie)
+  const ownResponse = await request(app).get(endpoint).set('Cookie', author.cookie)
 
-  const otherResponse = await request(app)
-    .get(endpoint)
-    .set('Cookie', other.cookie)
+  const otherResponse = await request(app).get(endpoint).set('Cookie', other.cookie)
 
-  expect(ownResponse.body).toEqual({ bankDetails: bank })
-  expect(otherResponse.body).toEqual({ bankDetails: otherBank })
+  expect(ownResponse.body).toEqual({ bankDetails: mask(bank) })
+  expect(otherResponse.body).toEqual({ bankDetails: mask(otherBank) })
 
   const audit = await AuditEvent.findOne({
     action,
@@ -120,6 +107,8 @@ it('dữ liệu thiếu hoặc có trường ngoài danh sách bị từ chối,
 
   const invalidBodies = [
     { bankName: 'TPBank' },
+    { ...bank, accountNumber: 'abc12345' },
+    { ...bank, accountNumber: '12345' },
     { ...bank, accountHolder: '   ' },
     { ...bank, accountId: String(author.account._id) },
   ]
@@ -137,9 +126,7 @@ it('ghi audit lỗi thì rollback cả việc thay đổi ngân hàng', async ()
     bankDetails: bank,
   })
 
-  const spy = vi
-    .spyOn(AuditEvent, 'create')
-    .mockRejectedValueOnce(new Error('Test audit failure'))
+  const spy = vi.spyOn(AuditEvent, 'create').mockRejectedValueOnce(new Error('Test audit failure'))
 
   try {
     const response = await saveBank(author.cookie, {

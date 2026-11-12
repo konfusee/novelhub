@@ -1,3 +1,4 @@
+import { PayoutBankCorrectionForm } from '../admin/PayoutBankCorrectionForm'
 import { useState } from 'react'
 import { useBackendResource } from '../../api/useBackendResource'
 import { useLocale } from '../../context/LocaleContext'
@@ -32,6 +33,12 @@ export function PayoutDetailsDialog({ withdrawalId, role, onClose }) {
             {feed.data.periodId} · {formatNumber(feed.data.amountCoins)} {t('wallet.coinUnit')} ·{' '}
             {t('adminPayouts.' + feed.data.status)}
           </p>
+          {feed.data.bankDetails && (
+            <p className="mt-2 text-sm text-muted">
+              {feed.data.bankDetails.bankName} · {feed.data.bankDetails.accountNumber} ·{' '}
+              {feed.data.bankDetails.accountHolder}
+            </p>
+          )}
           <p className="mt-2 text-xs leading-5 text-muted">{m('hint')}</p>
           <div className="mt-4 max-h-[55vh] overflow-auto">
             <table className="w-full min-w-[620px] text-left text-sm">
@@ -66,6 +73,13 @@ export function PayoutDetailsDialog({ withdrawalId, role, onClose }) {
               </tbody>
             </table>
           </div>
+          {role === 'admin' && feed.data.canCorrectBank && (
+            <PayoutBankCorrectionForm
+              withdrawalId={withdrawalId}
+              version={feed.data.version}
+              onSaved={feed.retry}
+            />
+          )}
           {!feed.data.items.length && <p className="mt-4 text-muted">{m('empty')}</p>}
           <div className="mt-4 flex justify-end gap-3">
             <Button

@@ -163,6 +163,9 @@ export function AdminDashboardPage() {
               Bảng điều khiển quản trị / Vận hành và tình trạng hệ thống
             </p>
             <h1 className="mt-1 text-h2 sm:text-h1">Bảng vận hành nền tảng</h1>
+            <ButtonLink to="/admin/payouts#finance-report" variant="secondary" className="mt-4">
+              {t('platformFinance.title')}
+            </ButtonLink>
           </div>
           <div className="flex flex-wrap gap-2">
             <Button

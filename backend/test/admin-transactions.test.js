@@ -1,7 +1,14 @@
 import request from 'supertest'
 import { expect, it, vi } from 'vitest'
 import { createApp } from '../src/app.js'
-import { Account, AuditEvent, BankTransaction, LedgerEntry, Wallet } from '../src/models/index.js'
+import {
+  Account,
+  AuditEvent,
+  BankTransaction,
+  LedgerEntry,
+  Wallet,
+  Notification,
+} from '../src/models/index.js'
 import { resolveBankTransaction } from '../src/modules/coins-payouts/finance/admin-transactions.js'
 import { authenticatedAccount } from './fixtures/accounts.js'
 import { testConfig } from './config.js'
@@ -32,7 +39,11 @@ async function prepare(status = 'amount-mismatch') {
     reader,
     wallet,
     bank,
-    body: { walletId: String(wallet._id), reason: 'Verified sender and receipt with support' },
+    body: {
+      expectedVersion: bank.version,
+      walletId: String(wallet._id),
+      reason: 'Verified sender and receipt with support',
+    },
   }
 }
 
@@ -63,6 +74,9 @@ it('concurrent resolution credits exactly once and preserves original evidence',
   expect(responses.filter(result => !result.reused)).toHaveLength(1)
   expect((await Wallet.findById(wallet._id)).availableBalance).toBe(50100)
   expect(await LedgerEntry.countDocuments({ sourceId: bank._id })).toBe(1)
+  expect(await Notification.countDocuments({ sourceEventKey: `bank-resolution:${bank._id}` })).toBe(
+    1,
+  )
   expect(await AuditEvent.countDocuments({ targetId: bank._id })).toBe(1)
   expect(await BankTransaction.findById(bank._id)).toMatchObject({
     matchStatus: 'resolved',
@@ -75,9 +89,37 @@ it('concurrent resolution credits exactly once and preserves original evidence',
   ).rejects.toMatchObject({ status: 409 })
 })
 
+it('rejects a stale version without credit and supports a 1000-character reason', async () => {
+  const { admin, bank, wallet, body } = await prepare()
+  const resolve = input =>
+    request(app)
+      .post(`/api/admin/transactions/${bank._id}/resolve`)
+      .set('Cookie', admin.cookie)
+      .set('Origin', origin)
+      .send(input)
+  expect((await resolve({ ...body, expectedVersion: bank.version + 1 })).status).toBe(409)
+  expect((await Wallet.findById(wallet._id)).availableBalance).toBe(100)
+  expect(await Notification.countDocuments()).toBe(0)
+  expect((await resolve({ ...body, reason: 'x'.repeat(1001) })).status).toBe(400)
+  expect((await resolve({ ...body, reason: 'x'.repeat(1000) })).status).toBe(200)
+  const details = await request(app)
+    .get(`/api/admin/transactions/${bank._id}/details`)
+    .set('Cookie', admin.cookie)
+  expect(details.status).toBe(200)
+  expect(details.body).toMatchObject({
+    originalStatus: 'amount-mismatch',
+    status: 'resolved',
+    adjustment: { amountCoins: 50000 },
+    canResolve: false,
+  })
+})
+
 it('allows closing without credit, forbids resolving matched receipts', async () => {
   const { admin, bank, wallet } = await prepare()
-  const input = { reason: 'Sender requested refund handled outside the application' }
+  const input = {
+    expectedVersion: bank.version,
+    reason: 'Sender requested refund handled outside the application',
+  }
   await resolveBankTransaction(admin.account, bank._id, input)
   expect((await resolveBankTransaction(admin.account, bank._id, input)).reused).toBe(true)
   expect((await Wallet.findById(wallet._id)).availableBalance).toBe(100)

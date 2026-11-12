@@ -5,7 +5,9 @@ import {
   LedgerEntry,
   Wallet,
   UnlockRequest,
+  TopUpOrder,
 } from '../../../models/index.js'
+import { notify } from '../../accounts-administration/service.js'
 import { withTransaction } from '../../../db/connection.js'
 import { HttpError } from '../../../middleware/errors.js'
 import { requireCurrentAdmin } from './admin-guard.js'
@@ -80,6 +82,7 @@ export async function listFinancialTransactions({ source, status, search, from, 
       bank
         ? {
             id: String(row._id),
+            version: row.version,
             reference: row.sePayTransactionId,
             amount: row.amountVnd,
             content: row.content,
@@ -87,7 +90,7 @@ export async function listFinancialTransactions({ source, status, search, from, 
             status: row.matchStatus,
             originalStatus: row.originalMatchStatus,
             occurredAt: row.receivedAt,
-            canResolve: unresolved.includes(row.matchStatus),
+            canResolve: unresolved.includes(row.matchStatus) && row.apiKeyAuthenticated,
             resolutionReason: row.resolutionReason ?? null,
           }
         : {
@@ -135,19 +138,69 @@ export async function findReaderWallets(search) {
   }
 }
 
+export async function getBankTransactionDetails(bankId) {
+  return withTransaction(async session => {
+    const bank = await BankTransaction.findById(bankId).session(session).lean()
+    if (!bank) throw new HttpError(404, 'transaction_not_found', 'Không tìm thấy giao dịch.')
+    const order = bank.matchedOrderId
+      ? await TopUpOrder.findById(bank.matchedOrderId)
+          .select('accountId paymentCode status coinAmount packageSnapshot expiresAt')
+          .session(session)
+          .lean()
+      : null
+    const reader = order
+      ? await Account.findById(order.accountId).select('displayName email').session(session).lean()
+      : null
+    const adjustment = bank.adjustmentId
+      ? await LedgerEntry.findById(bank.adjustmentId).session(session).lean()
+      : null
+    return {
+      id: String(bank._id),
+      version: bank.version,
+      reference: bank.sePayTransactionId,
+      amount: bank.amountVnd,
+      content: bank.content ?? '',
+      paymentCode: bank.extractedPaymentCode ?? null,
+      originalStatus: bank.originalMatchStatus,
+      status: bank.matchStatus,
+      occurredAt: bank.receivedAt,
+      authenticated: bank.apiKeyAuthenticated,
+      canResolve: unresolved.includes(bank.matchStatus) && bank.apiKeyAuthenticated,
+      resolutionReason: bank.resolutionReason ?? null,
+      resolvedAt: bank.resolvedAt ?? null,
+      order: order
+        ? {
+            id: String(order._id),
+            paymentCode: order.paymentCode,
+            status: order.status,
+            priceVnd: order.packageSnapshot.priceVnd,
+            coinAmount: order.coinAmount,
+            expiresAt: order.expiresAt,
+          }
+        : null,
+      reader: reader
+        ? { id: String(reader._id), displayName: reader.displayName, email: reader.email }
+        : null,
+      adjustment: adjustment
+        ? {
+            id: String(adjustment._id),
+            walletId: String(adjustment.walletId),
+            amountCoins: adjustment.amount,
+          }
+        : null,
+    }
+  })
+}
+
 // A manual adjustment credits exactly the received VND amount (1 VND = 1 coin).
 // It does not rewrite bank evidence or pretend a mismatched order was paid.
 export async function resolveBankTransaction(admin, bankId, input, now = new Date()) {
   return withTransaction(async session => {
     await requireCurrentAdmin(admin, session)
-    const bank = await BankTransaction.findOneAndUpdate(
-      { _id: bankId },
-      { $inc: { version: 1 } },
-      { session, returnDocument: 'after' },
-    )
+    const bank = await BankTransaction.findById(bankId).session(session)
     if (!bank) throw new HttpError(404, 'transaction_not_found', 'Không tìm thấy giao dịch.')
     const reason = input.reason?.trim()
-    if (!reason || reason.length > 500)
+    if (!reason || reason.length > 1000)
       throw new HttpError(400, 'validation_error', 'Cần nhập lý do đối soát.')
     if (bank.matchStatus === 'resolved') {
       const entry = bank.adjustmentId
@@ -170,6 +223,16 @@ export async function resolveBankTransaction(admin, bankId, input, now = new Dat
         'transaction_not_resolvable',
         'Giao dịch không thể đối soát thủ công.',
       )
+    if (!Number.isSafeInteger(input.expectedVersion) || input.expectedVersion < 0)
+      throw new HttpError(400, 'validation_error', 'Cần phiên bản giao dịch hợp lệ.')
+    const locked = await BankTransaction.updateOne(
+      { _id: bankId, version: input.expectedVersion, matchStatus: bank.matchStatus },
+      { $inc: { version: 1 } },
+      { session },
+    )
+    if (locked.matchedCount !== 1)
+      throw new HttpError(409, 'transaction_changed', 'Giao dịch đã thay đổi. Vui lòng tải lại.')
+    bank.version = input.expectedVersion + 1
     let adjustmentId
     if (input.walletId) {
       if (!Number.isSafeInteger(bank.amountVnd) || bank.amountVnd <= 0)
@@ -222,6 +285,19 @@ export async function resolveBankTransaction(admin, bankId, input, now = new Dat
         { session },
       )
       adjustmentId = entry._id
+      await notify(
+        {
+          recipientAccountId: wallet.ownerId,
+          sourceEventKey: `bank-resolution:${bank._id}`,
+          eventType: 'wallet.reconciliation-credited',
+          payload: {
+            amountCoins: bank.amountVnd,
+            reference: bank.sePayTransactionId,
+            body: `Ví của bạn đã được cộng ${bank.amountVnd.toLocaleString('vi-VN')} xu sau khi đối soát giao dịch ${bank.sePayTransactionId}.`,
+          },
+        },
+        { session },
+      )
     }
     bank.matchStatus = 'resolved'
     bank.resolvedBy = admin._id

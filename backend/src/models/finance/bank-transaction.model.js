@@ -45,4 +45,5 @@ lockFields(
 )
 schema.index({ sePayTransactionId: 1 }, { unique: true })
 schema.index({ matchStatus: 1, receivedAt: -1 })
+schema.index({ matchedOrderId: 1, apiKeyAuthenticated: 1, matchStatus: 1 })
 export const BankTransaction = defineModel('BankTransaction', schema, 'bankTransactions')

@@ -6,11 +6,12 @@ import {
   NotificationOutbox,
   PolicyVersion,
   Wallet,
+  WithdrawalRequest,
 } from '../../../models/index.js'
 import { withTransaction } from '../../../db/connection.js'
 import { HttpError } from '../../../middleware/errors.js'
+import { evaluatePayoutEligibility } from './payout-eligibility.js'
 import { createMonthlyPayoutRecords } from './monthly-payout-records.js'
-import { buildMonthlyPayoutPreview } from './admin-payout-preview.js'
 
 function validatePayoutPeriod(periodId, now) {
   if (periodId !== currentPayoutPeriod(now)) {
@@ -64,38 +65,11 @@ async function queuePayoutNotice(accountId, periodId, result, session, now) {
   }
 }
 
-export async function generateMonthlyPayouts(
-  admin,
-  periodId,
-  now = new Date(),
-  expectedPreviewHash,
-) {
+export async function generateMonthlyPayouts(admin, periodId, now = new Date()) {
   validatePayoutPeriod(periodId, now)
 
   return withTransaction(async session => {
     if (admin) await requireCurrentAdmin(admin, session)
-
-    // API sẽ luôn truyền expectedPreviewHash.
-    // Các test nghiệp vụ gọi trực tiếp hàm cũ vẫn có thể không truyền.
-    if (expectedPreviewHash !== undefined) {
-      const currentPreview = await buildMonthlyPayoutPreview(periodId, session, now)
-
-      if (currentPreview.previewHash !== expectedPreviewHash) {
-        throw new HttpError(
-          409,
-          'payout_preview_changed',
-          'Danh sách dự kiến đã thay đổi. Vui lòng tải lại trước khi xác nhận.',
-        )
-      }
-
-      if (currentPreview.eligibleCount === 0) {
-        throw new HttpError(
-          409,
-          'payout_preview_empty',
-          'Không có tác giả đủ điều kiện để lập chi trả.',
-        )
-      }
-    }
 
     const policy = await PolicyVersion.findOne({
       status: { $in: ['effective', 'superseded'] },
@@ -123,14 +97,13 @@ export async function generateMonthlyPayouts(
     const results = []
 
     for (const role of authorWallets) {
-      const account = await Account.findOneAndUpdate(
-        {
-          _id: role.ownerId,
-          status: 'active',
-        },
-        { $inc: { version: 1 } },
-        { session, returnDocument: 'after' },
-      ).select('+bankDetails')
+      if (await WithdrawalRequest.exists({ accountId: role.ownerId, periodId }).session(session)) {
+        results.push({ accountId: String(role.ownerId), state: 'existing' })
+        continue
+      }
+      const account = await Account.findOne({ _id: role.ownerId, status: 'active' })
+        .select('+bankDetails')
+        .session(session)
 
       if (!account) {
         results.push({
@@ -147,6 +120,22 @@ export async function generateMonthlyPayouts(
         purpose: 'author-earnings',
       }).session(session)
 
+      const eligibleBalanceCoins = await availableAtCutoff(wallet, periodId, session)
+      const eligibility = evaluatePayoutEligibility({
+        account,
+        wallet,
+        policy,
+        eligibleBalanceCoins,
+      })
+      if (eligibility.state === 'eligible') {
+        const locked = await Account.updateOne(
+          { _id: account._id, status: 'active', version: account.version },
+          { $inc: { version: 1 } },
+          { session },
+        )
+        if (locked.matchedCount !== 1)
+          throw new HttpError(409, 'account_changed', 'Tài khoản đã thay đổi. Vui lòng thử lại.')
+      }
       const result = await createMonthlyPayoutRecords(
         {
           account,
@@ -154,7 +143,7 @@ export async function generateMonthlyPayouts(
           periodId,
           policy,
           actorAccountId: admin?._id,
-          eligibleBalanceCoins: await availableAtCutoff(wallet, periodId, session),
+          eligibleBalanceCoins,
         },
         session,
         now,

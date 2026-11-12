@@ -1,21 +1,28 @@
 # NovelHub requirements baseline
 
-## Finance amendment — confirmed 2026-11-11
+## Finance amendment — confirmed 2026-11-12
 
-The Coins & Payouts owner explicitly confirmed automatic simulated settlement.
-This amendment supersedes older requirements for Admin approval, external-result
-recording and Admin payout bank correction for the current demonstration scope.
-At 00:00 on the 1st in Asia/Ho_Chi_Minh the system generates the monthly sheet,
-reserves eligible accumulated earnings (default threshold 100,000 coins), and
-automatically records simulated Paid/Failed outcomes. Admin has read-only payout
-access: runs, statistics, history, filters and CSV export. No bank transfer occurs.
-Every automatic outcome identifies simulation, a system actor and a deterministic
-receipt key. Retries never debit or settle twice. Invalid destination information
-leaves the obligation pending; the system never invents beneficiary details.
-Historical records remain unchanged and unclassified records are labelled legacy.
-See [current implementation and use cases](coins-payouts-completion.md) and
-[updated diagrams](diagrams/payouts-automatic-current.drawio).
+The Coins & Payouts owner confirmed automatic **simulated** monthly settlement.
+A-UC-13.1 (Admin recording a real transfer result) is **removed from the current
+project/demo scope**, along with manual generation/approval and payment-result UI.
+Admin views runs, statistics, history and CSV; Admin may correct a failed/missing
+simulated payout destination from verified support information, with a mandatory
+reason, version check and audit. This is not permission to execute a transfer.
+An active Author's bank update also repairs their failed/invalid simulated rows.
+The original evaluation snapshot and wallet reservation never change.
 
+Only the designated backend enables `PAYOUT_WORKER_ENABLED=true` (default false).
+At 00:00 on the 1st in Asia/Ho_Chi_Minh it reserves eligible accumulated earnings
+(default 100,000 coins) and automatically simulates Paid/Failed. Startup/daily
+catch-up is idempotent; corrected obligations are retried on the next worker tick.
+Only withdrawals explicitly created with `executionMode=simulation` are selected;
+legacy/external rows are never simulated or migrated automatically. There is no
+real bank transfer. Private stored bank numbers retain leading zeros; API views
+mask them. New unlocks use the **shared effective policy rate only**, with no
+per-Author override. Existing ledger/allocation snapshots remain unchanged.
+
+See [implementation contract](coins-payouts-completion.md),
+[review closure](coins-payouts-review-2026-11-12.md) and [demo runbook](sepay-demo-runbook.md).
 
 **Status: DRAFT FOR REVIEW.** This is the concise implementation contract for
 requirements-to-domain-to-database work. It records current product intent and
@@ -38,9 +45,8 @@ Apply this order when sources disagree:
    `UC-MOD-*`, and `UC-ADM-*` goals; `moderator-use-cases.csv` is the detailed
    Moderator contract.
 
-Draft/template documents and legacy diagrams are evidence only. A universal
-fixed rate is superseded: 70/30 is the configurable default, overridden by a
-negotiated per-Author rate.
+Draft/template documents and legacy diagrams are evidence only. New purchases use the shared effective revenue policy (default 70/30);
+per-Author overrides are outside the confirmed scope.
 Citations in this repository name source filenames, headings, and IDs only;
 no external source path is required.
 
@@ -242,13 +248,13 @@ are rejected. Payment codes are unique among orders.
 An eligible early unlock checks the explicit published revision,
 publication/eligibility, configured price, balance, and existing access; its
 coin deduction, chapter entitlement, effective price/access policy snapshot,
-and negotiated allocation snapshot commit together under compare-and-set.
+and policy-based allocation snapshot commit together under compare-and-set.
 Author price is bounded to 200–5,000 coins and early-access duration to 1–14
 days; both bounds are Admin-configurable. The same entitlement MUST NOT be
 charged twice (`FR-COIN-05`–`FR-COIN-11`, `NFR-REL-02`–`NFR-REL-03`).
 
-Eligible paid-unlock revenue uses a negotiated per-Author rate, falling back to
-70% Author/30% platform. The Author share rounds down to whole coins and the
+Eligible paid-unlock revenue uses the shared effective policy rate (default
+70% Author/30% platform); per-Author negotiated rates are outside the agreed scope. The Author share rounds down to whole coins and the
 platform receives the remainder. The Author allocation is credited immediately
 to the earnings wallet; top-up money is not Author revenue. Completed unlocks
 are final and no refunds are provided. Admin coin additions/removals use
@@ -287,19 +293,13 @@ removed, after the final deletion evaluation has run, no unpaid earnings balance
 unpaid earnings balance and no pending withdrawal, close the account and remove
 the email immediately in the deletion transaction.
 
-NovelHub never initiates a bank transfer. Admin/finance pays outside
-the system and records each row `Paid` or `Failed`. Actor/time are required;
-transfer reference and note are optional. Failed is a payment-result entry,
-not a terminal withdrawal status: the row remains pending until paid later,
-without returning coins. The Author contacts support with corrected bank
-details; Admin always enters them on the pending row, audited and Admin-only,
-without overwriting the original evaluation snapshot. Profile bank-details
-updates apply only to future monthly evaluations, never an existing row.
-Admin contacts suspended/deleted Authors off-platform as needed. Result
-idempotency is per entry: Failed entries may precede one later Paid entry.
-A Paid row's
-slip appears in earnings history and is emailed. No fee/tax applies: its VND
-equals withdrawn coins exactly (1 coin = 1 VND).
+NovelHub never initiates a bank transfer. The enabled worker automatically
+simulates only explicitly simulated withdrawals. Failed is an append-only result,
+not a terminal withdrawal state; coins remain reserved, without another debit.
+Audited bank correction by the active Author or by Admin via support unlocks one
+new attempt for the corrected destination. Admin cannot record payment results.
+Paid slips identify simulation and are shown in history and emailed. No fee/tax
+applies: the displayed slip equals withdrawn coins at 1 coin = 1 VND.
 For a deleted Author, keep the email address Admin-only until financial
 closure (defined above). Send withdrawal-created, Failed, and Paid-slip emails
 to it, then remove it; this address is not part of forever-retained finance/audit
@@ -325,9 +325,10 @@ Users may delete accounts even with financial history. Public profile/comment
 surfaces are anonymized and comments display “Deleted user.” Finance/audit
 records remain; finance/payout bank snapshots and legal/account-holder names
 are retained forever in V1 and become Admin-only after deletion, not redacted.
-While active, the Author and Admin can see the evaluation snapshot; corrected
-details are always Admin-only and always entered by Admin from support-supplied
-information. Deletion unpublishes Author stories and stops unlocks/earnings;
+Bank account numbers are masked in API views. The active Author may update their
+profile bank details and repair failed/invalid simulated obligations. Admin may
+correct such obligations using support-supplied information, including for deleted
+accounts; every correction is audited and preserves the original snapshot. Deletion unpublishes Author stories and stops unlocks/earnings;
 retained unlocks are inaccessible with no refunds. Published stories with
 unlocks cannot be hard-deleted; Authors may only unpublish/archive with no
 refunds. Author-role
@@ -384,7 +385,7 @@ notification remains.
 | Google OAuth | Validate/link identity; retain role and permission authority | `FR-AUTH-03`–`FR-AUTH-05`, `UC-GST-07` |
 | SePay incoming-transfer webhook | Notify NovelHub of incoming balance changes on NovelHub's bank account only; authenticate by API-key header. SePay provides no checkout, invoice, payment page, or transfer. | Confirmed top-up decision; `FR-COIN-02`–`FR-COIN-04`, `UC-RDR-14` |
 | VietQR API | Generate the payment-page QR with prefilled exact package amount and payment code. | Confirmed top-up decision |
-| Manual bank transfer by Admin/finance outside NovelHub | Admin/finance pays Authors from the payout sheet outside the system; NovelHub records each row's `Paid`/`Failed` result and optional reference, note, actor, and time. NovelHub does not initiate or retry transfers. | Confirmed payout-sheet decision; `FR-PAYOUT-04`, `FR-PAYOUT-09`, `UC-ADM-12`, `UC-ADM-13` |
+| Automatic simulated monthly settlement | Enabled designated worker reserves earnings once and simulates only explicitly simulated obligations; Admin views results and can auditably correct failed destinations. No transfer API or manual result entry. | Confirmed 2026-11-12 scope amendment; A-UC-13.1 removed |
 | OpenAI Embedding Service | Receive submitted text and return vectors; no verdict | `FR-MOD-03`–`FR-MOD-05`, `UC-AUT-10` |
 | NovelHub similarity process | Compare stored embeddings; collect actual source IDs/passages, including empty findings | `FR-MOD-04`, `BR-13` |
 | OpenAI LLM Service | Synthesize advisory findings from exact revision and actual evidence | `FR-MOD-02`, `UC-MOD-08` |
@@ -438,7 +439,7 @@ relevant design phase.
   (`NFR-SEC-03`–`NFR-SEC-05`).
 - Confirmed provider top-ups and successful unlocks are idempotent. Wallet and
   ledger purpose/type/unit are explicit; balance deduction, entitlement,
-  effective price/access snapshot, and negotiated-rate allocation are recorded
+  effective price/access snapshot, and policy-rate allocation are recorded
   consistently (`NFR-REL-01`–`NFR-REL-03`).
 - Provider failures expose status and preserve retry/audit context. Stage
   claims and completion CAS prevent stale later calls; manual moderation remains

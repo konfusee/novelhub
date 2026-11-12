@@ -13,7 +13,19 @@ it('preserves the wallet contract', async () => {
   const author = await authenticatedAccount('author')
   const wallet = await request(app).get('/api/author/earnings').set('Cookie', author.cookie)
   expect(wallet.status).toBe(200)
-  expect(wallet.body).toEqual({ balance: 0, entries: [], hasMore: false, page: 1, pageSize: 50 })
+  expect(wallet.body).toMatchObject({
+    balance: 0,
+    netAmount: 0,
+    entries: [],
+    hasMore: false,
+    page: 1,
+    pageSize: 50,
+    summary: {
+      revenueCoins: 0,
+      paidUnlockCount: 0,
+      payoutSummary: { pending: 0, paid: 0, failed: 0 },
+    },
+  })
   expect(await Wallet.countDocuments()).toBe(0)
 })
 

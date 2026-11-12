@@ -36,6 +36,10 @@ export async function getPlatformFinanceReport({
   authorId,
   storyId,
   chapterId,
+  walletPurpose,
+  ledgerType,
+  payoutStatus,
+  bankState,
   page = 1,
   all = false,
 }) {
@@ -167,8 +171,14 @@ export async function getPlatformFinanceReport({
       { $group: { _id: '$legs._id', coins: { $sum: '$legs.coins' } } },
     ]).session(session)
     const bank = await BankTransaction.aggregate([
-      { $match: { receivedAt: range } },
-      { $group: { _id: '$matchStatus', count: { $sum: 1 }, amountVnd: { $sum: '$amountVnd' } } },
+      { $match: { receivedAt: range, ...(bankState ? { matchStatus: bankState } : {}) } },
+      {
+        $group: {
+          _id: { status: '$matchStatus', bucket: timeKey('$receivedAt', bucket) },
+          count: { $sum: 1 },
+          amountVnd: { $sum: '$amountVnd' },
+        },
+      },
       { $sort: { _id: 1 } },
     ]).session(session)
     const topUps = await LedgerEntry.aggregate([
@@ -176,6 +186,7 @@ export async function getPlatformFinanceReport({
       { $group: { _id: null, coins: { $sum: '$amount' }, count: { $sum: 1 } } },
     ]).session(session)
     const balances = await Wallet.aggregate([
+      { $match: walletPurpose ? { purpose: walletPurpose } : {} },
       {
         $group: {
           _id: '$purpose',
@@ -186,7 +197,7 @@ export async function getPlatformFinanceReport({
       { $sort: { _id: 1 } },
     ]).session(session)
     const payouts = await WithdrawalRequest.aggregate([
-      { $match: { evaluatedAt: range } },
+      { $match: { evaluatedAt: range, ...(payoutStatus ? { status: payoutStatus } : {}) } },
       {
         $lookup: {
           from: 'payoutResultEntries',
@@ -202,6 +213,7 @@ export async function getPlatformFinanceReport({
       {
         $group: {
           _id: {
+            bucket: timeKey('$evaluatedAt', bucket),
             result: { $ifNull: [{ $arrayElemAt: ['$latest.result', 0] }, 'Pending'] },
             mode: { $ifNull: [{ $arrayElemAt: ['$latest.executionMode', 0] }, 'legacy'] },
           },
@@ -209,6 +221,25 @@ export async function getPlatformFinanceReport({
           coins: { $sum: '$amountCoins' },
         },
       },
+    ]).session(session)
+    const ledger = await LedgerEntry.aggregate([
+      { $match: { occurredAt: range, ...(ledgerType ? { ledgerType } : {}) } },
+      { $lookup: { from: 'wallets', localField: 'walletId', foreignField: '_id', as: 'wallet' } },
+      { $unwind: '$wallet' },
+      ...(walletPurpose ? [{ $match: { 'wallet.purpose': walletPurpose } }] : []),
+      {
+        $group: {
+          _id: {
+            bucket: timeKey('$occurredAt', bucket),
+            purpose: '$wallet.purpose',
+            type: '$ledgerType',
+          },
+          count: { $sum: 1 },
+          creditCoins: { $sum: { $cond: [{ $eq: ['$direction', 'credit'] }, '$amount', 0] } },
+          debitCoins: { $sum: { $cond: [{ $eq: ['$direction', 'debit'] }, '$amount', 0] } },
+        },
+      },
+      { $sort: { '_id.bucket': 1, '_id.purpose': 1, '_id.type': 1 } },
     ]).session(session)
     const summary = {
       registeredAccounts: registrations.reduce((sum, row) => sum + row.count, 0),
@@ -230,7 +261,14 @@ export async function getPlatformFinanceReport({
       groupBy,
       summary,
       registrations: registrations.map(row => ({ ...row._id, count: row.count })),
-      bank: bank.map(row => ({ status: row._id, count: row.count, amountVnd: row.amountVnd })),
+      bank: bank.map(row => ({ ...row._id, count: row.count, amountVnd: row.amountVnd })),
+      ledger: ledger.map(row => ({
+        ...row._id,
+        count: row.count,
+        creditCoins: row.creditCoins,
+        debitCoins: row.debitCoins,
+        netCoins: row.creditCoins - row.debitCoins,
+      })),
       balances: balances.map(row => ({
         purpose: row._id,
         count: row.count,

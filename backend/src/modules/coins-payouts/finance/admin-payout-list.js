@@ -1,3 +1,4 @@
+import { maskedBankDetails } from './bank-details.js'
 import { PayoutResultEntry, PayoutSheetRow, WithdrawalRequest } from '../../../models/index.js'
 import { withTransaction } from '../../../db/connection.js'
 import { assertReportAmounts, matchesAuthorName, paginateReport } from './finance-reporting.js'
@@ -13,7 +14,7 @@ export async function listMonthlyPayouts({
   return withTransaction(async session => {
     const rows = await WithdrawalRequest.find({ periodId })
       .select(
-        'accountId periodId amountCoins payoutSlipAmountVnd status createdAt +bankDetailsSnapshot',
+        'accountId periodId amountCoins payoutSlipAmountVnd status version executionMode createdAt +bankDetailsSnapshot',
       )
       .populate({
         path: 'accountId',
@@ -75,14 +76,10 @@ export async function listMonthlyPayouts({
         amountCoins: row.amountCoins,
         payoutSlipAmountVnd: row.payoutSlipAmountVnd,
         status: row.status,
+        version: row.version,
+        executionMode: row.executionMode ?? 'legacy',
         createdAt: row.createdAt,
-        bankDetails: bank
-          ? {
-              bankName: bank.bankName,
-              accountNumber: bank.accountNumber,
-              accountHolder: bank.accountHolder,
-            }
-          : null,
+        bankDetails: maskedBankDetails(bank),
         latestResult: latest
           ? {
               executionMode: latest.executionMode ?? 'legacy',

@@ -93,6 +93,10 @@ const envSchema = z.object({
     .trim()
     .regex(/^[A-Za-z0-9_-]+$/)
     .default('embedding_vectors'),
+  PAYOUT_WORKER_ENABLED: z
+    .enum(['true', 'false'])
+    .default('false')
+    .transform(value => value === 'true'),
   AI_EVIDENCE_WORKER_ENABLED: z
     .enum(['true', 'false'])
     .default('false')
@@ -151,6 +155,7 @@ export function loadEnv(source = process.env) {
     'SIMILARITY_TOP_K',
     'VECTOR_SEARCH_INDEX',
     'AI_EVIDENCE_WORKER_ENABLED',
+    'PAYOUT_WORKER_ENABLED',
     'AI_BUDGET_USD',
     'AI_BUDGET_WINDOW_START',
     'VBEE_APP_ID',
@@ -200,6 +205,7 @@ export function toAppConfig(env) {
     httpJsonLimitKb: env.HTTP_JSON_LIMIT_KB,
     mediaStorageDir: env.MEDIA_STORAGE_DIR,
     moderationClaimHours: env.MODERATION_CLAIM_HOURS,
+    payoutWorkerEnabled: env.PAYOUT_WORKER_ENABLED,
     ai: {
       openai: env.OPENAI_API_KEY ? { apiKey: env.OPENAI_API_KEY } : undefined,
       openaiKeySource: envKeySource('OPENAI_API_KEY', env.OPENAI_API_KEY),

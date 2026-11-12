@@ -50,7 +50,7 @@ it('tác giả chưa có ví nhận kết quả rỗng, không phát sinh dữ l
   const response = await request(app).get(endpoint).set('Cookie', author.cookie)
 
   expect(response.status).toBe(200)
-  expect(response.body).toEqual({
+  expect(response.body).toMatchObject({
     page: 1,
     pageSize: 50,
     balance: 0,

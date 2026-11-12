@@ -1680,7 +1680,18 @@
       "adjustment": "Điều chỉnh",
       "reversal": "Giao dịch đảo",
       "other": "Giao dịch khác",
-      "hasMore": "Còn giao dịch cũ hơn chưa được hiển thị."
+      "hasMore": "Còn giao dịch cũ hơn chưa được hiển thị.",
+      "monthRevenue": "Doanh thu mở khóa tháng này",
+      "paidUnlockCount": "Số lượt mua chương tháng này",
+      "nextEvaluation": "Lần xét chi trả tiếp theo",
+      "payoutPending": "Xu chờ chi trả",
+      "payoutPaid": "Xu đã chi trả",
+      "payoutFailed": "Xu chờ sửa thông tin",
+      "netAmount": "Biến động ròng theo bộ lọc",
+      "balanceAfter": "Số dư sau giao dịch",
+      "story": "Truyện",
+      "storyHint": "Nhập ID truyện của bạn; để trống để xem tất cả.",
+      "storySearch": "Tìm truyện theo tên"
     },
     "bank": {
       "title": "Ngân hàng nhận thu nhập",
@@ -1694,7 +1705,8 @@
       "save": "Lưu thông tin",
       "saving": "Đang lưu…",
       "saved": "Đã lưu thông tin ngân hàng.",
-      "saveError": "Chưa xác nhận lưu thành công. Nội dung đang nhập vẫn được giữ lại; vui lòng thử lại."
+      "saveError": "Chưa xác nhận lưu thành công. Nội dung đang nhập vẫn được giữ lại; vui lòng thử lại.",
+      "replaceNumberHint": "Số tài khoản đã được ẩn. Để lưu thay đổi, nhập lại đầy đủ số tài khoản (6–34 chữ số). Các khoản chi giả lập bị lỗi sẽ được cập nhật để hệ thống thử lại."
     }
   },
   "library": {
@@ -3100,42 +3112,7 @@
     "next": "Trang sau",
     "page": "Trang {{page}}",
     "actions": "Thao tác",
-    "generate": "Tải danh sách dự kiến",
-    "simulatePaid": "Ghi nhận đã chuyển",
-    "simulateFailed": "Ghi nhận thất bại",
-    "confirmTitle": "Xác nhận thao tác chi trả",
-    "confirmGenerate": "Lập danh sách chi trả kỳ {{period}} cho tất cả tác giả đủ điều kiện? Các bộ lọc trạng thái và phân trang không giới hạn việc xét chi trả.",
-    "confirmPaid": "Xác nhận đã chuyển {{amount}} VND cho {{author}}? Nhập mã giao dịch ngân hàng để lưu bằng chứng.",
-    "confirmFailed": "Ghi nhận chuyển khoản cho {{author}} thất bại? Khoản chi được giữ lại để xử lý tiếp.",
-    "simulationHint": "Chỉ ghi nhận sau khi kiểm tra kết quả chuyển khoản bên ngoài. Thao tác này không chuyển tiền và không trừ thêm xu.",
-    "generateHint": "Hệ thống tự lập khoản chi từ 00:00 ngày 1 theo giờ Việt Nam. Có thể kiểm tra và chạy bù kỳ hiện tại; doanh thu sau mốc chốt để lại kỳ sau.",
-    "confirm": "Xác nhận",
-    "cancel": "Đóng",
-    "submitting": "Đang xử lý...",
-    "actionError": "Chưa xác nhận được kết quả. Bạn có thể gửi lại trong hộp này hoặc đóng và tải lại danh sách để kiểm tra.",
-    "notDue": "Chỉ có thể lập khoản chi cho kỳ hiện tại, từ ngày 1 theo giờ Việt Nam.",
-    "alreadyPaid": "Khoản chi đã được thanh toán. Hãy đóng và tải lại danh sách.",
-    "forbidden": "Bạn không có quyền thực hiện thao tác này.",
-    "success": "Thao tác thành công. Danh sách đang được tải lại.",
-    "previewTitle": "Danh sách chi trả dự kiến",
-    "previewHint": "Các tác giả đủ điều kiện cho kỳ {{period}}. Xem trước chưa trích xu và chưa tạo khoản chi.",
-    "previewError": "Không tải được danh sách dự kiến. Vui lòng thử lại.",
-    "eligibleCount": "Tác giả đủ điều kiện",
-    "totalExpected": "Tổng tiền dự kiến",
-    "previewEmpty": "Không có tác giả đủ điều kiện chưa được lập chi trong kỳ này.",
-    "previewChanged": "Dữ liệu đã thay đổi. Hãy tải lại danh sách dự kiến và kiểm tra trước khi xác nhận.",
-    "reloadPreview": "Tải lại danh sách dự kiến",
-    "confirmCreate": "Xác nhận tạo khoản chi",
     "transferReference": "Mã giao dịch ngân hàng",
-    "transferOccurredAt": "Thời gian chuyển khoản (giờ địa phương)",
-    "resultNote": "Ghi chú / lý do thất bại",
-    "invalidResult": "Kiểm tra mã giao dịch, thời gian chuyển khoản sau lúc lập khoản chi và lý do thất bại.",
-    "bankRequired": "Bổ sung ngân hàng nhận từ hồ sơ hỗ trợ có xác minh",
-    "referenceUsed": "Mã giao dịch này đã được dùng cho khoản chi khác.",
-    "correction_bankName": "Ngân hàng nhận",
-    "correction_accountNumber": "Số tài khoản nhận",
-    "correction_accountHolder": "Chủ tài khoản nhận",
-    "correction_reason": "Căn cứ hiệu chỉnh ngân hàng",
     "simulatedResult": "Kết quả thanh toán giả lập",
     "runsTitle": "Các kỳ chi trả tự động",
     "processing": "Đang xử lý",
@@ -3228,7 +3205,11 @@
     "previous": "Trang trước",
     "next": "Trang sau",
     "page": "Trang {{page}}",
-    "simulatedResult": "Thanh toán giả lập, chưa chuyển tiền thực tế"
+    "simulatedResult": "Thanh toán giả lập, chưa chuyển tiền thực tế",
+    "bank": "Ngân hàng nhận",
+    "year": "Năm",
+    "allYears": "Tất cả các năm",
+    "allStates": "Tất cả trạng thái"
   },
   "staffRoles": {
     "title": "Vai trò và quyền truy cập",
@@ -3287,7 +3268,7 @@
     "unlock-debit": "Mua chương",
     "allocation-credit": "Phân bổ doanh thu",
     "withdrawal-debit": "Trích khoản chi",
-    "adjustment": "Điều chỉnh",
+    "adjustment": "Xu đã cộng qua đối soát",
     "reversal": "Hoàn xu",
     "deletion-forfeiture": "Đóng ví",
     "reader-coins": "Ví đọc truyện",
@@ -3320,7 +3301,15 @@
     "unresolvedPayments": "Khoản cần đối soát",
     "statistics": "Thống kê theo khoảng ngày",
     "walletId": "Xem mã ví",
-    "statisticsHint": "Thống kê phía trên tính theo khoảng ngày đã áp dụng, không theo từ khóa hay nguồn giao dịch. Ngày bắt đầu và kết thúc tính theo giờ Việt Nam."
+    "statisticsHint": "Thống kê phía trên tính theo khoảng ngày đã áp dụng, không theo từ khóa hay nguồn giao dịch. Ngày bắt đầu và kết thúc tính theo giờ Việt Nam.",
+    "details": "Chi tiết",
+    "detailTitle": "Chi tiết giao dịch ngân hàng",
+    "originalStatus": "Kết quả đối chiếu ban đầu",
+    "paymentCode": "Mã thanh toán",
+    "matchedOrder": "Đơn nạp liên quan",
+    "reader": "Người nạp",
+    "pending": "Chờ thanh toán",
+    "paid": "Đã thanh toán"
   },
   "walletFlow": {
     "pendingTitle": "Đơn nạp đang chờ và cần kiểm tra",
@@ -3337,7 +3326,8 @@
     "resolved-credit": "Đã đối soát và cộng xu",
     "resolved-no-credit": "Đã kết thúc đối soát, không cộng xu",
     "doNotRepay": "Không chuyển lại tiền cho đơn này. Kiểm tra lịch sử ví hoặc liên hệ hỗ trợ nếu cần.",
-    "exportPage": "Xuất trang này"
+    "exportPage": "Xuất trang này",
+    "settled": "Đã xác nhận thanh toán"
   },
   "platformFinance": {
     "title": "Báo cáo tài chính và mở khóa",
@@ -3358,7 +3348,7 @@
     "chapterId": "Chương",
     "apply": "Áp dụng",
     "reload": "Tải lại",
-    "scopeHint": "Tối đa 366 ngày, theo giờ Việt Nam. Lọc chính sách/tác giả/truyện/chương chỉ áp dụng lượt mua và phân bổ doanh thu. Số dư ví là hiện tại; đăng ký phân theo trạng thái hiện tại. Nạp và chi trả tính theo khoảng ngày. Kỳ chi trả giả lập không phải chuyển khoản ngân hàng thật.",
+    "scopeHint": "Lọc tác giả / truyện / chương / chính sách áp dụng cho mua chương. Mục đích ví áp dụng cho số dư và sổ cái; loại giao dịch áp dụng cho sổ cái; trạng thái ngân hàng và khoản chi áp dụng cho từng bảng tương ứng. Số dư là ảnh chụp hiện tại, không phải số dư cuối kỳ.",
     "optionsError": "Không tải được lựa chọn bộ lọc.",
     "loading": "Đang tổng hợp báo cáo…",
     "error": "Không tải được báo cáo. Kiểm tra khoảng ngày (tối đa 366 ngày) và thử lại.",
@@ -3390,7 +3380,15 @@
     "simulation": "Giả lập",
     "external": "Chuyển khoản ghi nhận",
     "legacy": "Lịch sử chưa phân loại",
-    "policyVersion": "Phiên bản {{version}} · {{date}}"
+    "policyVersion": "Phiên bản {{version}} · {{date}}",
+    "walletPurpose": "Mục đích ví (số dư và sổ cái)",
+    "ledgerType": "Loại giao dịch sổ cái",
+    "payoutStatus": "Trạng thái khoản chi",
+    "bankState": "Trạng thái ngân hàng",
+    "optionSearch": "Tìm tác giả / truyện / chương",
+    "searchOptions": "Tìm bộ lọc",
+    "optionSearchHint": "Mỗi danh sách hiển thị tối đa 50 kết quả. Tìm theo tên và chọn tác giả / truyện để thu hẹp danh sách.",
+    "ledger": "Biến động sổ cái theo thời gian (ròng)"
   },
   "payoutDetails": {
     "title": "Lịch sử xử lý khoản chi",
@@ -3470,5 +3468,15 @@
     "voice": "Giọng đọc tiếng Việt",
     "voiceNote": "Giọng đọc tiếng Việt mặc định, tạo tự động từ nội dung chương.",
     "volume": "Âm lượng"
+  },
+  "payoutCorrection": {
+    "title": "Sửa ngân hàng nhận khoản chi bị lỗi",
+    "hint": "Nhập thông tin đã xác minh qua hỗ trợ. Chỉ sửa thông tin nhận; hệ thống tự giả lập lại và không trích thêm xu.",
+    "reason": "Lý do và căn cứ xác minh",
+    "save": "Lưu thông tin để thử lại",
+    "saving": "Đang lưu…",
+    "saved": "Đã lưu. Hệ thống sẽ tự thử lại khi worker đang bật.",
+    "conflict": "Khoản chi đã thay đổi hoặc không còn cho phép sửa. Vui lòng tải lại.",
+    "error": "Không lưu được thông tin. Vui lòng thử lại."
   }
 }
