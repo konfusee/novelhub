@@ -245,10 +245,10 @@ export function WalletPage() {
           result.order.status !== 'paid'
             ? t('walletFlow.' + result.order.reviewState) + '. ' + t('walletFlow.doNotRepay')
             : result.order.status === 'paid'
-              ? 'Đơn đã được xác nhận thanh toán.'
+              ? t('walletFlow.paymentConfirmed')
               : result.order.status === 'expired'
-                ? 'Đơn đã hết hạn thanh toán.'
-                : 'Chưa ghi nhận thanh toán cho đơn này. Bạn có thể kiểm tra lại sau.',
+                ? t('walletFlow.paymentExpired')
+                : t('walletFlow.paymentNotReceived'),
       })
 
       if (result.order.status === 'paid') {
@@ -688,25 +688,71 @@ export function WalletPage() {
               </div>
             )}
 
-            <p className="text-sm text-muted">
-              Xu chỉ được cộng sau khi hệ thống xác nhận thanh toán.
-            </p>
-            {topUpOrder.status === 'pending' && (
-              <Button onClick={handleCheckPayment} disabled={checkingOrder}>
-                {checkingOrder ? 'Đang kiểm tra...' : 'Kiểm tra thanh toán'}
-              </Button>
-            )}
+            <div className="space-y-4 border-t border-line pt-4">
+              <p className="text-sm leading-6 text-muted">{t('walletFlow.confirmationHint')}</p>
 
-            {statusMessage?.orderId === topUpOrder.id && (
-              <p role="status" className="text-sm text-muted">
-                {statusMessage.text}
-              </p>
-            )}
-            {statusError?.orderId === topUpOrder.id && (
-              <p role="alert" className="text-sm text-muted">
-                {statusError.message}
-              </p>
-            )}
+              {statusMessage?.orderId === topUpOrder.id && (
+                <div
+                  role="status"
+                  aria-atomic="true"
+                  className="flex items-start gap-3 rounded-2xl border border-line bg-surface p-4"
+                >
+                  {displayedOrderStatus === 'paid' ? (
+                    <Check
+                      size={20}
+                      aria-hidden="true"
+                      className="mt-0.5 shrink-0 text-brand-strong"
+                    />
+                  ) : (
+                    <RefreshCw
+                      size={20}
+                      aria-hidden="true"
+                      className="mt-0.5 shrink-0 text-brand-strong"
+                    />
+                  )}
+                  <div className="min-w-0 space-y-1">
+                    <p className="text-sm font-semibold text-ink">{t('walletFlow.checkResult')}</p>
+                    <p className="break-words text-sm leading-6 text-ink">{statusMessage.text}</p>
+                  </div>
+                </div>
+              )}
+
+              {statusError?.orderId === topUpOrder.id && (
+                <div
+                  role="alert"
+                  className="flex items-start gap-3 rounded-2xl border border-rose/25 bg-rose/10 p-4"
+                >
+                  <AlertTriangle
+                    size={20}
+                    aria-hidden="true"
+                    className="mt-0.5 shrink-0 text-rose-strong"
+                  />
+                  <div className="min-w-0 space-y-1">
+                    <p className="text-sm font-semibold text-rose-strong">
+                      {t('walletFlow.checkError')}
+                    </p>
+                    <p className="break-words text-sm leading-6 text-ink">{statusError.message}</p>
+                  </div>
+                </div>
+              )}
+
+              {topUpOrder.status === 'pending' && (
+                <Button
+                  type="button"
+                  className="min-h-12 w-full gap-2"
+                  onClick={handleCheckPayment}
+                  disabled={checkingOrder}
+                  aria-busy={checkingOrder}
+                >
+                  <RefreshCw
+                    size={18}
+                    aria-hidden="true"
+                    className={checkingOrder ? 'shrink-0 motion-safe:animate-spin' : 'shrink-0'}
+                  />
+                  {t(checkingOrder ? 'walletFlow.checkingPayment' : 'walletFlow.checkPayment')}
+                </Button>
+              )}
+            </div>
           </div>
         )}
       </Modal>
