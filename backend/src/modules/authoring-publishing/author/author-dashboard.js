@@ -41,7 +41,8 @@ const viewsForWindow = (storyIds, startDay, endDay) =>
   ])
 
 async function revenueForStories(accountId, storyIds, chapterIds, from, to) {
-  if (!storyIds.length || !chapterIds.length) return { total: 0, unlocks: 0, byStory: new Map() }
+  if (!storyIds.length || !chapterIds.length)
+    return { total: 0, unlocks: 0, byStory: new Map() }
   const wallet = await Wallet.findOne({
     ownerType: 'account',
     ownerId: accountId,
@@ -212,9 +213,7 @@ export async function authorDashboard(accountId, { days = 1 } = {}, now = new Da
         { $group: { _id: '$storyId', count: { $sum: 1 } } },
       ]),
     ])
-  const publishedChapters = chapters.filter(
-    chapter => chapter.status === 'published' && chapter.publishedRevisionId,
-  )
+  const publishedChapters = chapters.filter(chapter => chapter.status === 'published')
   const publishedChapterIds = publishedChapters.map(chapter => chapter._id)
   const selectedComments = await Comment.countDocuments({
     $or: [
