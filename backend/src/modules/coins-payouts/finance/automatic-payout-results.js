@@ -7,7 +7,7 @@ import {
 import { createHash } from 'node:crypto'
 import { validBankDetails } from './bank-details.js'
 import { withTransaction } from '../../../db/connection.js'
-import { notify } from '../../accounts-administration/service.js'
+import { notify } from '../../accounts-administration/notifications.js'
 
 // This provider is deliberately simulated: no bank request is made. The receipt
 // and result explicitly identify simulation instead of claiming a real transfer.

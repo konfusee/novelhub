@@ -153,12 +153,6 @@ function FormerStoryDialog({ id, onClose, onChanged }) {
                 method: 'POST',
                 body: input,
               })
-              const expectedStatus =
-                action === 'unpublish'
-                  ? 'unpublished'
-                  : action === 'republish'
-                    ? 'published'
-                    : story.status
               if (
                 result?.story?.id !== id ||
                 result.story.status !==

@@ -13,6 +13,8 @@ import { MAX_AUDIO_BYTES, TtsProviderError } from './tts-provider.js'
 const LEASE_MS = 60_000
 const POLL_INTERVAL_MS = 2_000
 const MAX_PROCESSING_MS = 15 * 60_000
+const REQUEST_COOLDOWN_MS = 15_000
+const requestCooldowns = new Map()
 // Cost limits: provider submits per (revision, voice) before a retry is refused, and the
 // day boundary (Vietnam time) of the optional platform-wide daily character budget.
 export const MAX_ATTEMPTS = 3

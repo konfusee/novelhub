@@ -89,6 +89,7 @@ function notificationView(item) {
     ['author.content-warning', 'author.content-unpublished'].includes(item.eventType) &&
     /^[a-f\d]{24}$/i.test(item.payload?.storyId ?? '')
   const reportResolved = item.eventType === 'report.resolved'
+  const roleChanged = item.eventType === 'system.role-changed'
   const submissionReady =
     item.eventType === 'moderation.submission-ready' &&
     /^[a-f\d]{24}$/i.test(item.payload?.submissionId ?? '')

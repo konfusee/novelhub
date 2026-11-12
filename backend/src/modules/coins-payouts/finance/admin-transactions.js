@@ -7,7 +7,6 @@ import {
   UnlockRequest,
   TopUpOrder,
 } from '../../../models/index.js'
-import { notify } from '../../accounts-administration/service.js'
 import { withTransaction } from '../../../db/connection.js'
 import { HttpError } from '../../../middleware/errors.js'
 import { requireCurrentAdmin } from './admin-guard.js'

@@ -60,7 +60,6 @@ import { FollowButton } from '../../components/community/FollowButton'
 import { ReportDialog } from '../../components/community/ReportDialog'
 import { apiRequest } from '../../api/client'
 import { useBackendDocument } from '../../api/useBackendResource'
-import { apiGet } from '../../api/client'
 import { ROUTES } from '../../app/routes'
 import { useLocale } from '../../context/LocaleContext'
 

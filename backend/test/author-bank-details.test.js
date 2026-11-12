@@ -20,7 +20,6 @@ const bank = {
   accountNumber: '0123456789',
   accountHolder: 'NGUYEN VAN A',
 }
-const maskedBank = { ...bank, accountNumber: '••••6789' }
 
 function saveBank(cookie, body) {
   return request(app).put(endpoint).set('Cookie', cookie).set('Origin', origin).send(body)
