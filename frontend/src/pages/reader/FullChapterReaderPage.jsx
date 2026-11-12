@@ -170,7 +170,13 @@ function ReaderToolbar({
   listenTo,
   t,
 }) {
-  const fontIndex = READER_FONT_SIZES.indexOf(settings.fontSize)
+  const fontIndex = READER_FONT_SIZES.reduce(
+    (closest, size, index) =>
+      Math.abs(size - settings.fontSize) < Math.abs(READER_FONT_SIZES[closest] - settings.fontSize)
+        ? index
+        : closest,
+    0,
+  )
   if (settings.toolbarLayout === 'vertical')
     return (
       <div
@@ -511,6 +517,19 @@ export function FullChapterReaderPage() {
         : DEFAULT_CHAPTER_MODE,
     }
   })
+  useEffect(() => {
+    const controller = new AbortController()
+    apiRequest('/reader/profile', { signal: controller.signal })
+      .then(({ profile }) => {
+        if (controller.signal.aborted) return
+        const fontSize =
+          profile?.fontSizePx ?? { small: 14, large: 21, 'x-large': 24 }[profile?.fontSize]
+        if (Number.isInteger(fontSize) && fontSize >= 14 && fontSize <= 24)
+          setSettings(previous => ({ ...previous, fontSize }))
+      })
+      .catch(() => {})
+    return () => controller.abort()
+  }, [])
   const mode = settings.chapterMode
   const continuous = mode === 'continuous'
   /* Story context: title, Author, chapter list (with lock state) and the viewer's follow. */

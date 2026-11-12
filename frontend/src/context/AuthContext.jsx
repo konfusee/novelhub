@@ -100,6 +100,11 @@ export function AuthProvider({ children }) {
     hasRole: role => currentUser?.roles?.includes(role),
     login,
     loginWithGoogle,
+    refreshUser: async () => {
+      const { user } = await apiRequest('/auth/me')
+      setCurrentUser(previous => (previous?.id === user.id ? user : previous))
+      return user
+    },
     verifyTwoFactor: async (challenge, otp) => {
       const { user } = await apiRequest('/auth/two-factor/verify', {
         method: 'POST',

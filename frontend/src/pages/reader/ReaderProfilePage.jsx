@@ -8,8 +8,6 @@ import {
   Eye,
   Headphones,
   Palette,
-  Pause,
-  Play,
   RefreshCw,
   Save,
   ShieldCheck,
@@ -18,12 +16,10 @@ import {
 import { AdminLayout, AuthorLayout, ModeratorLayout, ReaderLayout } from '../../layouts'
 import {
   Avatar,
-  Badge,
   Button,
   Card,
   EmptyState,
   Input,
-  ProgressBar,
   SectionHeader,
   Skeleton,
   SkeletonText,
@@ -246,6 +242,7 @@ function ControlRow({ label, labelId, children }) {
  * last loaded or saved values; save persists them.
  */
 function PreferencesForm({ initial, isSettings, section }) {
+  const { refreshUser } = useAuth()
   const { theme, setTheme } = useTheme()
   const { t } = useLocale()
   const ids = useId()
@@ -259,7 +256,6 @@ function PreferencesForm({ initial, isSettings, section }) {
   const [skip, setSkip] = useState(initial.skip)
   const [autoplay, setAutoplay] = useState(initial.autoplay)
   const [saved, setSaved] = useState(true)
-  const [audioPlaying, setAudioPlaying] = useState(false)
   const [notice, setNotice] = useState('')
   const changed = () => setSaved(false)
   const changeFontSize = value => {
@@ -305,6 +301,7 @@ function PreferencesForm({ initial, isSettings, section }) {
         bio: profile.bio,
         fontSize: profile.fontSizePx ?? FONT_SIZES[profile.fontSize],
       })
+      void refreshUser?.().catch(() => {})
       setName(values.name)
       setBio(values.bio)
       setFontSize(values.fontSize)
@@ -563,9 +560,6 @@ function PreferencesForm({ initial, isSettings, section }) {
                 title={t('settings.privacy.title')}
                 note={t('settings.privacy.note')}
               />
-              <ControlRow label={t('settings.privacy.activity')}>
-                <Badge tone="green">{t('settings.privacy.friendsOnly')}</Badge>
-              </ControlRow>
             </Card>
           )}
           {section === 'security' && <SecurityPanel />}
@@ -591,14 +585,7 @@ function PreferencesForm({ initial, isSettings, section }) {
                   </span>
                 </div>
                 <div className="mt-5 border-y border-current/12 py-5">
-                  <p className="text-[11px] font-semibold uppercase tracking-[.16em] opacity-70">
-                    Chương 14 · The Silver Compass
-                  </p>
-                  <h2 className="mt-2 text-lg font-semibold">The Whisper in the Pines</h2>
-                  <p className="mt-4" style={{ fontSize, lineHeight: spacing }}>
-                    The ancient trail curved gently beneath the canopy of silver pines, where
-                    twilight pooled in deep amethyst shadows. The story had not ended at the lake.
-                  </p>
+                  <p style={{ fontSize, lineHeight: spacing }}>{t('settings.preview.sample')}</p>
                 </div>
                 <div className="mt-4 flex items-center gap-2 text-xs">
                   <button
@@ -618,43 +605,6 @@ function PreferencesForm({ initial, isSettings, section }) {
                     className="grid size-8 place-items-center rounded-full font-semibold transition-colors hover:bg-current/10 disabled:opacity-40 pointer-coarse:size-11"
                   >
                     A+
-                  </button>
-                  <ProgressBar
-                    value={62}
-                    tone="orange"
-                    size="sm"
-                    label="Tiến độ đọc mẫu"
-                    className="ml-auto max-w-24"
-                  />
-                  <span className="ml-2 tabular-nums">62%</span>
-                </div>
-              </Card>
-            )}
-            {section === 'listening' && (
-              <Card>
-                <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1">
-                  <strong className="text-sm">{t('settings.preview.narrator')}</strong>
-                  <span className="text-xs font-semibold text-orange-strong">
-                    {speed}× {t('settings.preview.cadence')}
-                  </span>
-                </div>
-                <div className="mt-4 flex items-center gap-3">
-                  <span className="grid size-14 shrink-0 place-items-center rounded-2xl bg-orange/16 text-orange-strong">
-                    <Headphones aria-hidden="true" />
-                  </span>
-                  <div className="min-w-0 flex-1">
-                    <strong className="block text-sm">The Silver Compass (Audio)</strong>
-                    <ProgressBar value={42} size="sm" label="Tiến độ nghe mẫu" className="mt-2" />
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => setAudioPlaying(value => !value)}
-                    className="grid size-11 shrink-0 place-items-center rounded-full bg-brand text-on-brand shadow-[0_10px_24px_-14px_var(--primary)] transition-transform active:scale-[0.96]"
-                    aria-label={t(
-                      audioPlaying ? 'settings.preview.pause' : 'settings.preview.play',
-                    )}
-                  >
-                    {audioPlaying ? <Pause size={16} /> : <Play size={16} />}
                   </button>
                 </div>
               </Card>
