@@ -1,76 +1,67 @@
-import { policy } from '../../accounts-administration/service.js'
 import { withTransaction } from '../../../db/connection.js'
 import { HttpError } from '../../../middleware/errors.js'
 import {
   Account,
-  ContentReport,
   ContentRevision,
   EvidenceBatch,
   LlmReview,
-  ModerationHistory,
   PublicationSubmission,
   SimilarityFinding,
   Story,
 } from '../../../models/index.js'
-import { terminalEvidenceReady } from '../review-evidence.js'
-import { lockModerator } from './moderator-access.js'
-import { claimableReportFilter } from './report-queue.js'
+import { evidenceState, terminalEvidenceReady } from '../review-evidence.js'
+import {
+  acquireClaim,
+  adoptOwnClaim,
+  claimState,
+  claimSummary,
+  endClaim,
+  policyTtlHours,
+  requireLiveClaim,
+} from './claim-lease.js'
+import { lockModerator, submissionChanged } from './moderator-access.js'
+import { moderatorSubmissionDetail } from './review-detail.js'
+
+/** Submission queue, claim and release (UC-MOD-01, UC-MOD-02; SDS SubmissionReviewService). */
 
 export const PAGE_SIZE = 20
 
-// Asia/Ho_Chi_Minh is UTC+7 without daylight saving time.
-export function startOfVietnamDay(now) {
-  const shifted = new Date(now.getTime() + 7 * 3600000)
-  return new Date(
-    Date.UTC(shifted.getUTCFullYear(), shifted.getUTCMonth(), shifted.getUTCDate()) - 7 * 3600000,
-  )
-}
-
-const queueFilter = now => ({
+/** Ready submissions without a live claim (BR-NEW-S04 "claimable"). */
+export const claimableSubmissionFilter = now => ({
   $or: [
     { status: 'pending-review' },
     { status: 'decision-pending', claimExpiresAt: { $lte: now } },
   ],
 })
-const mineFilter = (account, now) => ({
+/** Submissions under the account's live claim. */
+export const ownLiveSubmissionFilter = (accountId, now) => ({
   status: 'decision-pending',
-  claimOwnerAccountId: account._id,
+  claimOwnerAccountId: accountId,
   claimExpiresAt: { $gt: now },
 })
-const processingFilter = { status: 'validated' }
+/** Submissions whose AI evidence is still running. */
+export const processingSubmissionFilter = { status: 'validated' }
 
 // Submissions of suspended, closed or otherwise inactive authors are neither listed nor counted.
-async function activeAuthorScope() {
+export async function activeAuthorScope() {
   return {
     authorAccountId: { $nin: await Account.distinct('_id', { status: { $ne: 'active' } }) },
   }
 }
 
-const evidencePending = () =>
-  new HttpError(409, 'evidence_pending', 'AI đang xử lý bằng chứng; chưa thể nhận hồ sơ.')
-const submissionChanged = () =>
-  new HttpError(409, 'submission_changed', 'Hồ sơ đã thay đổi. Hãy tải lại.')
-
-function pageEnvelope(items, page, total) {
-  return {
-    items,
-    page,
-    pageSize: PAGE_SIZE,
-    total,
-    pageCount: Math.max(1, Math.ceil(total / PAGE_SIZE)),
-  }
+const VIEW_FILTERS = {
+  available: (account, now) => claimableSubmissionFilter(now),
+  mine: (account, now) => ownLiveSubmissionFilter(account._id, now),
+  processing: () => processingSubmissionFilter,
 }
 
-export function claimView(submission, account, now) {
-  const owner = submission.claimOwnerAccountId
-  if (!owner) return null
-  return {
-    ownerAccountId: String(owner),
-    ownedByMe: String(owner) === String(account._id),
-    expiresAt: submission.claimExpiresAt,
-    expired: !(submission.claimExpiresAt > now),
-  }
-}
+const analysisRunning = () =>
+  new HttpError(
+    409,
+    'analysis_running',
+    'AI vẫn đang phân tích hồ sơ. Chưa thể kiểm duyệt chính thức.',
+  )
+const submissionNotFound = () => new HttpError(404, 'not_found', 'Không tìm thấy hồ sơ.')
 
 export async function evidenceSummaries(batchIds) {
   const [batches, findings, reviews] = await Promise.all([
@@ -101,6 +92,7 @@ export async function evidenceSummaries(batchIds) {
         {
           batchId: key,
           batchVersion: batch.version,
+          state: evidenceState(batch),
           status: batch.status,
           stage: batch.stage ?? null,
           failedStage: batch.failedStage ?? null,
@@ -113,30 +105,9 @@ export async function evidenceSummaries(batchIds) {
   )
 }
 
-export async function moderatorSummary(account, now = new Date()) {
-  const scope = await activeAuthorScope()
-  const [queue, mine, processing, decidedToday, openReports] = await Promise.all([
-    PublicationSubmission.countDocuments({ ...queueFilter(now), ...scope }),
-    PublicationSubmission.countDocuments({ ...mineFilter(account, now), ...scope }),
-    PublicationSubmission.countDocuments({ ...processingFilter, ...scope }),
-    ModerationHistory.countDocuments({
-      action: 'manual-review.decided',
-      actorAccountId: account._id,
-      occurredAt: { $gte: startOfVietnamDay(now) },
-    }),
-    ContentReport.countDocuments(claimableReportFilter(now)),
-  ])
-  return { queue, mine, processing, decidedToday, openReports }
-}
-
+/** One view of the queue, oldest first, 20 per page (UC-MOD-01 steps 2-5). */
 export async function listModeratorSubmissions(account, { view, page }, now = new Date()) {
-  const base =
-    view === 'mine'
-      ? mineFilter(account, now)
-      : view === 'processing'
-        ? processingFilter
-        : queueFilter(now)
-  const filter = { ...base, ...(await activeAuthorScope()) }
+  const filter = { ...VIEW_FILTERS[view](account, now), ...(await activeAuthorScope()) }
   const [total, rows] = await Promise.all([
     PublicationSubmission.countDocuments(filter),
     PublicationSubmission.find(filter)
@@ -147,7 +118,7 @@ export async function listModeratorSubmissions(account, { view, page }, now = ne
   ])
   const [revisions, stories, authors, summaries] = await Promise.all([
     ContentRevision.find({ _id: { $in: rows.map(row => row.revisionId) } })
-      .select('content.title revisionNumber')
+      .select('content.title')
       .lean(),
     Story.find({ _id: { $in: rows.map(row => row.storyId) } })
       .select('title')
@@ -162,28 +133,40 @@ export async function listModeratorSubmissions(account, { view, page }, now = ne
   const storyById = byId(stories)
   const authorById = byId(authors)
   const items = rows.map(row => {
-    const revision = revisionById.get(String(row.revisionId))
-    const story = storyById.get(String(row.storyId))
-    const author = authorById.get(String(row.authorAccountId))
+    const evidence = summaries.get(String(row.currentEvidenceBatchId)) ?? null
     return {
-      id: String(row._id),
+      submissionId: String(row._id),
       version: row.version,
       status: row.status,
+      targetType: row.chapterId ? 'chapter' : 'story',
+      title: revisionById.get(String(row.revisionId))?.content?.title ?? '',
+      storyTitle: storyById.get(String(row.storyId))?.title ?? '',
+      author: {
+        id: String(row.authorAccountId),
+        displayName: authorById.get(String(row.authorAccountId))?.displayName ?? '',
+      },
       submittedAt: row.submittedAt,
-      type: row.chapterId ? 'chapter' : 'story',
-      storyId: String(row.storyId),
-      chapterId: row.chapterId ? String(row.chapterId) : null,
-      title: revision?.content?.title ?? '',
-      storyTitle: story?.title ?? '',
-      revisionNumber: revision?.revisionNumber ?? null,
-      author: { id: String(row.authorAccountId), displayName: author?.displayName ?? '' },
-      claim: claimView(row, account, now),
-      evidence: summaries.get(String(row.currentEvidenceBatchId)) ?? null,
+      waitingSeconds: Math.max(0, Math.floor((now - row.submittedAt) / 1000)),
+      evidenceStatus: evidence?.state ?? 'processing',
+      evidence,
+      ...claimSummary(row, account, now),
     }
   })
-  return pageEnvelope(items, page, total)
+  return {
+    view,
+    items,
+    page,
+    pageSize: PAGE_SIZE,
+    total,
+    pageCount: Math.max(1, Math.ceil(total / PAGE_SIZE)),
+  }
 }
 
+/**
+ * Claims a Ready submission in one transaction, checks in the order of UC-MOD-02 step 4: role,
+ * version, Ready (not processing), active author, no other live claim. The holder re-opening its
+ * own live claim takes no new claim (AF1).
+ */
 export async function claimSubmission(
   account,
   submissionId,
@@ -194,149 +177,56 @@ export async function claimSubmission(
   return withTransaction(async session => {
     await lockModerator(account, session)
     const submission = await PublicationSubmission.findById(submissionId).session(session)
-    if (!submission) throw new HttpError(404, 'not_found', 'Không tìm thấy hồ sơ.')
+    if (!submission) throw submissionNotFound()
     if (
       submission.status === 'decision-pending' &&
-      String(submission.claimOwnerAccountId) === String(account._id) &&
-      submission.claimExpiresAt > now
-    )
-      return {
-        id: String(submission._id),
-        version: submission.version,
-        status: submission.status,
-        claimExpiresAt: submission.claimExpiresAt,
-        replayed: true,
-      }
-    if (submission.status === 'validated') throw evidencePending()
-    const expired = submission.status === 'decision-pending' && !(submission.claimExpiresAt > now)
-    if (submission.status === 'decision-pending' && !expired)
-      throw new HttpError(409, 'claim_held', 'Hồ sơ đang được kiểm duyệt viên khác giữ.')
-    if (
-      (submission.status !== 'pending-review' && !expired) ||
-      submission.version !== expectedVersion
-    )
-      throw submissionChanged()
-    const author = await Account.findById(submission.authorAccountId)
-      .select('status')
-      .session(session)
-      .lean()
-    if (author?.status !== 'active')
-      throw new HttpError(409, 'author_unavailable', 'Tài khoản tác giả không còn hoạt động.')
-    const batch = await EvidenceBatch.findById(submission.currentEvidenceBatchId)
-      .session(session)
-      .lean()
-    if (!terminalEvidenceReady(batch)) throw evidencePending()
-    if (expired)
-      submission.claimReleaseHistory.push({
-        ownerAccountId: submission.claimOwnerAccountId,
-        claimVersion: submission.claimVersion,
-        expiresAt: submission.claimExpiresAt,
-        releasedAt: now,
-        reason: 'expired',
-        actorAccountId: account._id,
-      })
-    submission.status = 'decision-pending'
-    submission.claimOwnerAccountId = account._id
-    const effective = await policy.getEffective({ session, now, required: false })
-    submission.claimExpiresAt = new Date(
-      now.getTime() + (effective?.claimExpiryHours ?? config.moderationClaimHours) * 3600000,
-    )
-    submission.claimVersion += 1
-    await submission.save({ session })
+      claimState(submission, account._id, now) === 'mine'
+    ) {
+      if (adoptOwnClaim(submission)) await submission.save({ session })
+    } else {
+      if (submission.version !== expectedVersion) throw submissionChanged()
+      if (submission.status === 'validated') throw analysisRunning()
+      if (!['pending-review', 'decision-pending'].includes(submission.status))
+        throw submissionChanged()
+      const batch = await EvidenceBatch.findById(submission.currentEvidenceBatchId)
+        .session(session)
+        .lean()
+      if (!terminalEvidenceReady(batch)) throw analysisRunning()
+      const author = await Account.findById(submission.authorAccountId)
+        .select('status')
+        .session(session)
+        .lean()
+      if (author?.status !== 'active') throw submissionChanged()
+      acquireClaim(submission, account, await policyTtlHours(config, now, session), now)
+      submission.status = 'decision-pending'
+      await submission.save({ session })
+    }
     return {
-      id: String(submission._id),
-      version: submission.version,
-      status: submission.status,
-      claimExpiresAt: submission.claimExpiresAt,
-      replayed: false,
+      ...(await moderatorSubmissionDetail(account, submission._id, now, session)),
+      messageId: 'SYS-MSG-MOD-01',
     }
   })
 }
 
+/** Releases the account's own live claim (UC-MOD-02 AF2). */
 export async function releaseSubmission(
   account,
   submissionId,
-  { expectedVersion },
+  { expectedVersion, claimToken },
   now = new Date(),
 ) {
   return withTransaction(async session => {
     await lockModerator(account, session)
     const submission = await PublicationSubmission.findById(submissionId).session(session)
-    if (!submission) throw new HttpError(404, 'not_found', 'Không tìm thấy hồ sơ.')
-    // An expired claim can only be taken over through claimSubmission, which records the expiry.
-    if (
-      submission.status !== 'decision-pending' ||
-      String(submission.claimOwnerAccountId) !== String(account._id) ||
-      !(submission.claimExpiresAt > now)
-    )
-      throw new HttpError(409, 'claim_required', 'Bạn cần giữ claim còn hạn của hồ sơ này.')
+    if (!submission) throw submissionNotFound()
+    requireLiveClaim(submission, account, claimToken, now)
     if (submission.version !== expectedVersion) throw submissionChanged()
-    submission.claimReleaseHistory.push({
-      ownerAccountId: submission.claimOwnerAccountId,
-      claimVersion: submission.claimVersion,
-      expiresAt: submission.claimExpiresAt,
-      releasedAt: now,
-      reason: 'released',
-      actorAccountId: account._id,
-    })
+    endClaim(submission, 'released', account._id, now)
     submission.status = 'pending-review'
-    submission.claimOwnerAccountId = undefined
-    submission.claimExpiresAt = undefined
-    submission.claimVersion += 1
     await submission.save({ session })
-    return { id: String(submission._id), version: submission.version, status: submission.status }
-  })
-}
-
-export async function listModeratorDecisions(account, { outcome, scope, page }) {
-  const filter = {
-    action: 'manual-review.decided',
-    ...(outcome === 'all' ? {} : { outcome }),
-    ...(scope === 'mine' ? { actorAccountId: account._id } : {}),
-  }
-  const [total, rows] = await Promise.all([
-    ModerationHistory.countDocuments(filter),
-    ModerationHistory.find(filter)
-      .sort({ occurredAt: -1, _id: -1 })
-      .skip((page - 1) * PAGE_SIZE)
-      .limit(PAGE_SIZE)
-      .lean(),
-  ])
-  const [submissions, moderators] = await Promise.all([
-    PublicationSubmission.find({ _id: { $in: rows.map(row => row.submissionId) } })
-      .select('revisionId chapterId')
-      .lean(),
-    Account.find({ _id: { $in: rows.map(row => row.actorAccountId) } })
-      .select('displayName')
-      .lean(),
-  ])
-  const revisions = await ContentRevision.find({
-    _id: { $in: submissions.map(submission => submission.revisionId) },
-  })
-    .select('content.title')
-    .lean()
-  const byId = list => new Map(list.map(doc => [String(doc._id), doc]))
-  const submissionById = byId(submissions)
-  const revisionById = byId(revisions)
-  const moderatorById = byId(moderators)
-  const items = rows.map(row => {
-    const submission = submissionById.get(String(row.submissionId))
-    const revision = revisionById.get(String(submission?.revisionId))
     return {
-      id: String(row._id),
-      submissionId: String(row.submissionId),
-      revisionId: String(submission?.revisionId ?? row.revisionId),
-      title: revision?.content?.title ?? '',
-      type: submission?.chapterId ? 'chapter' : 'story',
-      outcome: row.outcome,
-      feedback: row.feedback ?? '',
-      occurredAt: row.occurredAt,
-      moderator: {
-        id: String(row.actorAccountId),
-        displayName: moderatorById.get(String(row.actorAccountId))?.displayName ?? '',
-      },
-      mine: String(row.actorAccountId) === String(account._id),
+      ...(await moderatorSubmissionDetail(account, submission._id, now, session)),
+      messageId: 'SYS-MSG-MOD-03',
     }
   })
-  return pageEnvelope(items, page, total)
 }

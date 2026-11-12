@@ -155,6 +155,8 @@ describe('review and community models', () => {
       reportId: id,
       moderatorAccountId: id,
       outcome: 'dismissed',
+      contentAction: 'dismiss',
+      contentChanged: false,
       reason: 'x',
     })
     resolution.reason = 'changed'

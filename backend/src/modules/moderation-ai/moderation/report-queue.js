@@ -1,179 +1,242 @@
-import { policy } from '../../accounts-administration/service.js'
 import { withTransaction } from '../../../db/connection.js'
 import { HttpError } from '../../../middleware/errors.js'
 import {
   Account,
-  Chapter,
-  Comment,
   ContentReport,
+  RESOLUTION_OUTCOMES,
   ReportResolution,
-  Story,
 } from '../../../models/index.js'
 import { publicName } from '../../reading-community/community/common.js'
+import {
+  acquireClaim,
+  adoptOwnClaim,
+  claimFields,
+  claimState,
+  claimSummary,
+  endClaim,
+  holdsClaimToken,
+  policyTtlHours,
+  requireLiveClaim,
+} from './claim-lease.js'
 import { lockModerator } from './moderator-access.js'
+import {
+  ALLOWED_REPORT_ACTIONS,
+  currentTarget,
+  reportSnapshot,
+  snapshotTitle,
+} from './report-targets.js'
+
+/** Report queue, review detail, claim and release (UC-MOD-05, SDS ReportReviewService). */
 
 export const REPORT_PAGE_SIZE = 20
 export const ACTIVE_REPORT_STATUSES = ['open', 'under-review']
-export const RESOLVED_REPORT_STATUSES = ['dismissed', 'actioned', 'closed']
-export const REPORT_ACTIONS = {
-  comment: ['dismiss', 'hide-comment'],
-  chapter: ['dismiss', 'unpublish-chapter', 'unpublish-story', 'warn-author'],
-  story: ['dismiss', 'unpublish-story', 'warn-author'],
-}
+const EARLIER_CASES_LIMIT = 50
 
-const liveClaim = (report, now) =>
-  report.status === 'under-review' && report.claimOwnerAccountId && report.claimExpiresAt > now
-export const ownsLiveClaim = (report, account, now) =>
-  liveClaim(report, now) && String(report.claimOwnerAccountId) === String(account._id)
-
-/** Reports a moderator can take now: open, or under review with an expired claim. */
+/** Open reports without a live claim: what a Moderator can claim now (BR-NEW-S01). */
 export const claimableReportFilter = now => ({
-  $or: [{ status: 'open' }, { status: 'under-review', claimExpiresAt: { $lte: now } }],
+  status: { $in: ACTIVE_REPORT_STATUSES },
+  $or: [{ claimOwnerAccountId: null }, { claimExpiresAt: { $lte: now } }],
 })
-const tabFilters = (account, now) => ({
-  // Everything still unresolved except my own live claims; others' live claims show as claimed.
-  open: {
+
+const VIEW_FILTERS = {
+  // Open reports without another moderator's live claim, the account's own claims included.
+  queue: (account, now) => ({
+    status: { $in: ACTIVE_REPORT_STATUSES },
     $or: [
-      { status: 'open' },
-      {
-        status: 'under-review',
-        $or: [{ claimOwnerAccountId: { $ne: account._id } }, { claimExpiresAt: { $lte: now } }],
-      },
+      { claimOwnerAccountId: null },
+      { claimExpiresAt: { $lte: now } },
+      { claimOwnerAccountId: account._id },
     ],
-  },
-  mine: { status: 'under-review', claimOwnerAccountId: account._id, claimExpiresAt: { $gt: now } },
-  resolved: { status: { $in: RESOLVED_REPORT_STATUSES } },
-})
+  }),
+  mine: (account, now) => ({
+    status: 'under-review',
+    claimOwnerAccountId: account._id,
+    claimExpiresAt: { $gt: now },
+  }),
+}
 
 export const reportChanged = () =>
-  new HttpError(409, 'report_changed', 'Báo cáo đã thay đổi. Hãy tải lại.')
-export const claimRequired = () =>
-  new HttpError(409, 'claim_required', 'Bạn cần giữ claim còn hạn của báo cáo này.')
+  new HttpError(
+    409,
+    'report_changed',
+    'Báo cáo đã thay đổi hoặc không còn phù hợp với thao tác đã chọn. Hãy tải lại.',
+  )
+const reportNotFound = () => new HttpError(404, 'not_found', 'Không tìm thấy báo cáo.')
 
-/** Current state of the reported content, for the moderator's side-by-side view. */
-async function targetState(report) {
-  const snapshot = report.targetSnapshot ?? {}
-  let storyId = snapshot.storyId ?? null
-  let chapterId = null
-  let currentStatus = 'missing'
-  let available = false
-  if (report.targetType === 'comment') {
-    const comment = await Comment.findById(report.targetId).select('status').lean()
-    currentStatus = comment?.status ?? 'missing'
-    available = currentStatus === 'visible'
-  } else if (report.targetType === 'chapter') {
-    chapterId = String(report.targetId)
-    const chapter = await Chapter.findById(report.targetId).select('status storyId').lean()
-    storyId = chapter ? String(chapter.storyId) : storyId
-    currentStatus = chapter?.status ?? 'missing'
-  } else {
-    storyId = String(report.targetId)
-  }
-  const story = storyId
-    ? await Story.findById(storyId).select('publicationStatus authorAccountId').lean()
-    : null
-  const author = story
-    ? await Account.findById(story.authorAccountId).select('displayName status').lean()
-    : null
-  const storyVisible =
-    story?.publicationStatus === 'published' &&
-    !['suspended', 'anonymized'].includes(author?.status)
-  if (report.targetType === 'story') {
-    currentStatus = story?.publicationStatus ?? 'missing'
-    available = storyVisible
-  } else if (report.targetType === 'chapter')
-    available = storyVisible && currentStatus === 'published'
+const reportStatus = report =>
+  ACTIVE_REPORT_STATUSES.includes(report.status) ? 'open' : 'resolved'
+
+// Literals of resolutions written before ReportAction/ResolutionOutcome (contentAction 'none').
+const LEGACY_OUTCOMES = { hidden: 'comment-hidden', warned: 'author-warned' }
+const LEGACY_ACTIONS = { dismissed: 'dismiss', hidden: 'hide-comment', warned: 'warn-author' }
+/**
+ * Action and outcome of a stored resolution. Resolutions are append-only, so legacy rows are
+ * mapped on read instead of being rewritten.
+ */
+export function resolutionLiterals({ outcome, contentAction }) {
+  if (RESOLUTION_OUTCOMES.includes(outcome) && contentAction !== 'none')
+    return { outcome, action: contentAction }
+  if (outcome === 'unpublished')
+    return {
+      outcome: contentAction === 'unpublish-chapter' ? 'chapter-unpublished' : 'story-unpublished',
+      action: contentAction,
+    }
   return {
-    available,
-    storyId,
-    chapterId,
-    title: snapshot.title ?? '',
-    authorName: author ? publicName(author) : '',
-    currentStatus,
+    outcome: LEGACY_OUTCOMES[outcome] ?? outcome,
+    action: LEGACY_ACTIONS[outcome] ?? contentAction,
   }
 }
 
-/** Moderator-facing row of one report. */
-export async function reportRow(report, account, now = new Date()) {
-  const active = ACTIVE_REPORT_STATUSES.includes(report.status)
-  const [reporter, claimOwner, resolution, target, sameTargetOpen] = await Promise.all([
-    Account.findById(report.reporterAccountId).select('displayName status').lean(),
-    liveClaim(report, now)
-      ? Account.findById(report.claimOwnerAccountId).select('displayName status').lean()
-      : null,
-    report.resolutionId ? ReportResolution.findById(report.resolutionId).lean() : null,
-    targetState(report),
-    ContentReport.countDocuments({
-      _id: { $ne: report._id },
-      targetType: report.targetType,
-      targetId: report.targetId,
-      status: { $in: ACTIVE_REPORT_STATUSES },
-    }),
-  ])
-  const moderator = resolution
-    ? await Account.findById(resolution.moderatorAccountId).select('displayName status').lean()
-    : null
-  return {
-    id: String(report._id),
-    version: report.version,
-    targetType: report.targetType,
-    targetId: String(report.targetId),
-    reason: report.reason ?? 'other',
-    details: report.details ?? '',
-    status: report.status,
-    submittedAt: report.submittedAt,
-    reporter: { displayName: publicName(reporter) },
-    snapshot: report.targetSnapshot ?? null,
-    target,
-    sameTargetOpen,
-    claim: liveClaim(report, now)
-      ? {
-          mine: String(report.claimOwnerAccountId) === String(account._id),
-          owner: publicName(claimOwner),
-          expiresAt: report.claimExpiresAt,
-        }
-      : null,
-    resolution: resolution
-      ? {
-          outcome: resolution.outcome,
-          contentAction: resolution.contentAction,
-          reason: resolution.reason,
-          resolvedAt: resolution.resolvedAt,
-          moderator: publicName(moderator),
-        }
-      : null,
-    allowedActions: active ? REPORT_ACTIONS[report.targetType] : [],
+export async function listModeratorReports(account, { view, targetType, page }, now = new Date()) {
+  const filter = {
+    ...VIEW_FILTERS[view](account, now),
+    ...(targetType ? { targetType } : {}),
   }
-}
-
-export async function listModeratorReports(
-  account,
-  { status, targetType, page },
-  now = new Date(),
-) {
-  const filters = tabFilters(account, now)
-  const scope = targetType ? { targetType } : {}
-  const filter = { ...filters[status], ...scope }
-  const [open, mine, resolved, rows] = await Promise.all([
-    ContentReport.countDocuments({ ...filters.open, ...scope }),
-    ContentReport.countDocuments({ ...filters.mine, ...scope }),
-    ContentReport.countDocuments({ ...filters.resolved, ...scope }),
+  const [total, rows] = await Promise.all([
+    ContentReport.countDocuments(filter),
     ContentReport.find(filter)
-      .sort(status === 'resolved' ? { resolvedAt: -1, _id: -1 } : { submittedAt: 1, _id: 1 })
+      .sort({ submittedAt: 1, _id: 1 })
       .skip((page - 1) * REPORT_PAGE_SIZE)
       .limit(REPORT_PAGE_SIZE)
       .lean(),
   ])
-  const counts = { open, mine, resolved }
+  const reporters = await Account.find({ _id: { $in: rows.map(row => row.reporterAccountId) } })
+    .select('displayName status')
+    .lean()
+  const reporterById = new Map(reporters.map(reporter => [String(reporter._id), reporter]))
   return {
-    items: await Promise.all(rows.map(row => reportRow(row, account, now))),
-    total: counts[status],
+    view,
+    items: rows.map(report => ({
+      reportId: String(report._id),
+      version: report.version,
+      targetType: report.targetType,
+      targetTitle: snapshotTitle(report),
+      reason: report.reason ?? 'other',
+      reporter: {
+        id: String(report.reporterAccountId),
+        displayName: publicName(reporterById.get(String(report.reporterAccountId))),
+      },
+      reportedAt: report.submittedAt,
+      ...claimSummary(report, account, now),
+    })),
     page,
     pageSize: REPORT_PAGE_SIZE,
-    counts,
+    total,
+    pageCount: Math.max(1, Math.ceil(total / REPORT_PAGE_SIZE)),
   }
 }
 
+/** Other reports on the same target with their resolutions, newest first, and the open count. */
+async function sameTargetCases(report, session) {
+  const sameTarget = {
+    _id: { $ne: report._id },
+    targetType: report.targetType,
+    targetId: report.targetId,
+  }
+  const [others, openDuplicates] = await Promise.all([
+    ContentReport.find(sameTarget)
+      .select('reason status submittedAt')
+      .sort({ submittedAt: -1, _id: -1 })
+      .limit(EARLIER_CASES_LIMIT)
+      .session(session)
+      .lean(),
+    ContentReport.countDocuments({
+      ...sameTarget,
+      status: { $in: ACTIVE_REPORT_STATUSES },
+    }).session(session),
+  ])
+  const resolutions = await ReportResolution.find({ reportId: { $in: others.map(row => row._id) } })
+    .select('reportId outcome contentAction contentChanged resolvedAt')
+    .session(session)
+    .lean()
+  const resolutionByReport = new Map(resolutions.map(row => [String(row.reportId), row]))
+  return {
+    openDuplicates,
+    earlierCases: others.map(other => {
+      const resolution = resolutionByReport.get(String(other._id))
+      return {
+        reportId: String(other._id),
+        reason: other.reason ?? 'other',
+        status: reportStatus(other),
+        reportedAt: other.submittedAt,
+        ...(resolution
+          ? {
+              ...resolutionLiterals(resolution),
+              contentChanged: resolution.contentChanged ?? null,
+              resolvedAt: resolution.resolvedAt,
+            }
+          : { outcome: null, action: null, contentChanged: null, resolvedAt: null }),
+      }
+    }),
+  }
+}
+
+async function resolutionView(report, session) {
+  if (!report.resolutionId) return null
+  const resolution = await ReportResolution.findById(report.resolutionId).session(session).lean()
+  if (!resolution) return null
+  const moderator = await Account.findById(resolution.moderatorAccountId)
+    .select('displayName status')
+    .session(session)
+    .lean()
+  return {
+    ...resolutionLiterals(resolution),
+    contentChanged: resolution.contentChanged ?? null,
+    reason: resolution.reason,
+    resolvedAt: resolution.resolvedAt,
+    moderator: { id: String(resolution.moderatorAccountId), displayName: publicName(moderator) },
+  }
+}
+
+/**
+ * Review detail: always the UC-MOD-05 step 3 summary; the snapshot, current state, earlier cases
+ * and allowed actions only while the account holds the live claim with its token (step 6, AF2).
+ * For a chapter report the parent story is named, since Unpublish Story applies to it.
+ */
+async function toDetail(report, account, now, session = null) {
+  const [reporter, resolution] = await Promise.all([
+    Account.findById(report.reporterAccountId).select('displayName status').session(session).lean(),
+    resolutionView(report, session),
+  ])
+  const summary = {
+    reportId: String(report._id),
+    version: report.version,
+    status: reportStatus(report),
+    targetType: report.targetType,
+    targetTitle: snapshotTitle(report),
+    reason: report.reason ?? 'other',
+    details: report.details ?? '',
+    reporter: { id: String(report.reporterAccountId), displayName: publicName(reporter) },
+    reportedAt: report.submittedAt,
+    ...claimFields(report, account, now),
+    resolution,
+    allowedActions: [],
+  }
+  if (!holdsClaimToken(report, account, now)) return summary
+  const [{ storyTitle, ...current }, cases] = await Promise.all([
+    currentTarget(report, session),
+    sameTargetCases(report, session),
+  ])
+  return {
+    ...summary,
+    snapshot: reportSnapshot(report),
+    current,
+    parentStory:
+      report.targetType === 'chapter' && current.storyId
+        ? { id: current.storyId, title: storyTitle }
+        : null,
+    ...cases,
+    allowedActions: ALLOWED_REPORT_ACTIONS[report.targetType],
+  }
+}
+
+export async function moderatorReportDetail(account, reportId, now = new Date()) {
+  const report = await ContentReport.findById(reportId).lean()
+  if (!report) throw reportNotFound()
+  return toDetail(report, account, now)
+}
+
+/** Claims an open report in one transaction (UC-MOD-05 steps 4-5, EX1-EX3, AF2). */
 export async function claimReport(
   account,
   reportId,
@@ -181,58 +244,43 @@ export async function claimReport(
   config,
   now = new Date(),
 ) {
-  const report = await withTransaction(async session => {
+  return withTransaction(async session => {
     await lockModerator(account, session)
     const report = await ContentReport.findById(reportId).session(session)
-    if (!report) throw new HttpError(404, 'not_found', 'Không tìm thấy báo cáo.')
-    if (ownsLiveClaim(report, account, now)) return report
-    if (liveClaim(report, now))
-      throw new HttpError(409, 'claimed', 'Báo cáo đang được kiểm duyệt viên khác xử lý.')
-    if (!ACTIVE_REPORT_STATUSES.includes(report.status) || report.version !== expectedVersion)
-      throw reportChanged()
-    if (report.status === 'under-review' && report.claimOwnerAccountId)
-      report.claimReleaseHistory.push({
-        ownerAccountId: report.claimOwnerAccountId,
-        claimVersion: report.claimVersion,
-        expiresAt: report.claimExpiresAt,
-        releasedAt: now,
-        reason: 'expired',
-        actorAccountId: account._id,
-      })
-    report.status = 'under-review'
-    report.claimOwnerAccountId = account._id
-    const effective = await policy.getEffective({ session, now, required: false })
-    report.claimExpiresAt = new Date(
-      now.getTime() + (effective?.claimExpiryHours ?? config.moderationClaimHours) * 3600000,
-    )
-    report.claimVersion += 1
-    await report.save({ session })
-    return report
+    if (!report) throw reportNotFound()
+    if (claimState(report, account._id, now) !== 'mine') {
+      if (report.version !== expectedVersion || !ACTIVE_REPORT_STATUSES.includes(report.status))
+        throw reportChanged()
+      acquireClaim(report, account, await policyTtlHours(config, now, session), now)
+      report.status = 'under-review'
+      await report.save({ session })
+    } else if (adoptOwnClaim(report)) await report.save({ session })
+    return {
+      ...(await toDetail(report.toObject(), account, now, session)),
+      messageId: 'SYS-MSG-MOD-01',
+    }
   })
-  return reportRow(report.toObject(), account, now)
 }
 
-export async function releaseReport(account, reportId, { expectedVersion }, now = new Date()) {
-  const report = await withTransaction(async session => {
+/** Releases the account's own live claim (UC-MOD-05 AF3). */
+export async function releaseReport(
+  account,
+  reportId,
+  { expectedVersion, claimToken },
+  now = new Date(),
+) {
+  return withTransaction(async session => {
     await lockModerator(account, session)
     const report = await ContentReport.findById(reportId).session(session)
-    if (!report) throw new HttpError(404, 'not_found', 'Không tìm thấy báo cáo.')
-    if (!ownsLiveClaim(report, account, now)) throw claimRequired()
+    if (!report) throw reportNotFound()
+    requireLiveClaim(report, account, claimToken, now)
     if (report.version !== expectedVersion) throw reportChanged()
-    report.claimReleaseHistory.push({
-      ownerAccountId: report.claimOwnerAccountId,
-      claimVersion: report.claimVersion,
-      expiresAt: report.claimExpiresAt,
-      releasedAt: now,
-      reason: 'released',
-      actorAccountId: account._id,
-    })
+    endClaim(report, 'released', account._id, now)
     report.status = 'open'
-    report.claimOwnerAccountId = undefined
-    report.claimExpiresAt = undefined
-    report.claimVersion += 1
     await report.save({ session })
-    return report
+    return {
+      ...(await toDetail(report.toObject(), account, now, session)),
+      messageId: 'SYS-MSG-MOD-03',
+    }
   })
-  return reportRow(report.toObject(), account, now)
 }

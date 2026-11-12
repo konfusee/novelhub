@@ -151,6 +151,8 @@ describe('evidence worker', () => {
     expect(attempts.map(attempt => attempt.attemptKey).sort()).toEqual(
       [batch._id + ':comparison:1', batch._id + ':embedding:1', batch._id + ':llm:1'].sort(),
     )
+    // The stored evidence is shown to the holder of the live claim (UC-MOD-02 steps 5-6).
+    expect((await claim(api, moderator, a.submissionId)).status).toBe(200)
     const detail = await api.get(moderator.cookie, `/api/moderator/submissions/${a.submissionId}`)
     expect(detail.status).toBe(200)
     expect(detail.body.evidence.findings[0].sourceChapterTitle).toBe('Chương của B')

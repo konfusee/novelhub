@@ -26,6 +26,13 @@ export function LocaleProvider({ children }) {
       formatDate: valueToFormat =>
         new Intl.DateTimeFormat('vi-VN', { dateStyle: 'medium' }).format(new Date(valueToFormat)),
       formatNumber: valueToFormat => new Intl.NumberFormat('vi-VN').format(valueToFormat),
+      // Instants shown with their time in Vietnam time (UTC+7), e.g. claim expiry or history.
+      formatDateTime: valueToFormat =>
+        new Intl.DateTimeFormat('vi-VN', {
+          dateStyle: 'medium',
+          timeStyle: 'short',
+          timeZone: 'Asia/Ho_Chi_Minh',
+        }).format(new Date(valueToFormat)),
     }),
     [dictionary],
   )

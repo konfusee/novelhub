@@ -194,9 +194,19 @@ const SimilarityRiskReviewPage = lazy(() =>
     default: m.SimilarityRiskReviewPage,
   })),
 )
-const ModerationDecisionsPage = lazy(() =>
-  import('./pages/moderator/ModerationDecisionsPage').then(m => ({
-    default: m.ModerationDecisionsPage,
+const ReportReviewDetailPage = lazy(() =>
+  import('./pages/moderator/ReportReviewDetailPage').then(m => ({
+    default: m.ReportReviewDetailPage,
+  })),
+)
+const ModerationHistoryPage = lazy(() =>
+  import('./pages/moderator/ModerationHistoryPage').then(m => ({
+    default: m.ModerationHistoryPage,
+  })),
+)
+const ModerationStatisticsPage = lazy(() =>
+  import('./pages/moderator/ModerationStatisticsPage').then(m => ({
+    default: m.ModerationStatisticsPage,
   })),
 )
 const AdminDashboardPage = lazy(() =>
@@ -576,56 +586,13 @@ function AppRoutes() {
           />
           <Route path="/moderator/reports" element={role('moderator', <ReportsQueuePage />)} />
           <Route
-            path="/moderator/reviews"
-            element={role(
-              'moderator',
-              <RoleUtilityPage
-                role="moderator"
-                eyebrow="An toàn nội dung"
-                title="Đánh giá nội dung"
-                description="Đánh giá bản thảo được giao, tín hiệu chính sách, xếp hạng độ tuổi và mức sẵn sàng xuất bản."
-              />,
-            )}
+            path="/moderator/reports/:reportId"
+            element={role('moderator', <ReportReviewDetailPage />)}
           />
+          <Route path="/moderator/history" element={role('moderator', <ModerationHistoryPage />)} />
           <Route
-            path="/moderator/similarity-flags"
-            element={role(
-              'moderator',
-              <RoleUtilityPage
-                role="moderator"
-                eyebrow="Tính nguyên bản"
-                title="Cờ tương đồng"
-                description="Kiểm tra kết quả tương đồng tự động và chuyển trường hợp rủi ro cao sang đánh giá chi tiết."
-              />,
-            )}
-          />
-          <Route
-            path="/moderator/decisions"
-            element={role('moderator', <ModerationDecisionsPage />)}
-          />
-          <Route
-            path="/moderator/escalations"
-            element={role(
-              'moderator',
-              <RoleUtilityPage
-                role="moderator"
-                eyebrow="Bàn ưu tiên"
-                title="Chuyển cấp"
-                description="Xử lý trường hợp khẩn cấp về an toàn, bản quyền và chính sách cần đánh giá cấp cao."
-              />,
-            )}
-          />
-          <Route
-            path="/moderator/audit-trail"
-            element={role(
-              'moderator',
-              <RoleUtilityPage
-                role="moderator"
-                eyebrow="Trách nhiệm giải trình"
-                title="Nhật ký kiểm tra"
-                description="Theo dõi hoạt động kiểm duyệt với chi tiết sự kiện bất biến và người đánh giá."
-              />,
-            )}
+            path="/moderator/statistics"
+            element={role('moderator', <ModerationStatisticsPage />)}
           />
           <Route
             path="/moderator/settings"
@@ -642,18 +609,6 @@ function AppRoutes() {
           <Route
             path="/moderator/account"
             element={role('moderator', <Navigate to="/moderator/profile?tab=account" replace />)}
-          />
-          <Route
-            path="/moderator/support"
-            element={role(
-              'moderator',
-              <RoleUtilityPage
-                role="moderator"
-                eyebrow="Trợ giúp NovelHub"
-                title="Trợ giúp và hỗ trợ"
-                description="Tìm hướng dẫn kiểm duyệt, chính sách tham chiếu và kênh hỗ trợ."
-              />,
-            )}
           />
           <Route
             path="/moderator/similarity-review/:reviewId"

@@ -11,6 +11,8 @@ const schema = new Schema(
     evidenceBatchVersion: Number,
     actorAccountId: { type: ObjectId, ref: 'Account', required: true },
     actorAuthorizationEpoch: Number,
+    // Start of the claim behind a decision or resolution; claim-to-decision time (UC-MOD-09).
+    claimAcquiredAt: Date,
     reason: String,
     feedback: String,
     beforeStateDigest: String,

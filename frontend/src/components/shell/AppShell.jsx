@@ -101,7 +101,8 @@ function commonNavigation(workspace) {
     items: [
       ['account.combinedTitle', `${base}/profile`, UserRound],
       ['navigation.settings', settingsPath, Settings],
-      ['common.helpSupport', `${base}/support`, HelpCircle],
+      // The moderator workspace has no help page (no mock RoleUtilityPage for moderators).
+      ...(workspace === 'moderator' ? [] : [['common.helpSupport', `${base}/support`, HelpCircle]]),
     ],
   }
 }

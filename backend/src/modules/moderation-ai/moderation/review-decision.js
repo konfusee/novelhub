@@ -13,14 +13,15 @@ import {
 import { createEditableRevision } from '../../authoring-publishing/author/author-submissions.js'
 import { terminalEvidenceReady } from '../review-evidence.js'
 import { digest } from '../../authoring-publishing/submissions/submission-digests.js'
-import { lockModerator, lockSubmissionAuthor } from './moderator-access.js'
-
-const submissionChanged = () =>
-  new HttpError(409, 'submission_changed', 'Hồ sơ đã thay đổi. Hãy tải lại.')
+import { endClaim, requireLiveClaim } from './claim-lease.js'
+import { lockModerator, lockSubmissionAuthor, submissionChanged } from './moderator-access.js'
 
 /**
  * Applies a moderator's approve or reject decision to a claimed submission in one transaction:
  * content state, claim release, history, audit and the author's in-app notification.
+ * The checks follow UC-MOD-04 step 4: role, author, submission version, live claim, reviewed
+ * revision, evidence batch and the draft pointer; any change other than the claim is
+ * submission_changed (SYS-MSG-PUB-06).
  */
 export async function decideSubmission(
   account,
@@ -32,29 +33,42 @@ export async function decideSubmission(
     await lockModerator(account, session)
     const submission = await PublicationSubmission.findById(submissionId).session(session)
     if (!submission) throw new HttpError(404, 'not_found', 'Không tìm thấy hồ sơ.')
-    if (['approved', 'rejected', 'cancelled'].includes(submission.status)) throw submissionChanged()
+    const author = await lockSubmissionAuthor(submission.authorAccountId, session)
     if (
-      submission.status !== 'decision-pending' ||
-      String(submission.claimOwnerAccountId) !== String(account._id) ||
-      !(submission.claimExpiresAt > now)
+      submission.version !== input.expectedVersion ||
+      !['pending-review', 'decision-pending'].includes(submission.status)
     )
-      throw new HttpError(409, 'claim_required', 'Bạn cần giữ claim còn hạn của hồ sơ này.')
-    if (submission.version !== input.expectedVersion) throw submissionChanged()
+      throw submissionChanged()
+    requireLiveClaim(submission, account, input.claimToken, now)
+
+    const revision = await ContentRevision.findOne({
+      _id: submission.revisionId,
+      storyId: submission.storyId,
+      chapterId: submission.chapterId ?? null,
+      status: 'submitted',
+      immutableAt: { $ne: null },
+    }).session(session)
+    if (
+      !revision ||
+      String(revision._id) !== input.revisionId ||
+      revision.version !== input.revisionVersion ||
+      revision.packageDigest !== submission.packageDigest
+    )
+      throw submissionChanged()
 
     const batch = await EvidenceBatch.findById(submission.currentEvidenceBatchId)
       .session(session)
       .lean()
     if (
-      String(submission.currentEvidenceBatchId) !== input.evidenceBatchId ||
       !batch ||
-      batch.version !== input.evidenceBatchVersion ||
+      String(batch._id) !== input.evidenceBatchId ||
+      batch.version !== input.evidenceVersion ||
       !terminalEvidenceReady(batch) ||
-      batch.packageDigest !== submission.packageDigest ||
-      String(batch.submissionId) !== String(submission._id)
+      String(batch.submissionId) !== String(submission._id) ||
+      String(batch.revisionId) !== String(revision._id) ||
+      batch.packageDigest !== submission.packageDigest
     )
-      throw new HttpError(409, 'evidence_changed', 'Bằng chứng AI đã thay đổi. Hãy tải lại.')
-
-    const author = await lockSubmissionAuthor(submission.authorAccountId, session)
+      throw submissionChanged()
 
     const story = await Story.findOne({
       _id: submission.storyId,
@@ -65,23 +79,15 @@ export async function decideSubmission(
           session,
         )
       : story
-    const revision = await ContentRevision.findOne({
-      _id: submission.revisionId,
-      storyId: submission.storyId,
-      chapterId: submission.chapterId ?? null,
-      status: 'submitted',
-      immutableAt: { $ne: null },
-    }).session(session)
     if (
       !story ||
       !target ||
-      !revision ||
-      revision.packageDigest !== submission.packageDigest ||
       String(target.draftRevisionId ?? target.currentRevisionId) !== String(revision._id)
     )
-      throw new HttpError(409, 'content_changed', 'Nội dung đã chuyển sang phiên bản khác.')
+      throw submissionChanged()
 
-    const outcome = input.decision === 'approve' ? 'approved' : 'rejected'
+    const outcome = input.outcome === 'approve' ? 'approved' : 'rejected'
+    let draftRevisionId = null
     if (outcome === 'approved') {
       revision.status = 'approved'
       await revision.save({ session })
@@ -106,6 +112,7 @@ export async function decideSubmission(
       })
       target.draftRevisionId = draft._id
       target.currentRevisionId = draft._id
+      draftRevisionId = draft._id
       if (submission.chapterId) {
         if (target.status !== 'published') target.status = 'draft'
         await target.save({ session })
@@ -121,22 +128,13 @@ export async function decideSubmission(
       }
     }
 
-    submission.claimReleaseHistory.push({
-      ownerAccountId: submission.claimOwnerAccountId,
-      claimVersion: submission.claimVersion,
-      expiresAt: submission.claimExpiresAt,
-      releasedAt: now,
-      reason: 'decided',
-      actorAccountId: account._id,
-    })
-    submission.claimOwnerAccountId = undefined
-    submission.claimExpiresAt = undefined
-    submission.claimVersion += 1
+    const claimAcquiredAt = submission.claimAcquiredAt
+    endClaim(submission, 'decided', account._id, now)
     submission.status = outcome
     submission.decisionSummary = input.feedback || undefined
     await submission.save({ session })
 
-    await ModerationHistory.create(
+    const [history] = await ModerationHistory.create(
       [
         {
           aggregateType: submission.chapterId ? 'chapter' : 'story',
@@ -149,6 +147,7 @@ export async function decideSubmission(
           evidenceBatchVersion: batch.version,
           actorAccountId: account._id,
           actorAuthorizationEpoch: account.authorizationEpoch,
+          claimAcquiredAt,
           reason: input.feedback || undefined,
           feedback: input.feedback || undefined,
           beforeStateDigest: submission.packageDigest,
@@ -201,10 +200,13 @@ export async function decideSubmission(
       { session },
     )
     return {
-      id: String(submission._id),
-      version: submission.version,
+      submissionId: String(submission._id),
       status: outcome,
-      decisionSummary: submission.decisionSummary ?? '',
+      decidedAt: now,
+      revisionId: String(revision._id),
+      draftRevisionId: draftRevisionId ? String(draftRevisionId) : null,
+      historyId: String(history._id),
+      messageId: outcome === 'approved' ? 'SYS-MSG-PUB-07' : 'SYS-MSG-PUB-08',
     }
   })
 }

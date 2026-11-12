@@ -5,6 +5,7 @@ import {
   PublicationSubmission,
   Story,
 } from '../../models/index.js'
+import { endClaim } from '../moderation-ai/moderation/claim-lease.js'
 import { digest } from './submissions/submission-digests.js'
 
 /** Runs only inside Accounts' transaction. Published revisions remain immutable. */
@@ -64,18 +65,10 @@ export async function cancelAuthorWork({ accountId, actorAccountId, session, now
     submission.status = 'cancelled'
     submission.cancelledAt = now
     submission.cancellationReason = reason
-    if (submission.claimOwnerAccountId)
-      submission.claimReleaseHistory.push({
-        ownerAccountId: submission.claimOwnerAccountId,
-        claimVersion: submission.claimVersion,
-        expiresAt: submission.claimExpiresAt ?? null,
-        releasedAt: now,
-        reason,
-        actorAccountId,
-      })
-    submission.claimOwnerAccountId = undefined
-    submission.claimExpiresAt = undefined
-    submission.claimVersion++
+    // Same lease cleanup as a release (BR-NEW-S01): owner, token, acquisition and expiry move to
+    // claimReleaseHistory and are cleared.
+    if (submission.claimOwnerAccountId) endClaim(submission, reason, actorAccountId, now)
+    else submission.claimVersion++
     await submission.save({ session })
     await ModerationHistory.create(
       [

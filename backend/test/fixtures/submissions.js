@@ -1,6 +1,11 @@
 import request from 'supertest'
 import { expect } from 'vitest'
-import { Category, EvidenceBatch, PublicationSubmission } from '../../src/models/index.js'
+import {
+  Category,
+  ContentRevision,
+  EvidenceBatch,
+  PublicationSubmission,
+} from '../../src/models/index.js'
 import { authenticatedAccount } from './accounts.js'
 
 // Disposable test database only. Does not load .env or write to a shared database.
@@ -100,20 +105,28 @@ export async function claim(api, moderator, submissionId) {
   })
 }
 
+// Sends the DecisionInput of the stored submission, revision, evidence batch and claim token
+// (a well-formed id that matches no claim when the submission has none).
 export async function decide(
   api,
   moderator,
   submissionId,
-  { decision = 'approve', feedback = '' } = {},
+  { outcome = 'approve', feedback = '' } = {},
 ) {
   const submission = await PublicationSubmission.findById(submissionId)
-  const batch = await EvidenceBatch.findById(submission.currentEvidenceBatchId)
+  const [revision, batch] = await Promise.all([
+    ContentRevision.findById(submission.revisionId),
+    EvidenceBatch.findById(submission.currentEvidenceBatchId),
+  ])
   return api.write(moderator.cookie, `/api/moderator/submissions/${submissionId}/decision`, {
-    decision,
+    outcome,
     feedback,
     expectedVersion: submission.version,
+    revisionId: String(revision._id),
+    revisionVersion: revision.version,
     evidenceBatchId: String(batch._id),
-    evidenceBatchVersion: batch.version,
+    evidenceVersion: batch.version,
+    claimToken: String(submission.claimToken ?? submission._id),
   })
 }
 

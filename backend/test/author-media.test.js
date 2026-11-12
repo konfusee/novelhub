@@ -18,6 +18,7 @@ import {
   EvidenceBatch,
 } from '../src/models/index.js'
 import { authenticatedAccount } from './fixtures/accounts.js'
+import { markEvidenceReady } from './fixtures/submissions.js'
 import { testConfig } from './config.js'
 import { useTestDatabase } from './db.js'
 useTestDatabase()
@@ -830,18 +831,39 @@ it('reports a missing submitted image without substituting another asset', async
   expect(response.status).toBe(404)
   expect(response.body.error.code).toBe('media_unavailable')
 })
-it('serves submitted package images to moderators only through the moderator route', async () => {
+it('serves submitted package images only to the moderator holding the live claim', async () => {
   const f = await submissionWithImages()
   const sent = await chapterWrite(f.author.cookie, '/api/author/submissions', f.body)
   expect(sent.status).toBe(201)
   const submissionId = sent.body.submission.id
   const moderator = await authenticatedAccount('moderator')
-  const base = `/api/moderator/submissions/${submissionId}/media`
-  const image = await get(moderator.cookie, `${base}/${f.asset.id}/content`)
+  const other = await authenticatedAccount('moderator')
+  const base = `/api/moderator/submissions/${submissionId}/images`
+  await markEvidenceReady(submissionId)
+  const unclaimed = await get(moderator.cookie, `${base}/${f.asset.id}`)
+  expect(unclaimed.status).toBe(409)
+  expect(unclaimed.body.error.code).toBe('claim_not_held')
+  const { version } = await PublicationSubmission.findById(submissionId)
+  const claimed = await chapterWrite(
+    moderator.cookie,
+    `/api/moderator/submissions/${submissionId}/claim`,
+    { expectedVersion: version },
+  )
+  expect(claimed.status).toBe(200)
+  const image = await get(moderator.cookie, `${base}/${f.asset.id}`)
   expect(image.status).toBe(200)
   expect(image.headers['content-type']).toContain('image/webp')
   expect(image.headers['cache-control']).toBe('private, no-store')
-  expect((await get(f.author.cookie, `${base}/${f.asset.id}/content`)).status).toBe(403)
+  expect((await get(other.cookie, `${base}/${f.asset.id}`)).status).toBe(409)
+  expect((await get(f.author.cookie, `${base}/${f.asset.id}`)).status).toBe(403)
   const randomId = crypto.randomUUID().replaceAll('-', '').slice(0, 24)
-  expect((await get(moderator.cookie, `${base}/${randomId}/content`)).status).toBe(404)
+  expect((await get(moderator.cookie, `${base}/${randomId}`)).status).toBe(404)
+  expect(
+    (
+      await get(
+        moderator.cookie,
+        `/api/moderator/submissions/${submissionId}/media/${f.asset.id}/content`,
+      )
+    ).status,
+  ).toBe(404)
 })

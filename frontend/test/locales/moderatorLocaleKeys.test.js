@@ -11,7 +11,7 @@ const usedKeys = () =>
     .flatMap(name =>
       [
         ...readFileSync(new URL(name, pagesDir), 'utf8').matchAll(
-          /'((?:manualReview|reviewClaims|reviewHistory|submissionData)\.[A-Za-z0-9_.-]+)'/g,
+          /'((?:manualReview|reviewClaims|reviewHistory|submissionData|moderationOverview|moderationStatistics|moderationFormat|reportsQueue|reportReview)\.[A-Za-z0-9_.-]+)'/g,
         ),
       ].map(match => match[1]),
     )

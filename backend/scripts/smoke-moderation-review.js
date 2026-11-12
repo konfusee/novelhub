@@ -286,17 +286,26 @@ async function submitChapter(step, cookie, storyId, { title, paragraphs }) {
   return { chapterId, submissionId: sent.submission.id }
 }
 
-// Polls the moderator view until the worker has moved the submission out of `validated`.
+// Polls the moderator summary until the worker has finished the evidence, then claims the
+// submission; only the claim holder receives the package and evidence (SDS decision 4).
 async function waitForReview(step, moderatorCookie, submissionId) {
   const deadline = Date.now() + timeoutSeconds * 1000
   for (;;) {
-    const detail = expectStatus(
+    const summary = expectStatus(
       step,
       await request(moderatorCookie, 'GET', `/moderator/submissions/${submissionId}`),
       200,
       'moderator detail',
     )
-    if (detail.submission.status !== 'validated') {
+    if (summary.submission.status !== 'validated' && summary.evidenceStatus !== 'processing') {
+      const detail = expectStatus(
+        step,
+        await request(moderatorCookie, 'POST', `/moderator/submissions/${submissionId}/claim`, {
+          expectedVersion: summary.submission.version,
+        }),
+        200,
+        'claim',
+      )
       const batch = detail.evidence?.batch
       if (
         batch?.status !== 'available-for-human-review' ||
@@ -306,6 +315,7 @@ async function waitForReview(step, moderatorCookie, submissionId) {
           step,
           `evidence not ready: status=${batch?.status ?? 'none'} failedStage=${batch?.failedStage ?? 'none'}`,
         )
+      if (!detail.actions.canDecide) fail(step, 'the claimed submission cannot be decided')
       return detail
     }
     if (Date.now() >= deadline) fail(step, 'evidence timeout')
@@ -313,34 +323,27 @@ async function waitForReview(step, moderatorCookie, submissionId) {
   }
 }
 
-async function decide(step, moderatorCookie, detail, decision, feedback) {
-  const id = detail.submission.id
+// Records the decision for the exact revision and evidence the claim holder reviewed.
+async function decide(step, moderatorCookie, detail, outcome, feedback) {
   expectStatus(
     step,
-    await request(moderatorCookie, 'POST', `/moderator/submissions/${id}/claim`, {
-      expectedVersion: detail.submission.version,
-    }),
+    await request(
+      moderatorCookie,
+      'POST',
+      `/moderator/submissions/${detail.submission.id}/decision`,
+      {
+        outcome,
+        feedback,
+        expectedVersion: detail.submission.version,
+        revisionId: detail.revision.id,
+        revisionVersion: detail.revision.version,
+        evidenceBatchId: detail.evidence.batch.id,
+        evidenceVersion: detail.evidence.batch.version,
+        claimToken: detail.submission.claimToken,
+      },
+    ),
     200,
-    'claim',
-  )
-  const claimed = expectStatus(
-    step,
-    await request(moderatorCookie, 'GET', `/moderator/submissions/${id}`),
-    200,
-    'moderator detail',
-  )
-  if (!claimed.actions.canDecide) fail(step, 'the claimed submission cannot be decided')
-  expectStatus(
-    step,
-    await request(moderatorCookie, 'POST', `/moderator/submissions/${id}/decision`, {
-      decision,
-      feedback,
-      expectedVersion: claimed.submission.version,
-      evidenceBatchId: claimed.evidence.batch.id,
-      evidenceBatchVersion: claimed.evidence.batch.version,
-    }),
-    200,
-    decision,
+    outcome,
   )
 }
 

@@ -1,27 +1,245 @@
 {
   "reviewHistory": {
-    "title": "Lịch sử quyết định",
-    "description": "Các quyết định kiểm duyệt đã lưu. Phản hồi và phiên bản được giữ trong lịch sử bất biến.",
+    "title": "Lịch sử kiểm duyệt",
+    "description": "Quyết định xuất bản và báo cáo đã xử lý của mọi kiểm duyệt viên, mới nhất trước. Lịch sử chỉ để xem và không thể sửa.",
     "reload": "Tải lại",
-    "all": "Tất cả",
-    "approved": "Đã phê duyệt",
-    "rejected": "Từ chối",
     "loading": "Đang tải lịch sử…",
-    "error": "Không tải được lịch sử. Vui lòng tải lại.",
-    "empty": "Chưa có quyết định trong nhóm này.",
-    "time": "Thời gian",
-    "submission": "Hồ sơ",
-    "revision": "Phiên bản",
-    "result": "Kết quả",
-    "reason": "Lý do và phản hồi",
-    "action": "Thao tác",
-    "open": "Xem gói duyệt",
-    "previous": "Trang trước",
-    "next": "Trang sau",
+    "error": "Không thể hoàn tất thao tác. Vui lòng thử lại.",
+    "invalid": "Một số giá trị không hợp lệ. Hãy kiểm tra lại bộ lọc, ví dụ ngày bắt đầu không được sau ngày kết thúc.",
+    "empty": "Không có bản ghi nào phù hợp với tiêu chí đã chọn.",
+    "scope": "Phạm vi",
     "scopeAll": "Tất cả kiểm duyệt viên",
-    "scopeMine": "Quyết định của tôi",
+    "scopeMine": "Của tôi",
+    "caseType": "Loại hồ sơ",
+    "caseAll": "Tất cả loại hồ sơ",
     "outcome": "Kết quả",
-    "moderator": "Kiểm duyệt viên"
+    "outcomeAll": "Tất cả kết quả",
+    "from": "Từ ngày",
+    "to": "Đến ngày",
+    "clearDates": "Xóa khoảng ngày",
+    "time": "Thời gian",
+    "moderator": "Kiểm duyệt viên",
+    "case": "Loại",
+    "target": "Đối tượng",
+    "result": "Kết quả",
+    "reason": "Phản hồi hoặc lý do",
+    "action": "Chi tiết",
+    "view": "Xem chi tiết",
+    "detail": {
+      "title": "Chi tiết lịch sử kiểm duyệt",
+      "loading": "Đang tải chi tiết…",
+      "notFound": "Mục đã chọn không còn tồn tại hoặc không thể truy cập.",
+      "revision": "Phiên bản đã duyệt",
+      "revisionNumber": "Phiên bản {{number}}",
+      "revisionStatus": "Trạng thái phiên bản",
+      "evidence": "Bằng chứng AI",
+      "failedStage": "Thất bại ở bước: {{stage}}",
+      "openSubmission": "Mở gói duyệt",
+      "reportReason": "Lý do báo cáo",
+      "reportDetails": "Mô tả của người báo cáo",
+      "noDetails": "Người báo cáo không thêm mô tả.",
+      "snapshot": "Nội dung bị báo cáo (bản lưu lúc báo cáo)",
+      "action": "Hành động đã áp dụng",
+      "contentChanged": "Nội dung có thay đổi không",
+      "changedYes": "Có, nội dung đã bị hạn chế.",
+      "changedNo": "Không, nội dung không thay đổi.",
+      "changedUnknown": "Không được ghi nhận (bản ghi cũ).",
+      "openReport": "Mở báo cáo",
+      "none": "Không có"
+    },
+    "revisionStatuses": {
+      "draft": "Bản nháp",
+      "submitted": "Đã gửi duyệt",
+      "approved": "Đã phê duyệt",
+      "rejected": "Đã từ chối",
+      "superseded": "Đã được thay thế"
+    },
+    "cancellation": {
+      "author-role-removed": "Vai trò tác giả đã bị thu hồi.",
+      "account-deleted": "Tài khoản tác giả đã bị xóa."
+    }
+  },
+  "moderationOverview": {
+    "title": "Tổng quan kiểm duyệt",
+    "description": "Việc cần chú ý ngay: bộ đếm trực tiếp, hồ sơ chờ lâu nhất, việc tiếp theo và quyết định gần đây của bạn. Số liệu không tự cập nhật; hãy tải lại để xem số mới.",
+    "computedAt": "Số liệu lúc {{time}}",
+    "reload": "Tải lại",
+    "loading": "Đang tải tổng quan…",
+    "error": "Không thể hoàn tất thao tác. Vui lòng thử lại.",
+    "empty": "Không có bản ghi nào phù hợp với tiêu chí đã chọn.",
+    "counters": {
+      "label": "Bộ đếm kiểm duyệt",
+      "claimable": "Hồ sơ có thể nhận",
+      "mine": "Tôi đang giữ",
+      "processing": "Đang chờ AI",
+      "decidedToday": "Tôi đã quyết định hôm nay",
+      "claimableReports": "Báo cáo có thể nhận"
+    },
+    "nextItems": "Việc tiếp theo",
+    "nextItemsHint": "Hồ sơ bạn đang giữ (sắp hết hạn trước), sau đó là hồ sơ có thể nhận chờ lâu nhất.",
+    "oldest": "Hồ sơ chờ lâu nhất",
+    "recent": "Quyết định gần đây của tôi",
+    "openQueue": "Mở hàng đợi",
+    "openHistory": "Xem lịch sử kiểm duyệt",
+    "openStatistics": "Xem thống kê",
+    "waiting": "Đã chờ {{age}}",
+    "storyOf": "Truyện: {{title}}",
+    "claimStates": {
+      "unclaimed": "Chưa có người nhận",
+      "mine": "Tôi giữ đến {{time}}",
+      "other": "Người khác đang giữ",
+      "expired": "Claim đã hết hạn lúc {{time}}"
+    }
+  },
+  "moderationStatistics": {
+    "title": "Thống kê kiểm duyệt",
+    "description": "Phân tích công việc kiểm duyệt trong kỳ đã chọn theo ngày, tuần hoặc tháng, tính theo giờ Việt Nam (UTC+7), tuần bắt đầu thứ Hai. Mỗi chỉ số kèm định nghĩa.",
+    "filters": "Bộ lọc thống kê",
+    "period": "Kỳ thống kê",
+    "periods": {
+      "last7": "7 ngày qua",
+      "last30": "30 ngày qua",
+      "last90": "90 ngày qua",
+      "custom": "Khoảng ngày tùy chọn"
+    },
+    "from": "Từ ngày",
+    "to": "Đến ngày",
+    "bucket": "Đơn vị thời gian",
+    "buckets": {
+      "day": "Ngày",
+      "week": "Tuần",
+      "month": "Tháng"
+    },
+    "groupBy": "Nhóm quyết định theo",
+    "groupNone": "Không nhóm",
+    "groups": {
+      "outcome": "Kết quả",
+      "moderator": "Kiểm duyệt viên",
+      "targetType": "Loại nội dung",
+      "riskLevel": "Mức rủi ro AI"
+    },
+    "outcome": "Kết quả quyết định",
+    "moderator": "Kiểm duyệt viên",
+    "moderators": {
+      "all": "Tất cả kiểm duyệt viên",
+      "mine": "Của tôi"
+    },
+    "onlyModerator": "Chỉ xem người này",
+    "targetType": "Loại nội dung bị báo cáo",
+    "reason": "Lý do báo cáo",
+    "resolution": "Kết quả xử lý báo cáo",
+    "riskLevel": "Mức rủi ro AI",
+    "all": "Tất cả",
+    "needDates": "Hãy chọn đủ ngày bắt đầu và ngày kết thúc trước khi tiếp tục.",
+    "loading": "Đang tính thống kê…",
+    "error": "Không thể hoàn tất thao tác. Vui lòng thử lại.",
+    "invalid": "Một số giá trị không hợp lệ: ngày bắt đầu sau ngày kết thúc hoặc ngày kết thúc ở tương lai. Không có số liệu nào được tính.",
+    "reload": "Tải lại",
+    "range": "Từ {{from}} đến {{to}}",
+    "definition": "Định nghĩa",
+    "empty": "Không có bản ghi nào phù hợp với tiêu chí đã chọn.",
+    "time": "Thời gian",
+    "total": "Tổng",
+    "queueAge": {
+      "title": "Tuổi hàng đợi",
+      "count": "Hồ sơ đang chờ duyệt",
+      "oldest": "Lâu nhất",
+      "median": "Trung vị",
+      "p90": "Phân vị 90"
+    },
+    "decisions": {
+      "title": "Quyết định xuất bản",
+      "group": "Nhóm",
+      "approved": "Phê duyệt",
+      "rejected": "Từ chối",
+      "approvedRate": "Tỷ lệ phê duyệt trên tổng ô thời gian",
+      "rejectedRate": "Tỷ lệ từ chối trên tổng ô thời gian",
+      "totals": "Tổng trong kỳ: {{approved}} phê duyệt, {{rejected}} từ chối.",
+      "filteredTotal": "Tổng trong kỳ ({{outcome}}): {{count}}."
+    },
+    "moderatorDecisions": {
+      "title": "Quyết định theo kiểm duyệt viên",
+      "decisions": "Số quyết định",
+      "median": "Trung vị từ lúc nhận đến lúc quyết định"
+    },
+    "reports": {
+      "title": "Báo cáo nhận được",
+      "byTarget": "Theo loại nội dung",
+      "byReason": "Theo lý do"
+    },
+    "resolutions": {
+      "title": "Báo cáo đã xử lý theo kết quả"
+    },
+    "ai": {
+      "title": "Đồng thuận giữa quyết định và AI",
+      "overall": "Tỷ lệ đồng thuận chung",
+      "byLevel": "Rủi ro: {{level}}",
+      "qualifying": "Quyết định có đánh giá LLM thành công",
+      "agreeing": "Quyết định đồng thuận với AI",
+      "withoutRiskLevel": "Đánh giá LLM thành công nhưng không có mức rủi ro",
+      "without": "Quyết định không có đánh giá LLM thành công"
+    }
+  },
+  "moderationFormat": {
+    "notAvailable": "Không có dữ liệu",
+    "percent": "{{value}}%",
+    "weekOf": "Tuần từ {{date}}",
+    "duration": {
+      "days": "{{count}} ngày",
+      "hours": "{{count}} giờ",
+      "minutes": "{{count}} phút",
+      "underMinute": "dưới 1 phút"
+    },
+    "caseTypes": {
+      "publication": "Xuất bản",
+      "report": "Báo cáo"
+    },
+    "targetTypes": {
+      "story": "Truyện",
+      "chapter": "Chương",
+      "comment": "Bình luận"
+    },
+    "outcomes": {
+      "approved": "Đã phê duyệt",
+      "rejected": "Đã từ chối",
+      "cancelled": "Đã hủy",
+      "dismissed": "Đã bác bỏ báo cáo",
+      "comment-hidden": "Đã ẩn bình luận",
+      "chapter-unpublished": "Đã gỡ xuất bản chương",
+      "story-unpublished": "Đã gỡ xuất bản truyện",
+      "author-warned": "Đã cảnh cáo tác giả"
+    },
+    "actions": {
+      "dismiss": "Bác bỏ báo cáo",
+      "hide-comment": "Ẩn bình luận",
+      "unpublish-chapter": "Gỡ xuất bản chương",
+      "unpublish-story": "Gỡ xuất bản truyện",
+      "warn-author": "Cảnh cáo tác giả"
+    },
+    "reasons": {
+      "spam": "Spam hoặc quảng cáo",
+      "harassment": "Quấy rối hoặc xúc phạm",
+      "inappropriate": "Nội dung không phù hợp",
+      "copyright": "Vi phạm bản quyền",
+      "spoiler": "Tiết lộ nội dung (spoiler)",
+      "other": "Lý do khác"
+    },
+    "riskLevels": {
+      "low": "Thấp",
+      "medium": "Trung bình",
+      "high": "Cao",
+      "none": "Không có mức rủi ro AI"
+    },
+    "evidence": {
+      "processing": "AI đang xử lý",
+      "ready": "Bằng chứng sẵn sàng",
+      "failed": "AI xử lý thất bại"
+    },
+    "stages": {
+      "embedding": "tạo vector nội dung",
+      "comparison": "so khớp tương đồng",
+      "llm": "đánh giá LLM"
+    }
   },
   "manualReview": {
     "title": "Kiểm duyệt nội dung thủ công",
@@ -42,7 +260,13 @@
     "decision": "Ghi quyết định",
     "outcome": "Kết quả kiểm duyệt",
     "reason": "Phản hồi cho tác giả (bắt buộc khi từ chối, tối đa 4000 ký tự)",
-    "claimRequired": "Hồ sơ đã kết thúc hoặc bạn chưa giữ claim còn hạn. Nhận claim và tải lại trước khi ra quyết định.",
+    "claimRequired": "Claim của bạn đã hết hạn hoặc không còn được giữ. Hãy nhận lại hồ sơ trước khi tiếp tục.",
+    "claimToView": "Nhận hồ sơ để xem đúng phiên bản đã gửi, khai báo quyền và bằng chứng AI đã lưu.",
+    "notFound": "Mục đã chọn không còn tồn tại hoặc không thể truy cập.",
+    "invalid": "Một số giá trị không hợp lệ. Hãy kiểm tra lại thông tin đã nhập.",
+    "evidenceState": "Bằng chứng AI",
+    "claimState": "Claim",
+    "feedback": "Phản hồi đã gửi tác giả:",
     "claims": "Đến hàng đợi nhận hồ sơ",
     "confirmTitle": "Xác nhận xử lý hồ sơ",
     "decisionNote": "Lưu quyết định cho đúng phiên bản đã đọc và trả claim. Phê duyệt không tự công khai truyện; tác giả tiếp tục phát hành theo điều kiện hệ thống.",
@@ -53,17 +277,18 @@
     "reloadRequired": "Đóng hộp thoại và tải lại gói nội dung trước khi thao tác tiếp.",
     "back": "Về hàng đợi",
     "author": "Tác giả",
-    "submittedAt": "Ngày gửi",
+    "submittedAt": "Thời điểm gửi",
     "revision": "Phiên bản {{number}}",
     "approve": "Phê duyệt",
     "reject": "Từ chối",
-    "feedbackHint": "Khi từ chối, nêu rõ mức độ nghiêm trọng và việc tác giả cần sửa.",
-    "saved": "Đã lưu quyết định và gửi thông báo cho tác giả.",
-    "changed": "Hồ sơ hoặc bằng chứng AI đã thay đổi. Tải lại trước khi quyết định.",
-    "evidencePending": "AI đang xử lý bằng chứng. Chưa thể nhận hoặc quyết định hồ sơ này.",
-    "authorUnavailable": "Tài khoản tác giả không còn hoạt động; không thể ra quyết định.",
-    "permissionChanged": "Quyền kiểm duyệt đã thay đổi. Hãy đăng nhập lại.",
-    "saveFailed": "Không lưu được thao tác. Vui lòng thử lại.",
+    "feedbackHint": "Bắt buộc khi từ chối, không bắt buộc khi phê duyệt, tối đa 4000 ký tự. Khi từ chối, nêu rõ mức độ nghiêm trọng và việc tác giả cần sửa.",
+    "approvedNotice": "Đã ghi nhận phê duyệt xuất bản.",
+    "rejectedNotice": "Đã ghi nhận từ chối và phản hồi cho tác giả.",
+    "changed": "Hồ sơ đã thay đổi hoặc không còn đủ điều kiện. Hãy tải lại trước khi quyết định.",
+    "evidencePending": "AI vẫn đang phân tích. Chưa thể kiểm duyệt chính thức hồ sơ này.",
+    "authorUnavailable": "Tài khoản tác giả không còn hoạt động; không thể nhận hay quyết định hồ sơ.",
+    "permissionChanged": "Bạn không có quyền thực hiện thao tác này. Quyền kiểm duyệt có thể đã thay đổi.",
+    "saveFailed": "Không thể hoàn tất thao tác. Vui lòng thử lại.",
     "actions": {
       "submitted": "Đã gửi duyệt",
       "decided": "Đã ra quyết định",
@@ -146,25 +371,28 @@
     "titleIntake": "Hồ sơ chờ tiếp nhận",
     "titleMine": "Hồ sơ tôi đang kiểm duyệt",
     "intake": "Chờ kiểm duyệt",
-    "openReview": "Xem gói duyệt",
-    "title": "Nhận hồ sơ kiểm duyệt",
-    "description": "Nhận hoặc trả hồ sơ đã vào hàng đợi kiểm duyệt. Thời hạn áp dụng theo chính sách tại lúc nhận; hồ sơ hết hạn có thể được nhận lại. Tải lại để xem trạng thái mới nhất.",
+    "openReview": "Mở hồ sơ",
+    "title": "Hàng đợi kiểm duyệt",
+    "description": "Hồ sơ chờ kiểm duyệt, cũ nhất trước, kèm thời gian chờ, trạng thái bằng chứng AI và claim. Xem danh sách không nhận hồ sơ. Thời hạn claim theo chính sách tại lúc nhận và hiển thị theo giờ Việt Nam.",
     "reload": "Tải lại",
-    "available": "Có thể nhận",
-    "mine": "Tôi đang giữ",
+    "views": {
+      "available": "Có thể nhận",
+      "mine": "Tôi đang giữ",
+      "processing": "Đang chờ AI"
+    },
     "loading": "Đang tải hàng đợi…",
-    "error": "Không tải được hàng đợi. Vui lòng tải lại.",
-    "empty": "Không có hồ sơ trong nhóm này.",
-    "submission": "Mã hồ sơ",
-    "submittedAt": "Ngày gửi",
-    "expiresAt": "Hạn claim",
+    "error": "Không thể hoàn tất thao tác. Vui lòng thử lại.",
+    "empty": "Không có hồ sơ nào phù hợp với nhóm đã chọn.",
+    "submission": "Hồ sơ",
+    "submittedAt": "Thời điểm gửi",
+    "waiting": "Thời gian chờ",
+    "claimState": "Claim",
     "story": "Truyện",
     "chapter": "Chương",
     "action": "Thao tác",
     "acquire": "Nhận hồ sơ",
     "release": "Trả hồ sơ",
-    "acquireNote": "Máy chủ kiểm tra lại quyền, gói duyệt và claim trước khi cấp thời hạn. Nhận hồ sơ không đồng nghĩa phê duyệt hay xuất bản.",
-    "releaseNote": "Trả hồ sơ về hàng đợi để người kiểm duyệt khác nhận. Claim hiện tại sẽ không còn hiệu lực.",
+    "acquireNote": "Máy chủ kiểm tra lại quyền, phiên bản, trạng thái hồ sơ và claim trước khi cấp thời hạn. Nhận hồ sơ không đồng nghĩa phê duyệt hay xuất bản.",
     "invalidResponse": "Không xác minh được kết quả claim từ máy chủ.",
     "reloadRequired": "Đóng hộp thoại và tải lại hàng đợi trước khi thao tác tiếp.",
     "confirm": "Xác nhận",
@@ -172,29 +400,38 @@
     "saving": "Đang xử lý…",
     "previous": "Trang trước",
     "next": "Trang sau",
-    "processing": "Đang chờ AI",
-    "claimed": "Đã nhận hồ sơ. Bạn có thể đọc và ra quyết định.",
-    "released": "Đã trả hồ sơ về hàng đợi.",
-    "claimHeld": "Hồ sơ đang được kiểm duyệt viên khác giữ.",
-    "expired": "Claim đã hết hạn",
+    "claimed": "Bạn đã nhận hồ sơ. Claim hết hạn lúc {{dateTime}} ({{timeZone}}).",
+    "timeZone": "giờ Việt Nam, UTC+7",
+    "released": "Đã trả claim của bạn.",
+    "claimHeld": "Hồ sơ đang được kiểm duyệt viên khác xử lý.",
+    "resume": "Tiếp tục claim",
+    "resumeNote": "Bạn đang giữ claim của hồ sơ này từ trước khi hệ thống dùng mã claim. Bấm Tiếp tục claim để xem gói nội dung và ra quyết định; thời hạn claim giữ nguyên.",
+    "claimStates": {
+      "unclaimed": "Chưa có người nhận",
+      "mine": "Bạn đang giữ đến {{dateTime}}",
+      "other": "Kiểm duyệt viên khác đang giữ đến {{dateTime}}",
+      "expired": "Claim đã hết hạn lúc {{dateTime}}"
+    },
+    "targetTypes": {
+      "story": "Truyện",
+      "chapter": "Chương"
+    },
+    "evidenceStates": {
+      "processing": "Đang xử lý",
+      "ready": "Sẵn sàng",
+      "failed": "Thất bại"
+    },
+    "processingNote": "Hồ sơ AI đang phân tích chỉ để theo dõi; chưa thể mở để kiểm duyệt cho đến khi bằng chứng sẵn sàng hoặc thất bại.",
+    "notOpenable": "Chưa thể mở: AI đang phân tích",
+    "age": {
+      "days": "{{days}} ngày {{hours}} giờ",
+      "hours": "{{hours}} giờ {{minutes}} phút",
+      "minutes": "{{minutes}} phút"
+    },
     "findings": "{{count}} đoạn tương đồng",
-    "noEvidence": "Chưa có bằng chứng",
     "author": "Tác giả",
-    "status": "Trạng thái",
     "evidence": "Bằng chứng AI",
-    "failedStage": "Thất bại ở: {{stage}}",
-    "overview": {
-      "title": "Tổng quan kiểm duyệt",
-      "description": "Số hồ sơ chờ, hồ sơ bạn đang giữ và quyết định gần đây, lấy trực tiếp từ máy chủ.",
-      "queue": "Chờ kiểm duyệt",
-      "mine": "Tôi đang giữ",
-      "processing": "Đang chờ AI",
-      "decidedToday": "Tôi đã quyết định hôm nay",
-      "oldest": "Hồ sơ chờ lâu nhất",
-      "recent": "Quyết định gần đây của tôi",
-      "openQueue": "Mở hàng đợi",
-      "openHistory": "Xem lịch sử quyết định"
-    }
+    "failedStage": "Thất bại ở: {{stage}}"
   },
   "walletLive": {
     "historicalBalanceUnavailable": "Giao dịch này không lưu snapshot số dư. Xem số dư khả dụng ở đầu trang.",
@@ -646,18 +883,14 @@
     "aiAssistant": "Trợ lý AI",
     "analytics": "Phân tích",
     "auditLogs": "Nhật ký kiểm toán",
-    "auditTrail": "Lịch sử kiểm toán",
     "audiobooks": "Truyện âm thanh",
     "categories": "Thể loại",
     "chapterEditor": "Trình soạn chương",
     "content": "Nội dung",
-    "contentReviews": "Duyệt nội dung",
     "create": "Sáng tác",
     "dashboard": "Bảng điều khiển",
-    "decisions": "Quyết định",
     "discover": "Khám phá",
     "drafts": "Bản nháp",
-    "escalations": "Chuyển cấp",
     "explore": "Tìm kiếm",
     "history": "Lịch sử",
     "home": "Trang chủ",
@@ -668,6 +901,8 @@
     "mediaLibrary": "Thư viện media",
     "messages": "Tin nhắn",
     "moderation": "Kiểm duyệt",
+    "moderationHistory": "Lịch sử kiểm duyệt",
+    "moderationStatistics": "Thống kê kiểm duyệt",
     "moderator": "Kiểm duyệt viên",
     "myList": "Danh sách của tôi",
     "myStories": "Truyện của tôi",
@@ -685,7 +920,6 @@
     "roles": "Vai trò",
     "services": "Dịch vụ",
     "settings": "Cài đặt",
-    "similarityFlags": "Cờ tương đồng",
     "submissions": "Bản gửi duyệt",
     "transactions": "Giao dịch",
     "users": "Người dùng",
@@ -2618,15 +2852,14 @@
   },
   "reportsQueue": {
     "title": "Hàng đợi báo cáo",
-    "description": "Báo cáo của độc giả về truyện, chương và bình luận. Nhận báo cáo trước khi xử lý.",
+    "description": "Báo cáo đang mở mà kiểm duyệt viên khác chưa giữ, cùng các báo cáo bạn đang giữ, cũ nhất trước. Mở báo cáo để xem chi tiết, nhận và xử lý.",
     "reload": "Tải lại",
     "loading": "Đang tải báo cáo…",
-    "error": "Không tải được báo cáo.",
-    "empty": "Không có báo cáo nào.",
+    "error": "Không thể hoàn tất thao tác. Vui lòng thử lại.",
+    "empty": "Không có báo cáo nào phù hợp với tiêu chí đã chọn.",
     "tabs": {
-      "open": "Đang mở",
-      "mine": "Của tôi",
-      "resolved": "Đã xử lý"
+      "queue": "Đang chờ xử lý",
+      "mine": "Tôi đang giữ"
     },
     "filterLabel": "Loại đối tượng",
     "targetTypes": {
@@ -2639,30 +2872,75 @@
       "spam": "Spam",
       "harassment": "Quấy rối",
       "inappropriate": "Nội dung không phù hợp",
-      "copyright": "Bản quyền",
+      "copyright": "Vi phạm bản quyền",
       "spoiler": "Tiết lộ nội dung",
       "other": "Khác"
     },
-    "available": "Đang hiển thị",
-    "unavailable": "Không còn khả dụng",
-    "currentStatus": "Trạng thái hiện tại: {{status}}",
-    "sameTarget": "{{count}} báo cáo mở khác cho cùng đối tượng",
-    "author": "Tác giả: {{name}}",
-    "details": "Chi tiết",
-    "submitted": "Gửi bởi {{name}} · {{date}}",
-    "claimMine": "Bạn đang giữ đến {{date}}",
-    "claimOther": "{{name}} đang giữ đến {{date}}",
-    "resolvedBy": "Xử lý bởi {{name}} · {{date}}",
-    "viewTarget": "Xem nội dung",
-    "claim": "Nhận báo cáo",
-    "release": "Trả lại",
-    "resolveAction": "Xử lý",
-    "outcomes": {
-      "dismissed": "Đã bác bỏ",
-      "hidden": "Đã ẩn bình luận",
-      "unpublished": "Đã gỡ xuất bản",
-      "warned": "Đã cảnh cáo tác giả"
+    "claimStates": {
+      "unclaimed": "Chưa có người nhận",
+      "mine": "Bạn đang giữ đến {{dateTime}}",
+      "other": "Kiểm duyệt viên khác đang giữ đến {{dateTime}}",
+      "expired": "Claim đã hết hạn lúc {{dateTime}}"
     },
+    "reportedBy": "Báo cáo bởi {{name}} · {{dateTime}}",
+    "open": "Xem báo cáo"
+  },
+  "reportReview": {
+    "back": "Về hàng đợi báo cáo",
+    "loading": "Đang tải báo cáo…",
+    "error": "Không thể hoàn tất thao tác. Vui lòng thử lại.",
+    "notFound": "Mục đã chọn không còn tồn tại hoặc không thể truy cập.",
+    "reload": "Tải lại",
+    "statuses": {
+      "open": "Đang mở",
+      "resolved": "Đã xử lý"
+    },
+    "reporter": "Người báo cáo:",
+    "reportedAt": "Thời điểm báo cáo:",
+    "claimLabel": "Claim:",
+    "details": "Chi tiết từ người báo cáo",
+    "noDetails": "Người báo cáo không ghi thêm chi tiết.",
+    "claim": "Nhận báo cáo",
+    "release": "Trả báo cáo",
+    "claimToView": "Nhận báo cáo để so sánh ảnh chụp lúc báo cáo với nội dung hiện tại và xử lý. Xem báo cáo không thay đổi nội dung.",
+    "claimHeld": "Báo cáo đang được kiểm duyệt viên khác xử lý.",
+    "resume": "Tiếp tục claim",
+    "resumeNote": "Bạn đang giữ claim của báo cáo này từ trước khi hệ thống dùng mã claim. Bấm Tiếp tục claim để so sánh nội dung và xử lý; thời hạn claim giữ nguyên.",
+    "claimed": "Bạn đã nhận báo cáo. Claim hết hạn lúc {{dateTime}} ({{timeZone}}).",
+    "timeZone": "giờ Việt Nam, UTC+7",
+    "released": "Đã trả claim của bạn.",
+    "resolved": "Đã ghi nhận kết quả xử lý báo cáo.",
+    "snapshot": "Ảnh chụp lúc báo cáo",
+    "capturedAt": "Lưu lúc {{dateTime}}",
+    "snapshotNote": "Ảnh chụp là căn cứ xem xét và không thay đổi theo nội dung hiện tại.",
+    "noExcerpt": "Không có trích đoạn.",
+    "current": "Trạng thái hiện tại",
+    "currentStates": {
+      "visible": "Đang hiển thị",
+      "changed": "Đang hiển thị, đã khác ảnh chụp",
+      "hidden": "Đã bị ẩn",
+      "unpublished": "Đã gỡ xuất bản",
+      "deleted": "Đã bị xóa"
+    },
+    "owner": "Tác giả: {{name}}",
+    "viewTarget": "Mở nội dung",
+    "earlier": "Báo cáo khác về cùng đối tượng",
+    "openDuplicates": "{{count}} báo cáo khác đang mở cho cùng đối tượng",
+    "earlierEmpty": "Chưa có báo cáo nào khác về đối tượng này.",
+    "outcomes": {
+      "dismissed": "Đã bác bỏ báo cáo",
+      "comment-hidden": "Đã ẩn bình luận",
+      "chapter-unpublished": "Đã gỡ xuất bản chương",
+      "story-unpublished": "Đã gỡ xuất bản truyện",
+      "author-warned": "Đã cảnh cáo tác giả"
+    },
+    "contentChanged": {
+      "yes": "Nội dung đã thay đổi",
+      "no": "Nội dung không thay đổi",
+      "unknown": "Không ghi nhận thay đổi nội dung"
+    },
+    "resolutionTitle": "Kết quả xử lý",
+    "resolvedBy": "Xử lý bởi {{name}} · {{dateTime}}",
     "actions": {
       "dismiss": "Bác bỏ báo cáo",
       "hide-comment": "Ẩn bình luận",
@@ -2670,29 +2948,34 @@
       "unpublish-story": "Gỡ xuất bản truyện",
       "warn-author": "Cảnh cáo tác giả"
     },
-    "notice": {
-      "claim": "Đã nhận báo cáo.",
-      "release": "Đã trả lại báo cáo.",
-      "resolved": "Đã xử lý báo cáo."
-    },
     "resolve": {
       "title": "Xử lý báo cáo",
       "action": "Hành động",
       "reason": "Lý do xử lý",
       "counter": "{{count}}/{{max}} ký tự (tối thiểu {{min}})",
-      "confirmDestructive": "Hành động này sẽ ẩn nội dung khỏi độc giả. Bấm xác nhận để tiếp tục.",
-      "cancel": "Hủy",
-      "submit": "Xử lý",
-      "confirm": "Xác nhận",
+      "submit": "Xử lý báo cáo",
       "saving": "Đang lưu…"
     },
+    "restrictions": {
+      "hide-comment": "ẩn khỏi độc giả bình luận",
+      "unpublish-chapter": "gỡ xuất bản chương",
+      "unpublish-story": "gỡ xuất bản truyện"
+    },
+    "confirm": {
+      "title": "Xác nhận hạn chế nội dung",
+      "body": "Bạn sắp {{restriction}} «{{target}}».",
+      "storyNote": "Toàn bộ truyện ngừng phát hành: mọi chương của truyện sẽ không còn hiển thị với độc giả.",
+      "note": "Nếu quay lại, hệ thống không ghi nhận gì và bạn vẫn giữ claim.",
+      "cancel": "Quay lại",
+      "confirm": "Xác nhận"
+    },
     "errors": {
-      "claimed": "Báo cáo đang được kiểm duyệt viên khác giữ.",
-      "claimRequired": "Bạn cần giữ báo cáo này trước khi thao tác.",
-      "conflict": "Báo cáo đã thay đổi. Danh sách đã được tải lại, hãy thử lại.",
-      "actionNotAllowed": "Hành động không hợp lệ cho báo cáo này.",
-      "forbidden": "Quyền của bạn đã thay đổi.",
-      "saveFailed": "Không lưu được. Hãy thử lại."
+      "claimConflict": "Báo cáo đang được kiểm duyệt viên khác xử lý.",
+      "claimNotHeld": "Claim của bạn đã hết hạn hoặc không còn được giữ. Hãy nhận lại báo cáo trước khi tiếp tục.",
+      "changed": "Báo cáo đã thay đổi hoặc không còn phù hợp với hành động đã chọn. Trang đã được tải lại.",
+      "forbidden": "Bạn không có quyền thực hiện thao tác này.",
+      "validation": "Một số giá trị không hợp lệ. Lý do xử lý cần từ 5 đến 2000 ký tự.",
+      "failed": "Không thể hoàn tất thao tác. Vui lòng thử lại."
     }
   },
   "unlock": {

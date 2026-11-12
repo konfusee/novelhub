@@ -39,13 +39,19 @@ async function readyAndClaimed(moderator, submissionId) {
 }
 async function decisionBody(submissionId, overrides = {}) {
   const submission = await PublicationSubmission.findById(submissionId)
-  const batch = await EvidenceBatch.findById(submission.currentEvidenceBatchId)
+  const [revision, batch] = await Promise.all([
+    ContentRevision.findById(submission.revisionId),
+    EvidenceBatch.findById(submission.currentEvidenceBatchId),
+  ])
   return {
-    decision: 'reject',
+    outcome: 'reject',
     feedback: 'Cần chỉnh sửa nội dung.',
     expectedVersion: submission.version,
+    revisionId: String(revision._id),
+    revisionVersion: revision.version,
     evidenceBatchId: String(batch._id),
-    evidenceBatchVersion: batch.version,
+    evidenceVersion: batch.version,
+    claimToken: String(submission.claimToken),
     ...overrides,
   }
 }
@@ -56,17 +62,28 @@ const expectError = (response, status, code) => {
   expect(response.body.error.code).toBe(code)
 }
 const reject = (moderator, submissionId, feedback = 'Cần chỉnh sửa nội dung.') =>
-  decide(api, moderator, submissionId, { decision: 'reject', feedback })
+  decide(api, moderator, submissionId, { outcome: 'reject', feedback })
 
 describe('moderator decisions', () => {
   it('approves a story, unfreezes it and leaves the release gates satisfiable', async () => {
     const moderator = await authenticatedAccount('moderator')
     const f = await submitStory(api)
     const { batch } = await readyAndClaimed(moderator, f.submissionId)
-    expect((await decide(api, moderator, f.submissionId)).status).toBe(200)
+    const claimed = await PublicationSubmission.findById(f.submissionId)
+    const decided = await decide(api, moderator, f.submissionId)
+    expect(decided.status).toBe(200)
+    expect(decided.body).toMatchObject({
+      submissionId: f.submissionId,
+      status: 'approved',
+      revisionId: String(claimed.revisionId),
+      draftRevisionId: null,
+      messageId: 'SYS-MSG-PUB-07',
+    })
     const submission = await PublicationSubmission.findById(f.submissionId)
     expect(submission.status).toBe('approved')
     expect(submission.claimOwnerAccountId).toBeUndefined()
+    expect(submission.claimToken).toBeUndefined()
+    expect(submission.claimAcquiredAt).toBeUndefined()
     expect(submission.claimReleaseHistory.at(-1).reason).toBe('decided')
     expect((await ContentRevision.findById(submission.revisionId)).status).toBe('approved')
     const story = await Story.findById(f.storyId)
@@ -74,7 +91,9 @@ describe('moderator decisions', () => {
     expect(story.publicationStatus).toBe('approved')
     const history = await ModerationHistory.find({ action: 'manual-review.decided' })
     expect(history).toHaveLength(1)
+    expect(String(history[0]._id)).toBe(decided.body.historyId)
     expect(history[0].outcome).toBe('approved')
+    expect(history[0].claimAcquiredAt.getTime()).toBe(claimed.claimAcquiredAt.getTime())
     expect(String(history[0].evidenceBatchId)).toBe(String(batch._id))
     expect(history[0].evidenceBatchVersion).toBe(batch.version)
     expect(history[0].beforeStateDigest).toBe(submission.packageDigest)
@@ -101,7 +120,9 @@ describe('moderator decisions', () => {
     const f = await submitStory(api)
     await readyAndClaimed(moderator, f.submissionId)
     const feedback = 'Cần làm rõ phần tóm tắt.'
-    expect((await reject(moderator, f.submissionId, feedback)).status).toBe(200)
+    const rejected = await reject(moderator, f.submissionId, feedback)
+    expect(rejected.status).toBe(200)
+    expect(rejected.body).toMatchObject({ status: 'rejected', messageId: 'SYS-MSG-PUB-08' })
     const submission = await PublicationSubmission.findById(f.submissionId)
     expect(submission.status).toBe('rejected')
     expect(submission.decisionSummary).toBe(feedback)
@@ -110,6 +131,7 @@ describe('moderator decisions', () => {
     expect(old.immutableAt).toBeTruthy()
     const story = await Story.findById(f.storyId)
     const draft = await ContentRevision.findById(story.draftRevisionId)
+    expect(rejected.body.draftRevisionId).toBe(String(draft._id))
     expect(draft.status).toBe('editable')
     expect(String(draft.parentRevisionId)).toBe(String(old._id))
     expect(story.authoringFrozen).toBe(false)
@@ -238,10 +260,11 @@ describe('moderator decisions', () => {
     const moderator = await authenticatedAccount('moderator')
     const { submissionId } = await submitStory(api)
     await readyAndClaimed(moderator, submissionId)
-    expectError(await reject(moderator, submissionId, ''), 400, 'validation_error')
+    expectError(await reject(moderator, submissionId, ''), 422, 'validation_error')
+    expectError(await reject(moderator, submissionId, '   '), 422, 'validation_error')
     expectError(
       await decideWith(moderator, submissionId, await decisionBody(submissionId, { extra: true })),
-      400,
+      422,
       'validation_error',
     )
     expectError(
@@ -250,10 +273,16 @@ describe('moderator decisions', () => {
         submissionId,
         await decisionBody(submissionId, { feedback: 'a'.repeat(4001) }),
       ),
-      400,
+      422,
       'validation_error',
     )
+    for (const missing of ['revisionId', 'revisionVersion', 'evidenceVersion', 'claimToken']) {
+      const body = await decisionBody(submissionId)
+      delete body[missing]
+      expectError(await decideWith(moderator, submissionId, body), 422, 'validation_error')
+    }
     expect((await PublicationSubmission.findById(submissionId)).status).toBe('decision-pending')
+    expect(await ModerationHistory.countDocuments({ action: 'manual-review.decided' })).toBe(0)
   })
 
   it('refuses decisions without an own unexpired claim', async () => {
@@ -262,48 +291,52 @@ describe('moderator decisions', () => {
     const reader = await authenticatedAccount()
     const { submissionId } = await submitStory(api)
     await markEvidenceReady(submissionId)
-    expectError(await decide(api, a, submissionId), 409, 'claim_required')
+    expectError(await decide(api, a, submissionId), 409, 'claim_not_held')
     expect((await claim(api, a, submissionId)).status).toBe(200)
-    expectError(await decide(api, b, submissionId), 409, 'claim_required')
+    expectError(await decide(api, b, submissionId), 409, 'claim_not_held')
+    expectError(
+      await decideWith(
+        a,
+        submissionId,
+        await decisionBody(submissionId, { claimToken: String(new mongoose.Types.ObjectId()) }),
+      ),
+      409,
+      'claim_not_held',
+    )
     await PublicationSubmission.updateOne(
       { _id: submissionId },
       { claimExpiresAt: new Date(Date.now() - 1000) },
     )
-    expectError(await decide(api, a, submissionId), 409, 'claim_required')
+    expectError(await decide(api, a, submissionId), 409, 'claim_not_held')
     expect((await decide(api, reader, submissionId)).status).toBe(403)
   })
 
-  it('refuses stale submission or evidence versions and terminal submissions', async () => {
+  it('refuses stale submission, revision or evidence versions and terminal submissions', async () => {
     const moderator = await authenticatedAccount('moderator')
+    const other = await authenticatedAccount('moderator')
     const { submissionId } = await submitStory(api)
     const { batch } = await readyAndClaimed(moderator, submissionId)
     const body = await decisionBody(submissionId)
+    // The version is checked before the claim (UC-MOD-04 step 4, SDS decision 6).
     expectError(
-      await decideWith(moderator, submissionId, {
-        ...body,
-        expectedVersion: body.expectedVersion - 1,
-      }),
+      await decideWith(other, submissionId, { ...body, expectedVersion: body.expectedVersion - 1 }),
       409,
       'submission_changed',
     )
-    expectError(
-      await decideWith(moderator, submissionId, {
-        ...body,
-        evidenceBatchVersion: body.evidenceBatchVersion + 1,
-      }),
-      409,
-      'evidence_changed',
-    )
-    expectError(
-      await decideWith(moderator, submissionId, {
-        ...body,
-        evidenceBatchId: String(new mongoose.Types.ObjectId()),
-      }),
-      409,
-      'evidence_changed',
-    )
+    for (const stale of [
+      { expectedVersion: body.expectedVersion - 1 },
+      { revisionVersion: body.revisionVersion + 1 },
+      { revisionId: String(new mongoose.Types.ObjectId()) },
+      { evidenceVersion: body.evidenceVersion + 1 },
+      { evidenceBatchId: String(new mongoose.Types.ObjectId()) },
+    ])
+      expectError(
+        await decideWith(moderator, submissionId, { ...body, ...stale }),
+        409,
+        'submission_changed',
+      )
     await EvidenceBatch.updateOne({ _id: batch._id }, { status: 'pending' })
-    expectError(await decideWith(moderator, submissionId, body), 409, 'evidence_changed')
+    expectError(await decideWith(moderator, submissionId, body), 409, 'submission_changed')
     await EvidenceBatch.updateOne({ _id: batch._id }, { status: 'available-for-human-review' })
     expect((await decide(api, moderator, submissionId)).status).toBe(200)
     expectError(await decide(api, moderator, submissionId), 409, 'submission_changed')
@@ -314,13 +347,13 @@ describe('moderator decisions', () => {
     const { author, submissionId } = await submitStory(api)
     await readyAndClaimed(moderator, submissionId)
     await Account.updateOne({ _id: author.account._id }, { status: 'suspended' })
-    expectError(await decide(api, moderator, submissionId), 409, 'author_unavailable')
+    expectError(await decide(api, moderator, submissionId), 409, 'submission_changed')
     await Account.updateOne({ _id: author.account._id }, { status: 'active' })
     await RoleAssignment.updateOne(
       { accountId: author.account._id, role: 'author' },
       { status: 'revoked' },
     )
-    expectError(await decide(api, moderator, submissionId), 409, 'author_unavailable')
+    expectError(await decide(api, moderator, submissionId), 409, 'submission_changed')
   })
 
   it('refuses decisions when the reviewed revision is no longer current', async () => {
@@ -328,7 +361,7 @@ describe('moderator decisions', () => {
     const { storyId, submissionId } = await submitStory(api)
     await readyAndClaimed(moderator, submissionId)
     await Story.updateOne({ _id: storyId }, { draftRevisionId: new mongoose.Types.ObjectId() })
-    expectError(await decide(api, moderator, submissionId), 409, 'content_changed')
+    expectError(await decide(api, moderator, submissionId), 409, 'submission_changed')
   })
 
   it('commits exactly one decision under concurrent requests and one notification', async () => {

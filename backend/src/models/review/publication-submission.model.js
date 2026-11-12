@@ -20,6 +20,8 @@ const schema = new Schema(
     packageDigest: String,
     decisionSummary: String,
     claimOwnerAccountId: { type: ObjectId, ref: 'Account' },
+    claimToken: ObjectId,
+    claimAcquiredAt: Date,
     claimExpiresAt: Date,
     claimVersion: { type: Number, min: 0, default: 0 },
     claimReleaseHistory: [{ type: Schema.Types.Mixed }],

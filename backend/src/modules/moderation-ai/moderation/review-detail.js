@@ -3,6 +3,7 @@ import {
   Account,
   Category,
   Chapter,
+  ContentRevision,
   EvidenceBatch,
   LlmReview,
   ModerationHistory,
@@ -15,50 +16,60 @@ import {
   loadSubmittedPackage,
   submittedImage,
 } from '../../authoring-publishing/author/author-submitted-package.js'
-import { terminalEvidenceReady } from '../review-evidence.js'
+import { evidenceState, terminalEvidenceReady } from '../review-evidence.js'
 import { rightsFacts } from '../../authoring-publishing/submissions/submission-digests.js'
-import { claimView } from './review-queue.js'
+import { claimFields, claimNotHeld, holdsClaimToken } from './claim-lease.js'
 
 const FINDINGS_LIMIT = 50
 
-async function submissionOwner(submissionId, session) {
-  const submission = await PublicationSubmission.findById(submissionId)
-    .select('authorAccountId')
-    .session(session ?? null)
-    .lean()
-  if (!submission) throw new HttpError(404, 'not_found', 'Không tìm thấy gói đã gửi.')
-  return { _id: submission.authorAccountId }
-}
+const submissionNotFound = () => new HttpError(404, 'not_found', 'Không tìm thấy hồ sơ.')
+
+/**
+ * The account holds the live claim of a submission under review with its token. A tokenless live
+ * claim (recorded before tokens existed) must be resumed through the claim mutation first.
+ */
+const holdsLiveClaim = (submission, account, now) =>
+  submission.status === 'decision-pending' && holdsClaimToken(submission, account, now)
 
 // The owner-scoped loader re-checks story ownership, revision, rights and every digest.
-export async function loadModeratorPackage(submissionId, session) {
-  return loadSubmittedPackage(await submissionOwner(submissionId, session), submissionId, session)
+function loadModeratorPackage(submission, session) {
+  return loadSubmittedPackage({ _id: submission.authorAccountId }, submission._id, session)
 }
 
-export async function moderatorSubmittedImage(config, submissionId, mediaId) {
-  return submittedImage(config, await submissionOwner(submissionId), submissionId, mediaId)
+/** An image of the submitted revision, only for the holder of its live claim (SDS 3.2 row 03). */
+export async function moderatorSubmittedImage(account, config, submissionId, mediaId, now) {
+  const submission = await PublicationSubmission.findById(submissionId)
+    .select('authorAccountId status claimOwnerAccountId claimToken claimExpiresAt')
+    .lean()
+  if (!submission) throw submissionNotFound()
+  if (!holdsLiveClaim(submission, account, now)) throw claimNotHeld()
+  return submittedImage(config, { _id: submission.authorAccountId }, submissionId, mediaId)
 }
 
-async function storedEvidence(batch) {
+async function storedEvidence(batch, session) {
   const [attempts, findings, findingsCount, review] = await Promise.all([
     ProcessingAttempt.find({ batchId: batch._id })
       .sort({ createdAt: 1 })
       .select('stage status failureCode startedAt finishedAt')
+      .session(session)
       .lean(),
     SimilarityFinding.find({ batchId: batch._id })
       .sort({ score: -1, rank: 1 })
       .limit(FINDINGS_LIMIT)
+      .session(session)
       .lean(),
-    SimilarityFinding.countDocuments({ batchId: batch._id }),
-    LlmReview.findOne({ batchId: batch._id, status: 'succeeded' }).lean(),
+    SimilarityFinding.countDocuments({ batchId: batch._id }).session(session),
+    LlmReview.findOne({ batchId: batch._id, status: 'succeeded' }).session(session).lean(),
   ])
   const chapters = await Chapter.find({
     _id: { $in: findings.map(finding => finding.sourceChapterId) },
   })
     .select('title storyId')
+    .session(session)
     .lean()
   const stories = await Story.find({ _id: { $in: chapters.map(chapter => chapter.storyId) } })
     .select('title')
+    .session(session)
     .lean()
   const chapterById = new Map(chapters.map(chapter => [String(chapter._id), chapter]))
   const storyById = new Map(stories.map(story => [String(story._id), story]))
@@ -117,42 +128,30 @@ async function storedEvidence(batch) {
   }
 }
 
-/** Read-only moderator view of the exact submitted package; never starts AI work. */
-export async function moderatorSubmissionDetail(account, submissionId, now = new Date()) {
-  const { submission, revision, rights, parent, manifest, document } =
-    await loadModeratorPackage(submissionId)
+/** Exact submitted package, rights, stored evidence and history; holder of the live claim only. */
+async function reviewPackage(submission, batch, session) {
+  const { revision, rights, parent, manifest, document } = await loadModeratorPackage(
+    submission,
+    session,
+  )
   const categoryId = submission.chapterId ? null : revision.content.categoryId
-  const [author, batch, history, category] = await Promise.all([
-    Account.findById(submission.authorAccountId).select('displayName status').lean(),
-    EvidenceBatch.findById(submission.currentEvidenceBatchId).lean(),
+  const [history, category, evidence] = await Promise.all([
     ModerationHistory.find({ submissionId: submission._id })
       .sort({ occurredAt: 1, _id: 1 })
       .select('action outcome feedback occurredAt')
+      .session(session)
       .lean(),
-    categoryId ? Category.findById(categoryId).select('name status').lean() : null,
+    categoryId ? Category.findById(categoryId).select('name status').session(session).lean() : null,
+    batch ? storedEvidence(batch, session) : null,
   ])
-  const authorActive = author?.status === 'active'
-  const terminal = terminalEvidenceReady(batch)
-  const claim = claimView(submission, account, now)
-  const ownLiveClaim =
-    submission.status === 'decision-pending' && Boolean(claim?.ownedByMe) && !claim.expired
   return {
-    submission: {
-      id: String(submission._id),
-      version: submission.version,
-      status: submission.status,
-      submittedAt: submission.submittedAt,
-      decisionSummary: submission.decisionSummary ?? '',
-      type: submission.chapterId ? 'chapter' : 'story',
-      claim,
-    },
     story: {
       id: String(submission.storyId),
       title: parent?.content.title ?? revision.content.title,
     },
-    author: { id: String(submission.authorAccountId), displayName: author?.displayName ?? '' },
     revision: {
       id: String(revision._id),
+      version: revision.version,
       number: revision.revisionNumber,
       formatVersion: revision.formatVersion,
     },
@@ -170,7 +169,7 @@ export async function moderatorSubmissionDetail(account, submissionId, now = new
               : null,
           },
         }),
-    evidence: batch ? await storedEvidence(batch) : null,
+    evidence,
     history: history.map(row => ({
       id: String(row._id),
       action: row.action,
@@ -178,14 +177,57 @@ export async function moderatorSubmissionDetail(account, submissionId, now = new
       feedback: row.feedback ?? '',
       occurredAt: row.occurredAt,
     })),
+  }
+}
+
+/**
+ * Moderator view of a submission; never starts AI work (BR-REV-07). Always the UC-MOD-02 step 2
+ * summary; the package, rights and evidence only while the account holds the live claim
+ * (steps 5-6, AF1).
+ */
+export async function moderatorSubmissionDetail(account, submissionId, now, session = null) {
+  const submission = await PublicationSubmission.findById(submissionId).session(session).lean()
+  if (!submission) throw submissionNotFound()
+  const [revision, story, author, batch] = await Promise.all([
+    ContentRevision.findById(submission.revisionId).select('content.title').session(session).lean(),
+    Story.findById(submission.storyId).select('title').session(session).lean(),
+    Account.findById(submission.authorAccountId)
+      .select('displayName status')
+      .session(session)
+      .lean(),
+    EvidenceBatch.findById(submission.currentEvidenceBatchId).session(session).lean(),
+  ])
+  const claim = claimFields(submission, account, now)
+  const authorActive = author?.status === 'active'
+  const terminal = terminalEvidenceReady(batch)
+  const holder = holdsLiveClaim(submission, account, now)
+  const summary = {
+    submission: {
+      id: String(submission._id),
+      version: submission.version,
+      status: submission.status,
+      submittedAt: submission.submittedAt,
+      decisionSummary: submission.decisionSummary ?? '',
+      type: submission.chapterId ? 'chapter' : 'story',
+      ...claim,
+    },
+    title: revision?.content?.title ?? '',
+    story: { id: String(submission.storyId), title: story?.title ?? '' },
+    author: {
+      id: String(submission.authorAccountId),
+      displayName: author?.displayName ?? '',
+      active: authorActive,
+    },
+    evidenceStatus: evidenceState(batch),
     actions: {
       canClaim:
         terminal &&
         authorActive &&
         (submission.status === 'pending-review' ||
-          (submission.status === 'decision-pending' && Boolean(claim?.expired))),
-      canRelease: ownLiveClaim,
-      canDecide: terminal && ownLiveClaim,
+          (submission.status === 'decision-pending' && claim.claimState === 'expired')),
+      canRelease: holder,
+      canDecide: terminal && holder,
     },
   }
+  return holder ? { ...summary, ...(await reviewPackage(submission, batch, session)) } : summary
 }

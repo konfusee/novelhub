@@ -22,11 +22,7 @@ export function SimilarityRiskReviewPage() {
             <p className="mt-2 max-w-3xl text-sm leading-6 text-muted">
               {t('manualReview.similarity.description')}
             </p>
-            {data && (
-              <p className="mt-2 break-words font-semibold">
-                {data.chapter ? data.chapter.document.title : data.metadata.title}
-              </p>
-            )}
+            {data && <p className="mt-2 break-words font-semibold">{data.title}</p>}
           </div>
           <ButtonLink to={ROUTES.moderatorSubmission(reviewId)} variant="secondary">
             <ArrowLeft size={15} />
@@ -49,6 +45,10 @@ export function SimilarityRiskReviewPage() {
               <RotateCcw size={15} />
               {t('manualReview.reload')}
             </Button>
+          </Card>
+        ) : !data.revision ? (
+          <Card className="mt-6">
+            <p className="text-sm leading-6 text-muted">{t('manualReview.claimToView')}</p>
           </Card>
         ) : (
           <SimilarityFindings submission={data.submission} evidence={data.evidence} />

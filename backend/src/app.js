@@ -27,6 +27,7 @@ import { createSePayWebhookRouter } from './routes/sepay-webhook.routes.js'
 import { createReaderUnlocksRouter } from './routes/reader-unlocks.routes.js'
 
 import { createModeratorRouter } from './routes/moderator.routes.js'
+import { createModeratorDashboardRouter } from './routes/moderator-dashboard.routes.js'
 import { createReaderReadingRouter } from './routes/reader-reading.routes.js'
 import { createCommunityRouter } from './routes/community.routes.js'
 import { createModeratorReportsRouter } from './routes/moderator-reports.routes.js'
@@ -96,6 +97,7 @@ export function createApp(config) {
   app.use('/api', createReaderUnlocksRouter(config))
 
   app.use('/api', createModeratorRouter(config))
+  app.use('/api', createModeratorDashboardRouter(config))
   app.use('/api', createReaderReadingRouter(config))
   app.use('/api', createCommunityRouter(config))
   app.use('/api', createModeratorReportsRouter(config))

@@ -31,18 +31,14 @@
     "aiAssistant": "AI Assistant",
     "analytics": "Analytics",
     "auditLogs": "Audit Logs",
-    "auditTrail": "Audit Trail",
     "audiobooks": "Audiobooks",
     "categories": "Categories",
     "chapterEditor": "Chapter Editor",
     "content": "Content",
-    "contentReviews": "Content Reviews",
     "create": "Create",
     "dashboard": "Dashboard",
-    "decisions": "Decisions",
     "discover": "Discover",
     "drafts": "Drafts",
-    "escalations": "Escalations",
     "explore": "Explore",
     "history": "History",
     "home": "Home",
@@ -53,6 +49,8 @@
     "mediaLibrary": "Media Library",
     "messages": "Messages",
     "moderation": "Moderation",
+    "moderationHistory": "Moderation History",
+    "moderationStatistics": "Moderation Statistics",
     "moderator": "Moderator",
     "myList": "My List",
     "myStories": "My Stories",
@@ -70,7 +68,6 @@
     "roles": "Roles",
     "services": "Services",
     "settings": "Settings",
-    "similarityFlags": "Similarity Flags",
     "submissions": "Submissions",
     "transactions": "Transactions",
     "users": "Users",
@@ -267,15 +264,14 @@
   },
   "reportsQueue": {
     "title": "Reports queue",
-    "description": "Reader reports about stories, chapters and comments. Claim a report before acting on it.",
+    "description": "Open reports not held by another moderator, and the reports you hold, oldest first. Open a report to review, claim and resolve it.",
     "reload": "Reload",
     "loading": "Loading reports…",
-    "error": "Could not load reports.",
-    "empty": "No reports.",
+    "error": "The operation could not be completed. Please try again.",
+    "empty": "No records match the selected criteria.",
     "tabs": {
-      "open": "Open",
-      "mine": "Mine",
-      "resolved": "Resolved"
+      "queue": "Waiting",
+      "mine": "Held by me"
     },
     "filterLabel": "Target type",
     "targetTypes": {
@@ -288,61 +284,18 @@
       "spam": "Spam",
       "harassment": "Harassment",
       "inappropriate": "Inappropriate content",
-      "copyright": "Copyright",
+      "copyright": "Copyright infringement",
       "spoiler": "Spoiler",
       "other": "Other"
     },
-    "available": "Visible",
-    "unavailable": "No longer available",
-    "currentStatus": "Current status: {{status}}",
-    "sameTarget": "{{count}} other open reports on this target",
-    "author": "Author: {{name}}",
-    "details": "Details",
-    "submitted": "Submitted by {{name}} · {{date}}",
-    "claimMine": "Held by you until {{date}}",
-    "claimOther": "Held by {{name}} until {{date}}",
-    "resolvedBy": "Resolved by {{name}} · {{date}}",
-    "viewTarget": "View content",
-    "claim": "Claim",
-    "release": "Release",
-    "resolveAction": "Resolve",
-    "outcomes": {
-      "dismissed": "Dismissed",
-      "hidden": "Comment hidden",
-      "unpublished": "Unpublished",
-      "warned": "Author warned"
+    "claimStates": {
+      "unclaimed": "Unclaimed",
+      "mine": "Held by you until {{dateTime}}",
+      "other": "Held by another moderator until {{dateTime}}",
+      "expired": "Claim expired at {{dateTime}}"
     },
-    "actions": {
-      "dismiss": "Dismiss report",
-      "hide-comment": "Hide comment",
-      "unpublish-chapter": "Unpublish chapter",
-      "unpublish-story": "Unpublish story",
-      "warn-author": "Warn Author"
-    },
-    "notice": {
-      "claim": "Report claimed.",
-      "release": "Report released.",
-      "resolved": "Report resolved."
-    },
-    "resolve": {
-      "title": "Resolve report",
-      "action": "Action",
-      "reason": "Resolution reason",
-      "counter": "{{count}}/{{max}} characters (minimum {{min}})",
-      "confirmDestructive": "This action hides the content from readers. Press confirm to continue.",
-      "cancel": "Cancel",
-      "submit": "Resolve",
-      "confirm": "Confirm",
-      "saving": "Saving…"
-    },
-    "errors": {
-      "claimed": "Another moderator holds this report.",
-      "claimRequired": "You must hold this report before acting on it.",
-      "conflict": "The report changed. The list was reloaded; please try again.",
-      "actionNotAllowed": "That action is not allowed for this report.",
-      "forbidden": "Your permissions changed.",
-      "saveFailed": "Could not save. Please try again."
-    }
+    "reportedBy": "Reported by {{name}} · {{dateTime}}",
+    "open": "View report"
   },
   "search": {
     "sort": {

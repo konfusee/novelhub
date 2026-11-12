@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { useNavigate } from 'react-router'
+import { useNavigate, useSearchParams } from 'react-router'
 import { ClipboardCheck, RotateCcw, UserPlus } from '../../components/icons'
 import { ModeratorLayout } from '../../layouts'
 import { ROUTES } from '../../app/routes'
@@ -17,59 +17,57 @@ import {
   Tabs,
 } from '../../components/ui'
 import { Pagination } from '../../components/ui/Pagination'
-import { moderationErrorKey } from './moderationMessages'
+import { moderationErrorKey, waitingAge } from './moderationMessages'
 
+const VIEWS = ['available', 'mine', 'processing']
 const columns = [
   'reviewClaims.submission',
   'reviewClaims.author',
   'reviewClaims.submittedAt',
-  'reviewClaims.status',
+  'reviewClaims.waiting',
   'reviewClaims.evidence',
-  'reviewClaims.expiresAt',
+  'reviewClaims.claimState',
   'reviewClaims.action',
 ]
 
 export function SubmissionQueuePage() {
-  const { t } = useLocale()
+  const { t, formatDateTime } = useLocale()
   const navigate = useNavigate()
-  const [view, setView] = useState('queue')
+  const [searchParams] = useSearchParams()
+  const [view, setView] = useState(() =>
+    VIEWS.includes(searchParams.get('view')) ? searchParams.get('view') : 'available',
+  )
   const [page, setPage] = useState(1)
   const [pending, setPending] = useState(null)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
-  const [notice, setNotice] = useState('')
   const resource = useBackendDocument('/moderator/submissions?view=' + view + '&page=' + page, null)
   const items = resource.status === 'ready' ? (resource.data?.items ?? []) : []
 
-  const open = (item, action) => {
-    setError('')
-    setPending({ item, action })
-  }
   const close = () => {
     if (saving) return
     setPending(null)
     setError('')
   }
-  const confirm = async () => {
+  const confirmClaim = async () => {
     if (!pending || saving) return
-    const { item, action } = pending
     setSaving(true)
     setError('')
     try {
-      await apiRequest('/moderator/submissions/' + item.id + '/' + action, {
-        method: 'POST',
-        body: { expectedVersion: item.version },
+      const claimed = await apiRequest(
+        '/moderator/submissions/' + pending.submissionId + '/claim',
+        { method: 'POST', body: { expectedVersion: pending.version } },
+      )
+      navigate(ROUTES.moderatorSubmission(pending.submissionId), {
+        state: {
+          notice: t('reviewClaims.claimed', {
+            dateTime: formatDateTime(claimed.submission.claimExpiresAt),
+            timeZone: t('reviewClaims.timeZone'),
+          }),
+        },
       })
-      if (action === 'claim') {
-        navigate(ROUTES.moderatorSubmission(item.id))
-        return
-      }
-      setPending(null)
-      setNotice(t('reviewClaims.released'))
-      resource.retry()
     } catch (failure) {
       setError(t(moderationErrorKey(failure.code)))
-    } finally {
       setSaving(false)
     }
   }
@@ -98,18 +96,11 @@ export function SubmissionQueuePage() {
               setView(value)
               setPage(1)
             }}
-            items={[
-              { value: 'queue', label: t('reviewClaims.available') },
-              { value: 'mine', label: t('reviewClaims.mine') },
-              { value: 'processing', label: t('reviewClaims.processing') },
-            ]}
+            items={VIEWS.map(value => ({ value, label: t('reviewClaims.views.' + value) }))}
           />
         </div>
-
-        {notice && (
-          <p role="status" className="mt-4 text-sm text-brand-strong">
-            {notice}
-          </p>
+        {view === 'processing' && (
+          <p className="mt-4 text-sm text-muted">{t('reviewClaims.processingNote')}</p>
         )}
 
         <Card className="mt-4 p-0">
@@ -137,7 +128,7 @@ export function SubmissionQueuePage() {
             <EmptyState icon={ClipboardCheck} title={t('reviewClaims.empty')} />
           ) : (
             <div className="overflow-x-auto">
-              <table className="w-full min-w-[60rem] text-left text-sm">
+              <table className="w-full min-w-[64rem] text-left text-sm">
                 <thead>
                   <tr className="border-b border-line">
                     {columns.map(key => (
@@ -149,7 +140,15 @@ export function SubmissionQueuePage() {
                 </thead>
                 <tbody>
                   {items.map(item => (
-                    <QueueRow key={item.id} item={item} view={view} onAction={open} />
+                    <QueueRow
+                      key={item.submissionId}
+                      item={item}
+                      view={view}
+                      onClaim={() => {
+                        setError('')
+                        setPending(item)
+                      }}
+                    />
                   ))}
                 </tbody>
               </table>
@@ -165,15 +164,9 @@ export function SubmissionQueuePage() {
       <Modal open={Boolean(pending)} title={t('reviewClaims.title')} onClose={close}>
         {pending && (
           <div>
-            <p className="font-semibold">{pending.item.title}</p>
-            <p className="mt-1 text-sm text-muted">{pending.item.storyTitle}</p>
-            <p className="mt-4 text-sm leading-6">
-              {t(
-                pending.action === 'claim'
-                  ? 'reviewClaims.acquireNote'
-                  : 'reviewClaims.releaseNote',
-              )}
-            </p>
+            <p className="font-semibold">{pending.title}</p>
+            <p className="mt-1 text-sm text-muted">{pending.storyTitle}</p>
+            <p className="mt-4 text-sm leading-6">{t('reviewClaims.acquireNote')}</p>
             {error && (
               <p role="alert" className="mt-3 text-sm text-rose-strong">
                 {error}
@@ -183,7 +176,7 @@ export function SubmissionQueuePage() {
               <Button variant="secondary" type="button" disabled={saving} onClick={close}>
                 {t('reviewClaims.close')}
               </Button>
-              <Button type="button" disabled={saving} onClick={confirm}>
+              <Button type="button" disabled={saving} onClick={confirmClaim}>
                 {t(saving ? 'reviewClaims.saving' : 'reviewClaims.confirm')}
               </Button>
             </div>
@@ -194,68 +187,64 @@ export function SubmissionQueuePage() {
   )
 }
 
-function QueueRow({ item, view, onAction }) {
-  const { t, formatDate } = useLocale()
-  const { evidence, claim } = item
+function QueueRow({ item, view, onClaim }) {
+  const { t, formatDateTime } = useLocale()
+  const { evidence } = item
   return (
     <tr className="border-b border-hairline align-top last:border-b-0">
       <td className="px-4 py-3">
         <p className="break-words font-medium">{item.title}</p>
-        <p className="mt-1 break-words text-caption text-muted">{item.storyTitle}</p>
+        <p className="mt-1 break-words text-caption text-muted">
+          {t('reviewClaims.targetTypes.' + item.targetType)} · {item.storyTitle}
+        </p>
       </td>
       <td className="px-4 py-3">{item.author.displayName}</td>
-      <td className="whitespace-nowrap px-4 py-3">{formatDate(item.submittedAt)}</td>
+      <td className="whitespace-nowrap px-4 py-3">{formatDateTime(item.submittedAt)}</td>
+      <td className="whitespace-nowrap px-4 py-3">{t(...waitingAge(item.waitingSeconds))}</td>
       <td className="px-4 py-3">
-        <Badge>{t('submissionData.status.' + item.status)}</Badge>
-      </td>
-      <td className="px-4 py-3">
-        {evidence ? (
-          <div className="flex flex-col gap-1">
-            <span>{t('submissionData.evidenceStatus.' + evidence.status)}</span>
+        <div className="flex flex-col gap-1">
+          <Badge tone={item.evidenceStatus === 'failed' ? 'red' : 'neutral'}>
+            {t('reviewClaims.evidenceStates.' + item.evidenceStatus)}
+          </Badge>
+          {evidence && item.evidenceStatus !== 'processing' && (
             <span className="text-caption text-muted">
               {t('reviewClaims.findings', { count: evidence.findingsCount })}
             </span>
-            {evidence.status === 'failed' && (
-              <span className="text-caption text-rose-strong">
-                {t('reviewClaims.failedStage', {
-                  stage: t('manualReview.evidence.stages.' + evidence.failedStage),
-                })}
-              </span>
-            )}
-          </div>
-        ) : (
-          <span className="text-muted">{t('reviewClaims.noEvidence')}</span>
-        )}
-      </td>
-      <td className="whitespace-nowrap px-4 py-3">
-        {claim ? (
-          <div className="flex flex-col gap-1">
-            <span>{formatDate(claim.expiresAt)}</span>
-            {claim.expired && (
-              <span className="text-caption text-orange-strong">{t('reviewClaims.expired')}</span>
-            )}
-          </div>
-        ) : (
-          '—'
-        )}
-      </td>
-      <td className="px-4 py-3">
-        <div className="flex flex-wrap gap-2">
-          <ButtonLink to={ROUTES.moderatorSubmission(item.id)} size="sm" variant="secondary">
-            {t('reviewClaims.openReview')}
-          </ButtonLink>
-          {view === 'queue' && (
-            <Button size="sm" onClick={() => onAction(item, 'claim')}>
-              <UserPlus size={15} />
-              {t('reviewClaims.acquire')}
-            </Button>
           )}
-          {view === 'mine' && (
-            <Button size="sm" variant="outline" onClick={() => onAction(item, 'release')}>
-              {t('reviewClaims.release')}
-            </Button>
+          {item.evidenceStatus === 'failed' && evidence?.failedStage && (
+            <span className="text-caption text-rose-strong">
+              {t('reviewClaims.failedStage', {
+                stage: t('manualReview.evidence.stages.' + evidence.failedStage),
+              })}
+            </span>
           )}
         </div>
+      </td>
+      <td className="px-4 py-3">
+        {t('reviewClaims.claimStates.' + item.claimState, {
+          dateTime: item.claimExpiresAt ? formatDateTime(item.claimExpiresAt) : '',
+        })}
+      </td>
+      <td className="px-4 py-3">
+        {view === 'processing' ? (
+          <span className="text-caption text-muted">{t('reviewClaims.notOpenable')}</span>
+        ) : (
+          <div className="flex flex-wrap gap-2">
+            <ButtonLink
+              to={ROUTES.moderatorSubmission(item.submissionId)}
+              size="sm"
+              variant="secondary"
+            >
+              {t('reviewClaims.openReview')}
+            </ButtonLink>
+            {view === 'available' && (
+              <Button size="sm" onClick={onClaim}>
+                <UserPlus size={15} />
+                {t('reviewClaims.acquire')}
+              </Button>
+            )}
+          </div>
+        )}
       </td>
     </tr>
   )

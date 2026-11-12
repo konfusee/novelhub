@@ -3,6 +3,6 @@ export const privateMediaUrl = id => `${API_BASE}/author/media/${encodeURICompon
 export const submittedMediaUrl = (submissionId, mediaId) =>
   `${API_BASE}/author/submissions/${encodeURIComponent(submissionId)}/media/${encodeURIComponent(mediaId)}/content`
 export const moderatorMediaUrl = (submissionId, mediaId) =>
-  `${API_BASE}/moderator/submissions/${encodeURIComponent(submissionId)}/media/${encodeURIComponent(mediaId)}/content`
+  `${API_BASE}/moderator/submissions/${encodeURIComponent(submissionId)}/images/${encodeURIComponent(mediaId)}`
 export const publishedMediaUrl = ({ storyId, chapterId, revisionId }, mediaId) =>
   `${API_BASE}/catalog/stories/${encodeURIComponent(storyId)}/chapters/${encodeURIComponent(chapterId)}/revisions/${encodeURIComponent(revisionId)}/media/${encodeURIComponent(mediaId)}`

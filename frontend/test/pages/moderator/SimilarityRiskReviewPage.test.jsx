@@ -30,15 +30,19 @@ const detail = evidence => ({
   submission: {
     id: 'sub-1',
     version: 4,
-    status: 'pending-review',
+    status: 'decision-pending',
     submittedAt: '2026-10-29T00:00:00Z',
     decisionSummary: '',
     type: 'chapter',
-    claim: null,
+    claimState: 'mine',
+    claimExpiresAt: '2026-10-30T00:00:00Z',
+    claimToken: 'token-1',
   },
+  title: 'Chương kiểm duyệt',
   story: { id: 'story-1', title: 'Truyện kiểm duyệt' },
-  author: { id: 'author-1', displayName: 'Tác giả A' },
-  revision: { id: 'revision-1', number: 1, formatVersion: 'blocks-v3' },
+  author: { id: 'author-1', displayName: 'Tác giả A', active: true },
+  evidenceStatus: 'ready',
+  revision: { id: 'revision-1', version: 3, number: 1, formatVersion: 'blocks-v3' },
   packageDigest: 'digest-1',
   rights: { basis: 'original', asserted: true, sourceLicenceNote: '' },
   media: [],
@@ -60,7 +64,7 @@ const detail = evidence => ({
     ...evidence,
   },
   history: [],
-  actions: { canClaim: true, canRelease: false, canDecide: false },
+  actions: { canClaim: false, canRelease: true, canDecide: true },
 })
 const view = () =>
   render(
@@ -149,5 +153,30 @@ it('explains an empty discovery only after a succeeded comparison', async () => 
       'Chưa có kết quả so sánh tương đồng; không thể kết luận là không trùng lặp.',
     ),
   ).toBeTruthy()
+  expect(screen.queryByText(NO_FINDINGS)).toBeNull()
+})
+
+it('asks for a claim before showing evidence to a moderator who does not hold it', async () => {
+  const { submission, title, story, author, evidenceStatus } = detail({})
+  mocks.apiRequest.mockResolvedValue({
+    submission: {
+      ...submission,
+      claimState: 'unclaimed',
+      claimExpiresAt: null,
+      claimToken: undefined,
+    },
+    title,
+    story,
+    author,
+    evidenceStatus,
+    actions: { canClaim: true, canRelease: false, canDecide: false },
+  })
+  view()
+  expect(
+    await screen.findByText(
+      'Nhận hồ sơ để xem đúng phiên bản đã gửi, khai báo quyền và bằng chứng AI đã lưu.',
+    ),
+  ).toBeTruthy()
+  expect(screen.getByText('Chương kiểm duyệt')).toBeTruthy()
   expect(screen.queryByText(NO_FINDINGS)).toBeNull()
 })

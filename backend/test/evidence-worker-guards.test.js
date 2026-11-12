@@ -25,7 +25,7 @@ import { REVIEW_INSTRUCTIONS } from '../src/modules/moderation-ai/ai/review-crit
 import { RUNNER_ID } from '../src/modules/moderation-ai/ai/runner-id.js'
 import { StageError } from '../src/modules/moderation-ai/ai/stage-error.js'
 import { authenticatedAccount } from './fixtures/accounts.js'
-import { apiClient, approvedStory, origin, submitChapter } from './fixtures/submissions.js'
+import { apiClient, approvedStory, claim, origin, submitChapter } from './fixtures/submissions.js'
 import { testConfig } from './config.js'
 import { useTestDatabase } from './db.js'
 
@@ -250,6 +250,7 @@ describe('evidence worker guards', () => {
     const review = await LlmReview.findOne({ batchId: batch._id })
     const dropped = review.evidenceRefs.find(ref => ref.droppedIneligibleFindings)
     expect([...dropped.droppedIneligibleFindings].sort()).toEqual(findingIds)
+    expect((await claim(api, moderator, a.submissionId)).status).toBe(200)
     const detail = await api.get(moderator.cookie, `/api/moderator/submissions/${a.submissionId}`)
     expect([...detail.body.evidence.llmReview.droppedIneligibleFindings].sort()).toEqual(findingIds)
   })
@@ -387,6 +388,7 @@ describe('evidence worker guards', () => {
     const review = await LlmReview.findOne({ batchId: (await batchOf(a.submissionId))._id })
     expect(review.reviewedChars).toBe(60000)
     expect(review.totalChars).toBe(input.submission.text.totalChars)
+    expect((await claim(api, moderator, a.submissionId)).status).toBe(200)
     const detail = await api.get(moderator.cookie, `/api/moderator/submissions/${a.submissionId}`)
     expect(detail.body.evidence.llmReview.reviewedChars).toBe(60000)
     expect(detail.body.evidence.llmReview.totalChars).toBe(input.submission.text.totalChars)

@@ -4,150 +4,118 @@ import { HttpError } from '../../../middleware/errors.js'
 import {
   AuditEvent,
   Chapter,
-  Comment,
   ContentReport,
   ModerationHistory,
   ReportResolution,
   Story,
 } from '../../../models/index.js'
 import { digest } from '../../authoring-publishing/submissions/submission-digests.js'
+import { endClaim, requireLiveClaim } from './claim-lease.js'
 import { lockModerator } from './moderator-access.js'
+import { ACTIVE_REPORT_STATUSES, reportChanged } from './report-queue.js'
 import {
-  ACTIVE_REPORT_STATUSES,
-  REPORT_ACTIONS,
-  claimRequired,
-  ownsLiveClaim,
-  reportChanged,
-  reportRow,
-} from './report-queue.js'
+  ALLOWED_REPORT_ACTIONS,
+  RESTRICTING_ACTIONS,
+  actionTarget,
+  restrictTarget,
+} from './report-targets.js'
 
+/** ResolutionOutcome recorded for each ReportAction. */
 const OUTCOMES = {
   dismiss: 'dismissed',
-  'hide-comment': 'hidden',
-  'unpublish-chapter': 'unpublished',
-  'unpublish-story': 'unpublished',
-  'warn-author': 'warned',
-}
-const transition = (account, now) => ({
-  actorAccountId: account._id,
-  occurredAt: now,
-  from: 'published',
-  to: 'unpublished',
-  result: 'moderator-report-unpublished',
-})
-
-/** Story id behind any report target (comments resolve through their own target). */
-async function reportStoryId(report, session) {
-  if (report.targetType === 'story') return report.targetId
-  if (report.targetType === 'chapter')
-    return (await Chapter.findById(report.targetId).select('storyId').session(session).lean())
-      ?.storyId
-  const comment = await Comment.findById(report.targetId)
-    .select('targetType targetId')
-    .session(session)
-    .lean()
-  if (!comment) return null
-  if (comment.targetType === 'story') return comment.targetId
-  return (await Chapter.findById(comment.targetId).select('storyId').session(session).lean())
-    ?.storyId
+  'hide-comment': 'comment-hidden',
+  'unpublish-chapter': 'chapter-unpublished',
+  'unpublish-story': 'story-unpublished',
+  'warn-author': 'author-warned',
 }
 
 /**
- * Applies the content action; already-unavailable content is left untouched.
- * Returns the notifications owed to the content's people besides the reporter.
+ * Applies the action (SDS ReportResolutionService.applyAction). Dismiss and Warn Author never
+ * write content; a restricting action changes content only when the target still exists and is
+ * not already restricted (UC-MOD-06 AF1-AF3). Returns whether content changed and the
+ * notifications owed to the commenter or author besides the reporter.
  */
-async function applyAction(report, action, input, account, session, now) {
-  const notices = []
-  const storyId = await reportStoryId(report, session)
-  const story = storyId ? await Story.findById(storyId).session(session) : null
-  const snapshot = report.targetSnapshot ?? {}
-  const chapterId = report.targetType === 'chapter' ? String(report.targetId) : null
-  const authorNotice = eventType =>
-    story &&
-    notices.push({
-      recipientAccountId: story.authorAccountId,
-      role: 'author',
-      eventType,
-      payload: {
-        storyId: String(story._id),
-        chapterId,
-        title: snapshot.title ?? '',
-        reason: input.reason,
-      },
-    })
-  let changed = false
-  if (action === 'hide-comment') {
-    const comment = await Comment.findById(report.targetId).session(session)
-    if (comment?.status === 'visible') {
-      changed = true
-      comment.status = 'hidden'
-      await comment.save({ session })
-      notices.push({
-        recipientAccountId: comment.authorAccountId,
-        role: 'commenter',
-        eventType: 'comment.hidden',
+async function applyAction(report, input, account, session, now) {
+  const unchanged = { contentChanged: false, notices: [] }
+  if (input.action === 'dismiss') return unchanged
+  const target = await actionTarget(report, input.action, session)
+  if (!target) return unchanged
+  const contentChanged = RESTRICTING_ACTIONS.includes(input.action)
+    ? await restrictTarget(target, input.action, account, now, session)
+    : false
+  // Warn Author always notifies; a restriction notifies only when it changed the content.
+  if (input.action !== 'warn-author' && !contentChanged) return unchanged
+  if (input.action === 'hide-comment') {
+    const storyId =
+      target.targetType === 'story'
+        ? target.targetId
+        : (await Chapter.findById(target.targetId).select('storyId').session(session).lean())
+            ?.storyId
+    return {
+      contentChanged,
+      notices: [
+        {
+          recipientAccountId: target.authorAccountId,
+          role: 'commenter',
+          eventType: 'comment.hidden',
+          payload: {
+            storyId: storyId ? String(storyId) : null,
+            chapterId: target.targetType === 'chapter' ? String(target.targetId) : null,
+            title: 'Bình luận của bạn đã bị ẩn',
+            reason: input.reason,
+          },
+        },
+      ],
+    }
+  }
+  const story =
+    input.action === 'unpublish-chapter'
+      ? await Story.findById(target.storyId).select('authorAccountId').session(session).lean()
+      : target
+  if (!story) return { contentChanged, notices: [] }
+  return {
+    contentChanged,
+    notices: [
+      {
+        recipientAccountId: story.authorAccountId,
+        role: 'author',
+        eventType:
+          input.action === 'warn-author' ? 'author.content-warning' : 'author.content-unpublished',
         payload: {
-          storyId: storyId ? String(storyId) : null,
-          chapterId: comment.targetType === 'chapter' ? String(comment.targetId) : null,
-          title: 'Bình luận của bạn đã bị ẩn',
+          storyId: String(story._id),
+          chapterId: report.targetType === 'chapter' ? String(report.targetId) : null,
+          title: report.targetSnapshot?.title ?? '',
           reason: input.reason,
         },
-      })
-    }
-  } else if (action === 'unpublish-chapter') {
-    const chapter = await Chapter.findById(report.targetId).session(session)
-    if (chapter?.status === 'published') {
-      chapter.status = 'unpublished'
-      chapter.publicationTransition = transition(account, now)
-      await chapter.save({ session })
-      changed = true
-      authorNotice('author.content-unpublished')
-    }
-  } else if (action === 'unpublish-story') {
-    if (story?.publicationStatus === 'published') {
-      story.publicationStatus = 'unpublished'
-      story.publicationTransition = {
-        ...transition(account, now),
-        revisionId: story.publishedRevisionId ? String(story.publishedRevisionId) : undefined,
-      }
-      await story.save({ session })
-      changed = true
-      authorNotice('author.content-unpublished')
-    }
-  } else if (action === 'warn-author') {
-    changed = Boolean(story)
-    authorNotice('author.content-warning')
+      },
+    ],
   }
-  return { changed, notices }
 }
 
-/** Resolves a claimed report in one transaction: content action, history, audit, notifications. */
+/**
+ * Resolves a claimed report in one transaction (UC-MOD-06): content action, resolution with
+ * contentChanged, report state, claim release, history, audit and notifications.
+ */
 export async function resolveReport(
   account,
   reportId,
   input,
   { correlationId, now = new Date() } = {},
 ) {
-  const report = await withTransaction(async session => {
+  return withTransaction(async session => {
     await lockModerator(account, session)
     const report = await ContentReport.findById(reportId).session(session)
     if (!report) throw new HttpError(404, 'not_found', 'Không tìm thấy báo cáo.')
-    if (!ACTIVE_REPORT_STATUSES.includes(report.status)) throw reportChanged()
-    if (!REPORT_ACTIONS[report.targetType].includes(input.action))
-      throw new HttpError(400, 'invalid_action', 'Hành động không áp dụng cho loại nội dung này.')
-    if (!ownsLiveClaim(report, account, now)) throw claimRequired()
-    if (report.version !== input.expectedVersion) throw reportChanged()
+    requireLiveClaim(report, account, input.claimToken, now)
+    if (
+      report.version !== input.expectedVersion ||
+      !ACTIVE_REPORT_STATUSES.includes(report.status) ||
+      !ALLOWED_REPORT_ACTIONS[report.targetType].includes(input.action)
+    )
+      throw reportChanged()
 
     const outcome = OUTCOMES[input.action]
-    const contentAction = ['hide-comment', 'unpublish-chapter', 'unpublish-story'].includes(
-      input.action,
-    )
-      ? input.action
-      : 'none'
-    const { changed, notices } =
-      input.action === 'dismiss'
-        ? { changed: false, notices: [] }
-        : await applyAction(report, input.action, input, account, session, now)
+    const { contentChanged, notices } = await applyAction(report, input, account, session, now)
 
     const [history] = await ModerationHistory.create(
       [
@@ -159,9 +127,10 @@ export async function resolveReport(
           revisionId: report.targetRevisionId,
           actorAccountId: account._id,
           actorAuthorizationEpoch: account.authorizationEpoch,
+          claimAcquiredAt: report.claimAcquiredAt,
           reason: input.reason,
           beforeStateDigest: report.targetHash,
-          afterStateDigest: digest({ outcome, contentAction, changed }),
+          afterStateDigest: digest({ outcome, action: input.action, contentChanged }),
           occurredAt: now,
           correlationId,
         },
@@ -174,7 +143,8 @@ export async function resolveReport(
           reportId: report._id,
           moderatorAccountId: account._id,
           outcome,
-          contentAction,
+          contentAction: input.action,
+          contentChanged,
           reason: input.reason,
           targetSnapshot: report.targetSnapshot,
           targetHash: report.targetHash,
@@ -184,20 +154,10 @@ export async function resolveReport(
       ],
       { session },
     )
-    report.claimReleaseHistory.push({
-      ownerAccountId: report.claimOwnerAccountId,
-      claimVersion: report.claimVersion,
-      expiresAt: report.claimExpiresAt,
-      releasedAt: now,
-      reason: 'resolved',
-      actorAccountId: account._id,
-    })
+    endClaim(report, 'resolved', account._id, now)
     report.status = input.action === 'dismiss' ? 'dismissed' : 'actioned'
     report.resolvedAt = now
     report.resolutionId = resolution._id
-    report.claimOwnerAccountId = undefined
-    report.claimExpiresAt = undefined
-    report.claimVersion += 1
     await report.save({ session })
 
     await AuditEvent.create(
@@ -238,7 +198,15 @@ export async function resolveReport(
       ],
       { session, ordered: true },
     )
-    return report
+    return {
+      reportId: String(report._id),
+      status: 'resolved',
+      action: input.action,
+      outcome,
+      contentChanged,
+      resolvedAt: now,
+      historyId: String(history._id),
+      messageId: 'SYS-MSG-RPT-02',
+    }
   })
-  return reportRow(report.toObject(), account, now)
 }

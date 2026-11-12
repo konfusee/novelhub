@@ -59,9 +59,11 @@ async function submit(author, storyId) {
   return { submissionId: sent.body.submission.id, revisionId: prepared.target.revisionId }
 }
 
+// Returns the review detail the claim opened (the package is shown only under a live claim).
 async function approveAndRelease(author, moderator, storyId, { submissionId, revisionId }) {
   await markEvidenceReady(submissionId)
-  expect((await claim(api, moderator, submissionId)).status).toBe(200)
+  const claimed = await claim(api, moderator, submissionId)
+  expect(claimed.status).toBe(200)
   expect((await decide(api, moderator, submissionId)).status).toBe(200)
   const { version } = await Story.findById(storyId)
   const released = await api.write(author.cookie, `/api/author/stories/${storyId}/release`, {
@@ -70,6 +72,7 @@ async function approveAndRelease(author, moderator, storyId, { submissionId, rev
     expectedVersion: version,
   })
   expect(released.status).toBe(201)
+  return claimed.body
 }
 
 const catalog = query => api.get('', `/api/catalog/stories?${new URLSearchParams(query)}`)
@@ -133,9 +136,8 @@ it('releases reviewed tags and finds published stories by tag', async () => {
   const created = await f.create({ tags: ['Kiếm-hiệp', 'Xuyên_không'] })
   const storyId = created.body.story.id
   const first = await submit(f.author, storyId)
-  const detail = await api.get(moderator.cookie, `/api/moderator/submissions/${first.submissionId}`)
-  expect(detail.body.metadata.tags).toEqual(['Kiếm-hiệp', 'Xuyên_không'])
-  await approveAndRelease(f.author, moderator, storyId, first)
+  const reviewed = await approveAndRelease(f.author, moderator, storyId, first)
+  expect(reviewed.metadata.tags).toEqual(['Kiếm-hiệp', 'Xuyên_không'])
 
   expect((await catalog({ tag: 'kiếm-HIỆP' })).body).toMatchObject({
     total: 1,

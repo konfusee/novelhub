@@ -15,94 +15,107 @@ afterEach(() => {
 })
 
 const REPORT_ID = '507f1f77bcf86cd799439011'
-const STORY_ID = '507f1f77bcf86cd799439012'
-const feed = {
-  items: [
-    {
-      id: REPORT_ID,
-      version: 3,
-      targetType: 'comment',
-      targetId: '507f1f77bcf86cd799439013',
-      reason: 'harassment',
-      details: 'Lời lẽ xúc phạm',
-      status: 'under-review',
-      submittedAt: '2026-10-20T08:00:00.000Z',
-      reporter: { displayName: 'Độc giả B' },
-      snapshot: { body: 'Bình luận gây hấn', storyId: STORY_ID },
-      target: {
-        available: true,
-        storyId: STORY_ID,
-        chapterId: null,
-        title: 'Truyện A',
-        authorName: 'Tác giả A',
-        currentStatus: 'visible',
-      },
-      sameTargetOpen: 2,
-      claim: { mine: true, owner: 'Mod A', expiresAt: '2026-10-21T08:00:00.000Z' },
-      resolution: null,
-      allowedActions: ['dismiss', 'hide-comment'],
-    },
-  ],
-  total: 1,
-  page: 1,
-  pageSize: 20,
-  counts: { open: 4, mine: 1, resolved: 7 },
+const vietnamTime = iso =>
+  new Intl.DateTimeFormat('vi-VN', {
+    dateStyle: 'medium',
+    timeStyle: 'short',
+    timeZone: 'Asia/Ho_Chi_Minh',
+  }).format(new Date(iso))
+const report = overrides => ({
+  reportId: REPORT_ID,
+  version: 2,
+  targetType: 'comment',
+  targetTitle: 'Bình luận gây hấn',
+  reason: 'harassment',
+  reporter: { id: 'reader-1', displayName: 'Độc giả A' },
+  reportedAt: '2026-10-29T01:00:00Z',
+  claimState: 'unclaimed',
+  claimExpiresAt: null,
+  ...overrides,
+})
+const feeds = {
+  queue: [report({ claimState: 'expired', claimExpiresAt: '2026-10-29T02:45:00Z' })],
+  mine: [report({ claimState: 'mine', claimExpiresAt: '2026-10-30T04:20:00Z' })],
 }
-const view = () =>
+const view = (entry = '/moderator/reports') =>
   render(
-    <MemoryRouter initialEntries={['/moderator/reports']}>
+    <MemoryRouter initialEntries={[entry]}>
       <LocaleProvider>
         <ReportsQueuePage />
       </LocaleProvider>
     </MemoryRouter>,
   )
-const serve = post =>
-  mocks.apiRequest.mockImplementation((path, options) =>
-    options?.method === 'POST' ? post(path, options) : Promise.resolve(feed),
-  )
-const openResolve = async () => {
-  expect(await screen.findByText('Bình luận gây hấn')).toBeTruthy()
-  fireEvent.click(screen.getByRole('button', { name: 'Xử lý' }))
-  fireEvent.change(screen.getByLabelText('Lý do xử lý'), {
-    target: { value: 'Ngôn từ quấy rối rõ ràng' },
+const serve = () =>
+  mocks.apiRequest.mockImplementation(path => {
+    const view = new URLSearchParams(path.split('?')[1]).get('view')
+    return Promise.resolve({
+      view,
+      items: feeds[view],
+      page: 1,
+      pageSize: 20,
+      total: 1,
+      pageCount: 1,
+    })
   })
-}
 
-it('renders live rows and resolves with only the allowed actions', async () => {
-  serve(() => Promise.resolve({ report: {} }))
+it('lists the queue with Vietnamese labels, claim expiry with time and a link to the report', async () => {
+  serve()
   view()
-  await openResolve()
-  expect(mocks.apiRequest.mock.calls[0][0]).toBe('/moderator/reports?status=open&page=1')
-  for (const text of [
-    'Truyện A',
-    'Lời lẽ xúc phạm',
-    'Đang mở (4)',
-    '2 báo cáo mở khác cho cùng đối tượng',
-  ])
-    expect(screen.getAllByText(text, { exact: false }).length).toBeGreaterThan(0)
-  const options = screen.getAllByRole('radio').map(radio => radio.value)
-  expect(options).toEqual(['dismiss', 'hide-comment'])
-  fireEvent.click(screen.getByRole('radio', { name: 'Ẩn bình luận' }))
-  const dialog = screen.getByRole('dialog')
-  fireEvent.click(dialog.querySelector('button[type="submit"]'))
-  fireEvent.click(screen.getByRole('button', { name: 'Xác nhận' }))
-  await waitFor(() =>
-    expect(mocks.apiRequest).toHaveBeenCalledWith(`/moderator/reports/${REPORT_ID}/resolve`, {
-      method: 'POST',
-      body: { action: 'hide-comment', reason: 'Ngôn từ quấy rối rõ ràng', expectedVersion: 3 },
-    }),
+  expect(await screen.findByText('Bình luận gây hấn')).toBeTruthy()
+  expect(mocks.apiRequest.mock.calls[0][0]).toBe('/moderator/reports?view=queue&page=1')
+  expect(screen.getAllByText('Bình luận').length).toBeGreaterThan(0)
+  expect(screen.getByText('Quấy rối')).toBeTruthy()
+  expect(
+    screen.getByText('Báo cáo bởi Độc giả A · ' + vietnamTime('2026-10-29T01:00:00Z')),
+  ).toBeTruthy()
+  expect(vietnamTime('2026-10-29T02:45:00Z')).toContain('09:45')
+  expect(
+    screen.getByText('Claim đã hết hạn lúc ' + vietnamTime('2026-10-29T02:45:00Z')),
+  ).toBeTruthy()
+  for (const raw of ['comment', 'harassment', 'expired']) expect(screen.queryByText(raw)).toBeNull()
+  expect(screen.getByRole('link', { name: 'Xem báo cáo' }).getAttribute('href')).toBe(
+    `/moderator/reports/${REPORT_ID}`,
   )
-  expect(await screen.findByText('Đã xử lý báo cáo.')).toBeTruthy()
 })
 
-it('shows the conflict message on 409', async () => {
-  serve(() =>
-    Promise.reject(Object.assign(new Error('x'), { status: 409, code: 'report_changed' })),
-  )
+it('filters by target type and switches to my claims', async () => {
+  serve()
   view()
-  await openResolve()
-  fireEvent.click(screen.getByRole('dialog').querySelector('button[type="submit"]'))
+  await screen.findByText('Bình luận gây hấn')
+  fireEvent.click(screen.getByRole('combobox', { name: 'Loại đối tượng' }))
+  fireEvent.click(screen.getByRole('option', { name: 'Chương' }))
+  await waitFor(() =>
+    expect(mocks.apiRequest.mock.calls.map(call => call[0])).toContain(
+      '/moderator/reports?view=queue&targetType=chapter&page=1',
+    ),
+  )
+  fireEvent.click(screen.getByRole('button', { name: 'Tôi đang giữ' }))
+  await waitFor(() =>
+    expect(mocks.apiRequest.mock.calls.map(call => call[0])).toContain(
+      '/moderator/reports?view=mine&targetType=chapter&page=1',
+    ),
+  )
   expect(
-    await screen.findByText('Báo cáo đã thay đổi. Danh sách đã được tải lại, hãy thử lại.'),
+    await screen.findByText('Bạn đang giữ đến ' + vietnamTime('2026-10-30T04:20:00Z')),
   ).toBeTruthy()
+})
+
+it('opens the view named in the URL', async () => {
+  serve()
+  view('/moderator/reports?view=mine')
+  expect(await screen.findByText('Bình luận gây hấn')).toBeTruthy()
+  expect(mocks.apiRequest.mock.calls[0][0]).toBe('/moderator/reports?view=mine&page=1')
+})
+
+it('shows the empty message when nothing matches', async () => {
+  mocks.apiRequest.mockResolvedValue({
+    view: 'queue',
+    items: [],
+    page: 1,
+    pageSize: 20,
+    total: 0,
+    pageCount: 0,
+  })
+  view()
+  expect(await screen.findByText('Không có báo cáo nào phù hợp với tiêu chí đã chọn.')).toBeTruthy()
 })

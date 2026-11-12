@@ -57,11 +57,12 @@ appear in lists.
 
 ### Moderator reports
 
-| Method and path                                    | Purpose                                                                 |
-| -------------------------------------------------- | ----------------------------------------------------------------------- |
-| `GET /api/moderator/reports?status=open\|mine\|resolved` | Queue with target state, claim and resolution                     |
-| `POST /api/moderator/reports/:id/claim` / `release`     | Exclusive claim that expires after `MODERATION_CLAIM_HOURS`       |
-| `POST /api/moderator/reports/:id/resolve`               | `dismiss`, `hide-comment`, `unpublish-chapter`, `unpublish-story` or `warn-author`, with a mandatory reason |
+| Method and path                                          | Purpose                                                                 |
+| -------------------------------------------------------- | ----------------------------------------------------------------------- |
+| `GET /api/moderator/reports?view=queue\|mine&targetType=` | `queue`: open reports without another moderator's live claim; `mine`: my live claims. Oldest first, 20 per page |
+| `GET /api/moderator/reports/:reportId`                    | Summary for any Moderator; the claim holder also gets the snapshot, the current target, earlier reports on the target and the allowed actions |
+| `POST /api/moderator/reports/:reportId/claim` / `release` | Exclusive claim for the policy's claim hours; `release` needs the `claimToken` returned by the claim |
+| `POST /api/moderator/reports/:reportId/resolution`        | `{ action, reason (5–2000), expectedVersion, claimToken }`; the result records whether the content changed |
 
 Allowed actions depend on what was reported:
 
@@ -71,10 +72,12 @@ Allowed actions depend on what was reported:
 | Chapter       | `dismiss`, `unpublish-chapter`, `unpublish-story`, `warn-author` |
 | Story         | `dismiss`, `unpublish-story`, `warn-author`                   |
 
-A resolution runs in one transaction. It writes `ReportResolution`,
-`ModerationHistory` and `AuditEvent` records, applies the content change, and
-sends in-app notices to the Author or comment owner and to the reporter. There
-is no escalation, and no report action suspends an account.
+A resolution runs in one transaction. It writes `ReportResolution` (with
+`contentChanged`: false for Dismiss, Warn Author and a target that was already
+restricted), `ModerationHistory` and `AuditEvent` records, applies the content
+change, and sends in-app notices to the reporter and, for Warn Author or a
+content change, to the Author or comment owner. There is no escalation, and no
+report action suspends an account.
 
 ## Tests
 
@@ -84,4 +87,5 @@ Backend: `backend/test/reading-*.test.js`, `backend/test/community-*.test.js`,
 Frontend: `frontend/test/components/community/`,
 `frontend/test/pages/guest/StoryDetailPage.test.jsx`,
 `frontend/test/pages/reader/FullChapterReaderPage.test.jsx`,
-`frontend/test/pages/moderator/ReportsQueuePage.test.jsx`.
+`frontend/test/pages/moderator/ReportsQueuePage.test.jsx`,
+`frontend/test/pages/moderator/ReportReviewDetailPage.test.jsx`.

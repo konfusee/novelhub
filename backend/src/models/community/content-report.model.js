@@ -24,6 +24,8 @@ const schema = new Schema(
     resolvedAt: Date,
     resolutionId: { type: ObjectId, ref: 'ReportResolution' },
     claimOwnerAccountId: { type: ObjectId, ref: 'Account' },
+    claimToken: ObjectId,
+    claimAcquiredAt: Date,
     claimExpiresAt: Date,
     claimVersion: { type: Number, default: 0 },
     claimReleaseHistory: [{ type: Schema.Types.Mixed }],
