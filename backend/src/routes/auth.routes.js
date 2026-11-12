@@ -110,6 +110,17 @@ export function createAuthRouter(config) {
 
   const captchaStore = config.captchaStore ?? createCaptchaStore(config.securityConfig)
   const recoveryRequests = new Map()
+  const verificationRequests = new Map()
+
+  function reserveEmailRequest(requests, email, seconds) {
+    const now = Date.now()
+    for (const [key, until] of requests) {
+      if (until <= now) requests.delete(key)
+    }
+    if (requests.has(email)) return false
+    requests.set(email, now + seconds * 1000)
+    return true
+  }
   const recoveryIps = new Map()
   const otpTtlMinutes = Math.min(
     config.passwordResetTtlMinutes,
@@ -288,8 +299,11 @@ export function createAuthRouter(config) {
       const parsed = emailSchema.safeParse(req.body)
       if (!parsed.success)
         return next(new HttpError(400, 'validation_error', 'Valid email is required'))
+      const email = parsed.data.email
+      const response = { message: 'Nếu tài khoản đang chờ xác minh, email mới sẽ được gửi.' }
+      if (!reserveEmailRequest(verificationRequests, email, 60)) return res.json(response)
       const account = await Account.findOne({
-        normalizedEmail: parsed.data.email,
+        normalizedEmail: email,
         status: 'pending-verification',
       })
       if (account) {
@@ -301,9 +315,13 @@ export function createAuthRouter(config) {
             session,
           }),
         )
-        await deliverToken({ email: account.email, token, purpose: 'email-verification' })
+        try {
+          await deliverToken({ email: account.email, token, purpose: 'email-verification' })
+        } catch (error) {
+          config.logger?.error({ err: error, accountId: account._id }, 'verification email failed')
+        }
       }
-      res.json({ message: 'If the account is awaiting verification, a new email has been sent.' })
+      res.json(response)
     } catch (error) {
       next(error)
     }
@@ -314,17 +332,13 @@ export function createAuthRouter(config) {
       const parsed = emailSchema.safeParse(req.body)
       if (!parsed.success)
         return next(new HttpError(400, 'validation_error', 'Valid email is required'))
-      const now = Date.now()
-      for (const [key, until] of recoveryRequests) {
-        if (until <= now) recoveryRequests.delete(key)
-      }
       const email = parsed.data.email
-      if (recoveryRequests.has(email)) {
+      if (!reserveEmailRequest(recoveryRequests, email, config.securityConfig.resendSeconds)) {
         return next(
           new HttpError(429, 'otp_cooldown', 'Please wait before requesting another code'),
         )
       }
-      recoveryRequests.set(email, now + config.securityConfig.resendSeconds * 1000)
+      const now = Date.now()
       const challenge = randomBytes(32).toString('base64url')
       const account = await Account.findOne({
         normalizedEmail: email,

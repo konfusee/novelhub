@@ -247,3 +247,15 @@ With two-factor enabled, password login returns requiresTwoFactor and a challeng
 instead of an authenticated session. Google callback returns to the login OTP
 step. POST /api/auth/two-factor/verify issues a session only after consuming the
 correct code. This is email verification, not an authenticator-app TOTP.
+
+### Local demo rehearsal
+
+Use a local MongoDB replica set for this rehearsal. Set `MONGODB_URI` in
+`backend/.env` to your local database, for example
+`mongodb://127.0.0.1:27018/novelhub_local?replicaSet=rs0&directConnection=true`.
+Use the OAuth and SMTP settings above. Keep `PAYOUT_WORKER_ENABLED=false`.
+
+1. Start the backend and frontend. Open the local login page and use Google
+   sign-in. Confirm that the callback takes you into the app as the test account.
+2. Sign out and register with a different email address you control. Open the
+   verification email, follow the link, and sign in with the verified account.

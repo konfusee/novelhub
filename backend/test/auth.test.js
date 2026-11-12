@@ -13,7 +13,7 @@ import { useTestDatabase } from './db.js'
 
 useTestDatabase()
 const deliveredEmails = []
-const createTestApp = () =>
+const createTestApp = (overrides = {}) =>
   createApp({
     ...testConfig(),
     corsOrigin: 'http://localhost:5173',
@@ -33,6 +33,7 @@ const createTestApp = () =>
         return { accepted: true }
       },
     },
+    ...overrides,
   })
 const password = 'correct horse battery staple'
 let app
@@ -169,6 +170,20 @@ describe('email registration and verification', () => {
     ).toBe(400)
   })
 
+  it('returns the same verification response on delivery failure and unknown email', async () => {
+    await registrationRequest().send(registration)
+    const send = vi.fn().mockRejectedValue(new Error('SMTP unavailable'))
+    const failingApp = createTestApp({ emailDelivery: { send } })
+    const resend = email =>
+      request(failingApp).post('/api/auth/resend-verification').send({ email })
+    const pending = await resend(registration.email)
+    const unknown = await resend('unknown@example.test')
+    expect(pending.status).toBe(200)
+    expect(unknown.status).toBe(200)
+    expect(pending.body).toEqual(unknown.body)
+    expect(send).toHaveBeenCalledTimes(3)
+  })
+
   it('revokes the older token when verification is resent', async () => {
     await registrationRequest().send(registration)
     const oldToken = new URL(deliveredEmails[0].actionUrl).searchParams.get('token')
@@ -176,6 +191,11 @@ describe('email registration and verification', () => {
       (await request(app).post('/api/auth/resend-verification').send({ email: registration.email }))
         .status,
     ).toBe(200)
+    const repeat = await request(app)
+      .post('/api/auth/resend-verification')
+      .send({ email: registration.email.toUpperCase() })
+    expect(repeat.status).toBe(200)
+    expect(deliveredEmails).toHaveLength(2)
     const newToken = new URL(deliveredEmails[1].actionUrl).searchParams.get('token')
     expect(
       (await request(app).post('/api/auth/verify-email').send({ token: oldToken })).status,

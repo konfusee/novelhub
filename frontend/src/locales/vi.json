@@ -2820,6 +2820,10 @@
     "enabledState": "Áp dụng đọc sớm"
   },
   "apiErrors": {
+    "internal_error": "Máy chủ gặp lỗi. Vui lòng thử lại.",
+    "csrf_rejected": "Nguồn yêu cầu không được phép.",
+    "not_found": "Không tìm thấy nội dung yêu cầu.",
+    "staff_role_conflict": "Tài khoản đã có vai trò quản trị hoặc kiểm duyệt.",
     "unauthorized": "Vui lòng đăng nhập để tiếp tục.",
     "forbidden": "Bạn không có quyền thực hiện thao tác này."
   },

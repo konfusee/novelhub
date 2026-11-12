@@ -46,7 +46,13 @@ export async function apiRequest(path, { method = 'GET', body, signal, binary = 
   const data = response.status === 204 ? null : await response.json().catch(() => null)
   if (!response.ok) {
     const code = data?.error?.code
-    const message = Object.hasOwn(vi.apiErrors, code) ? vi.apiErrors[code] : data?.error?.message
+    const serverMessage = data?.error?.message
+    const message =
+      response.status === 403 && code === 'forbidden' && serverMessage
+        ? serverMessage
+        : Object.hasOwn(vi.apiErrors, code)
+          ? vi.apiErrors[code]
+          : serverMessage
     throw new ApiError(message || vi.auth.requestFailed, { status: response.status, code })
   }
   return data
