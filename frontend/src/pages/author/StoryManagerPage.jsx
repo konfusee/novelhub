@@ -685,6 +685,7 @@ const emptyStoryAnalytics = {
   earnings: 0,
   rating: { average: null, count: 0 },
   comments: {},
+  dataCoverage: { requestedDays: 30, availableDays: null, sufficient: true, since: null },
 }
 
 const analyticsPeriods = [
@@ -884,6 +885,7 @@ function StoryAnalyticsSummary({ storyId }) {
     emptyStoryAnalytics,
   )
   const data = analytics.data
+  const dataCoverage = data.dataCoverage ?? emptyStoryAnalytics.dataCoverage
   const metrics = [
     [BookOpen, t('analyticsData.views'), data.reads ?? 0, 'brand'],
     [UsersRound, t('analyticsData.readers'), data.readers ?? 0, 'orange'],
@@ -923,6 +925,14 @@ function StoryAnalyticsSummary({ storyId }) {
                 period: t(`analyticsData.${selectedPeriod.labelKey}`),
               })}
             </p>
+            {!dataCoverage.sufficient && (
+              <p className="mt-2 text-xs font-semibold text-orange-strong">
+                {t('analyticsData.insufficientPeriod', {
+                  availableDays: dataCoverage.availableDays,
+                  requestedDays: dataCoverage.requestedDays,
+                })}
+              </p>
+            )}
           </div>
           <ButtonLink to={ROUTES.authorAnalytics(storyId)} variant="secondary" size="sm">
             {t('analyticsData.openFullAnalytics')}

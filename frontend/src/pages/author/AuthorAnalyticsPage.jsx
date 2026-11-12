@@ -40,6 +40,7 @@ const emptyAnalytics = {
   paidUnlocks: 0,
   earnings: 0,
   comments: {},
+  dataCoverage: { requestedDays: 30, availableDays: null, sufficient: true, since: null },
 }
 const rangeLabels = {
   'Last 7 Days': '1 tuần',
@@ -104,6 +105,7 @@ export function AuthorAnalyticsPage() {
   )
   const loading = analytics.status === 'loading'
   const { daily, labels, reads, readers } = analytics.data
+  const dataCoverage = analytics.data.dataCoverage ?? emptyAnalytics.dataCoverage
   const returning = analytics.data.returningReaders
   const returnRate = analytics.data.returnRate
   const hasReturningData =
@@ -374,6 +376,14 @@ export function AuthorAnalyticsPage() {
 
         <div className="mt-6 grid items-start gap-5 xl:grid-cols-[minmax(0,1fr)_18rem]">
           <div className="min-w-0">
+            {story && !dataCoverage.sufficient && (
+              <div className="mb-5 rounded-2xl border border-orange/30 bg-orange/10 px-4 py-3 text-sm text-orange-strong">
+                {t('analyticsData.insufficientPeriod', {
+                  availableDays: dataCoverage.availableDays,
+                  requestedDays: dataCoverage.requestedDays,
+                })}
+              </div>
+            )}
             {analytics.status === 'error' ? (
               <Card className="mt-6 p-0">
                 <EmptyState

@@ -24,7 +24,7 @@ export async function authorAnalytics(
     .sort({
       updatedAt: -1,
     })
-    .select('title')
+    .select('title createdAt')
     .lean()
   if (storyId && !stories.some(story => String(story._id) === storyId))
     throw new HttpError(404, 'not_found', 'Không tìm thấy truyện.')
@@ -81,6 +81,18 @@ export async function authorAnalytics(
   const selected = stories
     .filter(story => !storyId || String(story._id) === storyId)
     .map(story => story._id)
+  const selectedStory = storyId ? stories.find(story => String(story._id) === storyId) : null
+  const vietnameseDay = value =>
+    new Date(new Date(value).getTime() + 7 * 60 * 60 * 1000).toISOString().slice(0, 10)
+  const availableSince = selectedStory?.createdAt ? vietnameseDay(selectedStory.createdAt) : null
+  const availableDays = availableSince
+    ? Math.max(
+        1,
+        Math.floor(
+          (Date.parse(`${today}T00:00:00Z`) - Date.parse(`${availableSince}T00:00:00Z`)) / 86400000,
+        ) + 1,
+      )
+    : null
   const selectedChapters = selectedChapter
     ? [selectedChapter._id]
     : await Chapter.find({
@@ -384,5 +396,11 @@ export async function authorAnalytics(
     retention: null,
     channels: null,
     devices: null,
+    dataCoverage: {
+      requestedDays: days,
+      availableDays,
+      sufficient: availableDays == null || availableDays >= days,
+      since: availableSince,
+    },
   }
 }
