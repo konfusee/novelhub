@@ -43,6 +43,32 @@ function notificationView(item) {
     'monthly-payout.Paid': 'Khoản chi trả đã thanh toán',
     'monthly-payout.Failed': 'Chi trả chưa thành công',
   }
+  if (item.eventType === 'system.role-changed') {
+    const roles = {
+      reader: 'Độc giả',
+      author: 'Tác giả',
+      moderator: 'Kiểm duyệt viên',
+      admin: 'Quản trị viên',
+    }
+    const role = item.payload?.role
+    const description = Object.hasOwn(roles, role)
+      ? `Vai trò mới: ${roles[role]}`
+      : eventTitles[item.eventType]
+    return {
+      id: String(item._id),
+      title: eventTitles[item.eventType],
+      description,
+      body: description,
+      status: '',
+      read: Boolean(item.readAt),
+      unread: !item.readAt,
+      createdAt: item.createdAt,
+      type: 'system',
+      label: 'Đổi vai trò',
+      href: '/reader/account',
+      action: 'Xem tài khoản',
+    }
+  }
   const decided = item.eventType === 'author-application.decided'
   const publication = item.eventType === 'publication.decided'
   const candidate = item.eventType.replace(/^reference\./, '').split('.')[0]

@@ -9,6 +9,7 @@ import {
   ContentRevision,
   EvidenceBatch,
   ModerationHistory,
+  Notification,
   PublicationSubmission,
   RoleAssignment,
   Story,
@@ -201,6 +202,12 @@ it('atomically cancels future schedules and pending review, releases claims and 
   const epoch = (await Account.findById(f.author.account._id)).authorizationEpoch
   const result = await write(f.admin.cookie, f.url, f.revoke)
   expect(result.status).toBe(200)
+  const notifications = await Notification.find({
+    recipientAccountId: f.author.account._id,
+    eventType: 'system.role-changed',
+  }).lean()
+  expect(notifications).toHaveLength(1)
+  expect(notifications[0].payload.role).toBe('reader')
   expect(result.body.cancelledChapters).toBe(2)
   expect(result.body.cancelledSubmissions).toBe(2)
   const cancelled = await Chapter.findById(f.chapterId)

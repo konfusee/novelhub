@@ -5,8 +5,8 @@ import { AppShell } from '../../../src/components/shell/AppShell'
 import { LocaleProvider } from '../../../src/context/LocaleContext'
 import { notifyWalletBalanceChanged } from '../../../src/api/walletEvents'
 
-const mocks = vi.hoisted(() => ({ apiRequest: vi.fn(), user: null }))
-vi.mock('../../../src/api/client', () => ({ apiRequest: mocks.apiRequest }))
+const mocks = vi.hoisted(() => ({ apiRequest: vi.fn(), apiGet: vi.fn(), user: null }))
+vi.mock('../../../src/api/client', () => ({ apiRequest: mocks.apiRequest, apiGet: mocks.apiGet }))
 vi.mock('../../../src/context/AuthContext', () => ({
   ROLE_HOME: { reader: '/reader', author: '/author', moderator: '/moderator', admin: '/admin' },
   useAuth: () => ({
@@ -22,6 +22,7 @@ vi.mock('../../../src/context/ThemeContext', () => ({
 
 beforeEach(() => {
   localStorage.clear()
+  mocks.apiGet.mockReset().mockResolvedValue({ ok: true, data: { count: 0 } })
   mocks.user = { id: 'account-a', name: 'Account A', roles: ['reader', 'author'] }
   mocks.apiRequest
     .mockReset()
@@ -159,4 +160,16 @@ it('opens notifications in the active workspace', () => {
   fireEvent.click(header().getByRole('button', { name: 'Thông báo' }))
   expect(screen.getByTestId('location').textContent).toBe('/admin/notifications')
   expect(screen.getByText('Workspace admin')).toBeTruthy()
+})
+
+it('shows the unread count only when the backend reports unread notifications', async () => {
+  view('/reader')
+  const bell = header().getByRole('button', { name: 'Thông báo' })
+  expect(within(bell).queryByText('0')).toBeNull()
+  mocks.apiGet.mockResolvedValue({ ok: true, data: { count: 3 } })
+  fireEvent.focus(window)
+  expect(await within(bell).findByText('3')).toBeTruthy()
+  mocks.apiGet.mockResolvedValue({ ok: true, data: { count: 0 } })
+  fireEvent.focus(window)
+  await waitFor(() => expect(within(bell).queryByText('3')).toBeNull())
 })

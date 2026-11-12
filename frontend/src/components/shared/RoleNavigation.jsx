@@ -14,7 +14,8 @@ import {
   UserRound,
 } from '../icons'
 import { Link, useLocation, useNavigate } from 'react-router'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
+import { apiGet } from '../../api/client'
 import { ROLE_HOME, useAuth } from '../../context/AuthContext'
 import { useTheme } from '../../context/ThemeContext'
 import { Avatar, IconButton, Input } from '../ui'
@@ -160,6 +161,28 @@ export function SharedWorkspaceHeader({
   const navigate = useNavigate()
   const wallet = workspaceWallets[currentRole]
   const balance = useWorkspaceBalance(currentRole)
+  const { currentUser } = useAuth()
+  const accountId = currentUser?.id
+  const [unread, setUnread] = useState(null)
+  useEffect(() => {
+    if (!accountId) return
+    const controller = new AbortController()
+    const refresh = () => {
+      apiGet('/reader/notifications/unread-count', { signal: controller.signal })
+        .then(({ ok, data }) => {
+          if (!controller.signal.aborted) setUnread({ accountId, count: ok ? data?.count : 0 })
+        })
+        .catch(() => {})
+    }
+    refresh()
+    window.addEventListener('focus', refresh)
+    const timer = window.setInterval(refresh, 30_000)
+    return () => {
+      controller.abort()
+      window.removeEventListener('focus', refresh)
+      window.clearInterval(timer)
+    }
+  }, [accountId, pathname])
   const walletActive =
     wallet &&
     (pathname === wallet.path || (currentRole === 'author' && pathname === '/author/wallet'))
@@ -243,7 +266,11 @@ export function SharedWorkspaceHeader({
           onClick={() => navigate(ROUTES.workspaceNotifications(currentRole))}
         >
           <Bell size={18} />
-          <span className="absolute right-2.5 top-2.5 size-2 rounded-full bg-rose ring-2 ring-surface" />
+          {unread?.accountId === accountId && unread?.count > 0 && (
+            <span className="absolute right-1 top-1 rounded-full bg-rose px-1 text-[10px] leading-4 text-ink">
+              {unread.count > 99 ? '99+' : formatNumber(unread.count)}
+            </span>
+          )}
         </IconButton>
         <WorkspaceHeaderAccount currentRole={currentRole} />
       </div>

@@ -3,6 +3,7 @@ import { HttpError } from '../../../middleware/errors.js'
 import { Account, AuditEvent, RoleAssignment } from '../../../models/index.js'
 import { digest } from '../../authoring-publishing/submissions/submission-digests.js'
 import { runLifecycleHooks } from '../lifecycle.js'
+import { notify } from '../notifications.js'
 
 export async function listActiveAuthors({ page, pageSize, query }) {
   const literal = query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
@@ -114,6 +115,15 @@ export async function revokeAuthorRole(admin, accountId, input) {
       cancelledChapters,
       cancelledSubmissions,
     })
+    await notify(
+      {
+        recipientAccountId: target._id,
+        eventType: 'system.role-changed',
+        sourceEventKey: `account-role:${target.version}`,
+        payload: { role: 'reader' },
+      },
+      { session },
+    )
     return {
       accountId: String(target._id),
       roleId: String(role._id),
