@@ -35,6 +35,7 @@ const profile = account => ({
 function notificationView(item) {
   const text = (value, max = 4000) => (typeof value === 'string' ? value.slice(0, max) : '')
   const eventTitles = {
+    'system.role-changed': 'Vai trò tài khoản của bạn đã thay đổi',
     'google.linked': 'Đã liên kết tài khoản Google',
     'monthly-payout.created': 'Khoản chi trả đã được lập',
     'monthly-payout.bank-details-missing': 'Cần bổ sung thông tin ngân hàng',

@@ -1,3 +1,4 @@
+import { notify } from '../notifications.js'
 import { Account, AuditEvent, RoleAssignment, Session } from '../../../models/index.js'
 import { withTransaction } from '../../../db/connection.js'
 import { HttpError } from '../../../middleware/errors.js'
@@ -57,12 +58,8 @@ export async function changeStaffRole(admin, accountId, input) {
         'Tài khoản đã thay đổi hoặc chưa được xác minh. Hãy tải lại.',
       )
     const previous = await RoleAssignment.findOne({ accountId, status: 'active' }).session(session)
-    if (previous?.role === 'author')
-      throw new HttpError(
-        409,
-        'author_revocation_required',
-        'Hãy gỡ quyền Author qua quy trình quản lý tác giả trước.',
-      )
+    if (['author', 'admin'].includes(previous?.role))
+      throw new HttpError(409, 'SYS-MSG-NEW-S08', 'Vai trò hiện tại xung đột với thay đổi này.')
     if (previous?.role === input.role || (!previous && input.role === 'reader'))
       throw new HttpError(409, 'role_unchanged', 'Vai trò không thay đổi.')
     if (input.role === 'moderator' && target.everAuthor)
@@ -108,6 +105,15 @@ export async function changeStaffRole(admin, accountId, input) {
           occurredAt: now,
         },
       ],
+      { session },
+    )
+    await notify(
+      {
+        recipientAccountId: target._id,
+        eventType: 'system.role-changed',
+        sourceEventKey: `account-role:${target.version}`,
+        payload: { role: input.role },
+      },
       { session },
     )
     return { account: { id: String(target._id), version: target.version, role: input.role } }

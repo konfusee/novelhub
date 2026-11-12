@@ -74,37 +74,33 @@ it('grants and revokes staff roles with authorization, single-role, former-autho
   })
   expect(denied.status).toBe(409)
   expect(denied.body.error.code).toBe('former_author')
+  const otherAdmin = await authenticatedAccount('admin')
+  const conflict = await post(admin, `/admin/accounts/${otherAdmin.account._id}/role`, {
+    ...input,
+    expectedVersion: otherAdmin.account.version,
+  })
+  expect(conflict.status).toBe(409)
+  expect(conflict.body.error.code).toBe('SYS-MSG-NEW-S08')
+  expect(
+    await Notification.countDocuments({
+      recipientAccountId: reader.account._id,
+      eventType: 'system.role-changed',
+    }),
+  ).toBe(2)
   expect(await AuditEvent.countDocuments({ action: 'account.role-changed' })).toBe(2)
 })
 
-it('suspends staff, releases claims and rolls back every field when a hook fails', async () => {
-  const admin = await authenticatedAccount('admin'),
-    moderator = await authenticatedAccount('moderator')
-  const report = await ContentReport.create({
-    reporterAccountId: admin.account._id,
-    targetType: 'story',
-    targetId: admin.account._id,
-    status: 'under-review',
-    claimOwnerAccountId: moderator.account._id,
-    claimExpiresAt: new Date(Date.now() + 3600_000),
+it.each(['suspend', 'close'])('protects moderator accounts from %s', async action => {
+  const admin = await authenticatedAccount('admin')
+  const moderator = await authenticatedAccount('moderator')
+  const response = await post(admin, `/admin/accounts/${moderator.account._id}/status`, {
+    action,
+    expectedVersion: moderator.account.version,
+    reason: 'Tạm khóa',
   })
-  const path = `/admin/accounts/${moderator.account._id}/status`
-  const body = { action: 'suspend', expectedVersion: moderator.account.version, reason: 'Tạm khóa' }
-  const remove = registerLifecycleHook('onAccountSuspended', 'test-failure', async () => {
-    throw new Error('hook failed')
-  })
-  try {
-    expect((await post(admin, path, body)).status).toBe(500)
-    expect((await Account.findById(moderator.account._id)).status).toBe('active')
-    expect((await ContentReport.findById(report._id)).status).toBe('under-review')
-  } finally {
-    remove()
-  }
-  expect((await post(admin, path, body)).status).toBe(200)
-  const released = await ContentReport.findById(report._id)
-  expect(released.status).toBe('open')
-  expect(released.claimOwnerAccountId).toBeUndefined()
-  expect(released.claimReleaseHistory).toHaveLength(1)
+  expect(response.status).toBe(409)
+  expect(response.body.error.code).toBe('protected_account')
+  expect((await Account.findById(moderator.account._id)).status).toBe('active')
 })
 
 it('creates in-app notices idempotently and retries email at most three times with recorded attempts', async () => {

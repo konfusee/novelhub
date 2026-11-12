@@ -26,6 +26,15 @@ export async function changeAuthorAccount(admin, accountId, input) {
       throw new HttpError(409, 'protected_account', 'Không thể tự khóa tài khoản.')
     const target = await Account.findById(accountId).session(session)
     if (!target) throw new HttpError(404, 'not_found', 'Không tìm thấy tài khoản.')
+    if (
+      input.action === 'suspend' &&
+      (await RoleAssignment.exists({
+        accountId,
+        role: { $in: ['moderator', 'admin'] },
+        status: 'active',
+      }).session(session))
+    )
+      throw new HttpError(409, 'protected_account', 'Không thể thao tác với tài khoản nhân sự.')
     const from = input.action === 'suspend' ? 'active' : 'suspended'
     if (target.version !== input.expectedVersion || target.status !== from)
       throw new HttpError(

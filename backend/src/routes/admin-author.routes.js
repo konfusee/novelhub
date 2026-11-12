@@ -61,7 +61,7 @@ export function createAdminAuthorRouter(config) {
       try {
         const parsed = z
           .object({
-            role: z.enum(['reader', 'moderator', 'admin']),
+            role: z.enum(['reader', 'moderator']),
             expectedVersion: z.number().int().min(0),
             reason: z.string().trim().min(1).max(1000),
           })
