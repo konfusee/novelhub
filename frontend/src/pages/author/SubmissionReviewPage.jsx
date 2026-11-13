@@ -1,6 +1,14 @@
 import { useRef, useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router'
-import { AlertTriangle, Check, Clock3, FileCheck2, RefreshCw, Send } from '../../components/icons'
+import {
+  AlertTriangle,
+  Check,
+  ChevronDown,
+  Clock3,
+  FileCheck2,
+  RefreshCw,
+  Send,
+} from '../../components/icons'
 import { AuthorLayout } from '../../layouts'
 import { useBackendDocument } from '../../api/useBackendResource'
 import { apiRequest } from '../../api/client'
@@ -252,6 +260,7 @@ function StoryPackage({ storyId, chapterId, choose, onSubmitted }) {
 }
 
 function SubmissionPackage({ storyId, chapterId, onSubmitted }) {
+  const [checklistCollapsed, setChecklistCollapsed] = useState(false)
   const { t, formatNumber } = useLocale()
   const query = new URLSearchParams({ storyId, ...(chapterId ? { chapterId } : {}) })
   const resource = useBackendDocument(`/author/submissions/prepare?${query}`, emptyPackage)
@@ -368,78 +377,102 @@ function SubmissionPackage({ storyId, chapterId, onSubmitted }) {
         <div className="min-w-0 space-y-5">
           <Card>
             <div className="flex flex-wrap items-center justify-between gap-3">
-              <h2 className="text-h3">{t('submissionData.checklist')}</h2>
-              <Badge>
-                {passed} / {data.checks.length}
-              </Badge>
-              <Button size="sm" variant="secondary" disabled={busy} onClick={resource.retry}>
-                {t('submissionData.checkAgain')}
-              </Button>
+              <div className="flex min-w-0 items-center gap-3">
+                <h2 className="text-h3">{t('submissionData.checklist')}</h2>
+                <Badge>
+                  {passed} / {data.checks.length}
+                </Badge>
+              </div>
+              <div className="flex flex-wrap items-center justify-end gap-2">
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  aria-expanded={!checklistCollapsed}
+                  aria-controls="submission-checklist-content"
+                  onClick={() => setChecklistCollapsed(value => !value)}
+                >
+                  {t(
+                    checklistCollapsed
+                      ? 'submissionData.expandChecklist'
+                      : 'submissionData.collapseChecklist',
+                  )}
+                  <ChevronDown
+                    size={16}
+                    aria-hidden="true"
+                    className={`transition-transform duration-200 ${checklistCollapsed ? '-rotate-90' : ''}`}
+                  />
+                </Button>
+                <Button size="sm" variant="secondary" disabled={busy} onClick={resource.retry}>
+                  {t('submissionData.checkAgain')}
+                </Button>
+              </div>
             </div>
-            {resource.status === 'loading' ? (
-              <>
-                <StatusSkeleton />
-                <ol className="mt-5 space-y-3">
-                  {checklistSkeletons.map((lines, index) => (
-                    <ChecklistSkeleton key={index} {...lines} />
-                  ))}
-                </ol>
-              </>
-            ) : resource.status !== 'ready' ? (
-              <EmptyState
-                tone="rose"
-                icon={AlertTriangle}
-                title={t('submissionData.loadError')}
-                description={t('submissionData.notFound')}
-                action={<Button onClick={resource.retry}>{t('submissionData.retry')}</Button>}
-              />
-            ) : (
-              <>
-                <ProgressBar value={percent} className="mt-5" />
-                <ol className="mt-5 space-y-3">
-                  {data.checks.map(check => (
-                    <li
-                      key={check.code}
-                      className={`flex gap-3 rounded-2xl border p-4 ${check.ok ? 'border-hairline' : 'border-rose/40 bg-rose/5'}`}
-                    >
-                      <span
-                        className={`grid size-8 shrink-0 place-items-center rounded-full ${check.ok ? 'bg-brand/12 text-brand-strong' : 'bg-rose/14 text-rose-strong'}`}
-                        aria-label={t(check.ok ? 'submissionData.pass' : 'submissionData.fail')}
+            <div id="submission-checklist-content" hidden={checklistCollapsed}>
+              {resource.status === 'loading' ? (
+                <>
+                  <StatusSkeleton />
+                  <ol className="mt-5 space-y-3">
+                    {checklistSkeletons.map((lines, index) => (
+                      <ChecklistSkeleton key={index} {...lines} />
+                    ))}
+                  </ol>
+                </>
+              ) : resource.status !== 'ready' ? (
+                <EmptyState
+                  tone="rose"
+                  icon={AlertTriangle}
+                  title={t('submissionData.loadError')}
+                  description={t('submissionData.notFound')}
+                  action={<Button onClick={resource.retry}>{t('submissionData.retry')}</Button>}
+                />
+              ) : (
+                <>
+                  <ProgressBar value={percent} className="mt-5" />
+                  <ol className="mt-5 space-y-3">
+                    {data.checks.map(check => (
+                      <li
+                        key={check.code}
+                        className={`flex gap-3 rounded-2xl border p-4 ${check.ok ? 'border-hairline' : 'border-rose/40 bg-rose/5'}`}
                       >
-                        {check.ok ? <Check size={16} /> : <AlertTriangle size={16} />}
-                      </span>
-                      <div className="min-w-0">
-                        <h3 className="text-sm font-semibold">
-                          {t(`submissionData.checks.${check.code}.title`)}
-                        </h3>
-                        <p className="mt-1 text-sm text-muted">
-                          {t(`submissionData.checks.${check.code}.hint`)}
-                        </p>
-                        <p className="mt-2 text-xs font-semibold">
-                          {t(check.ok ? 'submissionData.pass' : 'submissionData.fail')}
-                        </p>
-                        {!check.ok && fixes[check.code] && (
-                          <div className="mt-3">
-                            <ButtonLink variant="secondary" size="sm" to={fixes[check.code].to}>
-                              {t(`submissionFixes.${fixes[check.code].label}`)}
-                            </ButtonLink>
-                            {['parent', 'media', 'editable'].includes(check.code) && (
-                              <p className="mt-2 text-xs leading-5 text-muted">
-                                {t(
-                                  check.code === 'media' && chapterMedia
-                                    ? 'submissionFixes.chapterMediaHint'
-                                    : `submissionFixes.${check.code}Hint`,
-                                )}
-                              </p>
-                            )}
-                          </div>
-                        )}
-                      </div>
-                    </li>
-                  ))}
-                </ol>
-              </>
-            )}
+                        <span
+                          className={`grid size-8 shrink-0 place-items-center rounded-full ${check.ok ? 'bg-brand/12 text-brand-strong' : 'bg-rose/14 text-rose-strong'}`}
+                          aria-label={t(check.ok ? 'submissionData.pass' : 'submissionData.fail')}
+                        >
+                          {check.ok ? <Check size={16} /> : <AlertTriangle size={16} />}
+                        </span>
+                        <div className="min-w-0">
+                          <h3 className="text-sm font-semibold">
+                            {t(`submissionData.checks.${check.code}.title`)}
+                          </h3>
+                          <p className="mt-1 text-sm text-muted">
+                            {t(`submissionData.checks.${check.code}.hint`)}
+                          </p>
+                          <p className="mt-2 text-xs font-semibold">
+                            {t(check.ok ? 'submissionData.pass' : 'submissionData.fail')}
+                          </p>
+                          {!check.ok && fixes[check.code] && (
+                            <div className="mt-3">
+                              <ButtonLink variant="secondary" size="sm" to={fixes[check.code].to}>
+                                {t(`submissionFixes.${fixes[check.code].label}`)}
+                              </ButtonLink>
+                              {['parent', 'media', 'editable'].includes(check.code) && (
+                                <p className="mt-2 text-xs leading-5 text-muted">
+                                  {t(
+                                    check.code === 'media' && chapterMedia
+                                      ? 'submissionFixes.chapterMediaHint'
+                                      : `submissionFixes.${check.code}Hint`,
+                                  )}
+                                </p>
+                              )}
+                            </div>
+                          )}
+                        </div>
+                      </li>
+                    ))}
+                  </ol>
+                </>
+              )}
+            </div>
           </Card>
           <Card>
             <h2 className="text-h3">{t('submissionData.rights')}</h2>

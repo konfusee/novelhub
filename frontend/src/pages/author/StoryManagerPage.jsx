@@ -3,6 +3,7 @@ import { Link, useNavigate, useParams, useSearchParams } from 'react-router'
 import { createPortal } from 'react-dom'
 import {
   AlertTriangle,
+  ArrowUp,
   Archive,
   BarChart3,
   BookOpen,
@@ -696,19 +697,28 @@ const analyticsPeriods = [
   { value: '365', labelKey: 'periodYear', days: 365, groupBy: 'month' },
 ]
 
+const SUBMISSION_PAGE_SIZES = [5, 10, 15]
+
 function StorySubmissionHistory({ storyId }) {
   const { t, formatDate } = useLocale()
   const [page, setPage] = useState(1)
+  const [pageSize, setPageSize] = useState(5)
   const feed = useBackendDocument(
-    `/author/submissions?page=${page}&storyId=${encodeURIComponent(storyId)}`,
+    `/author/submissions?page=${page}&pageSize=${pageSize}&storyId=${encodeURIComponent(storyId)}`,
     {
       items: [],
       stories: [],
       page: 1,
       pageCount: 1,
       total: 0,
+      pageSize: 5,
     },
   )
+  const total = Number(feed.data.total ?? 0)
+  const currentPage = Number(feed.data.page ?? page)
+  const currentPageSize = Number(feed.data.pageSize ?? pageSize)
+  const visibleFrom = total ? (currentPage - 1) * currentPageSize + 1 : 0
+  const visibleTo = Math.min(total, currentPage * currentPageSize)
   const knownStatuses = [
     'validated',
     'pending-review',
@@ -737,9 +747,18 @@ function StorySubmissionHistory({ storyId }) {
           <h2 className="mt-1 text-h3">{t('submissionData.storyHistoryTitle')}</h2>
           <p className="mt-1 text-sm text-muted">{t('submissionData.storyHistoryHint')}</p>
           {feed.status === 'ready' && (
-            <p className="mt-2 text-xs font-semibold text-brand-strong">
-              {t('submissionData.submissionCount', { count: feed.data.total })}
-            </p>
+            <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1">
+              <p className="text-xs font-semibold text-brand-strong">
+                {t('submissionData.submissionCount', { count: total })}
+              </p>
+              <p className="text-xs text-muted">
+                {t('submissionData.showing', {
+                  from: visibleFrom,
+                  to: visibleTo,
+                  total,
+                })}
+              </p>
+            </div>
           )}
         </div>
         <ButtonLink
@@ -846,29 +865,36 @@ function StorySubmissionHistory({ storyId }) {
               </div>
             </article>
           ))}
-          <div className="flex flex-wrap items-center justify-between gap-3 border-t border-hairline pt-4">
-            <Button
-              variant="secondary"
-              size="sm"
-              disabled={page <= 1}
-              onClick={() => setPage(value => value - 1)}
+          <div className="flex flex-col gap-3 border-t border-hairline pt-4 sm:flex-row sm:items-center sm:justify-between">
+            <label
+              className="flex items-center gap-2 text-xs font-semibold text-muted"
+              htmlFor="story-submission-page-size"
             >
-              {t('submissionData.previous')}
-            </Button>
-            <span className="text-sm tabular-nums">
-              {t('submissionData.pageOf', {
-                page: feed.data.page,
-                pageCount: feed.data.pageCount,
-              })}
-            </span>
-            <Button
-              variant="secondary"
-              size="sm"
-              disabled={page >= feed.data.pageCount}
-              onClick={() => setPage(value => value + 1)}
-            >
-              {t('submissionData.next')}
-            </Button>
+              {t('submissionData.pageSize')}
+              <Select
+                id="story-submission-page-size"
+                className="h-9 min-w-24"
+                value={pageSize}
+                onChange={event => {
+                  setPageSize(Number(event.target.value))
+                  setPage(1)
+                }}
+              >
+                {SUBMISSION_PAGE_SIZES.map(value => (
+                  <option key={value} value={value}>
+                    {value} {t('submissionData.submissionUnit')}
+                  </option>
+                ))}
+              </Select>
+            </label>
+            <div className="overflow-x-auto pb-1">
+              <Pagination
+                page={currentPage}
+                pageCount={feed.data.pageCount}
+                onChange={setPage}
+                className="mt-0 min-w-max justify-start sm:justify-end"
+              />
+            </div>
           </div>
         </div>
       )}
@@ -886,6 +912,9 @@ function StoryAnalyticsSummary({ storyId }) {
   )
   const data = analytics.data
   const dataCoverage = data.dataCoverage ?? emptyStoryAnalytics.dataCoverage
+  const daily = Array.isArray(data.daily) ? data.daily : []
+  const labels = Array.isArray(data.labels) ? data.labels : []
+  const dailyPeak = Math.max(0, ...daily)
   const metrics = [
     [BookOpen, t('analyticsData.views'), data.reads ?? 0, 'brand'],
     [UsersRound, t('analyticsData.readers'), data.readers ?? 0, 'orange'],
@@ -975,52 +1004,81 @@ function StoryAnalyticsSummary({ storyId }) {
                 </div>
               ))}
             </div>
-            {!data.daily?.length ? (
+            {!daily.length ? (
               <p className="mt-5 text-sm text-muted">{t('analyticsData.noDailyData')}</p>
             ) : (
-              <div className="mt-5">
-                <div className="flex h-28 items-end gap-1 rounded-2xl bg-elevated px-3 py-3">
-                  {data.daily.map((value, index) => {
-                    const peak = Math.max(1, ...data.daily)
-                    const barHeight = (value / peak) * 100
-                    return (
-                      <span
-                        key={`${data.labels?.[index] ?? index}`}
-                        title={`${data.labels?.[index] ?? ''}: ${value} ${t('analyticsData.readCountUnit')}`}
-                        className="relative h-full min-w-0 flex-1"
-                      >
-                        <strong
-                          className="pointer-events-none absolute left-1/2 z-10 -translate-x-1/2 whitespace-nowrap text-[10px] font-semibold tabular-nums text-ink"
-                          style={{ bottom: `${Math.min(100, barHeight + 3)}%` }}
-                        >
-                          {value.toLocaleString('vi-VN')}
-                        </strong>
-                        <span
-                          className="absolute inset-x-0 bottom-0 rounded-t bg-brand/75"
-                          style={{ height: `${barHeight}%` }}
-                        />
-                      </span>
-                    )
+              <div className="mt-6 rounded-2xl border border-hairline bg-surface p-4 sm:p-5">
+                <div className="flex flex-wrap items-start justify-between gap-3">
+                  <div className="min-w-0">
+                    <h3 className="text-h3">{t('analyticsData.storyDailyTitle')}</h3>
+                    <p className="mt-1 text-sm text-muted">{t('analyticsData.dailyHint')}</p>
+                  </div>
+                  <ul className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-ink/80">
+                    <Legend className="bg-brand">{t('analyticsData.dailyLegend')}</Legend>
+                  </ul>
+                </div>
+                <div
+                  className="relative mt-7 h-56"
+                  role="img"
+                  aria-label={t('analyticsData.chart', {
+                    days: daily.length,
+                    peak: dailyPeak,
                   })}
+                >
+                  <ChartGridLines />
+                  <div className="relative flex h-full items-end gap-[3px] border-b border-line sm:gap-1.5">
+                    {daily.map((value, index) => {
+                      const barHeight = dailyPeak ? (value / dailyPeak) * 100 : 0
+                      return (
+                        <div
+                          key={`${labels[index] ?? index}`}
+                          className="relative h-full min-w-0 flex-1"
+                          title={`${labels[index] ?? ''}: ${value} ${t('analyticsData.readCountUnit')}`}
+                        >
+                          <span
+                            className="pointer-events-none absolute left-1/2 z-10 -translate-x-1/2 whitespace-nowrap text-[10px] font-semibold tabular-nums text-ink"
+                            style={{ bottom: `${Math.min(100, barHeight + 2)}%` }}
+                          >
+                            {value.toLocaleString('vi-VN')}
+                          </span>
+                          <span
+                            className="absolute inset-x-0 bottom-0 rounded-t-[4px] bg-brand/75"
+                            style={{ height: `${barHeight}%` }}
+                          />
+                        </div>
+                      )
+                    })}
+                  </div>
                 </div>
-                <div className="mt-3 flex items-center justify-between gap-3 text-xs font-semibold text-muted">
-                  <span>{t('analyticsData.date')}</span>
-                  <span>{t('analyticsData.views')}</span>
+                <div className="mt-3 flex justify-between text-xs text-ink/70 tabular-nums">
+                  {[labels[0], labels[Math.floor(labels.length / 2)], labels.at(-1)]
+                    .filter(Boolean)
+                    .map(label => (
+                      <span key={label}>{label}</span>
+                    ))}
                 </div>
-                <div className="mt-1 max-h-40 overflow-y-auto rounded-xl border border-hairline bg-elevated">
-                  {data.daily.map((value, index) => (
+                <div className="mt-4 max-h-48 overflow-y-auto rounded-xl border border-hairline bg-elevated">
+                  {daily.map((value, index) => (
                     <div
-                      key={`row-${data.labels?.[index] ?? index}`}
+                      key={`row-${labels[index] ?? index}`}
                       className="flex items-center justify-between gap-3 border-b border-hairline px-3 py-2 text-xs last:border-b-0"
                     >
-                      <span className="text-muted">{data.labels?.[index] ?? '—'}</span>
+                      <span className="text-muted">{labels[index] ?? '—'}</span>
                       <strong className="tabular-nums text-ink">
                         {value.toLocaleString('vi-VN')} {t('analyticsData.readCountUnit')}
                       </strong>
                     </div>
                   ))}
                 </div>
-                <p className="mt-2 text-xs text-muted">{t('analyticsData.dailyHint')}</p>
+                <div className="mt-5 flex items-start gap-3 border-t border-hairline pt-4">
+                  <span className="grid size-9 shrink-0 place-items-center rounded-xl bg-brand/12 text-brand-strong">
+                    <ArrowUp size={16} aria-hidden="true" />
+                  </span>
+                  <p className="text-sm">
+                    <strong className="text-brand-strong">{t('analyticsData.recorded')}</strong>
+                    <span className="block text-muted">{t('analyticsData.dailyHint')}</span>
+                  </p>
+                </div>
               </div>
             )}
           </>
@@ -1036,6 +1094,25 @@ function RetryButton({ onClick }) {
       <RefreshCw size={14} aria-hidden="true" />
       Thử lại
     </Button>
+  )
+}
+
+function Legend({ className, children }) {
+  return (
+    <li className="flex items-center gap-2">
+      <span className={`size-2.5 rounded-[3px] ${className}`} aria-hidden="true" />
+      {children}
+    </li>
+  )
+}
+
+function ChartGridLines() {
+  return (
+    <div aria-hidden="true" className="absolute inset-0 flex flex-col justify-between">
+      {[0, 1, 2, 3].map(line => (
+        <span key={line} className="border-t border-dashed border-hairline" />
+      ))}
+    </div>
   )
 }
 
@@ -1573,7 +1650,7 @@ function StoryDetails({ story, onSaved, onLifecycle }) {
   }
   const showErrors = status === 'invalid'
   return (
-    <Card as="form" noValidate onSubmit={submit} className="mt-5 max-w-3xl">
+    <Card as="form" noValidate onSubmit={submit} className="mt-5 w-full max-w-6xl">
       <h2 className="text-h3">Thông tin và tóm tắt truyện</h2>
       <p className="mt-1 text-sm text-muted">{t('managerData.draftInfo')}</p>
       {!canEditMetadata && (
@@ -1581,221 +1658,242 @@ function StoryDetails({ story, onSaved, onLifecycle }) {
           {t('managerData.metadataLocked')}
         </p>
       )}
-      <label htmlFor="story-title" className="mt-6 block text-sm font-semibold">
-        Tên truyện
-      </label>
-      <Input
-        id="story-title"
-        value={title}
-        disabled={!canEditMetadata || status === 'saving' || lifecycleBusy}
-        maxLength={200}
-        onChange={event => {
-          setTitle(event.target.value)
-          setStatus('idle')
-        }}
-        aria-invalid={showErrors && titleError}
-        aria-describedby={showErrors && titleError ? 'story-title-error' : undefined}
-        className="mt-2"
-      />
-      {showErrors && titleError && (
-        <p id="story-title-error" className="mt-2 text-xs text-rose-strong">
-          Tên truyện không được để trống.
-        </p>
-      )}
-      <label htmlFor="story-synopsis" className="mt-5 flex justify-between text-sm font-semibold">
-        <span>Tóm tắt truyện</span>
-        <span className="font-normal text-muted tabular-nums">{synopsis.length}/10000</span>
-      </label>
-      <textarea
-        id="story-synopsis"
-        value={synopsis}
-        disabled={!canEditMetadata || status === 'saving' || lifecycleBusy}
-        maxLength={10000}
-        onChange={event => {
-          setSynopsis(event.target.value)
-          setStatus('idle')
-        }}
-        aria-invalid={showErrors && synopsisError}
-        aria-describedby="story-synopsis-hint"
-        className="mt-2 min-h-36 w-full resize-y rounded-3xl border border-line bg-surface p-4 text-base leading-6 text-ink outline-none transition-colors focus:border-brand sm:text-sm"
-      />
-      <p
-        id="story-synopsis-hint"
-        className={`mt-2 text-xs ${showErrors && synopsisError ? 'text-rose-strong' : 'text-muted'}`}
-      >
-        Tóm tắt là tùy chọn khi lưu bản nháp và tối đa 10.000 ký tự.
-      </p>
-      <fieldset
-        disabled={
-          !canEditMetadata || status === 'saving' || lifecycleBusy || coverBusy || bannerBusy
-        }
-        className="mt-5"
-      >
-        <legend className="text-sm font-semibold">{t('managerData.categories')}</legend>
-        <p className="mt-2 text-xs text-muted">{t('managerData.categoriesHint')}</p>
-        {categories.status === 'loading' ? (
-          <Skeleton className="mt-3 h-10 w-full" />
-        ) : categories.status === 'error' ? (
-          <div className="mt-3">
-            <p role="alert" className="text-sm text-rose-strong">
-              {t('managerData.categoriesError')}
-            </p>
-            <Button
-              type="button"
-              variant="secondary"
-              size="sm"
-              className="mt-2"
-              onClick={categories.retry}
-            >
-              {t('managerData.retryCategories')}
-            </Button>
-          </div>
-        ) : categories.status === 'empty' && !retired.length ? (
-          <p className="mt-3 text-sm text-muted">{t('managerData.categoriesEmpty')}</p>
-        ) : null}
-        <div role="radiogroup" className="mt-3 flex flex-wrap gap-2">
-          {genreOptions.map(item => (
-            <label
-              key={item.id}
-              className="flex min-h-11 items-center gap-2 rounded-full border border-line bg-elevated px-3 py-2 text-sm"
-            >
-              <input
-                type="radio"
-                name="story-category"
-                value={item.id}
-                checked={categoryId === item.id}
-                onChange={() => {
-                  setCategoryId(item.id)
-                  setStatus('idle')
-                }}
-                className="size-4 accent-brand"
-              />
-              {item.name}
-              {retired.some(old => old.id === item.id) && (
-                <span className="text-xs text-muted">{t('managerData.retiredCategory')}</span>
-              )}
-            </label>
-          ))}
-        </div>
-        {showErrors && !categoryId && (
-          <p role="alert" className="mt-2 text-xs text-rose-strong">
-            {t('managerData.categoriesRequired')}
-          </p>
-        )}
-      </fieldset>
-      <div className="mt-5">
-        <h3 className="text-sm font-semibold">{t('managerData.coverTitle')}</h3>
-        <div className="mt-3 flex flex-wrap items-center gap-4">
-          <StoryCover
-            story={{ ...story, coverUrl: coverUrl || undefined, cover: undefined }}
-            className="aspect-[2/3] w-20 rounded-xl"
+      <div className="mt-6 grid gap-x-8 gap-y-6 lg:grid-cols-2">
+        <div className="min-w-0">
+          <label htmlFor="story-title" className="block text-sm font-semibold">
+            Tên truyện
+          </label>
+          <Input
+            id="story-title"
+            value={title}
+            disabled={!canEditMetadata || status === 'saving' || lifecycleBusy}
+            maxLength={200}
+            onChange={event => {
+              setTitle(event.target.value)
+              setStatus('idle')
+            }}
+            aria-invalid={showErrors && titleError}
+            aria-describedby={showErrors && titleError ? 'story-title-error' : undefined}
+            className="mt-2"
           />
-          <div className="flex flex-wrap gap-2">
-            <input
-              ref={coverInputRef}
-              type="file"
-              accept="image/jpeg,image/png,image/webp"
-              onChange={chooseCover}
-              className="sr-only"
-            />
-            <Button
-              type="button"
-              variant="secondary"
-              size="sm"
-              disabled={
-                !canEditMetadata || coverBusy || bannerBusy || status === 'saving' || lifecycleBusy
-              }
-              onClick={() => coverInputRef.current?.click()}
-            >
-              {coverBusy
-                ? t('chapterImages.uploading')
-                : t(coverMediaId ? 'managerData.replaceCover' : 'managerData.uploadCover')}
-            </Button>
-            {coverMediaId && (
-              <Button
-                type="button"
-                variant="danger"
-                size="sm"
-                disabled={coverBusy || status === 'saving' || lifecycleBusy}
-                onClick={() => {
-                  setCoverMediaId(null)
-                  setCoverUrl(null)
-                  setStatus('idle')
-                }}
-              >
-                {t('managerData.removeCover')}
-              </Button>
-            )}
-          </div>
-        </div>
-      </div>
-      <div className="mt-5">
-        <h3 className="text-sm font-semibold">{t('managerData.bannerTitle')}</h3>
-        <div className="mt-3 flex flex-col gap-4 sm:flex-row sm:items-center">
-          <div className="relative aspect-[3/1] w-full max-w-sm overflow-hidden rounded-xl border border-line bg-elevated">
-            {bannerUrl ? (
-              <img
-                src={bannerUrl}
-                crossOrigin="use-credentials"
-                alt={t('managerData.bannerAlt', { title: story.title })}
-                className="h-full w-full object-cover"
-              />
-            ) : (
-              <div className="flex h-full items-center justify-center text-muted">
-                <ImagePlus size={22} aria-hidden="true" />
+          {showErrors && titleError && (
+            <p id="story-title-error" className="mt-2 text-xs text-rose-strong">
+              Tên truyện không được để trống.
+            </p>
+          )}
+          <label
+            htmlFor="story-synopsis"
+            className="mt-5 flex justify-between text-sm font-semibold"
+          >
+            <span>Tóm tắt truyện</span>
+            <span className="font-normal text-muted tabular-nums">{synopsis.length}/10000</span>
+          </label>
+          <textarea
+            id="story-synopsis"
+            value={synopsis}
+            disabled={!canEditMetadata || status === 'saving' || lifecycleBusy}
+            maxLength={10000}
+            onChange={event => {
+              setSynopsis(event.target.value)
+              setStatus('idle')
+            }}
+            aria-invalid={showErrors && synopsisError}
+            aria-describedby="story-synopsis-hint"
+            className="mt-2 min-h-36 w-full resize-y rounded-3xl border border-line bg-surface p-4 text-base leading-6 text-ink outline-none transition-colors focus:border-brand sm:text-sm"
+          />
+          <p
+            id="story-synopsis-hint"
+            className={`mt-2 text-xs ${showErrors && synopsisError ? 'text-rose-strong' : 'text-muted'}`}
+          >
+            Tóm tắt là tùy chọn khi lưu bản nháp và tối đa 10.000 ký tự.
+          </p>
+          <fieldset
+            disabled={
+              !canEditMetadata || status === 'saving' || lifecycleBusy || coverBusy || bannerBusy
+            }
+            className="mt-5"
+          >
+            <legend className="text-sm font-semibold">{t('managerData.categories')}</legend>
+            <p className="mt-2 text-xs text-muted">{t('managerData.categoriesHint')}</p>
+            {categories.status === 'loading' ? (
+              <Skeleton className="mt-3 h-10 w-full" />
+            ) : categories.status === 'error' ? (
+              <div className="mt-3">
+                <p role="alert" className="text-sm text-rose-strong">
+                  {t('managerData.categoriesError')}
+                </p>
+                <Button
+                  type="button"
+                  variant="secondary"
+                  size="sm"
+                  className="mt-2"
+                  onClick={categories.retry}
+                >
+                  {t('managerData.retryCategories')}
+                </Button>
               </div>
+            ) : categories.status === 'empty' && !retired.length ? (
+              <p className="mt-3 text-sm text-muted">{t('managerData.categoriesEmpty')}</p>
+            ) : null}
+            <div role="radiogroup" className="mt-3 flex flex-wrap gap-2">
+              {genreOptions.map(item => (
+                <label
+                  key={item.id}
+                  className="flex min-h-11 items-center gap-2 rounded-full border border-line bg-elevated px-3 py-2 text-sm"
+                >
+                  <input
+                    type="radio"
+                    name="story-category"
+                    value={item.id}
+                    checked={categoryId === item.id}
+                    onChange={() => {
+                      setCategoryId(item.id)
+                      setStatus('idle')
+                    }}
+                    className="size-4 accent-brand"
+                  />
+                  {item.name}
+                  {retired.some(old => old.id === item.id) && (
+                    <span className="text-xs text-muted">{t('managerData.retiredCategory')}</span>
+                  )}
+                </label>
+              ))}
+            </div>
+            {showErrors && !categoryId && (
+              <p role="alert" className="mt-2 text-xs text-rose-strong">
+                {t('managerData.categoriesRequired')}
+              </p>
             )}
+          </fieldset>
+        </div>
+        <div className="min-w-0 lg:border-l lg:border-line lg:pl-8">
+          <div>
+            <h3 className="text-sm font-semibold">{t('managerData.coverTitle')}</h3>
+            <div className="mt-3 flex flex-wrap items-center gap-4">
+              <StoryCover
+                story={{ ...story, coverUrl: coverUrl || undefined, cover: undefined }}
+                className="aspect-[2/3] w-20 rounded-xl"
+              />
+              <div className="flex flex-wrap gap-2">
+                <input
+                  ref={coverInputRef}
+                  type="file"
+                  accept="image/jpeg,image/png,image/webp"
+                  onChange={chooseCover}
+                  className="sr-only"
+                />
+                <Button
+                  type="button"
+                  variant="secondary"
+                  size="sm"
+                  disabled={
+                    !canEditMetadata ||
+                    coverBusy ||
+                    bannerBusy ||
+                    status === 'saving' ||
+                    lifecycleBusy
+                  }
+                  onClick={() => coverInputRef.current?.click()}
+                >
+                  {coverBusy
+                    ? t('chapterImages.uploading')
+                    : t(coverMediaId ? 'managerData.replaceCover' : 'managerData.uploadCover')}
+                </Button>
+                {coverMediaId && (
+                  <Button
+                    type="button"
+                    variant="danger"
+                    size="sm"
+                    disabled={coverBusy || status === 'saving' || lifecycleBusy}
+                    onClick={() => {
+                      setCoverMediaId(null)
+                      setCoverUrl(null)
+                      setStatus('idle')
+                    }}
+                  >
+                    {t('managerData.removeCover')}
+                  </Button>
+                )}
+              </div>
+            </div>
           </div>
-          <div className="flex flex-wrap gap-2">
-            <input
-              ref={bannerInputRef}
-              type="file"
-              accept="image/jpeg,image/png,image/webp"
-              onChange={chooseBanner}
-              className="sr-only"
+          <div className="mt-5">
+            <h3 className="text-sm font-semibold">{t('managerData.bannerTitle')}</h3>
+            <div className="mt-3 flex flex-col gap-4 sm:flex-row sm:flex-wrap sm:items-center">
+              <div className="relative aspect-[3/1] w-full max-w-sm overflow-hidden rounded-xl border border-line bg-elevated">
+                {bannerUrl ? (
+                  <img
+                    src={bannerUrl}
+                    crossOrigin="use-credentials"
+                    alt={t('managerData.bannerAlt', { title: story.title })}
+                    className="h-full w-full object-cover"
+                  />
+                ) : (
+                  <div className="flex h-full items-center justify-center text-muted">
+                    <ImagePlus size={22} aria-hidden="true" />
+                  </div>
+                )}
+              </div>
+              <div className="flex flex-wrap gap-2">
+                <input
+                  ref={bannerInputRef}
+                  type="file"
+                  accept="image/jpeg,image/png,image/webp"
+                  onChange={chooseBanner}
+                  className="sr-only"
+                />
+                <Button
+                  type="button"
+                  variant="secondary"
+                  size="sm"
+                  disabled={
+                    !canEditMetadata ||
+                    coverBusy ||
+                    bannerBusy ||
+                    status === 'saving' ||
+                    lifecycleBusy
+                  }
+                  onClick={() => bannerInputRef.current?.click()}
+                >
+                  {bannerBusy
+                    ? t('chapterImages.uploading')
+                    : t(
+                        coverBannerMediaId
+                          ? 'managerData.replaceBanner'
+                          : 'managerData.uploadBanner',
+                      )}
+                </Button>
+                {coverBannerMediaId && (
+                  <Button
+                    type="button"
+                    variant="danger"
+                    size="sm"
+                    disabled={coverBusy || bannerBusy || status === 'saving' || lifecycleBusy}
+                    onClick={() => {
+                      setCoverBannerMediaId(null)
+                      setBannerUrl(null)
+                      setStatus('idle')
+                    }}
+                  >
+                    <Trash2 size={14} aria-hidden="true" />
+                    {t('managerData.removeBanner')}
+                  </Button>
+                )}
+              </div>
+            </div>
+          </div>
+          <div className="mt-5">
+            <StoryTagEditor
+              id="story-manager-tag"
+              tags={tags}
+              disabled={!canEditMetadata || status === 'saving' || lifecycleBusy}
+              onChange={next => {
+                setTags(next)
+                setStatus('idle')
+              }}
             />
-            <Button
-              type="button"
-              variant="secondary"
-              size="sm"
-              disabled={
-                !canEditMetadata || coverBusy || bannerBusy || status === 'saving' || lifecycleBusy
-              }
-              onClick={() => bannerInputRef.current?.click()}
-            >
-              {bannerBusy
-                ? t('chapterImages.uploading')
-                : t(coverBannerMediaId ? 'managerData.replaceBanner' : 'managerData.uploadBanner')}
-            </Button>
-            {coverBannerMediaId && (
-              <Button
-                type="button"
-                variant="danger"
-                size="sm"
-                disabled={coverBusy || bannerBusy || status === 'saving' || lifecycleBusy}
-                onClick={() => {
-                  setCoverBannerMediaId(null)
-                  setBannerUrl(null)
-                  setStatus('idle')
-                }}
-              >
-                <Trash2 size={14} aria-hidden="true" />
-                {t('managerData.removeBanner')}
-              </Button>
-            )}
           </div>
         </div>
-      </div>
-      <div className="mt-5">
-        <StoryTagEditor
-          id="story-manager-tag"
-          tags={tags}
-          disabled={!canEditMetadata || status === 'saving' || lifecycleBusy}
-          onChange={next => {
-            setTags(next)
-            setStatus('idle')
-          }}
-        />
       </div>
       {saveError && (
         <p role="alert" className="mt-3 text-sm text-rose-strong">

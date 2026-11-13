@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import {
   AlertTriangle,
   Check,
@@ -21,8 +21,17 @@ import {
   Select,
   Skeleton,
 } from '../../components/ui'
+import { Pagination } from '../../components/ui/Pagination'
 
-const emptyComments = { items: [], stories: [], total: 0, page: 1, pageCount: 1, pageSize: 20 }
+const emptyComments = {
+  items: [],
+  stories: [],
+  chapters: [],
+  total: 0,
+  page: 1,
+  pageCount: 1,
+  pageSize: 5,
+}
 const statusTones = { visible: 'green', hidden: 'orange', 'soft-deleted': 'red' }
 
 export function AuthorCommentsPage() {
@@ -34,12 +43,48 @@ export function AuthorCommentsPage() {
   const [status, setStatus] = useState('')
   const [search, setSearch] = useState('')
   const [sort, setSort] = useState('newest')
+  const [pageSize, setPageSize] = useState(5)
   const [replyTarget, setReplyTarget] = useState(null)
   const [reply, setReply] = useState('')
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
-  const query = `/author/comments?page=${page}${storyId ? `&storyId=${encodeURIComponent(storyId)}` : ''}${chapterId ? `&chapterId=${encodeURIComponent(chapterId)}` : ''}${targetType ? `&targetType=${targetType}` : ''}${status ? `&status=${status}` : ''}${search.trim() ? `&search=${encodeURIComponent(search.trim())}` : ''}&sort=${sort}`
+  const defaultScopeApplied = useRef(false)
+  const query = `/author/comments?page=${page}&pageSize=${pageSize}${storyId ? `&storyId=${encodeURIComponent(storyId)}` : ''}${chapterId ? `&chapterId=${encodeURIComponent(chapterId)}` : ''}${targetType ? `&targetType=${targetType}` : ''}${status ? `&status=${status}` : ''}${search.trim() ? `&search=${encodeURIComponent(search.trim())}` : ''}&sort=${sort}`
   const resource = useBackendDocument(query, emptyComments)
+
+  // Start in the most useful scope: the first published story and its story-level comments.
+  // Keep this one-shot so the author can still return to “all stories” afterwards.
+  useEffect(() => {
+    if (
+      defaultScopeApplied.current ||
+      resource.status !== 'ready' ||
+      storyId ||
+      chapterId ||
+      !(resource.data.stories ?? []).length
+    )
+      return
+    const firstStory = resource.data.stories[0]
+    defaultScopeApplied.current = true
+    setStoryId(firstStory.id)
+    setTargetType('story')
+    setPage(1)
+  }, [resource.status, resource.data.stories, storyId, chapterId])
+
+  const visibleFrom = resource.data.total
+    ? (resource.data.page - 1) * resource.data.pageSize + 1
+    : 0
+  const visibleTo = Math.min(resource.data.total, resource.data.page * resource.data.pageSize)
+  const selectedStoryChapters = (resource.data.chapters ?? []).filter(
+    chapter => chapter.storyId === storyId,
+  )
+  const startReply = commentId => {
+    setReplyTarget(commentId)
+    setReply('')
+  }
+  const cancelReply = () => {
+    setReplyTarget(null)
+    setReply('')
+  }
   const changeFilter = setter => event => {
     setter(event.target.value)
     setPage(1)
@@ -47,7 +92,7 @@ export function AuthorCommentsPage() {
   const selectStory = nextStory => {
     setStoryId(nextStory)
     setChapterId('')
-    setTargetType('')
+    setTargetType(nextStory ? 'story' : '')
     setPage(1)
   }
   const selectChapter = nextChapter => {
@@ -112,7 +157,7 @@ export function AuthorCommentsPage() {
         <div className="mt-5 grid gap-5 xl:grid-cols-[minmax(0,1fr)_18rem]">
           <div className="min-w-0">
             <Card>
-              <div className="grid gap-3 md:grid-cols-3">
+              <div className="grid gap-3 md:grid-cols-4">
                 <label
                   className="text-xs font-semibold text-muted md:col-span-2"
                   htmlFor="comments-search"
@@ -142,6 +187,22 @@ export function AuthorCommentsPage() {
                     <option value="az">{t('authorComments.az')}</option>
                   </Select>
                 </label>
+                <label className="text-xs font-semibold text-muted" htmlFor="comments-page-size">
+                  {t('authorComments.pageSize')}
+                  <Select
+                    id="comments-page-size"
+                    className="mt-1 w-full"
+                    value={pageSize}
+                    onChange={event => {
+                      setPageSize(Number(event.target.value))
+                      setPage(1)
+                    }}
+                  >
+                    <option value={5}>5 {t('authorComments.commentUnit')}</option>
+                    <option value={10}>10 {t('authorComments.commentUnit')}</option>
+                    <option value={15}>15 {t('authorComments.commentUnit')}</option>
+                  </Select>
+                </label>
               </div>
               <p className="mt-3 text-xs text-muted">{t('authorComments.filterHint')}</p>
             </Card>
@@ -155,9 +216,18 @@ export function AuthorCommentsPage() {
               <div className="flex flex-wrap items-center justify-between gap-3">
                 <h2 className="text-h3">{t('authorComments.listTitle')}</h2>
                 {resource.status === 'ready' && (
-                  <Badge tone="green">
-                    {resource.data.total} {t('authorComments.commentUnit')}
-                  </Badge>
+                  <div className="flex flex-wrap items-center justify-end gap-2">
+                    <span className="text-xs text-muted">
+                      {t('authorComments.showing', {
+                        from: visibleFrom,
+                        to: visibleTo,
+                        total: resource.data.total,
+                      })}
+                    </span>
+                    <Badge tone="green">
+                      {resource.data.total} {t('authorComments.commentUnit')}
+                    </Badge>
+                  </div>
                 )}
               </div>
               {resource.status === 'loading' ? (
@@ -189,72 +259,78 @@ export function AuthorCommentsPage() {
                       t={t}
                       formatDate={formatDate}
                       busy={busy}
-                      setReplyTarget={setReplyTarget}
+                      onReply={startReply}
+                      onCancelReply={cancelReply}
+                      reply={reply}
+                      setReply={setReply}
+                      onSubmitReply={submitReply}
+                      selected={replyTarget === item.id}
                       onStatus={updateStatus}
                     />
                   ))}
-                  <div className="flex flex-wrap items-center justify-between gap-3 border-t border-hairline pt-4">
-                    <Button
-                      variant="secondary"
-                      size="sm"
-                      disabled={page <= 1}
-                      onClick={() => setPage(value => value - 1)}
-                    >
-                      {t('authorComments.previous')}
-                    </Button>
-                    <span className="text-sm tabular-nums">
-                      {t('authorComments.pageOf', {
-                        page: resource.data.page,
-                        pageCount: resource.data.pageCount,
-                      })}
-                    </span>
-                    <Button
-                      variant="secondary"
-                      size="sm"
-                      disabled={page >= resource.data.pageCount}
-                      onClick={() => setPage(value => value + 1)}
-                    >
-                      {t('authorComments.next')}
-                    </Button>
+                  <div className="flex justify-end border-t border-hairline pt-4">
+                    <div className="max-w-full overflow-x-auto pb-1">
+                      <Pagination
+                        page={resource.data.page}
+                        pageCount={resource.data.pageCount}
+                        onChange={setPage}
+                        className="mt-0 min-w-max justify-start"
+                      />
+                    </div>
                   </div>
                 </div>
               )}
             </Card>
-            <form onSubmit={submitReply} className="mt-5">
-              <label htmlFor="author-comment-reply" className="text-sm font-semibold">
-                {t('authorComments.replyLabel')}
-              </label>
-              <Input
-                id="author-comment-reply"
-                className="mt-2"
-                value={reply}
-                disabled={!replyTarget || busy}
-                onChange={event => setReply(event.target.value)}
-                placeholder={t('authorComments.replyPlaceholder')}
-                trailing={
-                  <button
-                    type="submit"
-                    className="grid size-8 place-items-center rounded-full bg-brand text-on-brand disabled:opacity-40"
-                    disabled={!replyTarget || busy || !reply.trim()}
-                    aria-label={t('authorComments.sendReply')}
-                  >
-                    <Send size={14} aria-hidden="true" />
-                  </button>
-                }
-              />
-              <p className="mt-2 text-xs text-muted">
-                {replyTarget ? t('authorComments.replyReady') : t('authorComments.selectReply')}
-              </p>
-            </form>
           </div>
           <aside
             className="min-w-0 xl:sticky xl:top-24 xl:self-start"
             aria-label="Chuyển phạm vi bình luận"
           >
-            <Card>
+            <Card className="p-5">
               <h2 className="text-sm font-semibold">{t('authorComments.sidebarTitle')}</h2>
               <p className="mt-1 text-xs leading-5 text-muted">{t('authorComments.sidebarHint')}</p>
               <div className="mt-4 grid gap-3">
+                <label className="text-xs font-semibold text-muted" htmlFor="comments-story">
+                  {t('authorComments.story')}
+                  <Select
+                    id="comments-story"
+                    className="mt-1 w-full"
+                    value={storyId}
+                    onChange={event => selectStory(event.target.value)}
+                  >
+                    <option value="">{t('authorComments.allStories')}</option>
+                    {resource.data.stories.map(story => (
+                      <option key={story.id} value={story.id}>
+                        {story.title}
+                      </option>
+                    ))}
+                  </Select>
+                </label>
+                {storyId && (
+                  <label className="text-xs font-semibold text-muted" htmlFor="comments-chapter">
+                    {t('authorComments.chapter')}
+                    <Select
+                      id="comments-chapter"
+                      className="mt-1 w-full"
+                      value={chapterId}
+                      onChange={event => {
+                        const nextChapter = event.target.value
+                        if (nextChapter) selectChapter(nextChapter)
+                        else selectStory(storyId)
+                      }}
+                    >
+                      <option value="">{t('authorComments.allChapters')}</option>
+                      {selectedStoryChapters.map(chapter => (
+                        <option key={chapter.id} value={chapter.id}>
+                          {t('authorComments.chapterLabel', {
+                            number: chapter.number ?? '—',
+                            title: chapter.title,
+                          })}
+                        </option>
+                      ))}
+                    </Select>
+                  </label>
+                )}
                 <label className="text-xs font-semibold text-muted" htmlFor="comments-target">
                   {t('authorComments.target')}
                   <Select
@@ -262,10 +338,12 @@ export function AuthorCommentsPage() {
                     className="mt-1 w-full"
                     value={targetType}
                     onChange={event => {
-                      setTargetType(event.target.value)
-                      setChapterId('')
+                      const nextTarget = event.target.value
+                      setTargetType(nextTarget)
+                      if (nextTarget !== 'chapter') setChapterId('')
                       setPage(1)
                     }}
+                    disabled={Boolean(chapterId)}
                   >
                     <option value="">{t('authorComments.allTargets')}</option>
                     <option value="story">{t('authorComments.storyComments')}</option>
@@ -287,45 +365,6 @@ export function AuthorCommentsPage() {
                   </Select>
                 </label>
               </div>
-              <div className="mt-4 space-y-1">
-                <button
-                  type="button"
-                  className={`w-full rounded-xl px-3 py-2 text-left text-sm ${!storyId && !chapterId ? 'bg-brand text-on-brand' : 'hover:bg-elevated'}`}
-                  onClick={() => selectStory('')}
-                >
-                  {t('authorComments.allStories')}
-                </button>
-                {resource.data.stories.map(story => {
-                  const storyChapters = (resource.data.chapters ?? []).filter(
-                    chapter => chapter.storyId === story.id,
-                  )
-                  return (
-                    <div key={story.id}>
-                      <button
-                        type="button"
-                        className={`w-full rounded-xl px-3 py-2 text-left text-sm font-semibold ${storyId === story.id && !chapterId ? 'bg-brand text-on-brand' : 'hover:bg-elevated'}`}
-                        onClick={() => selectStory(story.id)}
-                      >
-                        {story.title}
-                      </button>
-                      {storyChapters.length > 0 && (
-                        <div className="ml-3 border-l border-hairline pl-2">
-                          {storyChapters.map(chapter => (
-                            <button
-                              key={chapter.id}
-                              type="button"
-                              className={`w-full rounded-lg px-2 py-1.5 text-left text-xs ${chapterId === chapter.id ? 'bg-brand-soft text-brand-strong' : 'text-muted hover:bg-elevated'}`}
-                              onClick={() => selectChapter(chapter.id)}
-                            >
-                              {chapter.title}
-                            </button>
-                          ))}
-                        </div>
-                      )}
-                    </div>
-                  )
-                })}
-              </div>
             </Card>
           </aside>
         </div>
@@ -334,10 +373,25 @@ export function AuthorCommentsPage() {
   )
 }
 
-function CommentCard({ item, t, formatDate, busy, setReplyTarget, onStatus }) {
+function CommentCard({
+  item,
+  t,
+  formatDate,
+  busy,
+  onReply,
+  onCancelReply,
+  reply,
+  setReply,
+  onSubmitReply,
+  selected,
+  onStatus,
+}) {
   const [deleteOpen, setDeleteOpen] = useState(false)
   return (
-    <article className="rounded-2xl border border-hairline p-4">
+    <article
+      className={`rounded-2xl border p-4 transition-colors ${selected ? 'border-brand/45 bg-brand/5 shadow-sm' : 'border-hairline'}`}
+      aria-current={selected ? 'true' : undefined}
+    >
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div className="min-w-0">
           <div className="flex flex-wrap items-center gap-2">
@@ -362,7 +416,8 @@ function CommentCard({ item, t, formatDate, busy, setReplyTarget, onStatus }) {
               size="sm"
               variant="ghost"
               disabled={busy}
-              onClick={() => setReplyTarget(item.id)}
+              onClick={() => onReply(item.id)}
+              aria-pressed={selected}
             >
               <MessageCircle size={14} aria-hidden="true" />
               {t('authorComments.reply')}
@@ -402,6 +457,49 @@ function CommentCard({ item, t, formatDate, busy, setReplyTarget, onStatus }) {
       >
         {item.body}
       </p>
+      {selected && (
+        <form
+          onSubmit={onSubmitReply}
+          className="mt-4 rounded-2xl border border-brand/25 bg-brand/5 p-3"
+          aria-label={t('authorComments.replyLabel')}
+        >
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <div>
+              <p className="text-xs font-semibold text-brand-strong">
+                {t('authorComments.replyingTo')}
+              </p>
+              <p className="mt-1 text-xs text-muted">
+                {item.author} ·{' '}
+                {item.targetType === 'chapter'
+                  ? t('authorComments.chapterComments')
+                  : t('authorComments.storyComments')}
+              </p>
+            </div>
+            <Button type="button" variant="ghost" size="sm" disabled={busy} onClick={onCancelReply}>
+              {t('authorComments.cancelReply')}
+            </Button>
+          </div>
+          <Input
+            id={`author-comment-reply-${item.id}`}
+            className="mt-3"
+            value={reply}
+            disabled={busy}
+            onChange={event => setReply(event.target.value)}
+            placeholder={t('authorComments.replyPlaceholder')}
+            trailing={
+              <button
+                type="submit"
+                className="grid size-8 place-items-center rounded-full bg-brand text-on-brand disabled:opacity-40"
+                disabled={busy || !reply.trim()}
+                aria-label={t('authorComments.sendReply')}
+              >
+                <Send size={14} aria-hidden="true" />
+              </button>
+            }
+          />
+          <p className="mt-2 text-xs text-muted">{t('authorComments.replyReady')}</p>
+        </form>
+      )}
       {item.replies.length > 0 && (
         <div className="mt-3 space-y-2 border-l-2 border-brand/30 pl-4">
           {item.replies.map(reply => (

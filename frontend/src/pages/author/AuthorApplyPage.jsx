@@ -316,7 +316,6 @@ export function AuthorApplyPage() {
 
           <AuthShowcase
             variant="author"
-            authorName={currentUser?.name}
             className="col-span-12 lg:order-first lg:col-span-6 xl:col-span-7"
           />
         </div>

@@ -11,7 +11,10 @@ import {
 import { requireAuth, requireRole } from '../middleware/auth.js'
 import { HttpError } from '../middleware/errors.js'
 import { withTransaction } from '../db/connection.js'
-import { authorDashboard } from '../modules/authoring-publishing/author/author-dashboard.js'
+import {
+  authorDashboard,
+  authorDashboardPeriod,
+} from '../modules/authoring-publishing/author/author-dashboard.js'
 import { authorStoryList } from '../modules/authoring-publishing/author/author-story-list.js'
 import { authorStoryWorkspace } from '../modules/authoring-publishing/author/author-story-workspace.js'
 import { authorDrafts } from '../modules/authoring-publishing/author/author-drafts.js'
@@ -72,6 +75,7 @@ const authorCommentStatus = z.enum(['visible', 'hidden', 'soft-deleted'])
 const authorCommentQuery = z
   .object({
     page: z.coerce.number().int().min(1).max(100000).default(1),
+    pageSize: z.coerce.number().int().min(5).max(15).default(5),
     storyId: objectId.optional(),
     chapterId: objectId.optional(),
     targetType: z.enum(['story', 'chapter']).optional(),
@@ -147,6 +151,31 @@ export function createAuthorContentRouter(config) {
         res
           .set('Cache-Control', 'private, no-store')
           .json(await authorDashboard(req.account._id, query))
+      } catch (error) {
+        next(error)
+      }
+    },
+  )
+  router.get(
+    '/author/dashboard/period',
+    requireAuth(config),
+    requireRole('author'),
+    async (req, res, next) => {
+      try {
+        const query = parse(
+          z
+            .object({
+              days: z.coerce
+                .number()
+                .pipe(z.union([z.literal(1), z.literal(7), z.literal(30)]))
+                .default(1),
+            })
+            .strict(),
+          req.query,
+        )
+        res
+          .set('Cache-Control', 'private, no-store')
+          .json(await authorDashboardPeriod(req.account._id, query))
       } catch (error) {
         next(error)
       }

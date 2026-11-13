@@ -24,8 +24,10 @@ import {
 } from '../../components/ui'
 import { apiRequest } from '../../api/client'
 import { StoryCover } from '../../components/story/StoryCover'
+import { Pagination } from '../../components/ui/Pagination'
 
 const emptyWorkspace = { chapters: [] }
+const PAGE_SIZE_OPTIONS = [5, 10]
 export function AuthorWorksPage({ editor = false }) {
   const { t } = useLocale()
   const works = useBackendResource('/author/stories')
@@ -36,6 +38,8 @@ export function AuthorWorksPage({ editor = false }) {
   const [deleting, setDeleting] = useState(null)
   const [deleteError, setDeleteError] = useState('')
   const [deleteBusy, setDeleteBusy] = useState(false)
+  const [page, setPage] = useState(1)
+  const [pageSize, setPageSize] = useState(PAGE_SIZE_OPTIONS[0])
   const matches = useMemo(() => {
     const normalized = query.trim().toLocaleLowerCase('vi')
     return works.data
@@ -51,6 +55,9 @@ export function AuthorWorksPage({ editor = false }) {
         return new Date(right.updatedAt ?? 0) - new Date(left.updatedAt ?? 0)
       })
   }, [query, sort, status, works.data])
+  const pageCount = Math.max(1, Math.ceil(matches.length / pageSize))
+  const currentPage = Math.min(page, pageCount)
+  const pageRows = matches.slice((currentPage - 1) * pageSize, currentPage * pageSize)
   const confirmDelete = async () => {
     if (!deleting || deleteBusy) return
     setDeleteBusy(true)
@@ -95,12 +102,18 @@ export function AuthorWorksPage({ editor = false }) {
               aria-label={t('worksData.search')}
               placeholder={t('worksData.search')}
               value={query}
-              onChange={event => setQuery(event.target.value)}
+              onChange={event => {
+                setPage(1)
+                setQuery(event.target.value)
+              }}
             />
             <Select
               aria-label={t('worksData.filterLabel')}
               value={status}
-              onChange={event => setStatus(event.target.value)}
+              onChange={event => {
+                setPage(1)
+                setStatus(event.target.value)
+              }}
             >
               <option value="all">{t('worksData.filters.all')}</option>
               <option value="draft">{t('worksData.status.draft')}</option>
@@ -114,12 +127,31 @@ export function AuthorWorksPage({ editor = false }) {
             <Select
               aria-label={t('worksData.sortLabel')}
               value={sort}
-              onChange={event => setSort(event.target.value)}
+              onChange={event => {
+                setPage(1)
+                setSort(event.target.value)
+              }}
             >
               <option value="updated">{t('worksData.sort.updated')}</option>
               <option value="title">{t('worksData.sort.title')}</option>
               <option value="chapters">{t('worksData.sort.chapters')}</option>
             </Select>
+            {matches.length > PAGE_SIZE_OPTIONS[0] && (
+              <Select
+                aria-label={t('worksData.pageSizeLabel')}
+                value={pageSize}
+                onChange={event => {
+                  setPage(1)
+                  setPageSize(Number(event.target.value))
+                }}
+              >
+                {PAGE_SIZE_OPTIONS.map(size => (
+                  <option key={size} value={size}>
+                    {t('worksData.pageSize', { count: size })}
+                  </option>
+                ))}
+              </Select>
+            )}
           </div>
           {works.status === 'loading' ? (
             <div aria-busy="true" className="mt-5 space-y-4">
@@ -139,61 +171,64 @@ export function AuthorWorksPage({ editor = false }) {
               }
             />
           ) : matches.length ? (
-            <ul className="mt-5 divide-y divide-hairline">
-              {matches.map(story => (
-                <li
-                  key={story.id}
-                  className="flex flex-wrap items-center justify-between gap-4 py-5"
-                >
-                  <div className="flex min-w-0 flex-1 items-start gap-4">
-                    <StoryCover story={story} className="aspect-[2/3] w-16 shrink-0 rounded-xl" />
-                    <div className="min-w-0 flex-1">
-                      <h2 className="break-words text-h3">{story.title}</h2>
-                      <Badge className="mt-2">{t(`worksData.status.${story.status}`)}</Badge>
-                      <p className="mt-2 line-clamp-2 text-sm text-muted">{story.description}</p>
-                      <div className="mt-3 flex flex-wrap gap-2 text-xs text-muted">
-                        <span>
-                          {t('worksData.chapterCount', { count: story.chapterCount ?? 0 })}
-                        </span>
-                        {story.reviewStatus && (
-                          <Badge tone={story.reviewStatus === 'approved' ? 'green' : 'purple'}>
-                            {t('worksData.reviewLabel')}:{' '}
-                            {t(`worksData.review.${story.reviewStatus}`)}
-                          </Badge>
-                        )}
-                        {story.category && <Badge tone="blue">{story.category.name}</Badge>}
+            <>
+              <ul className="mt-5 divide-y divide-hairline">
+                {pageRows.map(story => (
+                  <li
+                    key={story.id}
+                    className="flex flex-wrap items-center justify-between gap-4 py-5"
+                  >
+                    <div className="flex min-w-0 flex-1 items-start gap-4">
+                      <StoryCover story={story} className="aspect-[2/3] w-16 shrink-0 rounded-xl" />
+                      <div className="min-w-0 flex-1">
+                        <h2 className="break-words text-h3">{story.title}</h2>
+                        <Badge className="mt-2">{t(`worksData.status.${story.status}`)}</Badge>
+                        <p className="mt-2 line-clamp-2 text-sm text-muted">{story.description}</p>
+                        <div className="mt-3 flex flex-wrap gap-2 text-xs text-muted">
+                          <span>
+                            {t('worksData.chapterCount', { count: story.chapterCount ?? 0 })}
+                          </span>
+                          {story.reviewStatus && (
+                            <Badge tone={story.reviewStatus === 'approved' ? 'green' : 'purple'}>
+                              {t('worksData.reviewLabel')}:{' '}
+                              {t(`worksData.review.${story.reviewStatus}`)}
+                            </Badge>
+                          )}
+                          {story.category && <Badge tone="blue">{story.category.name}</Badge>}
+                        </div>
                       </div>
                     </div>
-                  </div>
-                  <div className="flex flex-wrap items-center gap-2">
-                    {editor ? (
-                      <Button variant="secondary" onClick={() => setSelected(story)}>
-                        <PenLine size={16} />
-                        {t('worksData.chooseChapter')}
-                      </Button>
-                    ) : (
-                      <ButtonLink to={`/author/stories/${story.id}`} variant="secondary">
-                        <BookOpen size={16} />
-                        {t('worksData.manage')}
-                      </ButtonLink>
-                    )}
-                    {story.canDelete && (
-                      <Button
-                        variant="danger"
-                        size="sm"
-                        onClick={() => {
-                          setDeleteError('')
-                          setDeleting(story)
-                        }}
-                      >
-                        <Trash2 size={15} aria-hidden="true" />
-                        {t('worksData.delete')}
-                      </Button>
-                    )}
-                  </div>
-                </li>
-              ))}
-            </ul>
+                    <div className="flex flex-wrap items-center gap-2">
+                      {editor ? (
+                        <Button variant="secondary" onClick={() => setSelected(story)}>
+                          <PenLine size={16} />
+                          {t('worksData.chooseChapter')}
+                        </Button>
+                      ) : (
+                        <ButtonLink to={`/author/stories/${story.id}`} variant="secondary">
+                          <BookOpen size={16} />
+                          {t('worksData.manage')}
+                        </ButtonLink>
+                      )}
+                      {story.canDelete && (
+                        <Button
+                          variant="danger"
+                          size="sm"
+                          onClick={() => {
+                            setDeleteError('')
+                            setDeleting(story)
+                          }}
+                        >
+                          <Trash2 size={15} aria-hidden="true" />
+                          {t('worksData.delete')}
+                        </Button>
+                      )}
+                    </div>
+                  </li>
+                ))}
+              </ul>
+              <Pagination page={currentPage} pageCount={pageCount} onChange={setPage} />
+            </>
           ) : (
             <EmptyState
               icon={BookOpen}

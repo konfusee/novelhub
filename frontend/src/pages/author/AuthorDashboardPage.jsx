@@ -2,6 +2,7 @@ import { useState } from 'react'
 import {
   AlertTriangle,
   ArrowRight,
+  BarChart3,
   BookOpen,
   Coins,
   Edit3,
@@ -40,13 +41,38 @@ const emptyDashboard = {
     views: 0,
     audioPlays: null,
     followers: 0,
+    periodViews: 0,
+    periodFollowers: 0,
+    comparison: {},
   },
+  period: null,
   stories: [],
   drafts: [],
   feedback: [],
   draftWords: 0,
   draftCount: 0,
   feedbackTotal: 0,
+}
+const emptyPeriod = {
+  stats: {
+    periodViews: 0,
+    periodUnlocks: 0,
+    periodComments: 0,
+    periodEarnings: 0,
+    periodFollowers: 0,
+    comparison: {},
+  },
+  period: null,
+  revenue: {
+    selected: 0,
+    today: 0,
+    week: 0,
+    month: 0,
+    selectedUnlocks: 0,
+  },
+  storyRankings: [],
+  stories: [],
+  chart: null,
 }
 const statMeta = [
   {
@@ -64,13 +90,14 @@ const statMeta = [
 ]
 const dashboardPeriods = [
   { value: 1, label: 'Hôm nay' },
-  { value: 7, label: '7 ngày' },
-  { value: 30, label: '30 ngày' },
+  { value: 7, label: 'Tuần này' },
+  { value: 30, label: 'Tháng này' },
 ]
 const iconTone = {
   brand: 'bg-brand/12 text-brand-strong',
   orange: 'bg-orange/16 text-orange-strong',
   purple: 'bg-purple/12 text-purple-strong',
+  blue: 'bg-rose/12 text-rose-strong',
 }
 const statusLabels = {
   published: 'Đã xuất bản',
@@ -96,13 +123,29 @@ const statusFilter = {
 export function AuthorDashboardPage() {
   const { t, formatNumber } = useLocale()
   const [period, setPeriod] = useState(1)
-  const dashboard = useBackendDocument(`/author/dashboard?days=${period}`, emptyDashboard)
+  const baseDashboard = useBackendDocument('/author/dashboard', emptyDashboard)
+  const periodDashboard = useBackendDocument(
+    period === 1 ? null : `/author/dashboard/period?days=${period}`,
+    emptyPeriod,
+  )
+  const [chartOpen, setChartOpen] = useState(false)
+  const chartPeriodDashboard = useBackendDocument(
+    chartOpen && period === 1 ? '/author/dashboard/period?days=1' : null,
+    emptyPeriod,
+  )
+  const periodStatus = period === 1 ? baseDashboard.status : periodDashboard.status
+  const periodData = period === 1 ? baseDashboard.data : periodDashboard.data
+  const dashboard = baseDashboard
+  const periodLabel = dashboardPeriods.find(item => item.value === period)?.label ?? 'Tuần này'
+  const selectedStats = periodData.stats ?? {}
   const stats = {
     ...dashboard,
+    status: periodStatus,
+    retry: period === 1 ? baseDashboard.retry : periodDashboard.retry,
     data: [
-      [t('authorData.views'), formatNumber(dashboard.data.stats.views)],
-      [t('authorData.audioPlays'), '—'],
-      [t('authorData.followers'), formatNumber(dashboard.data.stats.followers)],
+      [`Lượt đọc ${periodLabel.toLowerCase()}`, formatNumber(selectedStats.periodViews ?? 0)],
+      [`Lượt nghe ${periodLabel.toLowerCase()}`, '—'],
+      [`Người theo dõi mới ${periodLabel.toLowerCase()}`, formatNumber(selectedStats.periodFollowers ?? 0)],
     ],
   }
   const storiesResource = {
@@ -123,16 +166,41 @@ export function AuthorDashboardPage() {
   const stories = storiesResource.data
   const shown = stories.filter(story => filter === 'all' || statusFilter[story.status] === filter)
   const drafting = dashboard.data.drafts
-  const periodLabel = dashboardPeriods.find(item => item.value === period)?.label ?? '7 ngày'
-  const revenue = dashboard.data.revenue ?? {
+  const revenue = periodData.revenue ?? {
     selected: 0,
     today: 0,
     week: 0,
     month: 0,
     selectedUnlocks: 0,
   }
-  const periodStats = dashboard.data.stats ?? {}
-  const rankings = dashboard.data.storyRankings ?? []
+  const periodStats = periodData.stats ?? {}
+  const comparison = periodStats.comparison ?? {}
+  const periodRankings = periodData.storyRankings ?? []
+  const baseRankings = dashboard.data.storyRankings ?? []
+  const baseRankingById = new Map(baseRankings.map(item => [item.id, item]))
+  const rankings = periodRankings.map(item => {
+    const base = baseRankingById.get(item.id)
+    return {
+      ...base,
+      ...item,
+      metrics: {
+        ...base?.metrics,
+        ...item.metrics,
+        selected: item.metrics?.selected,
+      },
+    }
+  })
+  const comparisonLabel = period === 1 ? 'Hôm qua' : period === 7 ? 'Tuần trước' : 'Tháng trước'
+  const comparisonText = (current, previous, unit = '') => {
+    if (!comparison.hasData) return `Chưa có dữ liệu ${comparisonLabel.toLowerCase()}`
+    if (previous == null) return `Chưa có dữ liệu ${comparisonLabel.toLowerCase()}`
+    const delta = Number(current ?? 0) - Number(previous ?? 0)
+    if (!delta) return `Không đổi so với ${comparisonLabel.toLowerCase()}`
+    const prefix = delta > 0 ? '+' : ''
+    return `${prefix}${formatNumber(delta)}${unit} so với ${comparisonLabel.toLowerCase()}`
+  }
+  const chartData = period === 1 ? chartPeriodDashboard.data.chart : periodData.chart
+  const chartStatus = period === 1 ? chartPeriodDashboard.status : periodStatus
   const sendReply = async event => {
     event.preventDefault()
     const target = feedbackResource.data.find(item => item.id === replyTarget)
@@ -243,6 +311,16 @@ export function AuthorDashboardPage() {
           >
             {stats.data.map(([label, value], index) => {
               const { icon: Icon, tone } = statMeta[index]
+              const current = index === 0
+                ? selectedStats.periodViews
+                : index === 2
+                  ? selectedStats.periodFollowers
+                  : null
+              const previous = index === 0
+                ? comparison.views
+                : index === 2
+                  ? comparison.followers
+                  : null
               return (
                 <Card key={label} className="flex flex-col p-4 sm:p-5">
                   <div className="flex items-start justify-between gap-3">
@@ -256,7 +334,7 @@ export function AuthorDashboardPage() {
                   <p className="mt-3 flex flex-wrap items-baseline gap-x-2 text-2xl font-bold tracking-tight tabular-nums">
                     {value}
                     <span className="text-xs font-normal text-muted">
-                      {t('authorData.noComparison')}
+                      {comparisonText(current, previous)}
                     </span>
                   </p>
                   <div aria-hidden="true" className="mt-4 h-1.5 rounded-full bg-elevated" />
@@ -266,7 +344,7 @@ export function AuthorDashboardPage() {
           </section>
         )}
 
-        {stats.status === 'ready' && (
+        {periodStatus === 'ready' && (
           <section
             className="nh-grid-12 nh-cols-2 nh-xl-cols-4 mt-5 grid gap-3 sm:gap-4"
             aria-label="Chỉ số theo kỳ"
@@ -276,27 +354,38 @@ export function AuthorDashboardPage() {
               label={`Thu nhập ${periodLabel.toLowerCase()}`}
               value={`${formatNumber(revenue.selected)} xu`}
               tone="orange"
+              comparison={comparisonText(periodStats.periodEarnings, comparison.earnings, ' xu')}
             />
             <MetricCard
               icon={Eye}
               label={`Lượt đọc ${periodLabel.toLowerCase()}`}
               value={formatNumber(periodStats.periodViews ?? 0)}
               tone="brand"
+              comparison={comparisonText(periodStats.periodViews, comparison.views)}
             />
             <MetricCard
               icon={BookOpen}
               label="Lượt mở khóa"
               value={formatNumber(periodStats.periodUnlocks ?? revenue.selectedUnlocks ?? 0)}
               tone="purple"
+              comparison={comparisonText(periodStats.periodUnlocks, comparison.unlocks)}
             />
             <MetricCard
               icon={MessageCircle}
               label="Bình luận mới"
               value={formatNumber(periodStats.periodComments ?? 0)}
               tone="blue"
+              comparison={comparisonText(periodStats.periodComments, comparison.comments)}
             />
           </section>
         )}
+
+        <div className="mt-5 flex justify-end">
+          <Button variant="secondary" size="sm" onClick={() => setChartOpen(true)}>
+            <BarChart3 size={15} aria-hidden="true" />
+            Xem biểu đồ tổng quan
+          </Button>
+        </div>
 
         {drafting.length > 0 && (
           <section className="mt-8" aria-labelledby="continue-writing">
@@ -373,7 +462,13 @@ export function AuthorDashboardPage() {
                   Xem sổ thu nhập
                 </ButtonLink>
               </div>
-              {rankings.length ? (
+              {periodStatus === 'loading' ? (
+                <div aria-busy="true" className="mt-4 space-y-3">
+                  {Array.from({ length: 3 }, (_, index) => (
+                    <Skeleton key={index} className="h-12 w-full rounded-2xl" />
+                  ))}
+                </div>
+              ) : rankings.length ? (
                 <div className="mt-4 overflow-x-auto">
                   <table className="w-full min-w-[560px] text-left text-sm">
                     <thead className="border-y border-hairline bg-elevated text-muted">
@@ -399,6 +494,16 @@ export function AuthorDashboardPage() {
                       ))}
                     </tbody>
                   </table>
+                </div>
+              ) : periodStatus === 'error' ? (
+                <div className="mt-5">
+                  <EmptyState
+                    tone="rose"
+                    headingAs="h3"
+                    title="Không tải được số liệu theo kỳ"
+                    description="Hãy thử lại để tải số liệu của kỳ xem này."
+                    action={<RetryButton onClick={periodDashboard.retry} />}
+                  />
                 </div>
               ) : (
                 <p className="mt-5 text-sm text-muted">Chưa có thu nhập theo kỳ này.</p>
@@ -585,7 +690,13 @@ export function AuthorDashboardPage() {
                 </div>
               </div>
               <ol className="mt-4 space-y-3">
-                {rankings.slice(0, 3).map(item => (
+                {periodStatus === 'loading' ? (
+                  <div className="mt-4 space-y-3" aria-busy="true">
+                    {Array.from({ length: 3 }, (_, index) => (
+                      <Skeleton key={index} className="h-14 w-full rounded-2xl" />
+                    ))}
+                  </div>
+                ) : rankings.slice(0, 3).map(item => (
                   <li key={item.id} className="flex items-center gap-3 rounded-2xl bg-elevated p-3">
                     <strong className="w-6 text-center text-orange-strong">{item.rank}</strong>
                     <div className="min-w-0 flex-1">
@@ -597,7 +708,18 @@ export function AuthorDashboardPage() {
                   </li>
                 ))}
               </ol>
-              {!rankings.length && (
+              {periodStatus === 'error' && (
+                <div className="mt-4">
+                  <EmptyState
+                    tone="rose"
+                    headingAs="h3"
+                    title="Không tải được xếp hạng"
+                    description="Hãy thử lại để tải số liệu của kỳ xem này."
+                    action={<RetryButton onClick={periodDashboard.retry} />}
+                  />
+                </div>
+              )}
+              {periodStatus === 'ready' && !rankings.length && (
                 <p className="mt-4 text-sm text-muted">Chưa có tác phẩm đủ dữ liệu xếp hạng.</p>
               )}
             </Card>
@@ -746,6 +868,34 @@ export function AuthorDashboardPage() {
             {t('common.close')}
           </Button>
         </Modal>
+        <Modal
+          open={chartOpen}
+          title={`Biểu đồ tổng quan · ${periodLabel}`}
+          onClose={() => setChartOpen(false)}
+          className="max-w-3xl"
+        >
+          {chartStatus === 'loading' ? (
+            <div className="space-y-3" aria-busy="true">
+              <Skeleton className="h-56 w-full rounded-2xl" />
+              <Skeleton className="h-4 w-2/3" />
+            </div>
+          ) : chartStatus === 'error' ? (
+            <EmptyState
+              tone="rose"
+              title="Không tải được biểu đồ"
+              description="Hãy thử lại để tải dữ liệu theo ngày."
+              action={<RetryButton onClick={period === 1 ? chartPeriodDashboard.retry : periodDashboard.retry} />}
+            />
+          ) : chartData?.labels?.length ? (
+            <OverviewChart chart={chartData} formatNumber={formatNumber} />
+          ) : (
+            <EmptyState
+              icon={BarChart3}
+              title="Chưa có dữ liệu biểu đồ"
+              description="Dữ liệu sẽ xuất hiện khi có lượt đọc, doanh thu hoặc tương tác trong kỳ."
+            />
+          )}
+        </Modal>
       </div>
     </AuthorLayout>
   )
@@ -798,8 +948,8 @@ function StoryMetricCells({ item, formatNumber }) {
       <td className="px-3 py-3 text-right font-semibold tabular-nums">
         {formatNumber(selected.earnings)} xu
         <div className="mt-1 text-[11px] font-normal text-muted">
-          Hôm nay {formatNumber(item.metrics?.today?.earnings ?? 0)} · 7 ngày{' '}
-          {formatNumber(item.metrics?.week?.earnings ?? 0)} · 30 ngày{' '}
+          Hôm nay {formatNumber(item.metrics?.today?.earnings ?? 0)} · Tuần này{' '}
+          {formatNumber(item.metrics?.week?.earnings ?? 0)} · Tháng này{' '}
           {formatNumber(item.metrics?.month?.earnings ?? 0)}
         </div>
         {item.metrics?.sincePublication && (
@@ -811,7 +961,7 @@ function StoryMetricCells({ item, formatNumber }) {
       <td className="px-3 py-3 text-right tabular-nums">
         {formatNumber(selected.unlocks)}
         <div className="mt-1 text-[11px] text-muted">
-          Hôm nay {formatNumber(item.metrics?.today?.unlocks ?? 0)} · 7 ngày{' '}
+          Hôm nay {formatNumber(item.metrics?.today?.unlocks ?? 0)} · Tuần này{' '}
           {formatNumber(item.metrics?.week?.unlocks ?? 0)}
         </div>
         {item.metrics?.sincePublication && (
@@ -823,8 +973,8 @@ function StoryMetricCells({ item, formatNumber }) {
       <td className="px-3 py-3 text-right tabular-nums">
         {formatNumber(selected.views)}
         <div className="mt-1 text-[11px] text-muted">
-          Hôm nay {formatNumber(item.metrics?.today?.views ?? 0)} · 7 ngày{' '}
-          {formatNumber(item.metrics?.week?.views ?? 0)} · 30 ngày{' '}
+          Hôm nay {formatNumber(item.metrics?.today?.views ?? 0)} · Tuần này{' '}
+          {formatNumber(item.metrics?.week?.views ?? 0)} · Tháng này{' '}
           {formatNumber(item.metrics?.month?.views ?? 0)}
         </div>
         {item.metrics?.sincePublication && (
@@ -837,7 +987,7 @@ function StoryMetricCells({ item, formatNumber }) {
   )
 }
 
-function MetricCard({ icon: Icon, label, value, tone = 'brand' }) {
+function MetricCard({ icon: Icon, label, value, comparison, tone = 'brand' }) {
   return (
     <Card className="flex items-center gap-3 p-4">
       <span
@@ -848,8 +998,70 @@ function MetricCard({ icon: Icon, label, value, tone = 'brand' }) {
       <div className="min-w-0">
         <p className="truncate text-xs text-muted">{label}</p>
         <p className="mt-1 text-xl font-bold tabular-nums">{value}</p>
+        {comparison && <p className="mt-1 text-[11px] text-muted">{comparison}</p>}
       </div>
     </Card>
+  )
+}
+
+function OverviewChart({ chart, formatNumber }) {
+  const series = [
+    { key: 'views', label: 'Lượt đọc', tone: 'bg-brand' },
+    { key: 'earnings', label: 'Doanh thu', tone: 'bg-orange' },
+    { key: 'unlocks', label: 'Mở khóa', tone: 'bg-purple' },
+    { key: 'comments', label: 'Bình luận', tone: 'bg-rose' },
+  ]
+  const maxByKey = Object.fromEntries(
+    series.map(item => [item.key, Math.max(1, ...(chart[item.key] ?? []))]),
+  )
+  return (
+    <div>
+      <div className="flex flex-wrap gap-3 text-xs text-muted">
+        {series.map(item => (
+          <span key={item.key} className="inline-flex items-center gap-1.5">
+            <span className={`size-2.5 rounded-full ${item.tone}`} aria-hidden="true" />
+            {item.label}
+          </span>
+        ))}
+      </div>
+      <div className="mt-5 overflow-x-auto pb-2">
+        <div
+          className="grid min-w-[34rem] items-end gap-1"
+          style={{ gridTemplateColumns: `repeat(${chart.labels.length}, minmax(1.25rem, 1fr))` }}
+          aria-label="Biểu đồ số liệu theo ngày"
+        >
+          {chart.labels.map((label, index) => {
+            const values = series.map(item => Number(chart[item.key]?.[index] ?? 0))
+            const height = Math.max(...values)
+            return (
+              <div key={label} className="flex h-56 items-end justify-center gap-0.5 rounded-t-xl bg-surface px-1 pt-3">
+                {series.map((item, seriesIndex) => (
+                  <span
+                    key={item.key}
+                    title={`${item.label}: ${formatNumber(values[seriesIndex])}`}
+                    className={`w-1.5 rounded-t-sm ${item.tone}`}
+                    style={{
+                      height: `${Math.max(2, (values[seriesIndex] / maxByKey[item.key]) * 100)}%`,
+                      opacity: height ? 1 : 0.35,
+                    }}
+                  />
+                ))}
+                <span className="sr-only">{label}</span>
+              </div>
+            )
+          })}
+        </div>
+        <div
+          className="mt-2 grid min-w-[34rem] gap-1 text-center text-[10px] text-muted"
+          style={{ gridTemplateColumns: `repeat(${chart.labels.length}, minmax(1.25rem, 1fr))` }}
+        >
+          {chart.labels.map(label => (
+            <span key={label}>{label.slice(5)}</span>
+          ))}
+        </div>
+      </div>
+      <p className="mt-3 text-xs text-muted">Mỗi cột là dữ liệu thật ghi nhận trong MongoDB theo ngày Việt Nam.</p>
+    </div>
   )
 }
 function RetryButton({ onClick }) {

@@ -54,6 +54,9 @@ export function CreateStoryPage() {
   const fileRef = useRef(null)
   const bannerFileRef = useRef(null)
   const [step, setStep] = useState(1)
+  // Only the current step and steps that have been completed can be opened. This keeps the
+  // wizard linear while still allowing an author to go back and edit an earlier step.
+  const [completedStep, setCompletedStep] = useState(0)
   const [title, setTitle] = useState('')
   const [synopsis, setSynopsis] = useState('')
   const [genre, setGenre] = useState('')
@@ -69,8 +72,11 @@ export function CreateStoryPage() {
 
   const errors = {
     title: title.trim() ? '' : 'Hãy nhập tên truyện.',
-    synopsis: '',
+    synopsis: synopsis.trim() ? '' : 'Hãy nhập tóm tắt truyện.',
+    genre: genreOptions.data.some(item => item.id === genre) ? '' : 'Hãy chọn thể loại chính.',
   }
+  const currentStepErrors =
+    step === 1 ? [errors.title, errors.synopsis] : step === 3 ? [errors.genre] : []
   const genreLabel =
     genreOptions.data.find(item => item.id === genre)?.name ?? t('createData.chooseGenre')
   const previewStory = {
@@ -81,30 +87,45 @@ export function CreateStoryPage() {
   }
 
   useEffect(() => {
-    const nodes = sectionRefs.current.filter(Boolean)
-    if (!nodes.length || typeof IntersectionObserver === 'undefined') return undefined
-    const observer = new IntersectionObserver(
-      entries => {
-        const visible = entries.filter(entry => entry.isIntersecting)
-        if (!visible.length) return
-        const top = visible.sort((a, b) => a.boundingClientRect.top - b.boundingClientRect.top)[0]
-        setStep(nodes.indexOf(top.target) + 1)
-      },
-      { rootMargin: '-30% 0px -55% 0px' },
-    )
-    nodes.forEach(node => observer.observe(node))
-    return () => observer.disconnect()
-  }, [])
+    const section = sectionRefs.current[step - 1]
+    if (typeof section?.scrollIntoView === 'function') {
+      section.scrollIntoView({ behavior: 'smooth', block: 'start' })
+    }
+  }, [step])
   useEffect(() => () => cover && URL.revokeObjectURL(cover.url), [cover])
   useEffect(() => () => banner && URL.revokeObjectURL(banner.url), [banner])
 
   const goTo = number => {
+    if (number < 1 || number > steps.length || number > completedStep + 1) return
     setStep(number)
-    sectionRefs.current[number - 1]?.scrollIntoView({ behavior: 'smooth', block: 'start' })
   }
-  const touch = () => {
+  const touch = invalidateFromStep => {
     setDraftState('idle')
     setSubmitState('idle')
+    setRequestError('')
+    if (invalidateFromStep) {
+      setCompletedStep(previous => Math.min(previous, invalidateFromStep - 1))
+    }
+  }
+  const completeStep = () => {
+    setRequestError('')
+    if (step === 1) {
+      setShowErrors(true)
+      if (errors.title || errors.synopsis) {
+        setRequestError('Hãy hoàn thiện tên truyện và tóm tắt trước khi sang bước tiếp theo.')
+        return
+      }
+    }
+    if (step === 3) {
+      setShowErrors(true)
+      if (errors.genre) {
+        setRequestError(errors.genre)
+        return
+      }
+    }
+    setShowErrors(false)
+    setCompletedStep(previous => Math.max(previous, step))
+    if (step < steps.length) setStep(step + 1)
   }
   const chooseCover = event => {
     const file = event.target.files?.[0]
@@ -115,7 +136,7 @@ export function CreateStoryPage() {
     if (file.size > MAX_COVER_BYTES) return setCoverError(t('createData.coverTooLarge'))
     setCoverError('')
     setCover({ name: file.name, url: URL.createObjectURL(file), file })
-    touch()
+    touch(2)
   }
   const chooseBanner = event => {
     const file = event.target.files?.[0]
@@ -126,7 +147,7 @@ export function CreateStoryPage() {
     if (file.size > MAX_COVER_BYTES) return setBannerError(t('createData.bannerTooLarge'))
     setBannerError('')
     setBanner({ name: file.name, url: URL.createObjectURL(file), file })
-    touch()
+    touch(2)
   }
   const persist = async asDraft => {
     if (busyRef.current || createdId) return
@@ -195,6 +216,7 @@ export function CreateStoryPage() {
   const saveDraft = () => void persist(true)
   const submit = event => {
     event.preventDefault()
+    if (step !== steps.length || completedStep < steps.length - 1) return
     void persist(false)
   }
   const saving = draftState === 'saving' || submitState === 'submitting'
@@ -213,13 +235,16 @@ export function CreateStoryPage() {
               {steps.map(([, label], index) => {
                 const number = index + 1
                 const active = step === number
+                const locked = number > completedStep + 1
                 return (
                   <li key={label} className="min-w-0">
                     <button
                       type="button"
                       onClick={() => goTo(number)}
+                      disabled={locked || saving || Boolean(createdId)}
                       aria-current={active ? 'step' : undefined}
-                      className={`flex w-full min-w-0 items-center gap-2 whitespace-normal rounded-full border px-2 py-1.5 pr-4 text-left text-xs font-semibold transition-[background-color,border-color,color] duration-200 sm:text-sm ${active ? 'border-brand bg-brand text-on-brand' : 'border-line bg-surface text-ink/70 hover:border-brand hover:text-ink'}`}
+                      aria-disabled={locked ? 'true' : undefined}
+                      className={`flex w-full min-w-0 items-center gap-2 whitespace-normal rounded-full border px-2 py-1.5 pr-4 text-left text-xs font-semibold transition-[background-color,border-color,color] duration-200 disabled:cursor-not-allowed disabled:opacity-50 sm:text-sm ${active ? 'border-brand bg-brand text-on-brand' : 'border-line bg-surface text-ink/70 hover:border-brand hover:text-ink'}`}
                     >
                       <span
                         className={`grid size-7 shrink-0 place-items-center rounded-full text-xs tabular-nums ${active ? 'bg-on-brand text-brand-strong' : 'bg-ink/6'}`}
@@ -241,6 +266,7 @@ export function CreateStoryPage() {
               <Card
                 id={steps[0][0]}
                 ref={node => (sectionRefs.current[0] = node)}
+                hidden={step !== 1}
                 className="scroll-mt-[calc(var(--app-header-h)+1rem)]"
               >
                 <CardHeading
@@ -266,7 +292,7 @@ export function CreateStoryPage() {
                       }
                       onChange={event => {
                         setTitle(event.target.value)
-                        touch()
+                        touch(1)
                       }}
                     />
                   </Field>
@@ -288,7 +314,7 @@ export function CreateStoryPage() {
                         }
                         onChange={event => {
                           setSynopsis(event.target.value)
-                          touch()
+                          touch(1)
                         }}
                         className="block min-h-40 w-full resize-y bg-transparent p-4 text-base leading-6 text-ink outline-none sm:text-sm"
                       />
@@ -303,6 +329,7 @@ export function CreateStoryPage() {
               <Card
                 id={steps[1][0]}
                 ref={node => (sectionRefs.current[1] = node)}
+                hidden={step !== 2}
                 className="scroll-mt-[calc(var(--app-header-h)+1rem)]"
               >
                 <CardHeading icon={ImagePlus} title="Bìa và hình ảnh" note="Không bắt buộc" />
@@ -339,7 +366,7 @@ export function CreateStoryPage() {
                           size="sm"
                           onClick={() => {
                             setCover(null)
-                            touch()
+                            touch(2)
                           }}
                         >
                           <Trash2 size={14} aria-hidden="true" />
@@ -396,7 +423,7 @@ export function CreateStoryPage() {
                             size="sm"
                             onClick={() => {
                               setBanner(null)
-                              touch()
+                              touch(2)
                             }}
                           >
                             <Trash2 size={14} aria-hidden="true" />
@@ -421,6 +448,7 @@ export function CreateStoryPage() {
               <Card
                 id={steps[2][0]}
                 ref={node => (sectionRefs.current[2] = node)}
+                hidden={step !== 3}
                 className="scroll-mt-[calc(var(--app-header-h)+1rem)]"
               >
                 <CardHeading icon={Tags} title="Phân loại thể loại và thẻ khám phá" />
@@ -478,7 +506,7 @@ export function CreateStoryPage() {
                           aria-checked={genre === item.id}
                           onClick={() => {
                             setGenre(item.id)
-                            touch()
+                            touch(3)
                           }}
                           className={`min-h-9 rounded-full border px-4 py-2 text-sm transition-[background-color,border-color,color] duration-200 ${genre === item.id ? 'border-brand bg-brand font-semibold text-on-brand' : 'border-line bg-surface text-ink/75 hover:border-brand hover:text-ink'}`}
                         >
@@ -486,6 +514,11 @@ export function CreateStoryPage() {
                         </button>
                       ))}
                     </div>
+                  )}
+                  {showErrors && errors.genre && (
+                    <p role="alert" className="mt-2 text-xs text-rose-strong">
+                      {errors.genre}
+                    </p>
                   )}
                 </fieldset>
 
@@ -495,7 +528,7 @@ export function CreateStoryPage() {
                     tags={tags}
                     onChange={next => {
                       setTags(next)
-                      touch()
+                      touch(3)
                     }}
                   />
                 </div>
@@ -504,6 +537,7 @@ export function CreateStoryPage() {
               <Card
                 id={steps[3][0]}
                 ref={node => (sectionRefs.current[3] = node)}
+                hidden={step !== 4}
                 className="scroll-mt-[calc(var(--app-header-h)+1rem)]"
               >
                 <CardHeading icon={Copyright} title="Xuất bản và bản quyền" />
@@ -554,19 +588,21 @@ export function CreateStoryPage() {
                       type="button"
                       variant="outline"
                       trailingIcon={ChevronRight}
-                      onClick={() => goTo(step + 1)}
+                      onClick={completeStep}
                     >
                       Tiếp tục đến bước {step + 1}
                     </Button>
                   )}
-                  <Button type="submit" disabled={saving}>
-                    <Check size={16} aria-hidden="true" />
-                    {submitState === 'submitting' ? 'Đang tạo truyện...' : 'Tạo truyện'}
-                  </Button>
+                  {step === steps.length && (
+                    <Button type="submit" disabled={saving}>
+                      <Check size={16} aria-hidden="true" />
+                      {submitState === 'submitting' ? 'Đang tạo truyện...' : 'Tạo truyện'}
+                    </Button>
+                  )}
                 </div>
-                {showErrors && Object.values(errors).some(Boolean) && (
+                {showErrors && currentStepErrors.some(Boolean) && (
                   <p role="alert" className="w-full text-xs text-rose-strong sm:text-right">
-                    Còn {Object.values(errors).filter(Boolean).length} mục cần hoàn thiện trước khi
+                    Còn {currentStepErrors.filter(Boolean).length} mục cần hoàn thiện trước khi
                     tạo truyện.
                   </p>
                 )}
@@ -622,7 +658,7 @@ export function CreateStoryPage() {
               <ul className="mt-4 space-y-4">
                 {[
                   ['Có tên truyện', Boolean(title.trim()), 1],
-                  ['Đã kiểm tra tóm tắt', true, 1],
+                  ['Đã nhập tóm tắt', Boolean(synopsis.trim()), 1],
                   [t('createData.coverOptional'), true, 2],
                 ].map(([label, done, target]) => (
                   <li key={label} className="flex gap-3">
