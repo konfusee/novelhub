@@ -8,6 +8,7 @@ import { ROUTES } from '../../app/routes'
 import { useLocale } from '../../context/LocaleContext'
 import { chapterLabel } from './chapterLabel'
 import { ChapterUnlock } from './ChapterUnlock'
+import { blockText } from './readingPoint'
 
 /* Prose column of one chapter; the skeleton and error states reuse it so nothing shifts. */
 const ARTICLE_CLASS =
@@ -17,12 +18,6 @@ const SKELETON_PARAGRAPHS = [300, 380, 310, 290, 300]
 const GLYPH_EM = 0.55
 const TEXT_BLOCKS = new Set(['paragraph', 'heading', 'quote'])
 const SCENE_BREAK = '*     *     *'
-
-/* Plain text of a block: legacy `blocks-v1` paragraphs carry `text`, rich blocks carry `inlines`. */
-const blockText = block =>
-  typeof block.text === 'string'
-    ? block.text
-    : (block.inlines ?? []).map(span => span.text).join('')
 
 /* API error → segment state. Locked previews never carry chapter text. */
 const failureStatus = error =>

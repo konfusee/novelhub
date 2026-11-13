@@ -9,9 +9,9 @@ import { useLocale } from '../../context/LocaleContext'
 /* A followed story (`LibraryItem`): new chapters since the last read, resume and unfollow. */
 export function SavedStoryCard({ item, onUnfollow, busy = false }) {
   const { t } = useLocale()
-  const { story, resume, listenResume } = item
+  const { story, resume } = item
   const href = ROUTES.story(story.id)
-  const listenTo = listenHref(story.id, listenResume)
+  const listenTo = listenHref(story.id, resume)
   return (
     <Card as="article" className="group flex gap-4 p-4">
       <Link to={href} tabIndex={-1} aria-hidden="true" className="shrink-0 self-start">

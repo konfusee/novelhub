@@ -328,55 +328,6 @@ it('turns a narration whose file disappeared into a retryable failure', async ()
   expect(provider.submits).toHaveLength(2)
 })
 
-it('keeps listening progress separate from reading progress', async () => {
-  const { author, storyId } = await api.publishStory({ title: 'Nghe thử' })
-  const first = await api.publishChapter(author, storyId, 'Một')
-  const second = await api.publishChapter(author, storyId, 'Hai')
-  const reader = await authenticatedAccount()
-  const save = body => api.write(reader.cookie, '/api/reader/progress', body, 'put')
-
-  expect((await save({ storyId, chapterId: first, position: 0.4 })).body.progress).toMatchObject({
-    mode: 'text',
-    position: 0.4,
-  })
-  const listened = await save({
-    storyId,
-    chapterId: second,
-    mode: 'audio',
-    position: 42,
-    duration: 120,
-  })
-  expect(listened.body.progress).toMatchObject({ mode: 'audio', position: 42, duration: 120 })
-  expect((await save({ storyId, chapterId: second, mode: 'audio', position: 90000 })).status).toBe(
-    400,
-  )
-  expect((await save({ storyId, chapterId: second, mode: 'text', position: 42 })).status).toBe(400)
-  expect((await save({ storyId, chapterId: first, position: 0.1, duration: 3 })).status).toBe(400)
-
-  const resume = (await api.get(reader.cookie, `/api/reader/progress/${storyId}`)).body
-  expect(resume.resume).toMatchObject({ chapterId: first, mode: 'text', position: 0.4 })
-  expect(resume.listen).toMatchObject({
-    chapterId: second,
-    mode: 'audio',
-    position: 42,
-    duration: 120,
-    fraction: 0.35,
-  })
-  const detail = (await api.get(reader.cookie, `/api/catalog/stories/${storyId}`)).body
-  expect(detail.viewer.resume.chapterId).toBe(first)
-  expect(detail.viewer.listenResume.chapterId).toBe(second)
-
-  await save({ storyId, chapterId: second, mode: 'audio', position: 120, completed: true })
-  const library = (await api.get(reader.cookie, '/api/reader/library')).body.items[0]
-  expect(library).toMatchObject({ chaptersRead: 2, totalChapters: 2, completed: false })
-  expect(library.listenResume.chapterId).toBe(second)
-
-  const history = (await api.get(reader.cookie, '/api/reader/history')).body.items
-  expect(history.map(item => [item.chapter.id, item.mode, item.completed])).toEqual([
-    [second, 'audio', true],
-  ])
-})
-
 it('talks to Vbee with App-Id and bearer token and maps request states', async () => {
   const calls = []
   const replies = [

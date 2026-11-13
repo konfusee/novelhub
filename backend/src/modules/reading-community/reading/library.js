@@ -1,7 +1,7 @@
 import { Follow, ReadingProgress } from '../../../models/index.js'
 import { publishedCards } from './access.js'
 import { publishedChapterRows } from './chapters.js'
-import { PROGRESS_MODES, resumeViews } from './progress.js'
+import { resumeViews } from './progress.js'
 
 export const LIBRARY_PAGE_SIZE = 20
 export const LIBRARY_TABS = ['all', 'reading', 'following', 'completed']
@@ -9,16 +9,16 @@ const latest = dates =>
   dates.reduce((max, date) => (date && (!max || date > max) ? date : max), null)
 
 /**
- * Reader library: actively followed stories plus stories with reading or listening progress,
- * limited to currently published, visible stories and ordered by latest activity. A chapter
- * counts as read/completed in either mode.
+ * Reader library: actively followed stories plus stories with saved progress, limited to
+ * currently published, visible stories and ordered by latest activity. A chapter counts
+ * as read/completed whether it was read or listened to.
  */
 export async function readerLibrary(account, { tab, page }) {
   const [follows, progress] = await Promise.all([
     Follow.find({ accountId: account._id, status: 'active' })
       .select('storyId createdAt updatedAt')
       .lean(),
-    ReadingProgress.find({ accountId: account._id, mode: { $in: PROGRESS_MODES } }).lean(),
+    ReadingProgress.find({ accountId: account._id }).lean(),
   ])
   const ids = [...new Set([...follows, ...progress].map(row => String(row.storyId)))]
   const cards = ids.length ? await publishedCards({ ids, pageSize: ids.length }) : []
@@ -42,20 +42,17 @@ export async function readerLibrary(account, { tab, page }) {
     const lastReadAt = latest(rows.map(row => row.lastReadAt))
     const following = followedAt.has(story.id)
     const since = lastReadAt ?? followedAt.get(story.id)
-    const newest = mode =>
-      rows
-        .filter(row => row.mode === mode)
-        .reduce(
-          (best, row) => (!best || (row.lastReadAt ?? 0) > (best.lastReadAt ?? 0) ? row : best),
-          null,
-        )
+    // "Continue" goes to the chapter read or listened to last.
+    const latestRow = rows.reduce(
+      (best, row) => (!best || (row.lastReadAt ?? 0) > (best.lastReadAt ?? 0) ? row : best),
+      null,
+    )
     const completed =
       published.length > 0 && published.every(chapter => completedIds.has(chapter.id))
     return {
       story,
       following,
-      latestProgress: newest('text'),
-      latestListen: newest('audio'),
+      latestRow,
       chaptersRead: new Set(read.map(row => String(row.chapterId))).size,
       totalChapters: published.length,
       completed,
@@ -85,14 +82,11 @@ export async function readerLibrary(account, { tab, page }) {
   const pageEntries = selected.slice((page - 1) * LIBRARY_PAGE_SIZE, page * LIBRARY_PAGE_SIZE)
   const resumes = await resumeViews(
     account,
-    pageEntries.flatMap(entry => [entry.latestProgress, entry.latestListen]),
+    pageEntries.map(entry => entry.latestRow),
   )
-  const items = pageEntries.map(
-    ({ latestProgress: _text, latestListen: _audio, reading: _reading, ...entry }, index) => ({
-      ...entry,
-      resume: resumes[2 * index],
-      listenResume: resumes[2 * index + 1],
-    }),
-  )
+  const items = pageEntries.map(({ latestRow: _row, reading: _reading, ...entry }, index) => ({
+    ...entry,
+    resume: resumes[index],
+  }))
   return { items, total: selected.length, page, pageSize: LIBRARY_PAGE_SIZE, counts }
 }

@@ -31,7 +31,7 @@ import {
   chapterListItem,
   publishedChapterRows,
 } from '../modules/reading-community/reading/chapters.js'
-import { resumePoints } from '../modules/reading-community/reading/progress.js'
+import { resumePoint } from '../modules/reading-community/reading/progress.js'
 import { recordChapterView } from '../modules/reading-community/reading/views.js'
 import { searchTagKey } from '../modules/authoring-publishing/content/story-tags.js'
 import { readAuthorMedia } from '../modules/authoring-publishing/author/author-media.js'
@@ -63,17 +63,12 @@ async function visibleChapter(config, req) {
 
 async function storyViewer(account, storyId) {
   if (!account) return null
-  const [follow, rating, points] = await Promise.all([
+  const [follow, rating, resume] = await Promise.all([
     Follow.exists({ accountId: account._id, storyId, status: 'active' }),
     Rating.findOne({ accountId: account._id, storyId, status: 'active' }).select('value').lean(),
-    resumePoints(account, storyId),
+    resumePoint(account, storyId),
   ])
-  return {
-    following: Boolean(follow),
-    rating: rating?.value ?? null,
-    resume: points.resume,
-    listenResume: points.listen,
-  }
+  return { following: Boolean(follow), rating: rating?.value ?? null, resume }
 }
 
 export function createCatalogRouter(config) {

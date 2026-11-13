@@ -6,9 +6,9 @@ export const resumeHref = (storyId, resume) =>
     ? `${ROUTES.read(storyId, resume.chapterId)}${resume.contentUpdated ? '?updated=1' : ''}`
     : ROUTES.story(storyId)
 
-/* Where "continue listening" goes: the saved audio chapter, or nothing when it is unavailable. */
-export const listenHref = (storyId, listenResume) =>
-  listenResume?.available ? ROUTES.listen(storyId, listenResume.chapterId) : null
+/* Where "continue listening" goes: the same saved chapter in the player, or nothing when unavailable. */
+export const listenHref = (storyId, resume) =>
+  resume?.available ? ROUTES.listen(storyId, resume.chapterId) : null
 
 /* Share of the story's published chapters the reader has finished. */
 export const storyPercent = item =>

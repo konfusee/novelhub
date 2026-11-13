@@ -17,6 +17,7 @@
     "db:backfill-embeddings": "node scripts/backfill-embeddings.js",
     "ai:fail-pending": "node scripts/fail-pending-evidence.js",
     "db:migrate-story-single-category": "node scripts/migrate-story-single-category.js",
+    "db:migrate-reading-progress": "node scripts/migrate-reading-progress.js",
     "smoke:moderation-review": "node scripts/smoke-moderation-review.js",
     "lint": "eslint .",
     "test": "vitest run",

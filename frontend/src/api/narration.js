@@ -19,15 +19,24 @@ export const startNarration = (storyId, chapterId, { signal } = {}) =>
 /* `audioUrl` is relative to the API base; cookies travel with the same-origin request. */
 export const narrationSource = audioUrl => `${API_BASE}${audioUrl}`
 
-/* PUT /reader/progress in audio mode: position/duration in seconds. */
-export const saveListenProgress = ({ storyId, chapterId, position, duration, completed }) =>
+/* PUT /reader/progress while listening: the paragraph heard plus the exact playback second. */
+export const saveListenProgress = ({
+  storyId,
+  chapterId,
+  paragraph,
+  paragraphCount,
+  audioSeconds,
+  duration,
+  completed,
+}) =>
   apiRequest('/reader/progress', {
     method: 'PUT',
     body: {
       storyId,
       chapterId,
-      mode: 'audio',
-      position,
+      paragraph,
+      paragraphCount,
+      audioSeconds,
       ...(duration ? { duration } : {}),
       ...(completed ? { completed: true } : {}),
     },

@@ -72,7 +72,6 @@ const HEX_ID = /^[a-f\d]{24}$/i
 const NO_CHAPTERS = Object.freeze([])
 /* Reading progress is saved at most every few seconds while it changes, and on leave. */
 const SAVE_INTERVAL = 5000
-const COMPLETE_AT = 0.98
 /* Continuous scroll: the chapter crossing this viewport line is "current"; ±1 stay rendered. */
 const READING_LINE = 0.35
 const KEEP_AROUND = 1
@@ -97,6 +96,21 @@ const readStored = (key, fallback) => {
 const prefersReducedMotion = () => window.matchMedia('(prefers-reduced-motion: reduce)').matches
 const hasTextSelection = () => Boolean(window.getSelection()?.toString().trim())
 const segmentNode = id => document.querySelector(`[data-chapter-segment="${id}"]`)
+/*
+ * Where the reader is in a chapter: the last paragraph whose top has passed the reading
+ * line. The chapter is done once its last paragraph is fully on screen.
+ */
+function paragraphOnScreen(segment) {
+  const nodes = segment.querySelectorAll('[data-paragraph]')
+  const line = innerHeight * READING_LINE
+  let paragraph = 0
+  for (const node of nodes) {
+    if (node.getBoundingClientRect().top > line) break
+    paragraph = Number(node.dataset.paragraph)
+  }
+  const last = nodes[nodes.length - 1]
+  return { paragraph, completed: !last || last.getBoundingClientRect().bottom <= innerHeight }
+}
 /*
  * Which chapters the canvas shows, by chapter id. `url` is the chapter in the address bar,
  * `current` the one being read; in continuous scroll `ids` is the rendered stream started at
@@ -662,7 +676,7 @@ export function FullChapterReaderPage() {
     if (
       !entry ||
       (sent?.chapterId === entry.chapterId &&
-        sent.position === entry.position &&
+        sent.paragraph === entry.paragraph &&
         sent.completed === entry.completed)
     )
       return
@@ -672,7 +686,8 @@ export function FullChapterReaderPage() {
       body: {
         storyId: entry.storyId,
         chapterId: entry.chapterId,
-        position: entry.position,
+        paragraph: entry.paragraph,
+        paragraphCount: entry.paragraphCount,
         ...(entry.completed ? { completed: true } : {}),
       },
     }).catch(() => setToast(t('reader.progressError')))
@@ -757,16 +772,17 @@ export function FullChapterReaderPage() {
         saved &&
         !saved.contentUpdated &&
         saved.chapterId === segment.chapter.id &&
-        saved.position > 0
+        saved.paragraph > 0
       ) {
-        let top
-        if (latest.current.mode === 'continuous') {
-          const rect = node.getBoundingClientRect()
-          top = scrollY + rect.top - (innerHeight * READING_LINE - saved.position * rect.height)
-        } else {
-          top = saved.position * (document.documentElement.scrollHeight - innerHeight)
+        // The saved paragraph (or the closest text block before it) goes just past the
+        // reading line, so measuring right after the scroll finds the same paragraph.
+        const target = [...node.querySelectorAll('[data-paragraph]')].findLast(
+          element => Number(element.dataset.paragraph) <= saved.paragraph,
+        )
+        if (target) {
+          const top = scrollY + target.getBoundingClientRect().top - innerHeight * READING_LINE + 1
+          scrollTo({ top: Math.max(0, top), behavior: 'instant' })
         }
-        scrollTo({ top: Math.max(0, top), behavior: 'instant' })
       }
       measureRef.current()
     })
@@ -789,12 +805,12 @@ export function FullChapterReaderPage() {
       }
       ratio = Math.min(1, Math.max(0, ratio))
       setProgress(Math.round(ratio * 100))
-      if (restoreRef.current.pending || !chapter) return
+      if (restoreRef.current.pending || !chapter || !segment) return
       queueProgress({
         storyId: chapter.story?.id ?? routeStory,
         chapterId: chapter.id,
-        position: Math.round(ratio * 1000) / 1000,
-        completed: ratio >= COMPLETE_AT,
+        ...paragraphOnScreen(segment),
+        paragraphCount: chapter.blocks.length,
       })
     }
     const schedule = () => {

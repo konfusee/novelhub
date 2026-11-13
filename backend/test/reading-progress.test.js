@@ -11,16 +11,18 @@ const app = createApp(testConfig({ cookieName: 'novelhub_session', corsOrigin: o
 const api = readingClient(app)
 const save = (reader, body) => api.write(reader.cookie, '/api/reader/progress', body, 'put')
 
-it('saves progress and resumes, restarting a chapter whose published revision changed', async () => {
+it('saves the paragraph and resumes, restarting a chapter whose published revision changed', async () => {
   const { author, storyId } = await api.publishStory()
-  const first = await api.publishChapter(author, storyId, 'Một', ['Bản đầu.'])
+  const first = await api.publishChapter(author, storyId, 'Một', ['Đoạn 1.', 'Đoạn 2.', 'Đoạn 3.'])
   const reader = await authenticatedAccount()
-  const saved = await save(reader, { storyId, chapterId: first, position: 0.6 })
+  const saved = await save(reader, { storyId, chapterId: first, paragraph: 1, paragraphCount: 3 })
   expect(saved.status).toBe(200)
   expect(saved.body.progress).toMatchObject({
     storyId,
     chapterId: first,
-    position: 0.6,
+    mode: 'text',
+    paragraph: 1,
+    audioSeconds: null,
     completed: false,
   })
   const resumeUrl = `/api/reader/progress/${storyId}`
@@ -28,35 +30,85 @@ it('saves progress and resumes, restarting a chapter whose published revision ch
     chapterId: first,
     orderKey: 1,
     title: 'Một',
-    position: 0.6,
+    paragraph: 1,
+    percent: 33,
     contentUpdated: false,
     available: true,
   })
-  expect((await save(reader, { storyId, chapterId: first, position: 2 })).status).toBe(400)
-  expect(
-    (await save(reader, { storyId, chapterId: first, position: 0.1, extra: true })).status,
-  ).toBe(400)
+  const invalid = [
+    { paragraph: 3, paragraphCount: 3 },
+    { paragraph: 0.5, paragraphCount: 3 },
+    { paragraph: 0, paragraphCount: 3, duration: 10 },
+    { paragraph: 0, paragraphCount: 3, extra: true },
+    { position: 0.5 },
+  ]
+  for (const body of invalid)
+    expect((await save(reader, { storyId, chapterId: first, ...body })).status).toBe(400)
 
   await api.republishRevision(author, storyId, first, ['Bản sửa.'])
   expect((await api.get(reader.cookie, resumeUrl)).body.resume).toMatchObject({
     chapterId: first,
-    position: 0,
+    paragraph: 0,
     contentUpdated: true,
     available: true,
   })
-  await save(reader, { storyId, chapterId: first, position: 0.3 })
+  await save(reader, { storyId, chapterId: first, paragraph: 0, paragraphCount: 1 })
   expect((await api.get(reader.cookie, resumeUrl)).body.resume).toMatchObject({
-    position: 0.3,
+    paragraph: 0,
     contentUpdated: false,
   })
 
   const second = await api.publishChapter(author, storyId, 'Hai')
-  await save(reader, { storyId, chapterId: second, position: 0.2 })
+  await save(reader, { storyId, chapterId: second, paragraph: 0, paragraphCount: 1 })
   expect((await api.get(reader.cookie, resumeUrl)).body.resume.chapterId).toBe(second)
   expect(
     (await api.get(reader.cookie, `/api/reader/progress/${String(author.account._id)}`)).body
       .resume,
   ).toBeNull()
+})
+
+it('keeps one row per chapter for reading and listening, and resumes the latest of either', async () => {
+  const { author, storyId } = await api.publishStory({ title: 'Nghe thử' })
+  const first = await api.publishChapter(author, storyId, 'Một', ['A.', 'B.', 'C.', 'D.'])
+  const reader = await authenticatedAccount()
+  const resume = async () =>
+    (await api.get(reader.cookie, `/api/reader/progress/${storyId}`)).body.resume
+
+  await save(reader, { storyId, chapterId: first, paragraph: 1, paragraphCount: 4 })
+  const listened = await save(reader, {
+    storyId,
+    chapterId: first,
+    paragraph: 2,
+    paragraphCount: 4,
+    audioSeconds: 42,
+    duration: 120,
+  })
+  expect(listened.body.progress).toMatchObject({ mode: 'audio', paragraph: 2, audioSeconds: 42 })
+  expect(await ReadingProgress.countDocuments({ accountId: reader.account._id })).toBe(1)
+  expect(await resume()).toMatchObject({
+    chapterId: first,
+    mode: 'audio',
+    paragraph: 2,
+    audioSeconds: 42,
+    duration: 120,
+    percent: 50,
+  })
+  const detail = (await api.get(reader.cookie, `/api/catalog/stories/${storyId}`)).body
+  expect(detail.viewer.resume).toMatchObject({ chapterId: first, mode: 'audio' })
+
+  // Reading on moves the point; the old playback second no longer applies.
+  await save(reader, { storyId, chapterId: first, paragraph: 3, paragraphCount: 4 })
+  expect(await resume()).toMatchObject({ mode: 'text', paragraph: 3, audioSeconds: null })
+  await save(reader, {
+    storyId,
+    chapterId: first,
+    paragraph: 3,
+    paragraphCount: 4,
+    completed: true,
+  })
+  // Completion stays when the Reader scrolls back up.
+  await save(reader, { storyId, chapterId: first, paragraph: 0, paragraphCount: 4 })
+  expect(await resume()).toMatchObject({ paragraph: 0, completed: true, percent: 100 })
 })
 
 it('builds library tabs and counts across following, reading and completed stories', async () => {
@@ -70,11 +122,17 @@ it('builds library tabs and counts across following, reading and completed stori
   const doneChapter = await api.publishChapter(done.author, done.storyId, 'Một')
 
   await Follow.create({ accountId: reader.account._id, storyId: followed.storyId })
-  await save(reader, { storyId: reading.storyId, chapterId: readingChapter, position: 0.5 })
+  await save(reader, {
+    storyId: reading.storyId,
+    chapterId: readingChapter,
+    paragraph: 0,
+    paragraphCount: 1,
+  })
   await save(reader, {
     storyId: done.storyId,
     chapterId: doneChapter,
-    position: 1,
+    paragraph: 0,
+    paragraphCount: 1,
     completed: true,
   })
   await api.publishChapter(followed.author, followed.storyId, 'Hai')
@@ -97,7 +155,7 @@ it('builds library tabs and counts across following, reading and completed stori
     chaptersRead: 1,
     totalChapters: 2,
     completed: false,
-    resume: { chapterId: readingChapter, position: 0.5 },
+    resume: { chapterId: readingChapter, paragraph: 0 },
   })
   expect(byTitle['Đọc xong']).toMatchObject({ completed: true, chaptersRead: 1, totalChapters: 1 })
   expect((await library('reading')).items.map(item => item.story.title)).toEqual(['Đang đọc'])
@@ -120,11 +178,18 @@ it('keeps one history entry per story and deletes all of that story’s saved pr
   const reader = await authenticatedAccount()
   const other = await authenticatedAccount()
   await Follow.create({ accountId: reader.account._id, storyId })
-  await save(reader, { storyId, chapterId: first, position: 1, completed: true })
-  await save(reader, { storyId, chapterId: second, position: 0.4 })
-  await save(reader, { storyId, chapterId: third, mode: 'audio', position: 30, duration: 120 })
-  await save(reader, { storyId: later.storyId, chapterId: laterChapter, position: 0.2 })
-  await save(other, { storyId, chapterId: first, position: 0.2 })
+  const at = (storyId, chapterId, extra = {}) => ({
+    storyId,
+    chapterId,
+    paragraph: 0,
+    paragraphCount: 4,
+    ...extra,
+  })
+  await save(reader, at(storyId, first, { completed: true }))
+  await save(reader, at(storyId, second, { paragraph: 1 }))
+  await save(reader, at(storyId, third, { paragraph: 1, audioSeconds: 30, duration: 120 }))
+  await save(reader, at(later.storyId, laterChapter))
+  await save(other, at(storyId, first))
 
   const history = async account => (await api.get(account.cookie, '/api/reader/history')).body
   const listed = await history(reader)
@@ -136,8 +201,9 @@ it('keeps one history entry per story and deletes all of that story’s saved pr
   expect(listed.items[1]).toMatchObject({
     chapter: { id: third, orderKey: 3, available: true },
     mode: 'audio',
-    position: 30,
-    fraction: 0.25,
+    paragraph: 1,
+    audioSeconds: 30,
+    percent: 25,
   })
 
   const remove = (account, id) =>
@@ -151,7 +217,6 @@ it('keeps one history entry per story and deletes all of that story’s saved pr
   expect(library.items.map(item => item.story.id)).toEqual([later.storyId])
   expect((await api.get(reader.cookie, `/api/reader/progress/${storyId}`)).body).toEqual({
     resume: null,
-    listen: null,
   })
 
   expect((await api.write(reader.cookie, '/api/reader/history', undefined, 'delete')).status).toBe(

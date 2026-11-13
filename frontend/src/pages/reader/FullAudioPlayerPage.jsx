@@ -32,6 +32,7 @@ import {
 import { ReaderRange } from '../../components/reader/ReaderSettings'
 import { ReadListenSwitch } from '../../components/reader/ReadListenSwitch'
 import { chapterLabel } from '../../components/reader/chapterLabel'
+import { paragraphAtTime, timeAtParagraph } from '../../components/reader/readingPoint'
 import { StoryCover } from '../../components/story/StoryCover'
 import { apiRequest } from '../../api/client'
 import { useBackendDocument } from '../../api/useBackendResource'
@@ -116,8 +117,8 @@ export function FullAudioPlayerPage() {
   const canonicalStoryId = chapter?.story?.id ?? detail.data?.story?.id ?? null
   const [prefs, setPrefs] = useState({ speed: 1, volume: 100, muted: false, autoContinue: true })
   const [toast, setToast] = useState('')
-  /* Saved listening point of this story (`listen` of GET /reader/progress/:story). */
-  const [progress, setProgress] = useState({ storyId: null, listen: null })
+  /* Saved point of this story (`resume` of GET /reader/progress/:story), read or listened. */
+  const [progress, setProgress] = useState({ storyId: null, resume: null })
   const [resumeUsed, setResumeUsed] = useState(null)
   const [updatedDismissed, setUpdatedDismissed] = useState(false)
 
@@ -129,10 +130,10 @@ export function FullAudioPlayerPage() {
     })
       .then(response => {
         if (!controller.signal.aborted)
-          setProgress({ storyId: canonicalStoryId, listen: response?.listen ?? null })
+          setProgress({ storyId: canonicalStoryId, resume: response?.resume ?? null })
       })
       .catch(() => {
-        if (!controller.signal.aborted) setProgress({ storyId: canonicalStoryId, listen: null })
+        if (!controller.signal.aborted) setProgress({ storyId: canonicalStoryId, resume: null })
       })
     return () => controller.abort()
   }, [canonicalStoryId])
@@ -143,10 +144,10 @@ export function FullAudioPlayerPage() {
   }, [toast])
 
   /* undefined while the saved point loads; null when there is nothing to resume here. */
-  const listen = progress.storyId === canonicalStoryId ? progress.listen : undefined
-  const savedHere = chapter && listen?.chapterId === chapter.id ? listen : null
+  const saved = progress.storyId === canonicalStoryId ? progress.resume : undefined
+  const savedHere = chapter && saved?.chapterId === chapter.id ? saved : null
   const resume =
-    listen === undefined ? undefined : savedHere && resumeUsed !== chapter.id ? savedHere : null
+    saved === undefined ? undefined : savedHere && resumeUsed !== chapter.id ? savedHere : null
   const showUpdated = Boolean(savedHere?.contentUpdated) && !updatedDismissed
 
   const goToChapter = useCallback(
@@ -399,7 +400,8 @@ function NarrationPlayer({
     const entry = saver.snapshot
     if (!saver.touched || !entry) return
     const sent = saver.sent
-    if (sent && sent.position === entry.position && sent.completed === entry.completed) return
+    if (sent && sent.audioSeconds === entry.audioSeconds && sent.completed === entry.completed)
+      return
     saver.sent = entry
     saver.lastAt = Date.now()
     saveListenProgress({ storyId, chapterId, ...entry }).catch(() => onSaveError())
@@ -417,10 +419,13 @@ function NarrationPlayer({
       save()
     }
   }, [save])
+  /* Playback second, plus the paragraph it falls in so reading can continue from there. */
   const capture = audio => {
     const length = finiteDuration(audio)
     saverRef.current.snapshot = {
-      position: tenths(audio.currentTime),
+      paragraph: paragraphAtTime(chapter.blocks, audio.currentTime, length),
+      paragraphCount: chapter.blocks.length,
+      audioSeconds: tenths(audio.currentTime),
       duration: length ? tenths(length) : null,
       completed: audio.ended,
     }
@@ -432,7 +437,10 @@ function NarrationPlayer({
       if (aliveRef.current) setPlaying(false)
     })
   }, [])
-  /* Once metadata and the saved point are known: seek to it once, then honour a pending Play. */
+  /*
+   * Once metadata and the saved point are known: seek to it once, then honour a pending Play.
+   * The exact second when this chapter was last listened to, else where the saved paragraph starts.
+   */
   const prime = useCallback(() => {
     const audio = audioRef.current
     const saved = resumeRef.current
@@ -440,15 +448,17 @@ function NarrationPlayer({
     primedRef.current = true
     if (saved) {
       const length = finiteDuration(audio)
-      if (!saved.contentUpdated && saved.position > 0 && (!length || saved.position < length - 1))
-        audio.currentTime = saved.position
+      const target = saved.contentUpdated
+        ? 0
+        : (saved.audioSeconds ?? timeAtParagraph(chapter.blocks, saved.paragraph, length))
+      if (target > 0 && (!length || target < length - 1)) audio.currentTime = target
       onResumeApplied(chapterId)
     }
     if (wantPlayRef.current) {
       wantPlayRef.current = false
       play(audio)
     }
-  }, [chapterId, onResumeApplied, play])
+  }, [chapter.blocks, chapterId, onResumeApplied, play])
   useEffect(() => {
     resumeRef.current = resume
     prime()
