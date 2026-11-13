@@ -559,12 +559,9 @@ export async function submissionList(
           .lean()
       : [],
   ])
-  const byId = (rows, id) =>
-    rows.find(row => row?._id && id && String(row._id) === String(id))
+  const byId = (rows, id) => rows.find(row => row?._id && id && String(row._id) === String(id))
   const targetOf = item =>
-    item.chapterId
-      ? byId(chapters, item.chapterId)
-      : byId(stories, item.storyId)
+    item.chapterId ? byId(chapters, item.chapterId) : byId(stories, item.storyId)
   const currentIds = items
     .map(targetOf)
     .filter(Boolean)
@@ -598,24 +595,14 @@ export async function submissionList(
         revisionNumber: revision?.revisionNumber ?? null,
         status: item.status,
         canRevise:
-          canReviseRejected(
-            item,
-            target,
-            current,
-            byId(stories, item.storyId) ?? {},
-          ) ||
+          canReviseRejected(item, target, current, byId(stories, item.storyId) ?? {}) ||
           canReviseUnpublished(
             item,
             byId(chapters, item.chapterId),
             revision,
             byId(stories, item.storyId) ?? {},
           ) ||
-          canReviseApprovedUnreleased(
-            item,
-            target,
-            current,
-            byId(stories, item.storyId) ?? {},
-          ),
+          canReviseApprovedUnreleased(item, target, current, byId(stories, item.storyId) ?? {}),
         version: item.version,
         submittedAt: item.submittedAt,
         decisionSummary: item.decisionSummary ?? '',

@@ -130,13 +130,13 @@ export async function authorStoryWorkspace(account, storyId) {
       : null
     const publishedCanRevise = Boolean(
       publishedSource &&
-        publishedRevision &&
-        canReviseUnpublished(publishedSource, chapter, publishedRevision, story),
+      publishedRevision &&
+      canReviseUnpublished(publishedSource, chapter, publishedRevision, story),
     )
     const currentCanRevise = Boolean(
       source &&
-        (canReviseUnpublished(source, chapter, revision, story) ||
-          canReviseApprovedUnreleased(source, chapter, revision, story)),
+      (canReviseUnpublished(source, chapter, revision, story) ||
+        canReviseApprovedUnreleased(source, chapter, revision, story)),
     )
     const revisionSource = publishedCanRevise ? publishedSource : currentCanRevise ? source : null
     return {
@@ -173,10 +173,10 @@ export async function authorStoryWorkspace(account, storyId) {
       // Immutable published revisions are read-only; authors edit a new revision.
       canEdit: Boolean(
         !story.authoringFrozen &&
-          !['submitted', 'under-review', 'archived'].includes(story.publicationStatus) &&
-          ['draft', 'published'].includes(chapter.status) &&
-          revision?.status === 'editable' &&
-          !revision?.immutableAt,
+        !['submitted', 'under-review', 'archived'].includes(story.publicationStatus) &&
+        ['draft', 'published'].includes(chapter.status) &&
+        revision?.status === 'editable' &&
+        !revision?.immutableAt,
       ),
       canRelease: Boolean(
         !story.authoringFrozen &&
@@ -191,9 +191,7 @@ export async function authorStoryWorkspace(account, storyId) {
       reads: views.find(item => item._id?.equals(chapter._id))?.count ?? 0,
       updatedAt: chapter.updatedAt,
       publishedAt: chapter.publishedAt ?? null,
-      publishedRevisionId: chapter.publishedRevisionId
-        ? String(chapter.publishedRevisionId)
-        : null,
+      publishedRevisionId: chapter.publishedRevisionId ? String(chapter.publishedRevisionId) : null,
       requestedReleaseAt: chapter.requestedReleaseAt ?? null,
       earlyAccess: chapter.earlyAccess
         ? {
@@ -239,8 +237,8 @@ export async function authorStoryWorkspace(account, storyId) {
         !['submitted', 'under-review', 'archived'].includes(story.publicationStatus),
       canEditMetadata: Boolean(
         !story.publishedRevisionId &&
-          !story.authoringFrozen &&
-          !['submitted', 'under-review', 'archived'].includes(story.publicationStatus),
+        !story.authoringFrozen &&
+        !['submitted', 'under-review', 'archived'].includes(story.publicationStatus),
       ),
     },
     chapters: rows,

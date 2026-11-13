@@ -17,8 +17,7 @@ export function AuthorPreviewPage() {
   const chapters = [...resource.data.chapters]
     .filter(
       chapter =>
-        chapter.status !== 'archived' &&
-        (source !== 'published' || chapter.publishedRevisionId),
+        chapter.status !== 'archived' && (source !== 'published' || chapter.publishedRevisionId),
     )
     .sort((a, b) => a.number - b.number)
   return (
@@ -98,18 +97,12 @@ function PreviewChapter({ storyId, chapterId, chapters, source }) {
           {t('authorDraftActions.chapterPosition', { position: chapterPosition })}
         </span>
         {index > 0 && (
-          <ButtonLink
-            variant="secondary"
-            to={previewPath(chapters[index - 1].id)}
-          >
+          <ButtonLink variant="secondary" to={previewPath(chapters[index - 1].id)}>
             {t('authorDraftActions.previous')}
           </ButtonLink>
         )}
         {chapters[index + 1] && (
-          <ButtonLink
-            variant="secondary"
-            to={previewPath(chapters[index + 1].id)}
-          >
+          <ButtonLink variant="secondary" to={previewPath(chapters[index + 1].id)}>
             {t('authorDraftActions.next')}
           </ButtonLink>
         )}
