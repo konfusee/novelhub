@@ -46,7 +46,11 @@ function vbeeProvider({ appId, token, apiUrl, timeoutMs }, voiceCode, fetchImpl)
       if (status === 401 || status === 403)
         throw new TtsProviderError('provider_unauthorized', true)
       if (status === 429 || status >= 500) throw new TtsProviderError('provider_busy', true)
-      throw new TtsProviderError('provider_rejected', false, body?.error?.message)
+      const message = body?.error?.message
+      // The account's character quota is used up ("You have exceeded the API TTS quota"):
+      // nothing is wrong with the chapter, it can be generated again once quota is added.
+      if (/quota/i.test(message ?? '')) throw new TtsProviderError('provider_quota', true, message)
+      throw new TtsProviderError('provider_rejected', false, message)
     }
     return body
   }

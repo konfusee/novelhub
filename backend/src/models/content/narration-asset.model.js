@@ -22,7 +22,7 @@ const schema = new Schema(
         characters: { type: Number, min: 0, required: true },
       },
     ],
-    // Reader whose play started the current provider job (per-account cooldown).
+    // Reader whose play started the current provider job (per-account active-job limit).
     requestedBy: { type: ObjectId, ref: 'Account' },
     leaseExpiresAt: Date,
     checkedAt: Date,

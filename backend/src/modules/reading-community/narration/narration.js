@@ -13,8 +13,6 @@ import { MAX_AUDIO_BYTES, TtsProviderError } from './tts-provider.js'
 const LEASE_MS = 60_000
 const POLL_INTERVAL_MS = 2_000
 const MAX_PROCESSING_MS = 15 * 60_000
-const REQUEST_COOLDOWN_MS = 15_000
-const requestCooldowns = new Map()
 // Cost limits: provider submits per (revision, voice) before a retry is refused, and the
 // day boundary (Vietnam time) of the optional platform-wide daily character budget.
 export const MAX_ATTEMPTS = 3
@@ -26,10 +24,13 @@ const TRANSIENT = new Set([
   'provider_invalid_response',
   'audio_download_failed',
 ])
+// Submit errors where the provider did not create (or bill) a job.
+const REFUSED = new Set(['provider_rejected', 'provider_quota', 'provider_unauthorized'])
 const FAILURE_MESSAGES = {
   text_too_long: 'Chương quá dài để chuyển thành giọng nói.',
   empty_text: 'Chương không có nội dung để đọc.',
   provider_rejected: 'Dịch vụ giọng nói từ chối nội dung chương này.',
+  provider_quota: 'Dịch vụ giọng nói đã hết hạn mức ký tự. Vui lòng thử lại sau.',
   audio_too_large: 'Tệp âm thanh tạo ra quá lớn.',
   audio_missing: 'Tệp âm thanh đã bị mất. Vui lòng tạo lại.',
 }
@@ -117,32 +118,34 @@ async function submit(config, provider, chapter, asset) {
   )
   if (!claimed) return NarrationAsset.findById(asset._id)
   const text = await chapterText(chapter)
-  if (!text) return fail(claimed, 'empty_text', false)
+  // Vbee answers "Invalid syntax" for text without a single letter or digit.
+  if (!/[\p{L}\p{N}]/u.test(text)) return fail(claimed, 'empty_text', false)
   if (text.length > provider.maxCharacters) return fail(claimed, 'text_too_long', false)
-  // Every submit is billed, so it counts as an attempt and toward the daily budget even
-  // when the provider then fails.
-  const submitted = await NarrationAsset.findOneAndUpdate(
-    { _id: claimed._id, status: 'processing' },
-    {
-      $push: { submissions: { at: new Date(), characters: text.length } },
-      $inc: { attempts: 1, version: 1 },
-    },
-    { returnDocument: 'after' },
-  )
-  if (!submitted) return NarrationAsset.findById(claimed._id)
+  // A submit counts as an attempt and toward the daily budget, since it may be billed even
+  // when the job then fails. A request the provider refused was never created, so it is not.
+  const billed = {
+    $push: { submissions: { at: new Date(), characters: text.length } },
+    $inc: { attempts: 1, version: 1 },
+  }
   try {
     const { jobId } = await provider.submit({ text, callbackUrl: config.tts?.callbackUrl })
     return NarrationAsset.findOneAndUpdate(
       { _id: claimed._id, status: 'processing' },
       {
+        ...billed,
         $set: { providerRequestId: jobId, checkedAt: new Date(), leaseExpiresAt: null },
-        $inc: { version: 1 },
       },
       { returnDocument: 'after' },
     )
   } catch (error) {
     if (!(error instanceof TtsProviderError)) throw error
-    return fail(submitted, error.code, error.retryable)
+    config.logger?.warn(
+      { chapterId: String(chapter._id), code: error.code, reason: error.message },
+      'narration submit failed',
+    )
+    if (!REFUSED.has(error.code))
+      await NarrationAsset.updateOne({ _id: claimed._id, status: 'processing' }, billed)
+    return fail(claimed, error.code, error.retryable)
   }
 }
 
@@ -310,28 +313,25 @@ const vietnamDayStart = now =>
   new Date(Math.floor((now.getTime() + VN_OFFSET_MS) / DAY_MS) * DAY_MS - VN_OFFSET_MS)
 
 /**
- * Cost guards before a new provider job is started for this account: a per-account
- * cooldown between job starts, and the optional platform-wide daily character budget.
+ * Cost guards before a new provider job is started for this account: at most
+ * `maxActiveJobsPerAccount` narrations being generated at once for one account, and the
+ * optional platform-wide daily character budget.
  */
 async function guardNewJob(config, account, chapter) {
   const now = new Date()
-  const cooldownMs = (config.tts?.requestCooldownSeconds ?? 0) * 1000
-  if (cooldownMs) {
-    const last = await NarrationAsset.findOne({
+  const maxActive = config.tts?.maxActiveJobsPerAccount ?? 0
+  if (maxActive) {
+    const active = await NarrationAsset.countDocuments({
       requestedBy: account._id,
-      requestedAt: { $gt: new Date(now.getTime() - cooldownMs) },
+      status: { $in: ['requested', 'processing'] },
+      requestedAt: { $gt: new Date(now.getTime() - MAX_PROCESSING_MS) },
     })
-      .sort({ requestedAt: -1 })
-      .select('requestedAt')
-      .lean()
-    if (last) {
-      const seconds = Math.ceil((last.requestedAt.getTime() + cooldownMs - now.getTime()) / 1000)
+    if (active >= maxActive)
       throw new HttpError(
         429,
-        'narration_cooldown',
-        `Bạn vừa yêu cầu tạo âm thanh. Vui lòng thử lại sau ${seconds} giây.`,
+        'narration_busy',
+        'Bạn đang tạo âm thanh cho chương khác. Vui lòng chờ chương đó xong rồi thử lại.',
       )
-    }
   }
   const limit = config.tts?.dailyCharacterLimit ?? 0
   if (limit) {
@@ -359,17 +359,6 @@ async function guardNewJob(config, account, chapter) {
 export async function requestNarration({ config, provider, account, storyId, chapterId }) {
   const { chapter } = await readableChapter({ storyId, chapterId, account })
   requireProvider(provider)
-  const cooldownKey = `${account._id}:${storyId}:${chapterId}`
-  const lastRequestedAt = requestCooldowns.get(cooldownKey) ?? 0
-  if (Date.now() - lastRequestedAt < REQUEST_COOLDOWN_MS) {
-    const existing = await current(chapter, provider)
-    if (existing) return narrationView(existing, { storyId, chapterId })
-  }
-  requestCooldowns.set(cooldownKey, Date.now())
-  if (requestCooldowns.size > 10_000) {
-    const cutoff = Date.now() - REQUEST_COOLDOWN_MS
-    for (const [key, value] of requestCooldowns) if (value < cutoff) requestCooldowns.delete(key)
-  }
   const key = { revisionId: chapter.publishedRevisionId, voiceId: provider.voiceId }
   let asset = await current(chapter, provider)
   if (!asset) {
