@@ -16,15 +16,27 @@ const vietnameseDay = value =>
   new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Ho_Chi_Minh' }).format(value)
 const dateWindow = (days, now = new Date()) => {
   const today = vietnameseDay(now)
+  const todayUtc = new Date(`${today}T00:00:00Z`)
+  let startDay = today
+  let periodKey = 'day'
+  if (days === 7) {
+    const mondayOffset = (todayUtc.getUTCDay() + 6) % 7
+    startDay = new Date(todayUtc.getTime() - mondayOffset * DAY_MS).toISOString().slice(0, 10)
+    periodKey = 'week'
+  } else if (days === 30) {
+    startDay = `${today.slice(0, 7)}-01`
+    periodKey = 'month'
+  }
   const end = new Date(`${today}T00:00:00+07:00`)
-  const start = new Date(end.getTime() - (days - 1) * DAY_MS)
+  const start = new Date(`${startDay}T00:00:00+07:00`)
   return {
     days,
+    periodKey,
     today,
     start,
     end: new Date(end.getTime() + DAY_MS),
-    startDay: vietnameseDay(start),
-    endDay: vietnameseDay(new Date(end.getTime() - 1)),
+    startDay,
+    endDay: today,
   }
 }
 
@@ -41,19 +53,21 @@ const viewsForWindow = (storyIds, startDay, endDay) =>
   ])
 
 const previousWindow = selected => {
-  const days = selected.days
-  const endDay = new Date(
-    Date.parse(`${selected.startDay}T00:00:00Z`) - DAY_MS,
-  )
-    .toISOString()
-    .slice(0, 10)
-  const startDay = new Date(
-    Date.parse(`${endDay}T00:00:00Z`) - (days - 1) * DAY_MS,
-  )
-    .toISOString()
-    .slice(0, 10)
+  const currentStart = Date.parse(`${selected.startDay}T00:00:00Z`)
+  const endDayDate = new Date(currentStart - DAY_MS)
+  const endDay = endDayDate.toISOString().slice(0, 10)
+  let startDay
+  if (selected.periodKey === 'month') {
+    startDay = new Date(Date.UTC(endDayDate.getUTCFullYear(), endDayDate.getUTCMonth(), 1))
+      .toISOString()
+      .slice(0, 10)
+  } else {
+    const span = selected.periodKey === 'week' ? 7 : 1
+    startDay = new Date(currentStart - span * DAY_MS).toISOString().slice(0, 10)
+  }
   return {
-    days,
+    days: selected.days,
+    periodKey: selected.periodKey,
     start: new Date(`${startDay}T00:00:00+07:00`),
     end: new Date(new Date(`${endDay}T00:00:00+07:00`).getTime() + DAY_MS),
     startDay,
@@ -109,12 +123,14 @@ const periodCommentsByDay = (storyIds, chapterIds, start, end) =>
     { $sort: { _id: 1 } },
   ])
 
-const periodFollows = (storyIds, start, end) =>
-  Follow.countDocuments({
-    storyId: { $in: storyIds },
-    status: 'active',
-    createdAt: { $gte: start, $lt: end },
-  })
+const periodFollows = async (storyIds, start, end) =>
+  (
+    await Follow.distinct('accountId', {
+      storyId: { $in: storyIds },
+      status: 'active',
+      createdAt: { $gte: start, $lt: end },
+    })
+  ).length
 
 const periodRevenueByDay = async (accountId, storyIds, chapterIds, start, end) => {
   if (!storyIds.length || !chapterIds.length) return []
@@ -240,7 +256,7 @@ export async function authorDashboard(accountId, { days = 1 } = {}, now = new Da
     story => story.publicationStatus === 'published' && story.publishedRevisionId,
   )
   const publishedStoryIds = publishedStories.map(story => story._id)
-  const [chapters, views, ratings, followers, feedback, feedbackTotal, selectedViews] =
+  const [chapters, views, ratings, followers, feedback, feedbackTotal, selectedViews, selectedFollowers] =
     await Promise.all([
       Chapter.find({
         storyId: {
@@ -326,6 +342,7 @@ export async function authorDashboard(accountId, { days = 1 } = {}, now = new Da
         },
         { $group: { _id: '$storyId', count: { $sum: 1 } } },
       ]),
+      periodFollows(publishedStoryIds, selectedWindow.start, selectedWindow.end),
     ])
   const publishedChapters = chapters.filter(
     chapter => chapter.status === 'published' && chapter.publishedRevisionId,
@@ -341,7 +358,7 @@ export async function authorDashboard(accountId, { days = 1 } = {}, now = new Da
     createdAt: { $gte: selectedWindow.start, $lt: selectedWindow.end },
   })
   const previous = previousWindow(selectedWindow)
-  const [previousViews, previousRevenue, previousComments] = await Promise.all([
+  const [previousViews, previousRevenue, previousComments, previousFollowers] = await Promise.all([
     viewsForWindow(publishedStoryIds, previous.startDay, previous.endDay),
     revenueForStories(
       accountId,
@@ -359,6 +376,7 @@ export async function authorDashboard(accountId, { days = 1 } = {}, now = new Da
       status: 'visible',
       createdAt: { $gte: previous.start, $lt: previous.end },
     }),
+    periodFollows(publishedStoryIds, previous.start, previous.end),
   ])
   const [chapterFeedback, chapterFeedbackTotal] = await Promise.all([
     Comment.find({
@@ -525,11 +543,19 @@ export async function authorDashboard(accountId, { days = 1 } = {}, now = new Da
       periodUnlocks: selectedRevenue.unlocks,
       periodComments: selectedComments,
       periodEarnings: selectedRevenue.total,
+      periodFollowers: selectedFollowers,
       comparison: {
         views: previousViews.reduce((sum, row) => sum + row.count, 0),
+        followers: previousFollowers,
         unlocks: previousRevenue.unlocks,
         comments: previousComments,
         earnings: previousRevenue.total,
+        hasData:
+          previousViews.some(row => row.count > 0) ||
+          previousFollowers > 0 ||
+          previousRevenue.unlocks > 0 ||
+          previousComments > 0 ||
+          previousRevenue.total > 0,
       },
     },
     period: {
@@ -623,7 +649,20 @@ export async function authorDashboardPeriod(accountId, { days = 1 } = {}, now = 
     .select('_id storyId')
     .lean()
   const chapterIds = chapters.map(chapter => chapter._id)
-  const [selectedViews, selectedRevenue, selectedComments] = await Promise.all([
+  const previous = previousWindow(selectedWindow)
+  const [
+    selectedViews,
+    selectedRevenue,
+    selectedComments,
+    selectedFollowers,
+    selectedViewsByDay,
+    selectedCommentsByDay,
+    selectedRevenueByDay,
+    previousViews,
+    previousRevenue,
+    previousComments,
+    previousFollowers,
+  ] = await Promise.all([
     StatisticsEvent.aggregate([
       {
         $match: {
@@ -650,6 +689,22 @@ export async function authorDashboardPeriod(accountId, { days = 1 } = {}, now = 
       status: 'visible',
       createdAt: { $gte: selectedWindow.start, $lt: selectedWindow.end },
     }),
+    periodFollows(storyIds, selectedWindow.start, selectedWindow.end),
+    periodViewsByDay(storyIds, selectedWindow.startDay, selectedWindow.endDay),
+    periodCommentsByDay(storyIds, chapterIds, selectedWindow.start, selectedWindow.end),
+    periodRevenueByDay(accountId, storyIds, chapterIds, selectedWindow.start, selectedWindow.end),
+    viewsForWindow(storyIds, previous.startDay, previous.endDay),
+    revenueForStories(accountId, storyIds, chapterIds, previous.start, previous.end),
+    Comment.countDocuments({
+      $or: [
+        { targetType: 'story', targetId: { $in: storyIds } },
+        { targetType: 'chapter', targetId: { $in: chapterIds } },
+      ],
+      parentCommentId: null,
+      status: 'visible',
+      createdAt: { $gte: previous.start, $lt: previous.end },
+    }),
+    periodFollows(storyIds, previous.start, previous.end),
   ])
   const selectedViewByStory = new Map(selectedViews.map(row => [String(row._id), row.count]))
   const rows = stories
@@ -676,17 +731,46 @@ export async function authorDashboardPeriod(accountId, { days = 1 } = {}, now = 
     })
     .sort((a, b) => b.earnings - a.earnings || b.views - a.views)
     .map((story, index, list) => ({ ...story, rank: index + 1, rankTotal: list.length }))
+  const labels = calendarDays(selectedWindow.startDay, selectedWindow.endDay)
+  const byDay = (rows, key = 'value') => new Map(rows.map(row => [row._id, row[key] ?? 0]))
+  const viewsByDay = byDay(selectedViewsByDay)
+  const commentsByDay = byDay(selectedCommentsByDay)
+  const revenueByDay = byDay(selectedRevenueByDay, 'earnings')
+  const unlocksByDay = byDay(selectedRevenueByDay, 'unlocks')
   return {
     stats: {
       periodViews: selectedViews.reduce((sum, row) => sum + row.count, 0),
       periodUnlocks: selectedRevenue.unlocks,
       periodComments: selectedComments,
       periodEarnings: selectedRevenue.total,
+      periodFollowers: selectedFollowers,
+      comparison: {
+        views: previousViews.reduce((sum, row) => sum + row.count, 0),
+        followers: previousFollowers,
+        unlocks: previousRevenue.unlocks,
+        comments: previousComments,
+        earnings: previousRevenue.total,
+        hasData:
+          previousViews.some(row => row.count > 0) ||
+          previousFollowers > 0 ||
+          previousRevenue.unlocks > 0 ||
+          previousComments > 0 ||
+          previousRevenue.total > 0,
+      },
     },
     period: {
       days: selectedWindow.days,
       start: selectedWindow.startDay,
       end: selectedWindow.endDay,
+      comparisonStart: previous.startDay,
+      comparisonEnd: previous.endDay,
+    },
+    chart: {
+      labels,
+      views: labels.map(day => viewsByDay.get(day) ?? 0),
+      earnings: labels.map(day => revenueByDay.get(day) ?? 0),
+      unlocks: labels.map(day => unlocksByDay.get(day) ?? 0),
+      comments: labels.map(day => commentsByDay.get(day) ?? 0),
     },
     revenue: {
       selected: selectedRevenue.total,

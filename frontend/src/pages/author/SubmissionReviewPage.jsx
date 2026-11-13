@@ -25,10 +25,8 @@ import {
   Select,
   Skeleton,
 } from '../../components/ui'
-import { Pagination } from '../../components/ui/Pagination'
 
-const SUBMISSION_PAGE_SIZES = [5, 10, 15]
-const emptyFeed = { items: [], stories: [], page: 1, pageCount: 1, total: 0, pageSize: 5 }
+const emptyFeed = { items: [], stories: [], page: 1, pageCount: 1, total: 0 }
 const emptyWorkspace = { chapters: [] }
 const emptyPackage = { checks: [], ready: false }
 
@@ -36,13 +34,12 @@ export function SubmissionReviewPage() {
   const { t } = useLocale()
   const [params, setParams] = useSearchParams()
   const [page, setPage] = useState(1)
-  const [pageSize, setPageSize] = useState(5)
   const storyId = params.get('storyId') || ''
   const chapterId = params.get('chapterId') || ''
   const status = params.get('status') || ''
   const targetType = params.get('targetType') || ''
   const feed = useBackendDocument(
-    `/author/submissions?page=${page}&pageSize=${pageSize}${storyId ? `&storyId=${encodeURIComponent(storyId)}` : ''}${chapterId ? `&chapterId=${encodeURIComponent(chapterId)}` : ''}${status ? `&status=${encodeURIComponent(status)}` : ''}${targetType ? `&targetType=${targetType}` : ''}`,
+    `/author/submissions?page=${page}${storyId ? `&storyId=${encodeURIComponent(storyId)}` : ''}${chapterId ? `&chapterId=${encodeURIComponent(chapterId)}` : ''}${status ? `&status=${encodeURIComponent(status)}` : ''}${targetType ? `&targetType=${targetType}` : ''}`,
     emptyFeed,
   )
   const choose = (story, chapter = '') => {
@@ -63,11 +60,6 @@ export function SubmissionReviewPage() {
       ...(targetType ? { targetType } : {}),
     })
   }
-  const total = Number(feed.data.total ?? 0)
-  const currentPage = Number(feed.data.page ?? page)
-  const currentPageSize = Number(feed.data.pageSize ?? pageSize)
-  const visibleFrom = total ? (currentPage - 1) * currentPageSize + 1 : 0
-  const visibleTo = Math.min(total, currentPage * currentPageSize)
   return (
     <AuthorLayout>
       <div className="page-author py-7">
@@ -179,18 +171,9 @@ export function SubmissionReviewPage() {
           <div className="flex flex-wrap items-center justify-between gap-3">
             <h2 className="text-h3">{t('submissionData.history')}</h2>
             {feed.status === 'ready' && (
-              <div className="flex flex-wrap items-center justify-end gap-x-3 gap-y-1">
-                <span className="text-xs text-muted">
-                  {t('submissionData.showing', {
-                    from: visibleFrom,
-                    to: visibleTo,
-                    total,
-                  })}
-                </span>
-                <span className="text-sm text-muted">
-                  {t('submissionData.totalCount', { count: total })}
-                </span>
-              </div>
+              <span className="text-sm text-muted">
+                {t('submissionData.totalCount', { count: feed.data.total })}
+              </span>
             )}
           </div>
           {feed.status === 'loading' ? (
@@ -211,36 +194,20 @@ export function SubmissionReviewPage() {
               {feed.data.items.map(item => (
                 <SubmissionEntry key={item.id} item={item} />
               ))}
-              <div className="flex flex-col gap-3 border-t border-hairline pt-4 sm:flex-row sm:items-center sm:justify-between">
-                <label
-                  className="flex items-center gap-2 text-xs font-semibold text-muted"
-                  htmlFor="submission-page-size"
+              <div className="flex flex-wrap items-center justify-between gap-3 pt-3">
+                <Button variant="secondary" disabled={page <= 1} onClick={() => setPage(page - 1)}>
+                  {t('submissionData.previous')}
+                </Button>
+                <span className="text-sm tabular-nums">
+                  {page} / {feed.data.pageCount}
+                </span>
+                <Button
+                  variant="secondary"
+                  disabled={page >= feed.data.pageCount}
+                  onClick={() => setPage(page + 1)}
                 >
-                  {t('submissionData.pageSize')}
-                  <Select
-                    id="submission-page-size"
-                    className="h-9 min-w-24"
-                    value={pageSize}
-                    onChange={event => {
-                      setPageSize(Number(event.target.value))
-                      setPage(1)
-                    }}
-                  >
-                    {SUBMISSION_PAGE_SIZES.map(value => (
-                      <option key={value} value={value}>
-                        {value} {t('submissionData.submissionUnit')}
-                      </option>
-                    ))}
-                  </Select>
-                </label>
-                <div className="overflow-x-auto pb-1">
-                  <Pagination
-                    page={currentPage}
-                    pageCount={feed.data.pageCount}
-                    onChange={setPage}
-                    className="mt-0 min-w-max justify-start sm:justify-end"
-                  />
-                </div>
+                  {t('submissionData.next')}
+                </Button>
               </div>
             </div>
           )}

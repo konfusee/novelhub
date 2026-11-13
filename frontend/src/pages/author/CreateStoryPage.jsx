@@ -75,6 +75,8 @@ export function CreateStoryPage() {
     synopsis: synopsis.trim() ? '' : 'Hãy nhập tóm tắt truyện.',
     genre: genreOptions.data.some(item => item.id === genre) ? '' : 'Hãy chọn thể loại chính.',
   }
+  const currentStepErrors =
+    step === 1 ? [errors.title, errors.synopsis] : step === 3 ? [errors.genre] : []
   const genreLabel =
     genreOptions.data.find(item => item.id === genre)?.name ?? t('createData.chooseGenre')
   const previewStory = {
@@ -242,7 +244,7 @@ export function CreateStoryPage() {
                       disabled={locked || saving || Boolean(createdId)}
                       aria-current={active ? 'step' : undefined}
                       aria-disabled={locked ? 'true' : undefined}
-                      className={`flex w-full min-w-0 items-center gap-2 whitespace-normal rounded-full border px-2 py-1.5 pr-4 text-left text-xs font-semibold transition-[background-color,border-color,color] duration-200 sm:text-sm ${active ? 'border-brand bg-brand text-on-brand' : 'border-line bg-surface text-ink/70 hover:border-brand hover:text-ink'}`}
+                      className={`flex w-full min-w-0 items-center gap-2 whitespace-normal rounded-full border px-2 py-1.5 pr-4 text-left text-xs font-semibold transition-[background-color,border-color,color] duration-200 disabled:cursor-not-allowed disabled:opacity-50 sm:text-sm ${active ? 'border-brand bg-brand text-on-brand' : 'border-line bg-surface text-ink/70 hover:border-brand hover:text-ink'}`}
                     >
                       <span
                         className={`grid size-7 shrink-0 place-items-center rounded-full text-xs tabular-nums ${active ? 'bg-on-brand text-brand-strong' : 'bg-ink/6'}`}
@@ -513,6 +515,11 @@ export function CreateStoryPage() {
                       ))}
                     </div>
                   )}
+                  {showErrors && errors.genre && (
+                    <p role="alert" className="mt-2 text-xs text-rose-strong">
+                      {errors.genre}
+                    </p>
+                  )}
                 </fieldset>
 
                 <div className="mt-6">
@@ -593,9 +600,9 @@ export function CreateStoryPage() {
                     </Button>
                   )}
                 </div>
-                {showErrors && Object.values(errors).some(Boolean) && (
+                {showErrors && currentStepErrors.some(Boolean) && (
                   <p role="alert" className="w-full text-xs text-rose-strong sm:text-right">
-                    Còn {Object.values(errors).filter(Boolean).length} mục cần hoàn thiện trước khi
+                    Còn {currentStepErrors.filter(Boolean).length} mục cần hoàn thiện trước khi
                     tạo truyện.
                   </p>
                 )}
