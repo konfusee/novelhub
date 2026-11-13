@@ -95,9 +95,7 @@ it('renders the chapter text and saves reading progress for that chapter', async
   expect(screen.getByRole('heading', { level: 1 }).textContent).toBe('Chương 1: Mở đầu')
   await waitFor(() => expect(progressCalls()).toHaveLength(1))
   const body = JSON.parse(progressCalls()[0][1].body)
-  expect(body).toMatchObject({ storyId: STORY, chapterId: CH1 })
-  expect(body.position).toBeGreaterThanOrEqual(0)
-  expect(body.position).toBeLessThanOrEqual(1)
+  expect(body).toMatchObject({ storyId: STORY, chapterId: CH1, paragraph: 0, paragraphCount: 1 })
   /* The early-access next chapter is shown as locked instead of being loaded. */
   expect(await screen.findByText('Chương 2: Bí mật đang khóa')).toBeTruthy()
   expect(fetchMock.mock.calls.some(([url]) => url.endsWith(`/chapters/${CH2}`))).toBe(false)

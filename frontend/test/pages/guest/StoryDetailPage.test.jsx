@@ -113,7 +113,7 @@ it('drives the Continue link from viewer.resume and shows the content-updated no
         chapterId: CH2,
         orderKey: 2,
         title: 'Gió lạ',
-        position: 0,
+        paragraph: 0,
         contentUpdated: true,
         available: true,
         lastReadAt: '2026-10-28T00:00:00Z',

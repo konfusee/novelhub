@@ -19,7 +19,7 @@ const story = {
     { id: CH1, title: 'Mở đầu', orderKey: 1, locked: false },
     { id: CH2, title: 'Bí mật', orderKey: 2, locked: true },
   ],
-  viewer: { following: false, resume: null, listenResume: null },
+  viewer: { following: false, resume: null },
 }
 const chapterOne = {
   chapter: {
@@ -55,7 +55,7 @@ const fetchMock = vi.fn((url, options = {}) => {
     return reply(200, { progress: JSON.parse(options.body) })
   if (path === `/catalog/stories/${STORY}`) return reply(200, story)
   if (path === `/catalog/stories/${STORY}/chapters/${CH1}`) return reply(200, chapterOne)
-  if (path === `/reader/progress/${STORY}`) return reply(200, { resume: null, listen: null })
+  if (path === `/reader/progress/${STORY}`) return reply(200, { resume: null })
   return reply(404, { error: { code: 'not_found', message: 'Không tìm thấy.' } })
 })
 const calls = (method, path) =>
@@ -142,7 +142,7 @@ it('shows the not-ready notice when TTS is not configured (HTTP 503)', async () 
   }
 })
 
-it('saves listening progress in audio mode', async () => {
+it('saves the playback second and the paragraph it falls in', async () => {
   narration = { get: view('available'), post: view('available') }
   renderPlayer()
   await waitFor(() => expect(document.querySelector('audio')).toBeTruthy())
@@ -169,8 +169,9 @@ it('saves listening progress in audio mode', async () => {
   expect(JSON.parse(calls('PUT', '/reader/progress')[0][1].body)).toEqual({
     storyId: STORY,
     chapterId: CH1,
-    mode: 'audio',
-    position: 42,
+    paragraph: 0,
+    paragraphCount: 1,
+    audioSeconds: 42,
     duration: 120,
   })
 })
