@@ -13,6 +13,7 @@ export function useBackendResource(path, initialData = emptyItems, select = item
   const [attempt, setAttempt] = useState(0)
   const [state, setState] = useState({ path: null, status: 'loading', data: initialData })
   useEffect(() => {
+    if (!path) return undefined
     const controller = new AbortController()
     apiRequest(path, { signal: controller.signal })
       .then(response => {
@@ -36,10 +37,18 @@ export function useBackendResource(path, initialData = emptyItems, select = item
     return () => controller.abort()
   }, [path, attempt, initialData, select])
   const retry = useCallback(() => {
+    if (!path) return
     setState({ path: null, status: 'loading', data: initialData })
     setAttempt(value => value + 1)
-  }, [initialData])
-  return { ...(state.path === path ? state : { status: 'loading', data: initialData }), retry }
+  }, [initialData, path])
+  return {
+    ...(path
+      ? state.path === path
+        ? state
+        : { status: 'loading', data: initialData }
+      : { status: 'idle', data: initialData }),
+    retry,
+  }
 }
 
 export function useBackendDocument(path, initialData) {

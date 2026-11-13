@@ -504,7 +504,7 @@ export async function submitContent(account, input, config) {
 }
 export async function submissionList(
   account,
-  { page = 1, storyId, chapterId, targetType, status } = {},
+  { page = 1, pageSize = 5, storyId, chapterId, targetType, status } = {},
 ) {
   const filter = {
     authorAccountId: account._id,
@@ -518,8 +518,8 @@ export async function submissionList(
     PublicationSubmission.countDocuments(filter),
     PublicationSubmission.find(filter)
       .sort({ submittedAt: -1, _id: -1 })
-      .skip((page - 1) * 10)
-      .limit(10)
+      .skip((page - 1) * pageSize)
+      .limit(pageSize)
       .lean(),
     Story.find({
       authorAccountId: account._id,
@@ -577,8 +577,9 @@ export async function submissionList(
     : []
   return {
     page,
+    pageSize,
     total,
-    pageCount: Math.max(1, Math.ceil(total / 10)),
+    pageCount: Math.max(1, Math.ceil(total / pageSize)),
     stories: stories.map(story => ({ id: String(story._id), title: story.title })),
     items: items.map(item => {
       const revision = byId(revisions, item.revisionId)

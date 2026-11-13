@@ -1,5 +1,4 @@
 import { useState } from 'react'
-import { useLocation } from 'react-router'
 import {
   Activity,
   AlertTriangle,
@@ -12,8 +11,8 @@ import {
 } from '../../components/icons'
 import { AdminLayout, AuthorLayout, ModeratorLayout, ReaderLayout } from '../../layouts'
 import { Badge, Button, Card, EmptyState, Input, ProgressBar, Skeleton } from '../../components/ui'
+import { useBackendResource } from '../../api/useBackendResource'
 import { useLocale } from '../../context/LocaleContext'
-import { useMockResource } from '../../context/MockDataContext'
 
 const layouts = {
   reader: ReaderLayout,
@@ -22,13 +21,8 @@ const layouts = {
   admin: AdminLayout,
 }
 
-const rows = [
-  { id: 'NH-1042', name: 'The Silent Forest', time: 'Cập nhật 12 phút trước', status: 'active' },
-  { id: 'NH-1038', name: 'Whispers of You', time: 'Cập nhật 46 phút trước', status: 'review' },
-  { id: 'NH-1027', name: 'Neon Hearts', time: 'Cập nhật hôm qua', status: 'resolved' },
-]
-
 const statusTone = { active: 'green', review: 'orange', resolved: 'purple' }
+const emptyActivity = Object.freeze([])
 
 /* Same grid template as the activity rows so placeholders keep each row's height. */
 const rowGrid =
@@ -42,10 +36,14 @@ const statTones = {
 export function RoleUtilityPage({ role, eyebrow, title, description }) {
   const Layout = layouts[role]
   const { t } = useLocale()
-  const { pathname } = useLocation()
-  const activity = useMockResource(`activity:${pathname}`, rows)
+  const activity = useBackendResource('/workspace/activity', emptyActivity)
   const [query, setQuery] = useState('')
-  const records = activity.data
+  const records = activity.data.map(row => ({
+    ...row,
+    name: row.title,
+    time: row.updatedAt ? new Date(row.updatedAt).toLocaleString('vi-VN') : '—',
+    status: row.status === 'Chưa đọc' ? 'review' : 'resolved',
+  }))
   const keyword = query.trim().toLowerCase()
   const visible = keyword
     ? records.filter(row => `${row.id} ${row.name}`.toLowerCase().includes(keyword))
@@ -136,8 +134,8 @@ export function RoleUtilityPage({ role, eyebrow, title, description }) {
           {loading && (
             <div aria-busy="true" aria-label={t('workspace.loading')}>
               <ul aria-hidden="true" className="divide-y divide-hairline">
-                {rows.map(row => (
-                  <li key={row.id} className={rowGrid}>
+                {Array.from({ length: 3 }, (_, index) => (
+                  <li key={index} className={rowGrid}>
                     <span className="flex h-4 items-center">
                       <Skeleton className="h-3 w-16" />
                     </span>

@@ -2,7 +2,7 @@ import { Account, Chapter, Comment, Story } from '../../../models/index.js'
 import { HttpError } from '../../../middleware/errors.js'
 import { ownerWrite } from '../../reading-community/reading/owner-write.js'
 
-const PAGE_SIZE = 20
+const DEFAULT_PAGE_SIZE = 5
 const statuses = new Set(['visible', 'hidden', 'soft-deleted'])
 const sorts = new Set(['newest', 'oldest', 'az'])
 
@@ -53,7 +53,16 @@ function publicAuthor(author) {
 
 export async function authorCommentList(
   accountId,
-  { page = 1, storyId, chapterId, targetType, status, search = '', sort = 'newest' } = {},
+  {
+    page = 1,
+    pageSize = DEFAULT_PAGE_SIZE,
+    storyId,
+    chapterId,
+    targetType,
+    status,
+    search = '',
+    sort = 'newest',
+  } = {},
 ) {
   const { stories: allStories, chapters: allChapters } = await ownedTargets(accountId)
   const stories = storyId
@@ -105,7 +114,16 @@ export async function authorCommentList(
       comment.targetType === 'story'
         ? storiesById.get(String(comment.targetId))
         : storiesById.get(String(chapter?.storyId))
-    return normalizeSearch([story?.title, chapter?.title, comment.body].filter(Boolean).join(' '))
+    return normalizeSearch(
+      [
+        authorsById.get(String(comment.authorAccountId))?.displayName,
+        story?.title,
+        chapter?.title,
+        comment.body,
+      ]
+        .filter(Boolean)
+        .join(' '),
+    )
   }
   if (sorts.has(sort) && sort === 'oldest')
     filteredRoots.sort(
@@ -119,7 +137,7 @@ export async function authorCommentList(
         new Date(b.createdAt) - new Date(a.createdAt),
     )
   const total = filteredRoots.length
-  const pagedRoots = filteredRoots.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE)
+  const pagedRoots = filteredRoots.slice((page - 1) * pageSize, page * pageSize)
   const replies = await Comment.find({
     parentCommentId: { $in: pagedRoots.map(comment => comment._id) },
   })
@@ -172,11 +190,12 @@ export async function authorCommentList(
       id: String(chapter._id),
       storyId: String(chapter.storyId),
       title: chapter.title,
+      number: chapter.orderKey,
     })),
     total,
     page,
-    pageCount: Math.max(1, Math.ceil(total / PAGE_SIZE)),
-    pageSize: PAGE_SIZE,
+    pageCount: Math.max(1, Math.ceil(total / pageSize)),
+    pageSize,
     search: String(search ?? ''),
     sort: sorts.has(sort) ? sort : 'newest',
   }

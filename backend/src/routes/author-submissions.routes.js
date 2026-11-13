@@ -17,6 +17,7 @@ const target = z.object({ storyId: id, chapterId: id.optional() }).strict()
 const listQuery = z
   .object({
     page: z.coerce.number().int().min(1).max(100000).default(1),
+    pageSize: z.coerce.number().int().min(5).max(15).default(5),
     storyId: id.optional(),
     chapterId: id.optional(),
     targetType: z.enum(['story', 'chapter']).optional(),

@@ -48,6 +48,24 @@ const emptyDashboard = {
   draftCount: 0,
   feedbackTotal: 0,
 }
+const emptyPeriod = {
+  stats: {
+    periodViews: 0,
+    periodUnlocks: 0,
+    periodComments: 0,
+    periodEarnings: 0,
+  },
+  period: null,
+  revenue: {
+    selected: 0,
+    today: 0,
+    week: 0,
+    month: 0,
+    selectedUnlocks: 0,
+  },
+  storyRankings: [],
+  stories: [],
+}
 const statMeta = [
   {
     icon: BookOpen,
@@ -96,7 +114,14 @@ const statusFilter = {
 export function AuthorDashboardPage() {
   const { t, formatNumber } = useLocale()
   const [period, setPeriod] = useState(1)
-  const dashboard = useBackendDocument(`/author/dashboard?days=${period}`, emptyDashboard)
+  const baseDashboard = useBackendDocument('/author/dashboard', emptyDashboard)
+  const periodDashboard = useBackendDocument(
+    period === 1 ? null : `/author/dashboard/period?days=${period}`,
+    emptyPeriod,
+  )
+  const periodStatus = period === 1 ? baseDashboard.status : periodDashboard.status
+  const periodData = period === 1 ? baseDashboard.data : periodDashboard.data
+  const dashboard = baseDashboard
   const stats = {
     ...dashboard,
     data: [
@@ -124,15 +149,29 @@ export function AuthorDashboardPage() {
   const shown = stories.filter(story => filter === 'all' || statusFilter[story.status] === filter)
   const drafting = dashboard.data.drafts
   const periodLabel = dashboardPeriods.find(item => item.value === period)?.label ?? '7 ngày'
-  const revenue = dashboard.data.revenue ?? {
+  const revenue = periodData.revenue ?? {
     selected: 0,
     today: 0,
     week: 0,
     month: 0,
     selectedUnlocks: 0,
   }
-  const periodStats = dashboard.data.stats ?? {}
-  const rankings = dashboard.data.storyRankings ?? []
+  const periodStats = periodData.stats ?? {}
+  const periodRankings = periodData.storyRankings ?? []
+  const baseRankings = dashboard.data.storyRankings ?? []
+  const baseRankingById = new Map(baseRankings.map(item => [item.id, item]))
+  const rankings = periodRankings.map(item => {
+    const base = baseRankingById.get(item.id)
+    return {
+      ...base,
+      ...item,
+      metrics: {
+        ...base?.metrics,
+        ...item.metrics,
+        selected: item.metrics?.selected,
+      },
+    }
+  })
   const sendReply = async event => {
     event.preventDefault()
     const target = feedbackResource.data.find(item => item.id === replyTarget)
@@ -266,7 +305,7 @@ export function AuthorDashboardPage() {
           </section>
         )}
 
-        {stats.status === 'ready' && (
+        {periodStatus === 'ready' && (
           <section
             className="nh-grid-12 nh-cols-2 nh-xl-cols-4 mt-5 grid gap-3 sm:gap-4"
             aria-label="Chỉ số theo kỳ"
@@ -373,7 +412,13 @@ export function AuthorDashboardPage() {
                   Xem sổ thu nhập
                 </ButtonLink>
               </div>
-              {rankings.length ? (
+              {periodStatus === 'loading' ? (
+                <div aria-busy="true" className="mt-4 space-y-3">
+                  {Array.from({ length: 3 }, (_, index) => (
+                    <Skeleton key={index} className="h-12 w-full rounded-2xl" />
+                  ))}
+                </div>
+              ) : rankings.length ? (
                 <div className="mt-4 overflow-x-auto">
                   <table className="w-full min-w-[560px] text-left text-sm">
                     <thead className="border-y border-hairline bg-elevated text-muted">
@@ -399,6 +444,16 @@ export function AuthorDashboardPage() {
                       ))}
                     </tbody>
                   </table>
+                </div>
+              ) : periodStatus === 'error' ? (
+                <div className="mt-5">
+                  <EmptyState
+                    tone="rose"
+                    headingAs="h3"
+                    title="Không tải được số liệu theo kỳ"
+                    description="Hãy thử lại để tải số liệu của kỳ xem này."
+                    action={<RetryButton onClick={periodDashboard.retry} />}
+                  />
                 </div>
               ) : (
                 <p className="mt-5 text-sm text-muted">Chưa có thu nhập theo kỳ này.</p>
@@ -585,7 +640,13 @@ export function AuthorDashboardPage() {
                 </div>
               </div>
               <ol className="mt-4 space-y-3">
-                {rankings.slice(0, 3).map(item => (
+                {periodStatus === 'loading' ? (
+                  <div className="mt-4 space-y-3" aria-busy="true">
+                    {Array.from({ length: 3 }, (_, index) => (
+                      <Skeleton key={index} className="h-14 w-full rounded-2xl" />
+                    ))}
+                  </div>
+                ) : rankings.slice(0, 3).map(item => (
                   <li key={item.id} className="flex items-center gap-3 rounded-2xl bg-elevated p-3">
                     <strong className="w-6 text-center text-orange-strong">{item.rank}</strong>
                     <div className="min-w-0 flex-1">
@@ -597,7 +658,18 @@ export function AuthorDashboardPage() {
                   </li>
                 ))}
               </ol>
-              {!rankings.length && (
+              {periodStatus === 'error' && (
+                <div className="mt-4">
+                  <EmptyState
+                    tone="rose"
+                    headingAs="h3"
+                    title="Không tải được xếp hạng"
+                    description="Hãy thử lại để tải số liệu của kỳ xem này."
+                    action={<RetryButton onClick={periodDashboard.retry} />}
+                  />
+                </div>
+              )}
+              {periodStatus === 'ready' && !rankings.length && (
                 <p className="mt-4 text-sm text-muted">Chưa có tác phẩm đủ dữ liệu xếp hạng.</p>
               )}
             </Card>

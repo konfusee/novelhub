@@ -1,6 +1,14 @@
 import { useRef, useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router'
-import { AlertTriangle, Check, Clock3, FileCheck2, RefreshCw, Send } from '../../components/icons'
+import {
+  AlertTriangle,
+  Check,
+  ChevronDown,
+  Clock3,
+  FileCheck2,
+  RefreshCw,
+  Send,
+} from '../../components/icons'
 import { AuthorLayout } from '../../layouts'
 import { useBackendDocument } from '../../api/useBackendResource'
 import { apiRequest } from '../../api/client'
@@ -17,8 +25,10 @@ import {
   Select,
   Skeleton,
 } from '../../components/ui'
+import { Pagination } from '../../components/ui/Pagination'
 
-const emptyFeed = { items: [], stories: [], page: 1, pageCount: 1, total: 0 }
+const SUBMISSION_PAGE_SIZES = [5, 10, 15]
+const emptyFeed = { items: [], stories: [], page: 1, pageCount: 1, total: 0, pageSize: 5 }
 const emptyWorkspace = { chapters: [] }
 const emptyPackage = { checks: [], ready: false }
 
@@ -26,12 +36,13 @@ export function SubmissionReviewPage() {
   const { t } = useLocale()
   const [params, setParams] = useSearchParams()
   const [page, setPage] = useState(1)
+  const [pageSize, setPageSize] = useState(5)
   const storyId = params.get('storyId') || ''
   const chapterId = params.get('chapterId') || ''
   const status = params.get('status') || ''
   const targetType = params.get('targetType') || ''
   const feed = useBackendDocument(
-    `/author/submissions?page=${page}${storyId ? `&storyId=${encodeURIComponent(storyId)}` : ''}${chapterId ? `&chapterId=${encodeURIComponent(chapterId)}` : ''}${status ? `&status=${encodeURIComponent(status)}` : ''}${targetType ? `&targetType=${targetType}` : ''}`,
+    `/author/submissions?page=${page}&pageSize=${pageSize}${storyId ? `&storyId=${encodeURIComponent(storyId)}` : ''}${chapterId ? `&chapterId=${encodeURIComponent(chapterId)}` : ''}${status ? `&status=${encodeURIComponent(status)}` : ''}${targetType ? `&targetType=${targetType}` : ''}`,
     emptyFeed,
   )
   const choose = (story, chapter = '') => {
@@ -52,6 +63,11 @@ export function SubmissionReviewPage() {
       ...(targetType ? { targetType } : {}),
     })
   }
+  const total = Number(feed.data.total ?? 0)
+  const currentPage = Number(feed.data.page ?? page)
+  const currentPageSize = Number(feed.data.pageSize ?? pageSize)
+  const visibleFrom = total ? (currentPage - 1) * currentPageSize + 1 : 0
+  const visibleTo = Math.min(total, currentPage * currentPageSize)
   return (
     <AuthorLayout>
       <div className="page-author py-7">
@@ -163,9 +179,18 @@ export function SubmissionReviewPage() {
           <div className="flex flex-wrap items-center justify-between gap-3">
             <h2 className="text-h3">{t('submissionData.history')}</h2>
             {feed.status === 'ready' && (
-              <span className="text-sm text-muted">
-                {t('submissionData.totalCount', { count: feed.data.total })}
-              </span>
+              <div className="flex flex-wrap items-center justify-end gap-x-3 gap-y-1">
+                <span className="text-xs text-muted">
+                  {t('submissionData.showing', {
+                    from: visibleFrom,
+                    to: visibleTo,
+                    total,
+                  })}
+                </span>
+                <span className="text-sm text-muted">
+                  {t('submissionData.totalCount', { count: total })}
+                </span>
+              </div>
             )}
           </div>
           {feed.status === 'loading' ? (
@@ -186,20 +211,36 @@ export function SubmissionReviewPage() {
               {feed.data.items.map(item => (
                 <SubmissionEntry key={item.id} item={item} />
               ))}
-              <div className="flex flex-wrap items-center justify-between gap-3 pt-3">
-                <Button variant="secondary" disabled={page <= 1} onClick={() => setPage(page - 1)}>
-                  {t('submissionData.previous')}
-                </Button>
-                <span className="text-sm tabular-nums">
-                  {page} / {feed.data.pageCount}
-                </span>
-                <Button
-                  variant="secondary"
-                  disabled={page >= feed.data.pageCount}
-                  onClick={() => setPage(page + 1)}
+              <div className="flex flex-col gap-3 border-t border-hairline pt-4 sm:flex-row sm:items-center sm:justify-between">
+                <label
+                  className="flex items-center gap-2 text-xs font-semibold text-muted"
+                  htmlFor="submission-page-size"
                 >
-                  {t('submissionData.next')}
-                </Button>
+                  {t('submissionData.pageSize')}
+                  <Select
+                    id="submission-page-size"
+                    className="h-9 min-w-24"
+                    value={pageSize}
+                    onChange={event => {
+                      setPageSize(Number(event.target.value))
+                      setPage(1)
+                    }}
+                  >
+                    {SUBMISSION_PAGE_SIZES.map(value => (
+                      <option key={value} value={value}>
+                        {value} {t('submissionData.submissionUnit')}
+                      </option>
+                    ))}
+                  </Select>
+                </label>
+                <div className="overflow-x-auto pb-1">
+                  <Pagination
+                    page={currentPage}
+                    pageCount={feed.data.pageCount}
+                    onChange={setPage}
+                    className="mt-0 min-w-max justify-start sm:justify-end"
+                  />
+                </div>
               </div>
             </div>
           )}
@@ -252,6 +293,7 @@ function StoryPackage({ storyId, chapterId, choose, onSubmitted }) {
 }
 
 function SubmissionPackage({ storyId, chapterId, onSubmitted }) {
+  const [checklistCollapsed, setChecklistCollapsed] = useState(false)
   const { t, formatNumber } = useLocale()
   const query = new URLSearchParams({ storyId, ...(chapterId ? { chapterId } : {}) })
   const resource = useBackendDocument(`/author/submissions/prepare?${query}`, emptyPackage)
@@ -368,78 +410,102 @@ function SubmissionPackage({ storyId, chapterId, onSubmitted }) {
         <div className="min-w-0 space-y-5">
           <Card>
             <div className="flex flex-wrap items-center justify-between gap-3">
-              <h2 className="text-h3">{t('submissionData.checklist')}</h2>
-              <Badge>
-                {passed} / {data.checks.length}
-              </Badge>
-              <Button size="sm" variant="secondary" disabled={busy} onClick={resource.retry}>
-                {t('submissionData.checkAgain')}
-              </Button>
+              <div className="flex min-w-0 items-center gap-3">
+                <h2 className="text-h3">{t('submissionData.checklist')}</h2>
+                <Badge>
+                  {passed} / {data.checks.length}
+                </Badge>
+              </div>
+              <div className="flex flex-wrap items-center justify-end gap-2">
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  aria-expanded={!checklistCollapsed}
+                  aria-controls="submission-checklist-content"
+                  onClick={() => setChecklistCollapsed(value => !value)}
+                >
+                  {t(
+                    checklistCollapsed
+                      ? 'submissionData.expandChecklist'
+                      : 'submissionData.collapseChecklist',
+                  )}
+                  <ChevronDown
+                    size={16}
+                    aria-hidden="true"
+                    className={`transition-transform duration-200 ${checklistCollapsed ? '-rotate-90' : ''}`}
+                  />
+                </Button>
+                <Button size="sm" variant="secondary" disabled={busy} onClick={resource.retry}>
+                  {t('submissionData.checkAgain')}
+                </Button>
+              </div>
             </div>
-            {resource.status === 'loading' ? (
-              <>
-                <StatusSkeleton />
-                <ol className="mt-5 space-y-3">
-                  {checklistSkeletons.map((lines, index) => (
-                    <ChecklistSkeleton key={index} {...lines} />
-                  ))}
-                </ol>
-              </>
-            ) : resource.status !== 'ready' ? (
-              <EmptyState
-                tone="rose"
-                icon={AlertTriangle}
-                title={t('submissionData.loadError')}
-                description={t('submissionData.notFound')}
-                action={<Button onClick={resource.retry}>{t('submissionData.retry')}</Button>}
-              />
-            ) : (
-              <>
-                <ProgressBar value={percent} className="mt-5" />
-                <ol className="mt-5 space-y-3">
-                  {data.checks.map(check => (
-                    <li
-                      key={check.code}
-                      className={`flex gap-3 rounded-2xl border p-4 ${check.ok ? 'border-hairline' : 'border-rose/40 bg-rose/5'}`}
-                    >
-                      <span
-                        className={`grid size-8 shrink-0 place-items-center rounded-full ${check.ok ? 'bg-brand/12 text-brand-strong' : 'bg-rose/14 text-rose-strong'}`}
-                        aria-label={t(check.ok ? 'submissionData.pass' : 'submissionData.fail')}
+            <div id="submission-checklist-content" hidden={checklistCollapsed}>
+              {resource.status === 'loading' ? (
+                <>
+                  <StatusSkeleton />
+                  <ol className="mt-5 space-y-3">
+                    {checklistSkeletons.map((lines, index) => (
+                      <ChecklistSkeleton key={index} {...lines} />
+                    ))}
+                  </ol>
+                </>
+              ) : resource.status !== 'ready' ? (
+                <EmptyState
+                  tone="rose"
+                  icon={AlertTriangle}
+                  title={t('submissionData.loadError')}
+                  description={t('submissionData.notFound')}
+                  action={<Button onClick={resource.retry}>{t('submissionData.retry')}</Button>}
+                />
+              ) : (
+                <>
+                  <ProgressBar value={percent} className="mt-5" />
+                  <ol className="mt-5 space-y-3">
+                    {data.checks.map(check => (
+                      <li
+                        key={check.code}
+                        className={`flex gap-3 rounded-2xl border p-4 ${check.ok ? 'border-hairline' : 'border-rose/40 bg-rose/5'}`}
                       >
-                        {check.ok ? <Check size={16} /> : <AlertTriangle size={16} />}
-                      </span>
-                      <div className="min-w-0">
-                        <h3 className="text-sm font-semibold">
-                          {t(`submissionData.checks.${check.code}.title`)}
-                        </h3>
-                        <p className="mt-1 text-sm text-muted">
-                          {t(`submissionData.checks.${check.code}.hint`)}
-                        </p>
-                        <p className="mt-2 text-xs font-semibold">
-                          {t(check.ok ? 'submissionData.pass' : 'submissionData.fail')}
-                        </p>
-                        {!check.ok && fixes[check.code] && (
-                          <div className="mt-3">
-                            <ButtonLink variant="secondary" size="sm" to={fixes[check.code].to}>
-                              {t(`submissionFixes.${fixes[check.code].label}`)}
-                            </ButtonLink>
-                            {['parent', 'media', 'editable'].includes(check.code) && (
-                              <p className="mt-2 text-xs leading-5 text-muted">
-                                {t(
-                                  check.code === 'media' && chapterMedia
-                                    ? 'submissionFixes.chapterMediaHint'
-                                    : `submissionFixes.${check.code}Hint`,
-                                )}
-                              </p>
-                            )}
-                          </div>
-                        )}
-                      </div>
-                    </li>
-                  ))}
-                </ol>
-              </>
-            )}
+                        <span
+                          className={`grid size-8 shrink-0 place-items-center rounded-full ${check.ok ? 'bg-brand/12 text-brand-strong' : 'bg-rose/14 text-rose-strong'}`}
+                          aria-label={t(check.ok ? 'submissionData.pass' : 'submissionData.fail')}
+                        >
+                          {check.ok ? <Check size={16} /> : <AlertTriangle size={16} />}
+                        </span>
+                        <div className="min-w-0">
+                          <h3 className="text-sm font-semibold">
+                            {t(`submissionData.checks.${check.code}.title`)}
+                          </h3>
+                          <p className="mt-1 text-sm text-muted">
+                            {t(`submissionData.checks.${check.code}.hint`)}
+                          </p>
+                          <p className="mt-2 text-xs font-semibold">
+                            {t(check.ok ? 'submissionData.pass' : 'submissionData.fail')}
+                          </p>
+                          {!check.ok && fixes[check.code] && (
+                            <div className="mt-3">
+                              <ButtonLink variant="secondary" size="sm" to={fixes[check.code].to}>
+                                {t(`submissionFixes.${fixes[check.code].label}`)}
+                              </ButtonLink>
+                              {['parent', 'media', 'editable'].includes(check.code) && (
+                                <p className="mt-2 text-xs leading-5 text-muted">
+                                  {t(
+                                    check.code === 'media' && chapterMedia
+                                      ? 'submissionFixes.chapterMediaHint'
+                                      : `submissionFixes.${check.code}Hint`,
+                                  )}
+                                </p>
+                              )}
+                            </div>
+                          )}
+                        </div>
+                      </li>
+                    ))}
+                  </ol>
+                </>
+              )}
+            </div>
           </Card>
           <Card>
             <h2 className="text-h3">{t('submissionData.rights')}</h2>

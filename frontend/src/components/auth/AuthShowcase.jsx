@@ -1,6 +1,5 @@
 import {
   BadgeDollarSign,
-  BellRing,
   BookOpen,
   CheckCircle2,
   ClipboardCheck,
@@ -12,62 +11,30 @@ import {
   ShieldCheck,
   Sparkles,
 } from '../icons'
-import { ProgressBar } from '../ui'
 import { StoryCover } from '../story/StoryCover'
 import { useLocale } from '../../context/LocaleContext'
-const stories = [
-  {
-    id: 'silent-forest',
-    title: 'The Silent Forest',
-    author: 'Mira Lane',
-    color: '#173b3f',
-    icon: '🌲',
-  },
-  {
-    id: 'whispers-of-you',
-    title: 'Whispers of You',
-    author: 'Elena J. Park',
-    color: '#df8b79',
-    icon: '🌅',
-  },
-  { id: 'neon-hearts', title: 'Neon Hearts', author: 'Kaito Min', color: '#34336f', icon: '🌃' },
-  {
-    id: 'dragons-wish',
-    title: "A Dragon's Wish",
-    author: 'Ren Park',
-    color: '#9d744b',
-    icon: '🐉',
-  },
-  {
-    id: 'last-kingdom',
-    title: 'The Last Kingdom',
-    author: 'Aurora White',
-    color: '#668ba3',
-    icon: '🏰',
-  },
-  { id: 'your-story', title: 'Truyện của bạn', author: '', color: '#31584c', icon: '✦' },
-]
+import { useCatalogStories } from '../public/catalog'
 
-const storyById = Object.fromEntries(stories.map(story => [story.id, story]))
-const socialCovers = ['silent-forest', 'whispers-of-you', 'neon-hearts']
+/* Auth pages use published catalogue records for every displayed story cover and title. */
+const storyAt = (stories, index) => stories[index] || null
 
 /*
  * Fan positions for md+ (x: % of one cover width, r: rotation, s: scale, order: flat-row slot
  * below md, outer: md+ only). Below md the covers render as a flat row: no rotation, no overlap.
  */
-const loginFan = [
-  { id: 'whispers-of-you', x: -62, r: -8, s: 0.9, z: 'z-0', order: 'order-1', lift: true },
-  { id: 'neon-hearts', x: 62, r: 8, s: 0.9, z: 'z-0', order: 'order-3', lift: true },
-  { id: 'silent-forest', x: 0, r: 0, s: 1, z: 'z-10', order: 'order-2', lift: true, lead: true },
-]
+const loginFan = stories => [
+  { story: storyAt(stories, 1), x: -62, r: -8, s: 0.9, z: 'z-0', order: 'order-1', lift: true },
+  { story: storyAt(stories, 2), x: 62, r: 8, s: 0.9, z: 'z-0', order: 'order-3', lift: true },
+  { story: storyAt(stories, 0), x: 0, r: 0, s: 1, z: 'z-10', order: 'order-2', lift: true, lead: true },
+].filter(item => item.story)
 
-const wideFan = center => [
-  { id: 'dragons-wish', x: -100, r: -13, s: 0.8, z: 'z-0', outer: true },
-  { id: 'last-kingdom', x: 100, r: 13, s: 0.8, z: 'z-0', outer: true },
-  { id: 'whispers-of-you', x: -53, r: -8, s: 0.9, z: 'z-[1]', order: 'order-1', lift: true },
-  { id: 'neon-hearts', x: 53, r: 8, s: 0.9, z: 'z-[1]', order: 'order-3', lift: true },
-  { x: 0, r: 0, s: 1, z: 'z-10', order: 'order-2', lift: true, lead: true, ...center },
-]
+const wideFan = stories => [
+  { story: storyAt(stories, 3), x: -100, r: -13, s: 0.8, z: 'z-0', outer: true },
+  { story: storyAt(stories, 4), x: 100, r: 13, s: 0.8, z: 'z-0', outer: true },
+  { story: storyAt(stories, 1), x: -53, r: -8, s: 0.9, z: 'z-[1]', order: 'order-1', lift: true },
+  { story: storyAt(stories, 2), x: 53, r: 8, s: 0.9, z: 'z-[1]', order: 'order-3', lift: true },
+  { story: storyAt(stories, 0), x: 0, r: 0, s: 1, z: 'z-10', order: 'order-2', lift: true, lead: true },
+].filter(item => item.story)
 
 /*
  * md+: the stage is a size container. --cover (one cover width) scales with both the stage width
@@ -93,7 +60,7 @@ const variants = {
   login: {
     eyebrow: t => [Sparkles, t('auth.storiesTogether')],
     proof: t => ['3M+', t('home.readers').toLowerCase()],
-    fan: () => loginFan,
+    fan: stories => loginFan(stories),
     stage: loginStage,
     Floating: ContinueCard,
     title: t => t('auth.introLoginTitle'),
@@ -103,7 +70,7 @@ const variants = {
   register: {
     eyebrow: t => [Sparkles, t('auth.storiesTogether')],
     proof: t => ['3M+', t('home.readers').toLowerCase()],
-    fan: () => wideFan({ id: 'silent-forest' }),
+    fan: stories => wideFan(stories),
     stage: wideStage,
     Floating: RoleCards,
     title: t => t('auth.introRegisterTitle'),
@@ -113,8 +80,7 @@ const variants = {
   author: {
     eyebrow: () => [Feather, 'Studio tác giả'],
     proof: t => ['15K+', t('home.authors').toLowerCase()],
-    fan: ({ authorName }) =>
-      wideFan({ id: 'your-story', story: { title: 'Truyện của bạn', author: authorName } }),
+    fan: stories => wideFan(stories),
     stage: wideStage,
     Floating: AuthorCards,
     title: () => 'Câu chuyện của bạn xứng đáng có độc giả.',
@@ -131,10 +97,12 @@ const variants = {
 
 /*
  * Presentational visual panel for the auth surfaces (/login, /register, /author/apply).
- * variant: 'login' | 'register' | 'author'. authorShare/authorName feed the author variant.
+ * variant: 'login' | 'register' | 'author'. authorShare feeds the author variant.
  */
-export function AuthShowcase({ variant, authorShare, authorName, className = '' }) {
+export function AuthShowcase({ variant, authorShare, className = '' }) {
   const { t } = useLocale()
+  const storiesResource = useCatalogStories({ sort: 'newest', pageSize: 5 })
+  const stories = storiesResource.status === 'ready' ? storiesResource.data.items : []
   const config = variants[variant] || variants.register
   const [EyebrowIcon, eyebrow] = config.eyebrow(t)
   const [proofValue, proofLabel] = config.proof(t)
@@ -157,10 +125,10 @@ export function AuthShowcase({ variant, authorShare, authorName, className = '' 
         </p>
         <div className="flex items-center gap-2.5 text-xs text-ink/70">
           <div aria-hidden="true" className="flex -space-x-2">
-            {socialCovers.map(id => (
+            {stories.slice(0, 3).map(story => (
               <StoryCover
-                key={id}
-                story={storyById[id]}
+                key={story.id}
+                story={story}
                 eager
                 className="size-7 rounded-full ring-2 ring-surface"
               />
@@ -177,10 +145,10 @@ export function AuthShowcase({ variant, authorShare, authorName, className = '' 
         style={config.stage}
         className="group relative mt-5 [container-type:inline-size] md:h-72 md:[container-type:size] lg:h-auto lg:min-h-40 lg:flex-1"
       >
-        <div className="flex justify-center gap-3 md:absolute md:left-1/2 md:top-1/2 md:block md:h-[calc(var(--cover)*1.62)] md:w-[min(100cqw,calc(var(--cover)*var(--frame)))] md:-translate-x-1/2 md:-translate-y-1/2">
-          {config.fan({ authorName }).map(({ id, story, x, r, s, z, order, outer, lift, lead }) => (
+        <div className="flex min-h-32 justify-center gap-3 md:absolute md:left-1/2 md:top-1/2 md:block md:h-[calc(var(--cover)*1.62)] md:w-[min(100cqw,calc(var(--cover)*var(--frame)))] md:-translate-x-1/2 md:-translate-y-1/2">
+          {config.fan(stories).map(({ story, x, r, s, z, order, outer, lift, lead }) => (
             <div
-              key={id}
+              key={story.id}
               style={{ '--fan-x': `${x}%`, '--fan-r': `${r}deg`, '--fan-s': s }}
               className={`${outer ? 'hidden md:block' : order} w-[28%] max-w-28 md:absolute md:left-1/2 md:top-1/2 md:w-[var(--cover)] md:max-w-none md:[transform:translate(calc(var(--fan-x)_-_50%),-50%)_rotate(var(--fan-r))_scale(var(--fan-s))] ${z}`}
             >
@@ -190,7 +158,7 @@ export function AuthShowcase({ variant, authorShare, authorName, className = '' 
                 }`}
               >
                 <StoryCover
-                  story={story || storyById[id]}
+                  story={story}
                   eager
                   className="aspect-[2/3] w-full rounded-2xl shadow-float ring-1 ring-ink/5"
                 />
@@ -198,7 +166,7 @@ export function AuthShowcase({ variant, authorShare, authorName, className = '' 
             </div>
           ))}
 
-          <config.Floating t={t} authorShare={authorShare} />
+          <config.Floating t={t} authorShare={authorShare} story={stories[0]} />
         </div>
       </div>
 
@@ -237,28 +205,20 @@ export function AuthShowcase({ variant, authorShare, authorName, className = '' 
   )
 }
 
-function ContinueCard({ t }) {
+function ContinueCard({ story }) {
+  if (!story) return null
   return (
-    <>
-      <div className="absolute bottom-0 left-0 z-20 hidden w-64 max-w-[60cqw] -translate-x-[28%] items-center gap-3 rounded-3xl border border-hairline bg-surface p-3 shadow-float md:flex">
-        <StoryCover
-          story={storyById['silent-forest']}
-          eager
-          className="aspect-[2/3] w-11 shrink-0 rounded-xl"
-        />
-        <div className="min-w-0 flex-1">
-          <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-brand-strong">
-            {t('readerHome.continueReading')}
-          </p>
-          <p className="mt-0.5 truncate text-sm font-semibold">The Silent Forest</p>
-          <p className="truncate text-xs text-muted">Chương 12 · còn 9 phút</p>
-          <ProgressBar value={68} size="sm" className="mt-2" label="Tiến độ đọc" />
-        </div>
+    <div className="absolute bottom-0 left-0 z-20 hidden w-64 max-w-[60cqw] -translate-x-[28%] items-center gap-3 rounded-3xl border border-hairline bg-surface p-3 shadow-float md:flex">
+      <StoryCover
+        story={story}
+        eager
+        className="aspect-[2/3] w-11 shrink-0 rounded-xl"
+      />
+      <div className="min-w-0 flex-1">
+        <p className="truncate text-sm font-semibold">{story.title}</p>
+        <p className="truncate text-xs text-muted">{story.author}</p>
       </div>
-      <span className="absolute right-0 top-[6%] z-20 hidden translate-x-1/4 items-center gap-1.5 rounded-full border border-hairline bg-surface px-3 py-1.5 text-xs font-semibold text-orange-strong shadow-soft md:inline-flex">
-        <BellRing size={14} /> 3 chương mới
-      </span>
-    </>
+    </div>
   )
 }
 
@@ -276,7 +236,7 @@ function RoleCards({ t }) {
         icon={PenLine}
         tone="bg-purple text-on-purple"
         title={t('auth.author')}
-        text="Xuất bản và nhận 80% doanh thu"
+        text={t('auth.benefitPublishing')}
         className="bottom-0 right-0"
       />
     </>
@@ -299,7 +259,7 @@ function AuthorCards({ authorShare, t }) {
         icon={CheckCircle2}
         tone="bg-brand text-on-brand"
         title="Đã được duyệt"
-        text="Chương 1 · sẵn sàng xuất bản"
+        text={t('auth.benefitPublishing')}
         className="bottom-0 right-0"
       />
     </>

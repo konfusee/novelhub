@@ -14,23 +14,6 @@ import {
   Sparkles,
   Theater,
 } from '../icons'
-import fantasyCover from '../../assets/covers/fantasy-cover-silent-forest.webp'
-import romanceCover from '../../assets/covers/romance-cover-whispers-of-you.webp'
-import scifiCover from '../../assets/covers/scifi-cover-neon-hearts.webp'
-
-const covers = {
-  'silent-forest': fantasyCover,
-  'the-silent-forest': fantasyCover,
-  'whispers-of-you': romanceCover,
-  'neon-hearts': scifiCover,
-}
-
-const slugify = value =>
-  value
-    ?.toLowerCase()
-    .replace(/[^a-z0-9]+/g, '-')
-    .replace(/(^-|-$)/g, '')
-
 /* Genre motif for generated covers: Folio glyph plus a palette tint (VI and EN genre labels). */
 const genreMotifs = [
   [/k[ỳy] [ảa]o|fantasy/i, Sparkles, 'var(--accent-purple)'],
@@ -62,13 +45,12 @@ const fallbackBackground = tint => ({
 
 export function StoryCover({ story, className = '', eager = false, badge }) {
   const [failedSrc, setFailedSrc] = useState(null)
-  const key = story?.id || slugify(story?.title)
   const backendUrl =
     story?.coverUrl && /^\/(?:author|catalog)\//u.test(story.coverUrl)
       ? `${API_BASE}${story.coverUrl}`
       : story?.coverUrl
   const privateMedia = Boolean(story?.coverUrl && /^\/author\//u.test(story.coverUrl))
-  const src = backendUrl || story?.cover || covers[key] || covers[slugify(story?.title)]
+  const src = backendUrl || story?.coverUrl || story?.cover
   const label = story?.title ? `Ảnh bìa của ${story.title}` : 'Ảnh bìa truyện NovelHub'
   const title = story?.title?.trim() || 'NovelHub'
   const [, GenreIcon, genreTint] = motifFor(story?.genre)
