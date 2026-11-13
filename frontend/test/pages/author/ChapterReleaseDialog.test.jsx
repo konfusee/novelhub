@@ -55,7 +55,7 @@ it('confirms the exact approved chapter and parent version and requires a real p
   const released = view()
   await screen.findByRole('heading', { name: 'Chương đã duyệt' })
   expect(mocks.apiRequest.mock.calls).toHaveLength(1)
-  expect(screen.getByRole('link', { name: 'Xem gói đã gửi' }).getAttribute('href')).toBe(
+  expect(screen.getByRole('link', { name: 'Xem bản đã gửi duyệt' }).getAttribute('href')).toBe(
     '/author/submissions/submission/preview',
   )
   fireEvent.click(screen.getByRole('button', { name: 'Phát hành ngay' }))

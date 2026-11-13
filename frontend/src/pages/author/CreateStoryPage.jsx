@@ -602,8 +602,8 @@ export function CreateStoryPage() {
                 </div>
                 {showErrors && currentStepErrors.some(Boolean) && (
                   <p role="alert" className="w-full text-xs text-rose-strong sm:text-right">
-                    Còn {currentStepErrors.filter(Boolean).length} mục cần hoàn thiện trước khi
-                    tạo truyện.
+                    Còn {currentStepErrors.filter(Boolean).length} mục cần hoàn thiện trước khi tạo
+                    truyện.
                   </p>
                 )}
               </div>

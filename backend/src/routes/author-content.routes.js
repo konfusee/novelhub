@@ -207,7 +207,7 @@ export function createAuthorContentRouter(config) {
           reply: await replyToAuthorComment(
             req,
             req.params.commentId,
-            parse(authorCommentReply, req.body),
+            parse(authorCommentReply, req.body).body,
           ),
         })
       } catch (error) {

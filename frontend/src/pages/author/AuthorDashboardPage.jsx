@@ -145,7 +145,10 @@ export function AuthorDashboardPage() {
     data: [
       [`Lượt đọc ${periodLabel.toLowerCase()}`, formatNumber(selectedStats.periodViews ?? 0)],
       [`Lượt nghe ${periodLabel.toLowerCase()}`, '—'],
-      [`Người theo dõi mới ${periodLabel.toLowerCase()}`, formatNumber(selectedStats.periodFollowers ?? 0)],
+      [
+        `Người theo dõi mới ${periodLabel.toLowerCase()}`,
+        formatNumber(selectedStats.periodFollowers ?? 0),
+      ],
     ],
   }
   const storiesResource = {
@@ -311,16 +314,14 @@ export function AuthorDashboardPage() {
           >
             {stats.data.map(([label, value], index) => {
               const { icon: Icon, tone } = statMeta[index]
-              const current = index === 0
-                ? selectedStats.periodViews
-                : index === 2
-                  ? selectedStats.periodFollowers
-                  : null
-              const previous = index === 0
-                ? comparison.views
-                : index === 2
-                  ? comparison.followers
-                  : null
+              const current =
+                index === 0
+                  ? selectedStats.periodViews
+                  : index === 2
+                    ? selectedStats.periodFollowers
+                    : null
+              const previous =
+                index === 0 ? comparison.views : index === 2 ? comparison.followers : null
               return (
                 <Card key={label} className="flex flex-col p-4 sm:p-5">
                   <div className="flex items-start justify-between gap-3">
@@ -696,17 +697,22 @@ export function AuthorDashboardPage() {
                       <Skeleton key={index} className="h-14 w-full rounded-2xl" />
                     ))}
                   </div>
-                ) : rankings.slice(0, 3).map(item => (
-                  <li key={item.id} className="flex items-center gap-3 rounded-2xl bg-elevated p-3">
-                    <strong className="w-6 text-center text-orange-strong">{item.rank}</strong>
-                    <div className="min-w-0 flex-1">
-                      <p className="truncate text-sm font-semibold">{item.title}</p>
-                      <p className="text-xs text-muted">
-                        {formatNumber(item.earnings)} xu · {formatNumber(item.views)} lượt đọc
-                      </p>
-                    </div>
-                  </li>
-                ))}
+                ) : (
+                  rankings.slice(0, 3).map(item => (
+                    <li
+                      key={item.id}
+                      className="flex items-center gap-3 rounded-2xl bg-elevated p-3"
+                    >
+                      <strong className="w-6 text-center text-orange-strong">{item.rank}</strong>
+                      <div className="min-w-0 flex-1">
+                        <p className="truncate text-sm font-semibold">{item.title}</p>
+                        <p className="text-xs text-muted">
+                          {formatNumber(item.earnings)} xu · {formatNumber(item.views)} lượt đọc
+                        </p>
+                      </div>
+                    </li>
+                  ))
+                )}
               </ol>
               {periodStatus === 'error' && (
                 <div className="mt-4">
@@ -884,7 +890,11 @@ export function AuthorDashboardPage() {
               tone="rose"
               title="Không tải được biểu đồ"
               description="Hãy thử lại để tải dữ liệu theo ngày."
-              action={<RetryButton onClick={period === 1 ? chartPeriodDashboard.retry : periodDashboard.retry} />}
+              action={
+                <RetryButton
+                  onClick={period === 1 ? chartPeriodDashboard.retry : periodDashboard.retry}
+                />
+              }
             />
           ) : chartData?.labels?.length ? (
             <OverviewChart chart={chartData} formatNumber={formatNumber} />
@@ -1034,7 +1044,10 @@ function OverviewChart({ chart, formatNumber }) {
             const values = series.map(item => Number(chart[item.key]?.[index] ?? 0))
             const height = Math.max(...values)
             return (
-              <div key={label} className="flex h-56 items-end justify-center gap-0.5 rounded-t-xl bg-surface px-1 pt-3">
+              <div
+                key={label}
+                className="flex h-56 items-end justify-center gap-0.5 rounded-t-xl bg-surface px-1 pt-3"
+              >
                 {series.map((item, seriesIndex) => (
                   <span
                     key={item.key}
@@ -1060,7 +1073,9 @@ function OverviewChart({ chart, formatNumber }) {
           ))}
         </div>
       </div>
-      <p className="mt-3 text-xs text-muted">Mỗi cột là dữ liệu thật ghi nhận trong MongoDB theo ngày Việt Nam.</p>
+      <p className="mt-3 text-xs text-muted">
+        Mỗi cột là dữ liệu thật ghi nhận trong MongoDB theo ngày Việt Nam.
+      </p>
     </div>
   )
 }

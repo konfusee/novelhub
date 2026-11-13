@@ -22,19 +22,39 @@ const storyAt = (stories, index) => stories[index] || null
  * Fan positions for md+ (x: % of one cover width, r: rotation, s: scale, order: flat-row slot
  * below md, outer: md+ only). Below md the covers render as a flat row: no rotation, no overlap.
  */
-const loginFan = stories => [
-  { story: storyAt(stories, 1), x: -62, r: -8, s: 0.9, z: 'z-0', order: 'order-1', lift: true },
-  { story: storyAt(stories, 2), x: 62, r: 8, s: 0.9, z: 'z-0', order: 'order-3', lift: true },
-  { story: storyAt(stories, 0), x: 0, r: 0, s: 1, z: 'z-10', order: 'order-2', lift: true, lead: true },
-].filter(item => item.story)
+const loginFan = stories =>
+  [
+    { story: storyAt(stories, 1), x: -62, r: -8, s: 0.9, z: 'z-0', order: 'order-1', lift: true },
+    { story: storyAt(stories, 2), x: 62, r: 8, s: 0.9, z: 'z-0', order: 'order-3', lift: true },
+    {
+      story: storyAt(stories, 0),
+      x: 0,
+      r: 0,
+      s: 1,
+      z: 'z-10',
+      order: 'order-2',
+      lift: true,
+      lead: true,
+    },
+  ].filter(item => item.story)
 
-const wideFan = stories => [
-  { story: storyAt(stories, 3), x: -100, r: -13, s: 0.8, z: 'z-0', outer: true },
-  { story: storyAt(stories, 4), x: 100, r: 13, s: 0.8, z: 'z-0', outer: true },
-  { story: storyAt(stories, 1), x: -53, r: -8, s: 0.9, z: 'z-[1]', order: 'order-1', lift: true },
-  { story: storyAt(stories, 2), x: 53, r: 8, s: 0.9, z: 'z-[1]', order: 'order-3', lift: true },
-  { story: storyAt(stories, 0), x: 0, r: 0, s: 1, z: 'z-10', order: 'order-2', lift: true, lead: true },
-].filter(item => item.story)
+const wideFan = stories =>
+  [
+    { story: storyAt(stories, 3), x: -100, r: -13, s: 0.8, z: 'z-0', outer: true },
+    { story: storyAt(stories, 4), x: 100, r: 13, s: 0.8, z: 'z-0', outer: true },
+    { story: storyAt(stories, 1), x: -53, r: -8, s: 0.9, z: 'z-[1]', order: 'order-1', lift: true },
+    { story: storyAt(stories, 2), x: 53, r: 8, s: 0.9, z: 'z-[1]', order: 'order-3', lift: true },
+    {
+      story: storyAt(stories, 0),
+      x: 0,
+      r: 0,
+      s: 1,
+      z: 'z-10',
+      order: 'order-2',
+      lift: true,
+      lead: true,
+    },
+  ].filter(item => item.story)
 
 /*
  * md+: the stage is a size container. --cover (one cover width) scales with both the stage width
@@ -209,11 +229,7 @@ function ContinueCard({ story }) {
   if (!story) return null
   return (
     <div className="absolute bottom-0 left-0 z-20 hidden w-64 max-w-[60cqw] -translate-x-[28%] items-center gap-3 rounded-3xl border border-hairline bg-surface p-3 shadow-float md:flex">
-      <StoryCover
-        story={story}
-        eager
-        className="aspect-[2/3] w-11 shrink-0 rounded-xl"
-      />
+      <StoryCover story={story} eager className="aspect-[2/3] w-11 shrink-0 rounded-xl" />
       <div className="min-w-0 flex-1">
         <p className="truncate text-sm font-semibold">{story.title}</p>
         <p className="truncate text-xs text-muted">{story.author}</p>

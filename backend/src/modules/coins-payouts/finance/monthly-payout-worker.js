@@ -20,7 +20,7 @@ export async function runMonthlyPayouts(now = new Date()) {
   )
   try {
     await evaluateDeletedAccountPayouts(now)
-    const generated = await generateMonthlyPayouts(null, periodId, now)
+    const generated = await generateMonthlyPayouts(null, periodId, now, 'simulation')
     const payments = await simulatePendingPayouts(now)
     await refreshPayoutRuns(periodId, now)
     return { ...generated, payments }

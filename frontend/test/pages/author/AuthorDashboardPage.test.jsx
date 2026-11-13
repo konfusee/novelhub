@@ -169,11 +169,10 @@ it('requires selecting a reader comment and persists a targeted reply, preservin
     }),
   )
   expect(await screen.findByText('Đã lưu trả lời vào bình luận đã chọn.')).toBeTruthy()
-  expect(mocks.apiRequest).toHaveBeenCalledWith('/community/stories/owned-story/comments', {
+  expect(mocks.apiRequest).toHaveBeenCalledWith('/author/comments/root-comment/reply', {
     method: 'POST',
     body: {
       body: 'Trả lời từ tác giả',
-      parentId: 'root-comment',
     },
   })
 })

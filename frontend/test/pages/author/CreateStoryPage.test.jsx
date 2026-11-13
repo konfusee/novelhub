@@ -24,16 +24,25 @@ afterEach(() => {
   cleanup()
   vi.resetAllMocks()
 })
+const completeBasicsAndOpenGenres = async (title, synopsis) => {
+  fireEvent.change(screen.getByRole('textbox', { name: /Tên truyện/ }), {
+    target: { value: title },
+  })
+  fireEvent.change(screen.getByRole('textbox', { name: /Tóm tắt truyện/ }), {
+    target: { value: synopsis },
+  })
+  fireEvent.click(await screen.findByRole('button', { name: 'Tiếp tục đến bước 2' }))
+  fireEvent.click(await screen.findByRole('button', { name: 'Tiếp tục đến bước 3' }))
+}
 it('creates a real private draft with the chosen category ID and links the confirmed story', async () => {
+  const synopsis = 'Tóm tắt truyện mới.'
   mocks.apiRequest.mockImplementation(async (_path, options) =>
     options?.method === 'POST' ? { story: { id: 'created-real' } } : categories,
   )
   view()
   expect(screen.queryByRole('button', { name: 'Gợi ý trau chuốt bằng AI' })).toBeNull()
   expect(screen.getByRole('textbox', { name: /Tên truyện/ }).value).toBe('')
-  fireEvent.change(screen.getByRole('textbox', { name: /Tên truyện/ }), {
-    target: { value: 'Truyện mới của tôi' },
-  })
+  await completeBasicsAndOpenGenres('Truyện mới của tôi', synopsis)
   fireEvent.click(await screen.findByRole('radio', { name: 'Kỳ ảo trong DB', exact: true }))
   const tagInput = screen.getByRole('textbox', { name: 'Thẻ khám phá' })
   fireEvent.change(tagInput, { target: { value: ' #Bí Ẩn Cổ Đại ' } })
@@ -55,7 +64,7 @@ it('creates a real private draft with the chosen category ID and links the confi
     method: 'POST',
     body: {
       title: 'Truyện mới của tôi',
-      description: '',
+      description: synopsis,
       categoryId: 'real-category',
       tags: ['BíẨnCổĐại', 'slow-burn'],
     },
@@ -64,21 +73,21 @@ it('creates a real private draft with the chosen category ID and links the confi
   expect(screen.queryByText('Mira Lane')).toBeNull()
 })
 it('does not claim success when persistence fails and retains the entered fields', async () => {
+  const title = 'Bản còn đang viết'
   mocks.apiRequest.mockImplementation(async (_path, options) => {
     if (options?.method === 'POST') throw new Error('MongoDB tạm thời không phản hồi')
     return categories
   })
   view()
-  fireEvent.change(screen.getByRole('textbox', { name: /Tên truyện/ }), {
-    target: { value: 'Bản còn đang viết' },
-  })
+  await completeBasicsAndOpenGenres(title, 'Tóm tắt bản thảo.')
   fireEvent.click(await screen.findByRole('radio', { name: 'Kỳ ảo trong DB', exact: true }))
   fireEvent.click(screen.getByRole('button', { name: 'Lưu làm bản nháp', exact: true }))
   expect(await screen.findByRole('alert')).toHaveProperty(
     'textContent',
     'MongoDB tạm thời không phản hồi',
   )
-  expect(screen.getByRole('textbox', { name: /Tên truyện/ }).value).toBe('Bản còn đang viết')
+  fireEvent.click(screen.getByRole('button', { name: /Thông tin cơ bản/ }))
+  expect(screen.getByRole('textbox', { name: /Tên truyện/ }).value).toBe(title)
   expect(screen.queryByRole('link', { name: 'Quản lý truyện', exact: true })).toBeNull()
   await waitFor(() =>
     expect(screen.getByRole('button', { name: 'Lưu làm bản nháp', exact: true }).disabled).toBe(
@@ -89,11 +98,9 @@ it('does not claim success when persistence fails and retains the entered fields
 it('requires an active category before writing and allows selecting a cover for the new draft', async () => {
   mocks.apiRequest.mockResolvedValue(categories)
   view()
-  await screen.findByRole('radio', { name: 'Kỳ ảo trong DB', exact: true })
+  await completeBasicsAndOpenGenres('Truyện có bìa', 'Tóm tắt truyện có bìa.')
   fireEvent.click(screen.getByRole('button', { name: 'Lưu làm bản nháp', exact: true }))
   expect(mocks.apiRequest.mock.calls.every(([, options]) => options?.method !== 'POST')).toBe(true)
+  fireEvent.click(screen.getByRole('button', { name: /Bìa và hình ảnh/ }))
   expect(screen.getByRole('button', { name: 'Tải ảnh bìa lên', exact: true }).disabled).toBe(false)
-  expect(screen.getByRole('combobox', { name: 'Ngôn ngữ bản thảo gốc' }).textContent).toContain(
-    'Tiếng Việt',
-  )
 })

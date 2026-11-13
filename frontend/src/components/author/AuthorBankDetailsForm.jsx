@@ -23,6 +23,11 @@ const editableDetails = details => ({
     ? ''
     : (details?.accountNumber ?? ''),
 })
+const maskedAccountNumber = value => (String(value ?? '').startsWith('••••') ? value : '')
+const savedDetails = details => ({
+  ...editableDetails(details),
+  accountNumber: maskedAccountNumber(details?.accountNumber),
+})
 
 export function AuthorBankDetailsForm() {
   const { t } = useLocale()
@@ -59,7 +64,7 @@ function BankDetailsFields({ initialDetails }) {
   const formId = useId()
   const copy = key => t(`authorFinance.bank.${key}`)
 
-  const [saved, setSaved] = useState(() => editableDetails(initialDetails))
+  const [saved, setSaved] = useState(() => savedDetails(initialDetails))
 
   const [draft, setDraft] = useState(() => ({
     ...emptyDetails,
@@ -108,7 +113,7 @@ function BankDetailsFields({ initialDetails }) {
         throw new Error('Invalid bank details response')
       }
 
-      setSaved({ ...result.bankDetails })
+      setSaved(savedDetails(result.bankDetails))
       setDraft({ ...result.bankDetails, accountNumber: '' })
       setFeedback('saved')
     } catch {

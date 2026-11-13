@@ -23,10 +23,9 @@ function unreleasedOwnedRevision(chapter, revision, story) {
 export function canConfigureEarlyAccess(chapter, revision, story) {
   return Boolean(
     unreleasedOwnedRevision(chapter, revision, story) &&
-    ((chapter.status === 'draft' && revision.status === 'editable' && !revision.immutableAt) ||
-      (['approved', 'scheduled', 'due'].includes(chapter.status) &&
-        ['approved', 'immutable'].includes(revision.status) &&
-        revision.immutableAt)),
+    chapter.status === 'draft' &&
+    revision.status === 'editable' &&
+    !revision.immutableAt,
   )
 }
 export function canDisableEarlyAccess(chapter, revision, story) {

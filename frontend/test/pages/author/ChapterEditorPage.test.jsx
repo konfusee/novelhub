@@ -40,6 +40,17 @@ const view = (query = '') =>
       </LocaleProvider>
     </MemoryRouter>,
   )
+const getEditor = () => screen.findByRole('textbox', { name: 'Nội dung chương có định dạng' })
+const setEditorParagraphs = (editor, paragraphs) => {
+  editor.replaceChildren(
+    ...paragraphs.map(text => {
+      const paragraph = document.createElement('p')
+      paragraph.textContent = text
+      return paragraph
+    }),
+  )
+  fireEvent.input(editor)
+}
 afterEach(() => {
   cleanup()
   vi.resetAllMocks()
@@ -83,51 +94,46 @@ it('loads structured editing explicitly, keeps marks when saving and previews th
       .textContent,
   ).toBe('Nội dung đậm vừa sửa')
 })
-it('keeps unsupported formatting unavailable without inserting rejected Markdown or HTML', async () => {
+it('does not alter rich content when formatting is requested without a selection', async () => {
   mocks.apiRequest.mockResolvedValue({ chapter })
   view()
-  const body = await screen.findByRole('textbox', { name: 'Nội dung chương' })
-  const original = body.value
-  for (const name of [
-    'In đậm',
-    'In nghiêng',
-    'Gạch chân',
-    'Tiêu đề 2',
-    'Tiêu đề 3',
-    'Trích dẫn',
-    'Hình ảnh',
-  ]) {
+  const body = await getEditor()
+  await waitFor(() => expect(body.textContent).toBe(chapter.paragraphs[0]))
+  const original = body.textContent
+  for (const name of ['In đậm', 'In nghiêng', 'Gạch chân', 'Tiêu đề 2', 'Tiêu đề 3', 'Trích dẫn']) {
     const button = screen.getByRole('button', { name, exact: true })
-    expect(button.disabled).toBe(true)
+    expect(button.disabled).toBe(false)
     expect(button.getAttribute('aria-describedby')).toBe('editor-format-support')
     fireEvent.click(button)
   }
-  expect(body.value).toBe(original)
+  expect(body.textContent).toBe(original)
   expect(screen.getByRole('button', { name: 'Lưu', exact: true }).disabled).toBe(true)
-  expect(screen.getByText(/Hiện lưu dưới dạng văn bản thuần/)).toBeTruthy()
 })
-it('retains supported scene, dialogue and mention edits and persists them as plain paragraphs', async () => {
+it('retains structured paragraph, quote and scene-break edits', async () => {
   mocks.apiRequest.mockImplementation(async (_path, options) =>
     options?.method === 'PUT' ? { chapter: { version: 10 } } : { chapter },
   )
   view()
-  const body = await screen.findByRole('textbox', { name: 'Nội dung chương' })
-  fireEvent.change(body, { target: { value: 'Lời thoại' } })
-  body.setSelectionRange(0, body.value.length)
-  fireEvent.click(screen.getByRole('button', { name: 'Hội thoại', exact: true }))
-  expect(body.value).toBe('“Lời thoại”')
-  body.setSelectionRange(body.value.length, body.value.length)
-  fireEvent.click(screen.getByRole('button', { name: 'Đường phân cách cảnh', exact: true }))
-  expect(body.value).toContain('*     *     *')
-  body.setSelectionRange(body.value.length, body.value.length)
-  fireEvent.click(screen.getByRole('button', { name: 'Đề cập', exact: true }))
+  const body = await getEditor()
+  setEditorParagraphs(body, ['Lời thoại', '*     *     *', 'Trích dẫn'])
+  body.children[1].replaceWith(document.createElement('hr'))
+  body.children[2].replaceWith(
+    Object.assign(document.createElement('blockquote'), { textContent: 'Trích dẫn' }),
+  )
+  fireEvent.input(body)
   fireEvent.click(screen.getByRole('button', { name: 'Lưu', exact: true }))
   await waitFor(() =>
     expect(mocks.apiRequest).toHaveBeenCalledWith('/author/stories/owned/chapters/seven', {
       method: 'PUT',
       body: {
-        title: 'Chương thật',
-        paragraphs: ['“Lời thoại”', '*     *     *', '@'],
+        document: {
+          title: 'Chương thật',
+          blocks: [
+            { type: 'paragraph', inlines: [{ text: 'Lời thoại', marks: [] }] },
+            { type: 'scene-break' },
+            { type: 'quote', inlines: [{ text: 'Trích dẫn', marks: [] }] },
+          ],
+        },
         expectedVersion: 9,
       },
     }),
@@ -139,29 +145,25 @@ it('saves edits beyond 20,000 characters without breaking an emoji', async () =>
   )
   view()
   const text = 'a'.repeat(19999) + '🌸' + 'Nội dung vừa sửa.'
-  fireEvent.change(await screen.findByRole('textbox', { name: 'Nội dung chương' }), {
-    target: { value: text },
-  })
+  const body = await getEditor()
+  setEditorParagraphs(body, [text])
   fireEvent.click(screen.getByRole('button', { name: 'Lưu', exact: true }))
   await waitFor(() =>
     expect(mocks.apiRequest.mock.calls.some(([, options]) => options?.method === 'PUT')).toBe(true),
   )
-  const paragraphs = mocks.apiRequest.mock.calls.find(([, options]) => options?.method === 'PUT')[1]
-    .body.paragraphs
-  expect(paragraphs.join('')).toBe(text)
-  expect(paragraphs.every(paragraph => paragraph.length <= 20000 && paragraph.isWellFormed())).toBe(
-    true,
-  )
+  const document = mocks.apiRequest.mock.calls.find(([, options]) => options?.method === 'PUT')[1]
+    .body.document
+  expect(document.blocks[0].inlines[0].text).toBe(text)
+  expect(document.blocks[0].inlines[0].text.isWellFormed()).toBe(true)
 })
 it('keeps an oversized paragraph count editable and explains how to resolve it before saving', async () => {
   mocks.apiRequest.mockResolvedValue({ chapter })
   view()
-  const editor = await screen.findByRole('textbox', { name: 'Nội dung chương' })
-  const text = Array(1001).fill('Đoạn').join('\n\n')
-  fireEvent.change(editor, { target: { value: text } })
+  const editor = await getEditor()
+  setEditorParagraphs(editor, Array(1001).fill('Đoạn'))
   fireEvent.click(screen.getByRole('button', { name: 'Lưu', exact: true }))
   expect((await screen.findByRole('alert')).textContent).toContain('tối đa 1.000 đoạn')
-  expect(editor.value).toBe(text)
+  expect(editor.querySelectorAll(':scope > p')).toHaveLength(1001)
   expect(mocks.apiRequest.mock.calls.some(([, options]) => options?.method === 'PUT')).toBe(false)
 })
 it('explains unsupported content without opening a truncated editable body', async () => {
@@ -170,7 +172,7 @@ it('explains unsupported content without opening a truncated editable body', asy
   )
   view()
   await screen.findByText(/Định dạng của bản nội dung này chưa được trình soạn hiện tại hỗ trợ/)
-  expect(screen.queryByRole('textbox', { name: 'Nội dung chương' })).toBeNull()
+  expect(screen.queryByRole('textbox', { name: 'Nội dung chương có định dạng' })).toBeNull()
   expect(screen.getByRole('link', { name: 'Về trang quản lý truyện' }).getAttribute('href')).toBe(
     '/author/stories/owned',
   )
@@ -180,15 +182,22 @@ it('saves dirty paragraphs before opening the exact chapter submission package',
     options?.method === 'PUT' ? { chapter: { version: 10 } } : { chapter },
   )
   view()
-  fireEvent.change(await screen.findByRole('textbox', { name: 'Nội dung chương' }), {
-    target: { value: 'Bản cần lưu trước khi gửi' },
-  })
+  const editor = await getEditor()
+  setEditorParagraphs(editor, ['Bản cần lưu trước khi gửi'])
   fireEvent.click(screen.getByRole('button', { name: 'Gửi chương', exact: true }))
   fireEvent.click(await screen.findByRole('button', { name: 'Lưu và kiểm tra gửi duyệt' }))
   await screen.findByText('submission-destination?storyId=owned&chapterId=seven')
   expect(mocks.apiRequest).toHaveBeenCalledWith('/author/stories/owned/chapters/seven', {
     method: 'PUT',
-    body: { title: 'Chương thật', paragraphs: ['Bản cần lưu trước khi gửi'], expectedVersion: 9 },
+    body: {
+      document: {
+        title: 'Chương thật',
+        blocks: [
+          { type: 'paragraph', inlines: [{ text: 'Bản cần lưu trước khi gửi', marks: [] }] },
+        ],
+      },
+      expectedVersion: 9,
+    },
   })
 })
 it('loads actual paragraphs and uses the next stored chapter ID, then saves successive versions', async () => {
@@ -197,19 +206,24 @@ it('loads actual paragraphs and uses the next stored chapter ID, then saves succ
     options?.method === 'PUT' ? { chapter: { version: ++version } } : { chapter },
   )
   view()
-  const body = await screen.findByRole('textbox', { name: 'Nội dung chương' })
-  expect(body.value).toBe(chapter.paragraphs[0])
+  const body = await getEditor()
+  expect(body.querySelector(':scope > p').textContent).toBe(chapter.paragraphs[0])
   expect(screen.getByRole('link', { name: /Tiếp tục đến Chương 13/ }).getAttribute('href')).toBe(
     '/author/stories/owned/chapters/thirteen/edit',
   )
-  fireEvent.change(body, { target: { value: 'Nội dung sửa.\n\nĐoạn thứ hai.' } })
+  setEditorParagraphs(body, ['Nội dung sửa.', 'Đoạn thứ hai.'])
   fireEvent.click(screen.getByRole('button', { name: 'Lưu', exact: true }))
   await waitFor(() =>
     expect(mocks.apiRequest).toHaveBeenCalledWith('/author/stories/owned/chapters/seven', {
       method: 'PUT',
       body: {
-        title: 'Chương thật',
-        paragraphs: ['Nội dung sửa.', 'Đoạn thứ hai.'],
+        document: {
+          title: 'Chương thật',
+          blocks: [
+            { type: 'paragraph', inlines: [{ text: 'Nội dung sửa.', marks: [] }] },
+            { type: 'paragraph', inlines: [{ text: 'Đoạn thứ hai.', marks: [] }] },
+          ],
+        },
         expectedVersion: 9,
       },
     }),
@@ -217,12 +231,18 @@ it('loads actual paragraphs and uses the next stored chapter ID, then saves succ
   await waitFor(() =>
     expect(screen.getByRole('button', { name: 'Lưu', exact: true }).disabled).toBe(true),
   )
-  fireEvent.change(body, { target: { value: 'Lần sửa kế tiếp.' } })
+  setEditorParagraphs(body, ['Lần sửa kế tiếp.'])
   fireEvent.keyDown(body, { key: 's', ctrlKey: true })
   await waitFor(() =>
     expect(mocks.apiRequest).toHaveBeenLastCalledWith('/author/stories/owned/chapters/seven', {
       method: 'PUT',
-      body: { title: 'Chương thật', paragraphs: ['Lần sửa kế tiếp.'], expectedVersion: 10 },
+      body: {
+        document: {
+          title: 'Chương thật',
+          blocks: [{ type: 'paragraph', inlines: [{ text: 'Lần sửa kế tiếp.', marks: [] }] }],
+        },
+        expectedVersion: 10,
+      },
     }),
   )
 })
@@ -240,35 +260,51 @@ it('merges a stale draft explicitly and saves only on a separate action against 
     }
     return {
       chapter:
-        ++reads === 1 ? chapter : { ...chapter, version: 13, paragraphs: ['Bản mới ở thẻ khác.'] },
+        ++reads === 1
+          ? chapter
+          : {
+              ...chapter,
+              version: 13,
+              document: {
+                title: chapter.title,
+                blocks: [
+                  { type: 'paragraph', inlines: [{ text: 'Bản mới ở thẻ khác.', marks: [] }] },
+                ],
+              },
+            },
     }
   })
   view()
-  const body = await screen.findByRole('textbox', { name: 'Nội dung chương' })
-  fireEvent.change(body, { target: { value: 'Bản chưa lưu.' } })
+  const body = await getEditor()
+  setEditorParagraphs(body, ['Bản chưa lưu.'])
   fireEvent.click(screen.getByRole('button', { name: 'Lưu', exact: true }))
   await screen.findByRole('button', { name: 'So sánh với bản mới' })
-  expect(body.value).toBe('Bản chưa lưu.')
+  expect(body.querySelector(':scope > p').textContent).toBe('Bản chưa lưu.')
   expect(screen.getByRole('button', { name: 'Lưu', exact: true }).disabled).toBe(true)
   expect(screen.getByRole('button', { name: 'Gửi chương', exact: true }).disabled).toBe(true)
   fireEvent.keyDown(body, { key: 's', ctrlKey: true })
   expect(writes).toBe(1)
   fireEvent.click(screen.getByRole('button', { name: 'So sánh với bản mới' }))
-  await screen.findByRole('textbox', { name: 'Nội dung đã lưu' })
-  fireEvent.change(screen.getByRole('textbox', { name: 'Nội dung sau khi gộp' }), {
-    target: { value: 'Bản mới ở thẻ khác.\n\nBản chưa lưu.' },
-  })
+  expect(await screen.findByRole('article', { name: 'Nội dung chương xem trước' })).toBeTruthy()
+  const mergedBody = await screen.findByRole('textbox', { name: 'Nội dung sau khi gộp' })
+  setEditorParagraphs(mergedBody, ['Bản mới ở thẻ khác.', 'Bản chưa lưu.'])
   fireEvent.click(screen.getByRole('checkbox'))
   fireEvent.click(screen.getByRole('button', { name: 'Đưa bản đã gộp về editor' }))
   expect(writes).toBe(1)
-  expect(body.value).toBe('Bản mới ở thẻ khác.\n\nBản chưa lưu.')
+  expect(body.querySelectorAll(':scope > p')).toHaveLength(2)
+  expect(body.querySelector(':scope > p').textContent).toBe('Bản mới ở thẻ khác.')
   fireEvent.click(screen.getByRole('button', { name: 'Lưu', exact: true }))
   await waitFor(() => expect(writes).toBe(2))
   expect(mocks.apiRequest).toHaveBeenLastCalledWith('/author/stories/owned/chapters/seven', {
     method: 'PUT',
     body: {
-      title: 'Chương thật',
-      paragraphs: ['Bản mới ở thẻ khác.', 'Bản chưa lưu.'],
+      document: {
+        title: 'Chương thật',
+        blocks: [
+          { type: 'paragraph', inlines: [{ text: 'Bản mới ở thẻ khác.', marks: [] }] },
+          { type: 'paragraph', inlines: [{ text: 'Bản chưa lưu.', marks: [] }] },
+        ],
+      },
       expectedVersion: 13,
     },
   })
@@ -279,25 +315,27 @@ it('retains unsaved text on a conflict instead of reporting a successful save', 
     return { chapter }
   })
   view()
-  const body = await screen.findByRole('textbox', { name: 'Nội dung chương' })
-  fireEvent.change(body, { target: { value: 'Bản chưa được lưu' } })
+  const body = await getEditor()
+  setEditorParagraphs(body, ['Bản chưa được lưu'])
   fireEvent.click(screen.getByRole('button', { name: 'Lưu', exact: true }))
   expect(await screen.findByRole('alert')).toHaveProperty('textContent', 'Phiên bản đã thay đổi')
-  expect(body.value).toBe('Bản chưa được lưu')
+  expect(body.querySelector(':scope > p').textContent).toBe('Bản chưa được lưu')
   expect(screen.getByRole('button', { name: 'Lưu', exact: true }).disabled).toBe(false)
 })
 it('opens published chapters read-only and never fabricates a missing chapter', async () => {
   mocks.apiRequest.mockResolvedValue({ chapter: { ...chapter, canEdit: false, canCreate: false } })
   view()
-  expect((await screen.findByRole('textbox', { name: 'Nội dung chương' })).disabled).toBe(true)
+  expect((await getEditor()).getAttribute('aria-disabled')).toBe('true')
   expect(screen.getByRole('button', { name: 'Lưu', exact: true }).disabled).toBe(true)
   cleanup()
   mocks.apiRequest.mockResolvedValue({ chapter: null })
   view()
-  await waitFor(() => expect(screen.queryByRole('textbox', { name: 'Nội dung chương' })).toBeNull())
+  await waitFor(() =>
+    expect(screen.queryByRole('textbox', { name: 'Nội dung chương có định dạng' })).toBeNull(),
+  )
   expect(await screen.findByRole('link', { name: 'Về trang quản lý truyện' })).toBeTruthy()
 })
-it('selects owned library images, requires alt text, saves references and previews the same draft image', async () => {
+it('uploads an image, requires alt text, saves its reference and previews the same draft image', async () => {
   const document = {
     title: chapter.title,
     blocks: [{ type: 'paragraph', inlines: [{ text: 'Chữ đậm', marks: ['bold'] }] }],
@@ -309,19 +347,23 @@ it('selects owned library images, requires alt text, saves references and previe
     storyId: chapter.storyId,
   }
   mocks.apiRequest.mockImplementation(async (path, options) => {
-    if (path === '/author/media')
-      return {
-        items: [asset, { ...asset, id: 'foreign', storyId: 'other', name: 'Truyện khác.webp' }],
-        nextCursor: null,
-      }
+    if (path.startsWith('/author/media?') && options?.method === 'POST') return { asset }
     if (options?.method === 'PUT') return { chapter: { version: 10 } }
     return { chapter: { ...chapter, document } }
   })
   view('?mode=rich')
   fireEvent.click(await screen.findByRole('button', { name: 'Hình ảnh', exact: true }))
   const picker = screen.getByRole('dialog', { name: 'Chọn ảnh cho chương' })
-  fireEvent.click(await within(picker).findByRole('button', { name: 'Chọn ảnh Minh họa.webp' }))
-  expect(within(picker).queryByRole('button', { name: 'Chọn ảnh Truyện khác.webp' })).toBeNull()
+  const file = new File(['image bytes'], asset.name, { type: 'image/webp' })
+  fireEvent.change(picker.querySelector('input[type="file"]'), { target: { files: [file] } })
+  await within(picker).findByText(asset.name)
+  const [uploadPath, uploadOptions] = mocks.apiRequest.mock.calls.find(
+    ([path, options]) => path.startsWith('/author/media?') && options?.method === 'POST',
+  )
+  const uploadQuery = new URLSearchParams(uploadPath.split('?')[1])
+  expect(uploadQuery.get('storyId')).toBe(chapter.storyId)
+  expect(uploadQuery.get('name')).toBe(asset.name)
+  expect(uploadOptions).toMatchObject({ method: 'POST', body: file, binary: true })
   fireEvent.click(within(picker).getByRole('button', { name: 'Thêm ảnh cuối chương' }))
   expect(within(picker).getByRole('alert').textContent).toContain('Nhập mô tả ảnh')
   fireEvent.change(

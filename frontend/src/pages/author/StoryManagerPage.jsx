@@ -73,7 +73,7 @@ const normalStatus = value =>
 const tabItems = [
   { value: 'chapters', label: 'Chương' },
   { value: 'details', label: 'Thông tin và tóm tắt truyện' },
-  { value: 'reviews', label: 'Bản gửi và đánh giá' },
+  { value: 'reviews', label: 'Gửi duyệt & phản hồi' },
   { value: 'analytics', label: 'Phân tích truyện' },
 ]
 const filters = [
@@ -698,6 +698,14 @@ const analyticsPeriods = [
 ]
 
 const SUBMISSION_PAGE_SIZES = [5, 10, 15]
+const emptySubmissionHistory = {
+  items: [],
+  stories: [],
+  page: 1,
+  pageCount: 1,
+  total: 0,
+  pageSize: 5,
+}
 
 function StorySubmissionHistory({ storyId }) {
   const { t, formatDate } = useLocale()
@@ -705,14 +713,7 @@ function StorySubmissionHistory({ storyId }) {
   const [pageSize, setPageSize] = useState(5)
   const feed = useBackendDocument(
     `/author/submissions?page=${page}&pageSize=${pageSize}&storyId=${encodeURIComponent(storyId)}`,
-    {
-      items: [],
-      stories: [],
-      page: 1,
-      pageCount: 1,
-      total: 0,
-      pageSize: 5,
-    },
+    emptySubmissionHistory,
   )
   const total = Number(feed.data.total ?? 0)
   const currentPage = Number(feed.data.page ?? page)
@@ -740,9 +741,9 @@ function StorySubmissionHistory({ storyId }) {
   const historyActions = ['submitted', 'decided', 'publication.superseded']
   const historyOutcomes = ['validated', 'approved', 'rejected', 'superseded', 'cancelled']
   return (
-    <Card className="mt-5">
+    <Card className="mt-5 min-w-0">
       <div className="flex flex-wrap items-start justify-between gap-3">
-        <div>
+        <div className="min-w-0">
           <p className="text-xs text-muted">{t('submissionData.studio')}</p>
           <h2 className="mt-1 text-h3">{t('submissionData.storyHistoryTitle')}</h2>
           <p className="mt-1 text-sm text-muted">{t('submissionData.storyHistoryHint')}</p>
@@ -792,9 +793,11 @@ function StorySubmissionHistory({ storyId }) {
       ) : (
         <div className="mt-5 space-y-3">
           {feed.data.items.map(item => (
-            <article key={item.id} className="rounded-2xl border border-hairline p-4">
+            <article key={item.id} className="min-w-0 rounded-2xl border border-hairline p-4">
               <div className="flex flex-wrap items-center justify-between gap-2">
-                <h3 className="text-sm font-semibold">{item.title || item.id}</h3>
+                <h3 className="min-w-0 break-words text-sm font-semibold">
+                  {item.title || item.id}
+                </h3>
                 <div className="flex flex-wrap justify-end gap-2">
                   <Badge tone={item.chapterId ? 'purple' : 'brand'}>
                     {t(
@@ -819,21 +822,35 @@ function StorySubmissionHistory({ storyId }) {
               )}
               {Array.isArray(item.history) && item.history.length > 0 && (
                 <ul className="mt-3 space-y-2">
-                  {item.history.map(row => (
-                    <li key={row.id} className="rounded-xl bg-elevated p-3 text-xs">
-                      {historyActions.includes(row.action)
-                        ? t(`submissionData.historyActions.${row.action}`)
-                        : row.action}{' '}
-                      ·{' '}
-                      {historyOutcomes.includes(row.outcome)
-                        ? t(`submissionData.historyOutcomes.${row.outcome}`)
-                        : row.outcome}{' '}
-                      · {row.occurredAt ? formatDate(row.occurredAt) : '—'}
-                      {row.feedback && (
-                        <p className="mt-2 whitespace-pre-wrap text-sm">{row.feedback}</p>
-                      )}
-                    </li>
-                  ))}
+                  {item.history.map(row => {
+                    const action = historyActions.includes(row.action)
+                      ? t(`submissionData.historyActions.${row.action}`)
+                      : row.action
+                    const outcome = historyOutcomes.includes(row.outcome)
+                      ? t(`submissionData.historyOutcomes.${row.outcome}`)
+                      : row.outcome
+                    return (
+                      <li
+                        key={row.id}
+                        className="flex min-w-0 flex-col gap-2 rounded-xl bg-elevated p-3 text-xs sm:flex-row sm:items-start sm:justify-between"
+                      >
+                        <div className="min-w-0">
+                          <p className="font-semibold">{action}</p>
+                          {row.feedback && (
+                            <p className="mt-1 whitespace-pre-wrap break-words text-sm">
+                              {row.feedback}
+                            </p>
+                          )}
+                        </div>
+                        <div className="flex shrink-0 flex-wrap items-center gap-2">
+                          <Badge tone={statusTones[row.outcome] ?? 'neutral'}>{outcome}</Badge>
+                          <time className="text-muted" dateTime={row.occurredAt || undefined}>
+                            {row.occurredAt ? formatDate(row.occurredAt) : '—'}
+                          </time>
+                        </div>
+                      </li>
+                    )
+                  })}
                 </ul>
               )}
               <div className="mt-3 flex flex-wrap gap-2">
@@ -2062,10 +2079,10 @@ function StoryHealth({ storyId, stats }) {
         <ButtonLink
           to={ROUTES.authorAnalytics(storyId)}
           variant="secondary"
-          className="mt-5 w-full"
+          className="mt-5 w-full text-left"
         >
-          <BarChart3 size={16} aria-hidden="true" />
-          Xem phân tích truyện
+          <BarChart3 size={16} aria-hidden="true" className="shrink-0" />
+          <span className="min-w-0 break-words">Xem phân tích truyện</span>
         </ButtonLink>
       </Card>
       <Card>
