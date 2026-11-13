@@ -40,10 +40,12 @@ import { createAuthorPayoutsRouter } from './routes/author-payouts.routes.js'
 
 // Runtime configuration is validated by loadEnv and mapped by toAppConfig.
 export function createApp(config) {
-  const { logger, corsOrigin, cookieName, httpJsonLimitKb } = config
+  const { logger, corsOrigin, cookieName, httpJsonLimitKb, trustProxyHops = 0 } = config
   const app = express()
   app.disable('x-powered-by')
-  app.use(helmet())
+  if (trustProxyHops) app.set('trust proxy', trustProxyHops)
+  // The deployed web app is a sibling subdomain of the API: images and audio load same-site.
+  app.use(helmet({ crossOriginResourcePolicy: { policy: 'same-site' } }))
   app.use(
     cors({
       origin: corsOrigin.split(',').map(o => o.trim()),

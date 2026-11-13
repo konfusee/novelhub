@@ -34,6 +34,8 @@ const envSchema = z.object({
   CAPTCHA_TTL_MINUTES: z.coerce.number().int().positive().max(1440),
   CAPTCHA_MAX_ENTRIES: z.coerce.number().int().positive().max(1000000),
   CAPTCHA_MAX_REQUESTS: z.coerce.number().int().positive().max(1000000),
+  // Reverse proxies in front of the API (1 behind cloudflared); per-IP limits use the client IP.
+  TRUST_PROXY_HOPS: z.coerce.number().int().min(0).max(5).default(0),
   MEDIA_STORAGE_DIR: z
     .string()
     .trim()
@@ -148,6 +150,7 @@ export function loadEnv(source = process.env) {
     'TOPUP_BANK_ACCOUNT_NAME',
     'SEPAY_WEBHOOK_API_KEY',
     'MODERATION_CLAIM_HOURS',
+    'TRUST_PROXY_HOPS',
     'OPENAI_API_KEY',
     'OPENAI_EMBEDDING_MODEL',
     'OPENAI_REVIEW_MODEL',
@@ -207,6 +210,7 @@ export function toAppConfig(env) {
     emailVerificationTtlMinutes: env.EMAIL_VERIFICATION_TTL_MINUTES,
     passwordResetTtlMinutes: env.PASSWORD_RESET_TTL_MINUTES,
     httpJsonLimitKb: env.HTTP_JSON_LIMIT_KB,
+    trustProxyHops: env.TRUST_PROXY_HOPS,
     mediaStorageDir: env.MEDIA_STORAGE_DIR,
     moderationClaimHours: env.MODERATION_CLAIM_HOURS,
     ai: {
