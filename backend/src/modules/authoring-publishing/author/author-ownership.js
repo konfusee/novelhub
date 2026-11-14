@@ -38,6 +38,4 @@ export function editable(story) {
 
 export function metadataEditable(story) {
   editable(story)
-  if (story.publishedRevisionId)
-    throw new HttpError(409, 'content_frozen', 'Truyện đã xuất bản, không thể sửa thông tin chung.')
 }

@@ -10,7 +10,6 @@ import {
 } from '../../../models/index.js'
 import { withTransaction } from '../../../db/connection.js'
 import { HttpError } from '../../../middleware/errors.js'
-import { evaluatePayoutEligibility } from './payout-eligibility.js'
 import { createMonthlyPayoutRecords } from './monthly-payout-records.js'
 
 function validatePayoutPeriod(periodId, now) {
@@ -66,7 +65,12 @@ async function queuePayoutNotice(accountId, periodId, result, session, now) {
   }
 }
 
-export async function generateMonthlyPayouts(admin, periodId, now = new Date()) {
+export async function generateMonthlyPayouts(
+  admin,
+  periodId,
+  now = new Date(),
+  executionMode = 'external',
+) {
   validatePayoutPeriod(periodId, now)
 
   return withTransaction(async session => {
@@ -122,21 +126,6 @@ export async function generateMonthlyPayouts(admin, periodId, now = new Date()) 
       }).session(session)
 
       const eligibleBalanceCoins = await availableAtCutoff(wallet, periodId, session)
-      const eligibility = evaluatePayoutEligibility({
-        account,
-        wallet,
-        policy,
-        eligibleBalanceCoins,
-      })
-      if (eligibility.state === 'eligible') {
-        const locked = await Account.updateOne(
-          { _id: account._id, status: 'active', version: account.version },
-          { $inc: { version: 1 } },
-          { session },
-        )
-        if (locked.matchedCount !== 1)
-          throw new HttpError(409, 'account_changed', 'Tài khoản đã thay đổi. Vui lòng thử lại.')
-      }
       const result = await createMonthlyPayoutRecords(
         {
           account,
@@ -145,6 +134,7 @@ export async function generateMonthlyPayouts(admin, periodId, now = new Date()) 
           policy,
           actorAccountId: admin?._id,
           eligibleBalanceCoins,
+          executionMode,
         },
         session,
         now,
@@ -155,11 +145,11 @@ export async function generateMonthlyPayouts(admin, periodId, now = new Date()) 
       }
       if (result.state === 'created') {
         const bumped = await Account.updateOne(
-          { _id: account._id, version: account.version },
+          { _id: account._id, status: 'active', version: account.version },
           { $inc: { version: 1 } },
           { session },
         )
-        if (bumped.modifiedCount !== 1)
+        if (bumped.matchedCount !== 1)
           throw new HttpError(
             409,
             'account_changed',

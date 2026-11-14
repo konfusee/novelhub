@@ -39,8 +39,8 @@ it('publishes only after explicit confirmation using the exact prepared approval
   const released = view()
   await screen.findByRole('heading', { name: 'Thông tin đã duyệt' })
   expect(mocks.apiRequest.mock.calls.some(([, options]) => options?.method === 'POST')).toBe(false)
-  expect(screen.getByText(/Các chương vẫn cần được duyệt và phát hành riêng/)).toBeTruthy()
-  expect(screen.getByRole('link', { name: 'Xem gói đã gửi' }).getAttribute('href')).toBe(
+  expect(screen.getByText(/Các chương vẫn cần gửi duyệt và phát hành riêng/)).toBeTruthy()
+  expect(screen.getByRole('link', { name: 'Xem bản đã gửi duyệt' }).getAttribute('href')).toBe(
     '/author/submissions/approved-submission/preview',
   )
   fireEvent.click(screen.getByRole('button', { name: 'Phát hành ngay' }))
@@ -92,9 +92,7 @@ it('labels restoration explicitly while retaining every server release gate', as
     target: { ...prepared.target, restoring: true },
   })
   view()
-  expect(
-    await screen.findByRole('heading', { name: 'Phát hành lại thông tin truyện' }),
-  ).toBeTruthy()
+  expect(await screen.findByRole('heading', { name: 'Phát hành lại truyện' })).toBeTruthy()
   expect(screen.getByText(/Những chương đã phát hành sẽ hiển thị lại/)).toBeTruthy()
   expect(screen.getByRole('button', { name: 'Phát hành ngay' }).disabled).toBe(false)
   expect(mocks.apiRequest.mock.calls.every(([, options]) => !options?.method)).toBe(true)
@@ -105,7 +103,7 @@ it.each([
   ['integrity', 'Kiểm tra gói đã gửi', '/author/submissions?storyId=story'],
   ['rights', 'Kiểm tra khai báo quyền', '/author/submissions?storyId=story'],
   ['categories', 'Chỉnh thể loại truyện', '/author/stories/story?tab=details'],
-  ['media', 'Kiểm tra media', '/author/stories/story?tab=media'],
+  ['media', 'Kiểm tra media', '/author/stories/story?tab=details'],
   ['editable', 'Xem trạng thái và phản hồi', '/author/stories/story?tab=reviews'],
 ])('links failed %s to its owned recovery destination', async (code, label, href) => {
   mocks.apiRequest.mockResolvedValue({

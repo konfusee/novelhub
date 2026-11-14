@@ -80,7 +80,7 @@ it('shows order waiting without blocking an otherwise valid schedule', async () 
   mocks.apiRequest.mockResolvedValue({ ...prepared, waiting: ['order'] })
   view()
   await chooseTime()
-  expect(screen.getByText(/Truyện cha hoặc chương trước chưa sẵn sàng/)).toBeTruthy()
+  expect(screen.getByText(/Truyện này hoặc chương đứng trước chưa đủ điều kiện/)).toBeTruthy()
   expect(screen.getByRole('button', { name: 'Lưu lịch phát hành' }).disabled).toBe(false)
 })
 it('can cancel a due schedule even when its package no longer passes release checks', async () => {

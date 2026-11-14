@@ -10,8 +10,8 @@ import { useLocale } from '../../context/LocaleContext'
 /* A story in progress (`LibraryItem` of GET /reader/library): saved chapter and story progress. */
 export function ContinueCard({ item }) {
   const { t } = useLocale()
-  const { story, resume, listenResume } = item
-  const listenTo = listenHref(story.id, listenResume)
+  const { story, resume } = item
+  const listenTo = listenHref(story.id, resume)
   const percent = storyPercent(item)
   return (
     <Card as="article" className="flex flex-col p-4 sm:p-5">
@@ -35,9 +35,7 @@ export function ContinueCard({ item }) {
             {story.author}
           </p>
           <p className="mt-auto truncate pt-3 text-xs text-muted">
-            {resume || listenResume
-              ? chapterLabel(t, resume ?? listenResume)
-              : t('readerHome.notStarted')}
+            {resume ? chapterLabel(t, resume) : t('readerHome.notStarted')}
           </p>
           {resume?.contentUpdated && (
             <Badge tone="orange" className="mt-1.5 self-start">

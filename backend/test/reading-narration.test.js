@@ -38,7 +38,7 @@ const provider = {
   },
 }
 // Cost guards are off unless a test turns them on.
-const tts = { ...testConfig().tts, requestCooldownSeconds: 0, dailyCharacterLimit: 0 }
+const tts = { ...testConfig().tts, maxActiveJobsPerAccount: 0, dailyCharacterLimit: 0 }
 const base = { cookieName: 'novelhub_session', corsOrigin: origin, tts }
 let root, app, api
 beforeAll(async () => {
@@ -206,6 +206,26 @@ it('records failures with a retry and reports an unconfigured provider', async (
   const rejected = (await rejecting.write(reader.cookie, url(storyId, other), {})).body.narration
   expect(rejected.failure).toMatchObject({ code: 'provider_rejected', retryable: false })
 
+  // Out of provider quota: nothing was created or billed, so no attempt is used and the
+  // next play retries.
+  const quotaFails = {
+    ...provider,
+    submit: async () => {
+      throw new TtsProviderError('provider_quota', true)
+    },
+  }
+  const third = await api.publishChapter(author, storyId, 'Ba')
+  const outOfQuota = readingClient(
+    createApp(testConfig({ ...base, mediaStorageDir: root, ttsProvider: quotaFails })),
+  )
+  const quota = (await outOfQuota.write(reader.cookie, url(storyId, third), {})).body.narration
+  expect(quota.failure).toMatchObject({ code: 'provider_quota', retryable: true })
+  expect(await NarrationAsset.findOne({ chapterId: third }).lean()).toMatchObject({
+    attempts: 0,
+    submissions: [],
+  })
+  expect((await play(reader, storyId, third)).body.narration.status).toBe('processing')
+
   const disabled = readingClient(createApp(testConfig({ ...base, ttsProvider: null })))
   const unavailable = await disabled.write(reader.cookie, url(storyId, chapterId), {})
   expect(unavailable.status).toBe(503)
@@ -242,26 +262,32 @@ it('limits new provider jobs per account and per day', async () => {
   const first = await api.publishChapter(author, storyId, 'Một', ['Một câu ngắn.'])
   const second = await api.publishChapter(author, storyId, 'Hai', ['Một câu ngắn khác.'])
   const reader = await authenticatedAccount()
-  const cooled = readingClient(
+  const limited = readingClient(
     createApp(
       testConfig({
         ...base,
         mediaStorageDir: root,
         ttsProvider: provider,
-        tts: { ...tts, requestCooldownSeconds: 60 },
+        tts: { ...tts, maxActiveJobsPerAccount: 1 },
       }),
     ),
   )
-  expect((await cooled.write(reader.cookie, url(storyId, first), {})).status).toBe(202)
-  const throttled = await cooled.write(reader.cookie, url(storyId, second), {})
-  expect(throttled.status).toBe(429)
-  expect(throttled.body.error.code).toBe('narration_cooldown')
+  expect((await limited.write(reader.cookie, url(storyId, first), {})).status).toBe(202)
+  const busy = await limited.write(reader.cookie, url(storyId, second), {})
+  expect(busy.status).toBe(429)
+  expect(busy.body.error.code).toBe('narration_busy')
   // Playing a job that already exists is not a new job.
-  expect((await cooled.write(reader.cookie, url(storyId, first), {})).status).toBe(202)
-  // Another account is not affected by this reader's cooldown.
+  expect((await limited.write(reader.cookie, url(storyId, first), {})).status).toBe(202)
+  // Another account is not affected by this reader's running job.
   const other = await authenticatedAccount()
-  expect((await cooled.write(other.cookie, url(storyId, second), {})).status).toBe(202)
+  expect((await limited.write(other.cookie, url(storyId, second), {})).status).toBe(202)
   expect(provider.submits).toHaveLength(2)
+  // Once the running job is done the reader can start the next chapter right away.
+  provider.script.set('job-1', [{ state: 'completed', audioUrl: 'https://cdn/1.mp3' }])
+  expect((await status(reader, storyId, first)).body.narration.status).toBe('available')
+  const next = await api.publishChapter(author, storyId, 'Bốn', ['Câu thứ tư.'])
+  expect((await limited.write(reader.cookie, url(storyId, next), {})).status).toBe(202)
+  expect(provider.submits).toHaveLength(3)
 
   const third = await api.publishChapter(author, storyId, 'Ba', ['Câu thứ ba.'])
   const budgeted = readingClient(
@@ -277,7 +303,7 @@ it('limits new provider jobs per account and per day', async () => {
   const overBudget = await budgeted.write(reader.cookie, url(storyId, third), {})
   expect(overBudget.status).toBe(429)
   expect(overBudget.body.error.code).toBe('tts_daily_limit')
-  expect(provider.submits).toHaveLength(2)
+  expect(provider.submits).toHaveLength(3)
 })
 
 it('turns a narration whose file disappeared into a retryable failure', async () => {
@@ -302,55 +328,6 @@ it('turns a narration whose file disappeared into a retryable failure', async ()
   expect(provider.submits).toHaveLength(2)
 })
 
-it('keeps listening progress separate from reading progress', async () => {
-  const { author, storyId } = await api.publishStory({ title: 'Nghe thử' })
-  const first = await api.publishChapter(author, storyId, 'Một')
-  const second = await api.publishChapter(author, storyId, 'Hai')
-  const reader = await authenticatedAccount()
-  const save = body => api.write(reader.cookie, '/api/reader/progress', body, 'put')
-
-  expect((await save({ storyId, chapterId: first, position: 0.4 })).body.progress).toMatchObject({
-    mode: 'text',
-    position: 0.4,
-  })
-  const listened = await save({
-    storyId,
-    chapterId: second,
-    mode: 'audio',
-    position: 42,
-    duration: 120,
-  })
-  expect(listened.body.progress).toMatchObject({ mode: 'audio', position: 42, duration: 120 })
-  expect((await save({ storyId, chapterId: second, mode: 'audio', position: 90000 })).status).toBe(
-    400,
-  )
-  expect((await save({ storyId, chapterId: second, mode: 'text', position: 42 })).status).toBe(400)
-  expect((await save({ storyId, chapterId: first, position: 0.1, duration: 3 })).status).toBe(400)
-
-  const resume = (await api.get(reader.cookie, `/api/reader/progress/${storyId}`)).body
-  expect(resume.resume).toMatchObject({ chapterId: first, mode: 'text', position: 0.4 })
-  expect(resume.listen).toMatchObject({
-    chapterId: second,
-    mode: 'audio',
-    position: 42,
-    duration: 120,
-    fraction: 0.35,
-  })
-  const detail = (await api.get(reader.cookie, `/api/catalog/stories/${storyId}`)).body
-  expect(detail.viewer.resume.chapterId).toBe(first)
-  expect(detail.viewer.listenResume.chapterId).toBe(second)
-
-  await save({ storyId, chapterId: second, mode: 'audio', position: 120, completed: true })
-  const library = (await api.get(reader.cookie, '/api/reader/library')).body.items[0]
-  expect(library).toMatchObject({ chaptersRead: 2, totalChapters: 2, completed: false })
-  expect(library.listenResume.chapterId).toBe(second)
-
-  const history = (await api.get(reader.cookie, '/api/reader/history')).body.items
-  expect(history.map(item => [item.chapter.id, item.mode, item.completed])).toEqual([
-    [second, 'audio', true],
-  ])
-})
-
 it('talks to Vbee with App-Id and bearer token and maps request states', async () => {
   const calls = []
   const replies = [
@@ -362,6 +339,12 @@ it('talks to Vbee with App-Id and bearer token and maps request states', async (
       json: { requestId: 'r1', status: 'COMPLETED', audioLink: 'https://a/b.mp3' },
     },
     { ok: false, status: 401, json: { error: { code: 'UNAUTHORIZED', message: 'x' } } },
+    {
+      ok: false,
+      status: 400,
+      json: { error: { code: 'BAD_REQUEST', message: 'You have exceeded the API TTS quota' } },
+    },
+    { ok: false, status: 400, json: { error: { code: 'BAD_REQUEST', message: 'Invalid syntax' } } },
   ]
   const fetchImpl = async (target, init) => {
     calls.push({ target, init })
@@ -400,6 +383,14 @@ it('talks to Vbee with App-Id and bearer token and maps request states', async (
   await expect(vbee.poll('r1')).rejects.toMatchObject({
     code: 'provider_unauthorized',
     retryable: true,
+  })
+  await expect(vbee.submit({ text: 'Xin chào', callbackUrl: 'https://cb' })).rejects.toMatchObject({
+    code: 'provider_quota',
+    retryable: true,
+  })
+  await expect(vbee.submit({ text: '***', callbackUrl: 'https://cb' })).rejects.toMatchObject({
+    code: 'provider_rejected',
+    retryable: false,
   })
   expect(createTtsProvider({ tts: { voiceCode: 'voice-1' } })).toBeNull()
 })

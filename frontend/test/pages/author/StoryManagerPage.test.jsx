@@ -1,4 +1,4 @@
-import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react'
+import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import { afterEach, expect, it, vi } from 'vitest'
 import { MemoryRouter, Route, Routes, useLocation } from 'react-router'
 import { LocaleProvider } from '../../../src/context/LocaleContext'
@@ -18,6 +18,7 @@ const workspace = {
     status: 'published',
     version: 7,
     canEdit: true,
+    canEditMetadata: true,
   },
   chapters: [
     {
@@ -56,6 +57,10 @@ const view = () =>
       </LocaleProvider>
     </MemoryRouter>,
   )
+const openChapterActions = async () => {
+  const row = await screen.findByRole('row', { name: /Chương 7: Chương bảy thật/ })
+  fireEvent.click(within(row).getByRole('button', { name: 'Thao tác khác cho chương' }))
+}
 afterEach(() => {
   cleanup()
   vi.resetAllMocks()
@@ -86,6 +91,7 @@ it('uses server lifecycle flags and refreshes the chapter row after archive and 
     }
   })
   view()
+  await openChapterActions()
   expect(
     (
       await screen.findByRole('link', { name: 'Xem phân tích chương 7: Chương bảy thật' })
@@ -94,26 +100,68 @@ it('uses server lifecycle flags and refreshes the chapter row after archive and 
   expect(screen.getByRole('link', { name: 'Xem phân tích truyện' }).getAttribute('href')).toBe(
     '/author/analytics?storyId=owned',
   )
-  fireEvent.click(await screen.findByRole('button', { name: 'Lưu trữ chương: Chương bảy thật' }))
+  fireEvent.click(screen.getByRole('button', { name: 'Đóng menu thao tác' }))
+  await openChapterActions()
+  fireEvent.click(await screen.findByRole('button', { name: 'Lưu trữ chương nháp' }))
   expect(mocks.apiRequest.mock.calls.some(([, o]) => o?.method === 'POST')).toBe(false)
   fireEvent.click(screen.getByRole('button', { name: 'Xác nhận', exact: true }))
-  const restore = await screen.findByRole(
-    'button',
-    { name: 'Khôi phục chương: Chương bảy thật' },
-    { timeout: 5000 },
-  )
+  expect(await screen.findByRole('link', { name: 'Xem nội dung' })).toBeTruthy()
+  await openChapterActions()
+  const restore = await screen.findByRole('button', { name: 'Khôi phục chương nháp' })
   expect(mocks.apiRequest).toHaveBeenCalledWith('/author/stories/owned/chapters/seven/lifecycle', {
     method: 'POST',
     body: { action: 'archive', expectedVersion: 3, expectedStoryVersion: 7 },
   })
-  expect(screen.getByRole('link', { name: 'Xem nội dung' })).toBeTruthy()
   fireEvent.click(restore)
   fireEvent.click(screen.getByRole('button', { name: 'Xác nhận', exact: true }))
-  await screen.findByRole('button', { name: 'Lưu trữ chương: Chương bảy thật' })
+  await screen.findByRole('link', { name: 'Viết tiếp' })
+  await openChapterActions()
+  await screen.findByRole('button', { name: 'Lưu trữ chương nháp' })
   expect(mocks.apiRequest).toHaveBeenCalledWith('/author/stories/owned/chapters/seven/lifecycle', {
     method: 'POST',
     body: { action: 'restore', expectedVersion: 4, expectedStoryVersion: 8 },
   })
+}, 15000)
+it('loads a story submission history once and renders its submitted version', async () => {
+  mocks.apiRequest.mockImplementation(async path => {
+    if (path.startsWith('/author/submissions?'))
+      return {
+        items: [
+          {
+            id: 'submission-1',
+            title: 'Truyện đã gửi duyệt',
+            status: 'approved',
+            submittedAt: '2026-10-01T00:00:00Z',
+            revisionNumber: 2,
+            history: [
+              {
+                id: 'history-1',
+                action: 'submitted',
+                outcome: 'validated',
+                feedback: 'Đã nhận bản gửi.',
+                occurredAt: '2026-10-01T00:00:00Z',
+              },
+            ],
+          },
+        ],
+        stories: [],
+        page: 1,
+        pageCount: 1,
+        total: 1,
+        pageSize: 5,
+      }
+    return workspace
+  })
+  view()
+  fireEvent.click(await screen.findByRole('button', { name: 'Gửi duyệt & phản hồi' }))
+  expect(await screen.findByText('Truyện đã gửi duyệt')).toBeTruthy()
+  expect(screen.getByText('Đã nhận bản gửi.')).toBeTruthy()
+  expect(screen.getByText('Đã kiểm tra')).toBeTruthy()
+  await waitFor(() =>
+    expect(
+      mocks.apiRequest.mock.calls.filter(([path]) => path.startsWith('/author/submissions?')),
+    ).toHaveLength(1),
+  )
 })
 it('enables chapter ordering only when the backend confirms the private draft is eligible', async () => {
   mocks.apiRequest.mockResolvedValue(workspace)
@@ -156,6 +204,7 @@ it('confirms archive and restore using persisted versions without deleting the w
         status: archived ? 'archived' : 'draft',
         version,
         canEdit: !archived,
+        canEditMetadata: !archived,
         canArchive: !archived,
         canRestore: archived,
       },
@@ -252,6 +301,8 @@ it('loads real categories and saves the single selected main category in the nex
       description: workspace.story.description,
       expectedVersion: 7,
       categoryId: 'mystery',
+      coverMediaId: null,
+      coverBannerMediaId: null,
     },
   })
 })
@@ -284,6 +335,8 @@ it('edits tags with the shared rules and sends them only when they changed', asy
       description: workspace.story.description,
       expectedVersion: 7,
       tags: ['CoDai', 'HồiHộp'],
+      coverMediaId: null,
+      coverBannerMediaId: null,
     },
   })
 })
@@ -319,6 +372,8 @@ it('reads owned chapters with exact IDs and saves versioned metadata from the ex
       title: 'Tên bản nháp mới',
       description: workspace.story.description,
       expectedVersion: 7,
+      coverMediaId: null,
+      coverBannerMediaId: null,
     },
   })
 })
@@ -388,17 +443,28 @@ it('shows an error instead of exposing a fallback story and disables creation fo
     expect(screen.getByRole('button', { name: 'Thêm chương mới' }).disabled).toBe(true),
   )
 })
-it('passes the current story to the image library and explains that audio upload is unavailable', async () => {
-  mocks.apiRequest.mockResolvedValue(workspace)
+it('uploads a story cover using the current story ID', async () => {
+  const file = new File(['image'], 'cover.png', { type: 'image/png' })
+  mocks.apiRequest.mockImplementation(async path => {
+    if (path === '/catalog/categories') return { items: [] }
+    if (path.startsWith('/author/media?')) return { asset: { id: 'cover' } }
+    return workspace
+  })
   view()
   await screen.findByText('Chương 7: Chương bảy thật')
-  expect(screen.queryByRole('link', { name: 'Quản lý bản âm thanh' })).toBeNull()
-  expect(screen.getByText('Chưa hỗ trợ tải âm thanh')).toBeTruthy()
-  fireEvent.click(screen.getByRole('button', { name: 'Media và bản âm thanh', exact: true }))
-  expect(screen.getByRole('heading', { name: 'Thư viện hình ảnh', exact: true })).toBeTruthy()
-  expect(
-    screen.getByRole('link', { name: 'Mở thư viện media', exact: true }).getAttribute('href'),
-  ).toBe('/author/media?storyId=owned')
+  fireEvent.click(screen.getByRole('button', { name: 'Sửa thông tin', exact: true }))
+  const coverInput = document.querySelector('input[type="file"]')
+  fireEvent.change(coverInput, { target: { files: [file] } })
+  await waitFor(() =>
+    expect(mocks.apiRequest).toHaveBeenCalledWith(
+      '/author/media?name=cover.png&kind=cover&storyId=owned',
+      {
+        method: 'POST',
+        body: file,
+        binary: true,
+      },
+    ),
+  )
 })
 it.each([false, true])(
   'uses the server metadata-release flag on an already published story: %s',
@@ -409,9 +475,9 @@ it.each([false, true])(
     })
     view()
     await screen.findByRole('heading', { name: 'Truyện thuộc tài khoản' })
-    expect(
-      Boolean(screen.queryByRole('button', { name: 'Phát hành thông tin truyện', exact: true })),
-    ).toBe(canReleaseMetadata)
+    expect(Boolean(screen.queryByRole('button', { name: 'Phát hành truyện', exact: true }))).toBe(
+      canReleaseMetadata,
+    )
     expect(screen.getByRole('link', { name: 'Xem truyện đã công khai' }).getAttribute('href')).toBe(
       '/stories/owned',
     )
@@ -479,6 +545,7 @@ it('unpublishes through server eligibility, refreshes the row and retains it in 
     }
   })
   view()
+  await openChapterActions()
   fireEvent.click(await screen.findByRole('button', { name: 'Gỡ xuất bản chương', exact: true }))
   expect(unpublished).toBe(false)
   fireEvent.click(screen.getByRole('button', { name: 'Xác nhận', exact: true }))
@@ -514,12 +581,13 @@ it('opens a new rich correction from the exact unpublished chapter source after 
         },
   )
   view()
+  await openChapterActions()
   fireEvent.click(await screen.findByRole('button', { name: 'Tạo bản sửa chương', exact: true }))
   expect(
     mocks.apiRequest.mock.calls.filter(([, options]) => options.method === 'POST'),
   ).toHaveLength(0)
   fireEvent.click(screen.getByRole('button', { name: 'Xác nhận', exact: true }))
-  await screen.findByText('/author/stories/owned/chapters/seven/edit?mode=rich')
+  await screen.findByText('/author/stories/owned/chapters/seven/edit')
   expect(mocks.apiRequest).toHaveBeenCalledWith('/author/submissions/source/revise', {
     method: 'POST',
     body: { expectedVersion: 12 },
@@ -568,6 +636,7 @@ it('opens real schedule controls from the chapter row and refreshes status after
     }
   })
   view()
+  await openChapterActions()
   fireEvent.click(await screen.findByRole('button', { name: 'Lên lịch phát hành' }))
   await screen.findByRole('heading', { name: 'Gói chương đã duyệt' })
   fireEvent.change(screen.getByLabelText('Thời gian phát hành'), {
@@ -575,6 +644,7 @@ it('opens real schedule controls from the chapter row and refreshes status after
   })
   fireEvent.click(screen.getByRole('button', { name: 'Lưu lịch phát hành' }))
   await screen.findByText('Đã lưu lịch phát hành trên máy chủ.')
+  await openChapterActions()
   expect(await screen.findByRole('button', { name: 'Đổi hoặc hủy lịch' })).toBeTruthy()
 })
 

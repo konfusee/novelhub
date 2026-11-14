@@ -218,21 +218,21 @@ function ReadAction({ storyId, chapters, viewer, isAuthenticated }) {
 }
 
 /**
- * Listening CTA (TTS is for signed-in readers only): the saved audio chapter, else the reading
- * resume chapter or chapter 1 in the player.
+ * Listening CTA (TTS is for signed-in readers only): the saved chapter (read or listened),
+ * else chapter 1, in the player.
  */
 function ListenAction({ storyId, chapters, viewer, isAuthenticated }) {
   const { t } = useLocale()
   if (!isAuthenticated) return null
-  const listen = viewer?.listenResume?.available ? viewer.listenResume : null
-  const target = listen?.chapterId ?? (viewer?.resume?.available && viewer.resume.chapterId)
-  const chapterId = target || (chapters.find(chapter => chapter.orderKey === 1) ?? chapters[0])?.id
+  const resume = viewer?.resume?.available ? viewer.resume : null
+  const chapterId =
+    resume?.chapterId ?? (chapters.find(chapter => chapter.orderKey === 1) ?? chapters[0])?.id
   if (!chapterId) return null
   return (
     <ButtonLink variant="secondary" size="lg" to={ROUTES.listen(storyId, chapterId)}>
       <Headphones size={18} aria-hidden="true" />
-      {listen
-        ? t('storyDetail.continueListening', { title: listen.title })
+      {resume
+        ? t('storyDetail.continueListening', { title: resume.title })
         : t('storyDetail.startListening')}
     </ButtonLink>
   )

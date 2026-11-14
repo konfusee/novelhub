@@ -61,9 +61,8 @@ function EntrySkeleton() {
 function HistoryEntry({ entry, onRemove, t }) {
   const { story, chapter } = entry
   const audio = entry.mode === 'audio'
-  /* `fraction` is the share of the chapter read or heard; text positions are fractions too. */
-  const fraction = entry.fraction ?? (audio ? 0 : entry.position)
-  const percent = Math.round(Math.min(1, Math.max(0, fraction || 0)) * 100)
+  /* `percent`: the paragraph reached out of the chapter's paragraphs (100 once finished). */
+  const percent = entry.percent ?? 0
   const href = !chapter.available
     ? ROUTES.story(story.id)
     : audio

@@ -7,27 +7,27 @@ import {
   clearHistory,
   deleteHistoryEntry,
   readingHistory,
-  resumePoints,
+  resumePoint,
   saveProgress,
 } from '../modules/reading-community/reading/progress.js'
 
 const id = z.string().regex(/^[a-f\d]{24}$/i)
 const page = z.coerce.number().int().min(1).max(100000).default(1)
-const progressFields = { storyId: id, chapterId: id, completed: z.boolean().optional() }
-// Text saves a scroll fraction; audio saves playback seconds and the track duration.
-const progressInput = z.discriminatedUnion('mode', [
-  z
-    .object({ ...progressFields, mode: z.literal('text'), position: z.number().min(0).max(1) })
-    .strict(),
-  z
-    .object({
-      ...progressFields,
-      mode: z.literal('audio'),
-      position: z.number().min(0).max(86400),
-      duration: z.number().positive().max(86400).optional(),
-    })
-    .strict(),
-])
+// Where the Reader is in a chapter: the paragraph (block index) being read or heard, out of
+// paragraphCount blocks. The player also sends the playback second and the track duration.
+const progressInput = z
+  .object({
+    storyId: id,
+    chapterId: id,
+    paragraph: z.number().int().min(0).max(100000),
+    paragraphCount: z.number().int().min(1).max(100000),
+    completed: z.boolean().optional(),
+    audioSeconds: z.number().min(0).max(86400).optional(),
+    duration: z.number().positive().max(86400).optional(),
+  })
+  .strict()
+  .refine(input => input.paragraph < input.paragraphCount)
+  .refine(input => input.duration === undefined || input.audioSeconds !== undefined)
 const libraryQuery = z.object({ tab: z.enum(LIBRARY_TABS).default('all'), page }).strict()
 const historyQuery = z.object({ page }).strict()
 const validate = (schema, value) => {
@@ -56,15 +56,14 @@ export function createReaderReadingRouter(config) {
 
   router.put('/reader/progress', async (req, res, next) => {
     try {
-      const body = { mode: 'text', ...req.body }
-      res.json({ progress: await saveProgress(req, validate(progressInput, body)) })
+      res.json({ progress: await saveProgress(req, validate(progressInput, req.body)) })
     } catch (error) {
       next(error)
     }
   })
   router.get('/reader/progress/:storyId', async (req, res, next) => {
     try {
-      res.json(await resumePoints(req.account, req.params.storyId))
+      res.json({ resume: await resumePoint(req.account, req.params.storyId) })
     } catch (error) {
       next(error)
     }

@@ -116,7 +116,7 @@ it('exports actual daily rows and treats formula-like story titles as literal te
   await screen.findByText('3')
   fireEvent.click(
     screen.getByRole('combobox', {
-      name: 'Chọn truyện',
+      name: 'Truyện',
     }),
   )
   fireEvent.click(
@@ -182,6 +182,7 @@ it('renders recorded daily counts and unknown unsupported metrics without sample
   expect(screen.getByText('3')).toBeTruthy()
   expect(screen.queryByText('65%')).toBeNull()
   expect(screen.queryByText('1.248.500')).toBeNull()
+  fireEvent.click(screen.getByRole('button', { name: 'Độc giả', exact: true }))
   expect(screen.getByText('Chưa ghi nhận nguồn kênh khám phá cho các lượt đọc.')).toBeTruthy()
   expect(
     screen.getByRole('button', {
@@ -196,7 +197,7 @@ it('requests real owned story IDs and the chosen range rather than multiplying s
   await screen.findByText('3')
   fireEvent.click(
     screen.getByRole('combobox', {
-      name: 'Chọn truyện',
+      name: 'Truyện',
     }),
   )
   fireEvent.click(
@@ -207,7 +208,7 @@ it('requests real owned story IDs and the chosen range rather than multiplying s
   )
   await waitFor(() =>
     expect(mocks.apiRequest).toHaveBeenCalledWith(
-      '/author/analytics?days=30&storyId=real-owned',
+      '/author/analytics?days=30&groupBy=day&storyId=real-owned',
       expect.any(Object),
     ),
   )
@@ -218,13 +219,13 @@ it('requests real owned story IDs and the chosen range rather than multiplying s
   )
   fireEvent.click(
     screen.getByRole('option', {
-      name: '7 ngày gần nhất',
+      name: '1 tuần',
       exact: true,
     }),
   )
   await waitFor(() =>
     expect(mocks.apiRequest).toHaveBeenCalledWith(
-      '/author/analytics?days=7&storyId=real-owned',
+      '/author/analytics?days=7&groupBy=day&storyId=real-owned',
       expect.any(Object),
     ),
   )
@@ -248,6 +249,7 @@ it('renders measured returners including a real zero rate and leaves an empty de
     returnRate: 200 / 3,
   })
   view()
+  fireEvent.click(screen.getByRole('button', { name: 'Giữ chân', exact: true }))
   expect(await screen.findByText('66,7%')).toBeTruthy()
   expect(screen.getByText('2 / 3 định danh có lượt đọc trong kỳ')).toBeTruthy()
   cleanup()
@@ -257,6 +259,7 @@ it('renders measured returners including a real zero rate and leaves an empty de
     returnRate: 0,
   })
   view()
+  fireEvent.click(screen.getByRole('button', { name: 'Giữ chân', exact: true }))
   expect(await screen.findByText('0%')).toBeTruthy()
   cleanup()
   mocks.apiRequest.mockResolvedValue({
@@ -267,6 +270,7 @@ it('renders measured returners including a real zero rate and leaves an empty de
     returnRate: null,
   })
   view()
+  fireEvent.click(screen.getByRole('button', { name: 'Giữ chân', exact: true }))
   expect(
     await screen.findByText('Chưa có lượt đọc để tính tỷ lệ quay lại trong bộ lọc này.'),
   ).toBeTruthy()
@@ -277,7 +281,7 @@ it('opens a chapter deep link, keeps it across date ranges and clears it when th
   view('/author/analytics?storyId=real-owned&chapterId=chapter-one')
   await screen.findByText('3')
   expect(mocks.apiRequest).toHaveBeenCalledWith(
-    '/author/analytics?days=30&storyId=real-owned&chapterId=chapter-one',
+    '/author/analytics?days=30&groupBy=day&storyId=real-owned&chapterId=chapter-one',
     expect.any(Object),
   )
   fireEvent.click(
@@ -287,19 +291,19 @@ it('opens a chapter deep link, keeps it across date ranges and clears it when th
   )
   fireEvent.click(
     screen.getByRole('option', {
-      name: '7 ngày gần nhất',
+      name: '1 tuần',
       exact: true,
     }),
   )
   await waitFor(() =>
     expect(mocks.apiRequest).toHaveBeenCalledWith(
-      '/author/analytics?days=7&storyId=real-owned&chapterId=chapter-one',
+      '/author/analytics?days=7&groupBy=day&storyId=real-owned&chapterId=chapter-one',
       expect.any(Object),
     ),
   )
   fireEvent.click(
     screen.getByRole('combobox', {
-      name: 'Chọn truyện',
+      name: 'Truyện',
     }),
   )
   fireEvent.click(
@@ -309,7 +313,10 @@ it('opens a chapter deep link, keeps it across date ranges and clears it when th
     }),
   )
   await waitFor(() =>
-    expect(mocks.apiRequest).toHaveBeenCalledWith('/author/analytics?days=7', expect.any(Object)),
+    expect(mocks.apiRequest).toHaveBeenCalledWith(
+      '/author/analytics?days=7&groupBy=day',
+      expect.any(Object),
+    ),
   )
   expect(
     screen.getByRole('combobox', {
@@ -334,7 +341,7 @@ it('requests the selected chapter and permits clearing a missing chapter without
   )
   await waitFor(() =>
     expect(mocks.apiRequest).toHaveBeenCalledWith(
-      '/author/analytics?days=30&storyId=real-owned&chapterId=chapter-two',
+      '/author/analytics?days=30&groupBy=day&storyId=real-owned&chapterId=chapter-two',
       expect.any(Object),
     ),
   )
@@ -350,7 +357,7 @@ it('requests the selected chapter and permits clearing a missing chapter without
   )
   fireEvent.click(
     screen.getByRole('option', {
-      name: '7 ngày gần nhất',
+      name: '1 tuần',
       exact: true,
     }),
   )
@@ -377,7 +384,7 @@ it('requests the selected chapter and permits clearing a missing chapter without
   )
   await waitFor(() =>
     expect(mocks.apiRequest).toHaveBeenCalledWith(
-      '/author/analytics?days=7&storyId=real-owned',
+      '/author/analytics?days=7&groupBy=day&storyId=real-owned',
       expect.any(Object),
     ),
   )
@@ -431,6 +438,7 @@ it('does not display malformed completion counts as a measured percentage', asyn
 it('shows only aggregated identity types with their counts and measured shares', async () => {
   mocks.apiRequest.mockResolvedValue(data)
   view()
+  fireEvent.click(screen.getByRole('button', { name: 'Độc giả', exact: true }))
   expect(
     await screen.findByRole('heading', {
       name: 'Loại định danh độc giả',
@@ -449,6 +457,8 @@ it('does not divide by zero or chart inconsistent audience totals', async () => 
     },
   })
   view()
+  await screen.findByText('3')
+  fireEvent.click(screen.getByRole('button', { name: 'Độc giả', exact: true }))
   expect(await screen.findByText('Chưa có định danh độc giả hợp lệ trong bộ lọc này.')).toBeTruthy()
   expect(screen.queryByText(/NaN%/)).toBeNull()
   cleanup()
@@ -460,6 +470,8 @@ it('does not divide by zero or chart inconsistent audience totals', async () => 
     },
   })
   view()
+  await screen.findByText('3')
+  fireEvent.click(screen.getByRole('button', { name: 'Độc giả', exact: true }))
   await screen.findByText('Chưa có định danh độc giả hợp lệ trong bộ lọc này.')
   expect(screen.queryByText('3 (150%)')).toBeNull()
 })
@@ -482,6 +494,7 @@ it('renders mature day-1/day-7 cohort denominators without mixing them with in-p
     ],
   })
   view()
+  fireEvent.click(screen.getByRole('button', { name: 'Giữ chân', exact: true }))
   const section = (
     await screen.findByRole('heading', {
       name: 'Giữ chân theo ngày quan sát',
@@ -511,6 +524,7 @@ it('distinguishes zero mature-cohort returns from insufficient observation', asy
     ],
   })
   view()
+  fireEvent.click(screen.getByRole('button', { name: 'Giữ chân', exact: true }))
   const section = (
     await screen.findByRole('heading', {
       name: 'Giữ chân theo ngày quan sát',
@@ -534,6 +548,7 @@ it('does not chart invalid cohort responses as measured retention', async () => 
     ],
   })
   view()
+  fireEvent.click(screen.getByRole('button', { name: 'Giữ chân', exact: true }))
   const section = (
     await screen.findByRole('heading', {
       name: 'Giữ chân theo ngày quan sát',

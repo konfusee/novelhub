@@ -26,24 +26,20 @@ function ItemBadges({ item, t }) {
 /* One `LibraryItem` of GET /reader/library: progress, resume link and unfollow. */
 export function LibraryCard({ item, view = 'grid', onUnfollow, busy = false }) {
   const { t } = useLocale()
-  const { story, resume, listenResume } = item
+  const { story, resume } = item
   const href = resumeHref(story.id, resume)
-  const listenTo = listenHref(story.id, listenResume)
+  const listenTo = listenHref(story.id, resume)
   const percent = storyPercent(item)
   const actionLabel = resume?.available ? t('library.continue') : t('library.openStory')
   const listenLabel = t('library.continueListening')
-  const chapter = resume
-    ? chapterLabel(t, resume)
-    : listenResume
-      ? chapterLabel(t, listenResume)
-      : t('library.notStarted')
+  const chapter = resume ? chapterLabel(t, resume) : t('library.notStarted')
   const listen = listenTo && (
     <ButtonLink
       to={listenTo}
       size="sm"
       variant="secondary"
       aria-label={`${listenLabel}: ${story.title}`}
-      title={chapterLabel(t, listenResume)}
+      title={chapterLabel(t, resume)}
     >
       <Headphones size={14} aria-hidden="true" />
       <span className="hidden sm:inline">{listenLabel}</span>

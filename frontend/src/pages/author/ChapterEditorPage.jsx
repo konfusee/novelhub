@@ -335,6 +335,10 @@ function ChapterEditor({ chapter }) {
       setSaveError(t('editorData.titleRequired'))
       return false
     }
+    if (richDocument.blocks.filter(block => block.type === 'paragraph').length > 1000) {
+      setSaveError(t('chapterText.tooManyParagraphs'))
+      return false
+    }
     busyRef.current = true
     setSaveBusy(true)
     setSaveError('')

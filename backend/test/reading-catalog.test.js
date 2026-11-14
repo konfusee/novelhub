@@ -177,7 +177,7 @@ describe('catalogue discovery', () => {
         await api.write(
           reader.cookie,
           '/api/reader/progress',
-          { storyId, chapterId, position: 0.4 },
+          { storyId, chapterId, paragraph: 0, paragraphCount: 1 },
           'put',
         )
       ).status,
@@ -187,7 +187,7 @@ describe('catalogue discovery', () => {
     expect(signed.body.viewer).toMatchObject({
       following: true,
       rating: null,
-      resume: { chapterId, position: 0.4, contentUpdated: false, available: true },
+      resume: { chapterId, paragraph: 0, contentUpdated: false, available: true },
     })
   })
 })

@@ -256,94 +256,102 @@ export async function authorDashboard(accountId, { days = 1 } = {}, now = new Da
     story => story.publicationStatus === 'published' && story.publishedRevisionId,
   )
   const publishedStoryIds = publishedStories.map(story => story._id)
-  const [chapters, views, ratings, followers, feedback, feedbackTotal, selectedViews, selectedFollowers] =
-    await Promise.all([
-      Chapter.find({
-        storyId: {
-          $in: ids,
-        },
-        'publicationTransition.result': {
-          $ne: 'author-draft-deleted',
-        },
+  const [
+    chapters,
+    views,
+    ratings,
+    followers,
+    feedback,
+    feedbackTotal,
+    selectedViews,
+    selectedFollowers,
+  ] = await Promise.all([
+    Chapter.find({
+      storyId: {
+        $in: ids,
+      },
+      'publicationTransition.result': {
+        $ne: 'author-draft-deleted',
+      },
+    })
+      .select('storyId title status draftRevisionId publishedRevisionId updatedAt')
+      .sort({
+        updatedAt: -1,
+        _id: -1,
       })
-        .select('storyId title status draftRevisionId publishedRevisionId updatedAt')
-        .sort({
-          updatedAt: -1,
-          _id: -1,
-        })
-        .lean(),
-      StatisticsEvent.aggregate([
-        {
-          $match: {
-            storyId: { $in: publishedStoryIds },
-            eventType: 'view',
+      .lean(),
+    StatisticsEvent.aggregate([
+      {
+        $match: {
+          storyId: { $in: publishedStoryIds },
+          eventType: 'view',
+        },
+      },
+      {
+        $group: {
+          _id: '$storyId',
+          count: {
+            $sum: 1,
           },
         },
-        {
-          $group: {
-            _id: '$storyId',
-            count: {
-              $sum: 1,
-            },
+      },
+    ]),
+    Rating.aggregate([
+      {
+        $match: {
+          storyId: { $in: publishedStoryIds },
+          status: 'active',
+        },
+      },
+      {
+        $group: {
+          _id: '$storyId',
+          average: {
+            $avg: '$value',
           },
         },
-      ]),
-      Rating.aggregate([
-        {
-          $match: {
-            storyId: { $in: publishedStoryIds },
-            status: 'active',
-          },
-        },
-        {
-          $group: {
-            _id: '$storyId',
-            average: {
-              $avg: '$value',
-            },
-          },
-        },
-      ]),
-      Follow.distinct('accountId', {
-        storyId: { $in: publishedStoryIds },
-        status: 'active',
-      }),
-      Comment.find({
-        targetType: 'story',
-        targetId: {
-          $in: publishedStoryIds,
-        },
-        parentCommentId: null,
-        status: 'visible',
+      },
+    ]),
+    Follow.distinct('accountId', {
+      storyId: { $in: publishedStoryIds },
+      status: 'active',
+    }),
+    Comment.find({
+      targetType: 'story',
+      targetId: {
+        $in: publishedStoryIds,
+      },
+      parentCommentId: null,
+      status: 'visible',
+    })
+      .sort({
+        createdAt: -1,
+        _id: -1,
       })
-        .sort({
-          createdAt: -1,
-          _id: -1,
-        })
-        .limit(2)
-        .populate('authorAccountId', 'displayName status')
-        .select('body targetId authorAccountId createdAt')
-        .lean(),
-      Comment.countDocuments({
-        targetType: 'story',
-        targetId: {
-          $in: publishedStoryIds,
+      .limit(2)
+      .populate('authorAccountId', 'displayName status')
+      .select('body targetType targetId authorAccountId createdAt')
+      .lean(),
+    Comment.countDocuments({
+      targetType: 'story',
+      targetId: {
+        $in: publishedStoryIds,
+      },
+      parentCommentId: null,
+      status: 'visible',
+    }),
+    StatisticsEvent.aggregate([
+      {
+        $match: {
+          storyId: { $in: publishedStoryIds },
+          eventType: 'view',
+          day: { $gte: selectedWindow.startDay, $lte: selectedWindow.endDay },
         },
-        parentCommentId: null,
-        status: 'visible',
-      }),
-      StatisticsEvent.aggregate([
-        {
-          $match: {
-            storyId: { $in: publishedStoryIds },
-            eventType: 'view',
-            day: { $gte: selectedWindow.startDay, $lte: selectedWindow.endDay },
-          },
-        },
-        { $group: { _id: '$storyId', count: { $sum: 1 } } },
-      ]),
-      periodFollows(publishedStoryIds, selectedWindow.start, selectedWindow.end),
-    ])
+      },
+      { $group: { _id: '$storyId', count: { $sum: 1 } } },
+    ]),
+    periodFollows(publishedStoryIds, selectedWindow.start, selectedWindow.end),
+  ])
   const publishedChapters = chapters.filter(
     chapter => chapter.status === 'published' && chapter.publishedRevisionId,
   )
@@ -388,7 +396,7 @@ export async function authorDashboard(accountId, { days = 1 } = {}, now = new Da
       .sort({ createdAt: -1, _id: -1 })
       .limit(2)
       .populate('authorAccountId', 'displayName status')
-      .select('body targetId authorAccountId createdAt')
+      .select('body targetType targetId authorAccountId createdAt')
       .lean(),
     Comment.countDocuments({
       targetType: 'chapter',
@@ -673,13 +681,7 @@ export async function authorDashboardPeriod(accountId, { days = 1 } = {}, now = 
       },
       { $group: { _id: '$storyId', count: { $sum: 1 } } },
     ]),
-    revenueForStories(
-      accountId,
-      storyIds,
-      chapterIds,
-      selectedWindow.start,
-      selectedWindow.end,
-    ),
+    revenueForStories(accountId, storyIds, chapterIds, selectedWindow.start, selectedWindow.end),
     Comment.countDocuments({
       $or: [
         { targetType: 'story', targetId: { $in: storyIds } },

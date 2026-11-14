@@ -210,7 +210,7 @@ describe('author dashboard', () => {
         ownerId: author.account._id,
         key: String(requestId),
       },
-      occurredAt: new Date('2026-11-13T03:00:00Z'),
+      occurredAt: new Date(),
     })
 
     const result = (

@@ -236,7 +236,6 @@ export async function authorStoryWorkspace(account, storyId) {
         !story.authoringFrozen &&
         !['submitted', 'under-review', 'archived'].includes(story.publicationStatus),
       canEditMetadata: Boolean(
-        !story.publishedRevisionId &&
         !story.authoringFrozen &&
         !['submitted', 'under-review', 'archived'].includes(story.publicationStatus),
       ),
