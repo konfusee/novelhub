@@ -261,8 +261,15 @@ export function JoinPage({ initialMode }) {
         too_many_attempts: 'auth.tooManyAttempts',
         email_not_verified: 'auth.emailNotVerified',
         account_unavailable: 'auth.accountUnavailable',
+        csrf_rejected: 'auth.sessionOriginError',
       }[reason.code]
-      setError(t(messageKey ?? 'auth.requestFailed'))
+      const fallbackKey =
+        reason.status >= 500
+          ? 'auth.serverUnavailable'
+          : reason.code === 'network_error'
+            ? 'auth.connectionFailed'
+            : 'auth.requestFailed'
+      setError(t(messageKey ?? fallbackKey))
       setVerificationEmail(reason.code === 'email_not_verified' ? form.email.trim() : '')
       if (!isLogin) reloadCaptcha()
       setBusy(false)
